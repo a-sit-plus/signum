@@ -3,6 +3,18 @@
 ## 3.0
 
 ### NEXT
+* Introduce full X.509 certificate validation support
+  * Added core `CertificateChainValidator` coordinating the full validation pipeline
+    * `validate()` method returns `CertificateValidationResult` which contains root policy node, leaf certificate and list of `ValidatorFailure`
+    * Validation fails softly, by returning `ValidatorFailure` for every exception thrown during validation
+  * Modular validator design with pluggable components:
+      * `PolicyValidator` – enforces certificate policies and policy constraints
+      * `BasicConstraintsValidator` – validates basicConstraints
+      * `NameConstraintsValidator` – enforces permitted/excluded name constraints across the chain
+      * `ChainValidator` - validates signatures and name chaining
+      * `KeyUsageValidator` - validates KeyUsage extensions
+      * `TimeValidityValidator` - checks certificate time validity and that each certificate was issued within the validity period of its issuer
+      * `TrustAnchorValidator` - checks if any certificate from the chain is trusted
 * Introduced dedicated X509 extension classes:
   * `X509CertificateExtension` is now a base class
   * Enables polymorphic decoding/encoding of extension types

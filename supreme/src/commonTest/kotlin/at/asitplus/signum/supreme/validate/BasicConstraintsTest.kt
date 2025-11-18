@@ -158,7 +158,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "Missing basicConstraints extension at cert index 0."
+        validatorFailure!!.errorMessage shouldBe "Missing basicConstraints extension at cert index 1."
     }
 
     "Invalid cA False Test2" {
@@ -215,7 +215,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "Missing CA flag at cert index 0."
+        validatorFailure!!.errorMessage shouldBe "Missing CA flag at cert index 1."
     }
 
     "Invalid cA False Test3" {
@@ -272,7 +272,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "basicConstraints extension must be critical (index 0)."
+        validatorFailure!!.errorMessage shouldBe "basicConstraints extension must be critical (index 1)."
     }
 
     "Invalid pathLenConstraint Test5" {
@@ -330,7 +330,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
     }
 
     "Valid pathLenConstraint Test7" {
@@ -476,7 +476,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 3."
     }
 
     "Invalid pathLenConstraint Test11" {
@@ -582,7 +582,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 3."
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 4."
     }
 
     "Valid pathLenConstraint Test13" {
@@ -778,7 +778,7 @@ val BasicConstraintsTest by testSuite{
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 3."
     }
 
     "Valid Self-Issued pathLenConstraint Test17" {

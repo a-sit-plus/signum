@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.BasicConstraintsException
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -15,14 +16,17 @@ class BasicConstraintsValidator(
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
 
+    @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.remove(KnownOIDs.basicConstraints_2_5_29_19)
         if (currentCertIndex >= pathLength - 1) return
 
+        currentCertIndex++
+
         val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
             ?: throw BasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
 
-        require(basicConstraints.critical) {
+        if(!basicConstraints.critical) {
             throw BasicConstraintsException("basicConstraints extension must be critical (index $currentCertIndex).")
         }
 
@@ -42,7 +46,5 @@ class BasicConstraintsValidator(
                 remainingPathLength = constraint
             }
         }
-
-        currentCertIndex++
     }
 }

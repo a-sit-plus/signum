@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
@@ -46,6 +47,7 @@ class PolicyNode(
         expectedPolicySet += expectedPolicy
     }
 
+    @ExperimentalPkiApi
     fun prune(minDepth: Int) {
         check(!isImmutable) { "PolicyNode is immutable" }
 

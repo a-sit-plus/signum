@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateValidityException
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -19,6 +20,7 @@ class TimeValidityValidator(
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
 
+    @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
         remainingCriticalExtensions: MutableSet<ObjectIdentifier>

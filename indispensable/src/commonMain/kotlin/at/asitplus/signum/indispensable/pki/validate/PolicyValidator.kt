@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificatePolicyException
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.toBigInteger
@@ -44,6 +45,7 @@ class PolicyValidator(
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
     }
 
+    @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.removeAll(supportedExtensions)
 
@@ -142,6 +144,7 @@ class PolicyValidator(
         }
     }
 
+    @OptIn(ExperimentalPkiApi::class)
     private fun processPolicies(
         certIndex: Int,
         initialPolicies: Set<ObjectIdentifier>,
@@ -179,7 +182,7 @@ class PolicyValidator(
                 // RFC 5280: 6.1.3 (d)(1)
                 val qualifiers = policyInfo.policyQualifiers
                 if (qualifiers.isNotEmpty() && rejectPolicyQualifiers && isCritical) {
-                    throw Exception("Critical policy qualifiers present in certificate")
+                    throw CertificatePolicyException("Critical policy qualifiers present in certificate")
                 }
 
                 // RFC 5280: 6.1.3 (d)(1)(i)
@@ -263,6 +266,7 @@ class PolicyValidator(
     * Called at the end of validation (only for final certificate in the chain).
     * Replaces anyPolicy leaf nodes with nodes from initial policies that are not already leafs
     */
+    @OptIn(ExperimentalPkiApi::class)
     private fun rewriteLeafNodes(
         certIndex: Int, initialPolicies: Set<ObjectIdentifier>, root: PolicyNode
     ): PolicyNode? {
@@ -350,6 +354,7 @@ class PolicyValidator(
     * RFC 5280: 6.1.4 (a)-(b)
     * Handles policy mappings
     */
+    @OptIn(ExperimentalPkiApi::class)
     private fun processPolicyMappings(
         certificate: X509Certificate,
         certDepth: Int,
@@ -417,6 +422,7 @@ class PolicyValidator(
     * Part of the RFC 5280: 6.1.5 (g)(iii)
     * Removes nodes that don't intersect with the initial policies
     */
+    @OptIn(ExperimentalPkiApi::class)
     private fun removeInvalidNodes(
         root: PolicyNode,
         certDepth: Int,
