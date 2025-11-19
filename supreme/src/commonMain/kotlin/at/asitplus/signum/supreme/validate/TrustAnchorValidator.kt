@@ -1,9 +1,12 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.BasicConstraintsException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
+import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import org.kotlincrypto.error.CertificateException
 
@@ -18,6 +21,7 @@ class TrustAnchorValidator(
 ) : CertificateValidator {
 
     private var foundTrusted: Boolean = false
+    private val basicConstraintsValidator: BasicConstraintsValidator = BasicConstraintsValidator(0)
 
     @ExperimentalPkiApi
     override suspend fun check(
@@ -43,6 +47,8 @@ class TrustAnchorValidator(
 
                 }
             }
+
+            issuingAnchor.cert?.let { basicConstraintsValidator.checkCaBasicConstraints(it) }
         }
 
         if (currentCertIndex == certChain.lastIndex && !foundTrusted) {

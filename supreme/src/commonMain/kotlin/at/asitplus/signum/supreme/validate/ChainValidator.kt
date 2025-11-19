@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -21,6 +22,8 @@ class ChainValidator(
     private val certificateChain: CertificateChain,
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
+
+    @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
         remainingCriticalExtensions: MutableSet<ObjectIdentifier>
