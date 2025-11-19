@@ -104,7 +104,6 @@ val Asn1EncodingTest by testSuite {
                     +Asn1.SetOf {
                         +PrintableString("World")
                         +PrintableString("Hello")
-                        +PrintableString("58FCA6693FC43D07889874861C7469F1E04980E27F4B5F4089E9E1C44F550C38F98830E1F4336BCB343FBE371D0D7B2ED7F08F59DA75BD0684054B7050242655")
                     }
                     +Asn1.Set {
                         +PrintableString("World")
