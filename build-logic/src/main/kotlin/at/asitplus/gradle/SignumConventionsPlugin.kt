@@ -74,7 +74,7 @@ class SignumConventionsExtension(private val project: Project) {
             }
         }
 
-        project.extensions.getByType<KotlinMultiplatformAndroidComponentsExtension>().apply {
+        project.extensions.findByType<KotlinMultiplatformAndroidComponentsExtension>()?.apply {
             onVariants { v ->
                 // Configure the instrumented-test APK only
                 v.androidTest?.manifestPlaceholders?.put("testLargeHeap", "true")

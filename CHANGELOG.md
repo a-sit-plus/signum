@@ -15,6 +15,7 @@
         * `RSAPadding`
         * `SymmetricEncryptionAlgorithm` and its nested implementations
 * Fix project setup on non-macOS build hosts
+* Fix Android project setup
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes
