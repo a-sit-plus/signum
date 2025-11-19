@@ -2,7 +2,6 @@ package at.asitplus.gradle
 
 import com.android.build.api.dsl.androidLibrary
 import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
@@ -15,6 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.extraProperties
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import java.io.File
 import java.util.*
 
 /**
@@ -30,10 +30,11 @@ import java.util.*
  */
 class SignumConventionsPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
+        target.keepAndroidJvmTarget = true // keep androidJvmMain wiring even if no AGP is applied
         logger.info("Signum Conventions Plugin applied to project: ${'$'}{target.path}")
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
-        pluginManager.apply("com.android.kotlin.multiplatform.library")
+        if (target.hasAndroidSdk()) pluginManager.apply("com.android.kotlin.multiplatform.library")
         pluginManager.apply("signing")
         pluginManager.apply("at.asitplus.gradle.conventions")
         pluginManager.apply("de.infix.testBalloon")
@@ -78,7 +79,7 @@ class SignumConventionsExtension(private val project: Project) {
                 // Configure the instrumented-test APK only
                 v.androidTest?.manifestPlaceholders?.put("testLargeHeap", "true")
             }
-        }?: throw GradleException("No Android SDK setup!")
+        }
     }
 
     var supreme: Boolean = false
@@ -292,10 +293,12 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
         tvosArm64()
     }
 
-    androidNativeX64()
-    androidNativeX86()
-    androidNativeArm32()
-    androidNativeArm64()
+    if (project.hasAndroidSdk()) {
+        androidNativeX64()
+        androidNativeX86()
+        androidNativeArm32()
+        androidNativeArm64()
+    }
 
     listOf(
         js().apply { browser { testTask { enabled = false } } },
@@ -309,4 +312,39 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     linuxX64()
     linuxArm64()
     mingwX64()
+}
+
+
+fun Project.hasAndroidSdk() = resolveAndroidSdk(this)?.let { it -> isValidAndroidSdk(it) } == true
+
+private fun resolveAndroidSdk(project: Project): File? {
+    // Highest precedence: ANDROID_SDK_ROOT (preferred), then ANDROID_HOME (legacy)
+    val env = System.getenv()
+    val fromEnv = listOf("ANDROID_SDK_ROOT", "ANDROID_HOME")
+        .asSequence()
+        .mapNotNull { env[it]?.takeIf { it.isNotBlank() } }
+        .map(::File)
+        .firstOrNull { it.exists() }
+
+    if (fromEnv != null) return fromEnv
+
+    // Fallback: local.properties (common on dev machines)
+    val localProps = File(project.rootDir, "local.properties")
+    if (localProps.exists()) {
+        Properties().apply {
+            localProps.inputStream().use(::load)
+            (getProperty("sdk.dir") ?: getProperty("android.sdk.path"))?.let {
+                val f = File(it)
+                if (f.exists()) return f
+            }
+        }
+    }
+    return null
+}
+
+
+private fun isValidAndroidSdk(sdk: File): Boolean {
+    val platformsOk = File(sdk, "platforms").listFiles()?.any { it.isDirectory } == true
+    val buildToolsOk = File(sdk, "build-tools").listFiles()?.any { it.isDirectory } == true
+    return platformsOk && buildToolsOk
 }
