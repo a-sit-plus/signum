@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import de.infix.testBalloon.framework.core.testSuite
@@ -7,9 +8,10 @@ import at.asitplus.testballoon.invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-/*
-* PKITS 4.1 Signature Verification
-* */
+/**
+ * PKITS 4.1 Signature Verification
+ */
+@OptIn(ExperimentalPkiApi::class)
 val SignatureVerificationTest by testSuite {
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +

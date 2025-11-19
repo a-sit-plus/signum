@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
@@ -10,9 +11,10 @@ import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-/*
-* PKITS 4.2 Validity Periods
-* */
+/**
+ * PKITS 4.2 Validity Periods
+ */
+@OptIn(ExperimentalPkiApi::class)
 val ValidityPeriodsTest by testSuite {
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +

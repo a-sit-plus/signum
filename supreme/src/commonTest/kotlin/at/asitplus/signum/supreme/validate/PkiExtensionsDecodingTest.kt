@@ -1,14 +1,12 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
+import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.testballoon.invoke
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf

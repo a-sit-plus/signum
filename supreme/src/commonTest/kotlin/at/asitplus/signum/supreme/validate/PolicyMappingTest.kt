@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -12,9 +13,10 @@ import at.asitplus.testballoon.invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-/*
-* PKITS 4.10 Policy Mappings
-* */
+/**
+ * PKITS 4.10 Policy Mappings
+ */
+@OptIn(ExperimentalPkiApi::class)
 val PolicyMappingTest by testSuite {
 
     val NISTTestPolicyOne = "2.16.840.1.101.3.2.1.48.1"

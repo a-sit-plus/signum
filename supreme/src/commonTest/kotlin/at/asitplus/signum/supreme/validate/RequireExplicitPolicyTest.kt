@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
@@ -11,6 +12,7 @@ import io.kotest.matchers.shouldNotBe
 /**
  * PKITS 4.9 Require Explicit Policy
  */
+@OptIn(ExperimentalPkiApi::class)
 val RequireExplicitPolicyTest by testSuite {
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
