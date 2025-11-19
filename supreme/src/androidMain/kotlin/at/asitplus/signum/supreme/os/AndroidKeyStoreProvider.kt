@@ -36,6 +36,7 @@ import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
 import at.asitplus.signum.supreme.sign.Signer as SignerI
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -50,7 +51,6 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import java.time.Instant
 import java.util.Date
-import java.util.concurrent.Executors
 import javax.security.auth.x500.X500Principal
 import kotlin.math.max
 
@@ -59,7 +59,7 @@ internal sealed interface FragmentContext {
     @JvmInline value class OfFragment(val fragment: Fragment): FragmentContext
 }
 
-private val keystoreContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+private val dispatcher = Dispatchers.IO.limitedParallelism(1, "Android Keystore Operations")
 
 class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
     /** Whether a StrongBox TPM is required. */
@@ -150,7 +150,7 @@ object AndroidKeyStoreProvider:
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSigningKeyConfiguration>
-    ) = withContext(keystoreContext) { catching {
+    ) = withContext(dispatcher) { catching {
         if (ks.containsAlias(alias)) {
             throw NoSuchElementException("Key with alias $alias already exists")
         }
@@ -225,7 +225,7 @@ object AndroidKeyStoreProvider:
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSignerConfiguration>
-    ): KmmResult<AndroidKeystoreSigner> = withContext(keystoreContext) { catching {
+    ): KmmResult<AndroidKeystoreSigner> = withContext(dispatcher) { catching {
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
             ?: throw NoSuchElementException("No key for alias $alias exists")
@@ -284,7 +284,7 @@ object AndroidKeyStoreProvider:
         }
     }}
 
-    override suspend fun deleteSigningKey(alias: String) = catching { withContext(keystoreContext) {
+    override suspend fun deleteSigningKey(alias: String) = catching { withContext(dispatcher) {
         ks.deleteEntry(alias)
     }}
 }
@@ -376,14 +376,14 @@ sealed class AndroidKeystoreSigner private constructor(
 
     final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<AndroidSignerSigningConfiguration>) = catching {
         if (needsAuthentication && !needsAuthenticationForEveryUse) {
-            withContext(keystoreContext) { getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure)) }
+            withContext(dispatcher) { getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure)) }
         }
     }
 
     final override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-    ): SignatureResult<*> = withContext(keystoreContext) { signCatching {
+    ): SignatureResult<*> = withContext(dispatcher) { signCatching {
         require(data.format == null)
         val jcaSig = getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
             .let { data.data.forEach(it::update); it.sign() }
