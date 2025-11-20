@@ -155,6 +155,9 @@ data class JsonWebToken(
     @SerialName("wallet_link")
     val walletLink: String? = null,
 
+    @SerialName("eudi_wallet_info")
+    val eudiWalletInfo: EudiWalletInfo? = null,
+
     /**
      * OID4VCI: OPTIONAL. Status mechanism for the Wallet Attestation as defined in ietf-oauth-status-list.
      */
@@ -186,6 +189,7 @@ data class JsonWebToken(
         if (accessTokenHash != other.accessTokenHash) return false
         if (walletName != other.walletName) return false
         if (walletLink != other.walletLink) return false
+        if (eudiWalletInfo != other.eudiWalletInfo) return false
         if (status != other.status) return false
 
         return true
@@ -206,6 +210,7 @@ data class JsonWebToken(
         result = 31 * result + (accessTokenHash?.hashCode() ?: 0)
         result = 31 * result + (walletName?.hashCode() ?: 0)
         result = 31 * result + (walletLink?.hashCode() ?: 0)
+        result = 31 * result + (eudiWalletInfo?.hashCode() ?: 0)
         result = 31 * result + (status?.hashCode() ?: 0)
         return result
     }
