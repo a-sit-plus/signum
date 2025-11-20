@@ -1,0 +1,1242 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "de.infix.testBalloon",
+    "module": "testBalloon-framework-core",
+    "version": "0.7.1-K2.3.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "dependencies": [
+        {
+          "group": "de.infix.testBalloon",
+          "module": "testBalloon-framework-shared",
+          "version": {
+            "requires": "0.7.1-K2.3.0-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-test",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "atomicfu",
+          "version": {
+            "requires": "0.29.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-framework-core-metadata-0.7.1-K2.3.0-SNAPSHOT.jar",
+          "url": "testBalloon-framework-core-0.7.1-K2.3.0-SNAPSHOT.jar",
+          "size": 31311,
+          "sha512": "4219ebfa281dca1e1c1591d8a99b2cdf3e3ca84ec226fbd2b9913a253ac03b0b94e9b9c53594bb202a454a8b5799076112055521a94ad1e39724f565f3b1e39d",
+          "sha256": "3e3b9174b08f8a37ba226705c5a589544bfcfa00d7c99308d6dd911f323c8772",
+          "sha1": "df3a17e56a8b61cacbffb8041e7b9f9291cd2b04",
+          "md5": "473857595f9c58100c7aa03d5e48a658"
+        }
+      ]
+    },
+    {
+      "name": "metadataSourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "files": [
+        {
+          "name": "testBalloon-framework-core-kotlin-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "url": "testBalloon-framework-core-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "size": 43114,
+          "sha512": "1c428bc0943125cc5270a4d80ac04e566f8ba01bf94eac6aa6e34bb1e3128487a661456785ea8cb5f81c67a281671870c66e2e6558d761c1f2c2e46cb84bb962",
+          "sha256": "d9a578ef90876967c5a7cc73a7f2014f843f8def4f2fdb5dde77e4eca62a6b52",
+          "sha1": "fb17d5e1a5afb3ffa557e334ddde1231adb549de",
+          "md5": "8185b3189be5918b37fc6eec90930649"
+        }
+      ]
+    },
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-android/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-android-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-android",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-android/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-android-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-android",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-android/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-android-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-android",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeArm32ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativearm32/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativearm32-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativearm32",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeArm32SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativearm32/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativearm32-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativearm32",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativearm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativearm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativearm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativearm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativearm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativearm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativex64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativex64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativex64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativex64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativex64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativex64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeX86ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x86",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativex86/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativex86-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativex86",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidNativeX86SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x86",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-androidnativex86/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-androidnativex86-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-androidnativex86",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-iosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-iosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-iosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-js/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-js-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-js",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-js/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-js-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-js",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-js/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-js-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-js",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-jvm/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-jvm-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-jvm",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-jvm/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-jvm-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-jvm",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-jvm/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-jvm-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-jvm",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "linuxArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-linuxarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-linuxarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-linuxarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "linuxArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-linuxarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-linuxarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-linuxarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-linuxx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-linuxx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-linuxx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-linuxx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-linuxx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-linuxx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-macosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-macosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-macosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-macosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-macosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-macosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-macosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-macosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-macosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-macosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-macosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-macosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-macosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-macosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-macosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-macosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-macosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-macosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "mingwX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-mingwx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-mingwx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-mingwx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "mingwX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-mingwx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-mingwx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-mingwx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "tvos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "tvos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "tvos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "tvos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "tvos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "tvos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "tvos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "tvos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "tvosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "tvos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-tvosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-tvosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-tvosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-wasm-js/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-wasm-js-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-wasm-js",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-wasm-js/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-wasm-js-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-wasm-js",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-wasm-js/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-wasm-js-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-wasm-js",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmWasiApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "wasi"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-wasm-wasi/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-wasm-wasi-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-wasm-wasi",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmWasiRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "wasi"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-wasm-wasi/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-wasm-wasi-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-wasm-wasi",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmWasiSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "wasi"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-wasm-wasi/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-wasm-wasi-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-wasm-wasi",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosArm32ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosarm32/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosarm32-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosarm32",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosArm32SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosarm32/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosarm32-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosarm32",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosArm32MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosarm32/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosarm32-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosarm32",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosDeviceArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_device_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosdevicearm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosdevicearm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosDeviceArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_device_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosdevicearm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosdevicearm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosDeviceArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_device_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosdevicearm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosdevicearm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchossimulatorarm64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchossimulatorarm64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchossimulatorarm64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    },
+    {
+      "name": "watchosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../testBalloon-framework-core-watchosx64/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-watchosx64-0.7.1-K2.3.0-SNAPSHOT.module",
+        "group": "de.infix.testBalloon",
+        "module": "testBalloon-framework-core-watchosx64",
+        "version": "0.7.1-K2.3.0-SNAPSHOT"
+      }
+    }
+  ]
+}

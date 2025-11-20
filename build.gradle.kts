@@ -16,7 +16,7 @@ plugins {
 group = "at.asitplus.signum"
 subprojects {
     repositories {
-        mavenLocal()
+        maven("${rootProject.layout.projectDirectory.asFile.absolutePath}./repo")
     }
 }
 //work around nexus publish bug

@@ -1,0 +1,107 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../testBalloon-framework-core/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-core-0.7.1-K2.3.0-SNAPSHOT.module",
+    "group": "de.infix.testBalloon",
+    "module": "testBalloon-framework-core",
+    "version": "0.7.1-K2.3.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "mingwX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "de.infix.testBalloon",
+          "module": "testBalloon-framework-shared",
+          "version": {
+            "requires": "0.7.1-K2.3.0-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-test",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "atomicfu",
+          "version": {
+            "requires": "0.29.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-framework-core-mingwX64Main-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "url": "testBalloon-framework-core-mingwx64-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "size": 136299,
+          "sha512": "f2f2d221b1afb5a86681b70a2bb9ce1ed72f4441337040aee43a2f02e538a13a97949077ebd4ad69de25724e42fa0238e3c87e72b4f6012caf9f4533f218b811",
+          "sha256": "c7a3781c019a6ed5337e2bd93323cc1cf813f9d02577e328a11b8a254d5af14f",
+          "sha1": "c2f41add90b22143a68de7b13f77a48c8b39bfe3",
+          "md5": "319da4ab5572dbe8927b66abceeadb17"
+        }
+      ]
+    },
+    {
+      "name": "mingwX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "testBalloon-framework-core-mingwx64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "url": "testBalloon-framework-core-mingwx64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "size": 36702,
+          "sha512": "39150b68f51c8537bedb5da6974b9a30b8cbba233aa3edf14f96d72649a7fde1ffd6a8a43e0d158eae7b2b828c9bda73f008d61fda4abe149bb273e94b9c85c0",
+          "sha256": "b820b1b0353db9510284af2e32ff926e543fd2d83f993a9a5b0afc7b59dd1a62",
+          "sha1": "50b2fa826d95d072a8b02084e452db36d6cd1d34",
+          "md5": "bfecdd1483ab04c4987204a1e136b4e5"
+        }
+      ]
+    }
+  ]
+}

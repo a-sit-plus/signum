@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>de.infix.testBalloon</groupId>
+  <artifactId>de.infix.testBalloon.gradle.plugin</artifactId>
+  <version>0.7.1-K2.3.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>testBalloon-gradle-plugin</name>
+  <description>Gradle plugin for the TestBalloon framework</description>
+  <url>https://github.com/infix-de/testBalloon/</url>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>https://www.apache.org/licenses/LICENSE-2.0.txt</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>infix-de</id>
+      <name>infix Software</name>
+      <url>https://github.com/infix-de</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git://github.com/infix-de/testBalloon.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/infix-de/testBalloon.git</developerConnection>
+    <url>https://github.com/infix-de/testBalloon/</url>
+  </scm>
+  <dependencies>
+    <dependency>
+      <groupId>de.infix.testBalloon</groupId>
+      <artifactId>testBalloon-gradle-plugin</artifactId>
+      <version>0.7.1-K2.3.0-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+</project>

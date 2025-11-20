@@ -1,0 +1,72 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../testBalloon-framework-shared/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-shared-0.7.1-K2.3.0-SNAPSHOT.module",
+    "group": "de.infix.testBalloon",
+    "module": "testBalloon-framework-shared",
+    "version": "0.7.1-K2.3.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-framework-shared-linuxX64Main-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "url": "testBalloon-framework-shared-linuxx64-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "size": 14977,
+          "sha512": "811f36582489bb7d2448bab2f77e1aa61b45f475fed9d8ed203b89cc2323ee75c2b68891cbd46b63d633d6981289f5e8f4eaee0e5cececf98ecb8464fc53a6fa",
+          "sha256": "d6e0cc51929d6ef6b85b45ec29924fa66eed2508863868e647a8489fa1ac7095",
+          "sha1": "5a531924dca3e172220549a9bd6d37a5a2ea1d73",
+          "md5": "49dda0b81a5b4cff3b2020e9a949a9bf"
+        }
+      ]
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "testBalloon-framework-shared-linuxx64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "url": "testBalloon-framework-shared-linuxx64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "size": 5061,
+          "sha512": "bd231c91f5cafcb1f505aaa9b9da0db6ec3ded8accd454f795ff1d71fe2c7fac583921062c2841c18fd0f01a358bbf46b9060083dc1e355d23f5b5f6124872a4",
+          "sha256": "deb7b7164f14a5a4425ed23c1d06d71a594f482bd25b5b85509e07c544752d96",
+          "sha1": "ff21130a6fdf0f8e1b6688e11dbcb1c3cb7b74ab",
+          "md5": "32d4af8b2f9d3d76a2ef98211ce1cf89"
+        }
+      ]
+    }
+  ]
+}

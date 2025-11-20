@@ -1,0 +1,86 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../testBalloon-integration-kotest-assertions/0.7.1-K2.3.0-SNAPSHOT/testBalloon-integration-kotest-assertions-0.7.1-K2.3.0-SNAPSHOT.module",
+    "group": "de.infix.testBalloon",
+    "module": "testBalloon-integration-kotest-assertions",
+    "version": "0.7.1-K2.3.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidNativeX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "de.infix.testBalloon",
+          "module": "testBalloon-framework-core",
+          "version": {
+            "requires": "0.7.1-K2.3.0-SNAPSHOT"
+          }
+        },
+        {
+          "group": "io.kotest",
+          "module": "kotest-assertions-core",
+          "version": {
+            "requires": "5.9.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-integration-kotest-assertions-androidNativeX64Main-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "url": "testBalloon-integration-kotest-assertions-androidnativex64-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "size": 4287,
+          "sha512": "a061830d27c563eea0f9c584db17be20c56b71452a12c7dd83bd0a03c70cdfa96f69354fc0b9ade5140f3f078410cf985723ef3ed558c9c9e23cba3a9f185c1e",
+          "sha256": "73bdd62c50e7bfe963ae07ecdc06840505e83d3ab88e93d7177d7447c7c3a596",
+          "sha1": "7f7305ce83b773421ec70b76df8c9b957c5d3e8b",
+          "md5": "2943ce890739c505ebd8ffd83d416294"
+        }
+      ]
+    },
+    {
+      "name": "androidNativeX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "testBalloon-integration-kotest-assertions-androidnativex64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "url": "testBalloon-integration-kotest-assertions-androidnativex64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "size": 3236,
+          "sha512": "898f83a47747cd16f731ae234f7a75243e685d83b3c7732e51b11c1d92dfce285cbaadebcc78adb905a42d2e957c8ac0eb318225e9b7976b216240c895f0032a",
+          "sha256": "a888e91399b9e5c57414f5f168fd4fe3e7417eb6a04ccdc1e3183e5d81a57861",
+          "sha1": "7db47688e4008a34325218c3ef8aead1631ca286",
+          "md5": "d795842e946080d386afd4a6ddb73bf7"
+        }
+      ]
+    }
+  ]
+}

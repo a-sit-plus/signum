@@ -1,0 +1,116 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../testBalloon-integration-blocking-detection/0.7.1-K2.3.0-SNAPSHOT/testBalloon-integration-blocking-detection-0.7.1-K2.3.0-SNAPSHOT.module",
+    "group": "de.infix.testBalloon",
+    "module": "testBalloon-integration-blocking-detection",
+    "version": "0.7.1-K2.3.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "watchosDeviceArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_device_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "de.infix.testBalloon",
+          "module": "testBalloon-framework-core",
+          "version": {
+            "requires": "0.7.1-K2.3.0-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-integration-blocking-detection-watchosDeviceArm64Main-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "url": "testBalloon-integration-blocking-detection-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "size": 5232,
+          "sha512": "0dea2cd15dfe257b3dde0923b47ce24e58b0fa5820accd5bd9ba2a2d50515ae83fe9fc42d63dd433f28140cf37e600d5daea118f181098cc7020076ed23cb45f",
+          "sha256": "049e766d920894d8ba83392285d8c43eb8a9765beee5a42d0dc1fca9ced0d947",
+          "sha1": "f90f5fc9775df467c27e009669cee5503e2879bc",
+          "md5": "1f17dc922fd5598feba49c97ae3257c0"
+        }
+      ]
+    },
+    {
+      "name": "watchosDeviceArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_device_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "testBalloon-integration-blocking-detection-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "url": "testBalloon-integration-blocking-detection-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "size": 2962,
+          "sha512": "6c17f157fe90aecb2cfa4d5a36fc2bb0d9eafe9ac9a07d8a7088c40760198be4c585cb0d80a9b9e56ed842e4d2084b18f104a5817f5778a9ee7129d8d398b239",
+          "sha256": "87bbf1704d2b3d6ece29747484afad5289b703d5073838712435ccb340d3d1d8",
+          "sha1": "243ebfbee1343a5d4518acf4cc77bde88427c255",
+          "md5": "3081b92d35e85f729925f5b3cc46036b"
+        }
+      ]
+    },
+    {
+      "name": "watchosDeviceArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_device_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "de.infix.testBalloon",
+          "module": "testBalloon-framework-core",
+          "version": {
+            "requires": "0.7.1-K2.3.0-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-integration-blocking-detection-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT-metadata.jar",
+          "url": "testBalloon-integration-blocking-detection-watchosdevicearm64-0.7.1-K2.3.0-SNAPSHOT-metadata.jar",
+          "size": 261,
+          "sha512": "1487e5a20c9e4d74f298e07c42e96a61be11b7a768c3fbc199ee138cd68e1fc2267d1cfe3f11f288acc05df755315344d052cc5f6f751f126ab4fe1caa5125ea",
+          "sha256": "c6deada2fac53b8ea6523dbda77597b128006674616f140f04df23264c6d1aa3",
+          "sha1": "2ad14aed781c4a73ed4dbb421966d408a0a06686",
+          "md5": "f43436d6bec321290f6af228ad602604"
+        }
+      ]
+    }
+  ]
+}

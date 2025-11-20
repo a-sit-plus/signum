@@ -1,0 +1,72 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../testBalloon-framework-shared/0.7.1-K2.3.0-SNAPSHOT/testBalloon-framework-shared-0.7.1-K2.3.0-SNAPSHOT.module",
+    "group": "de.infix.testBalloon",
+    "module": "testBalloon-framework-shared",
+    "version": "0.7.1-K2.3.0-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "mingwX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0-RC"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "testBalloon-framework-shared-mingwX64Main-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "url": "testBalloon-framework-shared-mingwx64-0.7.1-K2.3.0-SNAPSHOT.klib",
+          "size": 14976,
+          "sha512": "276e7a011252a0dc41e2fb3617b3ed6753c3f04c41d682e45bd6d06afeb0accb6c946cd278c5224d4fa614db6e47bc2ed13e12733a1252b87f4ae597c3a41ddb",
+          "sha256": "55bc4367f28852b08ebbd466a4436aba64f0f6911b3cea454c0cacfd4e960bc2",
+          "sha1": "d5e849358645af0dec4d81ccf93f34404bf7a37e",
+          "md5": "531beb3c90f2b2cb4763e576ff1b367e"
+        }
+      ]
+    },
+    {
+      "name": "mingwX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "testBalloon-framework-shared-mingwx64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "url": "testBalloon-framework-shared-mingwx64-0.7.1-K2.3.0-SNAPSHOT-sources.jar",
+          "size": 5061,
+          "sha512": "bd231c91f5cafcb1f505aaa9b9da0db6ec3ded8accd454f795ff1d71fe2c7fac583921062c2841c18fd0f01a358bbf46b9060083dc1e355d23f5b5f6124872a4",
+          "sha256": "deb7b7164f14a5a4425ed23c1d06d71a594f482bd25b5b85509e07c544752d96",
+          "sha1": "ff21130a6fdf0f8e1b6688e11dbcb1c3cb7b74ab",
+          "md5": "32d4af8b2f9d3d76a2ef98211ce1cf89"
+        }
+      ]
+    }
+  ]
+}
