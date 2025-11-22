@@ -21,55 +21,55 @@ jobs:
       - name: Build XCFrameworks
         run: ./gradlew assembleIndispensableAsn1XCFramework assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework assembleSupremeXCFramework
       - name: Upload debug XCFramework Indispensable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Indispensable-debug.xcframework
           path: |
             indispensable/build/XCFrameworks/debug/
       - name: Upload debug XCFramework Indispensable-ASN.1
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: IndispensableAsn1-debug.xcframework
           path: |
             indispensable-asn1/build/XCFrameworks/debug/
       - name: Upload debug XCFramework IndispensableJosef
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: IndispensableJosef-debug.xcframework
           path: |
             indispensable-josef/build/XCFrameworks/debug/
       - name: Upload debug XCFramework IndispensableCosef
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: IndispensableCosef-debug.xcframework
           path: |
             indispensable-cosef/build/XCFrameworks/debug/
       - name: Upload release XCFramework Indispensable-ASN.1
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: IndispensableAsn1-release.xcframework
           path: |
             indispensable-asn1/build/XCFrameworks/release/
       - name: Upload release XCFramework Indispensable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Indispensable-release.xcframework
           path: |
             indispensable/build/XCFrameworks/release/
       - name: Upload release XCFramework IndispensableJosef
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: IndispensableJosef-release.xcframework
           path: |
             indispensable-josef/build/XCFrameworks/release/
       - name: Upload release XCFramework IndispensableCosef
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: IndispensableCosef-release.xcframework
           path: |
             indispensable-cosef/build/XCFrameworks/release/
       - name: Upload release XCFramework Supreme
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: SignumSupreme-release.xcframework
           path: |
