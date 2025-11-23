@@ -535,7 +535,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
     object FromPKCS8 : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> {
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = src.decodeRethrowing {
+        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = src.decodeRethrowing<CryptoPrivateKey> {
             require(next().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
             val (algIdentifier, algParams) = next().asSequence().decodeRethrowing {
                 ObjectIdentifier.decodeFromTlv(next().asPrimitive()) to next().asPrimitive()
