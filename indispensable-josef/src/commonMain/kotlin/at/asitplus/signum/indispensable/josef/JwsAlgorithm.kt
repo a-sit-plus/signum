@@ -102,8 +102,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
         open val digest: Digest?
             get() = when (algorithm) {
-                is SignatureAlgorithm.ECDSA -> (this as SignatureAlgorithm.ECDSA).digest
-                is SignatureAlgorithm.RSA -> (this as SignatureAlgorithm.RSA).digest
+                is SignatureAlgorithm.ECDSA -> (algorithm as SignatureAlgorithm.ECDSA).digest
+                is SignatureAlgorithm.RSA -> (algorithm as SignatureAlgorithm.RSA).digest
             }
 
         companion object {

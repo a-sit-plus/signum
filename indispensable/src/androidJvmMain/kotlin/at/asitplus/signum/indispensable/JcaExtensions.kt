@@ -244,7 +244,6 @@ fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> =
     val kf = when (this) {
         is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
         is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
-        else -> TODO("Unreachable")
     }
     kf.generatePrivate(spec)!!
 }

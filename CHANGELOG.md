@@ -31,6 +31,20 @@
     * `X500Name.fromString()` / `.toRfc2253String()` - parse and serialize complete DNs with escaping and normalization
     * `RelativeDistinguishedName.fromString()` - parse multi-attribute RDNs
     * `AttributeTypeAndValue.fromString()` / `.toRfc2253String` - handle known attributes and canonicalize values
+* Fix a glaring JWS bug that caused an error whenever trying to get the digest of a JWS signature algorithm
+* Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
+    * Classes and interfaces refactored to use `Set` as `entries` to follow  the standardized pattern:
+        * `Asn1Element.Tag`
+        * `CoseAlgorithm` and its nested implementations
+        * `JsonWebAlgorithm`
+        * `JwsAlgorithm` and its nested implementations
+        * `DataIntegrityAlgorithm`
+        * `MessageAuthenticationCode`
+        * `SignatureAlgorithm`
+        * `RSAPadding`
+        * `SymmetricEncryptionAlgorithm` and its nested implementations
+* Fix project setup on non-macOS build hosts
+* Limit Keystore operations with `limitedParallelism` from `kotlinx.coroutines`
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes
