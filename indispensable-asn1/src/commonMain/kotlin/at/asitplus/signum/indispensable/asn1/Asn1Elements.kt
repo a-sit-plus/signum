@@ -234,7 +234,7 @@ sealed class Asn1Element(
      */
     @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(template: Tag.Template) = when (this) {
-        is Asn1Structure -> (this as Asn1Structure).withImplicitTag(
+        is Asn1Structure -> withImplicitTag(
             Tag(
                 tagValue = template.tagValue,
                 tagClass = template.tagClass ?: TagClass.CONTEXT_SPECIFIC,
