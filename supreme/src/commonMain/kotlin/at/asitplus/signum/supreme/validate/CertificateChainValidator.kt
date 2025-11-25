@@ -80,7 +80,6 @@ suspend fun CertificateChain.validate(
 
     val validators = context.validators.toMutableList()
 
-
     validators.addIfMissing(
         PolicyValidator(
             initialPolicies = context.initialPolicies,
@@ -103,7 +102,6 @@ suspend fun CertificateChain.validate(
     validators.addIfMissing(BasicConstraintsValidator(this.size))
     validators.addIfMissing(ChainValidator(this.reversed()))
     validators.addIfMissing(TimeValidityValidator(context.date, certificateChain = this.reversed()))
-
 
     val activeValidators = validators.toMutableSet()
     val validatorFailures = emptyList<ValidatorFailure>().toMutableList()
