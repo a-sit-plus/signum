@@ -4,6 +4,7 @@ import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -51,6 +52,42 @@ val LimboTests by testSuite{
         }
     }
 
+    //Aki tests from webpki-test-suite excluded, since AKI and SKI match is not required by RFC5280
+    context("Authority key identifier tests") {
+        val akiTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("rfc5280::aki", ignoreCase = true)
+        }
+        akiTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
+                } else {
+                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldBe null
+                    result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+                }
+            }
+        }
+    }
+
+    context("Authority key identifier tests") {
+        val akiTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("eku", ignoreCase = true)
+        }
+        akiTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.size shouldNotBe 0
+                } else {
+                    result.validatorFailures.size shouldBe 0
+                }
+            }
+        }
+    }
+
 }
 
 fun resourceText(path: String): String {
@@ -74,5 +111,10 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
     val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
     val context = CertificateValidationContext(trustAnchors = trustAnchors.toSet())
 
-    return chain.validate(context)
+    try {
+        return chain.validate(context)
+    }
+    catch (e: Throwable) {
+        throw e
+    }
 }

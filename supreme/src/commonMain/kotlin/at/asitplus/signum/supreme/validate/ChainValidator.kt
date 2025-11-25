@@ -1,12 +1,15 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
+import at.asitplus.signum.CertificateException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
@@ -44,6 +47,10 @@ class ChainValidator(
         val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(issuer.decodedPublicKey.getOrThrow()).getOrThrow()
         if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()).isSuccess) {
             throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
+        }
+
+        if (!cert.isSelfIssued) {
+            if (cert.findExtension<AuthorityKeyIdentifierExtension>() == null) throw CertificateChainValidatorException("Missing AuthorityKeyIdentifier extension in certificate.")
         }
     }
 

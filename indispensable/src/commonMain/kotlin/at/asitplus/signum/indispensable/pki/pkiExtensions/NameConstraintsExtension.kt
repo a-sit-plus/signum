@@ -140,11 +140,12 @@ class NameConstraintsExtension(
         val cn = subject.findMostSpecificCommonName()?.value?.asPrimitive()
         if (cn != null) {
             try {
-                val isIp = kotlin.runCatching { IPAddressName.decodeFromTlv(cn) }.isSuccess
+                val cnValue = Asn1String.decodeFromTlv(cn)
+                val isIp = runCatching { IPAddressName.fromString(cnValue.value) }.isSuccess
                 val neededType = if (isIp) GeneralNameOption.NameType.IP else GeneralNameOption.NameType.DNS
 
                 if (alternativeNames.none { it.name.type == neededType }) {
-                    val generalName = if (isIp) IPAddressName.decodeFromTlv(cn) else DNSName.decodeFromTlv(cn)
+                    val generalName = if (isIp) IPAddressName.fromString(cnValue.value) else DNSName(Asn1String.IA5(cnValue.value))
                     alternativeNames.add(GeneralName(generalName))
                 }
             } catch (_: Throwable) {
@@ -184,21 +185,35 @@ class NameConstraintsExtension(
         }
 
         if (!permitted?.trees.isNullOrEmpty()) {
+//            val sameTypeSubtrees = permitted!!.trees.filter {
+//                it.base.name.type == name.type
+//            }
+
+            // If no permitted subtrees exist for this type → type is not restricted at all
+//            if (sameTypeSubtrees.isEmpty()) {
+//                return true
+//            }
+
             var sameType = false
 
             for (generalSubtree in permitted!!.trees) {
                 val permittedName = generalSubtree.base.name
                 when (permittedName.constrains(name)) {
                     GeneralNameOption.ConstraintResult.MATCH,
-                    GeneralNameOption.ConstraintResult.WIDENS -> return true
-                    GeneralNameOption.ConstraintResult.DIFF_TYPE -> continue
+                    GeneralNameOption.ConstraintResult.WIDENS -> {
+                        return true
+                    }
+
                     GeneralNameOption.ConstraintResult.NARROWS,
                     GeneralNameOption.ConstraintResult.SAME_TYPE -> {
                         sameType = true
                         continue
                     }
+
+                    else -> continue
                 }
             }
+
             return !sameType
         }
         return true
