@@ -25,7 +25,8 @@ class CertificateValidationContext(
     val policyQualifiersRejected: Boolean = false,
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
     val trustAnchors: Set<TrustAnchor> = emptySet(),
-    val validators: Set<CertificateValidator> = emptySet()
+    val validators: Set<CertificateValidator> = emptySet(),
+    val expectedEku: Set<ObjectIdentifier> = emptySet()
 )
 
 /**
@@ -98,7 +99,7 @@ suspend fun CertificateChain.validate(
         )
     )
     validators.addIfMissing(NameConstraintsValidator(this.size))
-    validators.addIfMissing(KeyUsageValidator(this.size))
+    validators.addIfMissing(KeyUsageValidator(this.size, expectedEku = context.expectedEku))
     validators.addIfMissing(BasicConstraintsValidator(this.size))
     validators.addIfMissing(ChainValidator(this.reversed()))
     validators.addIfMissing(TimeValidityValidator(context.date, certificateChain = this.reversed()))
