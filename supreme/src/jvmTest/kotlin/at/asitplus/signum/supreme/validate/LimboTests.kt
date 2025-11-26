@@ -1,9 +1,14 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.clientAuth
+import at.asitplus.signum.indispensable.asn1.serverAuth
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -71,18 +76,21 @@ val LimboTests by testSuite{
         }
     }
 
-    context("Authority key identifier tests") {
+    context("EKU tests") {
         val akiTests = testSuiteLimbo.testcases.filter {
-            it.id.contains("eku", ignoreCase = true)
+            it.id.contains("rfc5280::eku", ignoreCase = true)
         }
         akiTests.forEach {
             test("Limbo testcase: ${it.id}") {
                 val result = validate(it)
+                val failure = result.validatorFailures.firstOrNull { it.validator is KeyUsageValidator }
 
-                if (it.expected_result == "FAILURE") {
-                    result.validatorFailures.size shouldNotBe 0
+                if (it.id.contains("empty", ignoreCase = true)) {
+                    failure?.cause?.message shouldBe "Empty EKU extension in leaf certificate."
+                } else if (it.id.contains("wrong", ignoreCase = true)) {
+                    failure?.cause?.message shouldBe "Missing EKU 1.3.6.1.5.5.7.3.1 in leaf certificate."
                 } else {
-                    result.validatorFailures.size shouldBe 0
+                    failure shouldBe null
                 }
             }
         }
@@ -109,7 +117,10 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
     val leaf = X509Certificate.decodeFromPem(testcase.peer_certificate).getOrThrow()
 
     val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
-    val context = CertificateValidationContext(trustAnchors = trustAnchors.toSet())
+    val context = CertificateValidationContext(
+        trustAnchors = trustAnchors.toSet(),
+        expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet()
+    )
 
     try {
         return chain.validate(context)
@@ -118,3 +129,9 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
         throw e
     }
 }
+
+val extendedKeyUsages: Map<String, ObjectIdentifier> = mapOf(
+    // RFC 5280 EKUs
+    "serverAuth" to KnownOIDs.serverAuth,
+    "clientAuth" to KnownOIDs.clientAuth
+)
