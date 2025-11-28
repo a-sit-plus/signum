@@ -6,6 +6,7 @@ import at.asitplus.signum.NameConstraintsException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.generalNames.IPAddressName
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import kotlinx.io.IOException
 
@@ -16,17 +17,21 @@ import kotlinx.io.IOException
 class NameConstraintsValidator(
     private val pathLength: Int,
     private var currentCertIndex: Int = 0,
-    private var previousNameConstraints: NameConstraintsExtension? = null
+    var previousNameConstraints: NameConstraintsExtension? = null
 ) : CertificateValidator {
 
     @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.remove(KnownOIDs.nameConstraints_2_5_29_30)
         currentCertIndex++
+
+        if (previousNameConstraints?.isValid == false) {
+            throw NameConstraintsException("Invalid GeneralName in NameConstraints extension.")
+        }
         if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued)) {
 
             try {
-                if (!previousNameConstraints!!.verify(currCert)) {
+                if (!previousNameConstraints!!.verify(currCert, currentCertIndex == pathLength)) {
                     throw NameConstraintsException("NameConstraints violation at cert index $currentCertIndex")
                 }
             } catch (e: Throwable) {
@@ -35,6 +40,10 @@ class NameConstraintsValidator(
                 )
             }
         }
+
+        if (currentCertIndex == pathLength &&
+            currCert.findExtension<NameConstraintsExtension>() != null) throw NameConstraintsException("Leaf certificate must not contain a NameConstraints extension.")
+
         previousNameConstraints = mergeNameConstraints(currCert, previousNameConstraints)
 
     }
@@ -46,6 +55,8 @@ class NameConstraintsValidator(
     ): NameConstraintsExtension? {
 
         val newNameConstraints = currCert.findExtension<NameConstraintsExtension>()
+
+        if (newNameConstraints?.critical == false || previousNameConstraints?.critical == false) throw NameConstraintsException("NameConstraints extension is not critical.")
 
         return if (previousNameConstraints == null) {
             newNameConstraints?.copy()
