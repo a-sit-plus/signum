@@ -15,7 +15,7 @@ data class RFC822Name internal constructor(
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.RFC822
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    override val isValid: Boolean by lazy { value.isValid }
+    override val isValid: Boolean by lazy { value.isValid && validate() }
 
     /**
      * @throws Asn1Exception if illegal RFC822Name is provided
@@ -41,6 +41,24 @@ data class RFC822Name internal constructor(
 
     override fun toString(): String {
         return value.value
+    }
+
+    private fun validate(): Boolean {
+        val str = value.value
+
+        if (str.isEmpty()) return false
+
+        if (str.count { it == '@' } > 1) return false
+
+        val atIndex = str.indexOf('@')
+        val domain = if (atIndex >= 0) str.substring(atIndex + 1) else str
+
+        if (domain.isEmpty()) return false
+
+        // Domain may start with '.', but cannot be just '.'
+        if (domain.startsWith(".") && domain.length == 1) return false
+
+        return true
     }
 
     @ExperimentalPkiApi
