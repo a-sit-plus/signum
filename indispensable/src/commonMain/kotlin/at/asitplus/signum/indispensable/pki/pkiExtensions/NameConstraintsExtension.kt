@@ -25,6 +25,19 @@ class NameConstraintsExtension(
     var excluded: GeneralSubtrees? = null
 ) : X509CertificateExtension(oid, critical, value) {
 
+    /** Indicates whether the NameConstraints extension contains only valid general names in both the permitted and excluded subtrees. */
+    val isValid : Boolean by lazy {
+        fun GeneralSubtree.isInvalid(): Boolean {
+            val name = base.name
+            if (name.isValid == false) return true
+            if (name is IPAddressName && name.addressAndPrefix == null) return true
+            return false
+        }
+
+        val allTrees = listOfNotNull(permitted?.trees, excluded?.trees).flatten()
+        allTrees.none { it.isInvalid() }
+    }
+
     constructor(
         base: X509CertificateExtension,
         permitted: GeneralSubtrees? = null,
@@ -102,7 +115,7 @@ class NameConstraintsExtension(
      * Verify that a certificate follows these NameConstraints
      *  - subject name and AlternativeName is consistent with both permitted and excluded subtree
      * */
-    fun verify(cert: X509Certificate): Boolean {
+    fun verify(cert: X509Certificate, isLeaf: Boolean = false): Boolean {
         val subject = cert.tbsCertificate.subjectName
 
         if (subject.relativeDistinguishedNames.isNotEmpty()) {
@@ -154,6 +167,8 @@ class NameConstraintsExtension(
         }
 
         for (alt in alternativeNames) {
+            if (alt.name.isValid == false) throw Asn1Exception("Invalid alternative name")
+            if (alt.name is IPAddressName && isLeaf && alt.name.addressAndPrefix != null) throw Asn1Exception("Leaf certificate must not contain an IPAddressName with a CIDRE range.")
             if (!verify(alt.name)) {
                 return false
             }
@@ -185,14 +200,6 @@ class NameConstraintsExtension(
         }
 
         if (!permitted?.trees.isNullOrEmpty()) {
-//            val sameTypeSubtrees = permitted!!.trees.filter {
-//                it.base.name.type == name.type
-//            }
-
-            // If no permitted subtrees exist for this type → type is not restricted at all
-//            if (sameTypeSubtrees.isEmpty()) {
-//                return true
-//            }
 
             var sameType = false
 
