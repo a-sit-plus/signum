@@ -96,6 +96,26 @@ val LimboTests by testSuite{
         }
     }
 
+    context("Name constraints tests") {
+        val ncTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("rfc5280::nc", ignoreCase = true)
+                    && !it.id.contains("rfc5280::nc::nc-forbids-same-chain-ica", ignoreCase = true)
+                    && !it.id.contains("rfc5280::nc::nc-forbids-alternate-chain-ica", ignoreCase = true)
+        }
+        ncTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldNotBe null
+                } else {
+                    result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+                }
+
+            }
+        }
+    }
+
 }
 
 fun resourceText(path: String): String {
@@ -122,12 +142,7 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
         expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet()
     )
 
-    try {
-        return chain.validate(context)
-    }
-    catch (e: Throwable) {
-        throw e
-    }
+    return chain.validate(context)
 }
 
 val extendedKeyUsages: Map<String, ObjectIdentifier> = mapOf(

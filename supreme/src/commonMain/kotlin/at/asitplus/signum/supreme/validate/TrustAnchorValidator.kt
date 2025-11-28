@@ -19,7 +19,8 @@ import org.kotlincrypto.error.CertificateException
 class TrustAnchorValidator(
     private val trustAnchors: Set<TrustAnchor>,
     private val certChain: CertificateChain,
-    private var currentCertIndex: Int = 0
+    private var currentCertIndex: Int = 0,
+    var trustAnchor: X509Certificate? = null
 ) : CertificateValidator {
 
     private var foundTrusted: Boolean = false
@@ -49,6 +50,8 @@ class TrustAnchorValidator(
 
                 }
             }
+
+            trustAnchor = issuingAnchor.cert
 
             issuingAnchor.cert?.let { basicConstraintsValidator.checkCaBasicConstraints(it) }
 

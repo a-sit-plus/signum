@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.asn1.anyPolicy
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
@@ -115,6 +116,11 @@ suspend fun CertificateChain.validate(
     } catch (e: Throwable) {
         validatorFailures.add(ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, e.message ?: "Trust Anchor validation failed.", -1, e))
     }
+
+    validators
+        .filterIsInstance<NameConstraintsValidator>()
+        .firstOrNull()
+        ?.apply { previousNameConstraints = trustAnchorValidator.trustAnchor?.findExtension<NameConstraintsExtension>() }
 
     this.reversed().forEachIndexed { i, cert ->
         val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
