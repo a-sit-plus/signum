@@ -344,8 +344,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     /**
      * Checks whether this certificate is valid at the specified [date].
      */
-    @Throws(CertificateValidityException::class)
-    fun checkValidity(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
+    fun isValidAt(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
 
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey

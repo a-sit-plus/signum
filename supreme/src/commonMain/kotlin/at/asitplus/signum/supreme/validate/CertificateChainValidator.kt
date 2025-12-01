@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
@@ -57,7 +58,7 @@ data class ValidatorFailure(
 /**
  * Performs a full validation of this [CertificateChain] according to the provided [context].
  *
- * EExecutes all registered validators (either provided explicitly
+ * Executes all registered validators (either provided explicitly
  * in [CertificateValidationContext.validators] or automatically added defaults) against every certificate in the chain.
  * It collects validation results from each stage rather than throwing exceptions
  *
@@ -109,12 +110,12 @@ suspend fun CertificateChain.validate(
     val validatorFailures = emptyList<ValidatorFailure>().toMutableList()
     val trustAnchorValidator = TrustAnchorValidator(context.trustAnchors, this)
 
-    try {
+    catchingUnwrapped {
         this.forEach {
             trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
         }
-    } catch (e: Throwable) {
-        validatorFailures.add(ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, e.message ?: "Trust Anchor validation failed.", -1, e))
+    }.onFailure {
+        validatorFailures.add(ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, it.message ?: "Trust Anchor validation failed.", -1, it))
     }
 
     validators
