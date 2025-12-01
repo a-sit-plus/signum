@@ -25,6 +25,7 @@ import at.asitplus.signum.indispensable.asn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.asn1.policyConstraints_2_5_29_36
 import at.asitplus.signum.indispensable.asn1.policyMappings
 import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.subjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.decodeBase
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.doDecode
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
@@ -36,6 +37,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -97,7 +99,8 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 KnownOIDs.inhibitAnyPolicy to { seq, tag -> InhibitAnyPolicyExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.keyUsage to { seq, tag -> KeyUsageExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.authorityKeyIdentifier_2_5_29_35 to { seq, tag -> AuthorityKeyIdentifierExtension.decodeFromTlv(seq, tag) },
-                KnownOIDs.extKeyUsage to { seq, tag -> ExtendedKeyUsageExtension.decodeFromTlv(seq, tag) }
+                KnownOIDs.extKeyUsage to { seq, tag -> ExtendedKeyUsageExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.subjectKeyIdentifier to { seq, tag -> SubjectKeyIdentifierExtension.decodeFromTlv(seq, tag) }
             )
         )
         val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension>

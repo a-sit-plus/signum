@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
@@ -32,6 +33,9 @@ class ExtendedKeyUsageExtension(
             val base = decodeBase(src)
 
             if (next().asPrimitive().readOid() != KnownOIDs.extKeyUsage) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.extKeyUsage}), but found OID: ${base.oid}")
+
+            val critical =
+                if (peek()?.tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false
 
             val inner = next().asEncapsulatingOctetString().single().asSequence()
 
