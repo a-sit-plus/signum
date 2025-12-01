@@ -17,6 +17,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 private val json = Json { ignoreUnknownKeys = true }
 
@@ -145,6 +147,44 @@ val LimboTests by testSuite{
         }
     }
 
+    context("online testcases") {
+        val onlineTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("online", ignoreCase = true)
+                    && !it.id.contains("online::stackoverflow.com", ignoreCase = true)
+
+        }
+        onlineTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.size shouldNotBe 0
+                } else {
+                    result.validatorFailures.size shouldBe 0
+                }
+
+            }
+        }
+    }
+
+    context("Subject Key Identifier testcases") {
+        val skiTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("rfc5280::ski", ignoreCase = true)
+        }
+        skiTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.size shouldNotBe 0
+                } else {
+                    result.validatorFailures.size shouldBe 0
+                }
+
+            }
+        }
+    }
+
 }
 
 fun resourceText(path: String): String {
@@ -166,9 +206,12 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
     val leaf = X509Certificate.decodeFromPem(testcase.peer_certificate).getOrThrow()
 
     val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
+    val validationTime = testcase.validation_time?.let(Instant::parse) ?: Clock.System.now()
+
     val context = CertificateValidationContext(
         trustAnchors = trustAnchors.toSet(),
-        expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet()
+        expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet(),
+        date = validationTime
     )
 
     return chain.validate(context)

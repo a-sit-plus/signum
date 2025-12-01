@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
-import at.asitplus.signum.CertificateException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.ExperimentalPkiApi
@@ -12,11 +11,10 @@ import at.asitplus.signum.indispensable.asn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
-import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifier
+import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
-import kotlin.time.Instant
 
 /**
  * Validator that ensures the integrity and correctness of a certificate chain.
@@ -38,11 +36,10 @@ class ChainValidator(
             val childCert = certificateChain[currentCertIndex + 1]
             verifySignature(childCert, issuer = currCert, childCert == certificateChain.last())
             subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
-            isSanCriticalWhenNameIsEmpty(childCert)
             currentCertIndex++
-        } else {
-            isSanCriticalWhenNameIsEmpty(currCert)
         }
+        isSanCriticalWhenNameIsEmpty(currCert)
+        isSKIcritical(currCert)
     }
 
     private fun verifySignature(
@@ -78,7 +75,14 @@ class ChainValidator(
     private fun isSanCriticalWhenNameIsEmpty(cert: X509Certificate) {
         val sanExtension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.subjectAltName_2_5_29_17 }
         if (cert.tbsCertificate.subjectName.relativeDistinguishedNames.isEmpty() && sanExtension?.critical == false)
-            throw CertificateValidityException("SAN extension is not critical, which is required when subject is empty.")
+            throw CertificateChainValidatorException("SAN extension is not critical, which is required when subject is empty.")
 
+    }
+
+    private fun isSKIcritical(cert: X509Certificate) {
+        cert.findExtension<SubjectKeyIdentifierExtension>().let {
+            if (it == null) throw  CertificateChainValidatorException("Missing SubjectKeyIdentifier extension in certificate.")
+            if (it.critical) throw CertificateChainValidatorException("SKI extension must not be critical.")
+        }
     }
 }
