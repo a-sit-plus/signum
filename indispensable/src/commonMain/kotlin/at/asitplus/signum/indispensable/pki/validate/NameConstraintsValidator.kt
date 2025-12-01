@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.NameConstraintsException
 import at.asitplus.signum.indispensable.asn1.*
@@ -28,6 +29,11 @@ class NameConstraintsValidator(
         if (previousNameConstraints?.isValid == false) {
             throw NameConstraintsException("Invalid GeneralName in NameConstraints extension.")
         }
+        // enforcing that all SANs are valid, since our parsing fails softly
+        if (currCert.tbsCertificate.subjectAlternativeNames?.generalNames?.all { it.name.isValid != false } == false) {
+            throw CertificateValidityException("Invalid GeneralName in Subject Alternative Name at index $currentCertIndex")
+        }
+
         if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued)) {
 
             try {

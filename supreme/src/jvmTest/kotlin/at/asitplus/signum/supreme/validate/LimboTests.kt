@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.clientAuth
@@ -12,6 +13,7 @@ import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.json.Json
@@ -49,7 +51,7 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
-                    result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator} shouldNotBe null
+                    result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator } shouldNotBe null
                 } else {
                     result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator} shouldBe null
                 }
@@ -113,6 +115,33 @@ val LimboTests by testSuite{
                 }
 
             }
+        }
+    }
+
+    context("san tests") {
+        val sanTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("rfc5280::san", ignoreCase = true)
+                    && !it.id.contains("malformed", ignoreCase = true)
+        }
+        sanTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.size shouldNotBe 0
+                } else {
+                    result.validatorFailures.size shouldBe 0
+                }
+
+            }
+        }
+    }
+
+    "rfc5280::san::malformed" {
+        val test = testSuiteLimbo.testcases.first {it.id.contains("rfc5280::san::malformed", ignoreCase = true)}
+
+        shouldThrow<Asn1Exception> {
+            validate(test)
         }
     }
 

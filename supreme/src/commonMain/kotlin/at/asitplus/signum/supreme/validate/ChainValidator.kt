@@ -2,10 +2,13 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateException
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
@@ -35,7 +38,10 @@ class ChainValidator(
             val childCert = certificateChain[currentCertIndex + 1]
             verifySignature(childCert, issuer = currCert, childCert == certificateChain.last())
             subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
+            isSanCriticalWhenNameIsEmpty(childCert)
             currentCertIndex++
+        } else {
+            isSanCriticalWhenNameIsEmpty(currCert)
         }
     }
 
@@ -67,5 +73,12 @@ class ChainValidator(
         if (cert.tbsCertificate.issuerUniqueID != issuer.tbsCertificate.subjectUniqueID) {
             throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
         }
+    }
+
+    private fun isSanCriticalWhenNameIsEmpty(cert: X509Certificate) {
+        val sanExtension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.subjectAltName_2_5_29_17 }
+        if (cert.tbsCertificate.subjectName.relativeDistinguishedNames.isEmpty() && sanExtension?.critical == false)
+            throw CertificateValidityException("SAN extension is not critical, which is required when subject is empty.")
+
     }
 }

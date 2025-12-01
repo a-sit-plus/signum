@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
+import at.asitplus.cidre.IpAddress
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
@@ -52,6 +53,10 @@ data class DNSName internal constructor(
             if (value.isEmpty() || value.contains(' ') || value.startsWith('.') || value.endsWith('.')) {
                 return false
             }
+
+            // check if ip address is encoded as DNSName
+            if (value.contains(':')) return false
+            if (runCatching { IpAddress(value) }.isSuccess) return false
 
             var startIndex = 0
             while (startIndex < value.length) {
