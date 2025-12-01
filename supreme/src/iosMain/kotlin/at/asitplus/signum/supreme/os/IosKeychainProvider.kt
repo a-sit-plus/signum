@@ -14,7 +14,8 @@ import at.asitplus.signum.supreme.sign.*
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -31,7 +32,7 @@ import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 @OptIn(DelicateCoroutinesApi::class)
-private val keychainThreads = newFixedThreadPoolContext(nThreads = 4, name = "iOS Keychain Operations")
+private val dispatcher = Dispatchers.IO.limitedParallelism(1, "iOS Keychain Operations")
 
 private fun isSecureEnclaveSupportedConfiguration(c: SigningKeyConfiguration.AlgorithmSpecific): Boolean {
     if (c !is SigningKeyConfiguration.ECConfiguration) return false
@@ -200,7 +201,7 @@ sealed class IosSigner(final override val alias: String,
     }
 
     final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<IosSignerSigningConfiguration>): KmmResult<Unit> =
-    withContext(keychainThreads) { catching {
+    withContext(dispatcher) { catching {
         if (needsAuthentication && !needsAuthenticationForEveryUse) {
             val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
             privateKeyManager.get(config)
@@ -209,7 +210,7 @@ sealed class IosSigner(final override val alias: String,
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
     final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
-    withContext(keychainThreads) { signCatching {
+    withContext(dispatcher) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
@@ -370,7 +371,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
-    ): KmmResult<IosSigner> = withContext(keychainThreads) { catching {
+    ): KmmResult<IosSigner> = withContext(dispatcher) { catching {
         memScoped {
             if (getPublicKey(alias) != null)
                 throw NoSuchElementException("Key with alias $alias already exists")
@@ -532,7 +533,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<IosSignerConfiguration>
-    ): KmmResult<IosSigner> = withContext(keychainThreads) { catching {
+    ): KmmResult<IosSigner> = withContext(dispatcher) { catching {
         val config = DSL.resolve(::IosSignerConfiguration, configure)
         val publicKeyBytes: ByteArray = memScoped {
             val publicKey = getPublicKey(alias)
@@ -550,7 +551,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         }
     }}
 
-    override suspend fun deleteSigningKey(alias: String) = withContext(keychainThreads) { catching {
+    override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) { catching {
         memScoped {
             mapOf(
                 "public key" to cfDictionaryOf(

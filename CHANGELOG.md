@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Fix a glaring JWS bug that caused an error whenever trying to get the digest of a JWS signature algorithm
 * Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
     * Classes and interfaces refactored to use `Set` as `entries` to follow  the standardized pattern:
         * `Asn1Element.Tag`
@@ -16,6 +17,7 @@
         * `SymmetricEncryptionAlgorithm` and its nested implementations
 * Fix project setup on non-macOS build hosts
 * Fix Android project setup
+* Limit Keystore operations with `limitedParallelism` from `kotlinx.coroutines`
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes

@@ -104,8 +104,6 @@ suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyTyp
                 authenticatedData
             )
         }
-        //compiler knows its exhaustive, but IDEA complains
-        else -> throw ImplementationError("Authenticated Decryption")
     }
 }
 
