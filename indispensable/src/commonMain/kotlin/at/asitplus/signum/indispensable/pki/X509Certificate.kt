@@ -330,7 +330,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
      * @return `true` if the certificate is expired, `false` otherwise.
      */
     fun isExpired(date: Instant = Clock.System.now()): Boolean =
-        date > tbsCertificate.validUntil.instant
+        Instant.fromEpochSeconds(date.epochSeconds) > tbsCertificate.validUntil.instant
 
     /**
      * Checks whether this certificate is not yet valid at the specified [date].
@@ -338,7 +338,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
      * @return `true` if the certificate is not yet valid, `false` otherwise.
      */
     fun isNotYetValid(date: Instant = Clock.System.now()): Boolean =
-        date < tbsCertificate.validFrom.instant
+        Instant.fromEpochSeconds(date.epochSeconds) < tbsCertificate.validFrom.instant
 
 
     /**
