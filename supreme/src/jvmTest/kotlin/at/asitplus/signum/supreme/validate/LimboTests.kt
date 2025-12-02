@@ -9,8 +9,10 @@ import at.asitplus.signum.indispensable.asn1.serverAuth
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
@@ -179,6 +181,48 @@ val LimboTests by testSuite{
                     result.validatorFailures.size shouldNotBe 0
                 } else {
                     result.validatorFailures.size shouldBe 0
+                }
+
+            }
+        }
+    }
+
+    context("Certificate serial number tests") {
+        val skiTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("rfc5280::serial", ignoreCase = true)
+        }
+        skiTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+                val failure = result.validatorFailures.firstOrNull { it.validator is CertValidityValidator }
+
+                if (it.id.contains("too-long", ignoreCase = true)) {
+                    failure?.cause?.message shouldBe "Serial number too long"
+                } else if (it.id.contains("negative", ignoreCase = true)) {
+                    failure?.cause?.message shouldBe "Serial number must be positive"
+                } else {
+                    failure?.cause?.message shouldBe "Serial number must not be zero"
+                }
+
+            }
+        }
+    }
+
+    context("tests") {
+        val skiTests = testSuiteLimbo.testcases.filter {
+            it.id.contains("rfc5280::validity", ignoreCase = true)
+        }
+        skiTests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    if (it.id.contains("expired-root", ignoreCase = true))
+                        result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
+                    else
+                        result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldNotBe null
+                } else {
+                    result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldBe null
                 }
 
             }

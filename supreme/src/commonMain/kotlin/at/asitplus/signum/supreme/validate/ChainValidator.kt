@@ -38,8 +38,6 @@ class ChainValidator(
             subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
             currentCertIndex++
         }
-        isSanCriticalWhenNameIsEmpty(currCert)
-        isSKIcritical(currCert)
     }
 
     private fun verifySignature(
@@ -69,20 +67,6 @@ class ChainValidator(
 
         if (cert.tbsCertificate.issuerUniqueID != issuer.tbsCertificate.subjectUniqueID) {
             throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
-        }
-    }
-
-    private fun isSanCriticalWhenNameIsEmpty(cert: X509Certificate) {
-        val sanExtension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.subjectAltName_2_5_29_17 }
-        if (cert.tbsCertificate.subjectName.relativeDistinguishedNames.isEmpty() && sanExtension?.critical == false)
-            throw CertificateChainValidatorException("SAN extension is not critical, which is required when subject is empty.")
-
-    }
-
-    private fun isSKIcritical(cert: X509Certificate) {
-        cert.findExtension<SubjectKeyIdentifierExtension>().let {
-            if (it == null) throw  CertificateChainValidatorException("Missing SubjectKeyIdentifier extension in certificate.")
-            if (it.critical) throw CertificateChainValidatorException("SKI extension must not be critical.")
         }
     }
 }

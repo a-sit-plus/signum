@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
@@ -100,15 +101,17 @@ suspend fun CertificateChain.validate(
             )
         )
     )
+    validators.addIfMissing(CertValidityValidator(context.date))
     validators.addIfMissing(NameConstraintsValidator(this.size))
     validators.addIfMissing(KeyUsageValidator(this.size, expectedEku = context.expectedEku))
     validators.addIfMissing(BasicConstraintsValidator(this.size))
     validators.addIfMissing(ChainValidator(this.reversed()))
     validators.addIfMissing(TimeValidityValidator(context.date, certificateChain = this.reversed()))
 
+
     val activeValidators = validators.toMutableSet()
     val validatorFailures = emptyList<ValidatorFailure>().toMutableList()
-    val trustAnchorValidator = TrustAnchorValidator(context.trustAnchors, this)
+    val trustAnchorValidator = TrustAnchorValidator(context.trustAnchors, this, date = context.date)
 
     catchingUnwrapped {
         this.forEach {
