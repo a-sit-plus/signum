@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -9,7 +10,10 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifier
 import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.kotlincrypto.error.CertificateException
+import kotlin.time.Instant
 
 /**
  * This validator checks whether any certificate in the chain is issued by a trusted anchor
@@ -19,7 +23,8 @@ class TrustAnchorValidator(
     private val trustAnchors: Set<TrustAnchor>,
     private val certChain: CertificateChain,
     private var currentCertIndex: Int = 0,
-    var trustAnchor: X509Certificate? = null
+    var trustAnchor: X509Certificate? = null,
+    val date: Instant
 ) : CertificateValidator {
 
     private var foundTrusted: Boolean = false
@@ -63,6 +68,26 @@ class TrustAnchorValidator(
             issuingAnchor.cert?.findExtension<SubjectKeyIdentifierExtension>().let {
                 if (it == null) throw CertificateChainValidatorException("Missing SubjectKeyIdentifier extension in certificate.")
                 if (it.critical) throw CertificateChainValidatorException("Trust Anchor must mark SubjectKeyIdentifier as non-critical")
+            }
+
+            issuingAnchor.cert?.let {
+                if (it.isExpired(date)) {
+                    throw CertificateValidityException(
+                        "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(
+                            TimeZone.currentSystemDefault()
+                        )
+                    )
+                }
+            }
+
+            issuingAnchor.cert?.let {
+                if (it.isNotYetValid(date)) {
+                    throw CertificateValidityException(
+                        "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(
+                            TimeZone.currentSystemDefault()
+                        )
+                    )
+                }
             }
 
             currCert.findExtension<AuthorityKeyIdentifierExtension>(). let{
