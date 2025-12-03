@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
+import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
@@ -73,9 +74,9 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
-                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
+                    result.validatorFailures.firstOrNull { it.validator is KeyIdentifierValidator } shouldNotBe null
                 } else {
-                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldBe null
+                    result.validatorFailures.firstOrNull { it.validator is KeyIdentifierValidator } shouldBe null
                     result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
                 }
             }
@@ -208,7 +209,7 @@ val LimboTests by testSuite{
         }
     }
 
-    context("tests") {
+    context("time validity tests") {
         val skiTests = testSuiteLimbo.testcases.filter {
             it.id.contains("rfc5280::validity", ignoreCase = true)
         }
