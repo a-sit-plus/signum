@@ -27,7 +27,7 @@ class TrustAnchorValidator(
     val date: Instant
 ) : CertificateValidator {
 
-    private var foundTrusted: Boolean = false
+    var foundTrusted: Boolean = false
     private val basicConstraintsValidator: BasicConstraintsValidator = BasicConstraintsValidator(0)
 
     @ExperimentalPkiApi
@@ -59,17 +59,6 @@ class TrustAnchorValidator(
 
             issuingAnchor.cert?.let { basicConstraintsValidator.checkCaBasicConstraints(it) }
 
-
-            issuingAnchor.cert?.findExtension<AuthorityKeyIdentifierExtension>().let {
-                if (issuingAnchor.cert?.isSelfIssued == false && it == null) throw CertificateChainValidatorException("Missing AuthorityKeyIdentifier extension in Trust Anchor.")
-                if (it?.critical == true) throw CertificateChainValidatorException("Trust Anchor must mark AuthorityKeyIdentifier as non-critical")
-            }
-
-            issuingAnchor.cert?.findExtension<SubjectKeyIdentifierExtension>().let {
-                if (it == null) throw CertificateChainValidatorException("Missing SubjectKeyIdentifier extension in certificate.")
-                if (it.critical) throw CertificateChainValidatorException("Trust Anchor must mark SubjectKeyIdentifier as non-critical")
-            }
-
             issuingAnchor.cert?.let {
                 if (it.isExpired(date)) {
                     throw CertificateValidityException(
@@ -88,11 +77,6 @@ class TrustAnchorValidator(
                         )
                     )
                 }
-            }
-
-            currCert.findExtension<AuthorityKeyIdentifierExtension>(). let{
-                if (it == null) throw CertificateChainValidatorException("Missing AuthorityKeyIdentifier extension in certificate.")
-                if (it.critical) throw CertificateChainValidatorException("Conforming CAs must mark AuthorityKeyIdentifier as non-critical")
             }
         }
 

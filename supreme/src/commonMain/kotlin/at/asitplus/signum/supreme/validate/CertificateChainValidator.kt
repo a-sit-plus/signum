@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtensi
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.PolicyNode
@@ -101,6 +102,8 @@ suspend fun CertificateChain.validate(
             )
         )
     )
+    val keyIdentifierValidator = KeyIdentifierValidator(this)
+    validators.addIfMissing(keyIdentifierValidator)
     validators.addIfMissing(CertValidityValidator(context.date))
     validators.addIfMissing(NameConstraintsValidator(this.size))
     validators.addIfMissing(KeyUsageValidator(this.size, expectedEku = context.expectedEku))
@@ -116,9 +119,20 @@ suspend fun CertificateChain.validate(
     catchingUnwrapped {
         this.forEach {
             trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
+            if (trustAnchorValidator.foundTrusted) {
+                catchingUnwrapped {
+                    keyIdentifierValidator.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor, it)
+                }.onFailure {
+                    validatorFailures.add(
+                        ValidatorFailure(KeyIdentifierValidator::class.simpleName!!, keyIdentifierValidator, it.message ?: "Key Identifier validation failed.", -1, it)
+                    )
+                }
+            }
         }
     }.onFailure {
-        validatorFailures.add(ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, it.message ?: "Trust Anchor validation failed.", -1, it))
+        validatorFailures.add(
+            ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, it.message ?: "Trust Anchor validation failed.", -1, it)
+        )
     }
 
     validators
