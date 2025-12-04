@@ -15,6 +15,8 @@
       * `KeyUsageValidator` - validates KeyUsage extensions
       * `TimeValidityValidator` - checks certificate time validity and that each certificate was issued within the validity period of its issuer
       * `TrustAnchorValidator` - checks if any certificate from the chain is trusted
+      * `KeyIdentifierValidator` - validates Subject and Authority key identifiers
+      * `CertValidityValidator` - checks whether the certificate is constructed correctly, since some components are decoded too leniently
 * Introduced dedicated X509 extension classes:
   * `X509CertificateExtension` is now a base class
   * Enables polymorphic decoding/encoding of extension types

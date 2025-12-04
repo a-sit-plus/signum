@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.anyPolicy
@@ -29,7 +30,6 @@ class CertificateValidationContext(
     val policyQualifiersRejected: Boolean = false,
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
     val trustAnchors: Set<TrustAnchor> = emptySet(),
-    val validators: Set<CertificateValidator> = emptySet(),
     val expectedEku: Set<ObjectIdentifier> = emptySet()
 )
 
@@ -58,40 +58,110 @@ data class ValidatorFailure(
 )
 
 /**
- * Performs a full validation of this [CertificateChain] according to the provided [context].
+ * Performs a full, potentially unsafe validation of this [CertificateChain] using the provided [validators].
  *
- * Executes all registered validators (either provided explicitly
- * in [CertificateValidationContext.validators] or automatically added defaults) against every certificate in the chain.
- * It collects validation results from each stage rather than throwing exceptions
+ * This function executes all validators in [validators] against every certificate in the chain.
+ * It does not automatically enforce RFC 5280 compliance — any custom validators can be provided
+ */
+@ExperimentalPkiApi
+@HazardousMaterials
+suspend fun CertificateChain.validate(
+    validators: List<CertificateValidator> = emptyList()
+) : CertificateValidationResult {
+
+    val activeValidators = validators.toMutableSet()
+    val validatorFailures = mutableListOf<ValidatorFailure>()
+    val trustAnchorValidator = activeValidators.filterIsInstance<TrustAnchorValidator>().firstOrNull()
+    val keyIdentifierValidator = activeValidators.filterIsInstance<KeyIdentifierValidator>().firstOrNull()
+    val nameConstraintsValidator = activeValidators.filterIsInstance<NameConstraintsValidator>().firstOrNull()
+
+    trustAnchorValidator?.let { trustAnchorValidator
+        catchingUnwrapped {
+            this.forEach {
+                trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
+                if (trustAnchorValidator.foundTrusted) {
+                    catchingUnwrapped {
+                        keyIdentifierValidator?.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor, it)
+                    }.onFailure {
+                        validatorFailures.add(
+                            ValidatorFailure(KeyIdentifierValidator::class.simpleName!!, keyIdentifierValidator, it.message ?: "Key Identifier validation failed.", -1, it)
+                        )
+                    }
+                }
+            }
+        }.onFailure {
+            validatorFailures.add(
+                ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, it.message ?: "Trust Anchor validation failed.", -1, it)
+            )
+        }
+
+        nameConstraintsValidator?.previousNameConstraints = trustAnchorValidator.trustAnchor?.findExtension<NameConstraintsExtension>()
+        activeValidators.remove(trustAnchorValidator)
+    }
+
+    this.reversed().forEachIndexed { i, cert ->
+        val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
+
+        val validatorIterator = activeValidators.iterator()
+        while (validatorIterator.hasNext()) {
+            val currValidator = validatorIterator.next()
+            try {
+                currValidator.check(cert, remainingCriticalExtensions)
+            } catch (e: Throwable) {
+                validatorIterator.remove()
+                validatorFailures.add(ValidatorFailure(currValidator::class.simpleName!!, currValidator, e.message ?: "Validation failed.", i + 1, e))
+            }
+        }
+        verifyCriticalExtensions(remainingCriticalExtensions, i , validatorFailures)
+    }
+    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf, validatorFailures)
+}
+
+/**
+ * Performs an RFC 5280-compliant validation of this [CertificateChain] using default validators.
  *
- * The following validators are automatically added if not already present:
+ * This function automatically adds all mandatory validators required for standard X.509
+ * path validation according to RFC 5280, including:
  * [PolicyValidator] – for certificate policy processing
  * [NameConstraintsValidator] – for name constraint enforcement
  * [KeyUsageValidator] – for key usage and extended key usage checks
  * [BasicConstraintsValidator] – for CA and path length validation
  * [ChainValidator] – for signature chain integrity
  * [TimeValidityValidator] – for certificate validity period
+ * [CertValidityValidator] – for checking whether the certificate is constructed correctly, since some components are decoded too leniently
  *
- * A [TrustAnchorValidator] is also executed once to ensure that the chain terminates
+ * [TrustAnchorValidator] is also executed to ensure that the chain terminates
  * in a trusted root or intermediate authority.
+ * [KeyIdentifierValidator] is added to validate Subject and Authority key identifiers
+ *
+ * Validation results are collected rather than throwing exceptions
  *
  * @return a [CertificateValidationResult] containing the resulting policy tree,
  * the end-entity certificate, and a list of any [ValidatorFailure] entries describing validation issues.
  */
+@OptIn(HazardousMaterials::class)
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
-    context: CertificateValidationContext = CertificateValidationContext(),
+    context: CertificateValidationContext = CertificateValidationContext()
 ) : CertificateValidationResult {
+    val validators = defineRFC5280Validators(context, this)
+    return this.validate(validators)
+}
 
-    val validators = context.validators.toMutableList()
+/** Constructs list of default validator used in RFC5280 validation based on [context] */
+fun defineRFC5280Validators(
+    context: CertificateValidationContext,
+    chain: CertificateChain
+) : MutableList<CertificateValidator> {
+    val validators = mutableListOf<CertificateValidator>()
 
-    validators.addIfMissing(
+    validators.add(
         PolicyValidator(
             initialPolicies = context.initialPolicies,
             expPolicyRequired = context.explicitPolicyRequired,
             polMappingInhibited = context.policyMappingInhibited,
             anyPolicyInhibited = context.anyPolicyInhibited,
-            certPathLen = this.size,
+            certPathLen = chain.size,
             rejectPolicyQualifiers = context.policyQualifiersRejected,
             rootNode = PolicyNode(
                 parent = null,
@@ -102,64 +172,17 @@ suspend fun CertificateChain.validate(
             )
         )
     )
-    val keyIdentifierValidator = KeyIdentifierValidator(this)
-    validators.addIfMissing(keyIdentifierValidator)
-    validators.addIfMissing(CertValidityValidator(context.date))
-    validators.addIfMissing(NameConstraintsValidator(this.size))
-    validators.addIfMissing(KeyUsageValidator(this.size, expectedEku = context.expectedEku))
-    validators.addIfMissing(BasicConstraintsValidator(this.size))
-    validators.addIfMissing(ChainValidator(this.reversed()))
-    validators.addIfMissing(TimeValidityValidator(context.date, certificateChain = this.reversed()))
-
-
-    val activeValidators = validators.toMutableSet()
-    val validatorFailures = emptyList<ValidatorFailure>().toMutableList()
-    val trustAnchorValidator = TrustAnchorValidator(context.trustAnchors, this, date = context.date)
-
-    catchingUnwrapped {
-        this.forEach {
-            trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
-            if (trustAnchorValidator.foundTrusted) {
-                catchingUnwrapped {
-                    keyIdentifierValidator.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor, it)
-                }.onFailure {
-                    validatorFailures.add(
-                        ValidatorFailure(KeyIdentifierValidator::class.simpleName!!, keyIdentifierValidator, it.message ?: "Key Identifier validation failed.", -1, it)
-                    )
-                }
-            }
-        }
-    }.onFailure {
-        validatorFailures.add(
-            ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, it.message ?: "Trust Anchor validation failed.", -1, it)
-        )
-    }
-
-    validators
-        .filterIsInstance<NameConstraintsValidator>()
-        .firstOrNull()
-        ?.apply { previousNameConstraints = trustAnchorValidator.trustAnchor?.findExtension<NameConstraintsExtension>() }
-
-    this.reversed().forEachIndexed { i, cert ->
-        val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
-
-        val iterator = activeValidators.iterator()
-        while (iterator.hasNext()) {
-            val currValidator = iterator.next()
-            try {
-                currValidator.check(cert, remainingCriticalExtensions)
-            } catch (e: Throwable) {
-                iterator.remove()
-                validatorFailures.add(ValidatorFailure(currValidator::class.simpleName!!, currValidator, e.message ?: "Validation failed.", i + 1, e))
-            }
-        }
-        verifyCriticalExtensions(remainingCriticalExtensions, i , validatorFailures)
-    }
-    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf, validatorFailures)
-}
-
-fun <T : CertificateValidator> MutableCollection<CertificateValidator>.addIfMissing(validator: T) {
-    if (none { it::class == validator::class }) add(validator)
+    validators += listOf(
+        CertValidityValidator(context.date),
+        NameConstraintsValidator(chain.size),
+        KeyUsageValidator(chain.size, expectedEku = context.expectedEku),
+        BasicConstraintsValidator(chain.size),
+        ChainValidator(chain.reversed()),
+        TimeValidityValidator(context.date, certificateChain = chain.reversed()),
+        TrustAnchorValidator(context.trustAnchors, chain, date = context.date),
+        KeyIdentifierValidator(chain)
+    )
+    return validators
 }
 
 /**
