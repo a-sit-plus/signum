@@ -15,6 +15,7 @@
         * `RSAPadding`
         * `SymmetricEncryptionAlgorithm` and its nested implementations
 * Fix project setup on non-macOS build hosts
+* COSE: Add identifiers `-9`, `-51`, `-53` for fully-specified algorithms for ECDSA, see [RFC 9864](https://www.rfc-editor.org/rfc/rfc9864.html#name-elliptic-curve-digital-sign)
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes

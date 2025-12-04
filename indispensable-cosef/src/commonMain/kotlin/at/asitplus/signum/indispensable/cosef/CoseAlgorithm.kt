@@ -89,10 +89,19 @@ sealed interface CoseAlgorithm : Enumerable {
         data object ES256 : Signature(-7, SignatureAlgorithm.ECDSAwithSHA256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
+        data object ESP256 : Signature(-9, SignatureAlgorithm.ECDSAwithSHA256)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         data object ES384 : Signature(-35, SignatureAlgorithm.ECDSAwithSHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
+        data object ESP384 : Signature(-51, SignatureAlgorithm.ECDSAwithSHA384)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         data object ES512 : Signature(-36, SignatureAlgorithm.ECDSAwithSHA512)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
+        data object ESP512 : Signature(-52, SignatureAlgorithm.ECDSAwithSHA512)
 
         // RSASSA-PSS with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
@@ -121,8 +130,11 @@ sealed interface CoseAlgorithm : Enumerable {
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy {
                 setOf(
+                    ESP256,
                     ES256,
+                    ESP384,
                     ES384,
+                    ESP512,
                     ES512,
                     PS256,
                     PS384,
