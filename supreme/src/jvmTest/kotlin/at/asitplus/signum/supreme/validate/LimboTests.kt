@@ -230,6 +230,51 @@ val LimboTests by testSuite{
         }
     }
 
+    context("rfc5280 tests") {
+        val excluded = listOf(
+            "basic-constraints",
+            "pathlen",
+            "rfc5280::aki",
+            "rfc5280::eku",
+            "rfc5280::nc",
+            "rfc5280::validity",
+            "rfc5280::serial",
+            "rfc5280::ski",
+            "rfc5280::san",
+            "online",
+            "betterTls",
+            "rfc5280::ca-as-leaf-wrong-san",
+            "rfc5280::root-and-intermediate-swapped",
+            "rfc5280::unknown-critical-extension-root",
+            "rfc5280::root-inconsistent-ca-extensions",
+            "rfc5280::duplicate-extensions"
+        )
+
+        val tests = testSuiteLimbo.testcases.filter { tc ->
+            tc.id.contains("rfc5280", ignoreCase = true) &&
+                    excluded.none { tc.id.contains(it, ignoreCase = true) }
+        }
+        tests.forEach {
+            test("Limbo testcase: ${it.id}") {
+                val result = validate(it)
+
+                if (it.expected_result == "FAILURE") {
+                    result.validatorFailures.size shouldNotBe 0
+                } else {
+                    result.validatorFailures.size shouldBe 0
+                }
+
+            }
+        }
+    }
+
+    "rfc5280::duplicate-extensions" {
+        val test = testSuiteLimbo.testcases.first {it.id.contains("rfc5280::duplicate-extensions", ignoreCase = true)}
+
+        shouldThrow<Asn1Exception> {
+            validate(test)
+        }.also { it.message shouldBe "Multiple extensions with the same OID found" }
+    }
 }
 
 fun resourceText(path: String): String {

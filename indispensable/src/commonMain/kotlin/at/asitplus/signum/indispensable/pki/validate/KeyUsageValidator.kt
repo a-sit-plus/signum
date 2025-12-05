@@ -6,6 +6,7 @@ import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
@@ -34,6 +35,15 @@ class KeyUsageValidator (
             verifyIntermediateKeyUsage(currCert)
         else {
             verifyExpectedEKU(currCert)
+            val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
+            
+            if (basicConstraints?.ca == true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
+                throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
+            }
+
+            if (basicConstraints?.ca != true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) == true) {
+                throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
+            }
         }
     }
 
