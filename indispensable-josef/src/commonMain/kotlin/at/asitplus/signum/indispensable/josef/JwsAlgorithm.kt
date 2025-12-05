@@ -4,11 +4,11 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
-import at.asitplus.signum.Enumerable
-import at.asitplus.signum.Enumeration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -32,22 +32,18 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
         sealed class EC(identifier: String, algorithm: SignatureAlgorithm) : Signature(identifier, algorithm) {
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES256 : EC("ES256", SignatureAlgorithm.ECDSAwithSHA256)
+            data object ES256 : EC("ES256", SignatureAlgorithm.ESP256)
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES384 : EC("ES384", SignatureAlgorithm.ECDSAwithSHA384)
+            data object ES384 : EC("ES384", SignatureAlgorithm.ESP384)
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES512 : EC("ES512", SignatureAlgorithm.ECDSAwithSHA512)
+            data object ES512 : EC("ES512", SignatureAlgorithm.ESP512)
 
             /** The curve to create signatures on.
              * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
             val ecCurve: ECCurve
-                get() = when (this) {
-                    ES256 -> ECCurve.SECP_256_R_1
-                    ES384 -> ECCurve.SECP_384_R_1
-                    ES512 -> ECCurve.SECP_521_R_1
-                }
+                get() = (algorithm as SignatureAlgorithm.ECDSA).requiredCurve!!
 
             companion object : Enumeration<EC> {
                 override val entries: Collection<EC> by lazy {
@@ -110,6 +106,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy { EC.entries + RSA.entries }
+
             //convenience
             val ES256 = EC.ES256
             val ES384 = EC.ES384
@@ -175,12 +172,35 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 }
 
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
+@Deprecated(
+    "This assumes NIST curves, even if none are specified.",
+    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
+)
+fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = toJwsAlgorithm(true)
+
+/**
+ *  Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest.
+ *  @param lenient `true` -> assume NIST curves if no curve is specified.
+ *  `false` -> don't assume curves
+ * */
+fun SignatureAlgorithm.toJwsAlgorithm(lenient: Boolean): KmmResult<JwsAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
-            Digest.SHA256 -> JwsAlgorithm.Signature.ES256
-            Digest.SHA384 -> JwsAlgorithm.Signature.ES384
-            Digest.SHA512 -> JwsAlgorithm.Signature.ES512
+            Digest.SHA256 -> {
+                if ((requiredCurve == null && lenient) || requiredCurve == ECCurve.SECP_256_R_1) JwsAlgorithm.Signature.ES256
+                else throw IllegalArgumentException("ECDSA with ${this.digest} and curve $requiredCurve is unsupported by JWS")
+            }
+
+            Digest.SHA384 -> {
+                if ((requiredCurve == null && lenient) || requiredCurve == ECCurve.SECP_384_R_1) JwsAlgorithm.Signature.ES384
+                else throw IllegalArgumentException("ECDSA with ${this.digest} and curve $requiredCurve is unsupported by JWS")
+            }
+
+            Digest.SHA512 -> {
+                if ((requiredCurve == null && lenient) || requiredCurve == ECCurve.SECP_521_R_1) JwsAlgorithm.Signature.ES512
+                else throw IllegalArgumentException("ECDSA with ${this.digest} and curve $requiredCurve is unsupported by JWS")
+            }
+
             else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
         }
 
@@ -202,9 +222,15 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     }
 }
 
-fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
+@Deprecated(
+    "This assumes NIST curves, even if none are specified.",
+    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
+)
+fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = toJwsAlgorithm(lenient = true)
+
+fun DataIntegrityAlgorithm.toJwsAlgorithm(lenient: Boolean): KmmResult<JwsAlgorithm> = catching {
     when (this) {
-        is SignatureAlgorithm -> toJwsAlgorithm().getOrThrow()
+        is SignatureAlgorithm -> toJwsAlgorithm(lenient).getOrThrow()
         is MessageAuthenticationCode -> toJwsAlgorithm().getOrThrow()
     }
 }
@@ -219,14 +245,37 @@ fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catchi
     }
 }
 
+/**
+ *  Tries to find a matching JWS algorithm.
+ *  @param lenient `true` -> assume NIST curves if no curve is specified.
+ *  `false` -> don't assume curves
+ * */
+fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm(lenient: Boolean) =
+    this.algorithm.toJwsAlgorithm(lenient)
+
 /** Tries to find a matching JWS algorithm*/
+@Deprecated(
+    "This assumes NIST curves, even if none are specified.",
+    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
+)
 fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm() =
-    this.algorithm.toJwsAlgorithm()
+    this.algorithm.toJwsAlgorithm(lenient = true)
 
 /** Tries to find a matching JWS algorithm.*/
 fun SpecializedMessageAuthenticationCode.toJwsAlgorithm() =
     this.algorithm.toJwsAlgorithm()
 
-/** Tries to find a matching JWS algorithm.*/
-fun SpecializedSignatureAlgorithm.toJwsAlgorithm() =
-    this.algorithm.toJwsAlgorithm()
+/** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
+@Deprecated(
+    "This assumes NIST curves, even if none are specified.",
+    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
+)
+fun SpecializedSignatureAlgorithm.toJwsAlgorithm() = toJwsAlgorithm(lenient = true)
+
+/**
+ *  Tries to find a matching JWS algorithm.
+ *  @param lenient `true` -> assume NIST curves if no curve is specified.
+ *  `false` -> don't assume curves
+ * */
+fun SpecializedSignatureAlgorithm.toJwsAlgorithm(lenient: Boolean) =
+    this.algorithm.toJwsAlgorithm(lenient)

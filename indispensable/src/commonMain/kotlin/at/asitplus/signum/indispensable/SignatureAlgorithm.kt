@@ -21,7 +21,10 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
                 setOf(
                     ECDSAwithSHA256,
                     ECDSAwithSHA384,
-                    ECDSAwithSHA512
+                    ECDSAwithSHA512,
+                    ESP256,
+                    ESP384,
+                    ESP512,
                 )
             }
         }
@@ -54,6 +57,11 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val ECDSAwithSHA256 = ECDSA(Digest.SHA256, null)
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
+
+        val ESP256 = ECDSA(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1)
+        val ESP384 = ECDSA(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1)
+        val ESP512 = ECDSA(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1)
+
 
         val RSAwithSHA256andPKCS1Padding = RSA(Digest.SHA256, RSAPadding.PKCS1)
         val RSAwithSHA384andPKCS1Padding = RSA(Digest.SHA384, RSAPadding.PKCS1)

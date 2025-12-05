@@ -3,6 +3,13 @@
 ## 3.0
 
 ### NEXT
+* Stricter JWS algorithm mapping
+    * Map with curve information
+    * Keep old, lenient mapping functions but deprecate them in favor of new ones with a flag to toggle leniency
+    * Introduce `SignatureAlgoritm`s with predefined NIST curves:
+        *  `ESP256`
+        *  `ESP384`
+        *  `ESP512`
 * Fix a glaring JWS bug that caused an error whenever trying to get the digest of a JWS signature algorithm
 * Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
     * Classes and interfaces refactored to use `Set` as `entries` to follow  the standardized pattern:
