@@ -4,6 +4,15 @@
 
 ### NEXT
 * Introduce full X.509 certificate validation support
+  * RFC Compliance:
+    * Implements RFC 5280 path validation rules, including policy processing, name constraints, key usage, and basic constraints
+  * Unsupported / Not Yet Implemented:
+      * Revocation checking: OCSP and CRL checks are not yet supported
+      * Partial cross-validation support:
+          * Multiple trust anchors can be supplied and checked (implemented)
+          * Validation succeeds if any certificate in the chain is issued by a trust anchor (implemented)
+          * If the trust anchor matches an intermediate certificate, the TA’s public key is verified against the certificate before it (implemented)
+          * Full cross-validation (exploring alternative chains through intermediates) (not implemented)
   * Added core `CertificateChainValidator` coordinating the full validation pipeline
     * `validate()` method returns `CertificateValidationResult` which contains root policy node, leaf certificate and list of `ValidatorFailure`
     * Validation fails softly, by returning `ValidatorFailure` for every exception thrown during validation
