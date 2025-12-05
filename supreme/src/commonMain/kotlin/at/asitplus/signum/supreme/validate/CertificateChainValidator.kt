@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.asn1.anyPolicy
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
@@ -81,7 +80,7 @@ suspend fun CertificateChain.validate(
                 trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
                 if (trustAnchorValidator.foundTrusted) {
                     catchingUnwrapped {
-                        keyIdentifierValidator?.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor, it)
+                        keyIdentifierValidator?.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor?.cert, it)
                     }.onFailure {
                         validatorFailures.add(
                             ValidatorFailure(KeyIdentifierValidator::class.simpleName!!, keyIdentifierValidator, it.message ?: "Key Identifier validation failed.", -1, it)
@@ -95,7 +94,7 @@ suspend fun CertificateChain.validate(
             )
         }
 
-        nameConstraintsValidator?.previousNameConstraints = trustAnchorValidator.trustAnchor?.findExtension<NameConstraintsExtension>()
+        nameConstraintsValidator?.previousNameConstraints = trustAnchorValidator.trustAnchor?.nameConstraints
         activeValidators.remove(trustAnchorValidator)
     }
 

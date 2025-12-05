@@ -4,8 +4,8 @@ import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
-import de.infix.testBalloon.framework.core.testSuite
 import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
@@ -36,7 +36,7 @@ val InhibitPolicyMappingTest by testSuite {
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val trustAnchor = TrustAnchor(trustAnchorRootCert)
+    val trustAnchor = TrustAnchor.CertificateAnchor(trustAnchorRootCert)
     val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
 
