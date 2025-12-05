@@ -245,7 +245,7 @@ fun ULong.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 fun UInt.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 
 private fun List<Byte>.asn1VarIntByteMask(it: Int) =
-    (if (isLastIndex(it)) 0x00 else UVARINT_SINGLEBYTE_MAXVALUE).toByte()
+    (if (isLastIndex(it)) 0x00 else UVARINT_SINGLEBYTE_MAXVALUE)
 
 private fun List<Byte>.isLastIndex(it: Int) = it == size - 1
 
