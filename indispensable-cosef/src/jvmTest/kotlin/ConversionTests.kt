@@ -1,4 +1,5 @@
 import at.asitplus.KmmResult
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
@@ -9,12 +10,10 @@ import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 //somehow including kmmresult-test makes this fail
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
@@ -34,10 +33,17 @@ val ConversionTests by testSuite {
             }
         }
     }
-    "COSE -> X509 -> COSE is stable" - {
-        withData(CoseAlgorithm.Signature.entries) {
+    "COSE -> X509 -> COSE" - {
+        withData(CoseAlgorithm.Signature.entries) - {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
-                x509.toCoseAlgorithm() shouldSucceedWith it
+                if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
+                    "Curve information is lost" {
+                        val algorithm = x509.toCoseAlgorithm().getOrThrow()
+                        algorithm shouldNotBe it
+                        algorithm.toString().takeLast(3) shouldBe it.toString().takeLast(3)
+                        algorithm.toString().take(2) shouldBe it.toString().take(2)
+                    }
+                } else "is stable" { x509.toCoseAlgorithm() shouldSucceedWith it }
             }
         }
     }
