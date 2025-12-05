@@ -58,8 +58,11 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
 
+        /** ECDSA with SHA-256 and P-256 curve*/
         val ESP256 = ECDSA(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1)
+        /** ECDSA with SHA-256 and P-384 curve*/
         val ESP384 = ECDSA(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1)
+        /** ECDSA with SHA-256 and P-521 curve*/
         val ESP512 = ECDSA(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1)
 
 

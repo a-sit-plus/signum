@@ -92,21 +92,21 @@ sealed interface CoseAlgorithm : Enumerable {
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP256 :
-            Signature(-9, SignatureAlgorithm.ECDSA(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1))
+            Signature(-9, SignatureAlgorithm.ESP256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ES384 : Signature(-35, SignatureAlgorithm.ECDSAwithSHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP384 :
-            Signature(-51, SignatureAlgorithm.ECDSA(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1))
+            Signature(-51, SignatureAlgorithm.ESP384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ES512 : Signature(-36, SignatureAlgorithm.ECDSAwithSHA512)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP512 :
-            Signature(-52, SignatureAlgorithm.ECDSA(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1))
+            Signature(-52, SignatureAlgorithm.ESP512)
 
         // RSASSA-PSS with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
