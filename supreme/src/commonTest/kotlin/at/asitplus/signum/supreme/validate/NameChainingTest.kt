@@ -35,7 +35,7 @@ val NameChainingTest by testSuite {
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val trustAnchor = TrustAnchor(trustAnchorRootCert)
+    val trustAnchor = TrustAnchor.CertificateAnchor(trustAnchorRootCert)
     val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
     val goodCACert = "-----BEGIN CERTIFICATE-----\n" +

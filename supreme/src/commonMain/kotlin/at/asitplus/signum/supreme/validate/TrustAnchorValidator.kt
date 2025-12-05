@@ -1,13 +1,10 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
-import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import kotlinx.datetime.TimeZone
@@ -23,7 +20,7 @@ class TrustAnchorValidator(
     private val trustAnchors: Set<TrustAnchor>,
     private val certChain: CertificateChain,
     private var currentCertIndex: Int = 0,
-    var trustAnchor: X509Certificate? = null,
+    var trustAnchor: TrustAnchor? = null,
     val date: Instant
 ) : CertificateValidator {
 
@@ -55,7 +52,7 @@ class TrustAnchorValidator(
                 }
             }
 
-            trustAnchor = issuingAnchor.cert
+            trustAnchor = issuingAnchor
 
             issuingAnchor.cert?.let { basicConstraintsValidator.checkCaBasicConstraints(it) }
 

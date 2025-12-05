@@ -36,7 +36,7 @@ class KeyUsageValidator (
         else {
             verifyExpectedEKU(currCert)
             val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
-            
+
             if (basicConstraints?.ca == true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
                 throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
             }
