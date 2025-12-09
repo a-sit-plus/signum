@@ -171,19 +171,12 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
     }
 }
 
-/** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-@Deprecated(
-    "This assumes NIST curves, even if none are specified.",
-    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
-)
-fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = toJwsAlgorithm(true)
-
 /**
  *  Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest.
  *  @param lenient `true` -> assume NIST curves if no curve is specified.
  *  `false` -> don't assume curves
  * */
-fun SignatureAlgorithm.toJwsAlgorithm(lenient: Boolean): KmmResult<JwsAlgorithm> = catching {
+fun SignatureAlgorithm.toJwsAlgorithm(lenient: Boolean = true): KmmResult<JwsAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> {
@@ -222,13 +215,7 @@ fun SignatureAlgorithm.toJwsAlgorithm(lenient: Boolean): KmmResult<JwsAlgorithm>
     }
 }
 
-@Deprecated(
-    "This assumes NIST curves, even if none are specified.",
-    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
-)
-fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = toJwsAlgorithm(lenient = true)
-
-fun DataIntegrityAlgorithm.toJwsAlgorithm(lenient: Boolean): KmmResult<JwsAlgorithm> = catching {
+fun DataIntegrityAlgorithm.toJwsAlgorithm(lenient: Boolean = true): KmmResult<JwsAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm -> toJwsAlgorithm(lenient).getOrThrow()
         is MessageAuthenticationCode -> toJwsAlgorithm().getOrThrow()
@@ -253,29 +240,14 @@ fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catchi
 fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm(lenient: Boolean) =
     this.algorithm.toJwsAlgorithm(lenient)
 
-/** Tries to find a matching JWS algorithm*/
-@Deprecated(
-    "This assumes NIST curves, even if none are specified.",
-    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
-)
-fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm() =
-    this.algorithm.toJwsAlgorithm(lenient = true)
-
 /** Tries to find a matching JWS algorithm.*/
 fun SpecializedMessageAuthenticationCode.toJwsAlgorithm() =
     this.algorithm.toJwsAlgorithm()
-
-/** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-@Deprecated(
-    "This assumes NIST curves, even if none are specified.",
-    replaceWith = ReplaceWith("toJwsAlgorithm(lenient = true)")
-)
-fun SpecializedSignatureAlgorithm.toJwsAlgorithm() = toJwsAlgorithm(lenient = true)
 
 /**
  *  Tries to find a matching JWS algorithm.
  *  @param lenient `true` -> assume NIST curves if no curve is specified.
  *  `false` -> don't assume curves
  * */
-fun SpecializedSignatureAlgorithm.toJwsAlgorithm(lenient: Boolean) =
+fun SpecializedSignatureAlgorithm.toJwsAlgorithm(lenient: Boolean = true) =
     this.algorithm.toJwsAlgorithm(lenient)
