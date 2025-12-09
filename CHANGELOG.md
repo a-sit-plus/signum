@@ -4,8 +4,7 @@
 
 ### NEXT
 * Stricter JWS algorithm mapping
-    * Map with curve information
-    * Keep old, lenient mapping functions but deprecate them in favor of new ones with a flag to toggle leniency
+    * Map with curve information, but use lenient mappings by default with a flag to toggle leniency
     * Introduce `SignatureAlgoritm`s with predefined NIST curves:
         *  `ESP256`
         *  `ESP384`
