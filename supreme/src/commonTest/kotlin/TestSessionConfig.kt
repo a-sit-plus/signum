@@ -15,5 +15,9 @@ class ModuleTestSession : TestSession(
         //Don't make the heap explode
         DataTest.compactByDefault = true
         PropertyTest.compactByDefault = true
+        DataTest.defaultTestNameMaxLength=16
+        DataTest.defaultDisplayNameMaxLength=16
+        PropertyTest.defaultDisplayNameMaxLength=16
+        PropertyTest.defaultDisplayNameMaxLength=16
     }
 }
