@@ -56,6 +56,9 @@ data class ValidatorFailure(
     val cause: Throwable? = null
 )
 
+typealias ValidatorFactory =
+            (CertificateChain, CertificateValidationContext?) -> List<CertificateValidator>
+
 /**
  * Performs a full, potentially unsafe validation of this [CertificateChain] using the provided [validators].
  *
@@ -64,8 +67,11 @@ data class ValidatorFailure(
  */
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
-    validators: List<CertificateValidator> = emptyList()
+    validatorFactory: (CertificateChain) -> List<CertificateValidator> =
+        { chain -> defineRFC5280Validators(CertificateValidationContext(), chain) }
 ) : CertificateValidationResult {
+
+    val validators = validatorFactory(this).toMutableList()
 
     val activeValidators = validators.toMutableSet()
     val validatorFailures = mutableListOf<ValidatorFailure>()
@@ -142,12 +148,13 @@ suspend fun CertificateChain.validate(
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext()
 ) : CertificateValidationResult {
-    val validators = defineRFC5280Validators(context, this)
-    return this.validate(validators)
+    return validate { chain ->
+        defineRFC5280Validators(context, chain)
+    }
 }
 
 /** Constructs list of default validator used in RFC5280 validation based on [context] */
-fun defineRFC5280Validators(
+private fun defineRFC5280Validators(
     context: CertificateValidationContext,
     chain: CertificateChain
 ) : MutableList<CertificateValidator> {
