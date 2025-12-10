@@ -63,7 +63,6 @@ data class ValidatorFailure(
  * It does not automatically enforce RFC 5280 compliance — any custom validators can be provided
  */
 @ExperimentalPkiApi
-@HazardousMaterials
 suspend fun CertificateChain.validate(
     validators: List<CertificateValidator> = emptyList()
 ) : CertificateValidationResult {
