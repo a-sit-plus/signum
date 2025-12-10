@@ -9,15 +9,7 @@ import at.asitplus.signum.indispensable.asn1.anyPolicy
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
-import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
-import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
-import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
-import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
-import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
-import at.asitplus.signum.indispensable.pki.validate.PolicyNode
-import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
-import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
+import at.asitplus.signum.indispensable.pki.validate.*
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -35,7 +27,7 @@ class CertificateValidationContext(
 /**
  * Represents the result of validating a certificate chain.
  */
-data class CertificateValidationResult (
+data class CertificateValidationResult(
     val rootPolicyNode: PolicyNode? = null,
     val subject: X509Certificate,
     val validatorFailures: List<ValidatorFailure>
@@ -56,8 +48,24 @@ data class ValidatorFailure(
     val cause: Throwable? = null
 )
 
-typealias ValidatorFactory =
-            (CertificateChain, CertificateValidationContext?) -> List<CertificateValidator>
+/**
+ * Represents a factory for creating certificate validators from a given certificate chain
+ * and a validation context. A factory is needed because validation is inherently stateful and individual
+ * validators carry mutable state.
+ *
+ * @param generate A function that takes a `CertificateChain` and a `CertificateValidationContext`,
+ *                 and returns a list of `CertificateValidator` instances to be applied.
+ */
+fun interface ValidatorFactory {
+    fun CertificateChain.generate(
+        context: CertificateValidationContext
+    ): List<CertificateValidator>
+}
+
+val RFC5280ValidatorFactory = ValidatorFactory { context ->
+    defineRFC5280Validators(context, this)
+}
+
 
 /**
  * Performs a full, potentially unsafe validation of this [CertificateChain] using the provided [validators].
@@ -67,11 +75,11 @@ typealias ValidatorFactory =
  */
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
-    validatorFactory: (CertificateChain) -> List<CertificateValidator> =
-        { chain -> defineRFC5280Validators(CertificateValidationContext(), chain) }
-) : CertificateValidationResult {
+    validatorFactory: ValidatorFactory = RFC5280ValidatorFactory,
+    context: CertificateValidationContext = CertificateValidationContext()
+): CertificateValidationResult {
 
-    val validators = validatorFactory(this).toMutableList()
+    val validators = with(validatorFactory) { this@validate.generate(context) }.toMutableList()
 
     val activeValidators = validators.toMutableSet()
     val validatorFailures = mutableListOf<ValidatorFailure>()
@@ -79,7 +87,7 @@ suspend fun CertificateChain.validate(
     val keyIdentifierValidator = activeValidators.filterIsInstance<KeyIdentifierValidator>().firstOrNull()
     val nameConstraintsValidator = activeValidators.filterIsInstance<NameConstraintsValidator>().firstOrNull()
 
-    trustAnchorValidator?.let { trustAnchorValidator
+    trustAnchorValidator?.let { trustAnchorValidator ->
         catchingUnwrapped {
             this.forEach {
                 trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
@@ -88,14 +96,26 @@ suspend fun CertificateChain.validate(
                         keyIdentifierValidator?.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor?.cert, it)
                     }.onFailure {
                         validatorFailures.add(
-                            ValidatorFailure(KeyIdentifierValidator::class.simpleName!!, keyIdentifierValidator, it.message ?: "Key Identifier validation failed.", -1, it)
+                            ValidatorFailure(
+                                KeyIdentifierValidator::class.simpleName!!,
+                                keyIdentifierValidator,
+                                it.message ?: "Key Identifier validation failed.",
+                                -1,
+                                it
+                            )
                         )
                     }
                 }
             }
         }.onFailure {
             validatorFailures.add(
-                ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, it.message ?: "Trust Anchor validation failed.", -1, it)
+                ValidatorFailure(
+                    TrustAnchorValidator::class.simpleName!!,
+                    trustAnchorValidator,
+                    it.message ?: "Trust Anchor validation failed.",
+                    -1,
+                    it
+                )
             )
         }
 
@@ -113,12 +133,22 @@ suspend fun CertificateChain.validate(
                 currValidator.check(cert, remainingCriticalExtensions)
             } catch (e: Throwable) {
                 validatorIterator.remove()
-                validatorFailures.add(ValidatorFailure(currValidator::class.simpleName!!, currValidator, e.message ?: "Validation failed.", i + 1, e))
+                validatorFailures.add(
+                    ValidatorFailure(
+                        currValidator::class.simpleName!!,
+                        currValidator,
+                        e.message ?: "Validation failed.",
+                        i + 1,
+                        e
+                    )
+                )
             }
         }
-        verifyCriticalExtensions(remainingCriticalExtensions, i , validatorFailures)
+        verifyCriticalExtensions(remainingCriticalExtensions, i, validatorFailures)
     }
-    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf, validatorFailures)
+    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode,
+        this.leaf,
+        validatorFailures)
 }
 
 /**
@@ -147,17 +177,13 @@ suspend fun CertificateChain.validate(
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext()
-) : CertificateValidationResult {
-    return validate { chain ->
-        defineRFC5280Validators(context, chain)
-    }
-}
+): CertificateValidationResult = validate(RFC5280ValidatorFactory, context)
 
 /** Constructs list of default validator used in RFC5280 validation based on [context] */
 private fun defineRFC5280Validators(
     context: CertificateValidationContext,
     chain: CertificateChain
-) : MutableList<CertificateValidator> {
+): MutableList<CertificateValidator> {
     val validators = mutableListOf<CertificateValidator>()
 
     validators.add(
@@ -199,7 +225,7 @@ private fun verifyCriticalExtensions(
     certificateIndex: Int,
     failures: MutableList<ValidatorFailure>
 ) {
-    if (remainingCriticalExtensions.isNotEmpty() && failures.none {it.validatorName == "CriticalCertificateExtensions"}) {
+    if (remainingCriticalExtensions.isNotEmpty() && failures.none { it.validatorName == "CriticalCertificateExtensions" }) {
         failures.add(
             ValidatorFailure(
                 validatorName = "CriticalCertificateExtensions",
