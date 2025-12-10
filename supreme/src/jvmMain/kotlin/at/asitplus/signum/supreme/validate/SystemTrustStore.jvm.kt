@@ -20,7 +20,7 @@ actual val SystemTrustStore: Set<TrustAnchor> = TrustManagerFactory.getInstance(
     val trustAnchors = mutableSetOf<TrustAnchor>()
     tm?.acceptedIssuers?.forEach {
         it.toKmpCertificate().onSuccess {
-            trustAnchors += TrustAnchor.CertificateAnchor(it)
+            trustAnchors += TrustAnchor.Certificate(it)
         }
     }
     trustAnchors

@@ -9,10 +9,12 @@ import at.asitplus.signum.indispensable.asn1.anyPolicy
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validate.*
 import kotlin.time.Clock
 import kotlin.time.Instant
 
+@OptIn(ExperimentalPkiApi::class)
 class CertificateValidationContext(
     val date: Instant = Clock.System.now(),
     val explicitPolicyRequired: Boolean = false,
@@ -20,7 +22,8 @@ class CertificateValidationContext(
     val anyPolicyInhibited: Boolean = false,
     val policyQualifiersRejected: Boolean = false,
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
-    val trustAnchors: Set<TrustAnchor> = emptySet(),
+    val allowIncludedTrustAnchor: Boolean = true,
+    val trustAnchors: Set<TrustAnchor> = SystemTrustStore,
     val expectedEku: Set<ObjectIdentifier> = emptySet()
 )
 
@@ -80,6 +83,7 @@ suspend fun CertificateChain.validate(
 ): CertificateValidationResult {
 
     val validators = with(validatorFactory) { this@validate.generate(context) }.toMutableList()
+    val processingChain = if (context.allowIncludedTrustAnchor) this.dropLast(1) else this
 
     val activeValidators = validators.toMutableSet()
     val validatorFailures = mutableListOf<ValidatorFailure>()
@@ -89,7 +93,7 @@ suspend fun CertificateChain.validate(
 
     trustAnchorValidator?.let { trustAnchorValidator ->
         catchingUnwrapped {
-            this.forEach {
+            processingChain.forEach {
                 trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
                 if (trustAnchorValidator.foundTrusted) {
                     catchingUnwrapped {
@@ -123,7 +127,7 @@ suspend fun CertificateChain.validate(
         activeValidators.remove(trustAnchorValidator)
     }
 
-    this.reversed().forEachIndexed { i, cert ->
+    processingChain.reversed().forEachIndexed { i, cert ->
         val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
 
         val validatorIterator = activeValidators.iterator()
@@ -185,6 +189,13 @@ private fun defineRFC5280Validators(
     chain: CertificateChain
 ): MutableList<CertificateValidator> {
     val validators = mutableListOf<CertificateValidator>()
+    val (trustAnchors, pathLen, processingChain) =
+        if (context.allowIncludedTrustAnchor) {
+            val newAnchors = setOf(TrustAnchor.Certificate(chain.root)) + context.trustAnchors
+            Triple(newAnchors, chain.size - 1, chain.dropLast(1))
+        } else {
+            Triple(context.trustAnchors, chain.size, chain)
+        }
 
     validators.add(
         PolicyValidator(
@@ -192,7 +203,7 @@ private fun defineRFC5280Validators(
             expPolicyRequired = context.explicitPolicyRequired,
             polMappingInhibited = context.policyMappingInhibited,
             anyPolicyInhibited = context.anyPolicyInhibited,
-            certPathLen = chain.size,
+            certPathLen = pathLen,
             rejectPolicyQualifiers = context.policyQualifiersRejected,
             rootNode = PolicyNode(
                 parent = null,
@@ -205,13 +216,13 @@ private fun defineRFC5280Validators(
     )
     validators += listOf(
         CertValidityValidator(context.date),
-        NameConstraintsValidator(chain.size),
-        KeyUsageValidator(chain.size, expectedEku = context.expectedEku),
-        BasicConstraintsValidator(chain.size),
-        ChainValidator(chain.reversed()),
-        TimeValidityValidator(context.date, certificateChain = chain.reversed()),
-        TrustAnchorValidator(context.trustAnchors, chain, date = context.date),
-        KeyIdentifierValidator(chain)
+        NameConstraintsValidator(pathLen),
+        KeyUsageValidator(pathLen, expectedEku = context.expectedEku),
+        BasicConstraintsValidator(pathLen),
+        ChainValidator(processingChain.reversed()),
+        TimeValidityValidator(context.date, certChain = processingChain.reversed()),
+        TrustAnchorValidator(trustAnchors, processingChain, date = context.date),
+        KeyIdentifierValidator(processingChain)
     )
     return validators
 }

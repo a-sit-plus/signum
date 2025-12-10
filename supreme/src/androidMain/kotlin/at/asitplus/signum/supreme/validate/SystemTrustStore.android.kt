@@ -12,7 +12,7 @@ actual val SystemTrustStore: Set<TrustAnchor> = KeyStore.getInstance("AndroidCAS
       val  alias = aliases.nextElement();
         val cert = it.getCertificate(alias);
         if (cert is X509Certificate) {
-            cert.toKmpCertificate().onSuccess { trustAnchors.add(TrustAnchor.CertificateAnchor(it)) }
+            cert.toKmpCertificate().onSuccess { trustAnchors.add(TrustAnchor.Certificate(it)) }
         }
     }
     trustAnchors

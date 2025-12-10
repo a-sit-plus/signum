@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifier
 import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 
 class KeyIdentifierValidator(
-    private val certificateChain: CertificateChain,
+    private val certChain: CertificateChain,
     private var currentCertIndex: Int = 0
 ): CertificateValidator {
     @ExperimentalPkiApi

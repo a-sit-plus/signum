@@ -45,7 +45,7 @@ val PolicyMappingTest by testSuite {
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val trustAnchor = TrustAnchor.CertificateAnchor(trustAnchorRootCert)
+    val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
     val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
     val mapping1to2CACert = "-----BEGIN CERTIFICATE-----\n" +

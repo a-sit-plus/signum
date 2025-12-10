@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtens
  * Enforces the X.509 Basic Constraints extension rules for a certificate chain
  */
 class BasicConstraintsValidator(
-    private val pathLength: Int,
+    private val certPathLen: Int,
     private var remainingPathLength: UInt? = null,
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
@@ -19,7 +19,7 @@ class BasicConstraintsValidator(
     @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.remove(KnownOIDs.basicConstraints_2_5_29_19)
-        if (currentCertIndex >= pathLength - 1) return
+        if (currentCertIndex >= certPathLen - 1) return
 
         currentCertIndex++
 

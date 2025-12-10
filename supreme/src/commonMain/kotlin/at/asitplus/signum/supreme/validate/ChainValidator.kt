@@ -1,17 +1,13 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
-import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
@@ -23,7 +19,7 @@ import at.asitplus.signum.supreme.sign.verify
  * ensures that the subject of the issuer certificate matches the issuer of the child certificate.
  */
 class ChainValidator(
-    private val certificateChain: CertificateChain,
+    private val certChain: CertificateChain,
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
 
@@ -32,9 +28,9 @@ class ChainValidator(
         currCert: X509Certificate,
         remainingCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
-        if (currentCertIndex < certificateChain.lastIndex) {
-            val childCert = certificateChain[currentCertIndex + 1]
-            verifySignature(childCert, issuer = currCert, childCert == certificateChain.last())
+        if (currentCertIndex < certChain.lastIndex) {
+            val childCert = certChain[currentCertIndex + 1]
+            verifySignature(childCert, issuer = currCert, childCert == certChain.last())
             subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
             currentCertIndex++
         }

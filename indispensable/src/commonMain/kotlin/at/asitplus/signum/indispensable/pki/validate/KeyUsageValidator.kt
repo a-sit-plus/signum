@@ -16,7 +16,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
  * Key usage to sign certificates (keyCertSign) and sign certificate revocation lists (cRLSign), according to RFC 5280.
  */
 class KeyUsageValidator (
-    private val pathLength: Int,
+    private val certPathLen: Int,
     private var currentCertIndex: Int = 0,
     private val expectedEku: Set<ObjectIdentifier> = emptySet()
 ) : CertificateValidator {
@@ -31,7 +31,7 @@ class KeyUsageValidator (
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.removeAll(supportedExtensions)
         currentCertIndex++
-        if (currentCertIndex <= pathLength - 1)
+        if (currentCertIndex <= certPathLen - 1)
             verifyIntermediateKeyUsage(currCert)
         else {
             verifyExpectedEKU(currCert)

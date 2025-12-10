@@ -286,7 +286,7 @@ fun resourceText(path: String): String {
 @OptIn(ExperimentalPkiApi::class)
 suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
     val trustAnchors = testcase.trusted_certs.map { pem ->
-        TrustAnchor.CertificateAnchor(X509Certificate.decodeFromPem(pem).getOrThrow())
+        TrustAnchor.Certificate(X509Certificate.decodeFromPem(pem).getOrThrow())
     }
 
     val intermediates = testcase.untrusted_intermediates.map { pem ->

@@ -16,7 +16,7 @@ import kotlin.time.Instant
  */
 class TimeValidityValidator(
     val date: Instant,
-    private val certificateChain: CertificateChain,
+    private val certChain: CertificateChain,
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
 
@@ -41,8 +41,8 @@ class TimeValidityValidator(
             )
         }
 
-        if (currentCertIndex < certificateChain.lastIndex) {
-            val childCert = certificateChain[currentCertIndex + 1]
+        if (currentCertIndex < certChain.lastIndex) {
+            val childCert = certChain[currentCertIndex + 1]
             wasCertificateIssuedWithinIssuerValidityPeriod(
                 dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
                 issuer = currCert)

@@ -12,7 +12,7 @@ import at.asitplus.signum.supreme.sign.verify
 /**
  * Represents a trusted certificate authority (TrustAnchor), which can be specified either
  * as an X509Certificate, or as a distinguished name (in RFC 2253 format) along with a public key.
- * */
+ */
 sealed class TrustAnchor {
 
     abstract val publicKey: CryptoPublicKey
@@ -20,7 +20,7 @@ sealed class TrustAnchor {
     abstract val nameConstraints: NameConstraintsExtension?
     open val cert: X509Certificate? = null
 
-    class CertificateAnchor(
+    class Certificate(
         override val cert: X509Certificate
     ) : TrustAnchor() {
 
@@ -31,7 +31,7 @@ sealed class TrustAnchor {
         override val nameConstraints: NameConstraintsExtension? = cert.findExtension<NameConstraintsExtension>()
     }
 
-    class PublicKeyAnchor(
+    class PublicKey(
         override val publicKey: CryptoPublicKey,
         override val principal: X500Name?,
         override val nameConstraints: NameConstraintsExtension? = null
@@ -42,7 +42,7 @@ sealed class TrustAnchor {
     }
 
     fun isIssuerOf(cert: X509Certificate): Boolean {
-        val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(publicKey).getOrThrow()
+        val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(publicKey).getOrElse { return false }
         val signatureValid = verifier.verify(
             cert.tbsCertificate.encodeToDer(),
             cert.decodedSignature.getOrThrow()

@@ -7,16 +7,14 @@ import at.asitplus.signum.NameConstraintsException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.generalNames.IPAddressName
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
-import kotlinx.io.IOException
 
 /**
  * Ensures that each certificate conforms to the permitted and excluded
  * subtrees specified in previous NameConstraints extensions, according to RFC 5280.
  */
 class NameConstraintsValidator(
-    private val pathLength: Int,
+    private val certPathLen: Int,
     private var currentCertIndex: Int = 0,
     var previousNameConstraints: NameConstraintsExtension? = null
 ) : CertificateValidator {
@@ -34,10 +32,10 @@ class NameConstraintsValidator(
             throw CertificateValidityException("Invalid GeneralName in Subject Alternative Name at index $currentCertIndex")
         }
 
-        if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued)) {
+        if (previousNameConstraints != null && (currentCertIndex == certPathLen || !currCert.isSelfIssued)) {
 
             try {
-                if (!previousNameConstraints!!.verify(currCert, currentCertIndex == pathLength)) {
+                if (!previousNameConstraints!!.verify(currCert, currentCertIndex == certPathLen)) {
                     throw NameConstraintsException("NameConstraints violation at cert index $currentCertIndex")
                 }
             } catch (e: Throwable) {
@@ -47,7 +45,7 @@ class NameConstraintsValidator(
             }
         }
 
-        if (currentCertIndex == pathLength &&
+        if (currentCertIndex == certPathLen &&
             currCert.findExtension<NameConstraintsExtension>() != null) throw NameConstraintsException("Leaf certificate must not contain a NameConstraints extension.")
 
         previousNameConstraints = mergeNameConstraints(currCert, previousNameConstraints)
