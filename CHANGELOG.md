@@ -2,6 +2,8 @@
 
 ## 3.0
 
+### NEXT
+
 ### 3.19.0 / Supreme 0.11.0
 * Fix a glaring JWS bug that caused an error whenever trying to get the digest of a JWS signature algorithm
 * Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
