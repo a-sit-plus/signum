@@ -1,8 +1,13 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
-import at.asitplus.gradle.*
+import at.asitplus.gradle.AspVersions
+import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.signumConventions
+import org.jetbrains.kotlin.daemon.common.toHexString
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.konan.target.HostManager
+import java.net.URI
 
 plugins {
     id("at.asitplus.signum.buildlogic")
@@ -16,6 +21,9 @@ signumConventions {
     )
     supreme = true
 }
+
+val appleRootsSrcDir = layout.buildDirectory.dir("generated/appleRoots/kotlin")
+
 
 kotlin {
     jvm()
@@ -67,6 +75,9 @@ kotlin {
         commonTest.dependencies {
             implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
         }
+        iosMain{
+            kotlin.srcDir(appleRootsSrcDir)
+        }
 
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
@@ -89,3 +100,91 @@ exportXCFramework(
 )
 */
 
+val appleTrustStoreRef: String by project.extra
+
+val downloadDir = layout.buildDirectory.dir("apple")
+val archiveFile = downloadDir.map { it.file("security_certificates-$appleTrustStoreRef.zip") }
+val rootsDir = layout.buildDirectory.dir("apple-roots")
+
+val downloadAppleTrustStore = tasks.register("downloadAppleTrustStore") {
+    // tell Gradle what this task produces
+    outputs.file(archiveFile)
+
+    doLast {
+        val url = URI(
+            "https://github.com/apple-oss-distributions/security_certificates/archive/refs/tags/$appleTrustStoreRef.zip"
+        ).toURL()
+
+        val outFile = archiveFile.get().asFile
+        outFile.parentFile.mkdirs()
+
+        if (!outFile.exists()) {
+            println("Downloading Apple trust store from $url")
+            url.openStream().use { input ->
+                outFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        } else {
+            println("Using cached ${outFile.absolutePath}")
+        }
+    }
+}
+
+val unpackAppleRoots = tasks.register<Copy>("unpackAppleRoots") {
+    dependsOn(downloadAppleTrustStore)
+
+    from({ zipTree(archiveFile.get().asFile) }) {
+        include("**/certificates/roots/*.cer")
+        // flatten into a single directory
+        eachFile { path = name }
+        includeEmptyDirs = false
+    }
+
+    into(rootsDir)
+}
+
+tasks.register("fetchAppleRoots") {
+    description = "Downloads and unpacks Apple PKITrustStore root certificates"
+    group = "verification"
+    dependsOn(unpackAppleRoots)
+}
+
+val generateAppleRootsSource = tasks.register("generateAppleRootsSource") {
+    dependsOn(unpackAppleRoots)
+
+    val outputFile = appleRootsSrcDir.map { it.file("AppleRoots.kt") }
+    outputs.file(outputFile)
+
+    doLast {
+        val outFile = outputFile.get().asFile
+        outFile.parentFile.mkdirs()
+
+        val roots = rootsDir.get().asFile
+        val cerFiles = roots
+            .listFiles { f -> f.isFile && f.extension.equals("cer", ignoreCase = true) }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+
+        val sb = StringBuilder()
+        sb.appendLine("package at.asitplus.signum.supreme.validate")
+        sb.appendLine()
+        sb.appendLine("internal val appleRoots = listOf(")
+
+        cerFiles.forEach { file ->
+            val bytes = file.readBytes().toHexString()
+            sb.appendLine("\"$bytes\",")
+
+        }
+        sb.appendLine(")")
+
+        sb.appendLine()
+
+        outFile.writeText(sb.toString())
+        println("Generated ${cerFiles.size} Apple root certs into ${outFile.absolutePath}")
+    }
+}
+
+tasks.filter { it.name.startsWith("compileKotlinIos")}.forEach {
+    it.dependsOn(generateAppleRootsSource)
+}
