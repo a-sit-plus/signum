@@ -37,7 +37,7 @@ val InhibitPolicyMappingTest by testSuite {
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
 
 
     val inhibitPolicyMapping1P12CACert = "-----BEGIN CERTIFICATE-----\n" +

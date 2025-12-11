@@ -37,7 +37,7 @@ val RequireExplicitPolicyTest by testSuite {
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
 
     val requireExplicitPolicy2CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDoTCCAomgAwIBAgIBLzANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +

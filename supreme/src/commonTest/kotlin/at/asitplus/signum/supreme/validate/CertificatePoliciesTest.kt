@@ -45,7 +45,7 @@ val CertificatePoliciesTest by testSuite {
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
 
     val goodCACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDfDCCAmSgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -211,6 +211,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true
         )
         var result = chain.validate(context)
@@ -219,6 +220,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
@@ -228,6 +230,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
@@ -238,6 +241,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true,
             initialPolicies = setOf(
                 ObjectIdentifier(NISTTestPolicyOne),
@@ -303,6 +307,7 @@ val CertificatePoliciesTest by testSuite {
 
         val context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true
         )
         result = chain.validate(context)
@@ -346,6 +351,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true
         )
         result = chain.validate(context)
@@ -355,6 +361,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true,
             initialPolicies = setOf(
                 ObjectIdentifier(NISTTestPolicyOne),
@@ -587,6 +594,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         result = chain.validate(context)
@@ -595,6 +603,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
         result = chain.validate(context)
@@ -861,6 +870,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         result = chain.validate(context)
@@ -869,6 +879,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
         result = chain.validate(context)
@@ -910,6 +921,7 @@ val CertificatePoliciesTest by testSuite {
 
         val context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         result = chain.validate(context)
@@ -1004,6 +1016,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         var result = chain.validate(context)
@@ -1056,6 +1069,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         var result = chain.validate(context)
@@ -1064,6 +1078,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
         result = chain.validate(context)
@@ -1237,6 +1252,7 @@ val CertificatePoliciesTest by testSuite {
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         var result = chain.validate(context)
@@ -1257,6 +1273,7 @@ val CertificatePoliciesTest by testSuite {
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
         result = chain.validate(context)
@@ -1356,6 +1373,7 @@ val CertificatePoliciesTest by testSuite {
 
         val context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
+            allowIncludedTrustAnchor = false,
             explicitPolicyRequired = true
         )
         val result = chain.validate(context)

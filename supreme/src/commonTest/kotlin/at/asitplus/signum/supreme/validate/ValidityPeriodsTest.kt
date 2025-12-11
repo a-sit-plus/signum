@@ -39,7 +39,7 @@ val ValidityPeriodsTest by testSuite {
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
 
     val goodCACertPem = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDfDCCAmSgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +

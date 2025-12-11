@@ -37,7 +37,7 @@ val InhibitAnyPolicyTest by testSuite {
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
 
     val inhibitAnyPolicy0CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDqDCCApCgAwIBAgIBOzANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -253,7 +253,7 @@ val InhibitAnyPolicyTest by testSuite {
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
 
-        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), anyPolicyInhibited = true)
+        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, anyPolicyInhibited = true)
         result = chain.validate(context)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null

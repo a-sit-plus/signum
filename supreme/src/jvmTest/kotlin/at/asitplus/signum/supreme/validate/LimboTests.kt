@@ -286,7 +286,7 @@ fun resourceText(path: String): String {
 @OptIn(ExperimentalPkiApi::class)
 suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
     val trustAnchors = testcase.trusted_certs.map { pem ->
-        TrustAnchor.Certificate(X509Certificate.decodeFromPem(pem).getOrThrow())
+        X509Certificate.decodeFromPem(pem).getOrThrow()
     }
 
     val intermediates = testcase.untrusted_intermediates.map { pem ->
@@ -295,11 +295,10 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
 
     val leaf = X509Certificate.decodeFromPem(testcase.peer_certificate).getOrThrow()
 
-    val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
+    val chain: CertificateChain = listOf(leaf) + intermediates.reversed() + trustAnchors
     val validationTime = testcase.validation_time?.let(Instant::parse) ?: Clock.System.now()
 
     val context = CertificateValidationContext(
-        trustAnchors = trustAnchors.toSet(),
         expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet(),
         date = validationTime
     )

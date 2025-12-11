@@ -46,7 +46,7 @@ val PolicyMappingTest by testSuite {
             "-----END CERTIFICATE-----\n"
     val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
 
     val mapping1to2CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDvDCCAqSgAwIBAgIBMDANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -297,18 +297,18 @@ val PolicyMappingTest by testSuite {
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
 
-        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         result = chain.validate(context)
         var validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null
         validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
 
-        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), policyMappingInhibited = true)
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, policyMappingInhibited = true)
         result = chain.validate(context)
         validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null
@@ -348,7 +348,7 @@ val PolicyMappingTest by testSuite {
         validatorFailure shouldNotBe null
         validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
 
-        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), policyMappingInhibited = true)
+        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, policyMappingInhibited = true)
         result = chain.validate(context)
         validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null
@@ -385,12 +385,12 @@ val PolicyMappingTest by testSuite {
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
-        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         var result = chain.validate(context)
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
 
-        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         result = chain.validate(context)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null
@@ -462,12 +462,12 @@ val PolicyMappingTest by testSuite {
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
 
-        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
         result = chain.validate(context)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null
@@ -503,12 +503,12 @@ val PolicyMappingTest by testSuite {
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
 
-        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
         result = chain.validate(context)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
         validatorFailure shouldNotBe null
@@ -793,7 +793,7 @@ val PolicyMappingTest by testSuite {
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
@@ -810,7 +810,7 @@ val PolicyMappingTest by testSuite {
         displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
 
 
-        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         result = chain.validate(context)
         result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
         result.isValid shouldBe true
