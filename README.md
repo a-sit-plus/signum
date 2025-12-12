@@ -767,10 +767,13 @@ val root: X509Certificate = TODO("Trusted root")
 val intermediate: X509Certificate = TODO()
 val leaf: X509Certificate = TODO("Certificate to validate")
 
+val context = CertificateValidationContext(
+  trustAnchors = setOf(TrustAnchor.Certificate(root)),
+)
 // Build chain leaf → intermediates
 val chain: CertificateChain = listOf(leaf, intermediate, root)
 
-val result = chain.validate()
+val result = chain.validate(context)
 
 println("Chain valid? ${result.isValid}")
 
@@ -782,23 +785,20 @@ if (!result.isValid) {
 }
 ```
 If no trust anchors are explicitly specified, the validation will fall back to using the system trust store.
-In this case, `allowIncludedTrustAnchor` must be set to `false` in the validation context.
-This ensures that the validator does not treat a certificate in the chain as a trust anchor.
-
+If `allowIncludedTrustAnchor` is set to `true` in the validation context, validation will try to match root with one of the trust anchors and the if match is found root will be omitted from the chain during the validation.
 ### Custom validation:
 ```kotlin
-val root: X509Certificate = TODO("Trusted root")
 val intermediate: X509Certificate = TODO()
 val leaf: X509Certificate = TODO("Certificate to validate")
 
-val chain: CertificateChain = listOf(leaf, intermediate, root)
+val chain: CertificateChain = listOf(leaf, intermediate)
 
 val context = CertificateValidationContext(
   date = Clock.System.now()
 )
 
 // TODO: Replace with your own custom validator factory
-val myValidatorFactory = ValidatorFactory { ctx ->
+val myValidatorFactory = ValidatorFactory { context ->
   // Here you can define your own validators for this chain
   // For example:
   // listOf(CustomValidator(this, ctx))

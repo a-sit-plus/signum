@@ -41,6 +41,14 @@ sealed class TrustAnchor {
         constructor(publicKey: CryptoPublicKey) : this(publicKey, null)
     }
 
+    fun matchesCertificate(cert: X509Certificate): Boolean {
+        this.cert?.let { return it == cert }
+
+        val sameKey = runCatching { this.publicKey == cert.decodedPublicKey.getOrThrow() }.getOrElse { false }
+        val samePrincipal = this.principal == cert.tbsCertificate.subjectName
+        return sameKey && samePrincipal
+    }
+
     fun isIssuerOf(cert: X509Certificate): Boolean {
         val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(publicKey).getOrElse { return false }
         val signatureValid = verifier.verify(

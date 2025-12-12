@@ -83,7 +83,9 @@ suspend fun CertificateChain.validate(
 ): CertificateValidationResult {
 
     val validators = with(validatorFactory) { this@validate.generate(context) }.toMutableList()
-    val processingChain = if (context.allowIncludedTrustAnchor) this.dropLast(1) else this
+    val processingChain = if (context.allowIncludedTrustAnchor && context.trustAnchors.any {
+            it.matchesCertificate(this.root)
+        }) this.dropLast(1) else this
 
     val activeValidators = validators.toMutableSet()
     val validatorFailures = mutableListOf<ValidatorFailure>()
@@ -189,12 +191,11 @@ private fun defineRFC5280Validators(
     chain: CertificateChain
 ): MutableList<CertificateValidator> {
     val validators = mutableListOf<CertificateValidator>()
-    val (trustAnchors, pathLen, processingChain) =
-        if (context.allowIncludedTrustAnchor) {
-            val newAnchors = setOf(TrustAnchor.Certificate(chain.root)) + context.trustAnchors
-            Triple(newAnchors, chain.size - 1, chain.dropLast(1))
+    val (pathLen, processingChain) =
+        if (context.allowIncludedTrustAnchor && context.trustAnchors.any { it.matchesCertificate(chain.root) }) {
+            chain.size - 1 to chain.dropLast(1)
         } else {
-            Triple(context.trustAnchors, chain.size, chain)
+            chain.size to chain
         }
 
     validators.add(
@@ -221,7 +222,7 @@ private fun defineRFC5280Validators(
         BasicConstraintsValidator(pathLen),
         ChainValidator(processingChain.reversed()),
         TimeValidityValidator(context.date, certChain = processingChain.reversed()),
-        TrustAnchorValidator(trustAnchors, processingChain, date = context.date),
+        TrustAnchorValidator(context.trustAnchors, processingChain, date = context.date),
         KeyIdentifierValidator(processingChain)
     )
     return validators

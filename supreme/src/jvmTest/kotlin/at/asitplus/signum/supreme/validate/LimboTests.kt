@@ -23,7 +23,7 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-private val json = Json { ignoreUnknownKeys = true }
+val json = Json { ignoreUnknownKeys = true }
 
 @OptIn(ExperimentalPkiApi::class)
 val LimboTests by testSuite{
@@ -190,7 +190,7 @@ val LimboTests by testSuite{
 
     context("Certificate serial number tests") {
         val skiTests = testSuiteLimbo.testcases.filter {
-            it.id.contains("rfc5280::serial", ignoreCase = true)
+            it.id.contains("rfc5280::serial::negative", ignoreCase = true)
         }
         skiTests.forEach {
             test("Limbo testcase: ${it.id}") {
@@ -286,7 +286,7 @@ fun resourceText(path: String): String {
 @OptIn(ExperimentalPkiApi::class)
 suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
     val trustAnchors = testcase.trusted_certs.map { pem ->
-        X509Certificate.decodeFromPem(pem).getOrThrow()
+        TrustAnchor.Certificate(X509Certificate.decodeFromPem(pem).getOrThrow())
     }
 
     val intermediates = testcase.untrusted_intermediates.map { pem ->
@@ -295,10 +295,12 @@ suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
 
     val leaf = X509Certificate.decodeFromPem(testcase.peer_certificate).getOrThrow()
 
-    val chain: CertificateChain = listOf(leaf) + intermediates.reversed() + trustAnchors
+    val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
     val validationTime = testcase.validation_time?.let(Instant::parse) ?: Clock.System.now()
 
     val context = CertificateValidationContext(
+        allowIncludedTrustAnchor = false,
+        trustAnchors = trustAnchors.toSet(),
         expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet(),
         date = validationTime
     )
