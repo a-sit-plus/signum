@@ -2,7 +2,8 @@
 
 ## 3.0
 
-### NEXT
+### 3.19.1 / Supreme 0.11.1
+* Bouncy Castle 1.83
 
 ### 3.19.0 / Supreme 0.11.0
 * Fix a glaring JWS bug that caused an error whenever trying to get the digest of a JWS signature algorithm
