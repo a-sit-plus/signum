@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
-import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -119,17 +118,14 @@ val ValidationApiTest by testSuite{
 
         val customValidatorFactory = ValidatorFactory { context ->
             val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }.toMutableList()
-            validators.removeAll { it is CertValidityValidator ||
-                    it is TimeValidityValidator ||
-                    it is KeyIdentifierValidator
-            }
+            validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator }
             validators
         }
 
         chain.validate(
             customValidatorFactory,
             CertificateValidationContext(
-                trustAnchors = setOf(TrustAnchor.Certificate(chain.root)),
+                trustAnchors = setOf(TrustAnchor.Certificate(chain.root)), checkLeafTimeValidity = false
             )
         ).isValid shouldBe true
     }

@@ -17,7 +17,8 @@ import kotlin.time.Instant
 class TimeValidityValidator(
     val date: Instant,
     private val certChain: CertificateChain,
-    private var currentCertIndex: Int = 0
+    private var currentCertIndex: Int = 0,
+    private val checkLeafValidity: Boolean = true
 ) : CertificateValidator {
 
     @ExperimentalPkiApi
@@ -25,25 +26,33 @@ class TimeValidityValidator(
         currCert: X509Certificate,
         remainingCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
-        if (currCert.isExpired(date)) {
-            throw CertificateValidityException(
-                "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(TimeZone.UTC)
-            )
-        }
+        // check leaf validity only if checkLeafValidity is true, enforce validity for all other certificates
+        if (currentCertIndex != certChain.lastIndex || (currentCertIndex == certChain.lastIndex && checkLeafValidity)) {
+            if (currCert.isExpired(date)) {
+                throw CertificateValidityException(
+                    "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(
+                        TimeZone.UTC
+                    )
+                )
+            }
 
-        if (currCert.isNotYetValid(date)) {
-            throw CertificateValidityException(
-                "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(TimeZone.UTC)
-            )
+            if (currCert.isNotYetValid(date)) {
+                throw CertificateValidityException(
+                    "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(
+                        TimeZone.UTC
+                    )
+                )
+            }
         }
-
-        if (currentCertIndex < certChain.lastIndex) {
+        // perform this check on last two certificates only if checkLeafValidity is true
+        if (currentCertIndex < certChain.lastIndex - 1 || (currentCertIndex == certChain.lastIndex - 1 && checkLeafValidity)) {
             val childCert = certChain[currentCertIndex + 1]
             wasCertificateIssuedWithinIssuerValidityPeriod(
                 dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
-                issuer = currCert)
-            currentCertIndex++
+                issuer = currCert
+            )
         }
+        currentCertIndex++
     }
 
     private fun wasCertificateIssuedWithinIssuerValidityPeriod(

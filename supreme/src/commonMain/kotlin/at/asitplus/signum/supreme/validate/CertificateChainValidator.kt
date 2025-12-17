@@ -17,6 +17,7 @@ import kotlin.time.Instant
 @OptIn(ExperimentalPkiApi::class)
 class CertificateValidationContext(
     val date: Instant = Clock.System.now(),
+    val checkLeafTimeValidity: Boolean = true,
     val explicitPolicyRequired: Boolean = false,
     val policyMappingInhibited: Boolean = false,
     val anyPolicyInhibited: Boolean = false,
@@ -222,7 +223,7 @@ private fun defineRFC5280Validators(
         KeyUsageValidator(pathLen, expectedEku = context.expectedEku),
         BasicConstraintsValidator(pathLen),
         ChainValidator(processingChain.reversed()),
-        TimeValidityValidator(context.date, certChain = processingChain.reversed()),
+        TimeValidityValidator(context.date, certChain = processingChain.reversed(), checkLeafValidity = context.checkLeafTimeValidity),
         TrustAnchorValidator(context.trustAnchors, processingChain, date = context.date),
         KeyIdentifierValidator(processingChain)
     )
