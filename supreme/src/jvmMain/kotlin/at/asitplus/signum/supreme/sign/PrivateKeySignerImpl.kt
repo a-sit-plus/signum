@@ -9,7 +9,7 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 
-actual suspend fun makePrivateKeySigner(
+actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.RSA,
     algorithm: SignatureAlgorithm.RSA
 ): Signer.RSA = EphemeralSigner.RSA(
@@ -19,7 +19,7 @@ actual suspend fun makePrivateKeySigner(
     signatureAlgorithm = algorithm
 )
 
-actual suspend fun makePrivateKeySigner(
+actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA = EphemeralSigner.EC(

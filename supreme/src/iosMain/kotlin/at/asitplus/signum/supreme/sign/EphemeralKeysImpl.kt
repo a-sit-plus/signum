@@ -128,14 +128,14 @@ internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyC
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual suspend fun makePrivateKeySigner(
+actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.RSA,
     algorithm: SignatureAlgorithm.RSA
 ): Signer.RSA =
     key.toSecKey().mapCatching { EphemeralSigner.RSA(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()
 
 @OptIn(ExperimentalForeignApi::class)
-actual suspend fun makePrivateKeySigner(
+actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA =
