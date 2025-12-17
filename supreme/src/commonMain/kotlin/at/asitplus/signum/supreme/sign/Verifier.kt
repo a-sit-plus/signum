@@ -94,7 +94,7 @@ internal expect fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
              config: PlatformVerifierConfiguration)
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
-internal expect fun verifyRSAImpl
+internal expect suspend fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration)

@@ -77,7 +77,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 }
 
 @JvmSynthetic
-internal actual fun verifyRSAImpl
+internal actual suspend fun verifyRSAImpl
     (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
      data: SignatureInput, signature: CryptoSignature.RSA,
      config: PlatformVerifierConfiguration)

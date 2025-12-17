@@ -31,7 +31,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 {
 }
 
-private fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: CryptoPublicKey,
+private suspend fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: CryptoPublicKey,
                        data: SignatureInput, signature: CryptoSignature,
                        config: PlatformVerifierConfiguration) {
     val key = publicKey.toSecKey().getOrThrow()
@@ -65,7 +65,7 @@ internal actual suspend fun verifyECDSAImpl
  }
 
 
-internal actual fun verifyRSAImpl
+internal actual suspend fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration) =
