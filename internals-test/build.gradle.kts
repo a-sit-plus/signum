@@ -20,6 +20,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                implementation("at.asitplus.gradle:testhelper:20251114")
                 implementation(project(":indispensable-asn1"))
                 implementation(libs.kotlinx.io.core)
             }
