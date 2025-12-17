@@ -27,17 +27,13 @@ class TimeValidityValidator(
     ) {
         if (currCert.isExpired(date)) {
             throw CertificateValidityException(
-                "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(
-                    TimeZone.currentSystemDefault()
-                )
+                "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(TimeZone.UTC)
             )
         }
 
         if (currCert.isNotYetValid(date)) {
             throw CertificateValidityException(
-                "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(
-                    TimeZone.currentSystemDefault()
-                )
+                "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(TimeZone.UTC)
             )
         }
 
