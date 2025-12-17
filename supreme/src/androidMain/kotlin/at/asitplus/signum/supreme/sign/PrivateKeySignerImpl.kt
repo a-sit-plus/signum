@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 
 
-actual fun makePrivateKeySigner(
+actual suspend fun makePrivateKeySigner(
     key: CryptoPrivateKey.RSA,
     algorithm: SignatureAlgorithm.RSA
 ): Signer.RSA = AndroidEphemeralSigner.RSA(
@@ -15,7 +15,7 @@ actual fun makePrivateKeySigner(
     signatureAlgorithm = algorithm
 )
 
-actual fun makePrivateKeySigner(
+actual suspend fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA = AndroidEphemeralSigner.EC(

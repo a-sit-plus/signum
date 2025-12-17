@@ -12,6 +12,7 @@ import io.kotest.matchers.shouldNotBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import io.kotest.engine.runBlocking
 
 val KeyAgreementTest by testSuite {
 
@@ -38,7 +39,7 @@ val KeyAgreementTest by testSuite {
 
     "Key Agreement Failure Test" - {
         repeat(100) {
-            val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
+            val base = runBlocking {  KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow() }
 
             withData(
                 ECCurve.SECP_384_R_1 to false,

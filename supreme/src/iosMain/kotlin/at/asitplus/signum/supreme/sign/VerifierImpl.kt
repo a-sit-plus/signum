@@ -48,7 +48,7 @@ private fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: Crypto
     }
 }
 
-internal actual fun verifyECDSAImpl
+internal actual suspend fun verifyECDSAImpl
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              data: SignatureInput, signature: CryptoSignature.EC,
              config: PlatformVerifierConfiguration) = when (signatureAlgorithm.digest) {

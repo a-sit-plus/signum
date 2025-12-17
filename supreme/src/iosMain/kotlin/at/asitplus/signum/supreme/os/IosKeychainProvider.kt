@@ -101,7 +101,7 @@ sealed class IosSigner(final override val alias: String,
 
 
     @SecretExposure
-    override fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
+    override suspend fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
@@ -491,8 +491,9 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     publicKey = publicKey, challenge = attestationConfig.challenge)
                 val clientDataJSON = clientData.prepareDigestInput()
 
+                val digest = Digest.SHA256.digest(clientDataJSON)
                 val assertionKeyAttestation = swiftasync {
-                    service.attestKey(keyId, Digest.SHA256.digest(clientDataJSON).toNSData(), callback)
+                    service.attestKey(keyId, digest.toNSData(), callback)
                 }.toByteArray()
                 Napier.v { "attested key ($assertionKeyAttestation)" }
 

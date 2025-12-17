@@ -14,10 +14,10 @@ import org.kotlincrypto.random.CryptoRand
 import kotlin.experimental.xor
 import kotlin.jvm.JvmInline
 
-private typealias HashToFieldFn = (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
+private typealias HashToFieldFn = suspend (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
 private typealias MapToCurveFn = (ModularBigInteger) -> ECPoint
 private typealias ClearCofactorFn = (ECPoint) -> ECPoint
-private typealias ExpandMessageFn = (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer
+private typealias ExpandMessageFn = suspend (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer
 
 /** RFC 9380 8.2ff */
 private inline val ECCurve.Z get() = BigInteger(when (this) {
@@ -210,19 +210,19 @@ private inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
 object RFC9380 {
     @JvmInline
     value class HashToECScalar(private val fn: HashToFieldFn) {
-        operator fun invoke(data: Sequence<ByteArray>) = fn(data, 1)[0]
-        operator fun invoke(data: ByteArray) = fn(sequenceOf(data), 1)[0]
-        operator fun invoke(data: Iterable<ByteArray>) = fn(data.asSequence(), 1)[0]
-        operator fun invoke(data: Sequence<ByteArray>, count: Int) = fn(data, count)
-        operator fun invoke(data: ByteArray, count: Int) = fn(sequenceOf(data), count)
-        operator fun invoke(data: Iterable<ByteArray>, count: Int) = fn(data.asSequence(), count)
+        suspend operator fun invoke(data: Sequence<ByteArray>) = fn(data, 1)[0]
+        suspend operator fun invoke(data: ByteArray) = fn(sequenceOf(data), 1)[0]
+        suspend operator fun invoke(data: Iterable<ByteArray>) = fn(data.asSequence(), 1)[0]
+        suspend operator fun invoke(data: Sequence<ByteArray>, count: Int) = fn(data, count)
+        suspend operator fun invoke(data: ByteArray, count: Int) = fn(sequenceOf(data), count)
+        suspend operator fun invoke(data: Iterable<ByteArray>, count: Int) = fn(data.asSequence(), count)
     }
 
     @JvmInline
-    value class HashToEllipticCurve(private val fn: (Sequence<ByteArray>)->ECPoint) {
-        operator fun invoke(data: Sequence<ByteArray>) = fn(data)
-        operator fun invoke(data: ByteArray) = fn(sequenceOf(data))
-        operator fun invoke(data: Iterable<ByteArray>) = fn(data.asSequence())
+    value class HashToEllipticCurve(private val fn: suspend (Sequence<ByteArray>)->ECPoint) {
+        suspend operator fun invoke(data: Sequence<ByteArray>) = fn(data)
+        suspend operator fun invoke(data: ByteArray) = fn(sequenceOf(data))
+        suspend operator fun invoke(data: Iterable<ByteArray>) = fn(data.asSequence())
     }
 
     /** the hash_to_field construction as specified in RFC9380;
