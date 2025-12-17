@@ -3,17 +3,26 @@
 ## 3.0
 
 ### NEXT
+* Make more provider functions suspending
+    * digest calculation
+    * MAC calculation
+    * private key export
+    * signature verification
+    * ephemeral key creation
+    * signer creation
+    * verifier creation
+    * hash to curve
 * Introduced dedicated X509 extension classes:
-  * `X509CertificateExtension` is now a base class
-  * Enables polymorphic decoding/encoding of extension types
-    * `BasicConstraintsExtension`
-    * `CertificatePoliciesExtension`
-    * `InhibitAnyPolicyExtension`
-    * `KeyUsageExtension`
-    * `NameConstraintsExtension` and `GeneralSubtree`
-    * `PolicyConstraintsExtension`
-    * `PolicyMappingsExtension`
-  * If decoding a dedicated extension fails, an `InvalidCertificateExtension` is returned, containing the original extension’s properties and the cause of the decoding failure.
+    * `X509CertificateExtension` is now a base class
+    * Enables polymorphic decoding/encoding of extension types
+        * `BasicConstraintsExtension`
+        * `CertificatePoliciesExtension`
+        * `InhibitAnyPolicyExtension`
+        * `KeyUsageExtension`
+        * `NameConstraintsExtension` and `GeneralSubtree`
+        * `PolicyConstraintsExtension`
+        * `PolicyMappingsExtension`
+   * If decoding a dedicated extension fails, an `InvalidCertificateExtension` is returned, containing the original extension’s properties and the cause of the decoding failure.
 * Refactored `AlternativeNames` for SAN/IAN extraction
     * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
     * Introduced dedicated `GeneralName` classes:
