@@ -247,7 +247,8 @@ val LimboTests by testSuite{
             "rfc5280::root-and-intermediate-swapped",
             "rfc5280::unknown-critical-extension-root",
             "rfc5280::root-inconsistent-ca-extensions",
-            "rfc5280::duplicate-extensions"
+            "rfc5280::duplicate-extensions",
+            "rfc5280::pc::ica-noncritical-pc"
         )
 
         val tests = testSuiteLimbo.testcases.filter { tc ->

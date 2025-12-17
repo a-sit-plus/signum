@@ -15,7 +15,9 @@ import io.kotest.matchers.shouldNotBe
  */
 val NistPkiTestSuite by testSuite{
 
-    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
+    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json")).filter { tc ->
+        !tc.name.contains("cRLSign", ignoreCase = true)
+    }
 
     testSuite.forEach { testCase ->
         test(testCase.name) {

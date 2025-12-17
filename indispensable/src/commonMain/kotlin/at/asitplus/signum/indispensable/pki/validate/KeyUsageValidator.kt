@@ -32,14 +32,12 @@ class KeyUsageValidator (
         remainingCriticalExtensions.removeAll(supportedExtensions)
         currentCertIndex++
         if (currentCertIndex <= certPathLen - 1)
-            verifyIntermediateKeyUsage(currCert)
+            verifySignatureKeyUsage(currCert)
         else {
             verifyExpectedEKU(currCert)
             val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
 
-            if (basicConstraints?.ca == true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
-                throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
-            }
+            if (basicConstraints?.ca == true) verifySignatureKeyUsage(currCert)
 
             if (basicConstraints?.ca != true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) == true) {
                 throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
@@ -47,13 +45,9 @@ class KeyUsageValidator (
         }
     }
 
-    private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
+    private fun verifySignatureKeyUsage(currCert: X509Certificate) {
         if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
             throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
-        }
-
-        if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.CRL_SIGN) != true) {
-            throw KeyUsageException("CRL signature key usage extension not present at cert index $currentCertIndex.")
         }
     }
 

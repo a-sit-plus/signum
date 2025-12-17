@@ -62,11 +62,12 @@ data class ValidatorFailure(
 fun interface ValidatorFactory {
     fun CertificateChain.generate(
         context: CertificateValidationContext
-    ): List<CertificateValidator>
-}
+    ): MutableList<CertificateValidator>
 
-val RFC5280ValidatorFactory = ValidatorFactory { context ->
-    defineRFC5280Validators(context, this)
+    companion object {
+        val RFC5280: ValidatorFactory =
+            ValidatorFactory { context -> defineRFC5280Validators(context, this) }
+    }
 }
 
 
@@ -78,11 +79,11 @@ val RFC5280ValidatorFactory = ValidatorFactory { context ->
  */
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
-    validatorFactory: ValidatorFactory = RFC5280ValidatorFactory,
+    validatorFactory: ValidatorFactory = ValidatorFactory.RFC5280,
     context: CertificateValidationContext = CertificateValidationContext()
 ): CertificateValidationResult {
 
-    val validators = with(validatorFactory) { this@validate.generate(context) }.toMutableList()
+    val validators = with(validatorFactory) { this@validate.generate(context) }
     val processingChain = if (context.allowIncludedTrustAnchor && context.trustAnchors.any {
             it.matchesCertificate(this.root)
         }) this.dropLast(1) else this
@@ -183,7 +184,7 @@ suspend fun CertificateChain.validate(
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext()
-): CertificateValidationResult = validate(RFC5280ValidatorFactory, context)
+): CertificateValidationResult = validate(ValidatorFactory.RFC5280, context)
 
 /** Constructs list of default validator used in RFC5280 validation based on [context] */
 private fun defineRFC5280Validators(

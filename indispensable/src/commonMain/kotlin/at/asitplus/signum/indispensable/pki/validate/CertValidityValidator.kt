@@ -27,6 +27,7 @@ class CertValidityValidator(
     ) {
         checkSerialNumber(currCert)
         isSanCriticalWhenNameIsEmpty(currCert)
+        checkTimeValidity(currCert)
     }
 
     @Throws(Asn1StructuralException::class)
@@ -36,10 +37,17 @@ class CertValidityValidator(
         if (cert.tbsCertificate.serialNumber.all { it == 0.toByte() }) throw Asn1StructuralException("Serial number must not be zero")
     }
 
+    @Throws(CertificateChainValidatorException::class)
     private fun isSanCriticalWhenNameIsEmpty(cert: X509Certificate) {
         val sanExtension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.subjectAltName_2_5_29_17 }
         if (cert.tbsCertificate.subjectName.relativeDistinguishedNames.isEmpty() && sanExtension?.critical == false)
             throw CertificateChainValidatorException("SAN extension is not critical, which is required when subject is empty.")
 
+    }
+
+    @Throws(Asn1StructuralException::class)
+    private fun checkTimeValidity(cert: X509Certificate) {
+        if (cert.tbsCertificate.validFrom.instant > cert.tbsCertificate.validUntil.instant)
+            throw Asn1StructuralException("notBefore is later then notAfter.")
     }
 }
