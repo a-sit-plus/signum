@@ -20,7 +20,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation("at.asitplus.gradle:testhelper:${libs.versions.asp.get()}")
                 implementation(project(":indispensable-asn1"))
                 implementation(libs.kotlinx.io.core)
             }
