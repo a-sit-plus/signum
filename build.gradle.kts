@@ -1,4 +1,4 @@
-import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
+import at.asitplus.gradle.dokka
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import java.time.Duration
@@ -33,13 +33,14 @@ nexusPublishing {
 }
 //end work around nexus publish bug
 
-//access dokka plugin from conventions plugin's classpath in root project → no need to specify version
-apply(plugin = "org.jetbrains.dokka")
-tasks.getByName("dokkaHtmlMultiModule") {
-    (this as DokkaMultiModuleTask)
-    outputDirectory.set(File("${buildDir}/dokka"))
-    moduleName.set("Signum")
+
+val dokkaDir = rootProject.layout.buildDirectory.dir("docs")
+dokka {
+    dokkaPublications.html{
+        outputDirectory.set(dokkaDir)
+    }
 }
+
 
 allprojects {
     apply(plugin = "org.jetbrains.dokka")
@@ -57,11 +58,11 @@ tasks.register<Copy>("copyAppLegend") {
 }
 
 tasks.register<Copy>("mkDocsPrepare") {
-    dependsOn("dokkaHtmlMultiModule")
+    dependsOn("dokkaGenerate")
     dependsOn("copyChangelog")
     dependsOn("copyAppLegend")
     into(rootDir.resolve("docs/docs/dokka"))
-    from("${buildDir}/dokka")
+    from(dokkaDir)
 }
 
 tasks.register<Exec>("mkDocsBuild") {
