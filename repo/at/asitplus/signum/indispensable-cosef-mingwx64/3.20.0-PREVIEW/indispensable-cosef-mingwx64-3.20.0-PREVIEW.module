@@ -1,0 +1,107 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-cosef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "mingwX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-cbor",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-cosef-mingwX64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-cosef-mingwx64-3.20.0-PREVIEW.klib",
+          "size": 183044,
+          "sha512": "803b67e51a3bd15b948dd6899fe6576d0b3b58e9377c4d019df71c54dc0970905dc3d17593fef35786c99881ed44ee98436b039fb11243fd1d0212e5c3c29e34",
+          "sha256": "8b6b8e10febf98069a044c21130cbc6cf580a9dc88a1e6863f59b633d05654b1",
+          "sha1": "a551d4494b8589f72b72e7415dc280401d370668",
+          "md5": "58ead87d4680a5e15b58dfaf317bef36"
+        }
+      ]
+    },
+    {
+      "name": "mingwX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-cosef-mingwx64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-cosef-mingwx64-3.20.0-PREVIEW-sources.jar",
+          "size": 28704,
+          "sha512": "22ffd64377ce9ed685a107a46cb783fa414eafa12e042967a490ac2839ffc9bf33ba8f6e6856a5fcad88b8e8da772722955b2e36e679117b10e08b63252aea24",
+          "sha256": "8d707a316871d4a28cd60b1416369b60e2418d82c6383e6fe003dab458d48fcb",
+          "sha1": "a719004b082df10f49e36f64553beba740d6bfc3",
+          "md5": "5e02234840ffa904888f62ac3b9af9d5"
+        }
+      ]
+    }
+  ]
+}

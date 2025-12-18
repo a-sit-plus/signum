@@ -1,0 +1,79 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-oids",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-oids-linuxX64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-oids-linuxx64-3.20.0-PREVIEW.klib",
+          "size": 606296,
+          "sha512": "2d0648b9c56c3954298281bd27e31e2175a610b63427baca70c8d5da4094562f5699ac16efb791e023bb1c8491161e6af94d90d901dd893a74cd759d5bf4e1b4",
+          "sha256": "b7157f586be6328f1959acf7529744228d6b203ac34e9b73ac0d730fb798d234",
+          "sha1": "ab37f4f8c45f6532d670ce56ccc537c3aea2df8f",
+          "md5": "68b427a21822dc46abe08561f953d55d"
+        }
+      ]
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-oids-linuxx64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-oids-linuxx64-3.20.0-PREVIEW-sources.jar",
+          "size": 87050,
+          "sha512": "fc6f1cec4fa7ebc507924ead1b0a626eae184148380f6f0c64f60d234ba1b6532dfb78900478706797fb1cc26205d896dd7d3b290feca56abac0ae5873499ca7",
+          "sha256": "e8a4c0b7953f5cb49349bdd5b7cbb26701353f992af01785aba7385d4fc42040",
+          "sha1": "b630e3a0a9844af8d0c177f04cbe0519e1fa5039",
+          "md5": "c61df4e0a0eff6ba6613137add0bbfb8"
+        }
+      ]
+    }
+  ]
+}

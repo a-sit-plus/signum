@@ -1,0 +1,116 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-oids",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "macosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-oids-macosX64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-oids-macosx64-3.20.0-PREVIEW.klib",
+          "size": 606297,
+          "sha512": "881f6165f9e7192a679cc9063a7c0023f60576308abaa243eeb77e343a72f6416140e7bbcf844dc3a9a484750a5dfa582397dc05eac6bae0e35af0f0e232e5ef",
+          "sha256": "dd099e8b4c0fc2c432923240b3043e0c948165c386c8010003e4a27493fe3700",
+          "sha1": "c6e65aa701f156c45941ac17e6c932a0f806b5f7",
+          "md5": "71232c7680dedf24cdb47cf2b50dc9b6"
+        }
+      ]
+    },
+    {
+      "name": "macosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-oids-macosx64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-oids-macosx64-3.20.0-PREVIEW-sources.jar",
+          "size": 87050,
+          "sha512": "fc6f1cec4fa7ebc507924ead1b0a626eae184148380f6f0c64f60d234ba1b6532dfb78900478706797fb1cc26205d896dd7d3b290feca56abac0ae5873499ca7",
+          "sha256": "e8a4c0b7953f5cb49349bdd5b7cbb26701353f992af01785aba7385d4fc42040",
+          "sha1": "b630e3a0a9844af8d0c177f04cbe0519e1fa5039",
+          "md5": "c61df4e0a0eff6ba6613137add0bbfb8"
+        }
+      ]
+    },
+    {
+      "name": "macosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-oids-macosx64-3.20.0-PREVIEW-metadata.jar",
+          "url": "indispensable-oids-macosx64-3.20.0-PREVIEW-metadata.jar",
+          "size": 261,
+          "sha512": "1487e5a20c9e4d74f298e07c42e96a61be11b7a768c3fbc199ee138cd68e1fc2267d1cfe3f11f288acc05df755315344d052cc5f6f751f126ab4fe1caa5125ea",
+          "sha256": "c6deada2fac53b8ea6523dbda77597b128006674616f140f04df23264c6d1aa3",
+          "sha1": "2ad14aed781c4a73ed4dbb421966d408a0a06686",
+          "md5": "f43436d6bec321290f6af228ad602604"
+        }
+      ]
+    }
+  ]
+}

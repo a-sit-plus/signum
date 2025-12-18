@@ -1,0 +1,165 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-cosef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-dom-api-compat",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-cbor",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
+          "size": 176762,
+          "sha512": "958e9ef9ba892d5ee371a26d5df9d9a41a31aa07b076106d54f3c6ecddba7a7e4679d9cec7ff7eb8d979961de55d05ccdd42de283a98489da55b7fd300a07aa6",
+          "sha256": "e43c3b7b0fc2980168aac98d2c9fa05dd55bb9274a7dff9e5f58847ae6a73c54",
+          "sha1": "8b6ace17efb694f5e0633808d16eb9441d438959",
+          "md5": "be1874aa56ca8bd192ff068e67b440ba"
+        }
+      ]
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-dom-api-compat",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-cbor",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
+          "size": 176762,
+          "sha512": "958e9ef9ba892d5ee371a26d5df9d9a41a31aa07b076106d54f3c6ecddba7a7e4679d9cec7ff7eb8d979961de55d05ccdd42de283a98489da55b7fd300a07aa6",
+          "sha256": "e43c3b7b0fc2980168aac98d2c9fa05dd55bb9274a7dff9e5f58847ae6a73c54",
+          "sha1": "8b6ace17efb694f5e0633808d16eb9441d438959",
+          "md5": "be1874aa56ca8bd192ff068e67b440ba"
+        }
+      ]
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "files": [
+        {
+          "name": "indispensable-cosef-js-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-cosef-js-3.20.0-PREVIEW-sources.jar",
+          "size": 28704,
+          "sha512": "22ffd64377ce9ed685a107a46cb783fa414eafa12e042967a490ac2839ffc9bf33ba8f6e6856a5fcad88b8e8da772722955b2e36e679117b10e08b63252aea24",
+          "sha256": "8d707a316871d4a28cd60b1416369b60e2418d82c6383e6fe003dab458d48fcb",
+          "sha1": "a719004b082df10f49e36f64553beba740d6bfc3",
+          "md5": "5e02234840ffa904888f62ac3b9af9d5"
+        }
+      ]
+    }
+  ]
+}

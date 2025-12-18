@@ -1,0 +1,72 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "internals",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "linuxArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "internals-linuxArm64Main-3.20.0-PREVIEW.klib",
+          "url": "internals-linuxarm64-3.20.0-PREVIEW.klib",
+          "size": 12887,
+          "sha512": "1ef13e2dca25d8e46c18ba2bd8db3fe024c0832a7a03649228c7666f14cb097ba056897ad71d56643562df0e4c0af61ae9a3e889c12f4d082b06ac6eab4e162c",
+          "sha256": "3b42e2a19042e5e1684a0539efc9704bba80b937fd32ac597abd991084178d6c",
+          "sha1": "952003b19ea19333e825d6ca9935d2a2eddbe496",
+          "md5": "d1b27ee78af3c1fbbad75adf701b6b93"
+        }
+      ]
+    },
+    {
+      "name": "linuxArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "internals-linuxarm64-3.20.0-PREVIEW-sources.jar",
+          "url": "internals-linuxarm64-3.20.0-PREVIEW-sources.jar",
+          "size": 2321,
+          "sha512": "4a42b7d015c3f7ff8b44d289de4c34cf382b968bbafb8f9830379813b2605fb8c49e9be34dc199cb836468f32525a142a17278d0e79091a881e8182981fd4fbf",
+          "sha256": "2e61ed3e2ef989b03aff245444d1db783169f224aadc1ae0850f783d2413add9",
+          "sha1": "6eaa81c269f9dfa36721e11380a28b617a9efaed",
+          "md5": "64fcd1d357f4e448fff70042b00c8771"
+        }
+      ]
+    }
+  ]
+}

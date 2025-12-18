@@ -1,0 +1,228 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "iosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-iosX64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-iosx64-3.20.0-PREVIEW.klib",
+          "size": 560780,
+          "sha512": "250f353bc4bfcac8c78828a4de3bf54d038c2929e1557a2ae36267578fc15e6ec31a958afdc0f6932648febe53f8aa079d6ff912ccf74c4c1f1d877871c205de",
+          "sha256": "e9d8710e8f038e443589968ee9c4c1afe50e1c4af4ca3b4e105b6895ff1da635",
+          "sha1": "eeadcdcfdf5f3c0510ec402ef61bdabcc9750095",
+          "md5": "ef10700e716e0b87cb65138727727df3"
+        }
+      ]
+    },
+    {
+      "name": "iosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-iosx64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-iosx64-3.20.0-PREVIEW-sources.jar",
+          "size": 109020,
+          "sha512": "348f2a577de5d3e643370bad54114347e76e8ccb6c5d359cf69bd853b2736e82b59d19d338ef05a2c00be5731240ec86780f451d0bd6ee99df97e461cccabf41",
+          "sha256": "dcb3b33fcd37233c143496e21dd69d2b92d22b3c9f6c28a85101239f2b699a41",
+          "sha1": "e4d67ab5084baea422c67d9d629810f2c87b82ea",
+          "md5": "6d166763598f4a1feed7d332032c8e0c"
+        }
+      ]
+    },
+    {
+      "name": "iosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-iosx64-3.20.0-PREVIEW-metadata.jar",
+          "url": "indispensable-iosx64-3.20.0-PREVIEW-metadata.jar",
+          "size": 2862,
+          "sha512": "eaf45068ef66b621fba6562aeb0bfd0a8bacad184f2b0173236d5ad91e580efb772d291fb59ba4d3aac8fd5446191a3b5a2a4287e065c5e0ffb82eca3c11da79",
+          "sha256": "4689f13841b44d122d2c086fedbbdef460ec97a03dbacd8aa18e32b8816b5a5f",
+          "sha1": "095be883f1882a80367f2c1dde07778749d5efc0",
+          "md5": "76fb69193ae872fe3d26fcc9f7079d92"
+        }
+      ]
+    }
+  ]
+}

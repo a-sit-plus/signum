@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>Signum</groupId>
+  <artifactId>internals-watchossimulatorarm64</artifactId>
+  <versioning>
+    <latest>3.20.0-PREVIEW</latest>
+    <release>3.20.0-PREVIEW</release>
+    <versions>
+      <version>3.20.0-PREVIEW</version>
+    </versions>
+    <lastUpdated>20251218154220</lastUpdated>
+  </versioning>
+</metadata>

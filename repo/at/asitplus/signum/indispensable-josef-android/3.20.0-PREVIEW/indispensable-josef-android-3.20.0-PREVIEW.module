@@ -1,0 +1,144 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-josef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef.aar",
+          "url": "indispensable-josef-android-3.20.0-PREVIEW.aar",
+          "size": 202765,
+          "sha512": "fada9faef7c15ff66af65a8b121c47cfa9f8ae7f468cf27e69f189222072e224100ddbff7295c4e92c7db1b2b41d296ea20f70c47006e8d21ec654b461b7c35c",
+          "sha256": "21b6c21d6a70a4d9c2e1f123034be554a31f84541838789576d6dbb353462136",
+          "sha1": "28c0c185cba6284cfd411bb99ecd6356462c0bca",
+          "md5": "e551f7a86974193db48ff98706645691"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef.aar",
+          "url": "indispensable-josef-android-3.20.0-PREVIEW.aar",
+          "size": 202765,
+          "sha512": "fada9faef7c15ff66af65a8b121c47cfa9f8ae7f468cf27e69f189222072e224100ddbff7295c4e92c7db1b2b41d296ea20f70c47006e8d21ec654b461b7c35c",
+          "sha256": "21b6c21d6a70a4d9c2e1f123034be554a31f84541838789576d6dbb353462136",
+          "sha1": "28c0c185cba6284cfd411bb99ecd6356462c0bca",
+          "md5": "e551f7a86974193db48ff98706645691"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "indispensable-josef-android-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-josef-android-3.20.0-PREVIEW-sources.jar",
+          "size": 35719,
+          "sha512": "09179fdd3e344faee8bc79135e81cf282779efb179de840b2ea37c5fdf34210c628402f9783ba1328e3b070999f2291470eda2dad1da5a8f1a712bcbb3a98740",
+          "sha256": "23433aed1b52467bdf59ca16b5ca28f6a2b4419a5b45864d0a8347533496b255",
+          "sha1": "bd93a8b382848ed299180d32e335817b3af88133",
+          "md5": "2d542e3f67f05cc8881a2578fd41b058"
+        }
+      ]
+    }
+  ]
+}

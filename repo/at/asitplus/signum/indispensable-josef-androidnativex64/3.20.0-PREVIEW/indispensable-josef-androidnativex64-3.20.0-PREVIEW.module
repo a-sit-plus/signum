@@ -1,0 +1,100 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-josef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidNativeX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-androidNativeX64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-josef-androidnativex64-3.20.0-PREVIEW.klib",
+          "size": 202427,
+          "sha512": "6330c9fd29b0e7abac9486654005408d8025d3086c04b6090a935565646e923ae80040e41fe18650fa7e3a5fae940ca845b24e97ae51e9fb82a269de5928938c",
+          "sha256": "718242b0e38193054736223c24c9801e458b7f8289efdb6a16c1598879b56805",
+          "sha1": "9488c34070c93446ffcb89c6cc3fc9ab147aa344",
+          "md5": "1ee64f78d7a80f82331f9e448ce74363"
+        }
+      ]
+    },
+    {
+      "name": "androidNativeX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-josef-androidnativex64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-josef-androidnativex64-3.20.0-PREVIEW-sources.jar",
+          "size": 34428,
+          "sha512": "17bfead8e989cf8f12a249b5d0c0a1fc565ae8488186e84e54b7c3bdcbc0d808802c3f81595e92be734e913c2e3d54c3c797d187fd20eb643609bcacec398624",
+          "sha256": "86eb664faeffe738a316ed0aa5f17726e1cd1a4280a3cf31599c319b2f241704",
+          "sha1": "fe10a771dd427c76953c4863705a3d7e0cf0cba6",
+          "md5": "e2b88bb749c78f522a11df075bc731a5"
+        }
+      ]
+    }
+  ]
+}

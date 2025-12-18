@@ -1,0 +1,135 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidNativeX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-androidNativeX64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-androidnativex64-3.20.0-PREVIEW.klib",
+          "size": 548546,
+          "sha512": "8275c96c97ab366fad0a914675d5e7bb09b411169072c7cf0596d528f46cfe584010fe9c8be3907ec7398ca459bf17389c2f1777e959914f0eecd9022531960e",
+          "sha256": "7a6f8b2529f6763831496661f89e9c1490906e601ea5c68af1a8955613907049",
+          "sha1": "d1a5eda35748095c64afd9c9417360850f106c7a",
+          "md5": "4c470931d32bd75572be69c98145f9c5"
+        }
+      ]
+    },
+    {
+      "name": "androidNativeX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-androidnativex64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-androidnativex64-3.20.0-PREVIEW-sources.jar",
+          "size": 107467,
+          "sha512": "aa0f3b0d5618417f5e786715971f6489a6005c7103d6308804094f881017708f7e2ac1957138bf46b2e6cddf2d07f5198dad4775228d61d3f70e69b19046fe0b",
+          "sha256": "97b0cd48c5a4734e9d1f334648bdd4dc7b54fbacdc7c3d0dbaaa357656db34d6",
+          "sha1": "b275f440776c4545d0f449aa70eb3af2649e958a",
+          "md5": "79c9f270c703be3557e1fef2bd63e288"
+        }
+      ]
+    }
+  ]
+}

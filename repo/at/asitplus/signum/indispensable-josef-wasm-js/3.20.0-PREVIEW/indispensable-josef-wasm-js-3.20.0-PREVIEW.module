@@ -1,0 +1,144 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-josef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "wasmJsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
+          "size": 187861,
+          "sha512": "a10039c3a73c6ffa6fe50eed9b003a8a1cab07840ccc6eaad25120d8273077f1c38e8c6f14129388e7d17df5c808cb3f2742ceb690b9477b13b88205c4ce55fb",
+          "sha256": "7932149c95dbfe12f06246834c71dda1a217f44554b9b3c619fe789e2f76dbd0",
+          "sha1": "89ab122a06edf09644a9c15d2c41e437349d4fda",
+          "md5": "1617e1704467b00a929db2ec79bab7dd"
+        }
+      ]
+    },
+    {
+      "name": "wasmJsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
+          "size": 187861,
+          "sha512": "a10039c3a73c6ffa6fe50eed9b003a8a1cab07840ccc6eaad25120d8273077f1c38e8c6f14129388e7d17df5c808cb3f2742ceb690b9477b13b88205c4ce55fb",
+          "sha256": "7932149c95dbfe12f06246834c71dda1a217f44554b9b3c619fe789e2f76dbd0",
+          "sha1": "89ab122a06edf09644a9c15d2c41e437349d4fda",
+          "md5": "1617e1704467b00a929db2ec79bab7dd"
+        }
+      ]
+    },
+    {
+      "name": "wasmJsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "files": [
+        {
+          "name": "indispensable-josef-wasm-js-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-josef-wasm-js-3.20.0-PREVIEW-sources.jar",
+          "size": 34428,
+          "sha512": "17bfead8e989cf8f12a249b5d0c0a1fc565ae8488186e84e54b7c3bdcbc0d808802c3f81595e92be734e913c2e3d54c3c797d187fd20eb643609bcacec398624",
+          "sha256": "86eb664faeffe738a316ed0aa5f17726e1cd1a4280a3cf31599c319b2f241704",
+          "sha1": "fe10a771dd427c76953c4863705a3d7e0cf0cba6",
+          "md5": "e2b88bb749c78f522a11df075bc731a5"
+        }
+      ]
+    }
+  ]
+}

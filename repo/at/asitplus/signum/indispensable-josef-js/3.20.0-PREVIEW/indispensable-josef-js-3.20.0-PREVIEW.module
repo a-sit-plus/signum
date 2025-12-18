@@ -1,0 +1,158 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-josef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-dom-api-compat",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-josef-js-3.20.0-PREVIEW.klib",
+          "size": 188860,
+          "sha512": "c5c7b1ded65aec747a8124366df7936644965415dcb85daddcb2cf72e07bbb4d163400cf17efc05dba4fa286cec71e61f124f24efede2506066dcaebfc1f7694",
+          "sha256": "694361e9745e324f4004b62e4b2052a74a35b434e67379d44aed2a272071a6ea",
+          "sha1": "6c0b96209a1bad278282cf00f9a9307e3639b97a",
+          "md5": "978c38ec39ba9135bf3c82cc098cc402"
+        }
+      ]
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-dom-api-compat",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-josef-js-3.20.0-PREVIEW.klib",
+          "size": 188860,
+          "sha512": "c5c7b1ded65aec747a8124366df7936644965415dcb85daddcb2cf72e07bbb4d163400cf17efc05dba4fa286cec71e61f124f24efede2506066dcaebfc1f7694",
+          "sha256": "694361e9745e324f4004b62e4b2052a74a35b434e67379d44aed2a272071a6ea",
+          "sha1": "6c0b96209a1bad278282cf00f9a9307e3639b97a",
+          "md5": "978c38ec39ba9135bf3c82cc098cc402"
+        }
+      ]
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "files": [
+        {
+          "name": "indispensable-josef-js-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-josef-js-3.20.0-PREVIEW-sources.jar",
+          "size": 34428,
+          "sha512": "17bfead8e989cf8f12a249b5d0c0a1fc565ae8488186e84e54b7c3bdcbc0d808802c3f81595e92be734e913c2e3d54c3c797d187fd20eb643609bcacec398624",
+          "sha256": "86eb664faeffe738a316ed0aa5f17726e1cd1a4280a3cf31599c319b2f241704",
+          "sha1": "fe10a771dd427c76953c4863705a3d7e0cf0cba6",
+          "md5": "e2b88bb749c78f522a11df075bc731a5"
+        }
+      ]
+    }
+  ]
+}

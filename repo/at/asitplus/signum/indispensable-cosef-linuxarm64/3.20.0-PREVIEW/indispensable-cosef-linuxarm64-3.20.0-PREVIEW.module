@@ -1,0 +1,107 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-cosef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "linuxArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-cbor",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-cosef-linuxArm64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-cosef-linuxarm64-3.20.0-PREVIEW.klib",
+          "size": 183057,
+          "sha512": "6319c217bafb36bf051615cdc480e00d0569da4456bad4867636b924d48b87cb1a6895ca309bac79bd18df1bb80f75433a451f323c92dda02da74cca590be455",
+          "sha256": "c74035033d8dece413a6cca26cf569f491be47896f244dd1b0b46db98a4d8f3a",
+          "sha1": "a612cdf6b65d66185a0f2b5c3aeddd5e24a7e065",
+          "md5": "fdfae3ec966e9ffd1771bb6b4805628f"
+        }
+      ]
+    },
+    {
+      "name": "linuxArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-cosef-linuxarm64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-cosef-linuxarm64-3.20.0-PREVIEW-sources.jar",
+          "size": 28704,
+          "sha512": "22ffd64377ce9ed685a107a46cb783fa414eafa12e042967a490ac2839ffc9bf33ba8f6e6856a5fcad88b8e8da772722955b2e36e679117b10e08b63252aea24",
+          "sha256": "8d707a316871d4a28cd60b1416369b60e2418d82c6383e6fe003dab458d48fcb",
+          "sha1": "a719004b082df10f49e36f64553beba740d6bfc3",
+          "md5": "5e02234840ffa904888f62ac3b9af9d5"
+        }
+      ]
+    }
+  ]
+}

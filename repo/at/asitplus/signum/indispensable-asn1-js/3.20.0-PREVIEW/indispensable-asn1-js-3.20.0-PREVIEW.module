@@ -1,0 +1,172 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-asn1",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-dom-api-compat",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-io-core",
+          "version": {
+            "requires": "0.8.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "kmmresult",
+          "version": {
+            "requires": "1.9.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-asn1-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-asn1-js-3.20.0-PREVIEW.klib",
+          "size": 236134,
+          "sha512": "073fc0993ab6c0d99d0ac0826caf83110a57f16602a488d4e0410dccb1c9fdea3255c47ddab2c1087985736c45dc9119b576c9ccc95dacfa36d9ebe01526121c",
+          "sha256": "85b56c011ac086d40bd8e9df44bfa09263b2d389aa76be57160faa10fd1d86d9",
+          "sha1": "07291e5f62ad68060b4570fb414812d285bc5977",
+          "md5": "55e6916525b37690079eca16a0720297"
+        }
+      ]
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-dom-api-compat",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-io-core",
+          "version": {
+            "requires": "0.8.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "kmmresult",
+          "version": {
+            "requires": "1.9.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-asn1-js-3.20.0-PREVIEW.klib",
+          "url": "indispensable-asn1-js-3.20.0-PREVIEW.klib",
+          "size": 236134,
+          "sha512": "073fc0993ab6c0d99d0ac0826caf83110a57f16602a488d4e0410dccb1c9fdea3255c47ddab2c1087985736c45dc9119b576c9ccc95dacfa36d9ebe01526121c",
+          "sha256": "85b56c011ac086d40bd8e9df44bfa09263b2d389aa76be57160faa10fd1d86d9",
+          "sha1": "07291e5f62ad68060b4570fb414812d285bc5977",
+          "md5": "55e6916525b37690079eca16a0720297"
+        }
+      ]
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "files": [
+        {
+          "name": "indispensable-asn1-js-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-asn1-js-3.20.0-PREVIEW-sources.jar",
+          "size": 50714,
+          "sha512": "3dadb3dc920c32a66ae46048d89d83bbcd10ac7f84a8eb8e2f5cb3b415a4cb5528e1388f53781f6cde239bb5f9fd2ee969ccb43e1fd1afb187d2f31ca05e54ef",
+          "sha256": "3bfbe569e36ffdd2d7915fb01797a9086c495a118738d471b46dacd322096c7d",
+          "sha1": "2b168fdccda9b546e6021f55b24042b3acec595c",
+          "md5": "9de91c17b38ba11a5991bc2bce43835f"
+        }
+      ]
+    }
+  ]
+}

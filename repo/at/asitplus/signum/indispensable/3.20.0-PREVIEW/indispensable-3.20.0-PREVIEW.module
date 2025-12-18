@@ -1,0 +1,1170 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "Signum",
+    "module": "indispensable",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-metadata-3.20.0-PREVIEW.jar",
+          "url": "indispensable-3.20.0-PREVIEW.jar",
+          "size": 76311,
+          "sha512": "274861da6473596cc24f1fd3d461acd7eaa02a5e0313a55b20349fb46c48bb9e450ca2b87f209f902dc154f9a20654bae29b93981be3715eefe94fc78885103f",
+          "sha256": "236d4134e4c2c093a4fd6f2cfe872e71b6d7e9ecb4f69dc9e3cbfa3d211f3a66",
+          "sha1": "fed0e6a6c026f62f835584a92ee218141681dbc5",
+          "md5": "abc98d221e423374b0b82fc69ce2c33a"
+        }
+      ]
+    },
+    {
+      "name": "metadataSourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "files": [
+        {
+          "name": "indispensable-kotlin-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-3.20.0-PREVIEW-sources.jar",
+          "size": 109020,
+          "sha512": "0771f0d021be1e7148b96dff1dd3297d698cde3fddb95aace3d211e5a359e9cc08486b447a6d214c7d2a50f2c1d149a479d29ee06238ef2a711ea0dc76d41d97",
+          "sha256": "d981d376e1c88ae42c9295987e202cea0b0dca35aca7b4c4288be720af0db658",
+          "sha1": "df620b3f66605981537ab8bc7d7ecbdabc76d4fd",
+          "md5": "a02e1589400368694baa82cf0e19349d"
+        }
+      ]
+    },
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../indispensable-android/3.20.0-PREVIEW/indispensable-android-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-android",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../indispensable-android/3.20.0-PREVIEW/indispensable-android-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-android",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../indispensable-android/3.20.0-PREVIEW/indispensable-android-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-android",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeArm32ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativearm32/3.20.0-PREVIEW/indispensable-androidnativearm32-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativearm32",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeArm32SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativearm32/3.20.0-PREVIEW/indispensable-androidnativearm32-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativearm32",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativearm64/3.20.0-PREVIEW/indispensable-androidnativearm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativearm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativearm64/3.20.0-PREVIEW/indispensable-androidnativearm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativearm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativex64/3.20.0-PREVIEW/indispensable-androidnativex64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativex64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativex64/3.20.0-PREVIEW/indispensable-androidnativex64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativex64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeX86ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_x86",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativex86/3.20.0-PREVIEW/indispensable-androidnativex86-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativex86",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidNativeX86SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_x86",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-androidnativex86/3.20.0-PREVIEW/indispensable-androidnativex86-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-androidnativex86",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iosarm64/3.20.0-PREVIEW/indispensable-iosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iosarm64/3.20.0-PREVIEW/indispensable-iosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iosarm64/3.20.0-PREVIEW/indispensable-iosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iossimulatorarm64/3.20.0-PREVIEW/indispensable-iossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iossimulatorarm64/3.20.0-PREVIEW/indispensable-iossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iossimulatorarm64/3.20.0-PREVIEW/indispensable-iossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iosx64/3.20.0-PREVIEW/indispensable-iosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iosx64/3.20.0-PREVIEW/indispensable-iosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-iosx64/3.20.0-PREVIEW/indispensable-iosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-iosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../indispensable-js/3.20.0-PREVIEW/indispensable-js-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-js",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../indispensable-js/3.20.0-PREVIEW/indispensable-js-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-js",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../indispensable-js/3.20.0-PREVIEW/indispensable-js-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-js",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../indispensable-jvm/3.20.0-PREVIEW/indispensable-jvm-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-jvm",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../indispensable-jvm/3.20.0-PREVIEW/indispensable-jvm-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-jvm",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../indispensable-jvm/3.20.0-PREVIEW/indispensable-jvm-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-jvm",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "linuxArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-linuxarm64/3.20.0-PREVIEW/indispensable-linuxarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-linuxarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "linuxArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-linuxarm64/3.20.0-PREVIEW/indispensable-linuxarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-linuxarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-linuxx64/3.20.0-PREVIEW/indispensable-linuxx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-linuxx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-linuxx64/3.20.0-PREVIEW/indispensable-linuxx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-linuxx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "macosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-macosarm64/3.20.0-PREVIEW/indispensable-macosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-macosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "macosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-macosarm64/3.20.0-PREVIEW/indispensable-macosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-macosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "macosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-macosarm64/3.20.0-PREVIEW/indispensable-macosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-macosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "macosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-macosx64/3.20.0-PREVIEW/indispensable-macosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-macosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "macosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-macosx64/3.20.0-PREVIEW/indispensable-macosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-macosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "macosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-macosx64/3.20.0-PREVIEW/indispensable-macosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-macosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "mingwX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-mingwx64/3.20.0-PREVIEW/indispensable-mingwx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-mingwx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "mingwX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-mingwx64/3.20.0-PREVIEW/indispensable-mingwx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-mingwx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "tvos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvosarm64/3.20.0-PREVIEW/indispensable-tvosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "tvos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvosarm64/3.20.0-PREVIEW/indispensable-tvosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "tvos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvosarm64/3.20.0-PREVIEW/indispensable-tvosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "tvos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-tvossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "tvos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-tvossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "tvos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-tvossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "tvos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvosx64/3.20.0-PREVIEW/indispensable-tvosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "tvos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvosx64/3.20.0-PREVIEW/indispensable-tvosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "tvosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "tvos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-tvosx64/3.20.0-PREVIEW/indispensable-tvosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-tvosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "wasmJsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../indispensable-wasm-js/3.20.0-PREVIEW/indispensable-wasm-js-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-wasm-js",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "wasmJsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../indispensable-wasm-js/3.20.0-PREVIEW/indispensable-wasm-js-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-wasm-js",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "wasmJsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../indispensable-wasm-js/3.20.0-PREVIEW/indispensable-wasm-js-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-wasm-js",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosArm32ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosarm32/3.20.0-PREVIEW/indispensable-watchosarm32-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosarm32",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosArm32SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosarm32/3.20.0-PREVIEW/indispensable-watchosarm32-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosarm32",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosArm32MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosarm32/3.20.0-PREVIEW/indispensable-watchosarm32-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosarm32",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosarm64/3.20.0-PREVIEW/indispensable-watchosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosarm64/3.20.0-PREVIEW/indispensable-watchosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosarm64/3.20.0-PREVIEW/indispensable-watchosarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-watchossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-watchossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-watchossimulatorarm64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchossimulatorarm64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosx64/3.20.0-PREVIEW/indispensable-watchosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosx64/3.20.0-PREVIEW/indispensable-watchosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "watchosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../indispensable-watchosx64/3.20.0-PREVIEW/indispensable-watchosx64-3.20.0-PREVIEW.module",
+        "group": "Signum",
+        "module": "indispensable-watchosx64",
+        "version": "3.20.0-PREVIEW"
+      }
+    }
+  ]
+}

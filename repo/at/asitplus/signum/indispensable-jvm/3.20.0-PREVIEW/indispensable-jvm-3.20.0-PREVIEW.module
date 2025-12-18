@@ -1,0 +1,242 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "org.bouncycastle",
+          "module": "bcpkix-jdk18on",
+          "version": {
+            "requires": "1.83"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core-jvm",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-jvm-3.20.0-PREVIEW.jar",
+          "url": "indispensable-jvm-3.20.0-PREVIEW.jar",
+          "size": 910466,
+          "sha512": "325870eb0448c6703d7e6cf9b9bc5dc0376254d2580d98f4b2b6de4680530ded3ee639b7254f18a635281c89b6e4167ca7e39ffcf6b739081e60ae4856a6e3e9",
+          "sha256": "54fbceec34c946e2b4aa58189052fdee4d2c9f3600d8299864004f2212ddf3d7",
+          "sha1": "94e54c701b0dd1dd974193d93487858ae3fd0df4",
+          "md5": "9a1d2357983c19b12e488c9ee96f3145"
+        }
+      ]
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "org.bouncycastle",
+          "module": "bcpkix-jdk18on",
+          "version": {
+            "requires": "1.83"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core-jvm",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-jvm-3.20.0-PREVIEW.jar",
+          "url": "indispensable-jvm-3.20.0-PREVIEW.jar",
+          "size": 910466,
+          "sha512": "325870eb0448c6703d7e6cf9b9bc5dc0376254d2580d98f4b2b6de4680530ded3ee639b7254f18a635281c89b6e4167ca7e39ffcf6b739081e60ae4856a6e3e9",
+          "sha256": "54fbceec34c946e2b4aa58189052fdee4d2c9f3600d8299864004f2212ddf3d7",
+          "sha1": "94e54c701b0dd1dd974193d93487858ae3fd0df4",
+          "md5": "9a1d2357983c19b12e488c9ee96f3145"
+        }
+      ]
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "indispensable-jvm-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-jvm-3.20.0-PREVIEW-sources.jar",
+          "size": 112713,
+          "sha512": "1ce77600d24c9b402319e26900b5b3396374ccde2a1aba466f91582beb64f8055bc834112bdbb1c5cb14228201c66a2a30a4aa4d2e37d7faf04bf5a138a3abc2",
+          "sha256": "b1f8422c6544790952e048505db476d19239a22e2533ff0546ce5963bd9a27e5",
+          "sha1": "8d8bd6a280237339a08bab06cf04857d749bdb45",
+          "md5": "87669a72e0287e85b59f96794b358cbb"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "internals",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "mingwX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "internals-mingwX64Main-3.20.0-PREVIEW.klib",
+          "url": "internals-mingwx64-3.20.0-PREVIEW.klib",
+          "size": 12874,
+          "sha512": "e871006e96c2a2efc806aa14c26246448dddb0ac2ffa76e0c936208970283a82c42655544b65a57950562248cd5615ba1b45c68f078a19ee3a97424f2f5e9813",
+          "sha256": "9aec37643eab1ec13d559d9d7ec8db9b9645521524dea1d95f35a1958991b9f8",
+          "sha1": "aceb583b107e9a22a1281c2c710d927d0ea938bd",
+          "md5": "382bdbb2fe162af7e51673d106853623"
+        }
+      ]
+    },
+    {
+      "name": "mingwX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "mingw_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "internals-mingwx64-3.20.0-PREVIEW-sources.jar",
+          "url": "internals-mingwx64-3.20.0-PREVIEW-sources.jar",
+          "size": 2321,
+          "sha512": "4a42b7d015c3f7ff8b44d289de4c34cf382b968bbafb8f9830379813b2605fb8c49e9be34dc199cb836468f32525a142a17278d0e79091a881e8182981fd4fbf",
+          "sha256": "2e61ed3e2ef989b03aff245444d1db783169f224aadc1ae0850f783d2413add9",
+          "sha1": "6eaa81c269f9dfa36721e11380a28b617a9efaed",
+          "md5": "64fcd1d357f4e448fff70042b00c8771"
+        }
+      ]
+    }
+  ]
+}

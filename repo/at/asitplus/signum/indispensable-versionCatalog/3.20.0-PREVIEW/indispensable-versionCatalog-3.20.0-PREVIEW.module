@@ -1,0 +1,36 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "Signum",
+    "module": "indispensable-versionCatalog",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "versionCatalogElements",
+      "attributes": {
+        "org.gradle.category": "platform",
+        "org.gradle.usage": "version-catalog"
+      },
+      "files": [
+        {
+          "name": "indispensable-versionCatalog-3.20.0-PREVIEW.toml",
+          "url": "indispensable-versionCatalog-3.20.0-PREVIEW.toml",
+          "size": 2841,
+          "sha512": "6633f220b53c584bd9b04473eb10c7fc79ca9f42893df704b71aea99f12044a0bb0ebe967f2c9cfadaed5ed08ba822706c9628eb48bbde1804326b7e77653e0d",
+          "sha256": "75182d2e98421dff1db2cb2959643b015bd2ffb5a453661f445bbd7a13f47510",
+          "sha1": "bcfbd4136babea301b7655aae46c1c35818421a1",
+          "md5": "3812e70ff6eaf8316e0ac9d7d60b337c"
+        }
+      ]
+    }
+  ]
+}

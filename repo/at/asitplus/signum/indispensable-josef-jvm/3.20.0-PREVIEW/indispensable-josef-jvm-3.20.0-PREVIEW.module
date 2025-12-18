@@ -1,0 +1,144 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-josef",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-jvm-3.20.0-PREVIEW.jar",
+          "url": "indispensable-josef-jvm-3.20.0-PREVIEW.jar",
+          "size": 218920,
+          "sha512": "ca6e526ec3d11685280c46572ca02847de3e9f89cc2cc6295914fefeea5ededd5df61084e195e9d04de03bb9fa91c9ec140b0f218d3a675b5a4284e9fbea114a",
+          "sha256": "e01a1096b5b95cd112ad1560c8c1a3ef276c3c9ed5b35c6a0524836f311c5165",
+          "sha1": "016e2eecd0d241fd25bed61edaf1483b530ec0b8",
+          "md5": "21f108cd2eb3fe319a4690539377a359"
+        }
+      ]
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-josef-jvm-3.20.0-PREVIEW.jar",
+          "url": "indispensable-josef-jvm-3.20.0-PREVIEW.jar",
+          "size": 218920,
+          "sha512": "ca6e526ec3d11685280c46572ca02847de3e9f89cc2cc6295914fefeea5ededd5df61084e195e9d04de03bb9fa91c9ec140b0f218d3a675b5a4284e9fbea114a",
+          "sha256": "e01a1096b5b95cd112ad1560c8c1a3ef276c3c9ed5b35c6a0524836f311c5165",
+          "sha1": "016e2eecd0d241fd25bed61edaf1483b530ec0b8",
+          "md5": "21f108cd2eb3fe319a4690539377a359"
+        }
+      ]
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "indispensable-josef-jvm-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-josef-jvm-3.20.0-PREVIEW-sources.jar",
+          "size": 35719,
+          "sha512": "09179fdd3e344faee8bc79135e81cf282779efb179de840b2ea37c5fdf34210c628402f9783ba1328e3b070999f2291470eda2dad1da5a8f1a712bcbb3a98740",
+          "sha256": "23433aed1b52467bdf59ca16b5ca28f6a2b4419a5b45864d0a8347533496b255",
+          "sha1": "bd93a8b382848ed299180d32e335817b3af88133",
+          "md5": "2d542e3f67f05cc8881a2578fd41b058"
+        }
+      ]
+    }
+  ]
+}

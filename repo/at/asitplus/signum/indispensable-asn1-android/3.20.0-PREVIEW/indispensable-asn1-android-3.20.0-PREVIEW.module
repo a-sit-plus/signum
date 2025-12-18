@@ -1,0 +1,158 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-asn1",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-io-core",
+          "version": {
+            "requires": "0.8.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "kmmresult",
+          "version": {
+            "requires": "1.9.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-asn1.aar",
+          "url": "indispensable-asn1-android-3.20.0-PREVIEW.aar",
+          "size": 280529,
+          "sha512": "c25f9c4670c8c7a84b368f217d1f8c59b28f14e757a90a41051c34f903753281b67a3388ea2415c2686b5956d016e4a55eb863ad1e4630dfca10fb035e52019a",
+          "sha256": "bc814cfc4e2f25e8cdce5391b1929be75ddddb66c49885ce736211522a1a7081",
+          "sha1": "5263dc93b891e205a38b6fb984b60c87b03a8ed9",
+          "md5": "87d7bcdb8b2d289015aceffc622a3a76"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-io-core",
+          "version": {
+            "requires": "0.8.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "kmmresult",
+          "version": {
+            "requires": "1.9.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-asn1.aar",
+          "url": "indispensable-asn1-android-3.20.0-PREVIEW.aar",
+          "size": 280529,
+          "sha512": "c25f9c4670c8c7a84b368f217d1f8c59b28f14e757a90a41051c34f903753281b67a3388ea2415c2686b5956d016e4a55eb863ad1e4630dfca10fb035e52019a",
+          "sha256": "bc814cfc4e2f25e8cdce5391b1929be75ddddb66c49885ce736211522a1a7081",
+          "sha1": "5263dc93b891e205a38b6fb984b60c87b03a8ed9",
+          "md5": "87d7bcdb8b2d289015aceffc622a3a76"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "indispensable-asn1-android-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-asn1-android-3.20.0-PREVIEW-sources.jar",
+          "size": 52030,
+          "sha512": "89135764277b3c5e32aaa87d6072f119259e6093e414147159e11f77c3d951a49eb6eedd9292e4f1691954ef10f67106932444f94f67d65b4565d3fb55ba0d89",
+          "sha256": "a76afa6fe4e379ee508d71bb7b981f7d997814b66e8a77d6db60d38879eb343f",
+          "sha1": "43ac3568dfa88ca5ee821057ba1fcfdbb9e8223c",
+          "md5": "d3d92906cabb0bfc965a44fe85f01019"
+        }
+      ]
+    }
+  ]
+}

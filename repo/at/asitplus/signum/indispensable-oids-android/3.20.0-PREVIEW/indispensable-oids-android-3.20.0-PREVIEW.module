@@ -1,0 +1,116 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-oids",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-oids.aar",
+          "url": "indispensable-oids-android-3.20.0-PREVIEW.aar",
+          "size": 187316,
+          "sha512": "008ab15820647935b0b6e0e687d7e46b5c0011eeb7c0a45837518ac22746f984e357df7999381d048c4860cd213732a58ca717a3cc0de8f588fc108880d1b4e5",
+          "sha256": "ef5677acfaf081133793d8bba262492868f6220cf1ae376bc8f71bda979435b4",
+          "sha1": "93de26f5ffb6589ac367de11c47204dae54fdf82",
+          "md5": "4272910aec4ea39b22259dbe9e9a027b"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-oids.aar",
+          "url": "indispensable-oids-android-3.20.0-PREVIEW.aar",
+          "size": 187316,
+          "sha512": "008ab15820647935b0b6e0e687d7e46b5c0011eeb7c0a45837518ac22746f984e357df7999381d048c4860cd213732a58ca717a3cc0de8f588fc108880d1b4e5",
+          "sha256": "ef5677acfaf081133793d8bba262492868f6220cf1ae376bc8f71bda979435b4",
+          "sha1": "93de26f5ffb6589ac367de11c47204dae54fdf82",
+          "md5": "4272910aec4ea39b22259dbe9e9a027b"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "indispensable-oids-android-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-oids-android-3.20.0-PREVIEW-sources.jar",
+          "size": 87050,
+          "sha512": "fc6f1cec4fa7ebc507924ead1b0a626eae184148380f6f0c64f60d234ba1b6532dfb78900478706797fb1cc26205d896dd7d3b290feca56abac0ae5873499ca7",
+          "sha256": "e8a4c0b7953f5cb49349bdd5b7cbb26701353f992af01785aba7385d4fc42040",
+          "sha1": "b630e3a0a9844af8d0c177f04cbe0519e1fa5039",
+          "md5": "c61df4e0a0eff6ba6613137add0bbfb8"
+        }
+      ]
+    }
+  ]
+}

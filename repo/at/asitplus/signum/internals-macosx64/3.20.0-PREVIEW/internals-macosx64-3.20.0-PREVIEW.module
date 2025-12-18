@@ -1,0 +1,102 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "internals",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "macosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "internals-macosX64Main-3.20.0-PREVIEW.klib",
+          "url": "internals-macosx64-3.20.0-PREVIEW.klib",
+          "size": 12873,
+          "sha512": "7a305980759c2f6a31cbddd6be61df2119569cb063689f4605dd6afb2af290483be4ae25569dc97b21f60d2f1f4a47d641bb599959eead7c61d8e3c28afdce31",
+          "sha256": "7f49057d559a8b439ed46963d19cb76a7215155f62d7215948469c3fb77307f6",
+          "sha1": "74d7abf3e0f41ba4771ba7bf875653e58e4ae120",
+          "md5": "ed8e10782a3db6792c83ac08b732a484"
+        }
+      ]
+    },
+    {
+      "name": "macosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "internals-macosx64-3.20.0-PREVIEW-sources.jar",
+          "url": "internals-macosx64-3.20.0-PREVIEW-sources.jar",
+          "size": 2321,
+          "sha512": "4a42b7d015c3f7ff8b44d289de4c34cf382b968bbafb8f9830379813b2605fb8c49e9be34dc199cb836468f32525a142a17278d0e79091a881e8182981fd4fbf",
+          "sha256": "2e61ed3e2ef989b03aff245444d1db783169f224aadc1ae0850f783d2413add9",
+          "sha1": "6eaa81c269f9dfa36721e11380a28b617a9efaed",
+          "md5": "64fcd1d357f4e448fff70042b00c8771"
+        }
+      ]
+    },
+    {
+      "name": "macosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "internals-macosx64-3.20.0-PREVIEW-metadata.jar",
+          "url": "internals-macosx64-3.20.0-PREVIEW-metadata.jar",
+          "size": 3905,
+          "sha512": "708bab83d6f94974f9f5c33fd7566d11da5cb2a4b89ed28ff276001dc6b0ed4d179a109e137e7cfd5b06f37f059513938e220660d1f868684df5cabb5031ac73",
+          "sha256": "2d6e09fa93b4e4e8c55b9aa83f57bb876ff8851e42e2946812c4fd2147dd459a",
+          "sha1": "6e5480d43fe937f7f7822e635f289ab7cf3ff007",
+          "md5": "2597e877ef092c6a5f75d56b8dd9d069"
+        }
+      ]
+    }
+  ]
+}

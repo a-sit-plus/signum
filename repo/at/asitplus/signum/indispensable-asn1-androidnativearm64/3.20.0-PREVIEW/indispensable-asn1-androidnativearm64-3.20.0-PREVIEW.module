@@ -1,0 +1,100 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-asn1",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidNativeArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-io-core",
+          "version": {
+            "requires": "0.8.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "kmmresult",
+          "version": {
+            "requires": "1.9.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-asn1-androidNativeArm64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-asn1-androidnativearm64-3.20.0-PREVIEW.klib",
+          "size": 256866,
+          "sha512": "5c4a39238e9994d797a79626056ea6f0bd43f58cffeb280f2f9976778dedd62117b10b0794fefe7cd26347751db662aff4688646d27b5f6cb28f72f5f2d88af6",
+          "sha256": "107445ec4e143c4ed98d5886065920d3d098e8a1ea384b75a625a5fab6e4e284",
+          "sha1": "422f44033e9751fcaf5905fdb85d01900ff48d49",
+          "md5": "a30fb01e9adbfb6cacb745cc291245f4"
+        }
+      ]
+    },
+    {
+      "name": "androidNativeArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-asn1-androidnativearm64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-asn1-androidnativearm64-3.20.0-PREVIEW-sources.jar",
+          "size": 50714,
+          "sha512": "3dadb3dc920c32a66ae46048d89d83bbcd10ac7f84a8eb8e2f5cb3b415a4cb5528e1388f53781f6cde239bb5f9fd2ee969ccb43e1fd1afb187d2f31ca05e54ef",
+          "sha256": "3bfbe569e36ffdd2d7915fb01797a9086c495a118738d471b46dacd322096c7d",
+          "sha1": "2b168fdccda9b546e6021f55b24042b3acec595c",
+          "md5": "9de91c17b38ba11a5991bc2bce43835f"
+        }
+      ]
+    }
+  ]
+}

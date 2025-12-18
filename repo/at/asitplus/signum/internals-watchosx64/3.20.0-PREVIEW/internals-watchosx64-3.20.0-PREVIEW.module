@@ -1,0 +1,102 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "internals",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "watchosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "internals-watchosX64Main-3.20.0-PREVIEW.klib",
+          "url": "internals-watchosx64-3.20.0-PREVIEW.klib",
+          "size": 12888,
+          "sha512": "ab614eed497b476927e45d743f614a276ff3ae5a72cf0f590933a5982e2fc705eb705630ea74a02cea5d3a37c1a5531839ea93aca9962ac343dfa1a9bb1e5d80",
+          "sha256": "f2203da5bdc038e6fd1eb8bcbe09afeb730ba3dfe9268e13cc3fc793506eb190",
+          "sha1": "c2b2e3e8bf58f47dbad701038557f29e6de47899",
+          "md5": "a9a59bbb9af3e6e6339d16d38dec0f70"
+        }
+      ]
+    },
+    {
+      "name": "watchosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "internals-watchosx64-3.20.0-PREVIEW-sources.jar",
+          "url": "internals-watchosx64-3.20.0-PREVIEW-sources.jar",
+          "size": 2321,
+          "sha512": "4a42b7d015c3f7ff8b44d289de4c34cf382b968bbafb8f9830379813b2605fb8c49e9be34dc199cb836468f32525a142a17278d0e79091a881e8182981fd4fbf",
+          "sha256": "2e61ed3e2ef989b03aff245444d1db783169f224aadc1ae0850f783d2413add9",
+          "sha1": "6eaa81c269f9dfa36721e11380a28b617a9efaed",
+          "md5": "64fcd1d357f4e448fff70042b00c8771"
+        }
+      ]
+    },
+    {
+      "name": "watchosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "internals-watchosx64-3.20.0-PREVIEW-metadata.jar",
+          "url": "internals-watchosx64-3.20.0-PREVIEW-metadata.jar",
+          "size": 3905,
+          "sha512": "708bab83d6f94974f9f5c33fd7566d11da5cb2a4b89ed28ff276001dc6b0ed4d179a109e137e7cfd5b06f37f059513938e220660d1f868684df5cabb5031ac73",
+          "sha256": "2d6e09fa93b4e4e8c55b9aa83f57bb876ff8851e42e2946812c4fd2147dd459a",
+          "sha1": "6e5480d43fe937f7f7822e635f289ab7cf3ff007",
+          "md5": "2597e877ef092c6a5f75d56b8dd9d069"
+        }
+      ]
+    }
+  ]
+}

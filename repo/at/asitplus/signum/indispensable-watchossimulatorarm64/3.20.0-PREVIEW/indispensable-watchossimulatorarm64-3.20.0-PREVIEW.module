@@ -1,0 +1,228 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "watchosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-watchosSimulatorArm64Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-watchossimulatorarm64-3.20.0-PREVIEW.klib",
+          "size": 548625,
+          "sha512": "2ba10a8a046b206c594191a6a9b8b386f4be90ac67621bac65ff11a53721f10328453114bc612e587a5aaf33ae08753aea504965f95b67f500cfca02f1639acb",
+          "sha256": "8e3071182922129a1a057cf7b7bd73da767d1414d9edf2f329d2ac3314e3da69",
+          "sha1": "d84444f797372add4ff7efc9a3807420def0f916",
+          "md5": "fdc994f02e15097fc431c3c6559bbe43"
+        }
+      ]
+    },
+    {
+      "name": "watchosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-watchossimulatorarm64-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-watchossimulatorarm64-3.20.0-PREVIEW-sources.jar",
+          "size": 107467,
+          "sha512": "aa0f3b0d5618417f5e786715971f6489a6005c7103d6308804094f881017708f7e2ac1957138bf46b2e6cddf2d07f5198dad4775228d61d3f70e69b19046fe0b",
+          "sha256": "97b0cd48c5a4734e9d1f334648bdd4dc7b54fbacdc7c3d0dbaaa357656db34d6",
+          "sha1": "b275f440776c4545d0f449aa70eb3af2649e958a",
+          "md5": "79c9f270c703be3557e1fef2bd63e288"
+        }
+      ]
+    },
+    {
+      "name": "watchosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "watchos_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "indispensable-oids",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "multibase",
+          "version": {
+            "requires": "1.2.2"
+          }
+        },
+        {
+          "group": "com.ionspin.kotlin",
+          "module": "bignum",
+          "version": {
+            "requires": "0.3.10"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        },
+        {
+          "group": "at.asitplus",
+          "module": "cidre",
+          "version": {
+            "requires": "0.3.1"
+          }
+        },
+        {
+          "group": "com.eygraber",
+          "module": "uri-kmp",
+          "version": {
+            "requires": "0.0.20"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "Signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-watchossimulatorarm64-3.20.0-PREVIEW-metadata.jar",
+          "url": "indispensable-watchossimulatorarm64-3.20.0-PREVIEW-metadata.jar",
+          "size": 2862,
+          "sha512": "eaf45068ef66b621fba6562aeb0bfd0a8bacad184f2b0173236d5ad91e580efb772d291fb59ba4d3aac8fd5446191a3b5a2a4287e065c5e0ffb82eca3c11da79",
+          "sha256": "4689f13841b44d122d2c086fedbbdef460ec97a03dbacd8aa18e32b8816b5a5f",
+          "sha1": "095be883f1882a80367f2c1dde07778749d5efc0",
+          "md5": "76fb69193ae872fe3d26fcc9f7079d92"
+        }
+      ]
+    }
+  ]
+}

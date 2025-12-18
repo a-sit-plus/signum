@@ -1,0 +1,79 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
+    "group": "Signum",
+    "module": "indispensable-oids",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidNativeArm32ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "android_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "Signum",
+          "module": "indispensable-asn1",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "indispensable-oids-androidNativeArm32Main-3.20.0-PREVIEW.klib",
+          "url": "indispensable-oids-androidnativearm32-3.20.0-PREVIEW.klib",
+          "size": 606321,
+          "sha512": "930dd0c9fb439f1626feb2618ad436406bf36de3610e1808bbc98009b88d86d7c4f729ebb52e1cd5d5c33e3117d20517085493f6f5949a810db56f62d3acefae",
+          "sha256": "4527c0533953b6485c04aba053900d4d54fb59735ed9105e46708c4b6fc0d103",
+          "sha1": "5f6b411b3d4689c4b0c67b96ed0a9054336cb74f",
+          "md5": "c58d7059d6128e2ab5d7e13d9e54f850"
+        }
+      ]
+    },
+    {
+      "name": "androidNativeArm32SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "android_arm32",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "indispensable-oids-androidnativearm32-3.20.0-PREVIEW-sources.jar",
+          "url": "indispensable-oids-androidnativearm32-3.20.0-PREVIEW-sources.jar",
+          "size": 87050,
+          "sha512": "fc6f1cec4fa7ebc507924ead1b0a626eae184148380f6f0c64f60d234ba1b6532dfb78900478706797fb1cc26205d896dd7d3b290feca56abac0ae5873499ca7",
+          "sha256": "e8a4c0b7953f5cb49349bdd5b7cbb26701353f992af01785aba7385d4fc42040",
+          "sha1": "b630e3a0a9844af8d0c177f04cbe0519e1fa5039",
+          "md5": "c61df4e0a0eff6ba6613137add0bbfb8"
+        }
+      ]
+    }
+  ]
+}

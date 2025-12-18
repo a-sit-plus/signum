@@ -1,0 +1,36 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "Signum",
+    "module": "indispensable-cosef-versionCatalog",
+    "version": "3.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "versionCatalogElements",
+      "attributes": {
+        "org.gradle.category": "platform",
+        "org.gradle.usage": "version-catalog"
+      },
+      "files": [
+        {
+          "name": "indispensable-cosef-versionCatalog-3.20.0-PREVIEW.toml",
+          "url": "indispensable-cosef-versionCatalog-3.20.0-PREVIEW.toml",
+          "size": 2351,
+          "sha512": "91297b47cca68e824c871e2390d20c1b99853359806050980bd133e69f4af1bdac60fa6198325b2e23798039736eaac872582e90a5ad67ce07c3eef82d86a66d",
+          "sha256": "08658345bcb04ce414bf42d063de4fe57dce5cefdc33e67ddc8c77bd10359636",
+          "sha1": "6d900a00e786cb0be465ff39128146a90c7ccd25",
+          "md5": "be9d1dae3ee520768c32c38cac123d9c"
+        }
+      ]
+    }
+  ]
+}

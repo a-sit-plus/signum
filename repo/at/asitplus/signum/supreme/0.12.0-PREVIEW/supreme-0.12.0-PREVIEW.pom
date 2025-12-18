@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- This module was also published with a richer model, Gradle metadata,  -->
+  <!-- which should be used instead. Do not delete the following line which  -->
+  <!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->
+  <!-- that they should prefer consuming it instead. -->
+  <!-- do_not_remove: published-with-gradle-metadata -->
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>Signum</groupId>
+  <artifactId>supreme</artifactId>
+  <version>0.12.0-PREVIEW</version>
+  <name>Signum Supreme</name>
+  <description>Kotlin Multiplatform Crypto Provider</description>
+  <url>https://github.com/a-sit-plus/signum</url>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>JesusMcCloud</id>
+      <name>Bernd Prünster</name>
+      <email>bernd.pruenster@a-sit.at</email>
+    </developer>
+    <developer>
+      <id>iaik-jheher</id>
+      <name>Jakob Heher</name>
+      <email>jakob.heher@tugraz.at</email>
+    </developer>
+    <developer>
+      <id>nodh</id>
+      <name>Christian Kollmann</name>
+      <email>christian.kollmann@a-sit.at</email>
+    </developer>
+    <developer>
+      <id>n0900</id>
+      <name>Simon Müller</name>
+      <email>simon.mueller@a-sit.at</email>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git@github.com:a-sit-plus/signum.git</connection>
+    <developerConnection>scm:git:git@github.com:a-sit-plus/signum.git</developerConnection>
+    <url>https://github.com/a-sit-plus/signum</url>
+  </scm>
+  <dependencies>
+    <dependency>
+      <groupId>Signum</groupId>
+      <artifactId>indispensable</artifactId>
+      <version>3.20.0-PREVIEW</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib</artifactId>
+      <version>2.3.0</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>Signum</groupId>
+      <artifactId>internals</artifactId>
+      <version>3.20.0-PREVIEW</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-coroutines-core</artifactId>
+      <version>1.10.2</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.aakira</groupId>
+      <artifactId>napier</artifactId>
+      <version>2.7.1</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.kotlincrypto.random</groupId>
+      <artifactId>crypto-rand</artifactId>
+      <version>0.6.0</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>
