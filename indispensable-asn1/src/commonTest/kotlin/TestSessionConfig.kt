@@ -1,7 +1,6 @@
 package io.kotest.property
 
 import at.asitplus.testballoon.DataTest
-import at.asitplus.testballoon.FreeSpec
 import at.asitplus.testballoon.PropertyTest
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession
@@ -18,11 +17,5 @@ class ModuleTestSession : TestSession(
         //Don't make the heap explode
         DataTest.compactByDefault = true
         PropertyTest.compactByDefault = true
-        DataTest.defaultTestNameMaxLength = -1
-        DataTest.defaultDisplayNameMaxLength = -1
-        FreeSpec.defaultTestNameMaxLength = -1
-        FreeSpec.defaultDisplayNameMaxLength = -1
-        PropertyTest.defaultTestNameMaxLength = -1
-        PropertyTest.defaultDisplayNameMaxLength = -1
     }
 }
