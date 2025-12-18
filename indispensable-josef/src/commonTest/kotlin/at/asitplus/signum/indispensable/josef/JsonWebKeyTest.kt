@@ -27,37 +27,37 @@ val JsonWebKeyTest by testSuite {
     withFixtureGenerator(::Context) - {
 
 
-        ("Thumbprint for minimal EC Key") {
+        ("Thumbprint for minimal EC Key") { it ->
             val newKey = JsonWebKey(type = JwkType.EC, curve = it.curve, x = it.x, y = it.y)
 
             newKey.jwkThumbprint shouldBe it.ecKey.jwkThumbprint
         }
 
-        ("Thumbprint for EC Key with additional properties") {
+        ("Thumbprint for EC Key with additional properties") { it ->
             val newKey = JsonWebKey(type = JwkType.EC, curve = it.curve, x = it.x, y = it.y, publicKeyUse = "foo")
 
             newKey.jwkThumbprint shouldBe it.ecKey.jwkThumbprint
         }
 
-        ("Thumbprint for EC Key with keyId") {
+        ("Thumbprint for EC Key with keyId") { it ->
             val newKey = JsonWebKey(type = JwkType.EC, curve = it.curve, x = it.x, y = it.y, keyId = "foo")
 
             newKey.jwkThumbprint shouldBe it.ecKey.jwkThumbprint
         }
 
-        ("Thumbprint for minimal RSA Key") {
+        ("Thumbprint for minimal RSA Key") { it ->
             val newKey = JsonWebKey(type = JwkType.RSA, n = it.n, e = it.e)
 
             newKey.jwkThumbprint shouldBe it.rsaKey.jwkThumbprint
         }
 
-        ("Thumbprint for RSA Key with additional properties") {
+        ("Thumbprint for RSA Key with additional properties") { it ->
             val newKey = JsonWebKey(type = JwkType.RSA, n = it.n, e = it.e, algorithm = JwsAlgorithm.Signature.RS256)
 
             newKey.jwkThumbprint shouldBe it.rsaKey.jwkThumbprint
         }
 
-        ("Thumbprint for RSA Key with keyId") {
+        ("Thumbprint for RSA Key with keyId") { it ->
             val newKey = JsonWebKey(type = JwkType.RSA, n = it.n, e = it.e, keyId = "foo")
 
             newKey.jwkThumbprint shouldBe it.rsaKey.jwkThumbprint

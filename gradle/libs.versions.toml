@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 agp = "8.12.3"
 core = "1.5.0"
 kotlinxIoCore = "0.8.0"
@@ -9,9 +9,8 @@ bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "2.2.0"
 kotlincryptoRandom = "0.6.0"
-testballoon = "0.7.1-K2.2.21"
-testballoonAddons = "0.5.0"
-asp = "20251114"
+testballoon = "0.7.1-K2.3.0"
+asp = "20251217"
 classgraph = "4.8.184"
 bouncycastle= "1.83"
 

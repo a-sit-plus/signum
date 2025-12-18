@@ -3,6 +3,16 @@
 ## 3.0
 
 ### NEXT
+* Gradle 9.2.0
+* Kotlin 2.3.0
+* Dokka 2.10.0
+* Return value checker set to `full`
+* Dependency Updates:
+    * AGP 8.12.3
+    * Ktor 3.3.3
+    * Bouncy Castle 1.83 (no more forcing exact version)
+    * TestBalloon 0.7.1-K2.3.0
+    * TestBalloon Addons 0.6.1
 
 ### 3.19.1 / Supreme 0.11.1
 * Bouncy Castle 1.83
