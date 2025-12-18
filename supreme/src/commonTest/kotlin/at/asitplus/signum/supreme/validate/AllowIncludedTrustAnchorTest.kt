@@ -4,6 +4,8 @@ import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.supreme.shouldBeInvalid
+import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -271,6 +273,8 @@ val AllowIncludedTrustAnchorTest by testSuite{
         val chainWithRoot: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRootCert)
         val result = chain.validate(context)
         val resultWithRoot = chainWithRoot.validate(context)
+        result.shouldBeInvalid()
+        resultWithRoot.shouldBeInvalid()
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
         val validatorFailureWithRoot = resultWithRoot.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
@@ -280,6 +284,7 @@ val AllowIncludedTrustAnchorTest by testSuite{
         validatorFailureWithRoot!!.errorMessage shouldBe "pathLenConstraint violated at cert index 4."
 
         val resultNotAllowed = chainWithRoot.validate(contextNotAllowedRoot)
+        resultNotAllowed.shouldBeInvalid()
         resultNotAllowed.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}!!.errorMessage shouldBe "pathLenConstraint violated at cert index 5."
     }
 
@@ -339,12 +344,12 @@ val AllowIncludedTrustAnchorTest by testSuite{
 
         val result = chain.validate(context)
         val resultWithRoot = chainWithRoot.validate(context)
-        result.isValid shouldBe true
-        resultWithRoot.isValid shouldBe true
+        result.shouldBeValid()
+        resultWithRoot.shouldBeValid()
 
         // Since root is not omitted from the chain, it will expect it to have
         val r = chainWithRoot.validate(contextNotAllowedRoot)
-        r.isValid shouldBe false
+        r.shouldBeInvalid()
     }
 
 }

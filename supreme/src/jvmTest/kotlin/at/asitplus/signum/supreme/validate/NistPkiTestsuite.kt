@@ -4,6 +4,7 @@ import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.supreme.shouldBeInvalid
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -48,6 +49,7 @@ val NistPkiTestSuite by testSuite{
             if (testCase.isSuccessful) {
                 result.isValid shouldBe true
             } else {
+                result.shouldBeInvalid()
                 val validatorFailure =
                     result.validatorFailures.firstOrNull {
                         it.validator!!::class.simpleName == testCase.failedValidator

@@ -1,32 +1,26 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.clientAuth
-import at.asitplus.signum.indispensable.asn1.serverAuth
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
-import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
-import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
-import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
-import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
-import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
+import at.asitplus.signum.indispensable.pki.validate.*
+import at.asitplus.signum.supreme.shouldBeInvalid
+import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.json.Json
+import kotlin.jvm.Throws
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 val json = Json { ignoreUnknownKeys = true }
 
 @OptIn(ExperimentalPkiApi::class)
-val LimboTests by testSuite{
+val LimboTests by testSuite {
 
     val testSuiteLimbo = json.decodeFromString<LimboSuite>(resourceText("limbo.json"))
 
@@ -39,9 +33,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
-                    result.validatorFailures.firstOrNull {it.validator is TrustAnchorValidator} shouldNotBe null
+                    result.shouldBeInvalid()
+                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
                 } else {
-                    result.validatorFailures.firstOrNull {it.validator is TrustAnchorValidator} shouldBe null
+                    result.shouldBeValid()
                 }
             }
         }
@@ -56,9 +51,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
-                    result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator } shouldNotBe null
+                    result.shouldBeInvalid()
+                    result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldNotBe null
                 } else {
-                    result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator} shouldBe null
+                    result.shouldBeValid()
                 }
             }
         }
@@ -74,10 +70,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     result.validatorFailures.firstOrNull { it.validator is KeyIdentifierValidator } shouldNotBe null
                 } else {
-                    result.validatorFailures.firstOrNull { it.validator is KeyIdentifierValidator } shouldBe null
-                    result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+                    result.shouldBeValid()
                 }
             }
         }
@@ -90,14 +86,17 @@ val LimboTests by testSuite{
         akiTests.forEach {
             test("Limbo testcase: ${it.id}") {
                 val result = validate(it)
-                val failure = result.validatorFailures.firstOrNull { it.validator is KeyUsageValidator }
 
                 if (it.id.contains("empty", ignoreCase = true)) {
+                    result.shouldBeInvalid()
+                    val failure = result.validatorFailures.firstOrNull { it.validator is KeyUsageValidator }
                     failure?.cause?.message shouldBe "Empty EKU extension in leaf certificate."
                 } else if (it.id.contains("wrong", ignoreCase = true)) {
+                    result.shouldBeInvalid()
+                    val failure = result.validatorFailures.firstOrNull { it.validator is KeyUsageValidator }
                     failure?.cause?.message shouldBe "Missing EKU 1.3.6.1.5.5.7.3.1 in leaf certificate."
                 } else {
-                    failure shouldBe null
+                   result.shouldBeValid()
                 }
             }
         }
@@ -114,9 +113,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldNotBe null
                 } else {
-                    result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+                    result.shouldBeValid()
                 }
 
             }
@@ -133,9 +133,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     result.validatorFailures.size shouldNotBe 0
                 } else {
-                    result.validatorFailures.size shouldBe 0
+                    result.shouldBeValid()
                 }
 
             }
@@ -143,7 +144,7 @@ val LimboTests by testSuite{
     }
 
     "rfc5280::san::malformed" {
-        val test = testSuiteLimbo.testcases.first {it.id.contains("rfc5280::san::malformed", ignoreCase = true)}
+        val test = testSuiteLimbo.testcases.first { it.id.contains("rfc5280::san::malformed", ignoreCase = true) }
 
         shouldThrow<Asn1Exception> {
             validate(test)
@@ -161,9 +162,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     result.validatorFailures.size shouldNotBe 0
                 } else {
-                    result.validatorFailures.size shouldBe 0
+                    result.shouldBeValid()
                 }
 
             }
@@ -179,9 +181,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     result.validatorFailures.size shouldNotBe 0
                 } else {
-                    result.validatorFailures.size shouldBe 0
+                    result.shouldBeValid()
                 }
 
             }
@@ -195,6 +198,7 @@ val LimboTests by testSuite{
         skiTests.forEach {
             test("Limbo testcase: ${it.id}") {
                 val result = validate(it)
+                result.shouldBeInvalid()
                 val failure = result.validatorFailures.firstOrNull { it.validator is CertValidityValidator }
 
                 if (it.id.contains("too-long", ignoreCase = true)) {
@@ -218,12 +222,13 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     if (it.id.contains("expired-root", ignoreCase = true))
                         result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
                     else
                         result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldNotBe null
                 } else {
-                    result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldBe null
+                    result.shouldBeValid()
                 }
 
             }
@@ -260,9 +265,10 @@ val LimboTests by testSuite{
                 val result = validate(it)
 
                 if (it.expected_result == "FAILURE") {
+                    result.shouldBeInvalid()
                     result.validatorFailures.size shouldNotBe 0
                 } else {
-                    result.validatorFailures.size shouldBe 0
+                    result.shouldBeValid()
                 }
 
             }
@@ -270,7 +276,7 @@ val LimboTests by testSuite{
     }
 
     "rfc5280::duplicate-extensions" {
-        val test = testSuiteLimbo.testcases.first {it.id.contains("rfc5280::duplicate-extensions", ignoreCase = true)}
+        val test = testSuiteLimbo.testcases.first { it.id.contains("rfc5280::duplicate-extensions", ignoreCase = true) }
 
         shouldThrow<Asn1Exception> {
             validate(test)
@@ -285,7 +291,8 @@ fun resourceText(path: String): String {
 }
 
 @OptIn(ExperimentalPkiApi::class)
-suspend fun validate(testcase: LimboTestcase) : CertificateValidationResult {
+@Throws(Asn1Exception::class)
+suspend fun validate(testcase: LimboTestcase): CertificateValidationResult {
     val trustAnchors = testcase.trusted_certs.map { pem ->
         TrustAnchor.Certificate(X509Certificate.decodeFromPem(pem).getOrThrow())
     }

@@ -9,8 +9,10 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
+import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
 @OptIn(ExperimentalPkiApi::class)
@@ -126,8 +128,7 @@ val PolicyQualifierTest by testSuite {
         val chain: CertificateChain = listOf(leaf)
 
         var result = chain.validate(defaultContext)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
         result.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
     }
 
@@ -164,8 +165,7 @@ val PolicyQualifierTest by testSuite {
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -210,8 +210,7 @@ val PolicyQualifierTest by testSuite {
         val chain: CertificateChain = listOf(leaf, ca)
         val result = chain.validate(defaultContext)
 
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -288,8 +287,7 @@ val PolicyQualifierTest by testSuite {
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
         var result = chain.validate(context)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         var qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -309,8 +307,7 @@ val PolicyQualifierTest by testSuite {
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
         result = chain.validate(context)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -358,8 +355,7 @@ val PolicyQualifierTest by testSuite {
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf)
         val result = chain.validate(defaultContext)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -409,8 +405,7 @@ val PolicyQualifierTest by testSuite {
             explicitPolicyRequired = true
         )
         val result = chain.validate(context)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -486,8 +481,7 @@ val PolicyQualifierTest by testSuite {
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         var qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -503,8 +497,7 @@ val PolicyQualifierTest by testSuite {
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         result = chain.validate(context)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
         qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
 
@@ -547,8 +540,7 @@ val PolicyQualifierTest by testSuite {
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -591,8 +583,7 @@ val PolicyQualifierTest by testSuite {
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
-        result.isValid shouldBe true
+        result.shouldBeValid()
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
