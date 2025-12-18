@@ -54,6 +54,17 @@
         * `SymmetricEncryptionAlgorithm` and its nested implementations
 * Fix project setup on non-macOS build hosts
 * Limit Keystore operations with `limitedParallelism` from `kotlinx.coroutines`
+* Build setup changes
+    * Gradle 9.2.0
+    * Kotlin 2.3.0
+    * Dokka 2.10.0
+    * Return value checker set to `full`
+    * Dependency Updates:
+        * AGP 8.12.3
+        * Ktor 3.3.3
+        * Bouncy Castle 1.83 (no more forcing exact version)
+        * TestBalloon 0.7.1-K2.3.0
+        * TestBalloon Addons 0.6.1
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes
