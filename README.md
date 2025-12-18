@@ -693,6 +693,129 @@ Application 1337 (9 elem)
         NumericString 12345
         UTCTime 2024-09-16 11:53:51 UTC
 ```
+# X.509 Certificate validation
+
+Provides a flexible framework for X.509 certificate chain validation, supporting both:
+* Full RFC 5280-compliant validation
+* Custom validator pipelines for application-specific needs.
+
+Validation never throws; instead it returns a structured `CertificateValidationResult` describing all encountered issues.
+
+The validation system is built around the `CertificateValidator` interface. Each validator:
+* Receives a certificate being processed
+* Removes supported critical extensions
+* Throws an exception when it cannot validate (caught and recorded by the framework)
+
+Unsupported / Not Yet Implemented:
+* Revocation checking: OCSP and CRL checks are not yet supported
+* Partial cross-validation support. Our validation logic assumes a linear certificate chain and does not perform graph-based path discovery, meaning it cannot search for or create alternative certification paths.:
+  * Multiple trust anchors can be supplied and checked (implemented)
+  * Validation succeeds if any certificate in the chain is issued by a trust anchor (implemented)
+  * If the trust anchor matches an intermediate certificate, the TA’s public key is verified against the certificate before it (implemented)
+  * Full cross-validation (exploring alternative chains through intermediates) (not implemented)
+
+### Use `CertificateValidationContext` to configure RFC 5280 validation:
+```kotlin
+val context = CertificateValidationContext(
+  date = Clock.System.now(),
+  explicitPolicyRequired = false,
+  policyMappingInhibited = false,
+  anyPolicyInhibited = false,
+  policyQualifiersRejected = false,
+  initialPolicies = emptySet(),
+  trustAnchors = setOf(TrustAnchor.Certificate(myRootCert)),
+  expectedEku = setOf(KnownOIDs.id_kp_serverAuth)
+)
+```
+This lets you specify:
+* Validation time
+* Whether explicit policy is required 
+* Whether anyPolicy or policy mapping is allowed
+* `policyQualifiersRejected` flag, which indicates should certificates that include policy qualifiers in a certificate policies extension that is marked critical be rejected
+* Expected EKUs
+* Which trust anchors are acceptable
+
+### Trust anchors
+A TrustAnchor represents the starting point of trust for certificate path validation.
+It defines the cryptographic identity against which the certificate chain is ultimately verified.
+
+A trust anchor can be represented in two ways:
+* `Certificate` (full X.509 certificate)
+* `PublicKey` (bare public key with an optional subject name and name constraints)
+
+1. Certificate based Trust anchor:
+* `TrustAnchor.Certificate(cert: X509Certificate)`
+This is the standard RFC 5280 trust model:
+* Trust is a self-signed or intermediate CA certificate.
+* The certificate’s subject name becomes the trust anchor’s principal.
+* Name constraints (if present) propagate into path validation.
+* The public key is extracted from the certificate.
+
+2. Public Key based Trust anchor:
+* `TrustAnchor.PublicKey(publicKey: CryptoPublicKey, principal: X500Name?, nameConstraints: NameConstraintsExtension? = null)`
+
+* There is also a convenience constructor (An unnamed trust anchor has no distinguishing subject name. Use only when a raw key truly makes sense):
+```kotlin
+@HazardousMaterials
+constructor(publicKey: CryptoPublicKey)
+```
+
+
+### RFC 5280 validation:
+```kotlin
+val root: X509Certificate = TODO("Trusted root")
+val intermediate: X509Certificate = TODO()
+val leaf: X509Certificate = TODO("Certificate to validate")
+
+val context = CertificateValidationContext(
+  trustAnchors = setOf(TrustAnchor.Certificate(root)),
+)
+// Build chain leaf → intermediates
+val chain: CertificateChain = listOf(leaf, intermediate, root)
+
+val result = chain.validate(context)
+
+println("Chain valid? ${result.isValid}")
+
+if (!result.isValid) {
+  println("Failures:")
+  result.validatorFailures.forEach {
+    println(" - [${it.validatorName}] ${it.errorMessage}")
+  }
+}
+```
+If no trust anchors are explicitly specified, the validation will fall back to using the system trust store.
+If `allowIncludedTrustAnchor` is set to `true` in the validation context, validation will try to match root with one of the trust anchors and the if match is found root will be omitted from the chain during the validation.
+### Custom validation:
+```kotlin
+val intermediate: X509Certificate = TODO()
+val leaf: X509Certificate = TODO("Certificate to validate")
+
+val chain: CertificateChain = listOf(leaf, intermediate)
+
+// It is optional, falls back to the default if missing
+val context = CertificateValidationContext(
+  date = Clock.System.now()
+)
+
+// TODO: Replace with your own custom validator factory
+val myValidatorFactory = ValidatorFactory { context -> 
+    // Here you can define your own validators for this chain 
+    // e.g. use rfc5280 factory to create mutable list and remove unnecessary  validators  
+  val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }
+  validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator || it is TimeValidityValidator }
+  validators
+}
+
+val result = chain.validate(
+  validatorFactory = myValidatorFactory,
+  context = context
+)
+
+println("Chain valid? ${result.isValid}")
+```
+
+
 
 ## Limitations
 * Only DER encoding and parsing of ASN.1 structures is supported

@@ -1,0 +1,87 @@
+package at.asitplus.signum.supreme.validate
+
+import at.asitplus.signum.CertificateValidityException
+import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import org.kotlincrypto.error.CertificateException
+import kotlin.time.Instant
+
+/**
+ * This validator checks whether any certificate in the chain is issued by a trusted anchor
+ * from the provided [trustAnchors] set
+ */
+class TrustAnchorValidator(
+    private val trustAnchors: Set<TrustAnchor>,
+    private val certChain: CertificateChain,
+    private var currentCertIndex: Int = 0,
+    var trustAnchor: TrustAnchor? = null,
+    val date: Instant
+) : CertificateValidator {
+
+    var foundTrusted: Boolean = false
+    private val basicConstraintsValidator: BasicConstraintsValidator = BasicConstraintsValidator(0)
+
+    @ExperimentalPkiApi
+    override suspend fun check(
+        currCert: X509Certificate,
+        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+    ) {
+        if (foundTrusted) return
+        val issuingAnchor = trustAnchors.firstOrNull { anchor ->
+            anchor.isIssuerOf(currCert)
+        }
+
+        if (issuingAnchor != null) {
+            foundTrusted = true
+
+            if (currentCertIndex < certChain.lastIndex) {
+                val nextCert = certChain[currentCertIndex + 1]
+
+                val anchorKey = issuingAnchor.publicKey
+                val nextIssuerKey = nextCert.decodedPublicKey.getOrThrow()
+
+                if (anchorKey != nextIssuerKey) {
+                    throw CertificateException("Untrusted certificate: trust anchor key mismatch.")
+
+                }
+            }
+
+            trustAnchor = issuingAnchor
+
+            issuingAnchor.cert?.let { basicConstraintsValidator.checkCaBasicConstraints(it) }
+
+            issuingAnchor.cert?.let {
+                if (it.isExpired(date)) {
+                    throw CertificateValidityException(
+                        "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(
+                            TimeZone.currentSystemDefault()
+                        )
+                    )
+                }
+            }
+
+            issuingAnchor.cert?.let {
+                if (it.isNotYetValid(date)) {
+                    throw CertificateValidityException(
+                        "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(
+                            TimeZone.currentSystemDefault()
+                        )
+                    )
+                }
+            }
+        }
+
+        if (currentCertIndex == certChain.lastIndex && !foundTrusted) {
+            throw CertificateException("No trusted issuer found in the chain.")
+        }
+
+        currentCertIndex++
+
+    }
+}

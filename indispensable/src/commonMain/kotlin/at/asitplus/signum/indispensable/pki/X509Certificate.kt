@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -22,6 +23,8 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -299,6 +302,49 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         level = DeprecationLevel.ERROR)
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
+
+    val criticalExtensionOids: Set<ObjectIdentifier>
+        get() = tbsCertificate.extensions
+            ?.filter { it.critical }
+            ?.map { it.oid }
+            ?.toSet()
+            ?: emptySet()
+
+    /**
+     * Indicates whether this certificate is self-issued.
+     * A certificate is self-issued if the subject and issuer are the same.
+     * Note that self-issued is not the same as self-signed. Self-signed means that cert signature
+     * can be verified using the public key from the same certificate. In other words, all self-signed
+     * certificates are self-issued, but not all self-issued certificates are self-signed.
+     */
+    val isSelfIssued: Boolean
+        get() = tbsCertificate.subjectName == tbsCertificate.issuerName
+
+    inline fun <reified T : X509CertificateExtension> findExtension(): T? {
+        return this.tbsCertificate.extensions?.firstNotNullOfOrNull { it as? T }
+    }
+
+    /**
+     * Checks whether this certificate has expired at the specified [date].
+     *
+     * @return `true` if the certificate is expired, `false` otherwise.
+     */
+    fun isExpired(date: Instant = Clock.System.now()): Boolean =
+        Instant.fromEpochSeconds(date.epochSeconds) > tbsCertificate.validUntil.instant
+
+    /**
+     * Checks whether this certificate is not yet valid at the specified [date].
+     *
+     * @return `true` if the certificate is not yet valid, `false` otherwise.
+     */
+    fun isNotYetValid(date: Instant = Clock.System.now()): Boolean =
+        Instant.fromEpochSeconds(date.epochSeconds) < tbsCertificate.validFrom.instant
+
+
+    /**
+     * Checks whether this certificate is valid at the specified [date].
+     */
+    fun isValidAt(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
 
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey

@@ -17,6 +17,7 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.*
+import org.bouncycastle.jce.X509KeyUsage
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
@@ -93,7 +94,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-        val keyUsage = KeyUsage(KeyUsage.digitalSignature)
+        val keyUsage = KeyUsage(X509KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki)
             .addAttribute(Extension.keyUsage, keyUsage)
@@ -148,7 +149,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-        val keyUsage = KeyUsage(KeyUsage.digitalSignature)
+        val keyUsage = KeyUsage(X509KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val extGen = ExtensionsGenerator()
@@ -409,7 +410,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             Pkcs10CertificationRequestAttribute
         */
 
-        val keyUsage = KeyUsage(KeyUsage.digitalSignature)
+        val keyUsage = KeyUsage(X509KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val attr1 =

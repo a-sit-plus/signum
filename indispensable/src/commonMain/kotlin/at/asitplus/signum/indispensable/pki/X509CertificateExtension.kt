@@ -12,26 +12,32 @@ import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.basicConstraints_2_5_29_19
 import at.asitplus.signum.indispensable.asn1.certificatePolicies_2_5_29_32
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.extKeyUsage
 import at.asitplus.signum.indispensable.asn1.inhibitAnyPolicy
 import at.asitplus.signum.indispensable.asn1.keyUsage
 import at.asitplus.signum.indispensable.asn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.asn1.policyConstraints_2_5_29_36
 import at.asitplus.signum.indispensable.asn1.policyMappings
 import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.subjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.decodeBase
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.doDecode
+import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -91,7 +97,10 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 KnownOIDs.certificatePolicies_2_5_29_32 to { seq, tag -> CertificatePoliciesExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.policyMappings to { seq, tag -> PolicyMappingsExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.inhibitAnyPolicy to { seq, tag -> InhibitAnyPolicyExtension.decodeFromTlv(seq, tag) },
-                KnownOIDs.keyUsage to { seq, tag -> KeyUsageExtension.decodeFromTlv(seq, tag) }
+                KnownOIDs.keyUsage to { seq, tag -> KeyUsageExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.authorityKeyIdentifier_2_5_29_35 to { seq, tag -> AuthorityKeyIdentifierExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.extKeyUsage to { seq, tag -> ExtendedKeyUsageExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.subjectKeyIdentifier to { seq, tag -> SubjectKeyIdentifierExtension.decodeFromTlv(seq, tag) }
             )
         )
         val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension>

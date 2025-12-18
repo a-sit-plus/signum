@@ -3,6 +3,29 @@
 ## 3.0
 
 ### NEXT
+* Introduce full X.509 certificate validation support
+  * RFC Compliance:
+    * Implements RFC 5280 path validation rules, including policy processing, name constraints, key usage, and basic constraints
+  * Unsupported / Not Yet Implemented:
+      * Revocation checking: OCSP and CRL checks are not yet supported
+      * Partial cross-validation support:
+          * Multiple trust anchors can be supplied and checked (implemented)
+          * Validation succeeds if any certificate in the chain is issued by a trust anchor (implemented)
+          * If the trust anchor matches an intermediate certificate, the TA’s public key is verified against the certificate before it (implemented)
+          * Full cross-validation (exploring alternative chains through intermediates) (not implemented)
+  * Added core `CertificateChainValidator` coordinating the full validation pipeline
+    * `validate()` method returns `CertificateValidationResult` which contains root policy node, leaf certificate and list of `ValidatorFailure`
+    * Validation fails softly, by returning `ValidatorFailure` for every exception thrown during validation
+  * Modular validator design with pluggable components:
+      * `PolicyValidator` – enforces certificate policies and policy constraints
+      * `BasicConstraintsValidator` – validates basicConstraints
+      * `NameConstraintsValidator` – enforces permitted/excluded name constraints across the chain
+      * `ChainValidator` - validates signatures and name chaining
+      * `KeyUsageValidator` - validates KeyUsage extensions
+      * `TimeValidityValidator` - checks certificate time validity and that each certificate was issued within the validity period of its issuer
+      * `TrustAnchorValidator` - checks if any certificate from the chain is trusted
+      * `KeyIdentifierValidator` - validates Subject and Authority key identifiers
+      * `CertValidityValidator` - checks whether the certificate is constructed correctly, since some components are decoded too leniently
 * Make more provider functions suspending
     * digest calculation
     * MAC calculation
@@ -22,7 +45,10 @@
         * `NameConstraintsExtension` and `GeneralSubtree`
         * `PolicyConstraintsExtension`
         * `PolicyMappingsExtension`
-   * If decoding a dedicated extension fails, an `InvalidCertificateExtension` is returned, containing the original extension’s properties and the cause of the decoding failure.
+        * `AuthorityKeyIdentifierExtension`
+        * `ExtendedKeyUsageExtension`
+        * `SubjectKeyIdentifier`
+    * If decoding a dedicated extension fails, an `InvalidCertificateExtension` is returned, containing the original extension’s properties and the cause of the decoding failure.
 * Refactored `AlternativeNames` for SAN/IAN extraction
     * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
     * Introduced dedicated `GeneralName` classes:
