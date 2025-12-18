@@ -25,7 +25,8 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
 val VerifierTests by testSuite {
-    Security.addProvider(BouncyCastleProvider())
+    val bc = BouncyCastleProvider()
+    Security.addProvider(bc)
 
     withDataSuites(
         mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
@@ -42,12 +43,12 @@ val VerifierTests by testSuite {
                 listOf<Digest?>(null) + Digest.entries
             ) { digest ->
                 withData(nameFn = { (key, _, _) -> key.publicPoint.toString() }, generateSequence {
-                    val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
+                    val keypair = KeyPairGenerator.getInstance("EC", bc).also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
                     val publicKey = keypair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC
                     val data = Random.nextBytes(256)
-                    val sig = Signature.getInstance("${digest.jcaAlgorithmComponent}withECDSA", "BC").run {
+                    val sig = Signature.getInstance("${digest.jcaAlgorithmComponent}withECDSA", bc).run {
                         initSign(keypair.private)
                         update(data)
                         sign()

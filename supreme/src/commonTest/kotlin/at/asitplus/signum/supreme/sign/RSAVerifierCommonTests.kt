@@ -7,9 +7,13 @@ import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.withFixtureGenerator
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.engine.runBlocking
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
@@ -152,15 +156,19 @@ fun main() {
     withData(tests) - { byPadding ->
         withData(byPadding) - { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) - { test ->
-                val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
-                verifier.verify(test.msg, test.sig) should succeed
-                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
-                Random.of(byDigest).let {
-                    if (it !== test) {
-                        verifier.verify(it.msg, test.sig) shouldNot succeed
-                        verifier.verify(it.msg, it.sig) shouldNot succeed
+                val verifier = runBlocking {  SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow() }
+
+                "basic" {
+                    verifier.verify(test.msg, test.sig) should succeed
+                    verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
+                    Random.of(byDigest).let {
+                        if (it !== test) {
+                            verifier.verify(it.msg, test.sig) shouldNot succeed
+                            verifier.verify(it.msg, it.sig) shouldNot succeed
+                        }
                     }
                 }
+
                 checkAll(Arb.of(Digest.entries.filter { it != test.digest })) { dig ->
                     SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed

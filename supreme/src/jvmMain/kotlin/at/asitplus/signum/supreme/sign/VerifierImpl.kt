@@ -40,7 +40,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 }
 
 @JvmSynthetic
-internal actual fun verifyECDSAImpl
+internal actual suspend fun verifyECDSAImpl
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              data: SignatureInput, signature: CryptoSignature.EC,
              config: PlatformVerifierConfiguration)
@@ -80,7 +80,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 }
 
 @JvmSynthetic
-internal actual fun verifyRSAImpl
+internal actual suspend fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration)

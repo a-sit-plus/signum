@@ -298,7 +298,7 @@ sealed class AndroidKeystoreSigner private constructor(
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
 
     @SecretExposure
-    override fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
+    override suspend fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 

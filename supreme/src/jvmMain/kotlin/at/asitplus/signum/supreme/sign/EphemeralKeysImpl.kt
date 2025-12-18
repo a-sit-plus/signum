@@ -52,7 +52,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
-        final override fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
+        final override suspend fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
             KeyAgreement.getInstance("ECDH").let {
@@ -70,7 +70,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
 
         @SecretExposure
-        final override fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()
+        final override suspend fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()
     }
 }
 
@@ -87,7 +87,7 @@ internal sealed interface JVMEphemeralKey {
         digests = digests)
     {
         @SecretExposure
-        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+        override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 
     class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
@@ -96,11 +96,11 @@ internal sealed interface JVMEphemeralKey {
         digests = digests, paddings = paddings)
     {
         @SecretExposure
-        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+        override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
+internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             getKPGInstance("EC", configuration.provider).run {
