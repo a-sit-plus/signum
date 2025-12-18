@@ -723,7 +723,7 @@ val context = CertificateValidationContext(
   anyPolicyInhibited = false,
   policyQualifiersRejected = false,
   initialPolicies = emptySet(),
-  trustAnchors = setOf(TrustAnchor(myRootCert)),
+  trustAnchors = setOf(TrustAnchor.Certificate(myRootCert)),
   expectedEku = setOf(KnownOIDs.id_kp_serverAuth)
 )
 ```
@@ -740,11 +740,11 @@ A TrustAnchor represents the starting point of trust for certificate path valida
 It defines the cryptographic identity against which the certificate chain is ultimately verified.
 
 A trust anchor can be represented in two ways:
-* `CertificateAnchor` (full X.509 certificate)
-* `PublicKeyAnchor` (bare public key with an optional subject name and name constraints)
+* `Certificate` (full X.509 certificate)
+* `PublicKey` (bare public key with an optional subject name and name constraints)
 
 1. Certificate based Trust anchor:
-* `TrustAnchor.CertificateAnchor(cert: X509Certificate)`
+* `TrustAnchor.Certificate(cert: X509Certificate)`
 This is the standard RFC 5280 trust model:
 * Trust is a self-signed or intermediate CA certificate.
 * The certificate’s subject name becomes the trust anchor’s principal.
@@ -752,7 +752,7 @@ This is the standard RFC 5280 trust model:
 * The public key is extracted from the certificate.
 
 2. Public Key based Trust anchor:
-* `TrustAnchor.PublicKeyAnchor(publicKey: CryptoPublicKey, principal: X500Name?, nameConstraints: NameConstraintsExtension? = null)`
+* `TrustAnchor.PublicKey(publicKey: CryptoPublicKey, principal: X500Name?, nameConstraints: NameConstraintsExtension? = null)`
 
 * There is also a convenience constructor (An unnamed trust anchor has no distinguishing subject name. Use only when a raw key truly makes sense):
 ```kotlin
@@ -793,16 +793,18 @@ val leaf: X509Certificate = TODO("Certificate to validate")
 
 val chain: CertificateChain = listOf(leaf, intermediate)
 
+// It is optional, falls back to the default if missing
 val context = CertificateValidationContext(
   date = Clock.System.now()
 )
 
 // TODO: Replace with your own custom validator factory
-val myValidatorFactory = ValidatorFactory { context ->
-  // Here you can define your own validators for this chain
-  // For example:
-  // listOf(CustomValidator(this, ctx))
-  TODO("Return a list of CertificateValidator for this chain")
+val myValidatorFactory = ValidatorFactory { context -> 
+    // Here you can define your own validators for this chain 
+    // e.g. use rfc5280 factory to create mutable list and remove unnecessary  validators  
+  val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }
+  validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator || it is TimeValidityValidator }
+  validators
 }
 
 val result = chain.validate(

@@ -1,11 +1,16 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
+import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
+import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -117,17 +122,34 @@ val ValidationApiTest by testSuite{
         ).isValid shouldBe false
 
         val customValidatorFactory = ValidatorFactory { context ->
-            val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }.toMutableList()
-            validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator }
+            val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }
+            validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator || it is TimeValidityValidator }
+            validators.add(AttestationTimeValidator(this))
             validators
         }
 
         chain.validate(
             customValidatorFactory,
             CertificateValidationContext(
-                trustAnchors = setOf(TrustAnchor.Certificate(chain.root)), checkLeafTimeValidity = false
+                trustAnchors = setOf(TrustAnchor.Certificate(chain.root))
             )
         ).isValid shouldBe true
     }
 }
 
+// Example of custom validator, it checks validity only in intermediate certificate
+class AttestationTimeValidator(
+    val certChain: CertificateChain
+) : CertificateValidator {
+
+    @ExperimentalPkiApi
+    override suspend fun check(
+        currCert: X509Certificate,
+        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+    ) {
+        if (currCert != certChain.leaf) {
+            if (!currCert.isValidAt()) throw CertificateValidityException("Certificate is not valid")
+        }
+    }
+
+}
