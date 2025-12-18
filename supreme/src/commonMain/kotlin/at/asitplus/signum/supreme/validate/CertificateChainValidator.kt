@@ -108,6 +108,7 @@ fun interface ValidatorFactory {
  */
 @OptIn(HazardousMaterials::class)
 @ExperimentalPkiApi
+@Throws(Asn1Exception::class, kotlin.coroutines.cancellation.CancellationException::class)
 suspend fun CertificateChain.validate(
     validatorFactory: ValidatorFactory,
     context: CertificateValidationContext = CertificateValidationContext()
@@ -213,7 +214,7 @@ suspend fun CertificateChain.validate(
  * @throws Asn1Exception on structurally invalid input
  */
 
-@Throws(Asn1Exception::class)
+@Throws(Asn1Exception::class, kotlin.coroutines.cancellation.CancellationException::class)
 @ExperimentalPkiApi
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext()
