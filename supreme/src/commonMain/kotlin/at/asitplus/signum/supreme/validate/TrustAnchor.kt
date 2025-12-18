@@ -49,7 +49,7 @@ sealed class TrustAnchor {
         return sameKey && samePrincipal
     }
 
-    fun isIssuerOf(cert: X509Certificate): Boolean {
+    suspend fun isIssuerOf(cert: X509Certificate): Boolean {
         val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(publicKey).getOrElse { return false }
         val signatureValid = verifier.verify(
             cert.tbsCertificate.encodeToDer(),

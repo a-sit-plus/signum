@@ -36,7 +36,7 @@ class ChainValidator(
         }
     }
 
-    private fun verifySignature(
+    private suspend fun verifySignature(
         cert: X509Certificate,
         issuer: X509Certificate,
         isLeaf: Boolean,
