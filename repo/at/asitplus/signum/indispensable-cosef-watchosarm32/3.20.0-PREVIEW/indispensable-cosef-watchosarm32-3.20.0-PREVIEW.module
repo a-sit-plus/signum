@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -73,10 +73,10 @@
           "name": "indispensable-cosef-watchosArm32Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-watchosarm32-3.20.0-PREVIEW.klib",
           "size": 183071,
-          "sha512": "e01b521f0cefd2a2b23e4d62d03652a528bc6ba5ab0304789842dbb63c60fc3f03bfd7dfbf2a5af11ce1b4f13d391993b54c44ab3e573f5e208d700983cafb89",
-          "sha256": "43e15f96bbab177ea059fc51e3bdd317c0c7f8050bdc09e27e4b588df617b8cb",
-          "sha1": "7fdc036f6fb5526e0fd17aebdcaa4cc8cb8e236c",
-          "md5": "cc03141d4e9bfef0f38615984cc5f1f7"
+          "sha512": "82655098cd41f9f0c5de8602978df9a90b42a89c730a053979751d053fe73716a3593efc321f78d8daffcfaeba86c5e4b400cb88beeeadf411017e95574f2d48",
+          "sha256": "5c2380ef19dc2d69b4ee9a5fc22fa05fc5b9bffe56cee76d68d73603e1863c08",
+          "sha1": "b647ba1a69b9e93a4edc4858df533cc5342e17cf",
+          "md5": "99b17630aa2f5a67074b83269c158e81"
         }
       ]
     },
@@ -114,7 +114,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -135,7 +135,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"

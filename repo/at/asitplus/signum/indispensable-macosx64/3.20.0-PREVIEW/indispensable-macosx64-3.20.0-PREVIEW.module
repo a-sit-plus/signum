@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,14 +26,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -82,7 +82,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -100,11 +100,11 @@
         {
           "name": "indispensable-macosX64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-macosx64-3.20.0-PREVIEW.klib",
-          "size": 548533,
-          "sha512": "6f04900d11a6dab5eb64f49736810a3ecb7857f67ef261596120ae4ce5aafac55a8e9fdb6890e1ff3a57f1ab0d5957d472b37de562991a2d9c2e596140b10900",
-          "sha256": "c9fa42947aa7f4c798ffb88b0a8920b507c082bee1b7bc710a724d86ba1b2560",
-          "sha1": "f2782d83fe5693e5f12dc602dc180c7e0a5fe806",
-          "md5": "78feef7d5ddb0e08b7df8fe27a0f2802"
+          "size": 548531,
+          "sha512": "369298a7ea4f8e5ad9b991536cb85fe59f00aa18a311e2286f608328e8e6ecac52241f5c8c05cc6c5aa75368621681f8d2221b05ad7b87cbc7ba62c112b526c0",
+          "sha256": "d25a6d61ada6aa8cbc91f6e951a68927dbb9a8efadad0f22e8b099ca854f529a",
+          "sha1": "3b033e7426ed76cb431a7d7c0672873f8814a7b2",
+          "md5": "2ca1a65d6b145a8b858c73ae990e83f5"
         }
       ]
     },
@@ -142,14 +142,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -198,7 +198,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -216,11 +216,11 @@
         {
           "name": "indispensable-macosx64-3.20.0-PREVIEW-metadata.jar",
           "url": "indispensable-macosx64-3.20.0-PREVIEW-metadata.jar",
-          "size": 2862,
-          "sha512": "eaf45068ef66b621fba6562aeb0bfd0a8bacad184f2b0173236d5ad91e580efb772d291fb59ba4d3aac8fd5446191a3b5a2a4287e065c5e0ffb82eca3c11da79",
-          "sha256": "4689f13841b44d122d2c086fedbbdef460ec97a03dbacd8aa18e32b8816b5a5f",
-          "sha1": "095be883f1882a80367f2c1dde07778749d5efc0",
-          "md5": "76fb69193ae872fe3d26fcc9f7079d92"
+          "size": 2872,
+          "sha512": "ae3c19b2936a8df637cb70436be85fe395404a5d3128de2b5a75c6fa4c740824e66c55a1444f58696df67703347b99a9fd8ed64a947efa819c49a95f92e790ba",
+          "sha256": "77e4c60844dfc9c413e198a40a80441a40cc26bddcdb12e47f600c440556d007",
+          "sha1": "c8c058084d098da46bee037119bf221dbdecfcb1",
+          "md5": "5d02f47004418a89b15ae962a9bd03bc"
         }
       ]
     }

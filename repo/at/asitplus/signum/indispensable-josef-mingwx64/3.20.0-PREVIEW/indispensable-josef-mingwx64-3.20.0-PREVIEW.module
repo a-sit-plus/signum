@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-josef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-josef-mingwX64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-mingwx64-3.20.0-PREVIEW.klib",
-          "size": 202414,
-          "sha512": "fd63142b9b21fd877920883a0aef26cd97551838b59964efa659c311ea6ff9a5744287bd97ad7aafe9fbda899dd0c6cf6e6ccabdbadfe099db706028dc360984",
-          "sha256": "6f5e770705e23dab7796f5b5be462bc3ab6697b72a10aeb8d9b2c4c5eab13320",
-          "sha1": "cb1d65352e8c544c8fa2b86ff0089d11670775fd",
-          "md5": "3b916fb8f9da5404bb40724a0e6374fb"
+          "size": 202415,
+          "sha512": "5845c88aa9ac5831ce0c77e3033436deef68e3fc3a1a77a89b186a07979e134b71dd6245b337e1932df503929ef6af79c1a0db02aaae8e48841be96df69edab4",
+          "sha256": "5c9dbea95753f425ea773978c03fdce84daa94aeb198c654de48f145255af7da",
+          "sha1": "1d93408cd8051f546000d0d775d4e256a9dc2691",
+          "md5": "cba3ddc5d3c8e552fd0e30b9ec514081"
         }
       ]
     },

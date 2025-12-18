@@ -1,7 +1,7 @@
 {
   "formatVersion": "1.1",
   "component": {
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-josef-versionCatalog",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -24,11 +24,11 @@
         {
           "name": "indispensable-josef-versionCatalog-3.20.0-PREVIEW.toml",
           "url": "indispensable-josef-versionCatalog-3.20.0-PREVIEW.toml",
-          "size": 2351,
-          "sha512": "41fc95a204ac8737ed6b14989d44c023790680fe6d8ca41096241e735c390f78587cb76013c0bb4835b507af7f66d336bdf5377a9f63cea287de3dde236dfb45",
-          "sha256": "1b9a1daf79c0fd28e017f53d050fdc7d5d5ea5a489ac4737e6f619ec149c8d66",
-          "sha1": "04ad72963e3acc5e2c9a0b821777fea2b95e14bd",
-          "md5": "dd053f40323e13428c93aa73f6cac94a"
+          "size": 2387,
+          "sha512": "a71f9304ebe1539b83a5ac5e94861c65fc415c4250d67b00be5a479ba0fb84a7654e40cc65dbb1ba3bf04bc50d17500ebc4df1a43e8488f259172850fc478b7f",
+          "sha256": "d1f65354019ab8a2f88bac8d8d6158a6fb735d12a46631fadd94131b078f0079",
+          "sha1": "d947ac6c55f6361c2f4fcc01605cc773722cf284",
+          "md5": "4691603bdc7ae9850079f22b9eec4724"
         }
       ]
     }

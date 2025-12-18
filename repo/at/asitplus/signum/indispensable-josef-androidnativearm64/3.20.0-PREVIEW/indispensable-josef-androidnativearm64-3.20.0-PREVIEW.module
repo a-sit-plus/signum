@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-josef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-josef-androidNativeArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-androidnativearm64-3.20.0-PREVIEW.klib",
-          "size": 202439,
-          "sha512": "5f8feacf7abeb4d6b676c0eae174b6c2116b7d54b85aaa60c3edbee8244a2687b08d2ff7cd819bb046453a4bfd0d297739dfca9b860c610ecdd8bc01014889e8",
-          "sha256": "33057df88f17b4b3da98cf9aeba341ac0cbe125c26dd1b77cd6b57eaf0c54184",
-          "sha1": "f17fdf1cc53f40829c8bea2aa60c0053c2d6e76f",
-          "md5": "c11ad28f4a7414ef896039ee70682a51"
+          "size": 202440,
+          "sha512": "8d4d8dcfc45c6b7b85199034c86eba4b1d1cccf1d2d2fcfc7afdfbbffad4b4f023d42f0a12a1a5ed33181ba72aea546d4c23d947a63c03ac907386f95ba9c0bc",
+          "sha256": "e7d2fc2f94fb4038be524758dacfedcb92c7b0acd0e2000053072bd6783ae32b",
+          "sha1": "a74560797353faa50bf568046c91266ddea6d449",
+          "md5": "ed3eb3fcc9f03e71422953fd6a11796d"
         }
       ]
     },

@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -72,11 +72,11 @@
         {
           "name": "indispensable-cosef-androidNativeX86Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-androidnativex86-3.20.0-PREVIEW.klib",
-          "size": 183057,
-          "sha512": "4b742fd94fef59b3d158e0295569d29bc0e4444c2bed4cf01cd1054dafb280d8b57230d37f385bc3bbc08aa6834315174582521aa2c112c4743d4c998c7ca1a4",
-          "sha256": "314353e971efb944e9b421369fbcda06f6157a0f2352140f772f3edac9296bb3",
-          "sha1": "7996f20e78c2a0a84b98ed0cd66b223c04ce8d56",
-          "md5": "3d1e1503abd39960416e4c46a535d1bd"
+          "size": 183059,
+          "sha512": "90f98d79c9892c5b7cb9dc1a1634af5802547098eb774f8cb0cfef60d23a375b7ef8ea799083692d0ee5841002a87af48c540a0cd1a11d058a482bd5a2aacc94",
+          "sha256": "90c329eefda08a56699efe9c322feca8ff547e73af66939202a1b07e6764db15",
+          "sha1": "b467e81b615270ab0a357e28b8dd7007c7a75760",
+          "md5": "c183651d17b5e56b29bdf70508a898fe"
         }
       ]
     },

@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-oids",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -45,10 +45,10 @@
           "name": "indispensable-oids-androidNativeArm32Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-oids-androidnativearm32-3.20.0-PREVIEW.klib",
           "size": 606321,
-          "sha512": "930dd0c9fb439f1626feb2618ad436406bf36de3610e1808bbc98009b88d86d7c4f729ebb52e1cd5d5c33e3117d20517085493f6f5949a810db56f62d3acefae",
-          "sha256": "4527c0533953b6485c04aba053900d4d54fb59735ed9105e46708c4b6fc0d103",
-          "sha1": "5f6b411b3d4689c4b0c67b96ed0a9054336cb74f",
-          "md5": "c58d7059d6128e2ab5d7e13d9e54f850"
+          "sha512": "bccdf9fc82ce8237b1529ca2c01ba9d3042b2659efbbcaefc0502da0d660aa2477119078e1037890909345e0285e749c3111add3ebb94126e0a86c0e3d340aae",
+          "sha256": "53eee16062512ee0a3f57ed99d68dd3184bc5e820da12e594af2225e5fd17957",
+          "sha1": "085611bed5064f3b3a1a2e69cf80d3a37a081f7e",
+          "md5": "dee19307f4b7d6297a27c413fb1e6119"
         }
       ]
     },

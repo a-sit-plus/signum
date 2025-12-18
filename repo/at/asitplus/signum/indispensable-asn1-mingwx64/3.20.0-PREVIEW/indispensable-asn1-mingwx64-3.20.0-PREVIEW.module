@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-asn1",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-asn1-mingwX64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-asn1-mingwx64-3.20.0-PREVIEW.klib",
-          "size": 256841,
-          "sha512": "f7684d1710cc111dd49dbba3ad5c9a8ebeecc70f9af4770148d5f972d0c8670098b1ee05ba4a571725377d6920f4928a844f479863bbba49458f2050af4fd577",
-          "sha256": "fb1f269fdff49fe9ea246452b5288e2de6eab1019259c4210680673062f3f9ba",
-          "sha1": "91086a7f9ecdfeb911ad95293d8be1d4c73d356b",
-          "md5": "2f8801dd83794b8fa67e4d563f54f363"
+          "size": 256844,
+          "sha512": "d8cd2844c99d8185fcf5dfdfdf70c47e2ce9144f518f08e0b99510278ba57d4ec32fffdb2802cedf9f997d90f7129eefa832564d885ef9b7b46995953df5e1e6",
+          "sha256": "4b62e33fe286b8f80000425b1af712af7f9d680f986badecf3b887a1ee52f990",
+          "sha1": "8e1f6255ff1220611f2e7647e9ab602994f01588",
+          "md5": "74e5d3a99423398fa0c7d3171f214487"
         }
       ]
     },

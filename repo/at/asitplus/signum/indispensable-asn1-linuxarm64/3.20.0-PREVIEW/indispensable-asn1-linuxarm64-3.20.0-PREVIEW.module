@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-asn1",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-asn1-linuxArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-asn1-linuxarm64-3.20.0-PREVIEW.klib",
-          "size": 256854,
-          "sha512": "3d28f1d3dc9fa0634c39fcb972c06dac93e967f69b4bba78e2d5e039ca58792b41e78aada166bd386d9c8a57ea058f523563fa86ed1f79030e1ab0b15c7ee08d",
-          "sha256": "1b0445aaa98531cd09e3bfe6b021ab07e7389c562450b6548bc50ab8dbff084f",
-          "sha1": "3f3e937117b8fa7f65c995eee049da97d8c25706",
-          "md5": "02fb07eff804fb013e5ff04976dbe264"
+          "size": 256856,
+          "sha512": "12e0129e78d65a777aec81dd2958b772eabd1290eed1bbdd7f4036227e9a970cc2b7ad5647d2e43b7341ffd5b2ca8a09b0109e0a6bb2d2f054d4b7544e7cd8df",
+          "sha256": "c0b48e01bd15a8a75627eadaefc92b1566f4e455ec0027c4387adf1eec6d8039",
+          "sha1": "55643fb8174eb9fec4fa1375562e78df94f0a98d",
+          "md5": "fc4a118137976d6a1c76d69de4bb8de8"
         }
       ]
     },

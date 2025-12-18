@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-asn1",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-asn1-iosArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-asn1-iosarm64-3.20.0-PREVIEW.klib",
-          "size": 256840,
-          "sha512": "aa38c2d2fd1fe8714db66fe719e4a0453f1e6d706a06f4653fd927a0338305ce84fb84005a9ae8d8a40c6ccec28d6836fd2e9582ed51d3c4e090ca9986f8746a",
-          "sha256": "e96e4d503a753a832538ffdbd90604324b843227f9997a74e52eed6957280aa0",
-          "sha1": "6f8878b4bf63b3e500531aafdbbd23902ecbbf4d",
-          "md5": "d76e671f4555a132d1de26488091e810"
+          "size": 256842,
+          "sha512": "c7996b667eefef7c0e837bf7b2ae5504ab2afcb3e6024e92f524446c5b785eabce94e8c2682e260831432e15221d80b6dbd2700da1d4e278b6295ed11d42f114",
+          "sha256": "cb5b88e697190dc92bf3f2c43da6570b5ee131f6f8f324b73b3c310f608b9f01",
+          "sha1": "d348492f280c0732b264d57c00da1a963fb80b63",
+          "md5": "fee3fabfc0b65cbeda1592e03dd2ce04"
         }
       ]
     },

@@ -30,9 +30,9 @@ asp = {group = "at.asitplus.gradle", name = "k2", version.ref = "asp" }
 bignum = {group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
 cidre = {group = "at.asitplus", name = "cidre", version.ref = "cidre" }
 classgraph = {group = "io.github.classgraph", name = "classgraph", version.ref = "classgraph" }
-indispensable = {group = "Signum", name = "indispensable", version = "3.20.0-PREVIEW" }
-indispensable-cosef = {group = "Signum", name = "indispensable-cosef", version = "3.20.0-PREVIEW" }
-internals = {group = "Signum", name = "internals", version = "unspecified" }
+indispensable = {group = "at.asitplus.signum", name = "indispensable", version = "3.20.0-PREVIEW" }
+indispensable-cosef = {group = "at.asitplus.signum", name = "indispensable-cosef", version = "3.20.0-PREVIEW" }
+internals = {group = "at.asitplus.signum", name = "internals", version = "unspecified" }
 jose = {group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kmmresult = {group = "at.asitplus", name = "kmmresult", version.ref = "kmmresult" }
 kotlinpoet = {group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }

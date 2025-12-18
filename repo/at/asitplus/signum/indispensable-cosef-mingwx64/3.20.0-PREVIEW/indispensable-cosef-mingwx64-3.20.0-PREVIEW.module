@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -72,11 +72,11 @@
         {
           "name": "indispensable-cosef-mingwX64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-mingwx64-3.20.0-PREVIEW.klib",
-          "size": 183044,
-          "sha512": "803b67e51a3bd15b948dd6899fe6576d0b3b58e9377c4d019df71c54dc0970905dc3d17593fef35786c99881ed44ee98436b039fb11243fd1d0212e5c3c29e34",
-          "sha256": "8b6b8e10febf98069a044c21130cbc6cf580a9dc88a1e6863f59b633d05654b1",
-          "sha1": "a551d4494b8589f72b72e7415dc280401d370668",
-          "md5": "58ead87d4680a5e15b58dfaf317bef36"
+          "size": 183046,
+          "sha512": "ac62358765ea3d1c09d38413356827e6d60f65b9f77e65d28f1f42998b86a13d90c6894e8438db8205f1dc4594ccc6b25b5fc1b78293c559380080b3d052fef8",
+          "sha256": "231f2293e6e93b23e15859501b1713c8754b21907f656fd266f57e215cc27af6",
+          "sha1": "ad9b6c5874a2ef665c8de825bb19d00270c5ea4e",
+          "md5": "f6e9e9c9f14d7462d6f5b07ad38fdc1c"
         }
       ]
     },

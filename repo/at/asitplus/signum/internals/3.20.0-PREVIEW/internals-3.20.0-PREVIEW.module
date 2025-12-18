@@ -1,7 +1,7 @@
 {
   "formatVersion": "1.1",
   "component": {
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -76,7 +76,7 @@
       },
       "available-at": {
         "url": "../../internals-android/3.20.0-PREVIEW/internals-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -92,7 +92,7 @@
       },
       "available-at": {
         "url": "../../internals-android/3.20.0-PREVIEW/internals-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -110,7 +110,7 @@
       },
       "available-at": {
         "url": "../../internals-android/3.20.0-PREVIEW/internals-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -126,7 +126,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativearm32/3.20.0-PREVIEW/internals-androidnativearm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativearm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -144,7 +144,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativearm32/3.20.0-PREVIEW/internals-androidnativearm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativearm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -160,7 +160,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativearm64/3.20.0-PREVIEW/internals-androidnativearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -178,7 +178,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativearm64/3.20.0-PREVIEW/internals-androidnativearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -194,7 +194,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativex64/3.20.0-PREVIEW/internals-androidnativex64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativex64",
         "version": "3.20.0-PREVIEW"
       }
@@ -212,7 +212,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativex64/3.20.0-PREVIEW/internals-androidnativex64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativex64",
         "version": "3.20.0-PREVIEW"
       }
@@ -228,7 +228,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativex86/3.20.0-PREVIEW/internals-androidnativex86-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativex86",
         "version": "3.20.0-PREVIEW"
       }
@@ -246,7 +246,7 @@
       },
       "available-at": {
         "url": "../../internals-androidnativex86/3.20.0-PREVIEW/internals-androidnativex86-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-androidnativex86",
         "version": "3.20.0-PREVIEW"
       }
@@ -262,7 +262,7 @@
       },
       "available-at": {
         "url": "../../internals-iosarm64/3.20.0-PREVIEW/internals-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -280,7 +280,7 @@
       },
       "available-at": {
         "url": "../../internals-iosarm64/3.20.0-PREVIEW/internals-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -296,7 +296,7 @@
       },
       "available-at": {
         "url": "../../internals-iosarm64/3.20.0-PREVIEW/internals-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -312,7 +312,7 @@
       },
       "available-at": {
         "url": "../../internals-iossimulatorarm64/3.20.0-PREVIEW/internals-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -330,7 +330,7 @@
       },
       "available-at": {
         "url": "../../internals-iossimulatorarm64/3.20.0-PREVIEW/internals-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -346,7 +346,7 @@
       },
       "available-at": {
         "url": "../../internals-iossimulatorarm64/3.20.0-PREVIEW/internals-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -362,7 +362,7 @@
       },
       "available-at": {
         "url": "../../internals-iosx64/3.20.0-PREVIEW/internals-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -380,7 +380,7 @@
       },
       "available-at": {
         "url": "../../internals-iosx64/3.20.0-PREVIEW/internals-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -396,7 +396,7 @@
       },
       "available-at": {
         "url": "../../internals-iosx64/3.20.0-PREVIEW/internals-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -412,7 +412,7 @@
       },
       "available-at": {
         "url": "../../internals-js/3.20.0-PREVIEW/internals-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -428,7 +428,7 @@
       },
       "available-at": {
         "url": "../../internals-js/3.20.0-PREVIEW/internals-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -446,7 +446,7 @@
       },
       "available-at": {
         "url": "../../internals-js/3.20.0-PREVIEW/internals-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -462,7 +462,7 @@
       },
       "available-at": {
         "url": "../../internals-jvm/3.20.0-PREVIEW/internals-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -478,7 +478,7 @@
       },
       "available-at": {
         "url": "../../internals-jvm/3.20.0-PREVIEW/internals-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -496,7 +496,7 @@
       },
       "available-at": {
         "url": "../../internals-jvm/3.20.0-PREVIEW/internals-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -512,7 +512,7 @@
       },
       "available-at": {
         "url": "../../internals-linuxarm64/3.20.0-PREVIEW/internals-linuxarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-linuxarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -530,7 +530,7 @@
       },
       "available-at": {
         "url": "../../internals-linuxarm64/3.20.0-PREVIEW/internals-linuxarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-linuxarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -546,7 +546,7 @@
       },
       "available-at": {
         "url": "../../internals-linuxx64/3.20.0-PREVIEW/internals-linuxx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-linuxx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -564,7 +564,7 @@
       },
       "available-at": {
         "url": "../../internals-linuxx64/3.20.0-PREVIEW/internals-linuxx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-linuxx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -580,7 +580,7 @@
       },
       "available-at": {
         "url": "../../internals-macosarm64/3.20.0-PREVIEW/internals-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -598,7 +598,7 @@
       },
       "available-at": {
         "url": "../../internals-macosarm64/3.20.0-PREVIEW/internals-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -614,7 +614,7 @@
       },
       "available-at": {
         "url": "../../internals-macosarm64/3.20.0-PREVIEW/internals-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -630,7 +630,7 @@
       },
       "available-at": {
         "url": "../../internals-macosx64/3.20.0-PREVIEW/internals-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -648,7 +648,7 @@
       },
       "available-at": {
         "url": "../../internals-macosx64/3.20.0-PREVIEW/internals-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -664,7 +664,7 @@
       },
       "available-at": {
         "url": "../../internals-macosx64/3.20.0-PREVIEW/internals-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -680,7 +680,7 @@
       },
       "available-at": {
         "url": "../../internals-mingwx64/3.20.0-PREVIEW/internals-mingwx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-mingwx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -698,7 +698,7 @@
       },
       "available-at": {
         "url": "../../internals-mingwx64/3.20.0-PREVIEW/internals-mingwx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-mingwx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -714,7 +714,7 @@
       },
       "available-at": {
         "url": "../../internals-tvosarm64/3.20.0-PREVIEW/internals-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -732,7 +732,7 @@
       },
       "available-at": {
         "url": "../../internals-tvosarm64/3.20.0-PREVIEW/internals-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -748,7 +748,7 @@
       },
       "available-at": {
         "url": "../../internals-tvosarm64/3.20.0-PREVIEW/internals-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -764,7 +764,7 @@
       },
       "available-at": {
         "url": "../../internals-tvossimulatorarm64/3.20.0-PREVIEW/internals-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -782,7 +782,7 @@
       },
       "available-at": {
         "url": "../../internals-tvossimulatorarm64/3.20.0-PREVIEW/internals-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -798,7 +798,7 @@
       },
       "available-at": {
         "url": "../../internals-tvossimulatorarm64/3.20.0-PREVIEW/internals-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -814,7 +814,7 @@
       },
       "available-at": {
         "url": "../../internals-tvosx64/3.20.0-PREVIEW/internals-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -832,7 +832,7 @@
       },
       "available-at": {
         "url": "../../internals-tvosx64/3.20.0-PREVIEW/internals-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -848,7 +848,7 @@
       },
       "available-at": {
         "url": "../../internals-tvosx64/3.20.0-PREVIEW/internals-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -864,7 +864,7 @@
       },
       "available-at": {
         "url": "../../internals-wasm-js/3.20.0-PREVIEW/internals-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -880,7 +880,7 @@
       },
       "available-at": {
         "url": "../../internals-wasm-js/3.20.0-PREVIEW/internals-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -898,7 +898,7 @@
       },
       "available-at": {
         "url": "../../internals-wasm-js/3.20.0-PREVIEW/internals-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -914,7 +914,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosarm32/3.20.0-PREVIEW/internals-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -932,7 +932,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosarm32/3.20.0-PREVIEW/internals-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -948,7 +948,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosarm32/3.20.0-PREVIEW/internals-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -964,7 +964,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosarm64/3.20.0-PREVIEW/internals-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -982,7 +982,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosarm64/3.20.0-PREVIEW/internals-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -998,7 +998,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosarm64/3.20.0-PREVIEW/internals-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1014,7 +1014,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosdevicearm64/3.20.0-PREVIEW/internals-watchosdevicearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosdevicearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1032,7 +1032,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosdevicearm64/3.20.0-PREVIEW/internals-watchosdevicearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosdevicearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1048,7 +1048,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosdevicearm64/3.20.0-PREVIEW/internals-watchosdevicearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosdevicearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1064,7 +1064,7 @@
       },
       "available-at": {
         "url": "../../internals-watchossimulatorarm64/3.20.0-PREVIEW/internals-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1082,7 +1082,7 @@
       },
       "available-at": {
         "url": "../../internals-watchossimulatorarm64/3.20.0-PREVIEW/internals-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1098,7 +1098,7 @@
       },
       "available-at": {
         "url": "../../internals-watchossimulatorarm64/3.20.0-PREVIEW/internals-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1114,7 +1114,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosx64/3.20.0-PREVIEW/internals-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1132,7 +1132,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosx64/3.20.0-PREVIEW/internals-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1148,7 +1148,7 @@
       },
       "available-at": {
         "url": "../../internals-watchosx64/3.20.0-PREVIEW/internals-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "internals-watchosx64",
         "version": "3.20.0-PREVIEW"
       }

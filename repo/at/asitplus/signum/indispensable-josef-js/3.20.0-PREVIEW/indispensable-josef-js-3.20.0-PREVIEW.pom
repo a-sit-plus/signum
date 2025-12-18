@@ -6,7 +6,7 @@
   <!-- that they should prefer consuming it instead. -->
   <!-- do_not_remove: published-with-gradle-metadata -->
   <modelVersion>4.0.0</modelVersion>
-  <groupId>Signum</groupId>
+  <groupId>at.asitplus.signum</groupId>
   <artifactId>indispensable-josef-js</artifactId>
   <version>3.20.0-PREVIEW</version>
   <packaging>klib</packaging>
@@ -54,7 +54,7 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>Signum</groupId>
+      <groupId>at.asitplus.signum</groupId>
       <artifactId>indispensable-js</artifactId>
       <version>3.20.0-PREVIEW</version>
       <scope>compile</scope>
@@ -72,7 +72,7 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>Signum</groupId>
+      <groupId>at.asitplus.signum</groupId>
       <artifactId>internals-js</artifactId>
       <version>3.20.0-PREVIEW</version>
       <scope>runtime</scope>

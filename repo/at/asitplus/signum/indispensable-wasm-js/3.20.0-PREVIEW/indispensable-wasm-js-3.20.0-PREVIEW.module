@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,14 +26,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -86,11 +86,11 @@
         {
           "name": "indispensable-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 527932,
-          "sha512": "6089ec3820f8831197a7b5cd3120ed871d680150624fef4293b3dd8475bb936b2fe2b669e30cfdfe192b3487f74cb6c4f73dbec4ac1c11d4e854395bd6cd8df5",
-          "sha256": "1338140f12b41cbb5c2cabcb01a46d34adaad39b12ac49e22ef9d4d440e583a4",
-          "sha1": "0f0f3ce13eb095f0cf6dbe3b53143feea1db8d20",
-          "md5": "93de24edb23ac4b739f2a437a44a7ee1"
+          "size": 527931,
+          "sha512": "a6e23c898c7a43d5f81ded22992a0288ca373655559662e6bc22f058966409858674a48a14987164227bcae98654e79616e312ec615332b7cd5282bbf3255110",
+          "sha256": "384048cfdcd39b38c3ebb32cd374523ce7762b66a889755ec683ef65188e209d",
+          "sha1": "b1609063e07bdf859a80480e7e1c05b1f90c9352",
+          "md5": "550a61803d259ea4ec07a67241a59865"
         }
       ]
     },
@@ -105,14 +105,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -161,7 +161,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -179,11 +179,11 @@
         {
           "name": "indispensable-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 527932,
-          "sha512": "6089ec3820f8831197a7b5cd3120ed871d680150624fef4293b3dd8475bb936b2fe2b669e30cfdfe192b3487f74cb6c4f73dbec4ac1c11d4e854395bd6cd8df5",
-          "sha256": "1338140f12b41cbb5c2cabcb01a46d34adaad39b12ac49e22ef9d4d440e583a4",
-          "sha1": "0f0f3ce13eb095f0cf6dbe3b53143feea1db8d20",
-          "md5": "93de24edb23ac4b739f2a437a44a7ee1"
+          "size": 527931,
+          "sha512": "a6e23c898c7a43d5f81ded22992a0288ca373655559662e6bc22f058966409858674a48a14987164227bcae98654e79616e312ec615332b7cd5282bbf3255110",
+          "sha256": "384048cfdcd39b38c3ebb32cd374523ce7762b66a889755ec683ef65188e209d",
+          "sha1": "b1609063e07bdf859a80480e7e1c05b1f90c9352",
+          "md5": "550a61803d259ea4ec07a67241a59865"
         }
       ]
     },

@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -37,11 +37,11 @@
         {
           "name": "internals-watchosX64Main-3.20.0-PREVIEW.klib",
           "url": "internals-watchosx64-3.20.0-PREVIEW.klib",
-          "size": 12888,
-          "sha512": "ab614eed497b476927e45d743f614a276ff3ae5a72cf0f590933a5982e2fc705eb705630ea74a02cea5d3a37c1a5531839ea93aca9962ac343dfa1a9bb1e5d80",
-          "sha256": "f2203da5bdc038e6fd1eb8bcbe09afeb730ba3dfe9268e13cc3fc793506eb190",
-          "sha1": "c2b2e3e8bf58f47dbad701038557f29e6de47899",
-          "md5": "a9a59bbb9af3e6e6339d16d38dec0f70"
+          "size": 12895,
+          "sha512": "8b34d33dafc79a2f977ec34050c8a6db8ec1d1ae185bb3e7d31b5cb9b6d3db41c28105596530d5a4c6d04372714ce974022f9d7adbaaed44455faa3867b942ed",
+          "sha256": "faa7cb7b2fef721da9b041b3bb58ab2723f97fc7cdcccc35cadba3ffc60b3be3",
+          "sha1": "652c708070fb96fb4fd585a1cd272bae6a50af8d",
+          "md5": "1560d15df0d8a6fcba619058b33e4cdf"
         }
       ]
     },
@@ -90,11 +90,11 @@
         {
           "name": "internals-watchosx64-3.20.0-PREVIEW-metadata.jar",
           "url": "internals-watchosx64-3.20.0-PREVIEW-metadata.jar",
-          "size": 3905,
-          "sha512": "708bab83d6f94974f9f5c33fd7566d11da5cb2a4b89ed28ff276001dc6b0ed4d179a109e137e7cfd5b06f37f059513938e220660d1f868684df5cabb5031ac73",
-          "sha256": "2d6e09fa93b4e4e8c55b9aa83f57bb876ff8851e42e2946812c4fd2147dd459a",
-          "sha1": "6e5480d43fe937f7f7822e635f289ab7cf3ff007",
-          "md5": "2597e877ef092c6a5f75d56b8dd9d069"
+          "size": 3911,
+          "sha512": "1ee6395381e3a560424055864bc433ceb883e0deabff6fcdcec9b01957344cc8e818a6a1be73fcbfdb3d91f0e38b5667b20db9a391742636e121cf5107dab52a",
+          "sha256": "e65a252f779a004d9643b0c89e5f4cf6712fd386c236f5041fc674ba409a9d59",
+          "sha1": "11f59658e6c68b50a204cebb5c77726fee45deae",
+          "md5": "1cf423e1c70d5e3f80cc9d585fbf4b0d"
         }
       ]
     }

@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-oids",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -44,11 +44,11 @@
         {
           "name": "indispensable-oids-mingwX64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-oids-mingwx64-3.20.0-PREVIEW.klib",
-          "size": 606297,
-          "sha512": "676a13675899e04b3640a0c21ba88d3c82e90fbdca50562737192524ccc592e2b892d32096e5ec782616f50ef301c001713d7d27e3c6d7b4ac93cfbea220b7e2",
-          "sha256": "2a13d55b23c3813c7761e7445103ca289c04cbcb7a62b59ff4c5ce6f8723618a",
-          "sha1": "ca59c290b81da4cfa6b20f31a72a52002d74831c",
-          "md5": "92b24d70c7dc9a406e61ee49593ffe3f"
+          "size": 606296,
+          "sha512": "17cf54744cb4c035a2b707d70461f124f19a0380b92e1c574c469bf8e0c61755352ff2abdcde19935f6df990de548f3a7ef74ddc60dd979032aa98a311cd952f",
+          "sha256": "e20e9573911bcb42b80bfbad3deaff608acc0a95cac566e220fb327f81ec4701",
+          "sha1": "3b55d717d6610b1eb4bd7a6fba4123e6141e3998",
+          "md5": "0882e31092dee235a033e8809669af52"
         }
       ]
     },

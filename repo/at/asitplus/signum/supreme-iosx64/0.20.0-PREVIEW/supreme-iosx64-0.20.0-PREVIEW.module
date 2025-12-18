@@ -1,0 +1,181 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../supreme/0.20.0-PREVIEW/supreme-0.20.0-PREVIEW.module",
+    "group": "at.asitplus.signum",
+    "module": "supreme",
+    "version": "0.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "iosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "at.asitplus.signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "io.github.aakira",
+          "module": "napier",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme-iosX64Main-0.20.0-PREVIEW.klib",
+          "url": "supreme-iosx64-0.20.0-PREVIEW.klib",
+          "size": 461806,
+          "sha512": "549a99310ecfc508a3d25a50545ffc944139fa872f98a5c2a8a41b0c43f27995c674ba425a126c35c8fee287835f57b1372d1c519c32a41b0f1730df8a043e43",
+          "sha256": "48487dabc0793a6dcc0eebd4e415f08d46964b3bc76c7b9d1c4e2ed93047289f",
+          "sha1": "bba4d32b69d5f65a4e92f54a4fa46fb60d969fbb",
+          "md5": "893c92544019dcb44479b16a90f7ba21"
+        },
+        {
+          "name": "supreme-iosX64Cinterop-cinteropMain-0.20.0-PREVIEW.klib",
+          "url": "supreme-iosx64-0.20.0-PREVIEW-cinterop-cinterop.klib",
+          "size": 42894,
+          "sha512": "f9b9d9aeaf734b5795d56dcc7b6e70eed53ad292058b798e788ef506f94ea366e6beb2304b793a9380959ac4e3490a650be1c4ea34b749dc7621000c87b5a4a7",
+          "sha256": "72f0fa0d54b6d6df5cbf239c87e03480ecf1bb3d6b7980b5f386896b023ed55d",
+          "sha1": "982756e559cae37c95941c3faee2bd208f803b72",
+          "md5": "78b92a9b90d5794f20b9b70390f3c042"
+        }
+      ]
+    },
+    {
+      "name": "iosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "supreme-iosx64-0.20.0-PREVIEW-sources.jar",
+          "url": "supreme-iosx64-0.20.0-PREVIEW-sources.jar",
+          "size": 206090,
+          "sha512": "4492a6cff322e597445e922fcd915982bf2bc3fcb568ad36e5f287229e607c74bd26e691d91c95349066072e21d6789b666781c9636152fd773f8e06f4e87f7d",
+          "sha256": "4ec8680e2d75acf2a8789c99cf7685d0f3252974dbf1791f4edbfc6eb603a7b6",
+          "sha1": "2affdce2d8a61cb1208f7abc948c988983b176f2",
+          "md5": "c300e3956f637a148cf525ecc4ccddff"
+        }
+      ]
+    },
+    {
+      "name": "iosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "at.asitplus.signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "io.github.aakira",
+          "module": "napier",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme-iosx64-0.20.0-PREVIEW-metadata.jar",
+          "url": "supreme-iosx64-0.20.0-PREVIEW-metadata.jar",
+          "size": 42828,
+          "sha512": "9e47c69ee1c17c620fe3bd343f8eebdf1e69ebf7ca410a7b0e1618ded3006a0f402e8f282bca177f7bc53f11b606abe516e5f4f52a1d34a93a383e16e306724e",
+          "sha256": "273f1d9d5fc33b3d749a55db69db83320afff107e33efdfae130336a526019b6",
+          "sha1": "38e2ea335df0f2590d5e540bb291a73317539239",
+          "md5": "27c3a8e30ab4f7ca94374670333a1299"
+        }
+      ]
+    }
+  ]
+}

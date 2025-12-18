@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-josef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -33,7 +33,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -58,11 +58,11 @@
         {
           "name": "indispensable-josef-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-js-3.20.0-PREVIEW.klib",
-          "size": 188860,
-          "sha512": "c5c7b1ded65aec747a8124366df7936644965415dcb85daddcb2cf72e07bbb4d163400cf17efc05dba4fa286cec71e61f124f24efede2506066dcaebfc1f7694",
-          "sha256": "694361e9745e324f4004b62e4b2052a74a35b434e67379d44aed2a272071a6ea",
-          "sha1": "6c0b96209a1bad278282cf00f9a9307e3639b97a",
-          "md5": "978c38ec39ba9135bf3c82cc098cc402"
+          "size": 188864,
+          "sha512": "2c000eaa519bc8b65b221c6949eae7499efab202ba1d60c88916f9c083ac70c1d414de8b4d8dfc390842b398a9c97db002de6065be7ca2626c1d2817a067acb1",
+          "sha256": "2a2460932f5554f449e3481760bc14a15d33f903060e6b385fb1718324e17d12",
+          "sha1": "f71ea3828b03ccd4e62e2b380b928ea879905fac",
+          "md5": "de1482f753d31ec0fff7b1658ab27041"
         }
       ]
     },
@@ -84,7 +84,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -105,7 +105,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -123,11 +123,11 @@
         {
           "name": "indispensable-josef-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-js-3.20.0-PREVIEW.klib",
-          "size": 188860,
-          "sha512": "c5c7b1ded65aec747a8124366df7936644965415dcb85daddcb2cf72e07bbb4d163400cf17efc05dba4fa286cec71e61f124f24efede2506066dcaebfc1f7694",
-          "sha256": "694361e9745e324f4004b62e4b2052a74a35b434e67379d44aed2a272071a6ea",
-          "sha1": "6c0b96209a1bad278282cf00f9a9307e3639b97a",
-          "md5": "978c38ec39ba9135bf3c82cc098cc402"
+          "size": 188864,
+          "sha512": "2c000eaa519bc8b65b221c6949eae7499efab202ba1d60c88916f9c083ac70c1d414de8b4d8dfc390842b398a9c97db002de6065be7ca2626c1d2817a067acb1",
+          "sha256": "2a2460932f5554f449e3481760bc14a15d33f903060e6b385fb1718324e17d12",
+          "sha1": "f71ea3828b03ccd4e62e2b380b928ea879905fac",
+          "md5": "de1482f753d31ec0fff7b1658ab27041"
         }
       ]
     },

@@ -1,7 +1,7 @@
 {
   "formatVersion": "1.1",
   "component": {
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-versionCatalog",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -24,11 +24,11 @@
         {
           "name": "indispensable-versionCatalog-3.20.0-PREVIEW.toml",
           "url": "indispensable-versionCatalog-3.20.0-PREVIEW.toml",
-          "size": 2841,
-          "sha512": "6633f220b53c584bd9b04473eb10c7fc79ca9f42893df704b71aea99f12044a0bb0ebe967f2c9cfadaed5ed08ba822706c9628eb48bbde1804326b7e77653e0d",
-          "sha256": "75182d2e98421dff1db2cb2959643b015bd2ffb5a453661f445bbd7a13f47510",
-          "sha1": "bcfbd4136babea301b7655aae46c1c35818421a1",
-          "md5": "3812e70ff6eaf8316e0ac9d7d60b337c"
+          "size": 2889,
+          "sha512": "51d9a2c6ed45ab1a2862ef536333371f40f2f151bfd51e77913c6328921ddaccd0583f7fca114f3b04563b1ae84c969e3cabe241a8f9a49cbfb0e7593dcb67e5",
+          "sha256": "350f2ec8b790002332de5033c70f89e2b7047071a64ec3b4bbf446bc0a456731",
+          "sha1": "61ea38f43f4b62362be0c94e1dfceb13b40ce360",
+          "md5": "dcbc6de7fbce12cf67982643e61790e4"
         }
       ]
     }

@@ -30,7 +30,7 @@ asp = {group = "at.asitplus.gradle", name = "k2", version.ref = "asp" }
 bignum = {group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
 cidre = {group = "at.asitplus", name = "cidre", version.ref = "cidre" }
 classgraph = {group = "io.github.classgraph", name = "classgraph", version.ref = "classgraph" }
-indispensable-asn1 = {group = "Signum", name = "indispensable-asn1", version = "3.20.0-PREVIEW" }
+indispensable-asn1 = {group = "at.asitplus.signum", name = "indispensable-asn1", version = "3.20.0-PREVIEW" }
 jose = {group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kmmresult = {group = "at.asitplus", name = "kmmresult", version.ref = "kmmresult" }
 kotlinpoet = {group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }

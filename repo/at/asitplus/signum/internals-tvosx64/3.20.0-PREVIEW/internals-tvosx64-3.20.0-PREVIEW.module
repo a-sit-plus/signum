@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -37,11 +37,11 @@
         {
           "name": "internals-tvosX64Main-3.20.0-PREVIEW.klib",
           "url": "internals-tvosx64-3.20.0-PREVIEW.klib",
-          "size": 12867,
-          "sha512": "f51f32755846a85bb534b531b69e8e95551b6011337a66c61b8fc53a284efb07508fc9845f711f822a98a45902b5ca00e5e1953a361b8b62e66f27a547166b2f",
-          "sha256": "5fa5b5a316425d2504280bf01a3eb8276674683b0ed3e267bfe344708cf1d339",
-          "sha1": "6116732f8c9b938b62ced99ca82333fb0d708dc4",
-          "md5": "c4228cefe0adacb01e141286cc402ab0"
+          "size": 12874,
+          "sha512": "4fb7a0e397432c67f6afd3446ac2407c852707c7fdd86ee52832dc00b24107f119c8c556a3fb04c3d572ce4aacf3b2418d10fb24583bc059e4d43b3cd845c540",
+          "sha256": "82e9be7ade87b04584e5c1ff132995d361a361a0d3b40cfc391aab1418848167",
+          "sha1": "6be83bbea37333a2485947f8db2f192737811d06",
+          "md5": "48e053daef7172c1af33a5944ae38830"
         }
       ]
     },
@@ -90,11 +90,11 @@
         {
           "name": "internals-tvosx64-3.20.0-PREVIEW-metadata.jar",
           "url": "internals-tvosx64-3.20.0-PREVIEW-metadata.jar",
-          "size": 3905,
-          "sha512": "708bab83d6f94974f9f5c33fd7566d11da5cb2a4b89ed28ff276001dc6b0ed4d179a109e137e7cfd5b06f37f059513938e220660d1f868684df5cabb5031ac73",
-          "sha256": "2d6e09fa93b4e4e8c55b9aa83f57bb876ff8851e42e2946812c4fd2147dd459a",
-          "sha1": "6e5480d43fe937f7f7822e635f289ab7cf3ff007",
-          "md5": "2597e877ef092c6a5f75d56b8dd9d069"
+          "size": 3911,
+          "sha512": "1ee6395381e3a560424055864bc433ceb883e0deabff6fcdcec9b01957344cc8e818a6a1be73fcbfdb3d91f0e38b5667b20db9a391742636e121cf5107dab52a",
+          "sha256": "e65a252f779a004d9643b0c89e5f4cf6712fd386c236f5041fc674ba409a9d59",
+          "sha1": "11f59658e6c68b50a204cebb5c77726fee45deae",
+          "md5": "1cf423e1c70d5e3f80cc9d585fbf4b0d"
         }
       ]
     }

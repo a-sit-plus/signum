@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-josef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-josef-linuxArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-linuxarm64-3.20.0-PREVIEW.klib",
-          "size": 202427,
-          "sha512": "5834cf2993f62f819eaebfbbbe0b0dd3b0bf16138618dbc148da2dfeebbf83be19752d5b1bdd808c1615764e1fa004f827586eba4b42fc06bc06903156bf8d5d",
-          "sha256": "5dd63832d584ce689821e0cd1c2476b9ef55c58ae855cc45a2a9ae60a0c530c8",
-          "sha1": "2ded069ee469a9a7625ac8f8684a7bdcb3d86264",
-          "md5": "4a2d9232354a1e5ee68bf172a16b1c4f"
+          "size": 202426,
+          "sha512": "b992768316c67c2b6eb885e4beb51e4ecb21a1b7a8536ca61d206fcecca8b990b4db73334b1b4a99b918648c60ac603fa41d49f10e56b720c51eb7caef64424c",
+          "sha256": "860794309cba0efe4d671fb7bebe5385ba0427336207872cf0a3679396d34558",
+          "sha1": "2ac880eff1fe11f06ee176148560262287945101",
+          "md5": "0202d4306aed131d26cd8c8da910d223"
         }
       ]
     },

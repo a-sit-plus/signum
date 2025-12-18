@@ -1,0 +1,151 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../supreme/0.20.0-PREVIEW/supreme-0.20.0-PREVIEW.module",
+    "group": "at.asitplus.signum",
+    "module": "supreme",
+    "version": "0.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme.aar",
+          "url": "supreme-android-0.20.0-PREVIEW.aar",
+          "size": 496155,
+          "sha512": "cc08f7353291e150145ae43b2cfd6a127c4f9382c1bbc36e70809546aea00311ca6dbdfd1579a03a9c5331b269f8836d00e146fde1875cc8a57bb5eac5329410",
+          "sha256": "aa3dc0562ad73fa578d98412c23fb2a0e8ac51d288eab457dd8ce769d9cd8a1c",
+          "sha1": "e1a8528958ba48c47bd373d5fa381291b20afcbd",
+          "md5": "5b3f21bbdc46df2c3472da3f8f57f8f2"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "androidx.biometric",
+          "module": "biometric",
+          "version": {
+            "requires": "1.2.0-alpha05"
+          }
+        },
+        {
+          "group": "at.asitplus.signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "io.github.aakira",
+          "module": "napier",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme.aar",
+          "url": "supreme-android-0.20.0-PREVIEW.aar",
+          "size": 496155,
+          "sha512": "cc08f7353291e150145ae43b2cfd6a127c4f9382c1bbc36e70809546aea00311ca6dbdfd1579a03a9c5331b269f8836d00e146fde1875cc8a57bb5eac5329410",
+          "sha256": "aa3dc0562ad73fa578d98412c23fb2a0e8ac51d288eab457dd8ce769d9cd8a1c",
+          "sha1": "e1a8528958ba48c47bd373d5fa381291b20afcbd",
+          "md5": "5b3f21bbdc46df2c3472da3f8f57f8f2"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "supreme-android-0.20.0-PREVIEW-sources.jar",
+          "url": "supreme-android-0.20.0-PREVIEW-sources.jar",
+          "size": 60700,
+          "sha512": "4bbe9e91077f54be4ba73c78ff2f8a53b60478d02c05251a50f93d4571e65ec5f7d5360c3454c8d1c09e8b42598d1e7217255c84640f0612ff4966781f3f4327",
+          "sha256": "05304fe34f1dc11ddf8f1b36670a9d5180b15f3c8f417a75bd479c2b2e645a9c",
+          "sha1": "d044028ae90aaa3db385a5c5f5e41d258ca57038",
+          "md5": "c2364fc66a49f58fe621c4aa7cf4120e"
+        }
+      ]
+    }
+  ]
+}

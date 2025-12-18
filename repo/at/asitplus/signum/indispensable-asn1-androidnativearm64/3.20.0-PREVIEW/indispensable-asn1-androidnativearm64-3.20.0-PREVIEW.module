@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-asn1",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-asn1-androidNativeArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-asn1-androidnativearm64-3.20.0-PREVIEW.klib",
-          "size": 256866,
-          "sha512": "5c4a39238e9994d797a79626056ea6f0bd43f58cffeb280f2f9976778dedd62117b10b0794fefe7cd26347751db662aff4688646d27b5f6cb28f72f5f2d88af6",
-          "sha256": "107445ec4e143c4ed98d5886065920d3d098e8a1ea384b75a625a5fab6e4e284",
-          "sha1": "422f44033e9751fcaf5905fdb85d01900ff48d49",
-          "md5": "a30fb01e9adbfb6cacb745cc291245f4"
+          "size": 256868,
+          "sha512": "905f2ab829ce24cdc393ea4db4198d5a062fe981845e3f20f9510f64318457383a4bb1ce6d8a3af9c6b41c4010228c5f7902be4e1e68ebb972ddd3b59a97a05f",
+          "sha256": "a078fef7685c4fa5c3cec739f74322a7afaeb6d95a95f1267a4eee06c505a8a9",
+          "sha1": "65780bbda08771c65e50ac2fcf2b5908c6fc4b59",
+          "md5": "8b1f1e5efb269c7acc866bd053aa8668"
         }
       ]
     },

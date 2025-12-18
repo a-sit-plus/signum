@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-oids",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -44,11 +44,11 @@
         {
           "name": "indispensable-oids-tvosSimulatorArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-oids-tvossimulatorarm64-3.20.0-PREVIEW.klib",
-          "size": 606369,
-          "sha512": "7e6304243ef021e42142e2b3dac181c27d7cfc56b8480df15b1f39da0ebc0b0bdd9ef780c1f67bb89c905150b3c61e71bf704e6ae71fbca19d3afb6496502cb4",
-          "sha256": "d6263969794da2759f5bdd658107337c363093451ecb0190d2d528eb120d15c1",
-          "sha1": "0b4b2774af5877025ee24792c693dd1f6d601146",
-          "md5": "74d95ea0c20227b8621b0674040745ff"
+          "size": 606367,
+          "sha512": "d6f62f503a918d56f20d23192e1ec2f702f3ed6fe23f2634632414e73b19aff27f4a26e068f9baf30f9b6714e93fd91fa2c4a60f8e7de2bdb7bd4b2c341c11b0",
+          "sha256": "fffcd5263fe068037e5b46d5ed19358fb514252ce26852ae11b409158a917563",
+          "sha1": "478a69672bb8c7b2974860519fcf3cc6c4bf38cc",
+          "md5": "2687a88b6e28e0c3e255096e8db97d77"
         }
       ]
     },
@@ -86,7 +86,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"

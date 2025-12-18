@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -37,11 +37,11 @@
         {
           "name": "internals-androidNativeX86Main-3.20.0-PREVIEW.klib",
           "url": "internals-androidnativex86-3.20.0-PREVIEW.klib",
-          "size": 12887,
-          "sha512": "7081c76bc594e191652aed9857babdae9fe2973da3464a90c9afa9e11380a0c46c7524b2d3698a43521ea9a7f95906655a12daf138d3abcb4600cb302e645980",
-          "sha256": "288af0c8a153237b48dad5863397b859156c0ae43fdc343ac7c258e264b253cf",
-          "sha1": "ff41fd5a2ce77ab603fe15d352803e5bae0dcc24",
-          "md5": "9fcb6a22555fbccde951ab17086ef9b1"
+          "size": 12893,
+          "sha512": "f639902d7a8760522ec02282a9abffed33675488179b864915acf3d6e1cc19d66d33664be15622c2c496327f1a5e9c81896c4de85d251ca5fdf9e528ee9f8be8",
+          "sha256": "b305ce263588725fe428039082d571dc6710ba7e009cc6121489aecf8e54484b",
+          "sha1": "39fa0ff34abdf91b25801a9d04fc4010d395364a",
+          "md5": "a6b8fdec8b4cc8067e96c14fa830873a"
         }
       ]
     },

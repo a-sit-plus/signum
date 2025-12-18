@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -51,11 +51,11 @@
         {
           "name": "indispensable-cosef-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 175853,
-          "sha512": "26232cbdf0ab0c5f1d1733e114aff8758f1f75a2fec622c6215b52d412df2502186f0aa0ff81c4dd99e6f54d347263d3c34ced870af7e67cd26d88bfc3f41ec3",
-          "sha256": "87a48660647d7b3b8f043d1524200706900b45f99ebc7f9f7291e10b48abe4e7",
-          "sha1": "65851e62de465959d0af051765d8a78713aaa811",
-          "md5": "7a32479f71f0ad3d2fbdb4e08994440e"
+          "size": 175855,
+          "sha512": "f91955ad7084c2374234e0a9124adb3f30c9130ad0f69d32a1db9276da6c6bb95e8e113df715f48ccbe1002073bd4e18aeb87f2145cdfce8e57e8f21fdf7d0b7",
+          "sha256": "d6c80fa07da3b56c0b85cce41563f034bec0c526ffb4cbae50afbb26641f7524",
+          "sha1": "e0afdf96172f0a8ea308c4062b980bc4968b19aa",
+          "md5": "fd5c13a029b1d176f4ef11b7185f5232"
         }
       ]
     },
@@ -70,7 +70,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -91,7 +91,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -116,11 +116,11 @@
         {
           "name": "indispensable-cosef-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 175853,
-          "sha512": "26232cbdf0ab0c5f1d1733e114aff8758f1f75a2fec622c6215b52d412df2502186f0aa0ff81c4dd99e6f54d347263d3c34ced870af7e67cd26d88bfc3f41ec3",
-          "sha256": "87a48660647d7b3b8f043d1524200706900b45f99ebc7f9f7291e10b48abe4e7",
-          "sha1": "65851e62de465959d0af051765d8a78713aaa811",
-          "md5": "7a32479f71f0ad3d2fbdb4e08994440e"
+          "size": 175855,
+          "sha512": "f91955ad7084c2374234e0a9124adb3f30c9130ad0f69d32a1db9276da6c6bb95e8e113df715f48ccbe1002073bd4e18aeb87f2145cdfce8e57e8f21fdf7d0b7",
+          "sha256": "d6c80fa07da3b56c0b85cce41563f034bec0c526ffb4cbae50afbb26641f7524",
+          "sha1": "e0afdf96172f0a8ea308c4062b980bc4968b19aa",
+          "md5": "fd5c13a029b1d176f4ef11b7185f5232"
         }
       ]
     },

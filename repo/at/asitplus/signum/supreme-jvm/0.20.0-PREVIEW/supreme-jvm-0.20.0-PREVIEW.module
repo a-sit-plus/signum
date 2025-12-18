@@ -1,0 +1,144 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../supreme/0.20.0-PREVIEW/supreme-0.20.0-PREVIEW.module",
+    "group": "at.asitplus.signum",
+    "module": "supreme",
+    "version": "0.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme-jvm-0.20.0-PREVIEW.jar",
+          "url": "supreme-jvm-0.20.0-PREVIEW.jar",
+          "size": 511512,
+          "sha512": "29ae0f365541b2cde5adb72b271b0bcd9557a17912360186d2ad70e7b2699562a71d1e0d46bfd64d56a334f6d7edef91019f6ec2c3b8fd7565010b65eb483e16",
+          "sha256": "4d469363bb8de838fe85f0c4405c56842ab2837a4b935bed0f946bc7e85f608c",
+          "sha1": "e38bd2f2827bb2014d1843a3b61c7a9581d693e3",
+          "md5": "8f36af65b76b4b33d607edf521205870"
+        }
+      ]
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "at.asitplus.signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "io.github.aakira",
+          "module": "napier",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme-jvm-0.20.0-PREVIEW.jar",
+          "url": "supreme-jvm-0.20.0-PREVIEW.jar",
+          "size": 511512,
+          "sha512": "29ae0f365541b2cde5adb72b271b0bcd9557a17912360186d2ad70e7b2699562a71d1e0d46bfd64d56a334f6d7edef91019f6ec2c3b8fd7565010b65eb483e16",
+          "sha256": "4d469363bb8de838fe85f0c4405c56842ab2837a4b935bed0f946bc7e85f608c",
+          "sha1": "e38bd2f2827bb2014d1843a3b61c7a9581d693e3",
+          "md5": "8f36af65b76b4b33d607edf521205870"
+        }
+      ]
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "supreme-jvm-0.20.0-PREVIEW-sources.jar",
+          "url": "supreme-jvm-0.20.0-PREVIEW-sources.jar",
+          "size": 58844,
+          "sha512": "bea49d5919944736c1ea662a535ef77be84beb32db34d1d53eb880553372df83b072b24e0654f41c0b00dcfad615d917029d4f49f0d1332bd76ba8aa138f33ec",
+          "sha256": "ffdbd9f520a6d52b6667c645cdaf67393d678455547250f66aaf63906cb21d70",
+          "sha1": "a73ffe77c675b92e5488779981aa34fffbb131c5",
+          "md5": "022deb65657253b0779c6900d56cde6e"
+        }
+      ]
+    }
+  ]
+}

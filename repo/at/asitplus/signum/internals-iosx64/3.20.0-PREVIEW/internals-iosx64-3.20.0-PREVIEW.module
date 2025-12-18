@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -37,11 +37,11 @@
         {
           "name": "internals-iosX64Main-3.20.0-PREVIEW.klib",
           "url": "internals-iosx64-3.20.0-PREVIEW.klib",
-          "size": 27560,
-          "sha512": "0c91b9b93c79785be12e364c700776d6affde80023af9440c9119f0026166fc9baf912572efbe16b1935d02f8e14381446d5b7498c22ca8e7e1e1f71062f1fae",
-          "sha256": "3209144c51f539e6cc27b039ff3fb2793f81f29a41a8363e177b1e91a0a3e1bc",
-          "sha1": "85f81e11ffa80948684f242d63d71120cccccd25",
-          "md5": "ef5dd4707a64ac75f04de482bb0b9bb3"
+          "size": 27566,
+          "sha512": "7b0100416214e14128a90983e9574a1464f41d7221c5c056266cf34a2e9c1d7b8f3f4ec8214595e9322da0b25af0b9975b04d017c870a72fcce81f6ec33c6601",
+          "sha256": "56862dbba43551cd4789bb9680237e1ea92e0ef26248a941ef58e9f8e323e9fb",
+          "sha1": "36d52210631ee4c610354bb46a4f20f59b58dc72",
+          "md5": "d05ca7770fb033dde03cbcfb6aba7908"
         }
       ]
     },
@@ -90,11 +90,11 @@
         {
           "name": "internals-iosx64-3.20.0-PREVIEW-metadata.jar",
           "url": "internals-iosx64-3.20.0-PREVIEW-metadata.jar",
-          "size": 3905,
-          "sha512": "708bab83d6f94974f9f5c33fd7566d11da5cb2a4b89ed28ff276001dc6b0ed4d179a109e137e7cfd5b06f37f059513938e220660d1f868684df5cabb5031ac73",
-          "sha256": "2d6e09fa93b4e4e8c55b9aa83f57bb876ff8851e42e2946812c4fd2147dd459a",
-          "sha1": "6e5480d43fe937f7f7822e635f289ab7cf3ff007",
-          "md5": "2597e877ef092c6a5f75d56b8dd9d069"
+          "size": 3911,
+          "sha512": "1ee6395381e3a560424055864bc433ceb883e0deabff6fcdcec9b01957344cc8e818a6a1be73fcbfdb3d91f0e38b5667b20db9a391742636e121cf5107dab52a",
+          "sha256": "e65a252f779a004d9643b0c89e5f4cf6712fd386c236f5041fc674ba409a9d59",
+          "sha1": "11f59658e6c68b50a204cebb5c77726fee45deae",
+          "md5": "1cf423e1c70d5e3f80cc9d585fbf4b0d"
         }
       ]
     }

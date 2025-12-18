@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,14 +26,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -82,7 +82,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -100,11 +100,11 @@
         {
           "name": "indispensable-androidNativeX86Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-androidnativex86-3.20.0-PREVIEW.klib",
-          "size": 548546,
-          "sha512": "ca90f4b7e4671a3e2d790f26c38f2ee568c72709b381a088a31450144ea5dfb9cc264a13dd981f3cde5cfc552788875f2f6c8a29c70597514cfe5016112eac58",
-          "sha256": "03e3ce5d884781f58f7cafc21c64fc1db41bb9c6b5619e7e7a87b4e26d1e8492",
-          "sha1": "5f3f6a7dcb68397a8216bb3606a8bc8b6fcbe4f3",
-          "md5": "c2a7b5c8998d13ed7626cb269ee5c2b2"
+          "size": 548545,
+          "sha512": "41aeb0f3a59149d8d2093e4e6fd918d7cc83ea11ef9d1b4966eadb766401958404cd7d2edf898a5478fff6dc8d3ac3fa650b64383aefe5187fd4b9d5124de404",
+          "sha256": "e6227268e40aac42068b59961df5f683215fcdaa143d4e3f0f696aee515f26d7",
+          "sha1": "db90436f7394625374c2a5dea9675e3faa9c47ad",
+          "md5": "925e6f80d053a76a3c92163cd6c52631"
         }
       ]
     },

@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-oids",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -44,11 +44,11 @@
         {
           "name": "indispensable-oids-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-oids-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 579394,
-          "sha512": "2b79186af8599ffe4d1fc1b1c1105e78cbfc96967f3b34996ddf9e24d47f46e279231948572ca0e194f648498b790c9dd7d64e5cc97deb9f8592160fa5f3e2a8",
-          "sha256": "fa5feccf9cc16287b500e1e097ccbde242262cbfd30e8e4df819e780cc01c7ec",
-          "sha1": "ac822155843396527895e5790ad755683c448754",
-          "md5": "16bdfd65cf70c203d1a8d8605699d896"
+          "size": 579393,
+          "sha512": "fe88066a3b7f748d7338b596f095530b26ddc4fe307a919c0009c1867c40c92d9b298002cfc8af405f81954e36c4e23c40326765aaf251fdbf4ac66526c9544c",
+          "sha256": "265ea5da9bd0367b91a949f1614f60ee572b01fc1c6f934918b35d09840b089e",
+          "sha1": "23441af79b8657e8428633ae6d4d11f2a34e6be2",
+          "md5": "5c6276ba0ea047161fd43cbfd7f0c778"
         }
       ]
     },
@@ -63,7 +63,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -81,11 +81,11 @@
         {
           "name": "indispensable-oids-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-oids-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 579394,
-          "sha512": "2b79186af8599ffe4d1fc1b1c1105e78cbfc96967f3b34996ddf9e24d47f46e279231948572ca0e194f648498b790c9dd7d64e5cc97deb9f8592160fa5f3e2a8",
-          "sha256": "fa5feccf9cc16287b500e1e097ccbde242262cbfd30e8e4df819e780cc01c7ec",
-          "sha1": "ac822155843396527895e5790ad755683c448754",
-          "md5": "16bdfd65cf70c203d1a8d8605699d896"
+          "size": 579393,
+          "sha512": "fe88066a3b7f748d7338b596f095530b26ddc4fe307a919c0009c1867c40c92d9b298002cfc8af405f81954e36c4e23c40326765aaf251fdbf4ac66526c9544c",
+          "sha256": "265ea5da9bd0367b91a949f1614f60ee572b01fc1c6f934918b35d09840b089e",
+          "sha1": "23441af79b8657e8428633ae6d4d11f2a34e6be2",
+          "md5": "5c6276ba0ea047161fd43cbfd7f0c778"
         }
       ]
     },

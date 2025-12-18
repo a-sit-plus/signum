@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,14 +26,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -82,7 +82,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -100,11 +100,11 @@
         {
           "name": "indispensable-iosSimulatorArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-iossimulatorarm64-3.20.0-PREVIEW.klib",
-          "size": 560858,
-          "sha512": "c3a74f3494aea16e582692f1f339d11e2ec2c3a442c1042a56a5d40a51553b0db07c88fc7ef249b306245c27bce051f5b582d3fc147e9bb56e011a542ca91d1f",
-          "sha256": "b5bcb926dc54ed046ac99ff519cad4ac9655d6de9d66b4a7cc630c8c3dd108a0",
-          "sha1": "bddfc7eb86c8d73bb45b086beb4ba372ce7c44c4",
-          "md5": "36cf234f2033f9265eb1418097c072db"
+          "size": 560855,
+          "sha512": "abad5d2a84027c59c110e764b715e9108de0ce573af6baea0a73dd6e981be9a7527353a87d22d2f77715eb6d4be9d9bb631c862c5d98feb8a31b92b0cc56d292",
+          "sha256": "4dc3e16cc886f8878aa7f155cc60fc51968b581b7da2cd53bc437b70bc1751dd",
+          "sha1": "74752cac5e8e159b5f761eb77313b189c7ee674c",
+          "md5": "ace033b8985ff4ebac37e72891b9f004"
         }
       ]
     },
@@ -142,14 +142,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -198,7 +198,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -216,11 +216,11 @@
         {
           "name": "indispensable-iossimulatorarm64-3.20.0-PREVIEW-metadata.jar",
           "url": "indispensable-iossimulatorarm64-3.20.0-PREVIEW-metadata.jar",
-          "size": 2862,
-          "sha512": "eaf45068ef66b621fba6562aeb0bfd0a8bacad184f2b0173236d5ad91e580efb772d291fb59ba4d3aac8fd5446191a3b5a2a4287e065c5e0ffb82eca3c11da79",
-          "sha256": "4689f13841b44d122d2c086fedbbdef460ec97a03dbacd8aa18e32b8816b5a5f",
-          "sha1": "095be883f1882a80367f2c1dde07778749d5efc0",
-          "md5": "76fb69193ae872fe3d26fcc9f7079d92"
+          "size": 2872,
+          "sha512": "ae3c19b2936a8df637cb70436be85fe395404a5d3128de2b5a75c6fa4c740824e66c55a1444f58696df67703347b99a9fd8ed64a947efa819c49a95f92e790ba",
+          "sha256": "77e4c60844dfc9c413e198a40a80441a40cc26bddcdb12e47f600c440556d007",
+          "sha1": "c8c058084d098da46bee037119bf221dbdecfcb1",
+          "md5": "5d02f47004418a89b15ae962a9bd03bc"
         }
       ]
     }

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-  <groupId>Signum</groupId>
+  <groupId>at.asitplus.signum</groupId>
   <artifactId>supreme-jvm</artifactId>
   <versioning>
-    <latest>0.12.0-PREVIEW</latest>
-    <release>0.12.0-PREVIEW</release>
+    <latest>0.20.0-PREVIEW</latest>
+    <release>0.20.0-PREVIEW</release>
     <versions>
-      <version>0.12.0-PREVIEW</version>
+      <version>0.20.0-PREVIEW</version>
     </versions>
-    <lastUpdated>20251218154220</lastUpdated>
+    <lastUpdated>20251218161107</lastUpdated>
   </versioning>
 </metadata>

@@ -1,7 +1,7 @@
 {
   "formatVersion": "1.1",
   "component": {
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -24,7 +24,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -45,7 +45,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -70,11 +70,11 @@
         {
           "name": "indispensable-cosef-metadata-3.20.0-PREVIEW.jar",
           "url": "indispensable-cosef-3.20.0-PREVIEW.jar",
-          "size": 21419,
-          "sha512": "67dcbf4aaf3423cde49a74730c238b17813e02d062e7182af7641b104f41266ac263cbf8a16eac5c81f6725443a99c4806baa7815a6a1e1ebd3eac583c82b250",
-          "sha256": "380d81c85bd8d6afe9d48938f9d5751f0464112b13f77df44b57717900b34786",
-          "sha1": "568ef10f27afdc7eb9dd5f31b75d87c50f492e0b",
-          "md5": "b961a03fd949066d2c0b5c846583d1b1"
+          "size": 21420,
+          "sha512": "c479e440e1aa4c65b1e44ff9f7152386ae837e042f0c7a0fba7cc65b67b3eba0f229c11f0ca3c99a1ea679bb990609cf080718d6014c5e4c5dbd0007ecdecc08",
+          "sha256": "12b0a0c95931af1572d96c4bdbada10d3c56fb9c20d6e7e48e913308184c1234",
+          "sha1": "b96da3089d3d378603ff65ed1e384f2a63273e0f",
+          "md5": "eef20e5b79f294a2906a6d6dba8308f2"
         }
       ]
     },
@@ -111,7 +111,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-android/3.20.0-PREVIEW/indispensable-cosef-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -127,7 +127,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-android/3.20.0-PREVIEW/indispensable-cosef-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -145,7 +145,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-android/3.20.0-PREVIEW/indispensable-cosef-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -161,7 +161,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativearm32/3.20.0-PREVIEW/indispensable-cosef-androidnativearm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativearm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -179,7 +179,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativearm32/3.20.0-PREVIEW/indispensable-cosef-androidnativearm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativearm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -195,7 +195,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativearm64/3.20.0-PREVIEW/indispensable-cosef-androidnativearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -213,7 +213,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativearm64/3.20.0-PREVIEW/indispensable-cosef-androidnativearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -229,7 +229,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativex64/3.20.0-PREVIEW/indispensable-cosef-androidnativex64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativex64",
         "version": "3.20.0-PREVIEW"
       }
@@ -247,7 +247,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativex64/3.20.0-PREVIEW/indispensable-cosef-androidnativex64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativex64",
         "version": "3.20.0-PREVIEW"
       }
@@ -263,7 +263,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativex86/3.20.0-PREVIEW/indispensable-cosef-androidnativex86-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativex86",
         "version": "3.20.0-PREVIEW"
       }
@@ -281,7 +281,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-androidnativex86/3.20.0-PREVIEW/indispensable-cosef-androidnativex86-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-androidnativex86",
         "version": "3.20.0-PREVIEW"
       }
@@ -297,7 +297,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iosarm64/3.20.0-PREVIEW/indispensable-cosef-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -315,7 +315,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iosarm64/3.20.0-PREVIEW/indispensable-cosef-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -331,7 +331,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iosarm64/3.20.0-PREVIEW/indispensable-cosef-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -347,7 +347,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -365,7 +365,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -381,7 +381,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -397,7 +397,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iosx64/3.20.0-PREVIEW/indispensable-cosef-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -415,7 +415,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iosx64/3.20.0-PREVIEW/indispensable-cosef-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -431,7 +431,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-iosx64/3.20.0-PREVIEW/indispensable-cosef-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -447,7 +447,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-js/3.20.0-PREVIEW/indispensable-cosef-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -463,7 +463,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-js/3.20.0-PREVIEW/indispensable-cosef-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -481,7 +481,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-js/3.20.0-PREVIEW/indispensable-cosef-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -497,7 +497,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-jvm/3.20.0-PREVIEW/indispensable-cosef-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -513,7 +513,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-jvm/3.20.0-PREVIEW/indispensable-cosef-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -531,7 +531,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-jvm/3.20.0-PREVIEW/indispensable-cosef-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -547,7 +547,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-linuxarm64/3.20.0-PREVIEW/indispensable-cosef-linuxarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-linuxarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -565,7 +565,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-linuxarm64/3.20.0-PREVIEW/indispensable-cosef-linuxarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-linuxarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -581,7 +581,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-linuxx64/3.20.0-PREVIEW/indispensable-cosef-linuxx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-linuxx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -599,7 +599,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-linuxx64/3.20.0-PREVIEW/indispensable-cosef-linuxx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-linuxx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -615,7 +615,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-macosarm64/3.20.0-PREVIEW/indispensable-cosef-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -633,7 +633,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-macosarm64/3.20.0-PREVIEW/indispensable-cosef-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -649,7 +649,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-macosarm64/3.20.0-PREVIEW/indispensable-cosef-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -665,7 +665,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-macosx64/3.20.0-PREVIEW/indispensable-cosef-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -683,7 +683,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-macosx64/3.20.0-PREVIEW/indispensable-cosef-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -699,7 +699,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-macosx64/3.20.0-PREVIEW/indispensable-cosef-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -715,7 +715,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-mingwx64/3.20.0-PREVIEW/indispensable-cosef-mingwx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-mingwx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -733,7 +733,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-mingwx64/3.20.0-PREVIEW/indispensable-cosef-mingwx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-mingwx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -749,7 +749,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvosarm64/3.20.0-PREVIEW/indispensable-cosef-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -767,7 +767,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvosarm64/3.20.0-PREVIEW/indispensable-cosef-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -783,7 +783,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvosarm64/3.20.0-PREVIEW/indispensable-cosef-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -799,7 +799,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -817,7 +817,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -833,7 +833,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -849,7 +849,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvosx64/3.20.0-PREVIEW/indispensable-cosef-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -867,7 +867,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvosx64/3.20.0-PREVIEW/indispensable-cosef-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -883,7 +883,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-tvosx64/3.20.0-PREVIEW/indispensable-cosef-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -899,7 +899,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-wasm-js/3.20.0-PREVIEW/indispensable-cosef-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -915,7 +915,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-wasm-js/3.20.0-PREVIEW/indispensable-cosef-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -933,7 +933,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-wasm-js/3.20.0-PREVIEW/indispensable-cosef-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -949,7 +949,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosarm32/3.20.0-PREVIEW/indispensable-cosef-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -967,7 +967,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosarm32/3.20.0-PREVIEW/indispensable-cosef-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -983,7 +983,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosarm32/3.20.0-PREVIEW/indispensable-cosef-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -999,7 +999,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosarm64/3.20.0-PREVIEW/indispensable-cosef-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1017,7 +1017,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosarm64/3.20.0-PREVIEW/indispensable-cosef-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1033,7 +1033,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosarm64/3.20.0-PREVIEW/indispensable-cosef-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1049,7 +1049,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1067,7 +1067,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1083,7 +1083,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-cosef-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1099,7 +1099,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosx64/3.20.0-PREVIEW/indispensable-cosef-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1117,7 +1117,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosx64/3.20.0-PREVIEW/indispensable-cosef-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1133,7 +1133,7 @@
       },
       "available-at": {
         "url": "../../indispensable-cosef-watchosx64/3.20.0-PREVIEW/indispensable-cosef-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-cosef-watchosx64",
         "version": "3.20.0-PREVIEW"
       }

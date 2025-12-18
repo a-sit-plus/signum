@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-  <groupId>Signum</groupId>
+  <groupId>at.asitplus.signum</groupId>
   <artifactId>indispensable-cosef</artifactId>
   <versioning>
     <latest>3.20.0-PREVIEW</latest>
@@ -8,6 +8,6 @@
     <versions>
       <version>3.20.0-PREVIEW</version>
     </versions>
-    <lastUpdated>20251218154218</lastUpdated>
+    <lastUpdated>20251218161056</lastUpdated>
   </versioning>
 </metadata>

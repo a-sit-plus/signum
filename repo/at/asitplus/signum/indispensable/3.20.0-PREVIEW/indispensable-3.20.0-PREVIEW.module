@@ -1,7 +1,7 @@
 {
   "formatVersion": "1.1",
   "component": {
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -24,14 +24,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -80,7 +80,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -98,11 +98,11 @@
         {
           "name": "indispensable-metadata-3.20.0-PREVIEW.jar",
           "url": "indispensable-3.20.0-PREVIEW.jar",
-          "size": 76311,
-          "sha512": "274861da6473596cc24f1fd3d461acd7eaa02a5e0313a55b20349fb46c48bb9e450ca2b87f209f902dc154f9a20654bae29b93981be3715eefe94fc78885103f",
-          "sha256": "236d4134e4c2c093a4fd6f2cfe872e71b6d7e9ecb4f69dc9e3cbfa3d211f3a66",
-          "sha1": "fed0e6a6c026f62f835584a92ee218141681dbc5",
-          "md5": "abc98d221e423374b0b82fc69ce2c33a"
+          "size": 76332,
+          "sha512": "5bcc5a9c144b34c46868d5faf8d15a0103e5f3726babb2cdd9221d8b4a5443ac9f5e4014ac0574cd4109f0b2a1c3724459f03df45fcefd0bc92a3aec89071ca1",
+          "sha256": "90ea2b4dffd79a0221a7bc9052b96660f46cea1c2568228eaf9d29e3a043ccfe",
+          "sha1": "37591120928eb4080f2703747a06c6e2977b108e",
+          "md5": "a7f9f4487be45b089fca0f568cf718e0"
         }
       ]
     },
@@ -139,7 +139,7 @@
       },
       "available-at": {
         "url": "../../indispensable-android/3.20.0-PREVIEW/indispensable-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -155,7 +155,7 @@
       },
       "available-at": {
         "url": "../../indispensable-android/3.20.0-PREVIEW/indispensable-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -173,7 +173,7 @@
       },
       "available-at": {
         "url": "../../indispensable-android/3.20.0-PREVIEW/indispensable-android-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-android",
         "version": "3.20.0-PREVIEW"
       }
@@ -189,7 +189,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativearm32/3.20.0-PREVIEW/indispensable-androidnativearm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativearm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -207,7 +207,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativearm32/3.20.0-PREVIEW/indispensable-androidnativearm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativearm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -223,7 +223,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativearm64/3.20.0-PREVIEW/indispensable-androidnativearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -241,7 +241,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativearm64/3.20.0-PREVIEW/indispensable-androidnativearm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativearm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -257,7 +257,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativex64/3.20.0-PREVIEW/indispensable-androidnativex64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativex64",
         "version": "3.20.0-PREVIEW"
       }
@@ -275,7 +275,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativex64/3.20.0-PREVIEW/indispensable-androidnativex64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativex64",
         "version": "3.20.0-PREVIEW"
       }
@@ -291,7 +291,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativex86/3.20.0-PREVIEW/indispensable-androidnativex86-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativex86",
         "version": "3.20.0-PREVIEW"
       }
@@ -309,7 +309,7 @@
       },
       "available-at": {
         "url": "../../indispensable-androidnativex86/3.20.0-PREVIEW/indispensable-androidnativex86-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-androidnativex86",
         "version": "3.20.0-PREVIEW"
       }
@@ -325,7 +325,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iosarm64/3.20.0-PREVIEW/indispensable-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -343,7 +343,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iosarm64/3.20.0-PREVIEW/indispensable-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -359,7 +359,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iosarm64/3.20.0-PREVIEW/indispensable-iosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -375,7 +375,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iossimulatorarm64/3.20.0-PREVIEW/indispensable-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -393,7 +393,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iossimulatorarm64/3.20.0-PREVIEW/indispensable-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -409,7 +409,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iossimulatorarm64/3.20.0-PREVIEW/indispensable-iossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -425,7 +425,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iosx64/3.20.0-PREVIEW/indispensable-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -443,7 +443,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iosx64/3.20.0-PREVIEW/indispensable-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -459,7 +459,7 @@
       },
       "available-at": {
         "url": "../../indispensable-iosx64/3.20.0-PREVIEW/indispensable-iosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-iosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -475,7 +475,7 @@
       },
       "available-at": {
         "url": "../../indispensable-js/3.20.0-PREVIEW/indispensable-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -491,7 +491,7 @@
       },
       "available-at": {
         "url": "../../indispensable-js/3.20.0-PREVIEW/indispensable-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -509,7 +509,7 @@
       },
       "available-at": {
         "url": "../../indispensable-js/3.20.0-PREVIEW/indispensable-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -525,7 +525,7 @@
       },
       "available-at": {
         "url": "../../indispensable-jvm/3.20.0-PREVIEW/indispensable-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -541,7 +541,7 @@
       },
       "available-at": {
         "url": "../../indispensable-jvm/3.20.0-PREVIEW/indispensable-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -559,7 +559,7 @@
       },
       "available-at": {
         "url": "../../indispensable-jvm/3.20.0-PREVIEW/indispensable-jvm-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-jvm",
         "version": "3.20.0-PREVIEW"
       }
@@ -575,7 +575,7 @@
       },
       "available-at": {
         "url": "../../indispensable-linuxarm64/3.20.0-PREVIEW/indispensable-linuxarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-linuxarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -593,7 +593,7 @@
       },
       "available-at": {
         "url": "../../indispensable-linuxarm64/3.20.0-PREVIEW/indispensable-linuxarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-linuxarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -609,7 +609,7 @@
       },
       "available-at": {
         "url": "../../indispensable-linuxx64/3.20.0-PREVIEW/indispensable-linuxx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-linuxx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -627,7 +627,7 @@
       },
       "available-at": {
         "url": "../../indispensable-linuxx64/3.20.0-PREVIEW/indispensable-linuxx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-linuxx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -643,7 +643,7 @@
       },
       "available-at": {
         "url": "../../indispensable-macosarm64/3.20.0-PREVIEW/indispensable-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -661,7 +661,7 @@
       },
       "available-at": {
         "url": "../../indispensable-macosarm64/3.20.0-PREVIEW/indispensable-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -677,7 +677,7 @@
       },
       "available-at": {
         "url": "../../indispensable-macosarm64/3.20.0-PREVIEW/indispensable-macosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-macosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -693,7 +693,7 @@
       },
       "available-at": {
         "url": "../../indispensable-macosx64/3.20.0-PREVIEW/indispensable-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -711,7 +711,7 @@
       },
       "available-at": {
         "url": "../../indispensable-macosx64/3.20.0-PREVIEW/indispensable-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -727,7 +727,7 @@
       },
       "available-at": {
         "url": "../../indispensable-macosx64/3.20.0-PREVIEW/indispensable-macosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-macosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -743,7 +743,7 @@
       },
       "available-at": {
         "url": "../../indispensable-mingwx64/3.20.0-PREVIEW/indispensable-mingwx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-mingwx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -761,7 +761,7 @@
       },
       "available-at": {
         "url": "../../indispensable-mingwx64/3.20.0-PREVIEW/indispensable-mingwx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-mingwx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -777,7 +777,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvosarm64/3.20.0-PREVIEW/indispensable-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -795,7 +795,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvosarm64/3.20.0-PREVIEW/indispensable-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -811,7 +811,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvosarm64/3.20.0-PREVIEW/indispensable-tvosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -827,7 +827,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -845,7 +845,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -861,7 +861,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvossimulatorarm64/3.20.0-PREVIEW/indispensable-tvossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -877,7 +877,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvosx64/3.20.0-PREVIEW/indispensable-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -895,7 +895,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvosx64/3.20.0-PREVIEW/indispensable-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -911,7 +911,7 @@
       },
       "available-at": {
         "url": "../../indispensable-tvosx64/3.20.0-PREVIEW/indispensable-tvosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-tvosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -927,7 +927,7 @@
       },
       "available-at": {
         "url": "../../indispensable-wasm-js/3.20.0-PREVIEW/indispensable-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -943,7 +943,7 @@
       },
       "available-at": {
         "url": "../../indispensable-wasm-js/3.20.0-PREVIEW/indispensable-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -961,7 +961,7 @@
       },
       "available-at": {
         "url": "../../indispensable-wasm-js/3.20.0-PREVIEW/indispensable-wasm-js-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-wasm-js",
         "version": "3.20.0-PREVIEW"
       }
@@ -977,7 +977,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosarm32/3.20.0-PREVIEW/indispensable-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -995,7 +995,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosarm32/3.20.0-PREVIEW/indispensable-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -1011,7 +1011,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosarm32/3.20.0-PREVIEW/indispensable-watchosarm32-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosarm32",
         "version": "3.20.0-PREVIEW"
       }
@@ -1027,7 +1027,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosarm64/3.20.0-PREVIEW/indispensable-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1045,7 +1045,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosarm64/3.20.0-PREVIEW/indispensable-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1061,7 +1061,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosarm64/3.20.0-PREVIEW/indispensable-watchosarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1077,7 +1077,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1095,7 +1095,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1111,7 +1111,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchossimulatorarm64/3.20.0-PREVIEW/indispensable-watchossimulatorarm64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchossimulatorarm64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1127,7 +1127,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosx64/3.20.0-PREVIEW/indispensable-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1145,7 +1145,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosx64/3.20.0-PREVIEW/indispensable-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosx64",
         "version": "3.20.0-PREVIEW"
       }
@@ -1161,7 +1161,7 @@
       },
       "available-at": {
         "url": "../../indispensable-watchosx64/3.20.0-PREVIEW/indispensable-watchosx64-3.20.0-PREVIEW.module",
-        "group": "Signum",
+        "group": "at.asitplus.signum",
         "module": "indispensable-watchosx64",
         "version": "3.20.0-PREVIEW"
       }

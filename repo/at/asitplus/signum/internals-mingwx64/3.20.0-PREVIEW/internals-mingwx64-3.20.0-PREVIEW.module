@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -37,11 +37,11 @@
         {
           "name": "internals-mingwX64Main-3.20.0-PREVIEW.klib",
           "url": "internals-mingwx64-3.20.0-PREVIEW.klib",
-          "size": 12874,
-          "sha512": "e871006e96c2a2efc806aa14c26246448dddb0ac2ffa76e0c936208970283a82c42655544b65a57950562248cd5615ba1b45c68f078a19ee3a97424f2f5e9813",
-          "sha256": "9aec37643eab1ec13d559d9d7ec8db9b9645521524dea1d95f35a1958991b9f8",
-          "sha1": "aceb583b107e9a22a1281c2c710d927d0ea938bd",
-          "md5": "382bdbb2fe162af7e51673d106853623"
+          "size": 12882,
+          "sha512": "baf90f48012dc6c96ff91300207f29456771b9a00230d81efe9a285485313122974cf5b5399e04a903f07030b461a8e1faf5aa562f44c2fb7eae7f986e5b6222",
+          "sha256": "3387f4cc8da42bcd82c5f73f7200ee33852aed51780e3699bc1dd28491c813c7",
+          "sha1": "cbe3fd8dd0f4b46fa70d417419ac2a2f1fb436fc",
+          "md5": "457b86bfefe356cf190fe9bbd56cfd7b"
         }
       ]
     },

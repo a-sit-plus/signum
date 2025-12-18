@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable/3.20.0-PREVIEW/indispensable-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,14 +26,14 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-oids",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -82,7 +82,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -100,11 +100,11 @@
         {
           "name": "indispensable-linuxX64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-linuxx64-3.20.0-PREVIEW.klib",
-          "size": 548533,
-          "sha512": "221c7bd2afedf2def2e4ccf4bdeefce756a9dc23a05afe7f934183c743423b4d7a5709b7d5efb8bc3a43068fa8be4675c1e073c8aa523ea7e9dc6e8f92901b73",
-          "sha256": "3fbffa90217d5f4883c552f2d457306f3b3f5e801d9ccff0decde84c48fd4b56",
-          "sha1": "92e7d55fc50a5d85eefb345fbbc286d9e2ef9c4c",
-          "md5": "ed6b482e4fa4f0bb1d890d020f4747e8"
+          "size": 548531,
+          "sha512": "0c2d0be88c814fd5a0b2e7ce868a31fa0ba796ec7c22fc2ddab5534b3abef6a12988227a11724015e5c87b30a17a3f741ceeb17b81105ce9774f9ae5547526d3",
+          "sha256": "135d6b9511cca188872fbd00a58b8ee1d4df0c1a90999044fe55102dadccf289",
+          "sha1": "2971a2daa9d1fbea6ad6888e169335ae73ada2fc",
+          "md5": "2a189fec047250d13f0e353b93442ab2"
         }
       ]
     },

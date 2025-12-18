@@ -1,0 +1,354 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "at.asitplus.signum",
+    "module": "supreme",
+    "version": "0.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "dependencies": [
+        {
+          "group": "at.asitplus.signum",
+          "module": "indispensable",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.3.0"
+          }
+        },
+        {
+          "group": "at.asitplus.signum",
+          "module": "internals",
+          "version": {
+            "requires": "3.20.0-PREVIEW"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "io.github.aakira",
+          "module": "napier",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "org.kotlincrypto.random",
+          "module": "crypto-rand",
+          "version": {
+            "requires": "0.6.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "supreme-metadata-0.20.0-PREVIEW.jar",
+          "url": "supreme-0.20.0-PREVIEW.jar",
+          "size": 32223,
+          "sha512": "bcff60b6efc4d3b4b3251835860320a737ae5125b16b675a41fb64707ba8fc68577acca3501df8fce374eb47ed6d441e8c2e3797c97928d1187b3538b7de527d",
+          "sha256": "7f8143436823cd5f269405b7edca1df5e3c5a176792cbff537f6ed01c9252b71",
+          "sha1": "4d92136e04699ce49e258ad8d998b91030b55abc",
+          "md5": "df9699edff8606af1fead0588280740c"
+        }
+      ]
+    },
+    {
+      "name": "metadataSourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "files": [
+        {
+          "name": "supreme-kotlin-0.20.0-PREVIEW-sources.jar",
+          "url": "supreme-0.20.0-PREVIEW-sources.jar",
+          "size": 206090,
+          "sha512": "81a140d8fca9966c915d7104899105cd35564b97c5adf809c05eb3541c2727a46e70c7b443135cf5c71ef8aa0a76e05995f9ed7e7c7262d18e3b81c174c43415",
+          "sha256": "c43c59c0c8cffc81ab3ffa07aad15c226cc5ffe4799c8659d880a5082103b14f",
+          "sha1": "5877f28e04d2e28499a661b364b40621615395cb",
+          "md5": "11a77926787331106439add87666445e"
+        }
+      ]
+    },
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../supreme-android/0.20.0-PREVIEW/supreme-android-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-android",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../supreme-android/0.20.0-PREVIEW/supreme-android-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-android",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../supreme-android/0.20.0-PREVIEW/supreme-android-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-android",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iosarm64/0.20.0-PREVIEW/supreme-iosarm64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iosarm64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iosarm64/0.20.0-PREVIEW/supreme-iosarm64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iosarm64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iosarm64/0.20.0-PREVIEW/supreme-iosarm64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iosarm64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iossimulatorarm64/0.20.0-PREVIEW/supreme-iossimulatorarm64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iossimulatorarm64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iossimulatorarm64/0.20.0-PREVIEW/supreme-iossimulatorarm64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iossimulatorarm64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iossimulatorarm64/0.20.0-PREVIEW/supreme-iossimulatorarm64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iossimulatorarm64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iosx64/0.20.0-PREVIEW/supreme-iosx64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iosx64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iosx64/0.20.0-PREVIEW/supreme-iosx64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iosx64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "iosX64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../supreme-iosx64/0.20.0-PREVIEW/supreme-iosx64-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-iosx64",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../supreme-jvm/0.20.0-PREVIEW/supreme-jvm-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-jvm",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../supreme-jvm/0.20.0-PREVIEW/supreme-jvm-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-jvm",
+        "version": "0.20.0-PREVIEW"
+      }
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../supreme-jvm/0.20.0-PREVIEW/supreme-jvm-0.20.0-PREVIEW.module",
+        "group": "at.asitplus.signum",
+        "module": "supreme-jvm",
+        "version": "0.20.0-PREVIEW"
+      }
+    }
+  ]
+}

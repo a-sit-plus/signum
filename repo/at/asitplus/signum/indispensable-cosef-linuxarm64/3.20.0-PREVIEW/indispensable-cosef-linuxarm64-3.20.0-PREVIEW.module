@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -47,7 +47,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -72,11 +72,11 @@
         {
           "name": "indispensable-cosef-linuxArm64Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-linuxarm64-3.20.0-PREVIEW.klib",
-          "size": 183057,
-          "sha512": "6319c217bafb36bf051615cdc480e00d0569da4456bad4867636b924d48b87cb1a6895ca309bac79bd18df1bb80f75433a451f323c92dda02da74cca590be455",
-          "sha256": "c74035033d8dece413a6cca26cf569f491be47896f244dd1b0b46db98a4d8f3a",
-          "sha1": "a612cdf6b65d66185a0f2b5c3aeddd5e24a7e065",
-          "md5": "fdfae3ec966e9ffd1771bb6b4805628f"
+          "size": 183058,
+          "sha512": "63dca35e8ba6a158e68a75f76791ba6b800d30d5ec03e3dee09cc7431edf980520cd8279323a26569995708a530d47e4d32a6b7ba3419652503127974cae40ba",
+          "sha256": "579edf1061fe760bdab8bdc53f1a9247d689f4b92e1045a1278b418c8eea720c",
+          "sha1": "9303b773694f9702219fd0264e85cccc77535f1b",
+          "md5": "87b24dc5b0b7e5696761234bd7dd3a98"
         }
       ]
     },

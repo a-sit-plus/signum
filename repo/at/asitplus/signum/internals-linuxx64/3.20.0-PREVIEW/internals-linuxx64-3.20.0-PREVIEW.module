@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -37,11 +37,11 @@
         {
           "name": "internals-linuxX64Main-3.20.0-PREVIEW.klib",
           "url": "internals-linuxx64-3.20.0-PREVIEW.klib",
-          "size": 12874,
-          "sha512": "c047262b2331104925aa6407523bc6b626e7d4001e195515320888005c40958ffd3c396082734a425a2b897973fdaad5444fa18974f83502abeff0639179dd6a",
-          "sha256": "d48b7e2973aeb4ae75d91c1d3c8ae677994526ddc30b7ebb64e81b03587bc2ac",
-          "sha1": "8d4cf78de5c4ac48a8348cf364d0f9490b3dded5",
-          "md5": "541011ac41e81f95ee30ed24a127271f"
+          "size": 12881,
+          "sha512": "521d6af030ecceb5b61c23c5f863fc6ae93146a8ef1d434e758d3ecc7f4f19f5364176e9298ffa2bc36ba9f9e56ae0b69a066347ff89a1b0af6d944c0400eb29",
+          "sha256": "72d5536bf56a62d918352be55a6d9de3b2aceead85e0590981a5b8b304d7c9f6",
+          "sha1": "ac38fd8a6e5f91f2708a321032228bd12d6391d4",
+          "md5": "13ab436b67f3172c131e62cfea65e97d"
         }
       ]
     },

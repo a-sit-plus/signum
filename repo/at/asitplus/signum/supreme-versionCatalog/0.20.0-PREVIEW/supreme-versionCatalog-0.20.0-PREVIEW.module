@@ -1,0 +1,36 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "at.asitplus.signum",
+    "module": "supreme-versionCatalog",
+    "version": "0.20.0-PREVIEW",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.2.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "versionCatalogElements",
+      "attributes": {
+        "org.gradle.category": "platform",
+        "org.gradle.usage": "version-catalog"
+      },
+      "files": [
+        {
+          "name": "supreme-versionCatalog-0.20.0-PREVIEW.toml",
+          "url": "supreme-versionCatalog-0.20.0-PREVIEW.toml",
+          "size": 2313,
+          "sha512": "a83de3508ceeabf8a7d2183057f41f9744e60a3ecc0ab4dca3a9a88aa46000fa302de88fb006ee3de96ef768c4bfb3eab5505972564e82b270c5dcdc2bf42560",
+          "sha256": "8e3b6c2f4f3118c8efef879fa2cf8b69b6708b899300d2253c4b4c76754dab65",
+          "sha1": "685eb76ca2e28dc61b4a311ccbc60f97dd4971bb",
+          "md5": "132c2051b23273ffa5c576d113e6d56b"
+        }
+      ]
+    }
+  ]
+}

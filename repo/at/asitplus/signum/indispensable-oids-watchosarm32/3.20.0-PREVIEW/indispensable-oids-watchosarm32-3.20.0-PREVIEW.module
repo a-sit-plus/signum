@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-oids/3.20.0-PREVIEW/indispensable-oids-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-oids",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -45,10 +45,10 @@
           "name": "indispensable-oids-watchosArm32Main-3.20.0-PREVIEW.klib",
           "url": "indispensable-oids-watchosarm32-3.20.0-PREVIEW.klib",
           "size": 606322,
-          "sha512": "46e7079c42465f6139714750b37c5a194f5cb7ac64ac3b8ab107d32147fac8473314c53d1a229b04bfe34a03fa3292bf5fde0bd0cd3604db30a5b221c34ef9af",
-          "sha256": "75ea25b89bd770b208368cf8b53b820bc04b67f0cf1907f83148ea2b147f017b",
-          "sha1": "548376da41c7a2cfc4f85132e7a9b4ff07064260",
-          "md5": "91f4446c813d56e750d4d9e1805048c8"
+          "sha512": "ce0227285ac9c69810c257c37fb62b79641965e10ab484c877101fc269279dc2c1c29f8af5d3db58db388c7bc52a46ced0167ab6fd0ee7715d1b3cfaf13bdc9f",
+          "sha256": "a5b5c7c7f382ffc49076861fb103617a6c60ec1741b881759308bfcd5636f511",
+          "sha1": "7be259a85c12406eecb0736e2944f46503317357",
+          "md5": "91a0b2aee519b1ac76cf6217e6e078d4"
         }
       ]
     },
@@ -86,7 +86,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable-asn1",
           "version": {
             "requires": "3.20.0-PREVIEW"

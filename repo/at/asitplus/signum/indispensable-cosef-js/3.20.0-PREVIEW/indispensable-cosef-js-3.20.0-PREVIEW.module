@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-cosef/3.20.0-PREVIEW/indispensable-cosef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-cosef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -33,7 +33,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -58,11 +58,11 @@
         {
           "name": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
-          "size": 176762,
-          "sha512": "958e9ef9ba892d5ee371a26d5df9d9a41a31aa07b076106d54f3c6ecddba7a7e4679d9cec7ff7eb8d979961de55d05ccdd42de283a98489da55b7fd300a07aa6",
-          "sha256": "e43c3b7b0fc2980168aac98d2c9fa05dd55bb9274a7dff9e5f58847ae6a73c54",
-          "sha1": "8b6ace17efb694f5e0633808d16eb9441d438959",
-          "md5": "be1874aa56ca8bd192ff068e67b440ba"
+          "size": 176763,
+          "sha512": "c8ab6b21e174285033ccfb48f8e449780f320c8fe877408d4b2d6b8e3cd8edbf3957906a27c2e27ae0c8d74ea35a754dabde0d89468d08b54bc20dfcd29f9107",
+          "sha256": "0ec4637dcb0af71db5ebd955e985b3cfd19db4d5e1b3938bdfc347b1efa0a958",
+          "sha1": "4246729152fe3c71a7683b1f1868eb1bf83904f6",
+          "md5": "25af5ee1e6ceb8d92ad52a2a3ad35b05"
         }
       ]
     },
@@ -84,7 +84,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -105,7 +105,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -130,11 +130,11 @@
         {
           "name": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-cosef-js-3.20.0-PREVIEW.klib",
-          "size": 176762,
-          "sha512": "958e9ef9ba892d5ee371a26d5df9d9a41a31aa07b076106d54f3c6ecddba7a7e4679d9cec7ff7eb8d979961de55d05ccdd42de283a98489da55b7fd300a07aa6",
-          "sha256": "e43c3b7b0fc2980168aac98d2c9fa05dd55bb9274a7dff9e5f58847ae6a73c54",
-          "sha1": "8b6ace17efb694f5e0633808d16eb9441d438959",
-          "md5": "be1874aa56ca8bd192ff068e67b440ba"
+          "size": 176763,
+          "sha512": "c8ab6b21e174285033ccfb48f8e449780f320c8fe877408d4b2d6b8e3cd8edbf3957906a27c2e27ae0c8d74ea35a754dabde0d89468d08b54bc20dfcd29f9107",
+          "sha256": "0ec4637dcb0af71db5ebd955e985b3cfd19db4d5e1b3938bdfc347b1efa0a958",
+          "sha1": "4246729152fe3c71a7683b1f1868eb1bf83904f6",
+          "md5": "25af5ee1e6ceb8d92ad52a2a3ad35b05"
         }
       ]
     },

@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-asn1/3.20.0-PREVIEW/indispensable-asn1-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-asn1",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -65,11 +65,11 @@
         {
           "name": "indispensable-asn1-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-asn1-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 235885,
-          "sha512": "ab03703f6845b6526e68e4c7e208a73cfde76db1ac8e4f826b73daaad59b02cf0ef233236bfddc71f36c61daa2c1e4a0f2f4f116e136d125cba8f1eeae332f20",
-          "sha256": "46397482ac5d17ad53fdbd36f9b4ffba35f02408e937adbb3de429a9b48634dd",
-          "sha1": "97d47f0bd5389bedb88204974977cd9393f8f489",
-          "md5": "c79dc38756ea39545d9b9566adca87fd"
+          "size": 235891,
+          "sha512": "8f437dd3f31ffd842d4ecc85d55a869cbea73f944746954df8550e5d4e47fe1acef335a8ee88a4801219446e404a7ce5cf81f31224930eff6fd2dee783ed4999",
+          "sha256": "10b9421c08874d295c9c1dfdd57520a92e18224becc4ca74fc0e78b7d618dc74",
+          "sha1": "1e56a4743364a0bc28f1a1c63e166b72ea49dd9c",
+          "md5": "4069e134344f44fee9edb357a1ec80ce"
         }
       ]
     },
@@ -123,11 +123,11 @@
         {
           "name": "indispensable-asn1-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-asn1-wasm-js-3.20.0-PREVIEW.klib",
-          "size": 235885,
-          "sha512": "ab03703f6845b6526e68e4c7e208a73cfde76db1ac8e4f826b73daaad59b02cf0ef233236bfddc71f36c61daa2c1e4a0f2f4f116e136d125cba8f1eeae332f20",
-          "sha256": "46397482ac5d17ad53fdbd36f9b4ffba35f02408e937adbb3de429a9b48634dd",
-          "sha1": "97d47f0bd5389bedb88204974977cd9393f8f489",
-          "md5": "c79dc38756ea39545d9b9566adca87fd"
+          "size": 235891,
+          "sha512": "8f437dd3f31ffd842d4ecc85d55a869cbea73f944746954df8550e5d4e47fe1acef335a8ee88a4801219446e404a7ce5cf81f31224930eff6fd2dee783ed4999",
+          "sha256": "10b9421c08874d295c9c1dfdd57520a92e18224becc4ca74fc0e78b7d618dc74",
+          "sha1": "1e56a4743364a0bc28f1a1c63e166b72ea49dd9c",
+          "md5": "4069e134344f44fee9edb357a1ec80ce"
         }
       ]
     },

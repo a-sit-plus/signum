@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../indispensable-josef/3.20.0-PREVIEW/indispensable-josef-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "indispensable-josef",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -26,7 +26,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -52,10 +52,10 @@
           "name": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
           "size": 187861,
-          "sha512": "a10039c3a73c6ffa6fe50eed9b003a8a1cab07840ccc6eaad25120d8273077f1c38e8c6f14129388e7d17df5c808cb3f2742ceb690b9477b13b88205c4ce55fb",
-          "sha256": "7932149c95dbfe12f06246834c71dda1a217f44554b9b3c619fe789e2f76dbd0",
-          "sha1": "89ab122a06edf09644a9c15d2c41e437349d4fda",
-          "md5": "1617e1704467b00a929db2ec79bab7dd"
+          "sha512": "05d8ea3b8cf5fc78a26c2ed301caf8892af77139dafd47414e63abcb53eb2f56a18db08348320c5b8f019d7dec29d20a359aa77d08077b2d3e7260f6149bee8f",
+          "sha256": "ffa707b883331a999b91972b6e767480384796483e537ea85452324b0b83c0cd",
+          "sha1": "219c0dc04907265f1e50097de316d8ac94da2232",
+          "md5": "3ca328c0e6e94e5120a2d943aa76e407"
         }
       ]
     },
@@ -70,7 +70,7 @@
       },
       "dependencies": [
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "indispensable",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -91,7 +91,7 @@
           }
         },
         {
-          "group": "Signum",
+          "group": "at.asitplus.signum",
           "module": "internals",
           "version": {
             "requires": "3.20.0-PREVIEW"
@@ -110,10 +110,10 @@
           "name": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
           "url": "indispensable-josef-wasm-js-3.20.0-PREVIEW.klib",
           "size": 187861,
-          "sha512": "a10039c3a73c6ffa6fe50eed9b003a8a1cab07840ccc6eaad25120d8273077f1c38e8c6f14129388e7d17df5c808cb3f2742ceb690b9477b13b88205c4ce55fb",
-          "sha256": "7932149c95dbfe12f06246834c71dda1a217f44554b9b3c619fe789e2f76dbd0",
-          "sha1": "89ab122a06edf09644a9c15d2c41e437349d4fda",
-          "md5": "1617e1704467b00a929db2ec79bab7dd"
+          "sha512": "05d8ea3b8cf5fc78a26c2ed301caf8892af77139dafd47414e63abcb53eb2f56a18db08348320c5b8f019d7dec29d20a359aa77d08077b2d3e7260f6149bee8f",
+          "sha256": "ffa707b883331a999b91972b6e767480384796483e537ea85452324b0b83c0cd",
+          "sha1": "219c0dc04907265f1e50097de316d8ac94da2232",
+          "md5": "3ca328c0e6e94e5120a2d943aa76e407"
         }
       ]
     },

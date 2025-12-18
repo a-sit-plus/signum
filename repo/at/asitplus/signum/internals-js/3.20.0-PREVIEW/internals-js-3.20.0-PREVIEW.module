@@ -2,7 +2,7 @@
   "formatVersion": "1.1",
   "component": {
     "url": "../../internals/3.20.0-PREVIEW/internals-3.20.0-PREVIEW.module",
-    "group": "Signum",
+    "group": "at.asitplus.signum",
     "module": "internals",
     "version": "3.20.0-PREVIEW",
     "attributes": {
@@ -44,11 +44,11 @@
         {
           "name": "internals-js-3.20.0-PREVIEW.klib",
           "url": "internals-js-3.20.0-PREVIEW.klib",
-          "size": 12639,
-          "sha512": "a430eb34fe12667b491cd77afdeb0c93a26f49dcb88f0f93efdcabcd25963a205e635de551a6f7261f6f34bc9513b0a2dd7fe0a64938f6cbac18310ed913ab42",
-          "sha256": "be6f4cc7a931f10c17aec8744420617d280f085ca8f1e54778c827905a260420",
-          "sha1": "70ae5bd059769d045ed0f604923b1bc42bdba787",
-          "md5": "b78ae59c93f9abd617d12e7d972bfc96"
+          "size": 12649,
+          "sha512": "68a4a3b0dd8edb906f682a4b1ea58736e01cfd213ab6565398d9cd424f0681cf15737888aedef02f3ee05fb10e7c93ed8657b9243e3d8a0ae8e9831e41f48168",
+          "sha256": "e75717f40e4e7f01a0e1102ff8471e1cea099d4c0582aa1e6cbc963423b69e0a",
+          "sha1": "4bcd85af19e01834ec2894bf50264ef1730370e8",
+          "md5": "08ed73e384b93b6c454404acb019ba07"
         }
       ]
     },
@@ -81,11 +81,11 @@
         {
           "name": "internals-js-3.20.0-PREVIEW.klib",
           "url": "internals-js-3.20.0-PREVIEW.klib",
-          "size": 12639,
-          "sha512": "a430eb34fe12667b491cd77afdeb0c93a26f49dcb88f0f93efdcabcd25963a205e635de551a6f7261f6f34bc9513b0a2dd7fe0a64938f6cbac18310ed913ab42",
-          "sha256": "be6f4cc7a931f10c17aec8744420617d280f085ca8f1e54778c827905a260420",
-          "sha1": "70ae5bd059769d045ed0f604923b1bc42bdba787",
-          "md5": "b78ae59c93f9abd617d12e7d972bfc96"
+          "size": 12649,
+          "sha512": "68a4a3b0dd8edb906f682a4b1ea58736e01cfd213ab6565398d9cd424f0681cf15737888aedef02f3ee05fb10e7c93ed8657b9243e3d8a0ae8e9831e41f48168",
+          "sha256": "e75717f40e4e7f01a0e1102ff8471e1cea099d4c0582aa1e6cbc963423b69e0a",
+          "sha1": "4bcd85af19e01834ec2894bf50264ef1730370e8",
+          "md5": "08ed73e384b93b6c454404acb019ba07"
         }
       ]
     },
