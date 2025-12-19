@@ -1,8 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
@@ -19,6 +21,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.TbsCertList.Companion.Tags.EXTENSIONS
+import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
@@ -28,7 +32,7 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
  */
 data class TbsCertList @Throws(Asn1Exception::class) constructor(
     val version: Int? = 2,
-    val signature: X509SignatureAlgorithm,
+    val signature: X509SignatureAlgorithmDescription,
     val issuer: List<RelativeDistinguishedName>,
     val thisUpdate: Asn1Time,
     val nextUpdate: Asn1Time,
@@ -106,7 +110,7 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
                 }
             }
 
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
             val issuerNames = (next().asSequence()).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
@@ -209,37 +213,28 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
  * */
 data class CertificateList @Throws(Asn1Exception::class) constructor(
     val tbsCertList: TbsCertList,
-    val signatureAlgorithm: X509SignatureAlgorithm,
-    val signature: CryptoSignature
+    val signatureAlgorithm: X509SignatureAlgorithmDescription,
+    val rawSignature: Asn1Primitive,
 ) : PemEncodable<Asn1Sequence> {
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
+    constructor(
+        tbsCertList: TbsCertList,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        signature: CryptoSignature
+    ) : this(tbsCertList, signatureAlgorithm, signature.x509Encoded)
+
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence{
         +tbsCertList
         +signatureAlgorithm
-        +signature.x509Encoded
+        +rawSignature
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as CertificateList
-
-        if (tbsCertList != other.tbsCertList) return false
-        if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (signature != other.signature) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = tbsCertList.hashCode()
-        result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signature.hashCode()
-        return result
-    }
+    val decodedSignature by lazy { catching {
+        signatureAlgorithm.requireSupported()
+        CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
+    }}
 
     companion object : PemDecodable<Asn1Sequence, CertificateList>(EB_STRINGS.DEFAULT) {
 
@@ -249,8 +244,8 @@ data class CertificateList @Throws(Asn1Exception::class) constructor(
 
         override fun doDecode(src: Asn1Sequence): CertificateList = src.decodeRethrowing {
             val tbsCertList = TbsCertList.decodeFromTlv(next().asSequence())
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, next().asPrimitive())
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
+            val signature = next().asPrimitive()
 
             CertificateList(
                 tbsCertList,
