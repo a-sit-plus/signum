@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.DigestAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
@@ -11,7 +12,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 
 data class CertId @Throws(Asn1Exception::class) constructor(
-    val hashAlgorithms: AlgorithmIdentifier, // hash algorithm
+    val hashAlgorithms: DigestAlgorithmDescription, // hash algorithm
     val issuerNameHash: ByteArray,
     val issuerKeyHash: ByteArray,
     val serialNumber: ByteArray
@@ -48,7 +49,7 @@ data class CertId @Throws(Asn1Exception::class) constructor(
 
     companion object : Asn1Decodable<Asn1Sequence, CertId> {
         override fun doDecode(src: Asn1Sequence): CertId = src.decodeRethrowing {
-            val hashAlg = AlgorithmIdentifier.decodeFromTlv(next().asSequence())
+            val hashAlg = DigestAlgorithmDescription.decodeFromTlv(next().asSequence())
             val nameHash = next().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
             val keyHash = next().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
             val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
