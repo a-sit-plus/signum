@@ -1,84 +1,69 @@
-name: Test Everything (All OS/Arch)
+name: Test Manually (Matrix Entry)
 
 on:
   workflow_dispatch:
     inputs:
+      entry-name:
+        description: "Matrix entry name from .github/test-strategy-matrix.json (e.g., iosRunner, appleOtherRunner, jvmRunner)"
+        required: true
+        default: "jvmRunner"
+        type: string
       kotlin-version:
-        description: 'Override Kotlin version?'
+        description: "Override Kotlin version?"
         required: false
-        default: ''
+        default: ""
         type: string
       testballoon-version:
-        description: 'Override TestBalloon version (full version string)?'
+        description: "Override TestBalloon version (full version string)?"
         required: false
-        default: ''
+        default: ""
         type: string
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            name: macRunner
-            arch: arm64
-            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test -x jvmTest -x jsTest
-          - os: ubuntu-latest
-            name: linuxNativeRunner
-            arch: x64
-            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" linuxX64Test --scan
-          - os: ubuntu-latest
-            name: jvmRunner
-            arch: x64
-            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" jvmTest --scan
-          - os: ubuntu-latest
-            name: jsRunner
-            arch: x64
-            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" jsTest --scan
-          - os: windows-latest
-            name: mingwRunner
-            arch: x64
-            shell: bash
-            run: ./gradlew "-Dkotlin.build.report.json.directory=$PWD/metrics" mingwX64Test --scan
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 300
-    env:
-      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.testballoon-version }}
-
+  select-entry:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.pick.outputs.os }}
+      arch: ${{ steps.pick.outputs.arch }}
+      testArgs: ${{ steps.pick.outputs.testArgs }}
+      enableKvm: ${{ steps.pick.outputs.enableKvm }}
+      xcodeVersion: ${{ steps.pick.outputs.xcodeVersion }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Run tests
-        run: ${{ matrix.run }}
-
-      - name: Test Report
-        if: success() || failure()
-        uses: dorny/test-reporter@v2
+      - uses: actions/checkout@v4
+      - id: pick
+        uses: actions/github-script@v7
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          ENTRY_NAME: ${{ inputs.entry-name }}
         with:
-          name: All Tests (${{ matrix.os }}-${{ matrix.name }}-${{ matrix.arch }})
-          path: "**/build/test-results/**/TEST*.xml"
-          list-suites: failed
-          list-tests: failed
-          reporter: java-junit
-          use-actions-summary: true
+          script: |
+            const fs = require('fs');
+            const entryName = process.env.ENTRY_NAME;
+            if (!entryName) {
+              core.setFailed('Missing entry-name input');
+              return;
+            }
+            const matrix = JSON.parse(fs.readFileSync('.github/test-strategy-matrix.json', 'utf8'));
+            const entry = (matrix.include || []).find(e => e.name === entryName);
+            if (!entry) {
+              core.setFailed(`No matrix entry named "${entryName}"`);
+              return;
+            }
+            core.setOutput('os', entry.os || '');
+            core.setOutput('arch', entry.arch || '');
+            core.setOutput('testArgs', entry.testArgs || '');
+            core.setOutput('enableKvm', entry.enableKvm ? 'true' : 'false');
+            core.setOutput('xcodeVersion', entry.xcodeVersion || '');
 
-      - name: Upload metrics
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrics-${{ matrix.os }}-${{ matrix.name }}-${{ matrix.arch }}
-          path: metrics/*.json
-          if-no-files-found: ignore
+  test:
+    needs: select-entry
+    uses: a-sit-plus/internal-workflows/.github/workflows/test-matrix-entry.yml@feature/modularTests
+    with:
+      override-cache: ${{ github.ref_name == 'development' || github.ref_name == 'main' }}
+      os: ${{ needs.select-entry.outputs.os }}
+      name: ${{ inputs.entry-name }}
+      arch: ${{ needs.select-entry.outputs.arch }}
+      testArgs: ${{ needs.select-entry.outputs.testArgs }}
+      enable-kvm: ${{ needs.select-entry.outputs.enableKvm == 'true' }}
+      xcode-version: ${{ needs.select-entry.outputs.xcodeVersion }}
+      kotlin-version: ${{ inputs.kotlin-version }}
+      testballoon-version: ${{ inputs.testballoon-version }}
