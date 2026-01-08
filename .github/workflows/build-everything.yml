@@ -1,0 +1,10 @@
+name: build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-everything:
+    uses: a-sit-plus/internal-workflows/.github/workflows/build-everything.yml@feature/modularTests
+    with:
+      matrix-file-name: ".github/build-strategy-matrix.json"
