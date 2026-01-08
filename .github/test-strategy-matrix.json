@@ -1,0 +1,10 @@
+{
+  "include": [
+    { "os": "ubuntu-latest",  "name": "linuxNativeRunner","arch": "x64",   "testArgs": "linuxX64Test --scan" },
+    { "os": "ubuntu-latest",  "name": "jvmRunner",        "arch": "x64",   "testArgs": "jvmTest --scan" },
+    { "os": "ubuntu-latest",  "name": "androidRunner",    "arch": "x64",   "enableKvm": true, "testArgs": "pixelAVDAndroidDeviceTest --scan" },
+    { "os": "ubuntu-latest",  "name": "jsRunner",         "arch": "x64",   "testArgs": "jsTest --scan" },
+    { "os": "windows-latest", "name": "mingwRunner",      "arch": "x64",   "testArgs": "mingwX64Test --scan" },
+    { "os": "macos-latest",   "name": "macRunner",        "arch": "arm64", "testArgs": "allTests -x iosX64Test -x jvmTest -x jsTest --scan" }
+  ]
+}
