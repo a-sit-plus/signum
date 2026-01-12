@@ -46,8 +46,8 @@ class PolicyValidator(
     }
 
     @ExperimentalPkiApi
-    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
-        remainingCriticalExtensions.removeAll(supportedExtensions)
+    override suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        checkedCriticalExtensions.addAll(supportedExtensions)
 
         rootNode = processPolicies(
             certIndex,

@@ -162,13 +162,13 @@ suspend fun CertificateChain.validate(
     }
 
     processingChain.reversed().forEachIndexed { i, cert ->
-        val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
+        val checkedCriticalExtensions = mutableSetOf<ObjectIdentifier>()
 
         val validatorIterator = activeValidators.iterator()
         while (validatorIterator.hasNext()) {
             val currValidator = validatorIterator.next()
             try {
-                currValidator.check(cert, remainingCriticalExtensions)
+                currValidator.check(cert, checkedCriticalExtensions)
             } catch (e: Throwable) {
                 validatorIterator.remove()
                 validatorFailures.add(
@@ -182,7 +182,7 @@ suspend fun CertificateChain.validate(
                 )
             }
         }
-        verifyCriticalExtensions(remainingCriticalExtensions, i, validatorFailures)
+        verifyCriticalExtensions(checkedCriticalExtensions, cert, i, validatorFailures)
     }
     return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode,
         this.leaf,
@@ -268,15 +268,17 @@ private fun defineRFC5280Validators(
  * which would indicate that the current validators do not support them.
  */
 private fun verifyCriticalExtensions(
-    remainingCriticalExtensions: Set<ObjectIdentifier>,
+    checkedCriticalExtensions: Set<ObjectIdentifier>,
+    cert: X509Certificate,
     certificateIndex: Int,
     failures: MutableList<ValidatorFailure>
 ) {
-    if (remainingCriticalExtensions.isNotEmpty() && failures.none { it.validatorName == "CriticalCertificateExtensions" }) {
+    val unsupportedCriticalExtensions = cert.criticalExtensionOids - checkedCriticalExtensions
+    if (unsupportedCriticalExtensions.isNotEmpty() && failures.none { it.validatorName == "CriticalCertificateExtensions" }) {
         failures.add(
             ValidatorFailure(
                 validatorName = "CriticalCertificateExtensions",
-                errorMessage = "Unsupported critical extensions: $remainingCriticalExtensions",
+                errorMessage = "Unsupported critical extensions: $unsupportedCriticalExtensions",
                 certificateIndex = certificateIndex
             )
         )

@@ -30,7 +30,7 @@ class TrustAnchorValidator(
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
-        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
         if (foundTrusted) return
         val issuingAnchor = trustAnchors.firstOrNull { anchor ->

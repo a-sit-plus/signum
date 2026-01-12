@@ -28,8 +28,8 @@ class KeyUsageValidator (
     )
 
     @ExperimentalPkiApi
-    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
-        remainingCriticalExtensions.removeAll(supportedExtensions)
+    override suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        checkedCriticalExtensions.addAll(supportedExtensions)
         currentCertIndex++
         if (currentCertIndex <= certPathLen - 1)
             verifySignatureKeyUsage(currCert)

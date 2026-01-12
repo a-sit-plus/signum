@@ -23,7 +23,7 @@ class TimeValidityValidator(
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
-        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
         if (currCert.isExpired(date)) {
             throw CertificateValidityException(

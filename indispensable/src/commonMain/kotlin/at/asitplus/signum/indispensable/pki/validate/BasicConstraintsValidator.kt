@@ -17,8 +17,8 @@ class BasicConstraintsValidator(
 ) : CertificateValidator {
 
     @ExperimentalPkiApi
-    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
-        remainingCriticalExtensions.remove(KnownOIDs.basicConstraints_2_5_29_19)
+    override suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        checkedCriticalExtensions.add(KnownOIDs.basicConstraints_2_5_29_19)
         if (currentCertIndex >= certPathLen - 1) return
 
         currentCertIndex++

@@ -128,12 +128,14 @@ val ValidationApiTest by testSuite{
             validators
         }
 
-        chain.validate(
+        val r = chain.validate(
             customValidatorFactory,
             CertificateValidationContext(
                 trustAnchors = setOf(TrustAnchor.Certificate(chain.root))
             )
-        ).isValid shouldBe true
+        )
+
+        r.isValid shouldBe true
     }
 }
 
@@ -145,10 +147,10 @@ class AttestationTimeValidator(
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
-        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
         if (currCert != certChain.leaf) {
-            if (!currCert.isValidAt()) throw CertificateValidityException("Certificate is not valid")
+            if (!currCert.isValidAt(currCert.tbsCertificate.validUntil.instant)) throw CertificateValidityException("Certificate is not valid")
         }
     }
 

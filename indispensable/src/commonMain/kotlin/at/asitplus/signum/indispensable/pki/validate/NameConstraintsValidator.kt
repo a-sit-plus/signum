@@ -20,8 +20,8 @@ class NameConstraintsValidator(
 ) : CertificateValidator {
 
     @ExperimentalPkiApi
-    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
-        remainingCriticalExtensions.remove(KnownOIDs.nameConstraints_2_5_29_30)
+    override suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        checkedCriticalExtensions.add(KnownOIDs.nameConstraints_2_5_29_30)
         currentCertIndex++
 
         if (previousNameConstraints?.isValid == false) {

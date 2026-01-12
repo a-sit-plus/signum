@@ -7,8 +7,8 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import kotlin.coroutines.cancellation.CancellationException
 
 interface CertificateValidator {
-    // Every validator removes checked critical extensions
+    // Every validator adds checked critical extensions
     @ExperimentalPkiApi
     @Throws(CertificateException::class, CancellationException::class)
-    suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>)
+    suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>)
 }

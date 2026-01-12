@@ -23,7 +23,7 @@ class CertValidityValidator(
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
-        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
         checkSerialNumber(currCert)
         isSanCriticalWhenNameIsEmpty(currCert)
