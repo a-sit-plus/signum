@@ -17,14 +17,13 @@ import kotlin.time.Instant
 /**
  * Checks whether the certificate is constructed correctly, since some components are decoded too leniently
  * */
-class CertValidityValidator(
-    val date: Instant
-) : CertificateValidator {
+class CertValidityValidator: CertificateValidator {
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
         checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
+        checkedCriticalExtensions.add(KnownOIDs.subjectAltName_2_5_29_17)
         checkSerialNumber(currCert)
         isSanCriticalWhenNameIsEmpty(currCert)
         checkTimeValidity(currCert)

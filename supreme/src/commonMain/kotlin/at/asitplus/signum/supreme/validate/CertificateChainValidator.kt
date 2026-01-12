@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
@@ -10,6 +11,9 @@ import at.asitplus.signum.indispensable.asn1.anyPolicy
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
+import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validate.*
 import kotlin.contracts.ExperimentalContracts
@@ -27,7 +31,21 @@ class CertificateValidationContext(
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
     val allowIncludedTrustAnchor: Boolean = true,
     val trustAnchors: Set<TrustAnchor> = SystemTrustStore,
-    val expectedEku: Set<ObjectIdentifier> = emptySet()
+    val expectedEku: Set<ObjectIdentifier> = emptySet(),
+    /** use this lambda to specify how to handle leaf key usage check */
+    val leafKeyUsageCheck: suspend (X509Certificate) -> Unit = { currCert ->
+        val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
+
+        if (basicConstraints?.ca == true) {
+            if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
+                throw KeyUsageException("Digital signature key usage extension not present at leaf cert.")
+            }
+        }
+
+        if (basicConstraints?.ca != true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) == true) {
+            throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
+        }
+    }
 )
 
 /**
@@ -86,7 +104,7 @@ data class ValidatorFailure(
 fun interface ValidatorFactory {
     fun CertificateChain.generate(
         context: CertificateValidationContext
-    ): MutableList<CertificateValidator>
+    ): List<CertificateValidator>
 
     companion object {
         val RFC5280: ValidatorFactory =
@@ -224,8 +242,7 @@ suspend fun CertificateChain.validate(
 private fun defineRFC5280Validators(
     context: CertificateValidationContext,
     chain: CertificateChain
-): MutableList<CertificateValidator> {
-    val validators = mutableListOf<CertificateValidator>()
+): List<CertificateValidator> {
     val (pathLen, processingChain) =
         if (context.allowIncludedTrustAnchor && context.trustAnchors.any { it.matchesCertificate(chain.root) }) {
             chain.size - 1 to chain.dropLast(1)
@@ -233,7 +250,7 @@ private fun defineRFC5280Validators(
             chain.size to chain
         }
 
-    validators.add(
+    return listOf(
         PolicyValidator(
             initialPolicies = context.initialPolicies,
             expPolicyRequired = context.explicitPolicyRequired,
@@ -248,19 +265,16 @@ private fun defineRFC5280Validators(
                 expectedPolicySet = setOf(KnownOIDs.anyPolicy),
                 generatedByPolicyMapping = false
             )
-        )
-    )
-    validators += listOf(
-        CertValidityValidator(context.date),
+        ),
+        CertValidityValidator(),
         NameConstraintsValidator(pathLen),
-        KeyUsageValidator(pathLen, expectedEku = context.expectedEku),
+        KeyUsageValidator(pathLen, expectedEku = context.expectedEku, leafKeyUsageCheck = context.leafKeyUsageCheck),
         BasicConstraintsValidator(pathLen),
         ChainValidator(processingChain.reversed()),
         TimeValidityValidator(context.date, certChain = processingChain.reversed()),
         TrustAnchorValidator(context.trustAnchors, processingChain, date = context.date),
         KeyIdentifierValidator(processingChain)
     )
-    return validators
 }
 
 /**

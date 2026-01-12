@@ -18,30 +18,25 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 class KeyUsageValidator (
     private val certPathLen: Int,
     private var currentCertIndex: Int = 0,
-    private val expectedEku: Set<ObjectIdentifier> = emptySet()
+    private val expectedEku: Set<ObjectIdentifier> = emptySet(),
+    private val leafKeyUsageCheck: suspend (X509Certificate) -> Unit
 ) : CertificateValidator {
 
-    private var supportedExtensions: Set<ObjectIdentifier> = setOf(
+    private val supportedExtensions: Set<ObjectIdentifier> = setOf(
         KnownOIDs.keyUsage,
-        KnownOIDs.extKeyUsage,
-        KnownOIDs.subjectAltName_2_5_29_17,
+        KnownOIDs.extKeyUsage
     )
 
     @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>) {
         checkedCriticalExtensions.addAll(supportedExtensions)
         currentCertIndex++
-        if (currentCertIndex <= certPathLen - 1)
+        if (currentCertIndex <= certPathLen - 1) {
             verifySignatureKeyUsage(currCert)
+        }
         else {
             verifyExpectedEKU(currCert)
-            val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
-
-            if (basicConstraints?.ca == true) verifySignatureKeyUsage(currCert)
-
-            if (basicConstraints?.ca != true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) == true) {
-                throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
-            }
+            leafKeyUsageCheck(currCert)
         }
     }
 

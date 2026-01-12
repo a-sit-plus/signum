@@ -122,7 +122,7 @@ val ValidationApiTest by testSuite{
         ).isValid shouldBe false
 
         val customValidatorFactory = ValidatorFactory { context ->
-            val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }
+            val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }.toMutableList()
             validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator || it is TimeValidityValidator }
             validators.add(AttestationTimeValidator(this))
             validators
