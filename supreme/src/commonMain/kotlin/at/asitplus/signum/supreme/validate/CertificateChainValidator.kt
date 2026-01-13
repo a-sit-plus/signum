@@ -138,7 +138,7 @@ suspend fun CertificateChain.validate(
             it.matchesCertificate(this.root)
         }) this.dropLast(1) else this
 
-    val activeValidators = validators.toMutableSet()
+    val activeValidators = validators.toMutableList()
     val validatorFailures = mutableListOf<ValidatorFailure>()
     val trustAnchorValidator = activeValidators.filterIsInstance<TrustAnchorValidator>().firstOrNull()
     val keyIdentifierValidator = activeValidators.filterIsInstance<KeyIdentifierValidator>().firstOrNull()
@@ -184,8 +184,7 @@ suspend fun CertificateChain.validate(
         val checkedCriticalExtensions = mutableSetOf<ObjectIdentifier>()
 
         val validatorIterator = activeValidators.iterator()
-        while (validatorIterator.hasNext()) {
-            val currValidator = validatorIterator.next()
+        for (currValidator in validatorIterator) {
             try {
                 currValidator.check(cert, checkedCriticalExtensions)
             } catch (e: Throwable) {
@@ -274,7 +273,7 @@ private fun defineRFC5280Validators(
         ChainValidator(processingChain.reversed()),
         TimeValidityValidator(context.date, certChain = processingChain.reversed()),
         TrustAnchorValidator(context.trustAnchors, processingChain, date = context.date),
-        KeyIdentifierValidator(processingChain)
+        KeyIdentifierValidator()
     )
 }
 

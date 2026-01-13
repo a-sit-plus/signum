@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.InvalidCertificateValidityPeriodException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -128,14 +128,12 @@ val ValidationApiTest by testSuite{
             validators
         }
 
-        val r = chain.validate(
+        chain.validate(
             customValidatorFactory,
             CertificateValidationContext(
                 trustAnchors = setOf(TrustAnchor.Certificate(chain.root))
             )
-        )
-
-        r.isValid shouldBe true
+        ).isValid shouldBe true
     }
 }
 
@@ -150,7 +148,7 @@ class AttestationTimeValidator(
         checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
         if (currCert != certChain.leaf) {
-            if (!currCert.isValidAt(currCert.tbsCertificate.validUntil.instant)) throw CertificateValidityException("Certificate is not valid")
+            if (!currCert.isValidAt(currCert.tbsCertificate.validUntil.instant)) throw InvalidCertificateValidityPeriodException("Certificate is not valid")
         }
     }
 

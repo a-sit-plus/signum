@@ -1,13 +1,10 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
 /**
@@ -29,10 +26,10 @@ class TimeValidityValidator(
 
         if (currentCertIndex < certChain.lastIndex) {
             val childCert = certChain[currentCertIndex + 1]
+            currentCertIndex++
             wasCertificateIssuedWithinIssuerValidityPeriod(
                 dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
                 issuer = currCert)
-            currentCertIndex++
         }
     }
 
@@ -43,7 +40,7 @@ class TimeValidityValidator(
         val beginValidity = issuer.tbsCertificate.validFrom.instant
         val endValidity = issuer.tbsCertificate.validUntil.instant
         if (beginValidity > dateOfIssuance || dateOfIssuance > endValidity) {
-            throw CertificateChainValidatorException("Certificate issued outside issuer validity period.")
+            throw CertificateChainValidatorException("Certificate at index $currentCertIndex issued outside issuer validity period.")
         }
     }
 }

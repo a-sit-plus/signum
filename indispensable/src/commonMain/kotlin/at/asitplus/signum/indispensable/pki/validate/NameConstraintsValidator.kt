@@ -1,11 +1,12 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.GeneralNameException
 import at.asitplus.signum.NameConstraintsException
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 
@@ -25,11 +26,11 @@ class NameConstraintsValidator(
         currentCertIndex++
 
         if (previousNameConstraints?.isValid == false) {
-            throw NameConstraintsException("Invalid GeneralName in NameConstraints extension.")
+            throw GeneralNameException("Invalid GeneralName in NameConstraints extension.")
         }
         // enforcing that all SANs are valid, since our parsing fails softly
         if (currCert.tbsCertificate.subjectAlternativeNames?.generalNames?.all { it.name.isValid != false } == false) {
-            throw CertificateValidityException("Invalid GeneralName in Subject Alternative Name at index $currentCertIndex")
+            throw GeneralNameException("Invalid GeneralName in Subject Alternative Name at index $currentCertIndex")
         }
 
         if (previousNameConstraints != null && (currentCertIndex == certPathLen || !currCert.isSelfIssued)) {
@@ -60,7 +61,7 @@ class NameConstraintsValidator(
 
         val newNameConstraints = currCert.findExtension<NameConstraintsExtension>()
 
-        if (newNameConstraints?.critical == false || previousNameConstraints?.critical == false) throw NameConstraintsException("NameConstraints extension is not critical.")
+        if (newNameConstraints?.critical == false || previousNameConstraints?.critical == false) throw NameConstraintsException("NameConstraints extension is not critical at cert index $currentCertIndex.")
 
         return if (previousNameConstraints == null) {
             newNameConstraints?.copy()

@@ -2,6 +2,10 @@ package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.BasicConstraintsException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.MissingBasicConstraintsException
+import at.asitplus.signum.MissingCaFlagException
+import at.asitplus.signum.NonCriticalBasicConstraintsException
+import at.asitplus.signum.PathLenConstraintViolationException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -24,13 +28,13 @@ class BasicConstraintsValidator(
         currentCertIndex++
 
         val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
-            ?: throw BasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
+            ?: throw MissingBasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
 
         checkCaBasicConstraints(currCert, currentCertIndex)
 
         if (remainingPathLength != null && !currCert.isSelfIssued) {
             if (remainingPathLength?.toInt() == 0) {
-                throw BasicConstraintsException("pathLenConstraint violated at cert index $currentCertIndex.")
+                throw PathLenConstraintViolationException("pathLenConstraint violated at cert index $currentCertIndex.")
             }
             remainingPathLength = remainingPathLength?.minus(1u)
         }
@@ -47,13 +51,13 @@ class BasicConstraintsValidator(
 fun checkCaBasicConstraints(cert: X509Certificate, certIndex: Int = 0) {
     val location = "at ${if (certIndex == 0) "trust anchor" else "cert index $certIndex."}"
     val basicConstraints = cert.findExtension<BasicConstraintsExtension>()
-        ?: throw BasicConstraintsException("Missing basicConstraints extension $location")
+        ?: throw MissingBasicConstraintsException("Missing basicConstraints extension $location")
 
     if(!basicConstraints.critical) {
-        throw BasicConstraintsException("basicConstraints extension must be critical $location")
+        throw NonCriticalBasicConstraintsException("basicConstraints extension must be critical $location")
     }
 
     if (!basicConstraints.ca) {
-        throw BasicConstraintsException("Missing CA flag $location")
+        throw MissingCaFlagException("Missing CA flag $location")
     }
 }

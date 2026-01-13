@@ -1,15 +1,13 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
-import at.asitplus.signum.TrustAnchorException
+import at.asitplus.signum.NoTrustedIssuerFoundException
+import at.asitplus.signum.TrustAnchorKeyMismatchException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.checkCaBasicConstraints
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
 /**
@@ -46,7 +44,7 @@ class TrustAnchorValidator(
                 val nextIssuerKey = nextCert.decodedPublicKey.getOrThrow()
 
                 if (anchorKey != nextIssuerKey) {
-                    throw TrustAnchorException("Untrusted certificate: trust anchor key mismatch.")
+                    throw TrustAnchorKeyMismatchException("Public key of certificate at index ${currentCertIndex + 1} does not match the issuing trust anchor.")
 
                 }
             }
@@ -59,7 +57,7 @@ class TrustAnchorValidator(
         }
 
         if (currentCertIndex == certChain.lastIndex && !foundTrusted) {
-            throw TrustAnchorException("No trusted issuer found in the chain.")
+            throw NoTrustedIssuerFoundException("No trusted issuer found in the trust anchor chain.")
         }
 
         currentCertIndex++

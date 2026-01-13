@@ -1185,7 +1185,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDfzCCAmegAwIBAgIBATANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEWMBQGA1UEAxMNQmFkIFNp\nZ25lZCBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBaMFMxCzAJBgNV\nBAYTAlVTMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMSMwIQYDVQQD\nExpJbnZhbGlkIENBIFNpZ25hdHVyZSBUZXN0MjCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBAJpto6V//mi4jC6Q4e/y1J79mi//TInYf0KaP3Aw5rsaMhC8\nIJbEAdkIhfj6Skvg6uPj6gJB0zsmN9Tf8NVArEfcRwjAq7IvvDtVrDz6I5Ie0bFD\n8MGkcdP0otJIpbTTHAcefxoqQQeTCt39X9viZokrLeBHWnB4L6zE4d05f/7Wh8ca\nKlDiKjRQl8aIqj8wPsu4MlVC4jnSYTQ6wEd6cA3gJRygcUWkaLaVleaV+PYyUqD7\n8X7p3+i16q1DzgtL9yXUP1b0rt48UWqfGBiIkTNUB0zN9heA7GyI/ilo1Ga8THpN\npha2SLqNB1rMWl3T9fRTsu0HGKRHZobhzGi7zJsCAwEAAaNrMGkwHwYDVR0jBBgw\nFoAUe90QO0rgyN1EhU6IPFqLzZkik68wHQYDVR0OBBYEFK0h9T1WA6JYJDOopjeq\nQZiYko4FMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEw\nDQYJKoZIhvcNAQELBQADggEBAJKcaDXNDhjePhSydqe+QrUBUS0YNqamRezwkiQ/\nNoKO8CMTNvta/bbq/tIYarPtac6n4d0rTuHURuCSC1l6VsruAWsNgn6Ja+G3nqeV\nMP8WM5XYIToIPHy8OMzCXfu04IV2dAuaX4igWL3hn0PXrh7JnrTwfnK5ytSbzxbh\nIWcFLpSqxL0XzEAfJz24325SbAyXqvwx+McF5UU34JHgEUQcvTUTXjr2Xp1i5moV\n68a0CjqYABdZ2pDpHAWoFzvVrcv7o93Y+/DbR+5dVpuN2184q7cJcoez/c7aSp8W\nA7R6Ggi+lJEic2RkktRRZTjh0oMM0ndj5c9Ya7CGfEN3gEY=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TrustAnchorValidator",
-    "errorMessage": "No trusted issuer found in the chain.",
+    "errorMessage": "No trusted issuer found in the trust anchor chain.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1213,7 +1213,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDjTCCAnWgAwIBAgIBAzANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAeFw00NzAxMDExMjAxMDBaFw00OTAxMDExMjAxMDBaMGcxCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMTcwNQYDVQQDEy5JbnZh\nbGlkIEVFIG5vdEJlZm9yZSBEYXRlIEVFIENlcnRpZmljYXRlIFRlc3QyMIIBIjAN\nBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtc20YJ/j2rSNlGJ/J9rqsxZKwQvD\n+f2lCf9yV6nowMsJGRYdX5ERKWoqW29xpRaseNUf38roqv9TiBy5bXzOoJ3a6zfN\nSvhWPf//uk4zP5fBAEwq7VL8+UrpZBsKpbTaVIvIeOfTpvWr9qW1N9J1aH0Y5B8D\nVsFsdzrGc7rjbDvb3bz2bymkDKGW2A4XClecaAIGJiJOguEuYMhq4B5tndQ0cAQN\nQcDXS9li//HO3vlYyiRYv40hZwaTt41m5cQ21xTfFOa/ORsCa96sAL2TR64sT/u4\nDWck/9kh3qxsw9gRSkRydr1xOX3HjA6gYUl7nv04OmUSHwf/w590ry4elwIDAQAB\no2swaTAfBgNVHSMEGDAWgBRYAYQkG7wrUpRKPaUQchRR9a86yTAdBgNVHQ4EFgQU\nmXSnPUJsL24xEXiVXHTV4VzB9nIwDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4w\nDAYKYIZIAWUDAgEwATANBgkqhkiG9w0BAQsFAAOCAQEAPSuzpUlBOhAZ8lTzHWdq\nZoo5cC8+mX8vg3YOTm02idO47H/HcqUjQMJZaUr/gsnr0dABy2kuiU802/JbLp3i\njLGTygmGtU7Wqj2t9IEgDeZdQflrYfaCm8rPqNeiwrQb0Mw52dXLMz3YFLqG1BAG\nFqrxg2utLDQfstLrpMs2BHXsSxSBq6ad7BS32qRweNr1KXQJ4QNnRGFrOARTMxi6\nMBY3zCiMJWYtgtV6aCt9t/q1kt1NFCkc8CzFdpgV8/rz4poS4FNweXhT+RqyF7UT\nPBzHycgL90/QG2N6LlTHxux9ElHQYy8HwwxlJoE+lPv89DSLNwra1mQ8MJMu7h9+\nqg==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 1 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1227,7 +1227,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDlDCCAnygAwIBAgIBBDANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAeFw01MDAxMDExMjAxMDBaFw0zMDEyMzEwODMwMDBaMG4xCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMT4wPAYDVQQDEzVWYWxp\nZCBwcmUyMDAwIFVUQyBub3RCZWZvcmUgRGF0ZSBFRSBDZXJ0aWZpY2F0ZSBUZXN0\nMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALOY1i2dfQm7MR3F7FEB\neUvqhyz0RVOJ5W9ffzQpg8puuROsdevN68qfhN/GTIHMLmeQeEv56Zsl1hRIKMqB\nhDpOvSNoaAeZUGJpAaMBzEdEE0KyVlh70u2IaKk3JYDzsWhmbN4ESXFGpmDccsfZ\n8kFZo+XTapSeFEc5ETbyVIV7HHPE54zPX9Ce67kJI0e41R5hsXUKFBA7ORycbcFh\n8c8sN3mDYhFFX8m7a2qTN6oHQ6I1fReKKOCfYDs671bbiyFCQWNl+7Ok19qUVOgQ\nL/g2HyA1YNvueh8ivNNRRwfv6RTPwhuOWF5FyOXRCTzDaS309Lb3TN9d3a3kAoEf\nHdMCAwEAAaNrMGkwHwYDVR0jBBgwFoAUWAGEJBu8K1KUSj2lEHIUUfWvOskwHQYD\nVR0OBBYEFEBvkKgDjazQ6vxQ2V37VnUlYMSbMA4GA1UdDwEB/wQEAwIE8DAXBgNV\nHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBABDntMraC1zS\nkjUQmdbhI+l1j8Is7ApNjb03/Hgq8pjDxP2VNPEy9XgXYDOHaAmt7p7jDYMwBxzV\n7TSnFIvR3kYjb5k7YhCMIQXkJJgM2QvZ8m0B5c9YJI6qktAp2sxPfzLuBg7fm4Oe\nBqQ6f2NlmLorDqhXG3QSJmXWRXMxti4rWz4mJfuWuzPdZERE9bJ118ijfksQjGfu\npjoWizxTCt8kRMP9+RSD8Hzipuxfc2JPn16fNrXMkyBtek82L7tNo1raLueyPcEg\nZ5RpwEX/C4nlsQV3JS2viDxhcdtgcmn/A/ho7Ta4QazDqWjQywXExpEpgrp7ExFn\nhiss7AFKddQ=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 1 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1241,7 +1241,7 @@
     "leaf":"-----BEGIN CERTIFICATE-----\nMIIDmjCCAoKgAwIBAgIBBTANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAgGA8yMDAyMDEwMTEyMDEwMFoXDTMwMTIzMTA4MzAwMFowcjELMAkGA1UEBhMC\nVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTExQjBABgNVBAMTOVZh\nbGlkIEdlbmVyYWxpemVkVGltZSBub3RCZWZvcmUgRGF0ZSBFRSBDZXJ0aWZpY2F0\nZSBUZXN0NDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK0TXsIKGzxY\niX5lX1bWQb/MZ9pouA3EQT8bxiWbQe3iWrZE5xIU4jFopRL8RXASP+lQIROJWqjT\nGtZhEaNQyB9CmNSz5w3Q/dME6LPrdiUF63klD3lY/J1cJheLov0Ql9Rshvrcjluq\nxR0aMebihrCVAbGB9fjapEf4D8xtm/l5SMvO7olLyDZKkibHgmzgZ66/ebGPrc3o\nOmxjoqvkyyH+vlRQgfv4oAVFetdVyYB8i2eJp47d2aFGTsWmn6zIoM7fy4iuu0kK\n07KGV+RGIif3sHoWXv2Uahz56Y7MGr135s/S8e80jA4KrfQpzqpN07ncyEtFGEs5\n3WeTcZi5zLsCAwEAAaNrMGkwHwYDVR0jBBgwFoAUWAGEJBu8K1KUSj2lEHIUUfWv\nOskwHQYDVR0OBBYEFM3r3nHYztXgRqo9a88ywemUwz7vMA4GA1UdDwEB/wQEAwIE\n8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAHWf\nJSZe+DwVSi+fwy98C4I5bZrrkWUX5P3ffOQkO1NrPjVURAvXqyTXbzYcf+PM5W+k\nJ6XD2jJvNCRNQ2R8AIdVbG1fIfAzBR3PhEZPL9qKhi2H1q2IloF1Kw26ghxS5cAF\ncfwkOyQgNUpyFp9kKT2OE+3GM6/zf8SVy0/bFL6Rf/5yrJ273Of0+ymy2CY/irTM\n/4X7WLSkSGyPz9RHiT+LoRSel59eclRDxQKXgyToiTgGTKXbEFcilTBT6+0WCgcJ\n3Lw5qc+s12lQDFF8T903ef6C77dPOYMcxnCD2WlBInOSoqsGhn8NDf6YQYsDFCbl\nOj2T6kRdn8YUigjmrhM=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 1 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1283,7 +1283,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDmjCCAoKgAwIBAgIBBzANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAgGA8xOTk3MDEwMTEyMDEwMFoXDTk5MDEwMTEyMDEwMFowcjELMAkGA1UEBhMC\nVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTExQjBABgNVBAMTOUlu\ndmFsaWQgcHJlMjAwMCBVVEMgRUUgbm90QWZ0ZXIgRGF0ZSBFRSBDZXJ0aWZpY2F0\nZSBUZXN0NzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ8k5yDE7wMf\nwlOhyZcxb9+PlGIC417Lq+G5CDDQQGbytGuZKYQR3+0AhiEUO7YwxfIeOtE4YOBl\nQsZsPUSOgSCb2l4s2rbH7V5QFfRcf8f3RQVDjMqhFXvIIWW5uys1poKMqXVDLw3x\ng3ysL2kVl/zORmqI3obmehIa2m1EUHR3jY++I43rJnFUsTvTNGKsE7HLTpkLDABH\nwptY+Ztt7J+sMc5w/pXweCkYLSdulazQ0EKwjDdmWS4BE/3CLIeQkTCB/CTkkseg\ndHPaD18xeV+4LLjAB2dsAmIwAnRiI+LouvCaF52pVBedX5cg6xMPTz1XfLzX3SkL\n3hj4LgUtuJMCAwEAAaNrMGkwHwYDVR0jBBgwFoAUWAGEJBu8K1KUSj2lEHIUUfWv\nOskwHQYDVR0OBBYEFNUChZ5TMCZHiJZ+TyOTFmSU8xivMA4GA1UdDwEB/wQEAwIE\n8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBABiL\nKJrH+iYNkDzEmwMr9Iebl4gc2uzCObyDkbaQ/UeuxbCvfUm3x1vYbty3HNEKp+tY\nJBXAEDh2GbHU1cLzhP+tNTYQuqgWzE86ZOKWLYI7wUkezHwL00wtOYI8RQfAScGV\nOySp2qwKgeKjXUAd/BVa6FVOzXkHavXNy903ssmko4d9sD+yb9FFY9UrlmIhXewl\nlR2rcUDtHT0dH5PJf7arPoGTRoePSFWeY6D7IBNuXfuhB3WEj+UQzzoANelmavIL\nVwM88Eszmwmofr2sbWi16b6z7XAKbwQm7n4hrwOd3vYTO/zRM0KBB9Y27p/trFLL\n6CmNjRghrN1erPNL1Z0=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 1 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
