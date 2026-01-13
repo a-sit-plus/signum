@@ -13,13 +13,15 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 
 /**
  * Ensures that intermediate CA certificates have the necessary key usage extensions.
- * Key usage to sign certificates (keyCertSign) and sign certificate revocation lists (cRLSign), according to RFC 5280.
+ * Checks Expected Key Usage in leaf certificate only
+ * Key usage to sign certificates (keyCertSign) and CRLSign is required according to RFC 5280.
  */
 class KeyUsageValidator (
     private val certPathLen: Int,
     private var currentCertIndex: Int = 0,
     private val expectedEku: Set<ObjectIdentifier> = emptySet(),
-    private val leafKeyUsageCheck: suspend (X509Certificate) -> Unit
+    private val leafKeyUsageCheck: suspend (X509Certificate) -> Unit,
+    private val supportRevocationChecking: Boolean
 ) : CertificateValidator {
 
     private val supportedExtensions: Set<ObjectIdentifier> = setOf(
@@ -43,6 +45,9 @@ class KeyUsageValidator (
     private fun verifySignatureKeyUsage(currCert: X509Certificate) {
         if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
             throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
+        }
+        if (supportRevocationChecking && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.CRL_SIGN) != true) {
+            throw KeyUsageException("CRL signature key usage extension not present at cert index $currentCertIndex.")
         }
     }
 

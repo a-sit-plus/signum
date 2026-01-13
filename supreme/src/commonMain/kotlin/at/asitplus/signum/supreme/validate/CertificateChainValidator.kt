@@ -45,7 +45,8 @@ class CertificateValidationContext(
         if (basicConstraints?.ca != true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) == true) {
             throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
         }
-    }
+    },
+    val supportRevocationChecking: Boolean = false
 )
 
 /**
@@ -268,7 +269,7 @@ private fun defineRFC5280Validators(
         ),
         CertValidityValidator(),
         NameConstraintsValidator(pathLen),
-        KeyUsageValidator(pathLen, expectedEku = context.expectedEku, leafKeyUsageCheck = context.leafKeyUsageCheck),
+        KeyUsageValidator(pathLen, expectedEku = context.expectedEku, leafKeyUsageCheck = context.leafKeyUsageCheck, supportRevocationChecking = context.supportRevocationChecking),
         BasicConstraintsValidator(pathLen),
         ChainValidator(processingChain.reversed()),
         TimeValidityValidator(context.date, certChain = processingChain.reversed()),

@@ -17,7 +17,7 @@ import io.kotest.matchers.shouldNotBe
 val NistPkiTestSuite by testSuite{
 
     val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json")).filter { tc ->
-        !tc.name.contains("cRLSign", ignoreCase = true)
+        tc.name.contains("cRLSign", ignoreCase = true)
     }
 
     testSuite.forEach { testCase ->
@@ -41,7 +41,8 @@ val NistPkiTestSuite by testSuite{
                 explicitPolicyRequired = testCase.explicitPolicyRequired,
                 initialPolicies = testCase.initialPolicies.map { ObjectIdentifier(it) }.toSet(),
                 anyPolicyInhibited = testCase.anyPolicyInhibited,
-                policyMappingInhibited = testCase.policyMappingInhibited
+                policyMappingInhibited = testCase.policyMappingInhibited,
+                supportRevocationChecking = true
             )
 
             val result = chain.validate(context)
