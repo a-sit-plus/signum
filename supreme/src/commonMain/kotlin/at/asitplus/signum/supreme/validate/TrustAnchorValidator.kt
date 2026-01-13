@@ -2,15 +2,14 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.TrustAnchorException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.checkCaBasicConstraints
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.kotlincrypto.error.CertificateException
 import kotlin.time.Instant
 
 /**
@@ -47,7 +46,7 @@ class TrustAnchorValidator(
                 val nextIssuerKey = nextCert.decodedPublicKey.getOrThrow()
 
                 if (anchorKey != nextIssuerKey) {
-                    throw CertificateException("Untrusted certificate: trust anchor key mismatch.")
+                    throw TrustAnchorException("Untrusted certificate: trust anchor key mismatch.")
 
                 }
             }
@@ -56,29 +55,11 @@ class TrustAnchorValidator(
 
             issuingAnchor.cert?.let { checkCaBasicConstraints(it) }
 
-            issuingAnchor.cert?.let {
-                if (it.isExpired(date)) {
-                    throw CertificateValidityException(
-                        "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(
-                            TimeZone.currentSystemDefault()
-                        )
-                    )
-                }
-            }
-
-            issuingAnchor.cert?.let {
-                if (it.isNotYetValid(date)) {
-                    throw CertificateValidityException(
-                        "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(
-                            TimeZone.currentSystemDefault()
-                        )
-                    )
-                }
-            }
+            issuingAnchor.cert?.let { it.checkValidityAt(date) }
         }
 
         if (currentCertIndex == certChain.lastIndex && !foundTrusted) {
-            throw CertificateException("No trusted issuer found in the chain.")
+            throw TrustAnchorException("No trusted issuer found in the chain.")
         }
 
         currentCertIndex++

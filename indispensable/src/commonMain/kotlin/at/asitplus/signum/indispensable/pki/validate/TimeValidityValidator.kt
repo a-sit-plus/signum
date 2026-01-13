@@ -25,17 +25,7 @@ class TimeValidityValidator(
         currCert: X509Certificate,
         checkedCriticalExtensions: MutableSet<ObjectIdentifier>
     ) {
-        if (currCert.isExpired(date)) {
-            throw CertificateValidityException(
-                "certificate expired on " + currCert.tbsCertificate.validUntil.instant.toLocalDateTime(TimeZone.UTC)
-            )
-        }
-
-        if (currCert.isNotYetValid(date)) {
-            throw CertificateValidityException(
-                "certificate not valid till " + currCert.tbsCertificate.validFrom.instant.toLocalDateTime(TimeZone.UTC)
-            )
-        }
+        currCert.checkValidityAt(date)
 
         if (currentCertIndex < certChain.lastIndex) {
             val childCert = certChain[currentCertIndex + 1]

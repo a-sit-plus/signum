@@ -21,6 +21,8 @@ import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 import kotlin.time.Clock
@@ -344,7 +346,26 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     /**
      * Checks whether this certificate is valid at the specified [date].
      */
-    fun isValidAt(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
+    fun isValidAt(date: Instant = Clock.System.now()): Boolean = runCatching { checkValidityAt(date) }.isSuccess
+
+    @Throws(CertificateValidityException::class)
+    fun checkValidityAt(date: Instant = Clock.System.now()) {
+        if (isExpired(date)) {
+            throw CertificateValidityException(
+                "certificate expired on " +
+                        tbsCertificate.validUntil.instant
+                            .toLocalDateTime(TimeZone.UTC)
+            )
+        }
+
+        if (isNotYetValid(date)) {
+            throw CertificateValidityException(
+                "certificate not valid till " +
+                        tbsCertificate.validFrom.instant
+                            .toLocalDateTime(TimeZone.UTC)
+            )
+        }
+    }
 
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
