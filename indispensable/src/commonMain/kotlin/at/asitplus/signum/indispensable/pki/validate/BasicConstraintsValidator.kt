@@ -26,7 +26,7 @@ class BasicConstraintsValidator(
         val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
             ?: throw BasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
 
-        checkCaBasicConstraints(currCert)
+        checkCaBasicConstraints(currCert, currentCertIndex)
 
         if (remainingPathLength != null && !currCert.isSelfIssued) {
             if (remainingPathLength?.toInt() == 0) {
@@ -41,18 +41,19 @@ class BasicConstraintsValidator(
             }
         }
     }
+}
 
-    @Throws(BasicConstraintsException::class)
-    fun checkCaBasicConstraints(cert: X509Certificate) {
-        val basicConstraints = cert.findExtension<BasicConstraintsExtension>()
-            ?: throw BasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
+@Throws(BasicConstraintsException::class)
+fun checkCaBasicConstraints(cert: X509Certificate, certIndex: Int = 0) {
+    val location = "at ${if (certIndex == 0) "trust anchor" else "cert index $certIndex."}"
+    val basicConstraints = cert.findExtension<BasicConstraintsExtension>()
+        ?: throw BasicConstraintsException("Missing basicConstraints extension $location")
 
-        if(!basicConstraints.critical) {
-            throw BasicConstraintsException("basicConstraints extension must be critical (index $currentCertIndex).")
-        }
+    if(!basicConstraints.critical) {
+        throw BasicConstraintsException("basicConstraints extension must be critical $location")
+    }
 
-        if (!basicConstraints.ca) {
-            throw BasicConstraintsException("Missing CA flag at cert index $currentCertIndex.")
-        }
+    if (!basicConstraints.ca) {
+        throw BasicConstraintsException("Missing CA flag $location")
     }
 }

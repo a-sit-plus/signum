@@ -36,7 +36,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDpjCCAo6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBiMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEyMDAGA1UEAxMpYmFzaWND\nb25zdHJhaW50cyBOb3QgQ3JpdGljYWwgY0EgRmFsc2UgQ0EwHhcNMTAwMTAxMDgz\nMDAwWhcNMzAxMjMxMDgzMDAwWjBeMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVz\ndCBDZXJ0aWZpY2F0ZXMgMjAxMTEuMCwGA1UEAxMlSW52YWxpZCBjQSBGYWxzZSBF\nRSBDZXJ0aWZpY2F0ZSBUZXN0MzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBAOMqfzk11boRFBbpNA1tq4GZJbk1M45bsflY/IBB0d8KUdhotWgSOm065GL3\nsB10F5JZI/sLVpXuH7R9TABBvnZu8XqX5RKKkNB7zMXlkpr4TFXGZnYgSmX09ta+\nfuZ4TQgj6BdztW1l/634f4exa7qZirzCISqddB99CN318WhQgMqxmounqUfkUD12\ne1UM3TjOPKqI7eYOJIfnfw2Ea6BhT55ncTXp5lcAhAajos+iWYhiqlPWc+cd1c8U\n3VrVi7kuKK6uuVBqA68QTiDnuaPEJsxadp9AuYY5WYGT4HT2HpsXzCd6R2fk94hZ\niV/C0hSIAq0mVtq9FJF9qh/XwsECAwEAAaNrMGkwHwYDVR0jBBgwFoAUOdCbt08p\nN77TsIp26mqeze9GvlgwHQYDVR0OBBYEFI/4W2j9iCltyb9KCY6b8q11whJ3MA4G\nA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcN\nAQELBQADggEBAG22QQs5JmmHtqLDRPAiJP+IjtpGyiOCH7IhyGLW6MKk88cjH9xe\nM066O9SE3asTYTrhQBirfy+nOxV1Qg+DdSmtA6ibr3USxTkH5xcz3OR+Sd3fkxEI\nqkjK5nYkXWs6B/xbX8A3iUrRmG2Yp/gLI4Fs3ZEobwh93E7wIamQ8PJ1SbnXTTcx\nxBy/IKY/usd7NdwtobmHP6fH2bWM0GyNxmOscLCxAhESLjmuq30srVG/jHs/Q0vL\nJww3lWZSPbJXcRxKMzlu35IrP92RZWjtByv1Wndugh7q5rjT1ccw0eF95b/U5whx\nX2XPc74bSpqoh8dfNGTWjtq2JeHhGoJd+9k=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "BasicConstraintsValidator",
-    "errorMessage": "basicConstraints extension must be critical (index 1).",
+    "errorMessage": "basicConstraints extension must be critical at cert index 1.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 

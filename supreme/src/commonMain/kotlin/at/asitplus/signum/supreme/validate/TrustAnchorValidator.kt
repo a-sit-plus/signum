@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import at.asitplus.signum.indispensable.pki.validate.checkCaBasicConstraints
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.kotlincrypto.error.CertificateException
@@ -25,7 +26,6 @@ class TrustAnchorValidator(
 ) : CertificateValidator {
 
     var foundTrusted: Boolean = false
-    private val basicConstraintsValidator: BasicConstraintsValidator = BasicConstraintsValidator(0)
 
     @ExperimentalPkiApi
     override suspend fun check(
@@ -54,7 +54,7 @@ class TrustAnchorValidator(
 
             trustAnchor = issuingAnchor
 
-            issuingAnchor.cert?.let { basicConstraintsValidator.checkCaBasicConstraints(it) }
+            issuingAnchor.cert?.let { checkCaBasicConstraints(it) }
 
             issuingAnchor.cert?.let {
                 if (it.isExpired(date)) {

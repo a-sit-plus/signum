@@ -4,7 +4,7 @@ sealed class CryptoException(message: String? = null, cause: Throwable? = null) 
 open class CryptoOperationFailed(message: String) : CryptoException(message)
 open class UnsupportedCryptoException(message: String? = null, cause: Throwable? = null) : CryptoException(message, cause)
 
-sealed class CertificateException(message: String? = null, cause: Throwable? = null) : Throwable(message, cause)
+open class CertificateException(message: String? = null, cause: Throwable? = null) : Throwable(message, cause)
 class CertificateChainValidatorException(message: String) : CertificateException(message)
 class KeyUsageException(message: String) : CertificateException(message)
 class ExtendedKeyUsageException(message: String) : CertificateException(message)
