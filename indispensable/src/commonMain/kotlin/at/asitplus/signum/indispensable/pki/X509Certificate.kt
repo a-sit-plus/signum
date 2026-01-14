@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateExpiredException
+import at.asitplus.signum.CertificateNotYetValidException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -351,7 +353,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Throws(CertificateValidityException::class)
     fun checkValidityAt(date: Instant = Clock.System.now()) {
         if (isExpired(date)) {
-            throw CertificateValidityException(
+            throw CertificateExpiredException(
                 "certificate expired on " +
                         tbsCertificate.validUntil.instant
                             .toLocalDateTime(TimeZone.UTC)
@@ -359,7 +361,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         }
 
         if (isNotYetValid(date)) {
-            throw CertificateValidityException(
+            throw CertificateNotYetValidException(
                 "certificate not valid till " +
                         tbsCertificate.validFrom.instant
                             .toLocalDateTime(TimeZone.UTC)

@@ -7,8 +7,16 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import kotlin.coroutines.cancellation.CancellationException
 
 interface CertificateValidator {
-    // Every validator adds checked critical extensions
+
+    /**
+     * Performs certificate validation for the given certificate
+     * Every validator adds checked critical extensions
+     *
+     * @throws CertificateException If the certificate fails validation according to the rules implemented by this validator
+     * @throws CancellationException
+     * @throws Throwable For multiplatform safety (e.g., Kotlin/Native to Swift), this allows catching all exceptions without crashing the application.
+     */
     @ExperimentalPkiApi
-    @Throws(CertificateException::class, CancellationException::class)
+    @Throws(Throwable::class)
     suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>)
 }
