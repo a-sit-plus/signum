@@ -1,6 +1,9 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CriticalAuthorityKeyIdentifierException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.KeyIdentifierException
+import at.asitplus.signum.MissingAuthorityKeyIdentifierException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -12,6 +15,8 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.json.Json
 import kotlin.jvm.Throws
 import kotlin.time.Clock
@@ -71,7 +76,7 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-                    result.validatorFailures.firstOrNull { it.validator is KeyIdentifierValidator } shouldNotBe null
+                    result.validatorFailures[0].cause.shouldBeInstanceOf<KeyIdentifierException>()
                 } else {
                     result.shouldBeValid()
                 }

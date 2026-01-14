@@ -141,28 +141,12 @@ suspend fun CertificateChain.validate(
     val activeValidators = validators.toMutableList()
     val validatorFailures = mutableListOf<ValidatorFailure>()
     val trustAnchorValidator = activeValidators.filterIsInstance<TrustAnchorValidator>().firstOrNull()
-    val keyIdentifierValidator = activeValidators.filterIsInstance<KeyIdentifierValidator>().firstOrNull()
     val nameConstraintsValidator = activeValidators.filterIsInstance<NameConstraintsValidator>().firstOrNull()
 
     trustAnchorValidator?.let { trustAnchorValidator ->
         catchingUnwrapped {
             processingChain.forEach {
                 trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
-                if (trustAnchorValidator.foundTrusted) {
-                    catchingUnwrapped {
-                        keyIdentifierValidator?.checkTrustAnchorAndChild(trustAnchorValidator.trustAnchor?.cert, it)
-                    }.onFailure {
-                        validatorFailures.add(
-                            ValidatorFailure(
-                                KeyIdentifierValidator::class.simpleName!!,
-                                keyIdentifierValidator,
-                                it.message ?: "Key Identifier validation failed.",
-                                -1,
-                                it
-                            )
-                        )
-                    }
-                }
             }
         }.onFailure {
             validatorFailures.add(

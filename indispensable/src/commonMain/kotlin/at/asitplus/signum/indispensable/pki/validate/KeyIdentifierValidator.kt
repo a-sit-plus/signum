@@ -22,26 +22,28 @@ class KeyIdentifierValidator(
         currentCertIndex++
         checkSubjectKeyIdentifier(currCert)
     }
-    @Throws(KeyIdentifierException::class)
-    fun checkTrustAnchorAndChild(trustAnchor: X509Certificate?, childCert: X509Certificate) {
-        trustAnchor?.findExtension<AuthorityKeyIdentifierExtension>().let {
-            if (trustAnchor?.isSelfIssued == false && it == null) throw MissingAuthorityKeyIdentifierException("Missing AuthorityKeyIdentifier extension in Trust Anchor.")
-            if (it?.critical == true) throw CriticalAuthorityKeyIdentifierException("Trust Anchor must mark AuthorityKeyIdentifier as non-critical")
-        }
+}
 
-        trustAnchor?.let{ checkSubjectKeyIdentifier(it) }
-
-        childCert.findExtension<AuthorityKeyIdentifierExtension>(). let{
-            if (it == null) throw MissingAuthorityKeyIdentifierException("Missing AuthorityKeyIdentifier extension in certificate.")
-            if (it.critical) throw CriticalAuthorityKeyIdentifierException("Conforming CAs must mark AuthorityKeyIdentifier as non-critical")
-        }
+@Throws(KeyIdentifierException::class)
+fun checkTrustAnchorAndChild(trustAnchor: X509Certificate?, childCert: X509Certificate) {
+    trustAnchor?.findExtension<AuthorityKeyIdentifierExtension>().let {
+        if (trustAnchor?.isSelfIssued == false && it == null) throw MissingAuthorityKeyIdentifierException("Missing AuthorityKeyIdentifier extension in Trust Anchor.")
+        if (it?.critical == true) throw CriticalAuthorityKeyIdentifierException("Trust Anchor must mark AuthorityKeyIdentifier as non-critical")
     }
 
-    @Throws(KeyIdentifierException::class)
-    private fun checkSubjectKeyIdentifier(cert: X509Certificate) {
-        cert.findExtension<SubjectKeyIdentifierExtension>().let {
-            if (it == null) throw  MissingSubjectKeyIdentifierException("Missing SubjectKeyIdentifier extension in certificate at index $currentCertIndex.")
-            if (it.critical) throw CriticalSubjectKeyIdentifierException("SubjectKeyIdentifier extension must not be critical (index $currentCertIndex).")
-        }
+    trustAnchor?.let{ checkSubjectKeyIdentifier(it) }
+
+    childCert.findExtension<AuthorityKeyIdentifierExtension>(). let{
+        if (it == null) throw MissingAuthorityKeyIdentifierException("Missing AuthorityKeyIdentifier extension in certificate.")
+        if (it.critical) throw CriticalAuthorityKeyIdentifierException("Conforming CAs must mark AuthorityKeyIdentifier as non-critical")
+    }
+}
+
+@Throws(KeyIdentifierException::class)
+private fun checkSubjectKeyIdentifier(cert: X509Certificate, currentCertIndex: Int? = null) {
+    val location = currentCertIndex?.let { " at index $it" }.orEmpty()
+    cert.findExtension<SubjectKeyIdentifierExtension>().let {
+        if (it == null) throw  MissingSubjectKeyIdentifierException("Missing SubjectKeyIdentifier extension in certificate$location.")
+        if (it.critical) throw CriticalSubjectKeyIdentifierException("SubjectKeyIdentifier extension must not be critical$location.")
     }
 }

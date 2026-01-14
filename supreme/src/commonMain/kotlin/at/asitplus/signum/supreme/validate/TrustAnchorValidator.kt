@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.checkCaBasicConstraints
+import at.asitplus.signum.indispensable.pki.validate.checkTrustAnchorAndChild
 import kotlin.time.Instant
 
 /**
@@ -53,7 +54,9 @@ class TrustAnchorValidator(
 
             issuingAnchor.cert?.let { checkCaBasicConstraints(it) }
 
-            issuingAnchor.cert?.let { it.checkValidityAt(date) }
+            issuingAnchor.cert?.checkValidityAt(date)
+
+            issuingAnchor.cert?.let { checkTrustAnchorAndChild(it, currCert) }
         }
 
         if (currentCertIndex == certChain.lastIndex && !foundTrusted) {

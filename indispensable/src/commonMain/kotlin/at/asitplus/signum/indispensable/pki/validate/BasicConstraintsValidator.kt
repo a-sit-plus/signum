@@ -48,8 +48,8 @@ class BasicConstraintsValidator(
 }
 
 @Throws(BasicConstraintsException::class)
-fun checkCaBasicConstraints(cert: X509Certificate, certIndex: Int = 0) {
-    val location = "at ${if (certIndex == 0) "trust anchor" else "cert index $certIndex."}"
+fun checkCaBasicConstraints(cert: X509Certificate, certIndex: Int? = null) {
+    val location = certIndex?.let { "at cert index $it." } ?: "at trust anchor"
     val basicConstraints = cert.findExtension<BasicConstraintsExtension>()
         ?: throw MissingBasicConstraintsException("Missing basicConstraints extension $location")
 
