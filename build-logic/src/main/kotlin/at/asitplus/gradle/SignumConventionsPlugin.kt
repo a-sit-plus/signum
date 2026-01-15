@@ -311,6 +311,8 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     linuxX64()
     linuxArm64()
     mingwX64()
+
+    sourceSets.commonTest.dependencies {implementation("de.infix.testBalloon:testBalloon-framework-core:${project.AspVersions.testballoonAddons}")}
 }
 
 

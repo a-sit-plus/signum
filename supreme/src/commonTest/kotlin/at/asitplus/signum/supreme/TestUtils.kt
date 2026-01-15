@@ -3,8 +3,6 @@
 package at.asitplus.signum.supreme
 
 import at.asitplus.KmmResult
-import de.infix.testBalloon.framework.core.TestElementEvent
-import de.infix.testBalloon.framework.core.TestExecutionReport
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
 import io.kotest.property.Arb
@@ -34,20 +32,6 @@ internal object succeed: Matcher<KmmResult<*>> {
 /** Decimal String -> Int */ fun i(s: String) = s.toInt(10)
 fun unreachable(): Nothing = throw IllegalStateException()
 
-
-class DisabledTestsExecutionReport : TestExecutionReport() {
-
-    override suspend fun add(event: TestElementEvent) {
-
-        if (event !is TestElementEvent.Finished) return
-
-
-        if (event.failed) {
-          event.throwable?.printStackTrace()
-        }
-
-    }
-}
 
 object InsecureRandom: CryptoRand() {
     override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)

@@ -10,7 +10,6 @@ signumConventions {
 }
 
 
-
 kotlin {
     indispensableTargets()
     project.gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
@@ -23,6 +22,7 @@ kotlin {
                 implementation("at.asitplus.gradle:testhelper:20251114")
                 implementation(project(":indispensable-asn1"))
                 implementation(libs.kotlinx.io.core)
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoonAddons}")
             }
         }
         jvmMain.dependencies {
