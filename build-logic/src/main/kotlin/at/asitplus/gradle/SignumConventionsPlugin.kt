@@ -1,16 +1,19 @@
 package at.asitplus.gradle
 
+import at.asitplus.gradle.at.asitplus.gradle.addTestExtensions
 import com.android.build.api.dsl.androidLibrary
 import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.extraProperties
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
@@ -47,6 +50,12 @@ class SignumConventionsExtension(private val project: Project) {
         project.version = indispensableVersion
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
+
+            //work around IDEA BUG not finding any test deps on non-JVM!
+            (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets.filter { it.name.endsWith("Test") }.forEach { it.dependencies{addTestExtensions()}}
+            tasks.withType<AbstractTestTask>().configureEach { failOnNoDiscoveredTests=false }
+
+            //TestBalloon 0.8 discovery issue
             tasks.withType<Test>().configureEach {
                 maxHeapSize = "10G"
             }
@@ -228,7 +237,6 @@ class SignumConventionsExtension(private val project: Project) {
 
 fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
     SignumConventionsExtension(this).init()
-
 }
 
 
@@ -312,7 +320,6 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     linuxArm64()
     mingwX64()
 
-    sourceSets.commonTest.dependencies {implementation("de.infix.testBalloon:testBalloon-framework-core:${project.AspVersions.testballoonAddons}")}
 }
 
 
