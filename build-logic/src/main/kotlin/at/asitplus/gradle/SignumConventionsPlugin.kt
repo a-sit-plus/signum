@@ -280,7 +280,7 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
 
     if ("true" != disableAppleTargets) {
         macosArm64()
-        macosX64()
+        //macosX64()
         tvosArm64()
         tvosX64()
         tvosSimulatorArm64()
