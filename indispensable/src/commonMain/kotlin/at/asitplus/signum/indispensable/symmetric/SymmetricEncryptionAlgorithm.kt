@@ -420,7 +420,7 @@ sealed interface NonceTrait {
 /**
  * Marker interface indicating a block cipher. Purely informational
  */
-abstract class BlockCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType>(
+abstract class BlockCipher<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>(
     val mode: ModeOfOperation,
     val blockSize: BitLength
 ) : SymmetricEncryptionAlgorithm<A, I, K> {
@@ -435,7 +435,7 @@ abstract class BlockCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType>(
 /**
  * Marker interface indicating a block cipher. Purely informational
  */
-abstract class StreamCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType> : SymmetricEncryptionAlgorithm<A, I, K>
+abstract class StreamCipher<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> : SymmetricEncryptionAlgorithm<A, I, K>
 
 
 //Here come the contracts!
