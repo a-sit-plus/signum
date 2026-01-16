@@ -260,7 +260,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.isAuthenticated(): Boolean {
     contract {
-        returns(true) implies (this@isAuthenticated is SymmetricKey.Authenticating<A, I, K>)
+        returns(true) implies (this@isAuthenticated is SymmetricKey.Authenticating<*, I, K>)
         returns(false) implies (this@isAuthenticated is SymmetricKey.NonAuthenticating<I>)
     }
     return this.algorithm.authCapability is AuthCapability.Authenticated<*>
@@ -281,7 +281,7 @@ fun <A : AuthCapability.Authenticated<*>, I : NonceTrait> SymmetricKey<A, I, *>.
 fun <A : AuthCapability<*>, I : NonceTrait> SymmetricKey<A, I, *>.hasDedicatedMacKey(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMacKey is SymmetricKey.WithDedicatedMac<I>)
-        returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<A, I>)
+        returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<*, I>)
     }
     return this is SymmetricKey.WithDedicatedMac
 }
