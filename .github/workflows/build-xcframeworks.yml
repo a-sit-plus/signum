@@ -17,7 +17,7 @@ jobs:
         with:
           xcode-version: 16.2.0
       - name: Build klibs
-        run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
+        run: ./gradlew iosArm64MainKlibrary
       - name: Build XCFrameworks
         run: ./gradlew assembleIndispensableAsn1XCFramework assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework assembleSupremeXCFramework
       - name: Upload debug XCFramework Indispensable

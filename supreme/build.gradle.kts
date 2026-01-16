@@ -20,7 +20,7 @@ signumConventions {
 kotlin {
     jvm()
 
-    val iosTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64())
+    val iosTargets = listOf(iosArm64(), iosSimulatorArm64())
     // Adapted from https://github.com/openwallet-foundation/multipaz
     iosTargets.forEach { target ->
         val platform = when (target.name) {

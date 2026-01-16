@@ -40,7 +40,7 @@ jobs:
       - name: Build klibs
         run: ./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary
       - name: Run tests
-        run: ./gradlew tvosX64Test tvosSimulatorArm64Test watchosSimulatorArm64Test watchosX64Test iosX64Test macosArm64Test macosX64Test
+        run: ./gradlew tvosSimulatorArm64Test watchosSimulatorArm64Test macosArm64Test
       - name: Test Report
         env:
           NODE_OPTIONS: --max-old-space-size=8192
