@@ -22,7 +22,7 @@ kotlin {
                 implementation("at.asitplus.gradle:testhelper:20251114")
                 implementation(project(":indispensable-asn1"))
                 implementation(libs.kotlinx.io.core)
-                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoonAddons}")
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${libs.versions.testballoon.get()}")
             }
         }
         jvmMain.dependencies {

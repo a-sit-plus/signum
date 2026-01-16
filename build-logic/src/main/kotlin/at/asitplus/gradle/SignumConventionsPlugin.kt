@@ -50,10 +50,6 @@ class SignumConventionsExtension(private val project: Project) {
         project.version = indispensableVersion
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
-
-            //work around IDEA BUG not finding any test deps on non-JVM!
-            (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets.filter { it.name.endsWith("Test") }.forEach { it.dependencies{addTestExtensions()}}
-
             //TestBalloon 0.8 discovery issue
             tasks.withType<AbstractTestTask>().configureEach { failOnNoDiscoveredTests=false }
             tasks.withType<Test>().configureEach {
