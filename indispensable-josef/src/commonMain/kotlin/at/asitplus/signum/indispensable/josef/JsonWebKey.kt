@@ -357,7 +357,7 @@ data class JsonWebKey(
      * * [SymmetricEncryptionAlgorithm.AES.WRAP]
      *
      */
-    override fun toSymmetricKey(): SymmetricKey<*, *, *> {
+    override fun toSymmetricKey(): SymmetricKey<*, *> {
         require(algorithm is JweAlgorithm.Symmetric) { "Not a symmetric JweAlgorithm" }
         require(k != null) { "key bytes not present" }
         return when (val alg = algorithm.algorithm) {
@@ -373,7 +373,7 @@ data class JsonWebKey(
  * @throws UnsupportedCryptoException if the algorithm has no supported JWE key wrapping identifier.
  */
 @Throws(Throwable::class)
-fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): JsonWebKey =
+fun SymmetricKey<*, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): JsonWebKey =
     JsonWebKey(
         k = jsonWebKeyBytes,
         type = JwkType.SYM,
@@ -386,7 +386,7 @@ fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg inclu
  * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
  */
 @OptIn(SecretExposure::class)
-val SymmetricKey<*, *, *>.jsonWebKeyBytes
+val SymmetricKey<*, *>.jsonWebKeyBytes
     get() =
         when (hasDedicatedMacKey()) {
             true -> macKey + encryptionKey
@@ -423,7 +423,7 @@ fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
 @Throws(Throwable::class)
-fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
+fun SymmetricKey<*, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     JsonWebKey(algorithm = algorithm.toJweKwAlgorithm(), keyId = keyId, k = jsonWebKeyBytes)
 
 
@@ -441,7 +441,7 @@ var PublicKey.jwkId: String?
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [PublicKey]
  */
-var SymmetricKey<*, *, *>.jwkId: String?
+var SymmetricKey<*, *>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)

@@ -15,7 +15,7 @@ private inline fun randomBytes(n: Int, random: CryptoRand = CryptoRand.Default):
  */
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
 @kotlin.internal.LowPriorityInOverloadResolution
-suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey() =
+suspend fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.randomKey() =
     @OptIn(HazardousMaterials::class) randomKey(CryptoRand.Default)
 /**
  * Generates a fresh random key for this algorithm.
@@ -23,14 +23,14 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
 @kotlin.internal.LowPriorityInOverloadResolution
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
-suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(
+suspend fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.randomKey(
     random: CryptoRand
-): SymmetricKey<A, I, out K> =
+): SymmetricKey<A, I> =
     keyFromInternal(
         randomBytes(keySize.bytes.toInt(), random),
         if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt(), random)
         else null
-    ) as SymmetricKey<A, I, out K>
+    ) as SymmetricKey<A, I>
 
 
 
@@ -40,7 +40,7 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
  */
 @JvmName("randomKeyAndMacKey")
 @Suppress("UNCHECKED_CAST")
-suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
+suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I>.randomKey(
     macKeyLength: BitLength
 ) = @OptIn(HazardousMaterials::class) randomKey(macKeyLength, CryptoRand.Default)
 /**
@@ -50,7 +50,7 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
 @JvmName("randomKeyAndMacKey")
 @Suppress("UNCHECKED_CAST")
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
-suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
+suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I>.randomKey(
     macKeyLength: BitLength,
     random: CryptoRand
 ): SymmetricKey.WithDedicatedMac<I> =
@@ -65,7 +65,7 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
  * You typically don't want to use this, but have your nonces auto-generated during the encryption process
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
-fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteArray =
+fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required>.randomNonce(): ByteArray =
     @OptIn(HazardousMaterials::class) randomNonce(CryptoRand.Default)
 
 /**
@@ -74,15 +74,15 @@ fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteA
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
-fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(random: CryptoRand): ByteArray =
+fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required>.randomNonce(random: CryptoRand): ByteArray =
     randomBytes((nonceSize.bytes).toInt(), random)
 
 
 @OptIn(HazardousMaterials::class)
-private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
+private fun SymmetricEncryptionAlgorithm<*, *>.keyFromInternal(
     bytes: ByteArray,
     dedicatedMacKey: ByteArray?
-): SymmetricKey<*, *, *> {
+): SymmetricKey<*, *> {
     require(bytes.size == this.keySize.bytes.toInt()) { "Invalid key size: ${bytes.size * 8}. Required: keySize=${bytes.size.bitLength}" }
     dedicatedMacKey?.let {
         require(it.isNotEmpty()) { "Dedicated MAC key is empty!" }
@@ -115,10 +115,10 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
 @JvmName("fixedKeyIntegrated")
 @Suppress("UNCHECKED_CAST")
 @Throws(Throwable::class)
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Integrated, I>.keyFrom(
     secretKey: ByteArray
-): SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated> =
-    keyFromInternal(secretKey, null) as SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>
+): SymmetricKey<AuthCapability.Integrated, I> =
+    keyFromInternal(secretKey, null) as SymmetricKey<AuthCapability.Integrated, I>
 
 
 /**
@@ -128,10 +128,10 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integra
 @JvmName("fixedKeyAuthenticatedIntegrated")
 @Suppress("UNCHECKED_CAST")
 @Throws(Throwable::class)
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, I>.keyFrom(
     secretKey: ByteArray
-): SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated> =
-    keyFromInternal(secretKey, null) as SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>
+): SymmetricKey<AuthCapability.Authenticated.Integrated, I> =
+    keyFromInternal(secretKey, null) as SymmetricKey<AuthCapability.Authenticated.Integrated, I>
 
 /**
  * Creates a [SymmetricKey] from the specified [encryptionKey] and [macKey].
@@ -140,11 +140,11 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K
 @JvmName("fixedKeyDedicatedMacKey")
 @Suppress("UNCHECKED_CAST")
 @Throws(Throwable::class)
-fun <A : AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I, KeyType.WithDedicatedMacKey>.keyFrom(
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
-): SymmetricKey<A, I, KeyType.WithDedicatedMacKey> =
-    keyFromInternal(encryptionKey, macKey) as SymmetricKey<A, I, KeyType.WithDedicatedMacKey>
+): SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac, I> =
+    keyFromInternal(encryptionKey, macKey) as SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac, I>
 
 
 suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey() =

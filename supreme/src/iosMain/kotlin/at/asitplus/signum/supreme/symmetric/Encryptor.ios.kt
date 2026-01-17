@@ -7,26 +7,26 @@ import at.asitplus.signum.internals.ImplementationError
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-internal actual suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
+internal actual suspend fun <A : AuthCapability, I : NonceTrait> initCipher(
     mode: PlatformCipher.Mode,
-    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    algorithm: SymmetricEncryptionAlgorithm<A, I>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<A, I, K> {
+): PlatformCipher<A, I> {
 
     @Suppress("UNCHECKED_CAST")
-    return IosPlatformCipher<A, I, K>(mode, algorithm, key, nonce, aad)
+    return IosPlatformCipher(mode, algorithm, key, nonce, aad)
 }
 
 
-private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>(
+private class IosPlatformCipher<A : AuthCapability, I : NonceTrait>(
     override val mode: PlatformCipher.Mode,
-    override val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    override val algorithm: SymmetricEncryptionAlgorithm<A, I>,
     override val key: ByteArray,
     override val nonce: ByteArray?,
     override val aad: ByteArray?,
-) : PlatformCipher<A, I, K> {
+) : PlatformCipher<A, I> {
 
     //the oneshot ccrypt is fully stateless. no init, no update, no final, so we are stateless here too
 
@@ -38,7 +38,7 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
                 if (!algorithm.isIntegrated()) throw ImplementationError("iOS AEAD algorithm mapping")
                 if (algorithm.nonceTrait !is NonceTrait.Required) TODO("ALGORITHM $algorithm UNSUPPORTED")
                 when (algorithm) {
-                    is AES<*, *, *> -> AESIOS.gcmDecrypt(data, key, nonce!!, authTag!!, aad)
+                    is AES<*, *> -> AESIOS.gcmDecrypt(data, key, nonce!!, authTag!!, aad)
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
                         data,
                         key,
@@ -51,10 +51,9 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
             }
 
             false -> {
-                require(algorithm is AES<*, *, *>) { "Only AES is supported" }
-                @Suppress("UNCHECKED_CAST")
+                require(algorithm is AES) { "Only AES is supported" }
                 AESIOS.cbcEcbCrypt(
-                    algorithm as AES<*, KeyType.Integrated, *>,
+                    algorithm,
                     encrypt = false,
                     key,
                     nonce,
@@ -69,13 +68,13 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    override suspend fun doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    override suspend fun doEncrypt(data: ByteArray): SealedBox<A, I> {
         require(mode == PlatformCipher.Mode.ENCRYPT) { "Cipher not in ENCRYPT mode!" }
         @Suppress("UNCHECKED_CAST")
         return when (algorithm) {
-            is AES<*, *, *> -> AESIOS.encrypt(algorithm, data, key, nonce, aad)
+            is AES<*, *> -> AESIOS.encrypt(algorithm, data, key, nonce, aad)
             is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, key, nonce!!, aad)
             else -> TODO("ALGORITHM $algorithm UNSUPPORTED")
-        } as SealedBox<A, I, K>
+        } as SealedBox<A, I>
     }
 }

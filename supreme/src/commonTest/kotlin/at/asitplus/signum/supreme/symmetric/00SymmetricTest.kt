@@ -1,4 +1,4 @@
-@file:OptIn(SecretExposure::class, HazardousMaterials::class, SignumInternals::class)
+@file:OptIn(SecretExposure::class)
 
 package at.asitplus.signum.supreme.symmetric
 
@@ -353,7 +353,7 @@ val SymmetricTest by matrixSuite {
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
+                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated>()
                         val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf())
                         decrypted shouldBe plaintext
 
@@ -505,7 +505,7 @@ val SymmetricTest by matrixSuite {
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonceSize.bytes.toInt()
-                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
+                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated>()
 
                                 val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf())
                                 decrypted shouldBe plaintext
@@ -916,7 +916,7 @@ val SymmetricTest by matrixSuite {
 
         "illegal nonce sizes" - {
             data(allAlgorithms.filter { it.requiresNonce() }) - { alg ->
-                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
+                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*>
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()

@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
-import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.NonceTrait
 import at.asitplus.signum.indispensable.symmetric.SealedBox
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -21,7 +20,7 @@ internal object ChaChaIOS {
         key: ByteArray,
         nonce: ByteArray,
         aad: ByteArray?
-    ): SealedBox<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated> {
+    ): SealedBox<AuthCapability.Authenticated.Integrated, NonceTrait.Required> {
         val ciphertext = ChaCha.encrypt(data.toNSData(), key.toNSData(), nonce.toNSData(), aad?.toNSData())
         if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
         @Suppress("UNCHECKED_CAST")

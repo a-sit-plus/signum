@@ -92,7 +92,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, E
     /** Key Encryption with HPKE using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-256-GCM AEAD */
     data object HPKE_7_KE : HPKE_KE("HPKE-7-KE", 0x10, 0x1, 0x2)
 
-    sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*,*>)
+    sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*>)
         : JweAlgorithm(identifier), SpecializedSymmetricEncryptionAlgorithm {
 
         companion object : Enumeration<Symmetric> {
@@ -173,7 +173,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, E
  * @throws UnsupportedCryptoException if no mapping exists
  */
 @Throws(Throwable::class)
-fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): JweAlgorithm.Symmetric =
+fun SymmetricEncryptionAlgorithm<*, *>.toJweKwAlgorithm(): JweAlgorithm.Symmetric =
     when (this) {
         SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
         SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW

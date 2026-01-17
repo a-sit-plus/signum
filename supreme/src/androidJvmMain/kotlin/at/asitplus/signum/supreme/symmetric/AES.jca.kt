@@ -15,7 +15,7 @@ import javax.crypto.spec.SecretKeySpec
 internal object AESJCA {
     fun initCipher(
         mode: PlatformCipher.Mode,
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, *>,
         key: ByteArray,
         nonce: ByteArray?,
         aad: ByteArray?
@@ -26,7 +26,7 @@ internal object AESJCA {
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 GCMParameterSpec(algorithm.authTagSize.bits.toInt(), nonce)
             )
-        else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*, *>) //covers unauthenticated and CBC-HMAC, because CBC will always delegate to here
+        else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers unauthenticated and CBC-HMAC, because CBC will always delegate to here
             init(
                 mode.jcaCipherMode,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
