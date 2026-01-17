@@ -319,11 +319,11 @@ fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.
 fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
     RsaPrivateKey.fromAsn1(encoded)
 
-val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
+val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
     @OptIn(HazardousMaterials::class)
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.CBC<*> -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING -> "AES/ECB/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
@@ -331,9 +331,9 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         //else -> TODO("$this is unsupported")
     }
 
-val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
+val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
+        is SymmetricEncryptionAlgorithm.AES<*, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
         //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }

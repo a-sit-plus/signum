@@ -10,15 +10,15 @@ import kotlin.jvm.JvmName
  * Use this function to load external encrypted data for decryption.
  * Returns a KmmResult purely for the sake of consistency, even though this operation will always success
  */
-fun <A : AuthCapability.Authenticated<out K>, K : KeyType> SealedBoxBuilder.WithNonce.Having<A, K>.from(
+fun <A : AuthCapability.Authenticated> SealedBoxBuilder.WithNonce.Having<A>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
-): KmmResult<SealedBox<A, NonceTrait.Required, K>> = catching {
+): KmmResult<SealedBox<A, NonceTrait.Required>> = catching {
     @Suppress("UNCHECKED_CAST")
-    SealedBox.WithNonce.Authenticated<K>(
+    SealedBox.WithNonce.Authenticated(
         nonce,
         algorithm.authenticatedCipherText(encryptedData, authTag)
-    ) as SealedBox<A, NonceTrait.Required, K>  //TODO why is this an unchecked cast???
+    ) as SealedBox<A, NonceTrait.Required>  //TODO why is this an unchecked cast???
 }
 
 
@@ -27,31 +27,12 @@ fun <A : AuthCapability.Authenticated<out K>, K : KeyType> SealedBoxBuilder.With
  * Use this function to load external encrypted data for decryption.
  * Returns a KmmResult purely for the sake of consistency, even though this operation will always success
  */
-fun SealedBoxBuilder.WithNonce.Having<AuthCapability.Unauthenticated, KeyType.Integrated>.from(
+fun SealedBoxBuilder.WithNonce.Having<AuthCapability.Unauthenticated>.from(
     encryptedData: ByteArray,
-): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>> = catching {
+): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Required>> = catching {
     SealedBox.WithNonce.Unauthenticated(
         nonce,
         Ciphertext.Unauthenticated(algorithm, encryptedData)
-    )
-}
-
-// we need both this one and the next to work around https://youtrack.jetbrains.com/issue/KT-75444
-/**
- * Creates a [SealedBox] matching the characteristics of the underlying [SealedBoxBuilder.algorithm].
- * Use this function to load external encrypted data for decryption.
- *
- *
- *  @return [at.asitplus.KmmResult.failure] on illegal auth tag length
- */
-@JvmName("fromAuthenticatedGeneric")
-fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.from(
-    encryptedData: ByteArray,
-    authTag: ByteArray
-): KmmResult<SealedBox<AuthCapability.Authenticated<*>, NonceTrait.Without, *>> = catching {
-    require(authTag.size.bytes == algorithm.authTagSize) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authTagSize.bits}" }
-    SealedBox.WithoutNonce.Authenticated<KeyType>(
-        algorithm.authenticatedCipherText(encryptedData, authTag)
     )
 }
 
@@ -62,12 +43,12 @@ fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.f
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("fromAuthenticatedWihtKeyType")
-fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<out K>, K>.from(
+fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
-): KmmResult<SealedBox<AuthCapability.Authenticated<out K>, NonceTrait.Without, K>> = catching {
+): KmmResult<SealedBox<AuthCapability.Authenticated, NonceTrait.Without>> = catching {
     require(authTag.size.bytes == algorithm.authTagSize) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authTagSize.bits}" }
-    SealedBox.WithoutNonce.Authenticated<K>(
+    SealedBox.WithoutNonce.Authenticated(
         algorithm.authenticatedCipherText(encryptedData, authTag)
     )
 }
@@ -79,9 +60,9 @@ fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenti
  * Returns a KmmResult purely for the sake of consistency
  */
 @JvmName("fromUnauthenticatedWithoutNonce")
-fun SealedBoxBuilder.Without<AuthCapability.Unauthenticated, KeyType.Integrated>.from(
+fun SealedBoxBuilder.Without<AuthCapability.Unauthenticated>.from(
     encryptedData: ByteArray,
-): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>> = catching {
+): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Without>> = catching {
     SealedBox.WithoutNonce.Unauthenticated(
         Ciphertext.Unauthenticated(algorithm, encryptedData)
     )
@@ -90,51 +71,51 @@ fun SealedBoxBuilder.Without<AuthCapability.Unauthenticated, KeyType.Integrated>
 /**
  * [SealedBox] builder from [algorithm]
  */
-sealed class SealedBoxBuilder<A : AuthCapability<out K>, I : NonceTrait, out K : KeyType>(internal val algorithm: SymmetricEncryptionAlgorithm<A, I, K>) {
-    sealed class WithNonce<A : AuthCapability<out K>, K : KeyType>(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>) :
-        SealedBoxBuilder<A, NonceTrait.Required, K>(algorithm) {
-        class Awaiting<A : AuthCapability<out K>, K : KeyType> internal constructor(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>) :
-            WithNonce<A, K>(algorithm) {
+sealed class SealedBoxBuilder<A : AuthCapability, I : NonceTrait>(internal val algorithm: SymmetricEncryptionAlgorithm<A, I>) {
+    sealed class WithNonce<A : AuthCapability>(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required>) :
+        SealedBoxBuilder<A, NonceTrait.Required>(algorithm) {
+        class Awaiting<A : AuthCapability> internal constructor(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required>) :
+            WithNonce<A>(algorithm) {
             @Suppress("UNCHECKED_CAST")
-            fun withNonce(nonce: ByteArray): Having<A, K> = when (algorithm.isAuthenticated()) {
-                true -> Having.Authenticated<AuthCapability.Authenticated<*>, KeyType>(
-                    algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, KeyType>,
+            fun withNonce(nonce: ByteArray): Having<A> = when (algorithm.isAuthenticated()) {
+                true -> Having.Authenticated(
+                    algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Required>,
                     nonce
                 )
 
                 false -> Having.Unauthenticated(
-                    algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>,
+                    algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required>,
                     nonce
                 )
-            } as Having<A, K>
+            } as Having<A>
 
         }
 
-        sealed class Having<A : AuthCapability<out K>, K : KeyType>(
-            algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>,
+        sealed class Having<A : AuthCapability>(
+            algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required>,
             internal val nonce: ByteArray
-        ) : WithNonce<A, K>(algorithm) {
-            class Authenticated<A : AuthCapability.Authenticated<out K>, K : KeyType> internal constructor(
-                algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>,
+        ) : WithNonce<A>(algorithm) {
+            class Authenticated<A : AuthCapability.Authenticated> internal constructor(
+                algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required>,
                 nonce: ByteArray,
-            ) : Having<A, K>(algorithm, nonce)
+            ) : Having<A>(algorithm, nonce)
 
             class Unauthenticated internal constructor(
-                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>,
+                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required>,
                 nonce: ByteArray
-            ) : Having<AuthCapability.Unauthenticated, KeyType.Integrated>(algorithm, nonce)
+            ) : Having<AuthCapability.Unauthenticated>(algorithm, nonce)
         }
     }
 
-    sealed class Without<A : AuthCapability<out K>, K : KeyType>(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K>) :
-        SealedBoxBuilder<A, NonceTrait.Without, K>(algorithm) {
-        class Authenticated<A : AuthCapability.Authenticated<out K>, K : KeyType> internal constructor(
-            algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K>,
-        ) : Without<A, K>(algorithm)
+    sealed class Without<A : AuthCapability>(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Without>) :
+        SealedBoxBuilder<A, NonceTrait.Without>(algorithm) {
+        class Authenticated<A : AuthCapability.Authenticated> internal constructor(
+            algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Without>,
+        ) : Without<A>(algorithm)
 
         class Unauthenticated internal constructor(
-            algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>,
-        ) : Without<AuthCapability.Unauthenticated, KeyType.Integrated>(algorithm)
+            algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without>,
+        ) : Without<AuthCapability.Unauthenticated>(algorithm)
     }
 }
 
@@ -143,9 +124,9 @@ sealed class SealedBoxBuilder<A : AuthCapability<out K>, I : NonceTrait, out K :
  * * Nonce requirement: &#10004;
  * * Authenticated encryption: &#10008;
  */
-val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>.sealedBox:
-        SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated, KeyType.Integrated>
-    @JvmName("boxWithNonceUnauthenticated") get() = SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated, KeyType.Integrated>(
+val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required>.sealedBox:
+        SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated>
+    @JvmName("boxWithNonceUnauthenticated") get() = SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated>(
         this
     )
 
@@ -155,8 +136,8 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Requ
  * * Nonce requirement: &#10008;
  * * Authenticated encryption: &#10008;
  */
-val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>.sealedBox:
-        SealedBoxBuilder.Without<AuthCapability.Unauthenticated, KeyType.Integrated>
+val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without>.sealedBox:
+        SealedBoxBuilder.Without<AuthCapability.Unauthenticated>
     @JvmName("boxWithoutNonceUnauthenticated") get() = SealedBoxBuilder.Without.Unauthenticated(this)
 
 
@@ -165,9 +146,9 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.With
  * * Nonce requirement: &#10004;
  * * Authenticated encryption: &#10004;
  */
-val <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>.sealedBox:
-        SealedBoxBuilder.WithNonce.Awaiting<A, K>
-    @JvmName("boxWithNonceAuthenticated") get() = SealedBoxBuilder.WithNonce.Awaiting<A, K>(this)
+val <A : AuthCapability.Authenticated> SymmetricEncryptionAlgorithm<A, NonceTrait.Required>.sealedBox:
+        SealedBoxBuilder.WithNonce.Awaiting<A>
+    @JvmName("boxWithNonceAuthenticated") get() = SealedBoxBuilder.WithNonce.Awaiting(this)
 
 
 // we need both this one and the next two to work around https://youtrack.jetbrains.com/issue/KT-75444
@@ -176,18 +157,18 @@ val <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricEncryptionAl
  * * Nonce requirement: &#10008;
  * * Authenticated encryption: &#10004;
  */
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.sealedBox:
-        SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>
-    @JvmName("boxWithoutNonceAuthenticatedGeneric")  get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, KeyType>(this)
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Without>.sealedBox:
+        SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated>
+    @JvmName("boxWithoutNonceAuthenticatedGeneric")  get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated>(this)
 
 /**
  * Creates a [SealedBoxBuilder] matching this algorithm's characteristics:
  * * Nonce requirement: &#10008;
  * * Authenticated encryption: &#10004;
  */
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Without, KeyType.Integrated>.sealedBox:
-        SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.Integrated>, KeyType.Integrated>
-    @JvmName("boxWithoutNonceAuthenticatedIntegrated")  get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.Integrated>, KeyType.Integrated>(
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without>.sealedBox:
+        SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated.Integrated>
+    @JvmName("boxWithoutNonceAuthenticatedIntegrated")  get() = SealedBoxBuilder.Without.Authenticated(
         this
     )
 
@@ -196,17 +177,17 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated
  * * Nonce requirement: &#10008;
  * * Authenticated encryption: &#10004;
  */
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, NonceTrait.Without, KeyType.WithDedicatedMacKey>.sealedBox:
-        SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, KeyType.WithDedicatedMacKey>
-    @JvmName("boxWithoutNonceAuthenticatedDedicated") get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, KeyType.WithDedicatedMacKey>(
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, NonceTrait.Without>.sealedBox:
+        SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated.WithDedicatedMac>
+    @JvmName("boxWithoutNonceAuthenticatedDedicated") get() = SealedBoxBuilder.Without.Authenticated(
         this
     )
 
 
-private inline fun <reified A : AuthCapability.Authenticated<out K>, reified I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
+private inline fun <reified A : AuthCapability.Authenticated, reified I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
-) = Ciphertext.Authenticated<A, I, SymmetricEncryptionAlgorithm<A, I, K>, K>(
+) = Ciphertext.Authenticated<A, I, SymmetricEncryptionAlgorithm<A, I>>(
     this,
     encryptedData,
     authTag,
