@@ -53,7 +53,7 @@ private class IosPlatformCipher<A : AuthCapability, I : NonceTrait>(
             false -> {
                 require(algorithm is AES) { "Only AES is supported" }
                 AESIOS.cbcEcbCrypt(
-                    algorithm,
+                  algorithm as AES<*, out AuthCapability.Integrated>,
                     encrypt = false,
                     key,
                     nonce,
