@@ -19,7 +19,7 @@ import kotlinx.serialization.encoding.Encoder
  * and also [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518)
  */
 @Serializable(with = JweEncryptionSerializer::class)
-enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) {
+enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncryptionAlgorithm<*, *>) {
 
     A128GCM("A128GCM", SymmetricEncryptionAlgorithm.AES_128.GCM),
     A192GCM("A192GCM", SymmetricEncryptionAlgorithm.AES_192.GCM),

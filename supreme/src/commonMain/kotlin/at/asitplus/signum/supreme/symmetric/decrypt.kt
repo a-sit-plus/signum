@@ -17,25 +17,25 @@ import kotlin.jvm.JvmName
  * [key] and [SealedBox].**
  */
 @JvmName("decryptGeneric")
-suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<ByteArray> = catching {
+suspend fun SealedBox<*, *>.decrypt(key: SymmetricKey<*, *>): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
-        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
+        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *>).decryptInternal(
             secretKey = @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow(),
             authenticatedData = byteArrayOf()
         )
 
         is Authenticated.WithDedicatedMac -> {
             key as SymmetricKey.WithDedicatedMac
-            (this as SealedBox<Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+            (this as SealedBox<Authenticated.WithDedicatedMac, *>).decryptInternal(
                 secretKey = @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
                 macKey = @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
                 authenticatedData = byteArrayOf()
             )
         }
 
-        is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
+        is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *>).decryptInternal(
             secretKey = @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
         )
     }
@@ -48,7 +48,7 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
  * [key] and [SealedBox].**
  */
 @JvmName("decryptGeneric")
-suspend fun SealedBox<*, *, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<ByteArray> = key.toSymmetricKey().transform { decrypt(it) }
+suspend fun SealedBox<*, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<ByteArray> = key.toSymmetricKey().transform { decrypt(it) }
 
 
 //required because we don't store MAC info all the way
@@ -60,12 +60,12 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<
  * [key] and [SealedBox].**
  */
 @JvmName("decryptAuthenticatedIntegrated")
-suspend fun <I : NonceTrait> SealedBox<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.decrypt(
+suspend fun <I : NonceTrait> SealedBox<Authenticated.WithDedicatedMac, I>.decrypt(
     key: SymmetricKey.WithDedicatedMac<*>,
     authenticatedData: ByteArray = byteArrayOf()
 ) = catching {
     @Suppress("UNCHECKED_CAST")
-    (this as SealedBox<Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+    decryptInternal(
         @OptIn(SecretExposure::class)
         key.encryptionKey.getOrThrow(),
         @OptIn(SecretExposure::class)
@@ -84,21 +84,21 @@ suspend fun <I : NonceTrait> SealedBox<AuthCapability.Authenticated.WithDedicate
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 @JvmName("decryptAuthenticatedGeneric")
-suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyType> SealedBox<A, I, out K>.decrypt(
-    key: SymmetricKey<A, I, out K>,
+suspend fun <A : AuthCapability.Authenticated, I : NonceTrait> SealedBox<A, I>.decrypt(
+    key: SymmetricKey<A, I>,
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
-        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
+        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *>).decryptInternal(
             @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow(),
             authenticatedData
         )
 
         is Authenticated.WithDedicatedMac -> {
             key as SymmetricKey.WithDedicatedMac
-            (this as SealedBox<Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+            (this as SealedBox<Authenticated.WithDedicatedMac, *>).decryptInternal(
                 @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
                 @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
                 authenticatedData
@@ -115,12 +115,12 @@ suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyTyp
  * a [AES.CBC] [SealedBox].
  * In such cases, this function will immediately return a [KmmResult.failure].
  */
-suspend fun <I : NonceTrait> SealedBox<AuthCapability.Unauthenticated, I, KeyType.Integrated>.decrypt(
-    key: SymmetricKey<AuthCapability.Unauthenticated, I, KeyType.Integrated>
+suspend fun <I : NonceTrait> SealedBox<AuthCapability.Unauthenticated, I>.decrypt(
+    key: SymmetricKey<AuthCapability.Unauthenticated, I>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     @Suppress("UNCHECKED_CAST")
-    (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
+    (this as SealedBox<AuthCapability.Unauthenticated, *>).decryptInternal(
         @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
     )
 
@@ -135,7 +135,7 @@ suspend fun <I : NonceTrait> SealedBox<AuthCapability.Unauthenticated, I, KeyTyp
  * In such cases, this function will immediately return a [KmmResult.failure].
  */
 @JvmName("decryptRawAuthenticated")
-private suspend fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.decryptInternal(
+private suspend fun SealedBox<Authenticated.Integrated, *>.decryptInternal(
     secretKey: ByteArray,
     authenticatedData: ByteArray
 ): ByteArray {
@@ -144,14 +144,14 @@ private suspend fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrate
 }
 
 @JvmName("decryptRaw")
-private suspend fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.decryptInternal(
+private suspend fun SealedBox<AuthCapability.Unauthenticated, *>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     return initDecrypt(secretKey, null, null).decrypt(encryptedData)
 }
 
-private suspend fun SealedBox<Authenticated.WithDedicatedMac, *, out KeyType.WithDedicatedMacKey>.decryptInternal(
+private suspend fun SealedBox<Authenticated.WithDedicatedMac, *>.decryptInternal(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
     authenticatedData: ByteArray
@@ -167,7 +167,7 @@ private suspend fun SealedBox<Authenticated.WithDedicatedMac, *, out KeyType.Wit
  * Directly decrypts raw [encryptedData], feeding [nonce] into the decryption process.
  */
 @JvmName("decryptRawUnauthedWithNonce")
-suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>.decrypt(
+suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Required>.decrypt(
     nonce: ByteArray,
     encryptedData: ByteArray
 ): KmmResult<ByteArray> = algorithm.sealedBox.withNonce(nonce).from(encryptedData).transform { it.decrypt(this) }
@@ -177,7 +177,7 @@ suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Required, Ke
  * Directly decrypts raw [encryptedData].
  */
 @JvmName("decryptRawUnauthedNoNonce")
-suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>.decrypt(
+suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Without>.decrypt(
     encryptedData: ByteArray
 ): KmmResult<ByteArray> = algorithm.sealedBox.from(encryptedData).transform { it.decrypt(this) }
 
@@ -187,7 +187,7 @@ suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Without, Key
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("decryptRawAuthedWithNonce")
-suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Required, *>.decrypt(
+suspend fun <A : AuthCapability.Authenticated> SymmetricKey<A, NonceTrait.Required>.decrypt(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
@@ -200,7 +200,7 @@ suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Req
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("decryptRawAuthedNoNonce")
-suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Without, *>.decrypt(
+suspend fun <A : AuthCapability.Authenticated> SymmetricKey<A, NonceTrait.Without>.decrypt(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
@@ -208,7 +208,7 @@ suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Wit
     algorithm.sealedBox.from(encryptedData, authTag).transform {
         @Suppress("UNCHECKED_CAST")
         it.decrypt(
-            this as SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>,
+            this as SymmetricKey<AuthCapability.Authenticated, NonceTrait.Without>,
             authenticatedData
         )
     }

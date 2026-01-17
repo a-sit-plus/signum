@@ -74,7 +74,7 @@ val JvmSymmetricTest  by testSuite {
                                 val secretKey = alg.randomKey(random = InsecureRandom)
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
-                                    (secretKey as SymmetricKey<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>).andPredefinedNonce(
+                                    secretKey.andPredefinedNonce(
                                         iv
                                     ).getOrThrow().encrypt(data = data, aad)
                                         .getOrThrow()

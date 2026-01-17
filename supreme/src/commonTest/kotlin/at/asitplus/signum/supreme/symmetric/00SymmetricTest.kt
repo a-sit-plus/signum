@@ -379,7 +379,7 @@ val SymmetricTest by testSuite {
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
+                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated>()
                         val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
                         decrypted shouldBe plaintext
 
@@ -559,7 +559,7 @@ val SymmetricTest by testSuite {
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonceSize.bytes.toInt()
-                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
+                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated>()
 
                                 val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
                                 decrypted shouldBe plaintext
@@ -970,7 +970,7 @@ val SymmetricTest by testSuite {
 
         "illegal nonce sizes" - {
             withDataSuites(allAlgorithms.filter { it.requiresNonce() }) { alg ->
-                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
+                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*>
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()

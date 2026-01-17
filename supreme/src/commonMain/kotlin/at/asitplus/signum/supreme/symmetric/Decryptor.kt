@@ -5,14 +5,14 @@ import at.asitplus.signum.supreme.mac.mac
 
 //needs no generics, because decrypt goes from bytes to bytes
 internal class Decryptor(
-    val platformCipher: PlatformCipher<*, *, *>,
-    val algorithm: SymmetricEncryptionAlgorithm<*, *, *>,
+    val platformCipher: PlatformCipher<*, *>,
+    val algorithm: SymmetricEncryptionAlgorithm<*, *>,
     val authTag: ByteArray?,
     val macKey: ByteArray?
 ) {
     companion object {
         suspend operator fun invoke(
-            algorithm: SymmetricEncryptionAlgorithm<*, *, *>,
+            algorithm: SymmetricEncryptionAlgorithm<*, *>,
             key: ByteArray,
             macKey: ByteArray?,
             nonce: ByteArray?,
@@ -48,7 +48,7 @@ internal class Decryptor(
     }
 }
 
-internal suspend fun SealedBox<*, *, *>.initDecrypt(
+internal suspend fun SealedBox<*, *>.initDecrypt(
     key: ByteArray,
     macKey: ByteArray?,
     aad: ByteArray?

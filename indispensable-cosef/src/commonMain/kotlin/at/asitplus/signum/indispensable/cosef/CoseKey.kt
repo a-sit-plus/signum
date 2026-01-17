@@ -156,7 +156,7 @@ data class CoseKey(
     /**
      * Tries to transform this CoseKey into a corresponding [SymmetricKey]
      */
-    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *>> = catching {
         require(algorithm is CoseAlgorithm.SymmetricEncryption) { "Not a symmetric algorithm" }
         require(keyParams is CoseKeyParams.SymmKeyParams) { "No symmetric key bytes present" }
         val alg = algorithm.algorithm
@@ -169,7 +169,7 @@ data class CoseKey(
 /**
  * Creates a CoseKey matching, if the key's [SymmetricKey.algorithm] has a COSE mapping.
  */
-fun SymmetricKey<*, *, *>.toCoseKey(
+fun SymmetricKey<*, *>.toCoseKey(
     baseIv: ByteArray? = null,
     keyId: ByteArray? = this.coseKid,
     vararg includedOps: CoseKeyOperation
@@ -257,7 +257,7 @@ var CryptoPublicKey.coseKid: ByteArray?
             ?: additionalProperties.remove(COSE_KID)
     }
 
-var SymmetricKey<*, *, *>.coseKid: ByteArray?
+var SymmetricKey<*, *>.coseKid: ByteArray?
     get() = additionalProperties[COSE_KID]?.decodeToByteArray(Base64UrlStrict)
     set(value) {
         value?.also { additionalProperties[COSE_KID] = value.encodeToString(Base64UrlStrict) }

@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.jcaKeySpec
 import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.isAuthenticated
 import at.asitplus.signum.indispensable.symmetric.isIntegrated
@@ -16,7 +15,7 @@ import javax.crypto.spec.SecretKeySpec
 internal object AESJCA {
     fun initCipher(
         mode: PlatformCipher.Mode,
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, *>,
         key: ByteArray,
         nonce: ByteArray?,
         aad: ByteArray?
@@ -27,7 +26,7 @@ internal object AESJCA {
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 GCMParameterSpec(algorithm.authTagSize.bits.toInt(), nonce)
             )
-        else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*, *>) //covers unauthenticated and CBC-HMAC, because CBC will always delegate to here
+        else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers unauthenticated and CBC-HMAC, because CBC will always delegate to here
             init(
                 mode.jcaCipherMode,
                 SecretKeySpec(key, algorithm.jcaKeySpec),

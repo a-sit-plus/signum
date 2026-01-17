@@ -12,24 +12,24 @@ import at.asitplus.signum.supreme.mac.mac
  *
  * Given we have ECB, we would use it to implement more modes of operation.
  */
-internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> private constructor(
-    private val platformCipher: PlatformCipher<*, *, *>,
-    private val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+internal class Encryptor<A : AuthCapability, I : NonceTrait> private constructor(
+    private val platformCipher: PlatformCipher<*, *>,
+    private val algorithm: SymmetricEncryptionAlgorithm<A, I>,
     /*this needs to go here, because we implement boltend-on AEAD in this file here, not in PlatformCipher*/
     private val macKey: ByteArray?,
 ) {
 
     //suspending init needs faux-ctor
     companion object {
-        suspend operator fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> invoke(
-            algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+        suspend operator fun <A : AuthCapability, I : NonceTrait> invoke(
+            algorithm: SymmetricEncryptionAlgorithm<A, I>,
             key: ByteArray,
             macKey: ByteArray?,
             @OptIn(HazardousMaterials::class)
             nonce: ByteArray? = if (algorithm.requiresNonce()) algorithm.randomNonce() else null,
             aad: ByteArray?,
 
-            ): Encryptor<A, I, K> {
+            ): Encryptor<A, I> {
             if (algorithm.requiresNonce()) {
                 require(nonce != null) { "$algorithm requires a nonce" }
                 require(nonce.size.toUInt() == algorithm.nonceSize.bytes) { "$algorithm IV must be exactly ${algorithm.nonceSize} bits long" }
@@ -50,7 +50,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
                 nonce,
                 aad
             )
-            return Encryptor<A, I, K>(platformCipher, algorithm, macKey)
+            return Encryptor<A, I>(platformCipher, algorithm, macKey)
         }
     }
 
@@ -59,7 +59,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
      * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
      * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
-    internal suspend fun encrypt(data: ByteArray): SealedBox<A, I, out K> {
+    internal suspend fun encrypt(data: ByteArray): SealedBox<A, I> {
         //Our own, flexible construction to make any unauthenticated cipher into an authenticated cipher
         if (algorithm.hasDedicatedMac()) {
 
@@ -81,30 +81,30 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
             @Suppress("UNCHECKED_CAST")
             return (
                     if (algorithm.requiresNonce()) {
-                        algorithm.sealedBox.withNonce((encrypted as SealedBox.WithNonce<*, *>).nonce).from(
+                        algorithm.sealedBox.withNonce((encrypted as SealedBox.WithNonce<*>).nonce).from(
                             encrypted.encryptedData,
                             authTag
                         )
-                    } else (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>).sealedBox.from(
+                    } else (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Without>).sealedBox.from(
                         encrypted.encryptedData,
                         authTag
                     )
-                    ).getOrThrow() as SealedBox<A, I, K>
+                    ).getOrThrow() as SealedBox<A, I>
 
-        } else @Suppress("UNCHECKED_CAST") return platformCipher.doEncrypt(data) as SealedBox<A, I, out K>
+        } else @Suppress("UNCHECKED_CAST") return platformCipher.doEncrypt(data) as SealedBox<A, I>
     }
 }
 
 /**
  * Platform cipher abstraction.
  */
-internal interface PlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> {
+internal interface PlatformCipher<A : AuthCapability, I : NonceTrait> {
     /**
      * We could do away with the encrypt/decrypt state and add subclassses, etc. but then we'd just have double the glue
      * code, because every platform cipher works that way.
      */
     val mode: Mode
-    val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
+    val algorithm: SymmetricEncryptionAlgorithm<A, I>
     val key: ByteArray
     val nonce: ByteArray?
     val aad: ByteArray?
@@ -112,7 +112,7 @@ internal interface PlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K :
 
     suspend fun doDecrypt(data: ByteArray, authTag: ByteArray?): ByteArray
 
-    suspend fun doEncrypt(data: ByteArray): SealedBox<A, I, out K>
+    suspend fun doEncrypt(data: ByteArray): SealedBox<A, I>
 
     enum class Mode {
         ENCRYPT,
@@ -121,10 +121,10 @@ internal interface PlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K :
     }
 }
 
-internal expect suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
+internal expect suspend fun <A : AuthCapability, I : NonceTrait> initCipher(
     mode: PlatformCipher.Mode,
-    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    algorithm: SymmetricEncryptionAlgorithm<A, I>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<A, I, K>
+): PlatformCipher<A, I>

@@ -15,14 +15,14 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1OctetStringPrimitive
 
 class IPAddressName internal constructor(
-    val address: IpAddress<*, *>?,
+    val address: IpAddress<*, *>,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     val rawBytes: ByteArray,
     performValidation: Boolean,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    override val isValid: Boolean by lazy { address != null }
+    override val isValid: Boolean by lazy { true }
 
     init {
         if (performValidation && !isValid) throw Asn1Exception("Invalid IpAddressName.")
@@ -106,7 +106,7 @@ class IPAddressName internal constructor(
 
     override fun hashCode(): Int {
         var result = isValid.hashCode()
-        result = 31 * result + (address?.hashCode() ?: 0)
+        result = 31 * result + address.hashCode()
         result = 31 * result + (addressAndPrefix?.hashCode() ?: 0)
         result = 31 * result + rawBytes.contentHashCode()
         result = 31 * result + type.hashCode()
@@ -114,6 +114,7 @@ class IPAddressName internal constructor(
         return result
     }
 
+    @Suppress("UNCHECKED_CAST")
     @ExperimentalPkiApi
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         return try {
@@ -123,12 +124,12 @@ class IPAddressName internal constructor(
                 this == input as IPAddressName -> GeneralNameOption.ConstraintResult.MATCH
 
                 network == null && input.network == null &&
-                        ((address!!.isV4() && input.address!!.isV4()) || (address!!.isV6() && input.address!!.isV6())) ->
+                        ((address.isV4() && input.address.isV4()) || (address.isV6() && input.address.isV6())) ->
                     GeneralNameOption.ConstraintResult.SAME_TYPE
 
                 network != null && input.network != null -> {
-                    val thisNet = network as IpNetwork<Number, Any>
-                    val otherNet = input.network as IpNetwork<Number, Any>
+                    val thisNet = network as IpNetwork<Number, Nothing>
+                    val otherNet = input.network as IpNetwork<Number, Nothing>
                     when {
                         thisNet == otherNet -> GeneralNameOption.ConstraintResult.MATCH
                         thisNet.contains(otherNet) -> GeneralNameOption.ConstraintResult.WIDENS
@@ -138,15 +139,15 @@ class IPAddressName internal constructor(
                 }
 
                 network != null -> {
-                    val thisNet = network as IpNetwork<Number, Any>
-                    val otherAddress = input.address as IpAddress<Number, Any>
+                    val thisNet = network as IpNetwork<Number, Nothing>
+                    val otherAddress = input.address as IpAddress<Number, Nothing>
                     if (thisNet.contains(otherAddress)) GeneralNameOption.ConstraintResult.WIDENS
                     else GeneralNameOption.ConstraintResult.SAME_TYPE
                 }
 
                 input.network != null -> {
-                    val thisAddress = address as IpAddress<Number, Any>
-                    val otherNet = input.network as IpNetwork<Number, Any>
+                    val thisAddress = address as IpAddress<Number, Nothing>
+                    val otherNet = input.network as IpNetwork<Number, Nothing>
                     if (otherNet.contains(thisAddress)) GeneralNameOption.ConstraintResult.NARROWS
                     else GeneralNameOption.ConstraintResult.SAME_TYPE
                 }
