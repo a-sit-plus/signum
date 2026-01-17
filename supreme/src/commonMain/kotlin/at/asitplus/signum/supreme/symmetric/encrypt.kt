@@ -13,9 +13,9 @@ import kotlin.jvm.JvmName
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptWithAutoGenIV")
-suspend fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
+suspend fun <A : AuthCapability, I : NonceTrait> SymmetricKey<A, I>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox<A, I, out K>> = catching {
+): KmmResult<SealedBox<A, I>> = catching {
     @OptIn(SecretExposure::class)    Encryptor(
         algorithm,
         if (this.hasDedicatedMacKey()) encryptionKey.getOrThrow() else secretKey.getOrThrow(),
@@ -37,10 +37,10 @@ suspend fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKe
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptAuthenticated")
-suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
+suspend fun <A : AuthCapability.Authenticated, I : NonceTrait> SymmetricKey<A, I>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox<A, I, out K>> = catching {
+): KmmResult<SealedBox<A, I>> = catching {
     @OptIn(SecretExposure::class) Encryptor(
         algorithm,
         if (this.hasDedicatedMacKey()) encryptionKey.getOrThrow() else secretKey.getOrThrow(),

@@ -4,21 +4,21 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import javax.crypto.Cipher
 
-internal actual suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
+internal actual suspend fun <A : AuthCapability, I : NonceTrait> initCipher(
     mode: PlatformCipher.Mode,
-    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    algorithm: SymmetricEncryptionAlgorithm<A, I>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<A, I, K> = JcaPlatformCipher(mode, algorithm, key, nonce, aad)
+): PlatformCipher<A, I> = JcaPlatformCipher(mode, algorithm, key, nonce, aad)
 
-internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>(
+internal class JcaPlatformCipher<A : AuthCapability, I : NonceTrait>(
     override val mode: PlatformCipher.Mode,
-    override val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    override val algorithm: SymmetricEncryptionAlgorithm<A, I>,
     override val key: ByteArray,
     override val nonce: ByteArray?,
     override val aad: ByteArray?,
-) : PlatformCipher<A, I, K> {
+) : PlatformCipher<A, I> {
 
 
     private val cipher: Cipher =
@@ -29,7 +29,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
                 @Suppress("UNCHECKED_CAST")
                 when (algorithm) {
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce, aad)
-                    is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
+                    is SymmetricEncryptionAlgorithm.AES<*, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
                 }
             }
 
@@ -41,7 +41,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
             }
         }
 
-    override suspend fun doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    override suspend fun doEncrypt(data: ByteArray): SealedBox<A, I> {
         require(mode == PlatformCipher.Mode.ENCRYPT) { "Cipher not in ENCRYPT mode!" }
         val jcaCiphertext = cipher.doFinal(data)
         //JCA simply concatenates ciphertext and authtag, so we need to split
@@ -63,7 +63,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
         return when {
             algorithm.requiresNonce() -> when {
                 algorithm.isAuthenticated() -> {
-                    (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>)
+                    (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Required>)
                     algorithm.sealedBox.withNonce(nonce!!).from(ciphertext, authTag!!)
                 }
 
@@ -72,14 +72,14 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
 
             else -> when {
                 algorithm.isAuthenticated() -> {
-                    (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>)
+                    (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Without>)
                     algorithm.sealedBox.from(ciphertext, authTag!!)
                 }
 
                 else -> algorithm.sealedBox.from(ciphertext)
             }
 
-        }.getOrThrow() as SealedBox<A, I, out K>
+        }.getOrThrow() as SealedBox<A, I>
     }
 
     override suspend fun doDecrypt(data: ByteArray, authTag: ByteArray?): ByteArray {
