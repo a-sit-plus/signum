@@ -4,6 +4,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.jcaKeySpec
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.authTagSize
 import at.asitplus.signum.indispensable.symmetric.isAuthenticated
 import at.asitplus.signum.indispensable.symmetric.isIntegrated
 import javax.crypto.Cipher

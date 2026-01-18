@@ -11,9 +11,9 @@ import kotlin.jvm.JvmName
  */
 @JvmName("encryptWithAutoGenIV")
 @Throws(Throwable::class)
-suspend fun <A : AuthCapability, I : NonceTrait> SymmetricKey<A, I>.encrypt(
+suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> SymmetricKey<E>.encrypt(
     data: ByteArray
-): SealedBox<A, I> =
+): SealedBox<E> =
     @OptIn(SecretExposure::class)
     Encryptor(
         algorithm,
@@ -35,10 +35,10 @@ suspend fun <A : AuthCapability, I : NonceTrait> SymmetricKey<A, I>.encrypt(
  */
 @JvmName("encryptAuthenticated")
 @Throws(Throwable::class)
-suspend fun <A : AuthCapability.Authenticated, I : NonceTrait> SymmetricKey<A, I>.encrypt(
+suspend fun <E: SymmetricEncryptionAlgorithm.Authenticated<*>> SymmetricKey<E>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): SealedBox<A, I> =
+): SealedBox<E> =
     @OptIn(SecretExposure::class)
     Encryptor(
         algorithm,
@@ -48,13 +48,11 @@ suspend fun <A : AuthCapability.Authenticated, I : NonceTrait> SymmetricKey<A, I
     ).encrypt(data)
 
 @Throws(Throwable::class)
-suspend fun SpecializedSymmetricKey.encrypt(data: ByteArray, authenticatedData: ByteArray? = null): SealedBox<*, *> {
+suspend fun SpecializedSymmetricKey.encrypt(data: ByteArray, authenticatedData: ByteArray? = null): SealedBox<*> {
     val key = toSymmetricKey()
-    return when (key) {
-        is SymmetricKey.Authenticating -> key.encrypt(data, authenticatedData)
-        else -> {
-            require(authenticatedData == null) { "Cannot specify AAD with non-AAD cipher" }
-            key.encrypt(data)
-        }
+    return if (key.isAuthenticated()) key.encrypt(data, authenticatedData)
+    else {
+        require(authenticatedData == null) { "Cannot specify AAD with non-AAD cipher" }
+        key.encrypt(data)
     }
 }
