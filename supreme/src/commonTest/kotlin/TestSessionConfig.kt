@@ -17,5 +17,6 @@ class ModuleTestSession : TestSession(
         //Don't make the heap explode
         DataTest.compactByDefault = true
         PropertyTest.compactByDefault = true
+        TestBalloonAddons.defaultTestNameMaxLength =-1
     }
 }
