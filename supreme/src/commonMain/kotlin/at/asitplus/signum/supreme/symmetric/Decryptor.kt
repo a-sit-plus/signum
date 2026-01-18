@@ -3,14 +3,14 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.mac.mac
 
-internal class Decryptor<out I: NonceTrait, out E: SymmetricEncryptionAlgorithm<*, I>>(
+internal class Decryptor<out I: NonceTrait<*>, out E: SymmetricEncryptionAlgorithm<*, I>>(
     val platformCipher: PlatformCipher<SymmetricEncryptionAlgorithm<*, I>>,
     val algorithm: E,
     val authTag: ByteArray?,
     val macKey: ByteArray?
 ) {
     companion object {
-        suspend operator fun <I: NonceTrait, E: SymmetricEncryptionAlgorithm<*, I>> invoke(
+        suspend operator fun <I: NonceTrait<*>, E: SymmetricEncryptionAlgorithm<*, I>> invoke(
             algorithm: E,
             key: ByteArray,
             macKey: ByteArray?,
@@ -45,7 +45,7 @@ internal class Decryptor<out I: NonceTrait, out E: SymmetricEncryptionAlgorithm<
     }
 }
 
-internal suspend fun <I: NonceTrait, E: SymmetricEncryptionAlgorithm<*, I>> SealedBox<E>.initDecrypt(
+internal suspend fun <I: NonceTrait<*>, E: SymmetricEncryptionAlgorithm<*, I>> SealedBox<E>.initDecrypt(
     key: ByteArray,
     macKey: ByteArray?,
     aad: ByteArray?

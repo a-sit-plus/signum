@@ -68,7 +68,7 @@ val JvmSymmetricTest  by testSuite {
 
 
                             val jcaCipher =
-                                Cipher.getInstance(if (alg.authCapability is AuthCapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
+                                Cipher.getInstance(if (!alg.isAuthenticated()) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                                 val secretKey = alg.randomKey(random = InsecureRandom)

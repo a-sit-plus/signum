@@ -56,7 +56,7 @@ private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
                     pad = when (algorithm) {
                         is AES.CBC.Unauthenticated, is AES.ECB -> true
                         is AES.WRAP.RFC3394 -> false
-                        is AES.GCM -> algorithm.absurdAuth()
+                        is AES.GCM -> algorithm.absurd()
                     }
                 )
             }

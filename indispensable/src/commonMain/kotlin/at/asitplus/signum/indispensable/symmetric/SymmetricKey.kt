@@ -1,5 +1,3 @@
-@file:Suppress("INFERRED_TYPE_VARIABLE_INTO_POSSIBLE_EMPTY_INTERSECTION")
-
 package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.KmmResult
@@ -98,7 +96,7 @@ private class SymmetricKeyIntegrated<out E: SymmetricEncryptionAlgorithm.Integra
 @SecretExposure
 val SymmetricKey.Integrated<*>.secretKey: KmmResult<ByteArray> get() = when(this) {
     is SymmetricKeyIntegrated -> secretKey
-    is SymmetricKeyWithDedicatedMac<*> -> algorithm.absurdIntegrated()
+    is SymmetricKeyWithDedicatedMac<*> -> algorithm.absurd()
 }
 
 private class SymmetricKeyWithDedicatedMac<E: SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> @HazardousMaterials("This constructor is public to enable testing. DO NOT USE IT!") constructor(
@@ -148,53 +146,53 @@ private class SymmetricKeyWithDedicatedMac<E: SymmetricEncryptionAlgorithm.Encry
 @SecretExposure
 val WithDedicatedMac<*>.encryptionKey: KmmResult<ByteArray> get() = when (this) {
     is SymmetricKeyWithDedicatedMac -> encryptionKey
-    is SymmetricKeyIntegrated<*> -> algorithm.absurdIntegrated()
+    is SymmetricKeyIntegrated<*> -> algorithm.absurd()
 }
 
 @SecretExposure
 val WithDedicatedMac<*>.macKey: KmmResult<ByteArray> get() = when (this) {
     is SymmetricKeyWithDedicatedMac -> macKey
-    is SymmetricKeyIntegrated<*> -> algorithm.absurdIntegrated()
+    is SymmetricKeyIntegrated<*> -> algorithm.absurd()
 }
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun SymmetricKey<SymmetricEncryptionAlgorithm<*, *>>.isAuthenticated(): Boolean {
+fun <I: NonceTrait<*>> SymmetricKey<SymmetricEncryptionAlgorithm<*, I>>.isAuthenticated(): Boolean {
     contract {
-        returns(true) implies (this@isAuthenticated is SymmetricKey.Authenticating<*>)
-        returns(false) implies (this@isAuthenticated is SymmetricKey.NonAuthenticating<*>)
+        returns(true) implies (this@isAuthenticated is SymmetricKey.Authenticating<I>)
+        returns(false) implies (this@isAuthenticated is SymmetricKey.NonAuthenticating<I>)
     }
-    return this.algorithm.authCapability is AuthCapability.Authenticated
+    return algorithm.isAuthenticated()
 }
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun SymmetricKey.Authenticating<*>.isIntegrated(): Boolean {
+fun <I: NonceTrait<*>> SymmetricKey.Authenticating<I>.isIntegrated(): Boolean {
     contract {
-        returns(true) implies (this@isIntegrated is SymmetricKey.Integrated<*>)
-        returns(false) implies (this@isIntegrated is WithDedicatedMac<*>)
+        returns(true) implies (this@isIntegrated is SymmetricKey.Integrated<I>)
+        returns(false) implies (this@isIntegrated is WithDedicatedMac<I>)
     }
     return !this.hasDedicatedMacKey()
 }
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun  SymmetricKey<SymmetricEncryptionAlgorithm<*, *>>.hasDedicatedMacKey(): Boolean {
+fun <I: NonceTrait<*>> SymmetricKey<SymmetricEncryptionAlgorithm<*, I>>.hasDedicatedMacKey(): Boolean {
     contract {
-        returns(true) implies (this@hasDedicatedMacKey is WithDedicatedMac<*>)
-        returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<*>)
+        returns(true) implies (this@hasDedicatedMacKey is WithDedicatedMac<I>)
+        returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<I>)
     }
-    return this.algorithm.authCapability is AuthCapability.Authenticated.WithDedicatedMac
+    return algorithm.hasDedicatedMac()
 }
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun SymmetricKey<SymmetricEncryptionAlgorithm<*, *>>.requiresNonce(): Boolean {
+fun <A: AuthCapability<*>> SymmetricKey<SymmetricEncryptionAlgorithm<A, *>>.requiresNonce(): Boolean {
     contract {
-        returns(true) implies (this@requiresNonce is SymmetricKey.RequiringNonce<*>)
-        returns(false) implies (this@requiresNonce is SymmetricKey.WithoutNonce<*>)
+        returns(true) implies (this@requiresNonce is SymmetricKey.RequiringNonce<A>)
+        returns(false) implies (this@requiresNonce is SymmetricKey.WithoutNonce<A>)
     }
-    return algorithm.nonceTrait is NonceTrait.Required
+    return algorithm.requiresNonce()
 }
 
 interface SpecializedSymmetricKey {

@@ -16,7 +16,7 @@ private inline fun randomBytes(n: Int, random: CryptoRand = CryptoRand.Default):
  */
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
 @kotlin.internal.LowPriorityInOverloadResolution
-suspend fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.randomKey() =
+suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> E.randomKey() =
     @OptIn(HazardousMaterials::class) randomKey(CryptoRand.Default)
 /**
  * Generates a fresh random key for this algorithm.

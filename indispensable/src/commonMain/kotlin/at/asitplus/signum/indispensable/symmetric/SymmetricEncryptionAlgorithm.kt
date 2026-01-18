@@ -1,4 +1,3 @@
-@file:Suppress("INFERRED_TYPE_VARIABLE_INTO_POSSIBLE_EMPTY_INTERSECTION")
 package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.signum.HazardousMaterials
@@ -14,12 +13,12 @@ import kotlin.jvm.JvmName
 
 /**
  * Base interface for every symmetric encryption algorithm. A Symmetric encryption algorithm is characterised by:
- * * an [authCapability] ([AuthCapability.Unauthenticated], [AuthCapability.Authenticated.Integrated], [AuthCapability.Authenticated.WithDedicatedMac]
+ * * an [authCapability] ([AuthCapability.Unauthenticated], [AuthCapability.AuthenticatedIntegrated], [AuthCapability.WithDedicatedMac]
  * * its [nonceTrait] ([NonceTrait.Required], [NonceTrait.Without])
  * * the [keySize]
  * * its [name]
  */
-sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : NonceTrait> :
+sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<*>, out I : NonceTrait<*>> :
     Identifiable {
     val authCapability: A
 
@@ -131,8 +130,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
     typealias Integrated<I> = SymmetricEncryptionAlgorithm<AuthCapability.Integrated, I>
     typealias Unauthenticated<I> = SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I>
     typealias Authenticated<I> = SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, I>
-    typealias AuthenticatedIntegrated<I> = SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, I>
-    typealias EncryptThenMAC<I> = SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I>
+    typealias AuthenticatedIntegrated<I> = SymmetricEncryptionAlgorithm<AuthCapability.AuthenticatedIntegrated, I>
+    typealias EncryptThenMAC<I> = SymmetricEncryptionAlgorithm<AuthCapability.WithDedicatedMac, I>
     typealias RequiringNonce<A> = SymmetricEncryptionAlgorithm<A, NonceTrait.Required>
     typealias WithoutNonce<A> = SymmetricEncryptionAlgorithm<A, NonceTrait.Without>
     typealias AuthenticatedWithoutNonce = SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Without>
@@ -143,7 +142,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
     /**
      * Advanced Encryption Standard
      */
-    sealed class AES<I : NonceTrait, A : AuthCapability>(
+    sealed class AES<I : NonceTrait<*>, A : AuthCapability<*>>(
         modeOfOps: ModeOfOperation,
         override val keySize: BitLength
     ) :
@@ -154,12 +153,12 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
         override fun toString(): String = name
 
         class GCM internal constructor(keySize: BitLength) :
-            AES<NonceTrait.Required, AuthCapability.Authenticated.Integrated>(
+            AES<NonceTrait.Required, AuthCapability.AuthenticatedIntegrated>(
                 ModeOfOperation.GCM,
                 keySize
             ) {
-            override val authCapability = AuthCapability.Authenticated.Integrated
-            override val nonceTrait = NonceTrait.Required
+            override val authCapability = AuthCapability.authenticatedIntegrated
+            override val nonceTrait = NonceTrait.required
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
                 192u -> KnownOIDs.aes192_GCM
@@ -182,8 +181,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
                     256u -> KnownOIDs.aes256_wrap
                     else -> throw ImplementationError("AES WRAP RFC3394 OID")
                 }
-                override val nonceTrait = NonceTrait.Without
-                override val authCapability = AuthCapability.Unauthenticated
+                override val nonceTrait = NonceTrait.without
+                override val authCapability = AuthCapability.unauthenticated
             }
             //on request, add RFC 5649  key wrapping here. requires manual work, though
         }
@@ -191,8 +190,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
         @HazardousMaterials("ECB is almost always insecure!")
         class ECB internal constructor(keySize: BitLength) :
             AES<NonceTrait.Without, AuthCapability.Unauthenticated>(ModeOfOperation.ECB, keySize) {
-            override val authCapability = AuthCapability.Unauthenticated
-            override val nonceTrait = NonceTrait.Without
+            override val authCapability = AuthCapability.unauthenticated
+            override val nonceTrait = NonceTrait.without
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_ECB
                 192u -> KnownOIDs.aes192_ECB
@@ -201,7 +200,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
             }
         }
 
-        sealed class CBC<A : AuthCapability>(keySize: BitLength) :
+        sealed class CBC<A : AuthCapability<*>>(keySize: BitLength) :
             AES<NonceTrait.Required, A>(ModeOfOperation.CBC, keySize) {
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
@@ -213,8 +212,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
             class Unauthenticated internal constructor(
                 keySize: BitLength
             ) : CBC<AuthCapability.Unauthenticated>(keySize) {
-                override val authCapability = AuthCapability.Unauthenticated
-                override val nonceTrait = NonceTrait.Required
+                override val authCapability = AuthCapability.unauthenticated
+                override val nonceTrait = NonceTrait.required
                 override val name = super.name + " Plain"
             }
 
@@ -228,8 +227,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
                 val macInputCalculation: MacInputCalculation,
                 val macAuthTagTransform: MacAuthTagTransformation,
                 val authTagSize: BitLength
-            ) : RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac>,
-                CBC<AuthCapability.Authenticated.WithDedicatedMac>(
+            ) : RequiringNonce<AuthCapability.WithDedicatedMac>,
+                CBC<AuthCapability.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
                 constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.HMAC) : this(
@@ -271,8 +270,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
                     tagLength
                 )
 
-                override val authCapability = AuthCapability.Authenticated.WithDedicatedMac
-                override val nonceTrait = NonceTrait.Required
+                override val authCapability = AuthCapability.withDedicatedMac
+                override val nonceTrait = NonceTrait.required
             }
         }
     }
@@ -280,13 +279,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : No
     /**
      * ChaCha20 with Poly-1305 AEAD stream cipher
      */
-    object ChaCha20Poly1305 : StreamCipher<AuthCapability.Authenticated.Integrated, NonceTrait.Required>() {
+    object ChaCha20Poly1305 : StreamCipher<AuthCapability.AuthenticatedIntegrated, NonceTrait.Required>() {
         override val name: String = "ChaCha20-Poly1305"
         override fun toString() = name
         override val keySize = 256u.bit
         override val oid = KnownOIDs.chaCha20Poly1305
-        override val authCapability = AuthCapability.Authenticated.Integrated
-        override val nonceTrait = NonceTrait.Required
+        override val authCapability = AuthCapability.authenticatedIntegrated
+        override val nonceTrait = NonceTrait.required
     }
 }
 
@@ -295,19 +294,19 @@ val SymmetricEncryptionAlgorithm.Authenticated<*>.authTagSize: BitLength get() =
     is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> authTagSize
     is SymmetricEncryptionAlgorithm.AES.GCM -> blockSize
     SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> 128u.bit
-    is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated -> absurdAuth()
-    is SymmetricEncryptionAlgorithm.AES.ECB -> absurdAuth()
-    is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> absurdAuth()
+    is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated -> absurd()
+    is SymmetricEncryptionAlgorithm.AES.ECB -> absurd()
+    is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> absurd()
 }
 
 @Suppress("UNCHECKED_CAST")
 @OptIn(HazardousMaterials::class)
-val <I : NonceTrait> SymmetricEncryptionAlgorithm.EncryptThenMAC<I>.innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated<I>
+val <I : NonceTrait<*>> SymmetricEncryptionAlgorithm.EncryptThenMAC<I>.innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated<I>
     get() = when(this) {
         is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> innerCipher as SymmetricEncryptionAlgorithm.Unauthenticated<I>
         is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated, is SymmetricEncryptionAlgorithm.AES.ECB,
         is SymmetricEncryptionAlgorithm.AES.GCM, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394,
-        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurdIntegrated()
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurd()
     }
 
 /**
@@ -318,7 +317,7 @@ val SymmetricEncryptionAlgorithm.EncryptThenMAC<*>.mac: HMAC get() = when (this)
     is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> mac
     is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated, is SymmetricEncryptionAlgorithm.AES.ECB,
     is SymmetricEncryptionAlgorithm.AES.GCM, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394,
-    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurdIntegrated()
+    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurd()
 }
 
 /**
@@ -329,7 +328,7 @@ val SymmetricEncryptionAlgorithm.EncryptThenMAC<*>.preferredMacKeyLength: BitLen
     is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> preferredMacKeyLength
     is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated, is SymmetricEncryptionAlgorithm.AES.ECB,
     is SymmetricEncryptionAlgorithm.AES.GCM, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394,
-    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurdIntegrated()
+    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurd()
 }
 
 /**
@@ -340,7 +339,7 @@ val SymmetricEncryptionAlgorithm.EncryptThenMAC<*>.macInputCalculation: MacInput
     is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> macInputCalculation
     is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated, is SymmetricEncryptionAlgorithm.AES.ECB,
     is SymmetricEncryptionAlgorithm.AES.GCM, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394,
-    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurdIntegrated()
+    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurd()
 }
 
 /**
@@ -351,7 +350,7 @@ val SymmetricEncryptionAlgorithm.EncryptThenMAC<*>.macAuthTagTransform: MacAuthT
     is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> macAuthTagTransform
     is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated, is SymmetricEncryptionAlgorithm.AES.ECB,
     is SymmetricEncryptionAlgorithm.AES.GCM, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394,
-    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurdIntegrated()
+    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurd()
 }
 
 @OptIn(HazardousMaterials::class)
@@ -362,41 +361,40 @@ val SymmetricEncryptionAlgorithm.RequiringNonce<*>.nonceSize: BitLength get() = 
     is SymmetricEncryptionAlgorithm.AES.ECB, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> absurdNonce()
 }
 
+class Box<out A: Unit?>(val a: A)
+
 /**
  * Defines whether a cipher is authenticated or not
  */
-sealed interface AuthCapability {
-    sealed interface Integrated: AuthCapability
-
+class AuthCapability<out A: Box<*>?> private constructor(val a: A) {
+    typealias Integrated = AuthCapability<Box<Nothing?>?>
     /**
      * Indicates an authenticated cipher
      */
-    sealed interface Authenticated : AuthCapability {
+    typealias Authenticated = AuthCapability<Box<*>>
 
-        /**
-         * An authenticated cipher construction that is inherently authenticated and thus permits no dedicated MAC key
-         */
-        data object Integrated : Authenticated, AuthCapability.Integrated
+    /**
+     * An authenticated cipher construction that is inherently authenticated and thus permits no dedicated MAC key
+     */
+    typealias AuthenticatedIntegrated = AuthCapability<Box<Nothing?>>
 
-        /**
-         * An _Encrypt-then-MAC_ authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function, requiring a dedicated MAC key.
-         */
-        data object WithDedicatedMac : Authenticated
-    }
+    /**
+     * An _Encrypt-then-MAC_ authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function, requiring a dedicated MAC key.
+     */
+    typealias WithDedicatedMac = AuthCapability<Box<Unit>>
 
     /**
      * Indicates an unauthenticated cipher
      */
-    object Unauthenticated : Integrated
+    typealias Unauthenticated = AuthCapability<Nothing?>
+    companion object {
+        val authenticatedIntegrated: AuthenticatedIntegrated = AuthCapability(Box(null))
+        val withDedicatedMac: WithDedicatedMac = AuthCapability(Box(Unit))
+        val unauthenticated: Unauthenticated = AuthCapability(null)
+    }
 }
 
-fun <T> SymmetricEncryptionAlgorithm<T & Any, *>.absurdAuth(): Nothing where T : AuthCapability.Authenticated?, T : AuthCapability.Unauthenticated? {
-    error("Impossible: $authCapability cannot be both Authenticated and Unauthenticated")
-}
-
-internal fun <T> SymmetricEncryptionAlgorithm<T & Any, *>.absurdIntegrated(): Nothing where T : AuthCapability.Integrated?, T : AuthCapability.Authenticated.WithDedicatedMac? {
-    error("Impossible: $authCapability cannot be both Integrated and WithDedicatedMac")
-}
+fun SymmetricEncryptionAlgorithm<AuthCapability<Box<Nothing>>, *>.absurd(): Nothing = authCapability.a.a
 
 /**
  * Typealias defining the signature of the lambda for processing the MAC output into an auth tag.
@@ -429,21 +427,21 @@ val DefaultMacInputCalculation: MacInputCalculation =
 /**
  * Marker, indicating whether a symmetric encryption algorithms requires or prohibits the use of a nonce/IV
  */
-sealed interface NonceTrait {
-    data object Required : NonceRequiredMarker
-    data object Without : NonceTrait
+class NonceTrait<out U: Unit?> private constructor(val a: U) {
+    typealias Required = NonceTrait<Unit>
+    typealias Without = NonceTrait<Nothing?>
+    companion object {
+        val required: Required = NonceTrait(Unit)
+        val without: Without = NonceTrait(null)
+    }
 }
 
-internal sealed interface NonceRequiredMarker : NonceTrait
-
-internal fun <@Suppress("unused") LB: T, T> SymmetricEncryptionAlgorithm<*, T & Any>.absurdNonce(): Nothing where T : NonceRequiredMarker?, T : NonceTrait.Without? {
-    error("Impossible: $nonceTrait cannot be both Required and Without")
-}
+internal fun SymmetricEncryptionAlgorithm<*, NonceTrait<Nothing>>.absurdNonce(): Nothing = nonceTrait.a
 
 /**
  * Marker interface indicating a block cipher. Purely informational
  */
-sealed class BlockCipher<A : AuthCapability, I : NonceTrait>(
+sealed class BlockCipher<A : AuthCapability<*>, I : NonceTrait<*>>(
     val mode: ModeOfOperation,
     val blockSize: BitLength
 ) : SymmetricEncryptionAlgorithm<A, I> {
@@ -458,7 +456,7 @@ sealed class BlockCipher<A : AuthCapability, I : NonceTrait>(
 /**
  * Marker interface indicating a block cipher. Purely informational
  */
-sealed class StreamCipher<A : AuthCapability, I : NonceTrait> : SymmetricEncryptionAlgorithm<A, I>
+sealed class StreamCipher<A : AuthCapability<*>, I : NonceTrait<*>> : SymmetricEncryptionAlgorithm<A, I>
 
 
 //Here come the contracts!
@@ -466,10 +464,10 @@ sealed class StreamCipher<A : AuthCapability, I : NonceTrait> : SymmetricEncrypt
 /**Use to smart-cast this algorithm*/
 @JvmName("isBlockCipherAlias")
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.isBlockCipher(): Boolean {
+fun SymmetricEncryptionAlgorithm<*, *>.isBlockCipher(): Boolean {
     contract {
-        returns(true) implies (this@isBlockCipher is BlockCipher<A, I>)
-        returns(false) implies (this@isBlockCipher is StreamCipher<A, I>)
+        returns(true) implies (this@isBlockCipher is BlockCipher)
+        returns(false) implies (this@isBlockCipher is StreamCipher)
     }
     return this is BlockCipher
 }
@@ -477,10 +475,10 @@ fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.isBl
 /**Use to smart-cast this algorithm*/
 @JvmName("isStreamCipherAlias")
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.isStreamCipher(): Boolean {
+fun SymmetricEncryptionAlgorithm<*, *>.isStreamCipher(): Boolean {
     contract {
-        returns(true) implies (this@isStreamCipher is StreamCipher<A, I>)
-        returns(false) implies (this@isStreamCipher is BlockCipher<A, I>)
+        returns(true) implies (this@isStreamCipher is StreamCipher)
+        returns(false) implies (this@isStreamCipher is BlockCipher)
     }
     return this is StreamCipher
 }
@@ -488,61 +486,47 @@ fun <A : AuthCapability, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I>.isSt
 /**Use to smart-cast this algorithm*/
 @JvmName("isAuthenticatedAlias")
 @OptIn(ExperimentalContracts::class)
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<*, I>.isAuthenticated(): Boolean {
+fun <I : NonceTrait<*>> SymmetricEncryptionAlgorithm<*, I>.isAuthenticated(): Boolean {
     contract {
         returns(true) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.Authenticated<I>)
         returns(false) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.Unauthenticated<I>)
     }
-    return this.authCapability is AuthCapability.Authenticated
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("isAuthenticatedIntegrated")
-@OptIn(ExperimentalContracts::class)
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Integrated, I>.isAuthenticated(): Boolean {
-    contract {
-        returns(true) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.AuthenticatedIntegrated<I>)
-        returns(false) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.Unauthenticated<I>)
-    }
-    return this.authCapability is AuthCapability.Authenticated.Integrated
+    return authCapability == AuthCapability.authenticatedIntegrated || authCapability == AuthCapability.withDedicatedMac
 }
 
 /**Use to smart-cast this algorithm*/
 @JvmName("hasDedicatedMacAlias")
 @OptIn(ExperimentalContracts::class)
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<*, I>.hasDedicatedMac(): Boolean {
+fun <I : NonceTrait<*>> SymmetricEncryptionAlgorithm<*, I>.hasDedicatedMac(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.EncryptThenMAC<I>)
-        returns(false) implies (
-                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Unauthenticated<I>
-                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.AuthenticatedIntegrated<I>))
+        returns(false) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Integrated<I>)
     }
-    return this.authCapability is AuthCapability.Authenticated.WithDedicatedMac
+    return authCapability == AuthCapability.withDedicatedMac
 }
 
 /**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceAlias")
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability> SymmetricEncryptionAlgorithm<A, *>.requiresNonce(): Boolean {
+fun <A : AuthCapability<*>> SymmetricEncryptionAlgorithm<A, *>.requiresNonce(): Boolean {
     contract {
         returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce<A>)
         returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce<A>)
     }
-    return this.nonceTrait is NonceTrait.Required
+    return nonceTrait == NonceTrait.required
 }
 
 /**Use to smart-cast this algorithm*/
 @JvmName("isIntegrated")
 @OptIn(ExperimentalContracts::class)
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, I>.isIntegrated(): Boolean {
+fun <I : NonceTrait<*>> SymmetricEncryptionAlgorithm.Authenticated<I>.isIntegrated(): Boolean {
     contract {
         returns(true) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.AuthenticatedIntegrated<I>)
         returns(false) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.EncryptThenMAC<I>)
-
     }
-    return this.authCapability is AuthCapability.Authenticated.Integrated
+    return authCapability == AuthCapability.authenticatedIntegrated
 }
 
 interface SpecializedSymmetricEncryptionAlgorithm {
-    val algorithm: SymmetricEncryptionAlgorithm<*,*>
+    val algorithm: SymmetricEncryptionAlgorithm<*, *>
 }

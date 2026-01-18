@@ -1,5 +1,3 @@
-@file:Suppress("INFERRED_TYPE_VARIABLE_INTO_POSSIBLE_EMPTY_INTERSECTION")
-
 package at.asitplus.signum.indispensable.symmetric
 
 import kotlin.contracts.ExperimentalContracts
@@ -41,7 +39,7 @@ val SealedBox.WithNonce<*>.nonce: ByteArray get() = when (this) {
 val SealedBox.Authenticated<*>.authTag: ByteArray get() = when (this) {
     is SealedBoxFromCiphertext -> when (ciphertext) {
         is CipherTextAuthenticated<*> -> ciphertext.authTag
-        is CipherTextUnauthenticated<*> -> ciphertext.algorithm.absurdAuth()
+        is CipherTextUnauthenticated<*> -> ciphertext.algorithm.absurd()
     }
 }
 
@@ -188,20 +186,20 @@ private class CipherTextUnauthenticated<E : SymmetricEncryptionAlgorithm.Unauthe
 
 /**Use to smart-cast this sealed box*/
 @OptIn(ExperimentalContracts::class)
-fun SealedBox<SymmetricEncryptionAlgorithm<*, *>>.isAuthenticated(): Boolean {
+fun <I: NonceTrait<*>> SealedBox<SymmetricEncryptionAlgorithm<*, I>>.isAuthenticated(): Boolean {
     contract {
-        returns(true) implies (this@isAuthenticated is SealedBox.Authenticated<*>)
-        returns(false) implies (this@isAuthenticated is SealedBox.Unauthenticated<*>)
+        returns(true) implies (this@isAuthenticated is SealedBox.Authenticated<I>)
+        returns(false) implies (this@isAuthenticated is SealedBox.Unauthenticated<I>)
     }
     return algorithm.isAuthenticated()
 }
 
 /**Use to smart-cast this sealed box*/
 @OptIn(ExperimentalContracts::class)
-fun SealedBox<SymmetricEncryptionAlgorithm<*, *>>.hasNonce(): Boolean {
+fun <A: AuthCapability<*>> SealedBox<SymmetricEncryptionAlgorithm<A, *>>.hasNonce(): Boolean {
     contract {
-        returns(true) implies (this@hasNonce is SealedBox.WithNonce<*>)
-        returns(false) implies (this@hasNonce is SealedBox.WithoutNonce<*>)
+        returns(true) implies (this@hasNonce is SealedBox.WithNonce<A>)
+        returns(false) implies (this@hasNonce is SealedBox.WithoutNonce<A>)
     }
     return algorithm.requiresNonce()
 }
@@ -209,7 +207,7 @@ fun SealedBox<SymmetricEncryptionAlgorithm<*, *>>.hasNonce(): Boolean {
 
 /**Use to smart-cast this sealed box*/
 @OptIn(ExperimentalContracts::class)
-fun <I : NonceTrait> SealedBox<SymmetricEncryptionAlgorithm<*, I>>.hasMacKey(): Boolean {
+fun <I : NonceTrait<*>> SealedBox<SymmetricEncryptionAlgorithm<*, I>>.hasMacKey(): Boolean {
     contract {
         returns(true) implies (this@hasMacKey is SealedBox<SymmetricEncryptionAlgorithm.EncryptThenMAC<I>>)
         returns(false) implies (this@hasMacKey is SealedBox<SymmetricEncryptionAlgorithm.Integrated<I>>)
