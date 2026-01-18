@@ -141,10 +141,10 @@ val SymmetricTest by matrixSuite {
                 key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
 
-                if (alg.authCapability is AuthCapability.Authenticated)
+                if (alg.isAuthenticated())
                     key.encrypt(Random.nextBytes(32))
                         .getOrThrow().algorithm.isAuthenticated() shouldBe true
-                else if (alg.authCapability is AuthCapability.Unauthenticated)
+                else
                     key.encrypt(Random.nextBytes(32))
                         .getOrThrow().algorithm.isAuthenticated() shouldBe false
             }
@@ -207,14 +207,14 @@ val SymmetricTest by matrixSuite {
                 key.andPredefinedNonce(alg.randomNonce()).getOrThrow()
                     .encrypt(data = Random.nextBytes(32)) should succeed
 
-                if (alg.authCapability is AuthCapability.Authenticated)
+                if (alg.isAuthenticated())
                     alg.randomKey(InsecureRandom).encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
                         it.getOrThrow().algorithm.isAuthenticated() shouldBe true
                     }
-                else if (alg.authCapability is AuthCapability.Unauthenticated)
+                else
                     alg.randomKey(InsecureRandom).encrypt(
                         Random.nextBytes(32)
                     ).let {
@@ -502,7 +502,7 @@ val SymmetricTest by matrixSuite {
                                 val manilaAlg = it.Custom(ciphertext.authTag.size.bytes)
                                 { _, _, _ -> "Manila".encodeToByteArray() }
 
-                                val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                val manilaKey = SymmetricKey.WithDedicatedMac(
                                     manilaAlg,
                                     key.encryptionKey.getOrThrow(),
                                     key.macKey.getOrThrow()
@@ -564,7 +564,7 @@ val SymmetricTest by matrixSuite {
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
                                 ).getOrThrow().decrypt(
-                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                    SymmetricKey.WithDedicatedMac(
                                         ciphertext.algorithm,
                                         key.encryptionKey.getOrThrow(),
                                         dedicatedMacKey = key.macKey.getOrThrow().asList().shuffled().toByteArray()
@@ -588,7 +588,7 @@ val SymmetricTest by matrixSuite {
                                 ).getOrThrow().decrypt(it.Custom(ciphertext.authTag.size.bytes) { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
                                 }.let {
-                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                    SymmetricKey.WithDedicatedMac(
                                         it,
                                         key.encryptionKey.getOrThrow(),
                                         key.macKey.getOrThrow()
@@ -736,29 +736,33 @@ val SymmetricTest by matrixSuite {
                 alg.randomKey(InsecureRandom).also { key ->
                     when (alg.hasDedicatedMac()) {
                         true -> {
+                            require(key.hasDedicatedMacKey())
                             key shouldBe alg.keyFrom(
-                                (key as SymmetricKey.WithDedicatedMac).encryptionKey.getOrThrow(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow()
+                                key.encryptionKey.getOrThrow(),
+                                key.macKey.getOrThrow()
                             ).getOrThrow()
 
                             key shouldNotBe alg.keyFrom(
                                 key.encryptionKey.getOrThrow(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow().asList().shuffled()
+                                key.macKey.getOrThrow().asList().shuffled()
                                     .toByteArray()
                             ).getOrThrow()
                             key shouldNotBe alg.keyFrom(
                                 key.encryptionKey.getOrThrow().asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow()
+                                key.macKey.getOrThrow()
                             ).getOrThrow()
                             key shouldNotBe alg.keyFrom(
                                 key.encryptionKey.getOrThrow().asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow().asList().shuffled()
+                                key.macKey.getOrThrow().asList().shuffled()
                                     .toByteArray()
                             ).getOrThrow()
                         }
 
-                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow())
-                            .getOrThrow()
+                        false -> {
+                            require(!key.hasDedicatedMacKey())
+                            key shouldBe alg.keyFrom(key.secretKey.getOrThrow())
+                                .getOrThrow()
+                        }
                     }
                 }
 
