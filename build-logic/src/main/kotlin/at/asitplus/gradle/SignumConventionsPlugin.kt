@@ -7,7 +7,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
@@ -50,8 +49,9 @@ class SignumConventionsExtension(private val project: Project) {
         project.version = indispensableVersion
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
-            //TestBalloon 0.8 discovery issue
-            tasks.withType<AbstractTestTask>().configureEach { failOnNoDiscoveredTests=false }
+            //work around IDEA BUG not finding any test deps on non-JVM!
+            (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets.filter { it.name.endsWith("Test") }
+                .forEach { it.dependencies { addTestExtensions() } }
             tasks.withType<Test>().configureEach {
                 maxHeapSize = "10G"
             }

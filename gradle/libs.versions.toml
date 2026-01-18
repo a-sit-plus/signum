@@ -13,7 +13,7 @@ asp = "20251217"
 classgraph = "4.8.184"
 bouncycastle= "1.83"
 testballoon = "0.8.0-RC-K2.3.0"
-testballoonAddons = "0.6.2-RC"
+testballoonAddons = "0.7.0-RC"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }

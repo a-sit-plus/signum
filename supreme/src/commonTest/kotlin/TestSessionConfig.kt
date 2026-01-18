@@ -1,6 +1,7 @@
 import at.asitplus.testballoon.DataTest
 import at.asitplus.testballoon.FreeSpec
 import at.asitplus.testballoon.PropertyTest
+import at.asitplus.testballoon.TestBalloonAddons
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession
 import de.infix.testBalloon.framework.core.invocation
@@ -16,11 +17,5 @@ class ModuleTestSession : TestSession(
         //Don't make the heap explode
         DataTest.compactByDefault = true
         PropertyTest.compactByDefault = true
-        DataTest.defaultTestNameMaxLength = 5
-        DataTest.defaultDisplayNameMaxLength = 5
-        FreeSpec.defaultTestNameMaxLength = 5
-        FreeSpec.defaultDisplayNameMaxLength = 5
-        PropertyTest.defaultTestNameMaxLength = 5
-        PropertyTest.defaultDisplayNameMaxLength = 5
     }
 }
