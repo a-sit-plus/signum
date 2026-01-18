@@ -17,7 +17,7 @@ import kotlin.contracts.contract
 internal sealed interface Encryptor<out E : SymmetricEncryptionAlgorithm<*, *>> {
     //suspending init needs faux-ctor
     companion object {
-        suspend operator fun <I : NonceTrait, E : SymmetricEncryptionAlgorithm<*, I>> invoke(
+        suspend operator fun <I : NonceTrait<*>, E : SymmetricEncryptionAlgorithm<*, I>> invoke(
             algorithm: E,
             key: ByteArray,
             macKey: ByteArray?,
@@ -46,7 +46,7 @@ internal sealed interface Encryptor<out E : SymmetricEncryptionAlgorithm<*, *>> 
      */
     suspend fun encrypt(data: ByteArray): SealedBox<E>
 
-    class Mac<out I : NonceTrait, out E : SymmetricEncryptionAlgorithm.EncryptThenMAC<I>>(
+    class Mac<out I : NonceTrait<*>, out E : SymmetricEncryptionAlgorithm.EncryptThenMAC<I>>(
         val platformCipher: PlatformCipher<SymmetricEncryptionAlgorithm<*, I>>,
         val algorithm: E,
         /*this needs to go here, because we implement boltend-on AEAD in this file here, not in PlatformCipher*/
