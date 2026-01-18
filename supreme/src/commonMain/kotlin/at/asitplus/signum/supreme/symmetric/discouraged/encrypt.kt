@@ -21,10 +21,10 @@ import kotlin.jvm.JvmName
  */
 @HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptAuthenticatedWithNonce")
-suspend fun <A : AuthCapability.Authenticated> KeyWithNonceAuthenticating<A>.encrypt(
+suspend fun <E: SymmetricEncryptionAlgorithm.AuthenticatedRequiringNonce> KeyWithNonceAuthenticating<E>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox<A, NonceTrait.Required>> = catching {
+): KmmResult<SealedBox<E>> = catching {
     val second = second
     @OptIn(SecretExposure::class) Encryptor(
         second.algorithm,
@@ -46,9 +46,9 @@ suspend fun <A : AuthCapability.Authenticated> KeyWithNonceAuthenticating<A>.enc
  */
 @HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptWithNonce")
-suspend fun <A : AuthCapability> KeyWithNonce<A>.encrypt(
+suspend fun <E: SymmetricEncryptionAlgorithm.RequiringNonce<*>> KeyWithNonce<E>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox.WithNonce<A>> = catching {
+): KmmResult<SealedBox<E>> = catching {
     val first = first
     @OptIn(SecretExposure::class) Encryptor(
         first.algorithm,
@@ -56,7 +56,7 @@ suspend fun <A : AuthCapability> KeyWithNonce<A>.encrypt(
         if (first.hasDedicatedMacKey()) first.macKey.getOrThrow() else null,
         second,
         null,
-    ).encrypt(data) as SealedBox.WithNonce<A>
+    ).encrypt(data)
 }
 
 /**
@@ -65,11 +65,10 @@ suspend fun <A : AuthCapability> KeyWithNonce<A>.encrypt(
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <A : AuthCapability> SymmetricKey<A, NonceTrait.Required>.andPredefinedNonce(nonce: ByteArray) =
-    catching {
-        require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
-        KeyWithNonce(this, nonce)
-    }
+fun <E: SymmetricEncryptionAlgorithm.RequiringNonce<*>> SymmetricKey<E>.andPredefinedNonce(nonce: ByteArray) = catching {
+    require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
+    KeyWithNonce(this, nonce)
+}
 
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
@@ -78,17 +77,16 @@ fun <A : AuthCapability> SymmetricKey<A, NonceTrait.Required>.andPredefinedNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <A : AuthCapability.Authenticated> SymmetricKey<out A, NonceTrait.Required>.andPredefinedNonce(
+fun <E: SymmetricEncryptionAlgorithm.AuthenticatedRequiringNonce> SymmetricKey<E>.andPredefinedNonce(
     nonce: ByteArray
-) =
-    catching {
-        require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
-        KeyWithNonceAuthenticating(nonce, this)
-    }
+) = catching {
+    require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
+    KeyWithNonceAuthenticating(nonce, this)
+}
 
-private typealias KeyWithNonce<A> = Pair<SymmetricKey<out A, NonceTrait.Required>, ByteArray>
+private typealias KeyWithNonce<E> = Pair<SymmetricKey<E>, ByteArray>
 //first and second are deliberately swapped to avoid mixups
-private typealias KeyWithNonceAuthenticating<A> = Pair<ByteArray, SymmetricKey<out A, NonceTrait.Required>>
+private typealias KeyWithNonceAuthenticating<E> = Pair<ByteArray, SymmetricKey<E>>
 
 
 val KeyWithNonceAuthenticating<*>.nonce: ByteArray @JvmName("nonceAuthenticating") get() = first
