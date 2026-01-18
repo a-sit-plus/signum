@@ -11,6 +11,7 @@ import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -337,7 +338,14 @@ val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
         //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
-
+val HMAC.jcaName: String
+    get() = when (this) {
+        HMAC.SHA1 -> "HmacSHA1"
+        HMAC.SHA256 -> "HmacSHA256"
+        HMAC.SHA384 -> "HmacSHA384"
+        HMAC.SHA512 -> "HmacSHA512"
+        else -> TODO("unuspported")
+    }
 /**
  * An encryption algorithm's JCA name. This is publicly exposed because it could come in handy under _very specific_ circumstances.
  * **Double and triple check before feeding this into `Cipher.getInstance`!**.
