@@ -26,7 +26,6 @@ internal class JcaPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
             algorithm.requiresNonce() -> {
             require(nonce != null) { "Nonce is required for ${algorithm.name}!" }
 
-                @Suppress("UNCHECKED_CAST")
                 when (algorithm) {
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce, aad)
                     is SymmetricEncryptionAlgorithm.AES<*, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
@@ -59,7 +58,6 @@ internal class JcaPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
             false -> Pair(jcaCiphertext, null)
         }
 
-        @Suppress("UNCHECKED_CAST")
         return when {
             algorithm.requiresNonce() -> when {
                 algorithm.isAuthenticated() -> {
