@@ -13,14 +13,14 @@ private inline fun randomBytes(n: Int, random: CryptoRand = CryptoRand.Default):
 /**
  * Generates a fresh random key for this algorithm.
  */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> E.randomKey() =
     @OptIn(HazardousMaterials::class) randomKey(CryptoRand.Default)
 /**
  * Generates a fresh random key for this algorithm.
  */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
 suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> E.randomKey(
@@ -85,7 +85,6 @@ private fun SymmetricEncryptionAlgorithm<*, *>.checkKeySize(
  * @throws IllegalArgumentException if the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyIntegrated")
-@Suppress("UNCHECKED_CAST")
 @Throws(Throwable::class)
 fun <E : SymmetricEncryptionAlgorithm.Integrated<*>> E.keyFrom(
     secretKey: ByteArray
@@ -100,7 +99,6 @@ fun <E : SymmetricEncryptionAlgorithm.Integrated<*>> E.keyFrom(
  */
 @OptIn(HazardousMaterials::class)
 @JvmName("fixedKeyDedicatedMacKey")
-@Suppress("UNCHECKED_CAST")
 @Throws(Throwable::class)
 fun <E : SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> E.keyFrom(
     encryptionKey: ByteArray,
