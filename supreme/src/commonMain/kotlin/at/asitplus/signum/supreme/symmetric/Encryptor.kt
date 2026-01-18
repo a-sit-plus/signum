@@ -4,6 +4,8 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.supreme.mac.mac
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 /**
  * Additional abstraction layer atop [PlatformCipher]. Currently, this is used to
@@ -12,45 +14,28 @@ import at.asitplus.signum.supreme.mac.mac
  *
  * Given we have ECB, we would use it to implement more modes of operation.
  */
-internal class Encryptor<A : AuthCapability, I : NonceTrait> private constructor(
-    private val platformCipher: PlatformCipher<*, *>,
-    private val algorithm: SymmetricEncryptionAlgorithm<A, I>,
-    /*this needs to go here, because we implement boltend-on AEAD in this file here, not in PlatformCipher*/
-    private val macKey: ByteArray?,
-) {
-
+internal sealed interface Encryptor<out E : SymmetricEncryptionAlgorithm<*, *>> {
     //suspending init needs faux-ctor
     companion object {
-        suspend operator fun <A : AuthCapability, I : NonceTrait> invoke(
-            algorithm: SymmetricEncryptionAlgorithm<A, I>,
+        suspend operator fun <I : NonceTrait, E : SymmetricEncryptionAlgorithm<*, I>> invoke(
+            algorithm: E,
             key: ByteArray,
             macKey: ByteArray?,
             @OptIn(HazardousMaterials::class)
             nonce: ByteArray? = if (algorithm.requiresNonce()) algorithm.randomNonce() else null,
             aad: ByteArray?,
-
-            ): Encryptor<A, I> {
+        ): Encryptor<E> {
             if (algorithm.requiresNonce()) {
                 require(nonce != null) { "$algorithm requires a nonce" }
                 require(nonce.size.toUInt() == algorithm.nonceSize.bytes) { "$algorithm IV must be exactly ${algorithm.nonceSize} bits long" }
             }
             require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
-            val platformCipher = if (algorithm.hasDedicatedMac())
-                initCipher(
-                    PlatformCipher.Mode.ENCRYPT,
-                    algorithm.innerCipher,
-                    key,
-                    nonce,
-                    aad
-                )
-            else initCipher(
-                PlatformCipher.Mode.ENCRYPT,
+            return if (algorithm.hasDedicatedMac()) Mac(
+                initCipher(PlatformCipher.Mode.ENCRYPT, algorithm.innerCipher, key, nonce, aad),
                 algorithm,
-                key,
-                nonce,
-                aad
+                macKey ?: throw ImplementationError("AES-CBC-HMAC MAC key is null")
             )
-            return Encryptor<A, I>(platformCipher, algorithm, macKey)
+            else Integrated(initCipher(PlatformCipher.Mode.ENCRYPT, algorithm, key, nonce, aad))
         }
     }
 
@@ -59,52 +44,71 @@ internal class Encryptor<A : AuthCapability, I : NonceTrait> private constructor
      * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
      * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
-    internal suspend fun encrypt(data: ByteArray): SealedBox<A, I> {
-        //Our own, flexible construction to make any unauthenticated cipher into an authenticated cipher
-        if (algorithm.hasDedicatedMac()) {
+    suspend fun encrypt(data: ByteArray): SealedBox<E>
 
-            if (!algorithm.innerCipher.requiresNonce()) throw ImplementationError("AES-CBC-HMAC Nonce inconsistency")
-            if (macKey == null) throw ImplementationError("AES-CBC-HMAC MAC key is null")
+    class Mac<out I : NonceTrait, out E : SymmetricEncryptionAlgorithm.EncryptThenMAC<I>>(
+        val platformCipher: PlatformCipher<SymmetricEncryptionAlgorithm<*, I>>,
+        val algorithm: E,
+        /*this needs to go here, because we implement boltend-on AEAD in this file here, not in PlatformCipher*/
+        private val macKey: ByteArray,
+    ) : Encryptor<E> {
+        @OptIn(ExperimentalContracts::class)
+        fun requiresNonce(): Boolean {
+            contract {
+                returns(true) implies (this@Mac is Mac<NonceTrait.Required, SymmetricEncryptionAlgorithm.EncryptThenMAC<NonceTrait.Required>>)
+                returns(false) implies (this@Mac is Mac<NonceTrait.Without, SymmetricEncryptionAlgorithm.EncryptThenMAC<NonceTrait.Without>>)
+            }
+            return algorithm.requiresNonce()
+        }
 
-            val encrypted = platformCipher.doEncrypt(data)
+        suspend fun authTag(encrypted: SealedBox<*>, nonce: ByteArray): ByteArray {
             val macInputCalculation = algorithm.macInputCalculation
-            val hmacInput: ByteArray =
-                algorithm.macInputCalculation(
-                    encrypted.encryptedData,
-                    if (algorithm.requiresNonce()) platformCipher.nonce!! /*make it fail hard if not present*/ else byteArrayOf(),
-                    platformCipher.aad ?: byteArrayOf()
-                )
+            val hmacInput: ByteArray = algorithm.macInputCalculation(
+                encrypted.encryptedData,
+                nonce,
+                platformCipher.aad ?: byteArrayOf()
+            )
 
             val outputTransform = algorithm.macAuthTagTransform
-            val authTag = algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput).getOrThrow())
+            return algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput).getOrThrow())
+        }
 
-            @Suppress("UNCHECKED_CAST")
-            return (
-                    if (algorithm.requiresNonce()) {
-                        algorithm.sealedBox.withNonce((encrypted as SealedBox.WithNonce<*>).nonce).from(
-                            encrypted.encryptedData,
-                            authTag
-                        )
-                    } else (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated, NonceTrait.Without>).sealedBox.from(
+        override suspend fun encrypt(data: ByteArray): SealedBox<E> =
+            //Our own, flexible construction to make any unauthenticated cipher into an authenticated cipher
+            when {
+                !algorithm.innerCipher.requiresNonce() -> throw ImplementationError("AES-CBC-HMAC Nonce inconsistency")
+                requiresNonce() -> {
+                    val encrypted = platformCipher.doEncrypt(data)
+                    algorithm.sealedBox.withNonce(encrypted.nonce).from(
                         encrypted.encryptedData,
-                        authTag
+                        authTag(encrypted, encrypted.nonce)
                     )
-                    ).getOrThrow() as SealedBox<A, I>
+                }
 
-        } else @Suppress("UNCHECKED_CAST") return platformCipher.doEncrypt(data) as SealedBox<A, I>
+                else -> {
+                    val encrypted = platformCipher.doEncrypt(data)
+                    algorithm.sealedBox.from(encrypted.encryptedData, authTag(encrypted, byteArrayOf()))
+                }
+            }.getOrThrow()
+    }
+
+    private class Integrated<out E : SymmetricEncryptionAlgorithm.Integrated<*>>(
+        val platformCipher: PlatformCipher<E>,
+    ) : Encryptor<E> {
+        override suspend fun encrypt(data: ByteArray): SealedBox<E> = platformCipher.doEncrypt(data)
     }
 }
 
 /**
  * Platform cipher abstraction.
  */
-internal interface PlatformCipher<A : AuthCapability, I : NonceTrait> {
+internal interface PlatformCipher<out E : SymmetricEncryptionAlgorithm<*, *>> {
     /**
      * We could do away with the encrypt/decrypt state and add subclassses, etc. but then we'd just have double the glue
      * code, because every platform cipher works that way.
      */
     val mode: Mode
-    val algorithm: SymmetricEncryptionAlgorithm<A, I>
+    val algorithm: E
     val key: ByteArray
     val nonce: ByteArray?
     val aad: ByteArray?
@@ -112,7 +116,7 @@ internal interface PlatformCipher<A : AuthCapability, I : NonceTrait> {
 
     suspend fun doDecrypt(data: ByteArray, authTag: ByteArray?): ByteArray
 
-    suspend fun doEncrypt(data: ByteArray): SealedBox<A, I>
+    suspend fun doEncrypt(data: ByteArray): SealedBox<E>
 
     enum class Mode {
         ENCRYPT,
@@ -121,10 +125,10 @@ internal interface PlatformCipher<A : AuthCapability, I : NonceTrait> {
     }
 }
 
-internal expect suspend fun <A : AuthCapability, I : NonceTrait> initCipher(
+internal expect suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> initCipher(
     mode: PlatformCipher.Mode,
-    algorithm: SymmetricEncryptionAlgorithm<A, I>,
+    algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<A, I>
+): PlatformCipher<E>

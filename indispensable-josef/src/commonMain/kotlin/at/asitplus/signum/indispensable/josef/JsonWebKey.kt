@@ -358,7 +358,7 @@ data class JsonWebKey(
      * * [SymmetricEncryptionAlgorithm.AES.WRAP]
      *
      */
-    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *>> = catching {
+    override fun toSymmetricKey(): KmmResult<SymmetricKey<*>> = catching {
         require(algorithm is JweAlgorithm.Symmetric) { "Not a symmetric JweAlgorithm" }
         require(k != null) { "key bytes not present" }
         when (val alg = algorithm.algorithm) {
@@ -374,7 +374,7 @@ data class JsonWebKey(
  * correspond to a valid JWA `alg` identifier but will still be encoded.
  * * Allowed key operations can be restricted by specifying [includedOps]
  * */
-fun SymmetricKey<*, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): KmmResult<JsonWebKey> =
+fun SymmetricKey<*>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): KmmResult<JsonWebKey> =
     catching {
         @OptIn(SecretExposure::class)
         JsonWebKey(
@@ -390,7 +390,7 @@ fun SymmetricKey<*, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg included
  * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
  */
 @OptIn(SecretExposure::class)
-val SymmetricKey<*, *>.jsonWebKeyBytes
+val SymmetricKey<*>.jsonWebKeyBytes
     get() = catching {
         when (hasDedicatedMacKey()) {
             true -> macKey.getOrThrow() + encryptionKey.getOrThrow()
@@ -425,7 +425,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
 /**
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
-fun SymmetricKey<*, *>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<JsonWebKey> = catching {
+fun SymmetricKey<*>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<JsonWebKey> = catching {
     val jwAlg = this.algorithm.toJweKwAlgorithm().getOrThrow()
     JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
 }
@@ -445,7 +445,7 @@ var CryptoPublicKey.jwkId: String?
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
-var SymmetricKey<*, *>.jwkId: String?
+var SymmetricKey<*>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)

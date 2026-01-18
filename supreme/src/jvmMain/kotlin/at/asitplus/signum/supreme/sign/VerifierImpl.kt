@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
 import java.security.Signature
+import kotlin.contracts.contract
 
 /**
  * Configures JVM-specific properties.

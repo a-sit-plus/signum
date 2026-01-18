@@ -30,13 +30,13 @@ private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): B
 
 internal object AESIOS {
     @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
-    fun encrypt(
-        alg: SymmetricEncryptionAlgorithm.AES<*, *>,
+    fun <E: AES<*, *>> encrypt(
+        alg: E,
         data: ByteArray,
         key: ByteArray,
         nonce: ByteArray?,
         aad: ByteArray?
-    ) = when (alg) {
+    ): SealedBox<E> = when (alg) {
         is AES.CBC.Unauthenticated -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
             alg.sealedBox.withNonce(nonce!!).from(bytes).getOrThrow()
@@ -54,7 +54,7 @@ internal object AESIOS {
 
         is AES.GCM -> {
             val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce?.toNSData(), aad?.toNSData())
-            if (ciphertext == null) throw IllegalStateException("Error from swift code!")
+                ?: throw IllegalStateException("Error from swift code!")
             alg.sealedBox.withNonce(ciphertext.iv().toByteArray()).from(
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.authTag().toByteArray()
