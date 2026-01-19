@@ -1,9 +1,0 @@
-{
-  "module" : [
-    "indispensable-asn1",
-    "indispensable",
-    "indispensable-josef",
-    "indispensable-cosef",
-    "indispensable-oids"
-  ]
-}
