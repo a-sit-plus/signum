@@ -1,0 +1,45 @@
+{
+  "include": [
+    {
+      "os": "ubuntu-latest",
+      "name": "linuxNativeRunner",
+      "testArgs": "linuxX64Test --scan"
+    },
+    {
+      "os": "ubuntu-latest",
+      "name": "jvmRunner",
+      "testArgs": "jvmTest --scan"
+    },
+    {
+      "os": "ubuntu-latest",
+      "name": "androidRunner",
+      "enableKvm": true,
+      "testArgs": "pixelAVDAndroidDeviceTest --scan"
+    },
+    {
+      "os": "ubuntu-latest",
+      "name": "jsRunner",
+      "testArgs": "jsTest --scan"
+    },
+    {
+      "os": "windows-latest",
+      "name": "mingwRunner",
+      "testArgs": "mingwX64Test --scan"
+    },
+    {
+      "os": "macos-latest",
+      "name": "iosRunner",
+      "testArgs": "iosArm64MainKlibrary iosSimulatorArm64MainKlibrary iosSimulatorArm64Test --scan"
+    },
+    {
+      "os": "macos-latest",
+      "name": "appleOtherRunner",
+      "testArgs": "iosArm64MainKlibrary iosSimulatorArm64MainKlibrary tvosX64Test tvosSimulatorArm64Test watchosSimulatorArm64Test watchosX64Test iosX64Test macosArm64Test macosX64Test --scan"
+    },
+    {
+      "os": "macos-latest",
+      "name": "macRunner",
+      "testArgs": "allTests -x iosX64Test -x jvmTest -x jsTest --scan"
+    }
+  ]
+}

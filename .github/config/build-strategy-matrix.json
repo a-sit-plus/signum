@@ -1,0 +1,24 @@
+{
+  "include" : [
+    {
+      "module": "indispensable",
+      "artifactName": "Indispensable"
+    },
+    {
+      "module": "indispensable-asn1",
+      "artifactName": "IndispensableAsn1"
+    },
+    {
+      "module": "indispensable-josef",
+      "artifactName": "IndispensableJosef"
+    },
+    {
+      "module": "indispensable-cosef",
+      "artifactName": "IndispensableCosef"
+    },
+    {
+      "module": "supreme",
+      "artifactName": "SignumSupreme"
+    }
+  ]
+}
