@@ -42,7 +42,7 @@ jobs:
               core.setFailed('Missing entry-name input');
               return;
             }
-            const matrix = JSON.parse(fs.readFileSync('.github/test-strategy-matrix.json', 'utf8'));
+            const matrix = JSON.parse(fs.readFileSync('.github/config/test-strategy-matrix.json', 'utf8'));
             const entry = (matrix.include || []).find(e => e.name === entryName);
             if (!entry) {
               core.setFailed(`No matrix entry named "${entryName}"`);
