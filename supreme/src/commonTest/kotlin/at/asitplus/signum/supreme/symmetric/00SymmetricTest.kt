@@ -973,8 +973,7 @@ val SymmetricTest by testSuite {
         }
 
         "illegal nonce sizes" - {
-            withDataSuites(allAlgorithms.filter { it.requiresNonce() }) { alg ->
-                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*>
+            withDataSuites(allAlgorithms.mapNotNull { if (it.requiresNonce()) it else null }) { alg ->
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()

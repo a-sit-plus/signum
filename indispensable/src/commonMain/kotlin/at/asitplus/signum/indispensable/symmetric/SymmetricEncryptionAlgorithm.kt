@@ -222,12 +222,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<*>, out I :
              */
             class HMAC
             private constructor(
-                val innerCipher: Unauthenticated,
+                override val innerCipher: Unauthenticated,
                 val mac: at.asitplus.signum.indispensable.HMAC,
                 val macInputCalculation: MacInputCalculation,
                 val macAuthTagTransform: MacAuthTagTransformation,
                 val authTagSize: BitLength
             ) : RequiringNonce<AuthCapability.WithDedicatedMac>,
+                SymmetricEncryptionAlgorithmEncryptThenMac<NonceTrait.Required>,
                 CBC<AuthCapability.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
@@ -289,6 +290,10 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<*>, out I :
     }
 }
 
+private sealed interface SymmetricEncryptionAlgorithmEncryptThenMac<I: NonceTrait<*>>: SymmetricEncryptionAlgorithm.EncryptThenMAC<I> {
+    val innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated<I>
+}
+
 @OptIn(HazardousMaterials::class)
 val SymmetricEncryptionAlgorithm.Authenticated<*>.authTagSize: BitLength get() = when(this) {
     is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> authTagSize
@@ -302,8 +307,8 @@ val SymmetricEncryptionAlgorithm.Authenticated<*>.authTagSize: BitLength get() =
 @Suppress("UNCHECKED_CAST")
 @OptIn(HazardousMaterials::class)
 val <I : NonceTrait<*>> SymmetricEncryptionAlgorithm.EncryptThenMAC<I>.innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated<I>
-    get() = when(this) {
-        is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> innerCipher as SymmetricEncryptionAlgorithm.Unauthenticated<I>
+    get() = when (this) {
+        is SymmetricEncryptionAlgorithmEncryptThenMac -> innerCipher
         is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated, is SymmetricEncryptionAlgorithm.AES.ECB,
         is SymmetricEncryptionAlgorithm.AES.GCM, is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394,
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> absurd()
