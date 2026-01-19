@@ -24,6 +24,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlin.collections.mapNotNull
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Clock
@@ -954,7 +955,6 @@ val SymmetricTest by matrixSuite {
 
         "illegal nonce sizes" - {
             data(allAlgorithms.filter { it.requiresNonce() }) - { alg ->
-                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*>
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
