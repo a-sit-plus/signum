@@ -1,0 +1,23 @@
+name: Build Everything (JAR/XCFramework)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kotlin-version:
+        description: 'Override Kotlin version?'
+        required: false
+        default: ''
+        type: string
+      testballoon-version:
+        description: 'Override TestBalloon version (full version string)?'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  build-everything:
+    uses: a-sit-plus/internal-workflows/.github/workflows/build-everything.yml@feature/modularTests
+    with:
+      matrix-file-name: ".github/config/build-strategy-matrix.json"
+      kotlin-version: ${{ inputs.kotlin-version }}
+      testballoon-version: ${{ inputs.testballoon-version }}

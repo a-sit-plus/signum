@@ -78,6 +78,10 @@ kotlin {
     }
 }
 
+//Task alias for github action globbing
+tasks.register("assembleSignumSupremeXCFramework") {
+    dependsOn("assembleSupremeXCFramework")
+}
 
 /*
 exportXCFramework(
