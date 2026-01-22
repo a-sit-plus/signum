@@ -155,6 +155,10 @@ data class JsonWebToken(
     @SerialName("wallet_link")
     val walletLink: String? = null,
 
+    /**
+     * OPTIONAL: Data class containing information for instance/unit attestation
+     * See: https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
+     */
     @SerialName("eudi_wallet_info")
     val eudiWalletInfo: EudiWalletInfo? = null,
 
