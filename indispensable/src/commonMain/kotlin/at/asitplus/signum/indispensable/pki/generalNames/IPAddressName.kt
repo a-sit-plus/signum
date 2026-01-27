@@ -33,14 +33,14 @@ class IPAddressName internal constructor(
      */
     @Throws(Asn1Exception::class)
     constructor(address: IpAddress<*, *>, addressAndPrefix: IpAddressAndPrefix<*, *>? = null)
-      : this(address, addressAndPrefix, addressAndPrefix?.toX509Octets() ?: address.octets, true)
+            : this(address, addressAndPrefix, addressAndPrefix?.toX509Octets() ?: address.octets, true)
 
     /**
      * @throws Asn1Exception if illegal IpAddress is provided
      */
     @Throws(Asn1Exception::class)
     constructor(addressAndPrefix: IpAddressAndPrefix<*, *>)
-      : this(addressAndPrefix.address, addressAndPrefix, addressAndPrefix.toX509Octets(), true)
+            : this(addressAndPrefix.address, addressAndPrefix, addressAndPrefix.toX509Octets(), true)
 
     val network: IpNetwork<*, *>? by lazy {
         when (addressAndPrefix) {
@@ -123,7 +123,7 @@ class IPAddressName internal constructor(
                 this == input as IPAddressName -> GeneralNameOption.ConstraintResult.MATCH
 
                 network == null && input.network == null &&
-                  ((address!!.isV4() && input.address!!.isV4()) || (address!!.isV6() && input.address!!.isV6())) ->
+                        ((address!!.isV4() && input.address!!.isV4()) || (address!!.isV6() && input.address!!.isV6())) ->
                     GeneralNameOption.ConstraintResult.SAME_TYPE
 
                 network != null && input.network != null -> {
