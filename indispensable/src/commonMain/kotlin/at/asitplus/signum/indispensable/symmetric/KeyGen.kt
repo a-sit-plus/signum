@@ -14,25 +14,23 @@ private inline fun randomBytes(n: Int, random: CryptoRand = CryptoRand.Default):
 /**
  * Generates a fresh random key for this algorithm.
  */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
-suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey() =
+suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> E.randomKey() =
     @OptIn(HazardousMaterials::class) randomKey(CryptoRand.Default)
 /**
  * Generates a fresh random key for this algorithm.
  */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
-suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(
+suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> E.randomKey(
     random: CryptoRand
-): SymmetricKey<A, I, out K> =
-    keyFromInternal(
-        randomBytes(keySize.bytes.toInt(), random),
-        if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt(), random)
-        else null
-    ) as SymmetricKey<A, I, out K>
-
+): SymmetricKey<E> {
+    val bytes = randomBytes(keySize.bytes.toInt(), random)
+    return (if (hasDedicatedMac()) keyFrom(bytes, randomBytes(preferredMacKeyLength.bytes.toInt(), random))
+    else keyFrom(bytes)).getOrThrow()
+}
 
 
 /**
@@ -40,8 +38,7 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
  * [macKeyLength] can be specified to override [preferredMacKeyLength].
  */
 @JvmName("randomKeyAndMacKey")
-@Suppress("UNCHECKED_CAST")
-suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
+suspend fun <E : SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> E.randomKey(
     macKeyLength: BitLength
 ) = @OptIn(HazardousMaterials::class) randomKey(macKeyLength, CryptoRand.Default)
 /**
@@ -49,16 +46,15 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
  * [macKeyLength] can be specified to override [preferredMacKeyLength].
  */
 @JvmName("randomKeyAndMacKey")
-@Suppress("UNCHECKED_CAST")
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
-suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
+suspend fun <E : SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> E.randomKey(
     macKeyLength: BitLength,
     random: CryptoRand
-): SymmetricKey.WithDedicatedMac<I> =
-    keyFromInternal(
+): SymmetricKey<E> =
+    keyFrom(
         randomBytes(keySize.bytes.toInt(), random),
         randomBytes(macKeyLength.bytes.toInt(), random)
-    ) as SymmetricKey.WithDedicatedMac<I>
+    ).getOrThrow()
 
 
 /**
@@ -66,7 +62,7 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
  * You typically don't want to use this, but have your nonces auto-generated during the encryption process
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
-fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteArray =
+fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required>.randomNonce(): ByteArray =
     @OptIn(HazardousMaterials::class) randomNonce(CryptoRand.Default)
 
 /**
@@ -75,81 +71,43 @@ fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteA
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
 @HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
-fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(random: CryptoRand): ByteArray =
+fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required>.randomNonce(random: CryptoRand): ByteArray =
     randomBytes((nonceSize.bytes).toInt(), random)
 
 
 @OptIn(HazardousMaterials::class)
-private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
+private fun SymmetricEncryptionAlgorithm<*, *>.checkKeySize(
     bytes: ByteArray,
-    dedicatedMacKey: ByteArray?
-): SymmetricKey<*, *, *> {
+) =
     require(bytes.size == this.keySize.bytes.toInt()) { "Invalid key size: ${bytes.size * 8}. Required: keySize=${bytes.size.bitLength}" }
-    dedicatedMacKey?.let {
-        require(it.isNotEmpty()) { "Dedicated MAC key is empty!" }
-    }
-    @OptIn(HazardousMaterials::class)
-    return when (this.requiresNonce()) {
-        true -> when (isAuthenticated()) {
-            true -> when (isIntegrated()) {
-                false -> SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
-                true -> SymmetricKey.Integrated.Authenticating.RequiringNonce(this, bytes)
-            }
-
-            false -> SymmetricKey.Integrated.NonAuthenticating.RequiringNonce(this, bytes)
-        }
-
-        false -> when (isAuthenticated()) {
-            true -> when (isIntegrated()) {
-                false -> SymmetricKey.WithDedicatedMac.WithoutNonce(this, bytes, dedicatedMacKey!!)
-                true -> SymmetricKey.Integrated.Authenticating.WithoutNonce(this, bytes)
-            }
-
-            false -> SymmetricKey.Integrated.NonAuthenticating.WithoutNonce(this, bytes)
-        }
-    }
-}
 
 /**
  * Creates a [SymmetricKey] from the specified [secretKey].
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyIntegrated")
-@Suppress("UNCHECKED_CAST")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
+fun <E : SymmetricEncryptionAlgorithm.Integrated<*>> E.keyFrom(
     secretKey: ByteArray
-): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
-    catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(secretKey, null)
-    } as KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>>
-
-
-/**
- * Creates a [SymmetricKey] from the specified [secretKey].
- * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
- */
-@JvmName("fixedKeyAuthenticatedIntegrated")
-@Suppress("UNCHECKED_CAST")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
-    secretKey: ByteArray
-): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
-    catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(secretKey, null)
-    } as KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>>
+): KmmResult<SymmetricKey<E>> = catching {
+    checkKeySize(secretKey)
+    SymmetricKey.Integrated(this, secretKey)
+}
 
 /**
  * Creates a [SymmetricKey] from the specified [encryptionKey] and [macKey].
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize] or the specified [macKey] is empty.
  */
+@OptIn(HazardousMaterials::class)
 @JvmName("fixedKeyDedicatedMacKey")
-@Suppress("UNCHECKED_CAST")
-fun <A : AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I, KeyType.WithDedicatedMacKey>.keyFrom(
+fun <E : SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> E.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
-): KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>> =
+): KmmResult<SymmetricKey<E>> =
     catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(encryptionKey, macKey)
-    } as KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>>
+        checkKeySize(encryptionKey)
+        require(macKey.isNotEmpty()) { "Dedicated MAC key is empty!" }
+        SymmetricKey.WithDedicatedMac(this, encryptionKey, macKey)
+    }
 
 
 suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey() =

@@ -1,8 +1,5 @@
 package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.symmetric.AuthCapability
-import at.asitplus.signum.indispensable.symmetric.KeyType
-import at.asitplus.signum.indispensable.symmetric.NonceTrait
 import at.asitplus.signum.indispensable.symmetric.SealedBox
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.from
@@ -16,16 +13,17 @@ import kotlinx.cinterop.ExperimentalForeignApi
 
 internal object ChaChaIOS {
     @OptIn(ExperimentalForeignApi::class)
-    fun encrypt(
+    @Suppress("FINAL_UPPER_BOUND")
+    fun <E: SymmetricEncryptionAlgorithm.ChaCha20Poly1305> encrypt(
+        algorithm: E,
         data: ByteArray,
         key: ByteArray,
         nonce: ByteArray,
         aad: ByteArray?
-    ): SealedBox<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated> {
+    ): SealedBox<E> {
         val ciphertext = ChaCha.encrypt(data.toNSData(), key.toNSData(), nonce.toNSData(), aad?.toNSData())
-        if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
-        @Suppress("UNCHECKED_CAST")
-        return SymmetricEncryptionAlgorithm.ChaCha20Poly1305.sealedBox.withNonce( ciphertext.iv().toByteArray()).from(
+            ?: throw UnsupportedOperationException("Error from swift code!")
+        return algorithm.sealedBox.withNonce(ciphertext.iv().toByteArray()).from(
             ciphertext.ciphertext().toByteArray(),
             ciphertext.authTag().toByteArray()
         ).getOrThrow()

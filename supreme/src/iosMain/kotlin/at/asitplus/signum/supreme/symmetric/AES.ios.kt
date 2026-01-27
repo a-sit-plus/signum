@@ -11,14 +11,14 @@ import at.asitplus.signum.supreme.symmetric.internal.ios.GCM
 import kotlinx.cinterop.*
 import platform.CoreCrypto.*
 
-private fun BlockCipher<*, *, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
+private fun BlockCipher<*, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
     val blockBytes = blockSize.bytes.toInt()
     val diff = blockBytes - (plain.size % blockBytes)
     return plain + ByteArray(diff) { diff.toByte() }
 }
 
 
-private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
+private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
     val paddingBytes = plainWithPadding.last().toInt()
     require(paddingBytes > 0) { "Illegal padding: $paddingBytes" }
     require(paddingBytes <= blockSize.bytes.toInt()) { "Illegal padding: $paddingBytes" }
@@ -30,13 +30,13 @@ private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray)
 
 internal object AESIOS {
     @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
-    fun encrypt(
-        alg: SymmetricEncryptionAlgorithm.AES<*, *, *>,
+    fun <E: AES<*, *>> encrypt(
+        alg: E,
         data: ByteArray,
         key: ByteArray,
         nonce: ByteArray?,
         aad: ByteArray?
-    ) = when (alg) {
+    ): SealedBox<E> = when (alg) {
         is AES.CBC.Unauthenticated -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
             alg.sealedBox.withNonce(nonce!!).from(bytes).getOrThrow()
@@ -54,7 +54,7 @@ internal object AESIOS {
 
         is AES.GCM -> {
             val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce?.toNSData(), aad?.toNSData())
-            if (ciphertext == null) throw IllegalStateException("Error from swift code!")
+                ?: throw IllegalStateException("Error from swift code!")
             alg.sealedBox.withNonce(ciphertext.iv().toByteArray()).from(
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.authTag().toByteArray()
@@ -84,7 +84,7 @@ internal object AESIOS {
 
     @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
     internal fun cbcEcbCrypt(
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>,
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, out AuthCapability.Integrated>,
         encrypt: Boolean,
         secretKey: ByteArray,
         nonce: ByteArray?,
@@ -171,7 +171,7 @@ internal object AESIOS {
     }
 }
 
-val SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>.iosOptions: UInt
+val SymmetricEncryptionAlgorithm.AES<*, out AuthCapability.Integrated>.iosOptions: UInt
     get() = @OptIn(HazardousMaterials::class) when (this) {
         is AES.CBC.Unauthenticated, is AES.WRAP.RFC3394 -> 0u //no options (=manual padding).
         is AES.ECB -> kCCOptionECBMode

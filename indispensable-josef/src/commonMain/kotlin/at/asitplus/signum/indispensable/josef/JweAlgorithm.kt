@@ -23,7 +23,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
     @Serializable(with = JweAlgorithmSerializer::class)
     object ECDH_ES : JweAlgorithm("ECDH-ES")
 
-    sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*,*>)
+    sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*>)
         : JweAlgorithm(identifier), SpecializedSymmetricEncryptionAlgorithm {
 
         companion object {
@@ -103,7 +103,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
  *
  * @return `null` if no mapping exists
  */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): KmmResult<JweAlgorithm.Symmetric> = catching {
+fun SymmetricEncryptionAlgorithm<*, *>.toJweKwAlgorithm(): KmmResult<JweAlgorithm.Symmetric> = catching {
     when (this) {
         SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
         SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW

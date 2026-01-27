@@ -49,7 +49,7 @@ sealed interface CoseAlgorithm {
     }
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class SymmetricEncryption(override val coseValue: Int, override val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
+    sealed class SymmetricEncryption(override val coseValue: Int, override val algorithm: SymmetricEncryptionAlgorithm<*, *>) :
         CoseAlgorithm.Symmetric, SpecializedSymmetricEncryptionAlgorithm {
 
 
@@ -239,7 +239,7 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
 }
 
 /** Tries to find a matching COSE algorithm. Note that only AES-GCM and ChaCha/Poly are supported. */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
+fun SymmetricEncryptionAlgorithm<*, *>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
     when (this) {
         SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
         SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM

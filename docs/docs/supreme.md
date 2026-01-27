@@ -426,7 +426,7 @@ Every one of the following subsections has their own part on contracts.
 All contracts can be combined, meaning it is possible to steadily narrow down the properties of an object.
 
 * `isAuthenticated()`
-    * if `true`, smart-casts the object's AuthCapability to `AuthCapability.Authenticated<*>`
+    * if `true`, smart-casts the object's AuthCapability to `AuthCapability.Authenticated`
     * if `false` smart-casts the object's AuthCapability to `AuthCapability.Unathenticated`
 * `hasDedicatedMac()`
     * if `true`, smart-casts the object's
@@ -457,7 +457,7 @@ Cryptographic algorithms have various obvious properties, such as the underlying
 Taking all [characteristics](#characteristics) into account results in the following class definition:
 
 ```kotlin
-SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType>
+SymmetricEncryptionAlgorithm<out A : AuthCapability, out I : NonceTrait>
 ```
 
 As can be seen, this leaves quite some degrees of freedom, especially for AES-based encryption algorithms, which do exhaust

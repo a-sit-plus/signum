@@ -253,11 +253,13 @@ object AndroidKeyStoreProvider:
 
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
-        val algorithm = when (publicKey) {
+        when (publicKey) {
             is CryptoPublicKey.EC -> {
                 val ecConfig = config.ec.v
                 val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
-                SignatureAlgorithm.ECDSA(digest, publicKey.curve)
+                AndroidKeystoreSigner.ECDSA(
+                    jcaPrivateKey, alias, keyInfo, config, publicKey,
+                    attestation, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
             }
             is CryptoPublicKey.RSA -> {
                 val rsaConfig = config.rsa.v
@@ -268,19 +270,10 @@ object AndroidKeyStoreProvider:
                         RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
                     }
                 }
-                SignatureAlgorithm.RSA(digest, padding)
-            }
-        }
-
-        return@catching when (publicKey) {
-            is CryptoPublicKey.EC ->
-                AndroidKeystoreSigner.ECDSA(
-                    jcaPrivateKey, alias, keyInfo, config, publicKey,
-                    attestation, algorithm as SignatureAlgorithm.ECDSA)
-            is CryptoPublicKey.RSA ->
                 AndroidKeystoreSigner.RSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
-                    attestation, algorithm as SignatureAlgorithm.RSA)
+                    attestation, SignatureAlgorithm.RSA(digest, padding))
+            }
         }
     }}
 

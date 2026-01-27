@@ -7,26 +7,22 @@ import at.asitplus.signum.internals.ImplementationError
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-internal actual suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
+internal actual suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> initCipher(
     mode: PlatformCipher.Mode,
-    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<A, I, K> {
-
-    @Suppress("UNCHECKED_CAST")
-    return IosPlatformCipher<A, I, K>(mode, algorithm, key, nonce, aad)
-}
+): PlatformCipher<E> = IosPlatformCipher(mode, algorithm, key, nonce, aad)
 
 
-private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>(
+private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
     override val mode: PlatformCipher.Mode,
-    override val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
+    override val algorithm: E,
     override val key: ByteArray,
     override val nonce: ByteArray?,
     override val aad: ByteArray?,
-) : PlatformCipher<A, I, K> {
+) : PlatformCipher<E> {
 
     //the oneshot ccrypt is fully stateless. no init, no update, no final, so we are stateless here too
 
@@ -36,9 +32,9 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
         return when (algorithm.isAuthenticated()) {
             true -> {
                 if (!algorithm.isIntegrated()) throw ImplementationError("iOS AEAD algorithm mapping")
-                if (algorithm.nonceTrait !is NonceTrait.Required) TODO("ALGORITHM $algorithm UNSUPPORTED")
+                if (!algorithm.requiresNonce()) TODO("ALGORITHM $algorithm UNSUPPORTED")
                 when (algorithm) {
-                    is AES<*, *, *> -> AESIOS.gcmDecrypt(data, key, nonce!!, authTag!!, aad)
+                    is AES<*, *> -> AESIOS.gcmDecrypt(data, key, nonce!!, authTag!!, aad)
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
                         data,
                         key,
@@ -46,15 +42,13 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
                         authTag!!,
                         aad
                     )
-                    else -> TODO("ALGORITHM UNSUPPORTED")
                 }
             }
 
             false -> {
-                require(algorithm is AES<*, *, *>) { "Only AES is supported" }
-                @Suppress("UNCHECKED_CAST")
+                require(algorithm is AES<*, AuthCapability.Unauthenticated>) { "Only AES is supported" }
                 AESIOS.cbcEcbCrypt(
-                    algorithm as AES<*, KeyType.Integrated, *>,
+                  algorithm,
                     encrypt = false,
                     key,
                     nonce,
@@ -62,6 +56,7 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
                     pad = when (algorithm) {
                         is AES.CBC.Unauthenticated, is AES.ECB -> true
                         is AES.WRAP.RFC3394 -> false
+                        is AES.GCM -> algorithm.absurd()
                     }
                 )
             }
@@ -69,13 +64,11 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    override suspend fun doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    override suspend fun doEncrypt(data: ByteArray): SealedBox<E> {
         require(mode == PlatformCipher.Mode.ENCRYPT) { "Cipher not in ENCRYPT mode!" }
-        @Suppress("UNCHECKED_CAST")
         return when (algorithm) {
-            is AES<*, *, *> -> AESIOS.encrypt(algorithm, data, key, nonce, aad)
-            is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, key, nonce!!, aad)
-            else -> TODO("ALGORITHM $algorithm UNSUPPORTED")
-        } as SealedBox<A, I, K>
+            is AES<*, *> -> AESIOS.encrypt(algorithm, data, key, nonce, aad)
+            is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(algorithm, data, key, nonce!!, aad)
+        }
     }
 }
