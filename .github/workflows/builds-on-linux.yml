@@ -1,4 +1,4 @@
-name: Build Linux Frameworks
+name: Test Linux Build
 on:
   # still run checks on every PR *before* the merge
   pull_request:
@@ -36,4 +36,4 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Try Linux build
-        run: ./gradlew assemble
+        run: ./gradlew publishToMavenLocal
