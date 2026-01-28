@@ -8,6 +8,7 @@ import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.testing.Test
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -264,20 +265,20 @@ private fun KotlinMultiplatformExtension.getBuildableTargets() =
         }
     }
 
-
-fun KotlinMultiplatformExtension.indispensableTargets() {
-
-    val disableAppleTargets = System.getenv("disableAppleTargets")
+val Project.disableAppleTargets
+    get() = "true" == (System.getenv("disableAppleTargets")
         ?.also { Logger.lifecycle("  > Property disableAppleTargets set to $it from environment") }
         ?: runCatching {
             (project.extraProperties["disableAppleTargets"] as String).also {
                 Logger.lifecycle("  > Property disableAppleTargets set to $it from extra properties")
             }
-        }.getOrNull()
+        }.getOrElse { if(!OperatingSystem.current().isMacOsX) "true" else null })
+
+fun KotlinMultiplatformExtension.indispensableTargets() {
 
     jvm()
 
-    if ("true" != disableAppleTargets) {
+    if (!project.disableAppleTargets) {
         macosArm64()
         macosX64()
         tvosArm64()

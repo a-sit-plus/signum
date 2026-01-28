@@ -8,6 +8,15 @@ Pull requests will be used to merge finished features from their feature branch 
 Each pull request will result in a single squashed feature commit on `development`, which references the original pull request.
 **Pull requests must never be merged into `main`**, since doing so would cause `main` and `development` to diverge.
 
+## Built-In Preflight Checks
+This project ensures that Android and Apple targets are disabled when the host does not support it.
+This means the Android Gradle Plugin is not even enabled and Android sources are not wired unless an Android SDK is correctly wired.
+`disableAppleTargets` can be set either through environment variable or `local.properties`. The Android SDK can be wired into this project by all supported means
+
+> [!WARNING]  
+> When including Signum as part of a composite build and not using environment variables to setup an Android SDK or to enable/disable apple targets,
+> make sure that local.properties with the correct settings is also present inside the **Signum** project directory in addition to the root project's!
+
 ## Release process
 
 Both `main` and `development` are branch-protected against direct commits.

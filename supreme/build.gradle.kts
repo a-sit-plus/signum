@@ -20,7 +20,7 @@ signumConventions {
 kotlin {
     jvm()
 
-    val iosTargets = listOf(iosArm64(), iosX64(), iosSimulatorArm64())
+    val iosTargets = if (disableAppleTargets) listOf() else listOf(iosX64(), iosArm64(), iosSimulatorArm64())
     // Adapted from https://github.com/openwallet-foundation/multipaz
     iosTargets.forEach { target ->
         val platform = when (target.name) {
@@ -72,7 +72,7 @@ kotlin {
             implementation("com.lambdaworks:scrypt:1.4.0")
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }
-        iosMain {
+        if (!disableAppleTargets) iosMain {
             if (!HostManager.hostIsMac) kotlin.srcDir("src/iosMain/stubbed")
         }
     }

@@ -57,7 +57,7 @@
     * Kotlinx.io 0.8.0
     * crypto-rand 0.6.0
 * Build Setup:
-    * Remove Swift-Klib and massively cleanup Swift Interop 
+    * Remove Swift-Klib and massively cleanup Swift Interop
 
 
 ### 3.18.1 / Supreme 0.10.1
@@ -97,8 +97,8 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
     * scrypt
 * X.509 Revamp
     * Introduce `X509SignatureAlgorithmDescription`, which is the OID + params pair that identifies a `X509SignatureAlgorithm`
-      * Instances of `X509SignatureAlgorithm` represent algorithms that are known to Signum
-      * Test `.isSupported()` or `.requireSupported()` (with contract smart-cast support)
+        * Instances of `X509SignatureAlgorithm` represent algorithms that are known to Signum
+        * Test `.isSupported()` or `.requireSupported()` (with contract smart-cast support)
     * `X509Certificate` and `Pkcs10CertificationRequest` now use `X509SignatureAlgorithmDescription` to represent a non-validated signature algorithm
     * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Primitive` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
         * Use the new KmmResult-returning `decodedSignature` and `decodedPublicKey` members to replace `publicKey` and `signature`, respectively.
@@ -130,7 +130,7 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
 * Strippable `KnownOIDs`
     * Move `KnownOIDs` into a discrete module `indispensable-oids`
 * OID descriptions:
-    * `KnownOIDs` now implements `MutableMap<ObjectIdentifier, String>` to store and look up descriptions of Object Identifiers 
+    * `KnownOIDs` now implements `MutableMap<ObjectIdentifier, String>` to store and look up descriptions of Object Identifiers
     * OIDs can hence be described using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"`
     * OID descriptions are exposed in accordance with the map interface: `KnownOIDs[theExpressionistsOid]` will yield `"Edvard Munch"` if this description was added prior.
     * All OIDs present in `KnownOIDs` shipped with the `indispensable-oids` module come with a description. To actually add them to all known descriptions, call `KnownOIDs.describeAll()` once.
@@ -142,7 +142,7 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
 * In `JwsHeader` add property `vcTypeMetadata` with key `vctm`, see [SD-JWT VC](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-10.html#name-sd-jwt-vc-type-metadata)
 * Dependency Updates:
     * Kotlin 2.2.0
-    * AGP 8.10.0 
+    * AGP 8.10.0
     * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
         * This fixes key generation in WASM/JS
     * kotlinx.io 0.7.0
@@ -429,7 +429,7 @@ The full list of changes is:
 ### 3.8.1 (Supreme 0.3.1)
 * Hotfix for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
 * Disables export of `Asn1Element.Tag` class to ObjC. Signum remains usable for KMP projects,
-the Tag class just cannot be directly accessed from Swift and ObjC any more.
+  the Tag class just cannot be directly accessed from Swift and ObjC any more.
 
 ### 3.8.0 (Supreme 0.3.0) Breaking Changes Ahead!
 * Completely revamped ASN.1 Tag Handling
@@ -623,7 +623,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
- 
+
 ## 2.0
 
 ### 2.6.0
@@ -692,7 +692,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
     * Throw `IllegalArgumentException` for input-related errors
     * Add `xxxOrNull()` functions for all encoding/decoding/parsing functions
     * Add `xxxSafe()` functions to encapsulate encoding/decoding in `KmmResult`
-    * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`) 
+    * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`)
 
 
 ### 2.0.0
