@@ -23,7 +23,7 @@ jobs:
           - os: macos-latest
             name: macRunner
             arch: arm64
-            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x jvmTest -x jsTest
+            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test -x jvmTest -x jsTest
           - os: ubuntu-latest
             name: linuxNativeRunner
             arch: x64

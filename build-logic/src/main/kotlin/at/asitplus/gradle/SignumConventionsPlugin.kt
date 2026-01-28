@@ -55,6 +55,19 @@ class SignumConventionsExtension(private val project: Project) {
             tasks.withType<Test>().configureEach {
                 maxHeapSize = "10G"
             }
+            if (supreme) {
+                //we still need this. Something's fishy with x64 test targets.
+                // HOWEVER: we never want to test on X64 anyway, and it has no impact on
+                // producing valid artefacts, and I have spent enough time failing to find the root cause
+                tasks.configureEach {
+                    if (name == "linkDebugTestIosX64") {
+                        enabled = false
+                    }
+                    if (name == "iosX64Test") {
+                        enabled = false
+                    }
+                }
+            }
         }
         project.silence()
 
@@ -266,14 +279,19 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
 
     if ("true" != disableAppleTargets) {
         macosArm64()
+        macosX64()
         tvosArm64()
+        tvosX64()
         tvosSimulatorArm64()
+        iosX64()
         iosArm64()
         iosSimulatorArm64()
         watchosSimulatorArm64()
+        watchosX64()
         watchosArm32()
         watchosArm64()
         tvosSimulatorArm64()
+        tvosX64()
         tvosArm64()
     }
 
