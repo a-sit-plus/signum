@@ -1,5 +1,6 @@
 package at.asitplus.gradle
 
+import at.asitplus.gradle.at.asitplus.gradle.addTestExtensions
 import com.android.build.api.dsl.androidLibrary
 import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
 import org.gradle.api.Plugin
@@ -11,6 +12,7 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.extraProperties
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
@@ -47,10 +49,12 @@ class SignumConventionsExtension(private val project: Project) {
         project.version = indispensableVersion
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
+            //work around IDEA BUG not finding any test deps on non-JVM!
+            (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets.filter { it.name.endsWith("Test") }
+                .forEach { it.dependencies { addTestExtensions() } }
             tasks.withType<Test>().configureEach {
                 maxHeapSize = "10G"
             }
-
             if (supreme) {
                 //we still need this. Something's fishy with x64 test targets.
                 // HOWEVER: we never want to test on X64 anyway, and it has no impact on
@@ -228,7 +232,6 @@ class SignumConventionsExtension(private val project: Project) {
 
 fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
     SignumConventionsExtension(this).init()
-
 }
 
 
@@ -311,6 +314,7 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     linuxX64()
     linuxArm64()
     mingwX64()
+
 }
 
 
