@@ -11,10 +11,13 @@ Each pull request will result in a single squashed feature commit on `developmen
 ## Built-In Preflight Checks
 This project ensures that Android and Apple targets are disabled when the host does not support it.
 This means the Android Gradle Plugin is not even enabled and Android sources are not wired unless an Android SDK is correctly wired.
-`disableAppleTargets` can be set either through environment variable or `local.properties`. The Android SDK can be wired into this project by all supported means
+`disableAppleTargets` can be set either through environment variable or `local.properties`. The Android SDK can be wired into this project by all supported means.
+
+If you need to manually disable Android NDK-based targets (which are also disabled if no NDK is found, similarly to the SDK), set `disableNdkTargets` to `true`;
+either through extra properties or through an environment variable.
 
 > [!WARNING]  
-> When including Signum as part of a composite build and not using environment variables to setup an Android SDK or to enable/disable apple targets,
+> When including Signum as part of a composite build and not using environment variables to setup an Android SDK(NDK) or to enable/disable apple targets,
 > make sure that local.properties with the correct settings is also present inside the **Signum** project directory in addition to the root project's!
 
 ## Release process

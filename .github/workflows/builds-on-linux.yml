@@ -36,4 +36,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Try Linux build
+        env:
+          disableNdkTargets: "true"
         run: ./gradlew publishToMavenLocal

@@ -266,13 +266,22 @@ private fun KotlinMultiplatformExtension.getBuildableTargets() =
     }
 
 val Project.disableAppleTargets
-    get() = "true" == (System.getenv("disableAppleTargets")
+    get() = ("true" == (System.getenv("disableAppleTargets")
         ?.also { Logger.lifecycle("  > Property disableAppleTargets set to $it from environment") }
         ?: runCatching {
             (project.extraProperties["disableAppleTargets"] as String).also {
                 Logger.lifecycle("  > Property disableAppleTargets set to $it from extra properties")
             }
-        }.getOrElse { if(!OperatingSystem.current().isMacOsX) "true" else null })
+        }.getOrElse { if(!OperatingSystem.current().isMacOsX) "true" else null }))
+
+val Project.disableNdkTargets
+    get() = ("true" == (System.getenv("disableNdkTargets")
+        ?.also { Logger.lifecycle("  > Property disableNdkTargets set to $it from environment") }
+        ?: runCatching {
+            (project.extraProperties["disableNdkTargets"] as String).also {
+                Logger.lifecycle("  > Property disableNdkTargets set to $it from extra properties")
+            }
+        }.getOrNull()))
 
 fun KotlinMultiplatformExtension.indispensableTargets() {
 
@@ -297,13 +306,13 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     }
 
     if (project.hasAndroidSdk()) {
-        if (project.hasAndroidNdk()) {
+        if (project.hasAndroidNdk() && !project.disableNdkTargets) {
             androidNativeX64()
             androidNativeX86()
             androidNativeArm32()
             androidNativeArm64()
         } else {
-            Logger.lifecycle("  > Android SDK found, but Android NDK missing; skipping Android native targets")
+            Logger.lifecycle("  > Skipping Android native targets (NDK missing or disableNdkTargets=true)")
         }
     }
 
