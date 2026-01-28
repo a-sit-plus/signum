@@ -33,9 +33,11 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-                implementation(project(":internals-test"))
                 implementation(project(":indispensable"))
             }
+        }
+        jvmTest.dependencies {
+            gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }
     }
 }

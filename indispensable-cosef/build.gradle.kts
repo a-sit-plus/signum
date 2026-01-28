@@ -25,7 +25,9 @@ kotlin {
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }
-        jvmTest.dependencies { implementation(project(":internals-test")) }
+        jvmTest.dependencies {
+            gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
+        }
     }
 }
 exportXCFramework(
