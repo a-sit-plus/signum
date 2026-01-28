@@ -1,20 +1,20 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.catching
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import at.asitplus.signum.Enumerable
-import at.asitplus.signum.Enumeration
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 // future: SPI
 private interface X509SignatureAlgorithmProvider {
-    fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> X509SignatureAlgorithm)?
+    fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> X509SignatureAlgorithm?)?
 }
 
 sealed class X509SignatureAlgorithmDescription(
@@ -39,8 +39,8 @@ sealed class X509SignatureAlgorithmDescription(
 
     internal class Unknown(oid: ObjectIdentifier, override val parameters: List<Asn1Element>) :
         X509SignatureAlgorithmDescription(oid) {
-            override fun toString() = "Unknown($oid)"
-        }
+        override fun toString() = "Unknown($oid)"
+    }
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
@@ -48,8 +48,8 @@ sealed class X509SignatureAlgorithmDescription(
             // future: SPI
             sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
                 .firstNotNullOfOrNull { it.loaderForOid(oid) }
-                    ?.invoke(this@decodeRethrowing)
-                    ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
+                ?.invoke(this@decodeRethrowing)
+                ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
         }
     }
 }
@@ -84,15 +84,17 @@ sealed class X509SignatureAlgorithm(
             else -> when (val alg = entries.firstOrNull { it.oid == oid }) {
                 null -> null
                 is RSAPKCS1 -> ({
-                    if (it.next() != Asn1Null) {
-                        throw Asn1TagMismatchException(
-                            Asn1Element.Tag.NULL, it.currentElement.tag,
-                            "RSA Params not allowed."
-                        )
+                    if (!it.hasNext()) null /*this is cursed, illegal, forbidden, evil and non-complaint, but we have to deal with it*/
+                    else {
+                        if (it.next() != Asn1Null) {
+                            throw Asn1TagMismatchException(
+                                Asn1Element.Tag.NULL, it.currentElement.tag,
+                                "RSA Params not allowed." //unless you are an OEM with massive market share who is too big to fail, then the world just has to deal with it
+                            )
+                        }
+                        alg
                     }
-                    alg
                 })
-
                 else -> ({ alg })
             }
         }
@@ -185,6 +187,7 @@ sealed class X509SignatureAlgorithm(
     object RS256 : RSAPKCS1(KnownOIDs.sha256WithRSAEncryption, Digest.SHA256)
     object RS384 : RSAPKCS1(KnownOIDs.sha384WithRSAEncryption, Digest.SHA384)
     object RS512 : RSAPKCS1(KnownOIDs.sha512WithRSAEncryption, Digest.SHA512)
+
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm>,
         Enumeration<X509SignatureAlgorithm> {

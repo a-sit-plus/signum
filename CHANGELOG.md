@@ -3,6 +3,17 @@
 ## 3.0
 
 ### NEXT
+* Introduce CURSED RSA X.509 signature algorithm profiles to support CURSED certificates produced by some devices in the field produced by OEMs with impressive market shares
+    * **THIS IS A BINARY-BREAKING CHANGE.**
+    * This is also a source-breaking change for some rare code paths
+    * Signum now s every RSA PKCS1 X.509 Signature algorithm twice
+        * Once with correct encoding (a single ASN.1 NULL)
+        * Once with cursed encoding (no content)
+        * Both share the same OID
+        * Both do the same
+        * There is only one canonical encoding
+        * There is only one correct encoding
+        * But reality is ugly and not everyone observes specs the world has agreed upon, so here we are
 * Gradle 9.2.0
 * Kotlin 2.3.0
 * Dokka 2.10.0

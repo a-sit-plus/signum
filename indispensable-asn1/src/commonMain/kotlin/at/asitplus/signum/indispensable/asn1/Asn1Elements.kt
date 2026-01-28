@@ -680,7 +680,9 @@ sealed class Asn1Structure(
         /** The last element returned by [next]. Throws [NoSuchElementException] if [next] was not yet called. */
         val currentElement get() =
             try { children[currentIndex] }
-            catch (x: IndexOutOfBoundsException) { throw NoSuchElementException(x.message) }
+            catch (x: IndexOutOfBoundsException) {
+                throw NoSuchElementException(x.message)
+            }
 
         private val step get() = if (isForward) 1 else -1
 
