@@ -297,10 +297,14 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     }
 
     if (project.hasAndroidSdk()) {
-        androidNativeX64()
-        androidNativeX86()
-        androidNativeArm32()
-        androidNativeArm64()
+        if (project.hasAndroidNdk()) {
+            androidNativeX64()
+            androidNativeX86()
+            androidNativeArm32()
+            androidNativeArm64()
+        } else {
+            Logger.lifecycle("  > Android SDK found, but Android NDK missing; skipping Android native targets")
+        }
     }
 
     listOf(
@@ -320,6 +324,8 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
 
 
 fun Project.hasAndroidSdk() = resolveAndroidSdk(this)?.let { it -> isValidAndroidSdk(it) } == true
+
+fun Project.hasAndroidNdk() = resolveAndroidNdk(this)?.let { it -> isValidAndroidNdk(it) } == true
 
 private fun resolveAndroidSdk(project: Project): File? {
     // Highest precedence: ANDROID_SDK_ROOT (preferred), then ANDROID_HOME (legacy)
@@ -344,6 +350,54 @@ private fun resolveAndroidSdk(project: Project): File? {
         }
     }
     return null
+}
+
+private fun resolveAndroidNdk(project: Project): File? {
+    val env = System.getenv()
+    val fromEnv = listOf("ANDROID_NDK_ROOT", "ANDROID_NDK_HOME", "ANDROID_NDK", "NDK_HOME")
+        .asSequence()
+        .mapNotNull { env[it]?.takeIf { it.isNotBlank() } }
+        .map(::File)
+        .firstOrNull { it.exists() }
+    if (fromEnv != null) return fromEnv
+
+    val localProps = File(project.rootDir, "local.properties")
+    if (localProps.exists()) {
+        Properties().apply {
+            localProps.inputStream().use(::load)
+            (getProperty("ndk.dir") ?: getProperty("ndkDirectory"))?.let {
+                val f = File(it)
+                if (f.exists()) return f
+            }
+        }
+    }
+
+    val sdk = resolveAndroidSdk(project) ?: return null
+    val bundled = listOf(File(sdk, "ndk-bundle"), File(sdk, "ndk"))
+        .firstOrNull { it.exists() }
+
+    // $SDK/ndk is a folder containing versioned subfolders; pick the "latest" directory.
+    if (bundled?.name == "ndk") {
+        val candidates = bundled.listFiles()?.filter { it.isDirectory } ?: emptyList()
+        return candidates.maxWithOrNull { a, b ->
+            val ta = a.name.toVersionTuple()
+            val tb = b.name.toVersionTuple()
+            val n = maxOf(ta.size, tb.size)
+            (0 until n).asSequence()
+                .map { i -> (ta.getOrNull(i) ?: 0).compareTo(tb.getOrNull(i) ?: 0) }
+                .firstOrNull { it != 0 } ?: 0
+        } ?: bundled
+    }
+
+    return bundled
+}
+
+private fun String.toVersionTuple(): List<Int> =
+    split('.', '-', '_').mapNotNull { it.toIntOrNull() }.ifEmpty { listOf(0) }
+
+private fun isValidAndroidNdk(ndk: File): Boolean {
+    val prebuilt = File(ndk, "toolchains/llvm/prebuilt")
+    return prebuilt.isDirectory && (prebuilt.listFiles()?.any { it.isDirectory } == true)
 }
 
 
