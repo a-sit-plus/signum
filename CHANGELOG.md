@@ -1,5 +1,7 @@
 # Changelog
 
+## NEXT
+
 ## 3.19.2 / Supreme 0.11.2
 * Introduce CURSED RSA X.509 signature algorithm profiles to support CURSED certificates produced by some devices in the field produced by OEMs with impressive market shares
     * **THIS IS A BINARY-BREAKING CHANGE.**
