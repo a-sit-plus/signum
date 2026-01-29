@@ -70,7 +70,7 @@ kotlin {
 
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
-            implementation(project(":internals-test"))
+            gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }
         iosMain {
             if (!HostManager.hostIsMac) kotlin.srcDir("src/iosMain/stubbed")

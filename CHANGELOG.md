@@ -1,8 +1,6 @@
 # Changelog
 
-## 3.0
-
-### NEXT
+## 3.19.2 / Supreme 0.11.2
 * Introduce CURSED RSA X.509 signature algorithm profiles to support CURSED certificates produced by some devices in the field produced by OEMs with impressive market shares
     * **THIS IS A BINARY-BREAKING CHANGE.**
     * This is also a source-breaking change for some rare code paths
@@ -22,8 +20,8 @@
     * AGP 8.12.3
     * Ktor 3.3.3
     * Bouncy Castle 1.83 (no more forcing exact version)
-    * TestBalloon 0.7.1-K2.3.0
-    * TestBalloon Addons 0.6.1
+    * TestBalloon 0.8.2-K2.3.0
+    * TestBalloon Addons 0.7.1
 
 ### 3.19.1 / Supreme 0.11.1
 * Bouncy Castle 1.83
