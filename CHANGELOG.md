@@ -1,6 +1,7 @@
 # Changelog
 
-## NEXT
+## 3.19.3 / Supreme 0.11.3
+* Support CURSED X.509 Certificate extensions that encode critical=false instead of omitting it
 
 ## 3.19.2 / Supreme 0.11.2
 * Introduce CURSED RSA X.509 signature algorithm profiles to support CURSED certificates produced by some devices in the field produced by OEMs with impressive market shares

@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
 
 /**
  * X.509 Certificate Extension
@@ -11,28 +12,34 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
 data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
-    val critical: Boolean = false
+    val critical: Boolean, //TODO replace this mess with the two properties a nullable Boolean, such that:
+    val isCursed: Boolean, //true = true, false= cursed, null = false. never expose nullable, but only non-cursed true/False
+    //maybe even go as far and store a single byte because there will be implementations that mess this up and encode true as 0x01
+    //but supporting this mess should come with a switch
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     init {
-        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(
+            Asn1Element.Tag.OCTET_STRING,
+            value.tag
+        )
     }
 
     constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: Asn1EncapsulatingOctetString
-    ) : this(oid, value, critical)
+    ) : this(oid, value, critical, isCursed = false)
 
     constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: Asn1PrimitiveOctetString
-    ) : this(oid, value, critical)
+    ) : this(oid, value, critical, isCursed = false)
 
     override fun encodeToTlv() = Asn1.Sequence {
         +oid
-        if (critical) +Bool(true)
+        if (critical) +Bool(true) else if (isCursed) +Bool(false)
         +value
     }
 
@@ -42,11 +49,16 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
 
             val id = next().asPrimitive().readOid()
-            val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false
+            val crit = peek()!!
+            var critical = false
+            var cursed = false
+            if (crit.tag == Asn1Element.Tag.BOOL) {
+                    critical = next().asPrimitive().decodeToBoolean()
+                    if (!critical) cursed = true
+            }
 
             val value = next()
-            X509CertificateExtension(id, value, critical)
+            X509CertificateExtension(id, value, critical, cursed)
         }
 
     }
