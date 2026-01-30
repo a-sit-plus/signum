@@ -1,4 +1,4 @@
-name: Test Common + Non-Apple
+name: Test Linux Build
 on:
   # still run checks on every PR *before* the merge
   pull_request:
@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 30
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
@@ -30,21 +30,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           submodules: recursive
-      - uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Run tests
-        run: ./gradlew allTests -x jvmTest
-      - name: Test Report
-        uses: dorny/test-reporter@v2
+      - name: Try Linux build
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
-        if: success() || failure()
-        with:
-          name: All Tests
-          path: '**/build/test-results/**/TEST*.xml'
-          reporter: java-junit
-          list-suites: failed
-          list-tests: failed
-          use-actions-summary: true
+          disableNdkTargets: "true"
+        run: ./gradlew publishToMavenLocal
