@@ -60,7 +60,7 @@ kotlin {
             implementation(libs.securerandom) //fix composite build
         }
 
-        androidMain.dependencies {
+        if(hasAndroidSdk()) androidMain.dependencies {
             implementation("androidx.biometric:biometric:1.2.0-alpha05")
         }
 
