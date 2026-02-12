@@ -111,8 +111,8 @@ Rules:
 - CHOICE mode is opt-in and does not replace default polymorphic representation.
 
 ### 2.4 Extra strictness
-- Decoder now rejects superfluous ASN.1 children for class/object structures.
-- `TbsCertificate` parsing now rejects trailing unknown children (`Asn1StructuralException`).
+- Decoder rejects superfluous ASN.1 children for class/object structures.
+
 
 ## 3. Collection and Primitive Behavior in DER Format
 
