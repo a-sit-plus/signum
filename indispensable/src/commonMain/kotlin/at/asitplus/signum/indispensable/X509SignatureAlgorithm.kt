@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
@@ -264,7 +265,7 @@ sealed class X509SignatureAlgorithm(
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
+fun SignatureAlgorithm.toX509SignatureAlgorithm(): KmmResult<X509SignatureAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> X509SignatureAlgorithm.ES256
@@ -292,5 +293,5 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
+fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm(): KmmResult<X509SignatureAlgorithm> =
     this.algorithm.toX509SignatureAlgorithm()
