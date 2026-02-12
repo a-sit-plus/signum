@@ -155,7 +155,14 @@ class DerDecoder internal constructor(
             annotations
         )
 
-        val decoded = when (propertyDescriptor.kind) {
+        val effectiveDescriptor =
+            if (propertyDescriptor.isInline && propertyDescriptor.elementsCount == 1) {
+                propertyDescriptor.getElementDescriptor(0)
+            } else {
+                propertyDescriptor
+            }
+
+        val decoded = when (effectiveDescriptor.kind) {
             PolymorphicKind.OPEN -> TODO("Polymorphic decoding not yet implemented")
             PolymorphicKind.SEALED -> TODO("Sealed class decoding not yet implemented")
             PrimitiveKind.BOOLEAN -> processedElement.asPrimitive()
@@ -178,7 +185,7 @@ class DerDecoder internal constructor(
 
             PrimitiveKind.STRING -> processedElement.asPrimitive().decodeString(expectedTag)
             SerialKind.ENUM -> processedElement.asPrimitive()
-                .decodeToEnumOrdinal(expectedTag ?: Asn1Element.Tag.INT)
+                .decodeToEnumOrdinal(expectedTag ?: Asn1Element.Tag.ENUM)
 
             else -> TODO("Unsupported kind: ${propertyDescriptor.kind}")
         } as Any
@@ -194,28 +201,22 @@ class DerDecoder internal constructor(
     ): T {
 
         val nullableCouldBeAbsent = couldBeNull
+        var nullableAbsenceRequiresFallback = false
         if (nullableCouldBeAbsent) {
             couldBeNull = false
             if (elementIndex == elements.size) {
                 return null as T
             }
-            /*
-                        val class1nnotaton = deserializer.descriptor.asn1nnotation
-                        val classOuter = class1nnotaton?.layers?.firstOrNull()?.tag
-                        val classBitString = if (class1nnotaton?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
-                        val classDefault = getDefaultTagForDescriptor(deserializer.descriptor)?.tagValue
-                        val propertyOuter = propertyAsn1nnotation?.layers?.firstOrNull()?.tag
-                        val propertyBitString =
-                            if (propertyAsn1nnotation?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
-                        val propertyDefault = getDefaultTagForDescriptor(propertyDescriptor)?.tagValue
-                        if (propertyDefault != classDefault) throw ImplementationError("Something something Asn1nnotation")
-                        val expected = propertyOuter ?: classOuter ?: propertyBitString ?: classBitString ?: propertyDefault
-                        expected?.let {
-                            if (elements[index].tag.tagValue != it)
-                                throw SerializationException("Mismatching ASN.1 data")
 
-                        }
-            */
+            val expectedLeadingTags = propertyDescriptor.possibleLeadingTagsForAsn1(propertyAsn1nnotation)
+            if (expectedLeadingTags == null || expectedLeadingTags.isEmpty()) {
+                nullableAbsenceRequiresFallback = true
+            } else {
+                val actualTag = elements[elementIndex].tag
+                if (actualTag !in expectedLeadingTags) {
+                    return null as T
+                }
+            }
         }
         val currentAnnotatedElement = elements[elementIndex]
         if (currentAnnotatedElement == Asn1Null) {
@@ -229,17 +230,19 @@ class DerDecoder internal constructor(
             decodeSerializableValue(deserializer)
 
         } catch (t: Asn1TagMismatchException) {
-            if (nullableCouldBeAbsent) null as T
+            if (nullableCouldBeAbsent && nullableAbsenceRequiresFallback) null as T
             else throw SerializationException(t)
         } catch (t: SerializationException) {
             val cause = t.cause
-            if (nullableCouldBeAbsent && (cause is Asn1TagMismatchException || cause is Asn1ChoiceNoMatchingAlternativeException)) {
+            if (nullableCouldBeAbsent && nullableAbsenceRequiresFallback &&
+                (cause is Asn1TagMismatchException || cause is Asn1ChoiceNoMatchingAlternativeException)
+            ) {
                 null as T
             } else {
                 throw t
             }
         } catch (t: Asn1ChoiceNoMatchingAlternativeException) {
-            if (nullableCouldBeAbsent) null as T
+            if (nullableCouldBeAbsent && nullableAbsenceRequiresFallback) null as T
             else throw t
         }
     }
@@ -354,6 +357,19 @@ class DerDecoder internal constructor(
             }
         }
 
+        if (deserializer.descriptor.kind == SerialKind.ENUM) {
+            val ordinal = processedElement.asPrimitive()
+                .decodeToEnumOrdinal(expectedTag ?: Asn1Element.Tag.ENUM)
+                .toInt()
+            val enumDecoder = object : AbstractDecoder() {
+                override val serializersModule: SerializersModule = this@DerDecoder.serializersModule
+                override fun decodeEnum(enumDescriptor: SerialDescriptor): Int = ordinal
+                override fun decodeElementIndex(descriptor: SerialDescriptor): Int = CompositeDecoder.DECODE_DONE
+            }
+            elementIndex++
+            return deserializer.deserialize(enumDecoder)
+        }
+
         // (3) Primitive kinds → defer to decodeValue()
         if (deserializer.descriptor.kind is PrimitiveKind) {
             if (!::propertyDescriptor.isInitialized) {
@@ -404,7 +420,10 @@ class DerDecoder internal constructor(
             )
 
         val (processedElement, _) = processAnnotationsForDecoding(currentAnnotatedElement, allAnnotations)
-        val subtypeDescriptor = deserializer.descriptor.getElementDescriptor(1)
+        val subtypeDescriptor = deserializer.descriptor.findLikelySealedAlternativesDescriptor()
+            ?: throw SerializationException(
+                "Could not inspect sealed CHOICE alternatives for ${deserializer.descriptor.serialName}"
+            )
         val matches = mutableListOf<Pair<String, T>>()
         for (i in 0 until subtypeDescriptor.elementsCount) {
             val serialName = subtypeDescriptor.getElementName(i)

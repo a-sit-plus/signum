@@ -220,6 +220,52 @@ val SerializationTest by testSuite(testConfig = DefaultConfiguration.invocation(
         DER.decodeFromDer<PartiallyTaggedUnambiguousNumericNullables>(DER.encodeToDer(mostlySet)) shouldBe mostlySet
     }
 
+    "Tag class is considered for ambiguity disambiguation" {
+        val withoutTagged = ContextSpecificVsUniversalInt(null, 7)
+        val withTagged = ContextSpecificVsUniversalInt(5, 7)
+
+        DER.decodeFromDer<ContextSpecificVsUniversalInt>(DER.encodeToDer(withoutTagged)) shouldBe withoutTagged
+        DER.decodeFromDer<ContextSpecificVsUniversalInt>(DER.encodeToDer(withTagged)) shouldBe withTagged
+    }
+
+    "Map roundtrip is supported" {
+        val plainMap = mapOf(1 to true, 2 to false, 3 to true)
+        DER.decodeFromDer<Map<Int, Boolean>>(DER.encodeToDer(plainMap)) shouldBe plainMap
+
+        val wrapped = MapInEnvelope(
+            prefix = "map-check",
+            values = plainMap,
+            suffix = listOf(7, 8, 9)
+        )
+
+        DER.decodeFromDer<MapInEnvelope>(DER.encodeToDer(wrapped)) shouldBe wrapped
+    }
+
+    "Nullable map/list ambiguity is rejected unless tagged" {
+        val ambiguous = AmbiguousNullableMapThenList(
+            maybeMap = null,
+            values = listOf(1, 2, 3)
+        )
+        shouldThrow<SerializationException> {
+            DER.encodeToDer(ambiguous)
+        }
+        shouldThrow<SerializationException> {
+            DER.decodeFromDer<AmbiguousNullableMapThenList>("3000".hexToByteArray())
+        }
+
+        val taggedWithoutMap = TaggedNullableMapThenList(
+            maybeMap = null,
+            values = listOf(1, 2, 3)
+        )
+        val taggedWithMap = TaggedNullableMapThenList(
+            maybeMap = mapOf(1 to true),
+            values = listOf(1, 2, 3)
+        )
+
+        DER.decodeFromDer<TaggedNullableMapThenList>(DER.encodeToDer(taggedWithoutMap)) shouldBe taggedWithoutMap
+        DER.decodeFromDer<TaggedNullableMapThenList>(DER.encodeToDer(taggedWithMap)) shouldBe taggedWithMap
+    }
+
 
     "SET semantics" {
         val set = setOf("Foo", "Bar", "Baz")
@@ -1189,4 +1235,31 @@ data class PartiallyTaggedUnambiguousNumericNullables(
     @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 33uL))
     val floatValue: Float?,
     val doubleValue: Double?,
+)
+
+@Serializable
+data class ContextSpecificVsUniversalInt(
+    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 2uL))
+    val maybeTaggedInt: Int?,
+    val plainInt: Int,
+)
+
+@Serializable
+data class AmbiguousNullableMapThenList(
+    val maybeMap: Map<Int, Boolean>?,
+    val values: List<Int>,
+)
+
+@Serializable
+data class TaggedNullableMapThenList(
+    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 40uL))
+    val maybeMap: Map<Int, Boolean>?,
+    val values: List<Int>,
+)
+
+@Serializable
+data class MapInEnvelope(
+    val prefix: String,
+    val values: Map<Int, Boolean>,
+    val suffix: List<Int>,
 )

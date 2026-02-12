@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.TagClass
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.PolymorphicKind
@@ -13,22 +14,22 @@ private data class Asn1FieldShape(
     val index: Int,
     val name: String,
     val omittable: Boolean,
-    val possibleLeadingTagNumbers: Set<ULong>?,
+    val possibleLeadingTags: Set<Asn1Element.Tag>?,
 )
 
-private val Asn1StringTagNumbers: Set<ULong> = setOf(
-    Asn1Element.Tag.STRING_UTF8.tagValue,
-    Asn1Element.Tag.STRING_BMP.tagValue,
-    Asn1Element.Tag.STRING_NUMERIC.tagValue,
-    Asn1Element.Tag.STRING_T61.tagValue,
-    Asn1Element.Tag.STRING_VISIBLE.tagValue,
-    Asn1Element.Tag.STRING_UNIVERSAL.tagValue,
-    Asn1Element.Tag.STRING_PRINTABLE.tagValue,
-    Asn1Element.Tag.STRING_IA5.tagValue,
-    Asn1Element.Tag.STRING_GENERAL.tagValue,
-    Asn1Element.Tag.STRING_GRAPHIC.tagValue,
-    Asn1Element.Tag.STRING_UNRESTRICTED.tagValue,
-    Asn1Element.Tag.STRING_VIDEOTEX.tagValue,
+private val Asn1StringTags: Set<Asn1Element.Tag> = setOf(
+    Asn1Element.Tag.STRING_UTF8,
+    Asn1Element.Tag.STRING_BMP,
+    Asn1Element.Tag.STRING_NUMERIC,
+    Asn1Element.Tag.STRING_T61,
+    Asn1Element.Tag.STRING_VISIBLE,
+    Asn1Element.Tag.STRING_UNIVERSAL,
+    Asn1Element.Tag.STRING_PRINTABLE,
+    Asn1Element.Tag.STRING_IA5,
+    Asn1Element.Tag.STRING_GENERAL,
+    Asn1Element.Tag.STRING_GRAPHIC,
+    Asn1Element.Tag.STRING_UNRESTRICTED,
+    Asn1Element.Tag.STRING_VIDEOTEX,
 )
 
 internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
@@ -45,7 +46,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
             index = index,
             name = getElementName(index),
             omittable = omittable,
-            possibleLeadingTagNumbers = possibleLeadingTagNumbers(
+            possibleLeadingTags = possibleLeadingTags(
                 descriptor = fieldDescriptor,
                 propertyAsn1nnotation = propertyAsn1nnotation
             )
@@ -54,7 +55,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
 
     for (start in fields.indices) {
         val nullableOrOptionalField = fields[start]
-        val firstTags = nullableOrOptionalField.possibleLeadingTagNumbers ?: continue
+        val firstTags = nullableOrOptionalField.possibleLeadingTags ?: continue
         if (!nullableOrOptionalField.omittable || firstTags.isEmpty()) continue
 
         var allSkippedFieldsAreOmittable = true
@@ -64,13 +65,13 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
             if (!allSkippedFieldsAreOmittable) break
 
             val candidateField = fields[candidate]
-            val candidateTags = candidateField.possibleLeadingTagNumbers ?: continue
+            val candidateTags = candidateField.possibleLeadingTags ?: continue
             val overlap = firstTags intersect candidateTags
             if (overlap.isNotEmpty()) {
                 throw SerializationException(
                     "Ambiguous ASN.1 layout for $serialName: " +
                             "property '${nullableOrOptionalField.name}' (index ${nullableOrOptionalField.index}) " +
-                            "can be omitted and shares possible tag(s) ${overlap.sorted()} with " +
+                            "can be omitted and shares possible tag(s) ${formatTags(overlap)} with " +
                             "property '${candidateField.name}' (index ${candidateField.index}). " +
                             "Add disambiguating @Asn1nnotation layers or set encodeNull=true for nullable fields."
                 )
@@ -79,55 +80,129 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
     }
 }
 
-private fun possibleLeadingTagNumbers(
+internal fun SerialDescriptor.possibleLeadingTagsForAsn1(
+    propertyAsn1nnotation: Asn1nnotation? = null,
+): Set<Asn1Element.Tag>? = possibleLeadingTags(
+    descriptor = this,
+    propertyAsn1nnotation = propertyAsn1nnotation,
+)
+
+private fun possibleLeadingTags(
     descriptor: SerialDescriptor,
     propertyAsn1nnotation: Asn1nnotation?,
     inheritedBitString: Boolean = false,
-): Set<ULong>? {
+    forcedChoice: Boolean? = null,
+): Set<Asn1Element.Tag>? {
     val allLayers = (propertyAsn1nnotation?.layers?.toList() ?: emptyList()) + descriptor.annotations.asn1Layers
-    allLayers.firstOrNull()?.let {
-        return setOf(it.tag)
-    }
 
     val isBitString = inheritedBitString || propertyAsn1nnotation?.asBitString == true || descriptor.isAsn1BitString
+    val choiceMode = forcedChoice ?: (propertyAsn1nnotation?.asChoice == true || descriptor.asn1nnotation?.asChoice == true)
 
+    val baseTags = possibleBaseLeadingTags(
+        descriptor = descriptor,
+        isBitString = isBitString,
+        choiceMode = choiceMode,
+    ) ?: return null
+
+    return applyLayers(baseTags, allLayers)
+}
+
+private fun possibleBaseLeadingTags(
+    descriptor: SerialDescriptor,
+    isBitString: Boolean,
+    choiceMode: Boolean,
+): Set<Asn1Element.Tag>? {
     if (descriptor.isInline && descriptor.elementsCount == 1) {
-        return possibleLeadingTagNumbers(
+        return possibleLeadingTags(
             descriptor = descriptor.getElementDescriptor(0),
             propertyAsn1nnotation = null,
-            inheritedBitString = isBitString
+            inheritedBitString = isBitString,
+            forcedChoice = choiceMode,
         )
     }
 
     if (descriptor == ByteArraySerializer().descriptor) {
         return setOf(
-            if (isBitString) Asn1Element.Tag.BIT_STRING.tagValue
-            else Asn1Element.Tag.OCTET_STRING.tagValue
+            if (isBitString) Asn1Element.Tag.BIT_STRING
+            else Asn1Element.Tag.OCTET_STRING
         )
     }
 
     return when (descriptor.kind) {
-        PrimitiveKind.BOOLEAN -> setOf(Asn1Element.Tag.BOOL.tagValue)
+        PrimitiveKind.BOOLEAN -> setOf(Asn1Element.Tag.BOOL)
         PrimitiveKind.BYTE,
         PrimitiveKind.SHORT,
         PrimitiveKind.INT,
-        PrimitiveKind.LONG -> setOf(Asn1Element.Tag.INT.tagValue)
+        PrimitiveKind.LONG -> setOf(Asn1Element.Tag.INT)
 
         PrimitiveKind.FLOAT,
-        PrimitiveKind.DOUBLE -> setOf(Asn1Element.Tag.REAL.tagValue)
+        PrimitiveKind.DOUBLE -> setOf(Asn1Element.Tag.REAL)
 
         PrimitiveKind.CHAR,
-        PrimitiveKind.STRING -> Asn1StringTagNumbers
+        PrimitiveKind.STRING -> Asn1StringTags
 
-        SerialKind.ENUM -> setOf(Asn1Element.Tag.INT.tagValue)
+        SerialKind.ENUM -> setOf(Asn1Element.Tag.INT)
 
         is StructureKind.CLASS,
-        is StructureKind.OBJECT,
+        is StructureKind.OBJECT -> setOf(if (descriptor.isSetDescriptor) Asn1Element.Tag.SET else Asn1Element.Tag.SEQUENCE)
+
         is StructureKind.LIST,
-        is StructureKind.MAP,
-        is PolymorphicKind.OPEN,
-        is PolymorphicKind.SEALED -> setOf(Asn1Element.Tag.SEQUENCE.tagValue)
+        is StructureKind.MAP -> setOf(Asn1Element.Tag.SEQUENCE)
+
+        is PolymorphicKind.OPEN -> setOf(Asn1Element.Tag.SEQUENCE)
+        is PolymorphicKind.SEALED -> {
+            if (choiceMode) possibleSealedChoiceAlternativeLeadingTags(descriptor)
+            else setOf(Asn1Element.Tag.SEQUENCE)
+        }
 
         else -> null
     }
 }
+
+internal fun SerialDescriptor.findLikelySealedAlternativesDescriptor(): SerialDescriptor? =
+    (0 until elementsCount)
+        .map { getElementDescriptor(it) }
+        .filter { it.elementsCount > 0 }
+        .maxByOrNull { it.elementsCount }
+
+private fun possibleSealedChoiceAlternativeLeadingTags(descriptor: SerialDescriptor): Set<Asn1Element.Tag>? {
+    val alternativesDescriptor = descriptor.findLikelySealedAlternativesDescriptor() ?: return null
+    val alternativeTags = mutableSetOf<Asn1Element.Tag>()
+
+    for (i in 0 until alternativesDescriptor.elementsCount) {
+        val alternativeDescriptor = alternativesDescriptor.getElementDescriptor(i)
+        val tags = possibleLeadingTags(
+            descriptor = alternativeDescriptor,
+            propertyAsn1nnotation = null,
+            forcedChoice = alternativeDescriptor.asn1nnotation?.asChoice == true,
+        ) ?: return null
+        alternativeTags += tags
+    }
+
+    return alternativeTags.takeIf { it.isNotEmpty() }
+}
+
+private fun applyLayers(
+    baseTags: Set<Asn1Element.Tag>,
+    layers: List<Layer>,
+): Set<Asn1Element.Tag> {
+    if (layers.isEmpty()) return baseTags
+
+    val innerTags = applyLayers(baseTags, layers.drop(1))
+    val current = layers.first()
+
+    return when (current.type) {
+        Type.OCTET_STRING -> setOf(Asn1Element.Tag.OCTET_STRING)
+        Type.EXPLICIT_TAG -> setOf(Asn1Element.Tag(current.tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC))
+        Type.IMPLICIT_TAG -> innerTags.map {
+            Asn1Element.Tag(current.tag, constructed = it.isConstructed, tagClass = TagClass.CONTEXT_SPECIFIC)
+        }.toSet()
+    }
+}
+
+private fun formatTags(tags: Set<Asn1Element.Tag>): String = tags
+    .sortedWith(compareBy<Asn1Element.Tag>({ it.tagClass.ordinal }, { it.tagValue }, { it.isConstructed }))
+    .joinToString(prefix = "[", postfix = "]") { formatTag(it) }
+
+private fun formatTag(tag: Asn1Element.Tag): String =
+    "${tag.tagClass}:${tag.tagValue}${if (tag.isConstructed) "/C" else "/P"}"
