@@ -19,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import java.security.KeyPairGenerator
 import kotlin.random.Random
 
@@ -109,6 +110,16 @@ val SerializationTest by testSuite(testConfig = DefaultConfiguration.invocation(
         val encoded = DER.encodeToDer<AmbiguousChoice>(AmbiguousChoiceA("foo"))
         shouldThrow<SerializationException> {
             DER.decodeFromDer<AmbiguousChoice>(encoded)
+        }
+    }
+
+    "ASN.1 serializers reject non-ASN.1 formats" {
+        val value = Asn1String.UTF8("foo")
+        shouldThrow<SerializationException> {
+            Json.encodeToString(Asn1String.Companion, value)
+        }
+        shouldThrow<SerializationException> {
+            Json.decodeFromString(Asn1String.Companion, "\"Zm9v\"")
         }
     }
 
