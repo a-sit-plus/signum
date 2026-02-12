@@ -4,6 +4,8 @@ import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigU
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -184,6 +186,22 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
                 .foldIndexed(
                     byteArrayOf((first().shortValue() * 40 + get(1).shortValue()).toUByte().toByte())
                 ) { i, acc, bytes -> if (i >= 2) acc + bytes else acc }
+        }
+
+        override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
+            if (encoder is DerEncoder) {
+                super<Asn1Serializer>.serialize(encoder, value)
+            } else {
+                ObjectIdentifierStringSerializer.serialize(encoder, value)
+            }
+        }
+
+        override fun deserialize(decoder: Decoder): ObjectIdentifier {
+            return if (decoder is DerDecoder) {
+                super<Asn1Serializer>.deserialize(decoder)
+            } else {
+                ObjectIdentifierStringSerializer.deserialize(decoder)
+            }
         }
     }
 }

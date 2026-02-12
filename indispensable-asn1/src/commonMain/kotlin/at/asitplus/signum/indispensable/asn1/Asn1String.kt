@@ -27,6 +27,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToUtf8String
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToVideotexString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -407,6 +409,22 @@ sealed class Asn1String(
                 UNRESTRICTED_STRING.toULong() -> src.decodeToUnrestrictedString()
                 VIDEOTEX_STRING.toULong() -> src.decodeToVideotexString()
                 else -> throw Asn1Exception("Not an Asn1String!")
+            }
+        }
+
+        override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: Asn1String) {
+            if (encoder is DerEncoder) {
+                super<Asn1Serializer>.serialize(encoder, value)
+            } else {
+                encoder.encodeString(value.value)
+            }
+        }
+
+        override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): Asn1String {
+            return if (decoder is DerDecoder) {
+                super<Asn1Serializer>.deserialize(decoder)
+            } else {
+                UTF8(decoder.decodeString())
             }
         }
     }

@@ -4,6 +4,8 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -182,6 +184,22 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
                     if (sign == Asn1Integer.Sign.POSITIVE) Asn1Real.Finite(Asn1Integer.Positive(mantissa), exponent)
                     else Asn1Real.Finite(Asn1Integer.Negative(mantissa), exponent)
                 }
+            }
+        }
+
+        override fun serialize(encoder: Encoder, value: Asn1Real) {
+            if (encoder is DerEncoder) {
+                super<Asn1Serializer>.serialize(encoder, value)
+            } else {
+                Asn1RealStringSerializer.serialize(encoder, value)
+            }
+        }
+
+        override fun deserialize(decoder: Decoder): Asn1Real {
+            return if (decoder is DerDecoder) {
+                super<Asn1Serializer>.deserialize(decoder)
+            } else {
+                Asn1RealStringSerializer.deserialize(decoder)
             }
         }
 

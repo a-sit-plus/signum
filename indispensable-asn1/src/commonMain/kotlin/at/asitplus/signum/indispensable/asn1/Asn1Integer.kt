@@ -9,6 +9,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
 import kotlinx.io.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -140,6 +142,22 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
                 )
 
             else -> Positive(VarUInt(input))
+        }
+
+        override fun serialize(encoder: Encoder, value: Asn1Integer) {
+            if (encoder is DerEncoder) {
+                super<Asn1Serializer>.serialize(encoder, value)
+            } else {
+                Asn1IntegerStringSerializer.serialize(encoder, value)
+            }
+        }
+
+        override fun deserialize(decoder: Decoder): Asn1Integer {
+            return if (decoder is DerDecoder) {
+                super<Asn1Serializer>.deserialize(decoder)
+            } else {
+                Asn1IntegerStringSerializer.deserialize(decoder)
+            }
         }
 
         override fun doDecode(src: Asn1Primitive): Asn1Integer = src.decodeToAsn1Integer()
