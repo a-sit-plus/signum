@@ -112,6 +112,24 @@ val SerializationTest by testSuite(testConfig = DefaultConfiguration.invocation(
         }
     }
 
+    "Generic nullable ambiguity is rejected at runtime" {
+        val ambiguous = AmbiguousNullableStringLayout("first", null, "third")
+        shouldThrow<SerializationException> {
+            DER.encodeToDer(ambiguous)
+        }
+        shouldThrow<SerializationException> {
+            DER.decodeFromDer<AmbiguousNullableStringLayout>("300e0c0566697273740c057468697264".hexToByteArray())
+        }
+    }
+
+    "Tagged nullable layouts remain valid" {
+        val valueWithoutSecond = TaggedNullableStringLayout("first", null, "third")
+        val valueWithSecond = TaggedNullableStringLayout("first", "second", "third")
+
+        DER.decodeFromDer<TaggedNullableStringLayout>(DER.encodeToDer(valueWithoutSecond)) shouldBe valueWithoutSecond
+        DER.decodeFromDer<TaggedNullableStringLayout>(DER.encodeToDer(valueWithSecond)) shouldBe valueWithSecond
+    }
+
 
     "SET semantics" {
         val set = setOf("Foo", "Bar", "Baz")
@@ -1006,3 +1024,18 @@ data class AmbiguousChoiceA(val value: String) : AmbiguousChoice
 
 @Serializable
 data class AmbiguousChoiceB(val value: String) : AmbiguousChoice
+
+@Serializable
+data class AmbiguousNullableStringLayout(
+    val first: String,
+    val second: String?,
+    val third: String,
+)
+
+@Serializable
+data class TaggedNullableStringLayout(
+    val first: String,
+    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 0uL))
+    val second: String?,
+    val third: String,
+)

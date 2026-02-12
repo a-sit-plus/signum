@@ -87,6 +87,7 @@ class DerDecoder internal constructor(
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         return when (descriptor.kind) {
             is StructureKind.CLASS, is StructureKind.OBJECT -> {
+                if (descriptorIndex == 0) descriptor.ensureNoAsn1AmbiguousOptionalLayout()
                 if (descriptorIndex >= descriptor.elementsCount) {
                     if (elementIndex < elements.size) {
                         throw SerializationException(
@@ -230,6 +231,13 @@ class DerDecoder internal constructor(
         } catch (t: Asn1TagMismatchException) {
             if (nullableCouldBeAbsent) null as T
             else throw SerializationException(t)
+        } catch (t: SerializationException) {
+            val cause = t.cause
+            if (nullableCouldBeAbsent && (cause is Asn1TagMismatchException || cause is Asn1ChoiceNoMatchingAlternativeException)) {
+                null as T
+            } else {
+                throw t
+            }
         } catch (t: Asn1ChoiceNoMatchingAlternativeException) {
             if (nullableCouldBeAbsent) null as T
             else throw t
@@ -348,9 +356,13 @@ class DerDecoder internal constructor(
 
         // (3) Primitive kinds → defer to decodeValue()
         if (deserializer.descriptor.kind is PrimitiveKind) {
-            propertyDescriptor = deserializer.descriptor
-            this.propertyAsn1nnotation =
-                deserializer.descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
+            if (!::propertyDescriptor.isInitialized) {
+                propertyDescriptor = deserializer.descriptor
+            }
+            if (propertyAsn1nnotation == null) {
+                propertyAsn1nnotation =
+                    deserializer.descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
+            }
             return decodeValue() as T
         }
 

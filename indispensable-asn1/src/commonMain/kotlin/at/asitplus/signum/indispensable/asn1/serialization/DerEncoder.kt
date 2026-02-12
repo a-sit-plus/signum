@@ -266,6 +266,11 @@ internal class DerEncoder(
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
+        if (descriptor.kind is kotlinx.serialization.descriptors.StructureKind.CLASS ||
+            descriptor.kind is kotlinx.serialization.descriptors.StructureKind.OBJECT
+        ) {
+            descriptor.ensureNoAsn1AmbiguousOptionalLayout()
+        }
         // Get property-level annotations BEFORE clearing descriptorAndIndex
         val propertyAnnotations = descriptorAndIndex?.let { (descriptor, index) ->
             descriptorAndIndex = null
