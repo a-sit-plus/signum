@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -16,8 +17,12 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.KeyPurposeId
 import org.bouncycastle.asn1.x509.KeyUsage
@@ -43,7 +48,7 @@ val PkiKotlinxDerSurrogateTest by testSuite {
         }
 
         val (ok, _) = readGoogleDerCorpus()
-        ok.forEach { (name, der) ->
+        withData(ok) { (name, der) ->
             assertX509SurrogateRoundtrip(label = name, der = der)
         }
     }
@@ -52,8 +57,8 @@ val PkiKotlinxDerSurrogateTest by testSuite {
         val (_, faulty) = readGoogleDerCorpus()
 
         withData(nameFn = { (name, _) -> name }, faulty) { (name, der) ->
-            val legacy = runCatching { X509Certificate.decodeFromDer(der) }
-            val surrogate = runCatching { DER.decodeFromDer<SurrogateX509Certificate>(der) }
+            val legacy = catchingUnwrapped { X509Certificate.decodeFromDer(der) }
+            val surrogate = catchingUnwrapped { DER.decodeFromDer<SurrogateX509Certificate>(der) }
 
             withClue(name+" legacy failure ${legacy.isFailure}, surrogate failure: ${surrogate.isFailure}") {
                 if(legacy.isSuccess && !name.startsWith("ok-") && surrogate.isFailure) {
@@ -66,7 +71,7 @@ val PkiKotlinxDerSurrogateTest by testSuite {
                     //these are invalid, so checks for conformance are not relevant
                     //surrogateValue.isConsistentWithX509Constraints() shouldBe true
                     val surrogateDer = DER.encodeToDer(surrogateValue)
-                    runCatching { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
+                    catchingUnwrapped { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
 
                     val legacyDer = legacy.getOrThrow().encodeToDer()
                     //we only check when encoding itself is kosher
@@ -96,8 +101,8 @@ val PkiKotlinxDerSurrogateTest by testSuite {
         val valid = generatedCsrVectors().first().second
         withData(malformedCsrVectors(valid)) { (name, der) ->
             withClue(name) {
-                runCatching { Pkcs10CertificationRequest.decodeFromDer(der) }.isFailure shouldBe true
-                runCatching { DER.decodeFromDer<SurrogatePkcs10CertificationRequest>(der) }.isFailure shouldBe true
+                catchingUnwrapped { Pkcs10CertificationRequest.decodeFromDer(der) }.isFailure shouldBe true
+                catchingUnwrapped { DER.decodeFromDer<SurrogatePkcs10CertificationRequest>(der) }.isFailure shouldBe true
             }
         }
     }
@@ -149,7 +154,7 @@ private fun assertX509SurrogateRoundtrip(label: String, der: ByteArray) {
     val surrogateDer = DER.encodeToDer(surrogate)
     withClue(label) {
         surrogate.isConsistentWithX509Constraints() shouldBe true
-        runCatching { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
+        catchingUnwrapped { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
         DER.encodeToDer(DER.decodeFromDer<SurrogateX509Certificate>(surrogateDer)) shouldBe surrogateDer
 
         val legacyDer = legacy.encodeToDer()
@@ -342,33 +347,38 @@ data class SurrogateCertificationRequestInfo(
 @Serializable(with = SurrogateSubjectPublicKeyInfoSerializer::class)
 sealed interface SurrogateSubjectPublicKeyInfo
 
-@Serializable
-data class SurrogateEcAlgorithmIdentifier(
-    val algorithm: ObjectIdentifier,
-    val parameters: ObjectIdentifier,
-) {
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable(with = SurrogateEcPublicKeyInfoSerializer::class)
+@KeepGeneratedSerializer
+data class SurrogateEcPublicKeyInfo(
+    @Serializable(with = SurrogateNonNullEcCurveSerializer::class)
+    val curve: ECCurve,
+    val x: ByteArray,
+    val y: ByteArray,
+) : SurrogateSubjectPublicKeyInfo {
     init {
-        require(algorithm == KnownOIDs.ecPublicKey) { "EC AlgorithmIdentifier must use id-ecPublicKey OID" }
-        require(ECCurve.entries.any { it.oid == parameters }) { "Curve not supported: $parameters" }
+        val expectedLength = curve.coordinateLength.bytes.toInt()
+        require(x.size == expectedLength) {
+            "Invalid EC X coordinate size for ${curve.name}: expected $expectedLength, got ${x.size}"
+        }
+        require(y.size == expectedLength) {
+            "Invalid EC Y coordinate size for ${curve.name}: expected $expectedLength, got ${y.size}"
+        }
     }
 }
 
-@Serializable
-data class SurrogateEcPublicKeyInfo(
-    val algorithmIdentifier: SurrogateEcAlgorithmIdentifier,
-    @Asn1nnotation(asBitString = true)
-    val subjectPublicKey: ByteArray,
-) : SurrogateSubjectPublicKeyInfo {
-    init {
-        val curve = ECCurve.entries.firstOrNull { it.oid == algorithmIdentifier.parameters }
-            ?: throw IllegalArgumentException("Curve not supported: ${algorithmIdentifier.parameters}")
-        val expectedLength = 1 + (curve.coordinateLength.bytes.toInt() * 2)
-        require(subjectPublicKey.size == expectedLength) {
-            "Invalid EC point size for ${curve.name}: expected $expectedLength, got ${subjectPublicKey.size}"
-        }
-        require(subjectPublicKey.firstOrNull() == 0x04.toByte()) {
-            "EC key not prefixed with 0x04"
-        }
+object SurrogateNonNullEcCurveSerializer : KSerializer<ECCurve> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("SurrogateNonNullEcCurve", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: ECCurve) {
+        encoder.encodeString(value.jwkName)
+    }
+
+    override fun deserialize(decoder: Decoder): ECCurve {
+        val encoded = decoder.decodeString()
+        return ECCurve.entries.firstOrNull { it.jwkName == encoded }
+            ?: throw SerializationException("Unsupported curve: $encoded")
     }
 }
 
@@ -410,11 +420,60 @@ data class SurrogateUnknownPublicKeyInfo(
 }
 
 @Serializable
+private data class SurrogateEcPublicKeyInfoRaw(
+    val algorithmIdentifier: Asn1Element,
+    @Asn1nnotation(asBitString = true)
+    val subjectPublicKey: ByteArray,
+)
+
+@Serializable
 private data class SurrogateRsaPublicKeyInfoRaw(
     val algorithmIdentifier: Asn1Element,
     @Asn1nnotation(asBitString = true)
     val subjectPublicKey: ByteArray,
 )
+
+@OptIn(ExperimentalSerializationApi::class)
+object SurrogateEcPublicKeyInfoSerializer : KSerializer<SurrogateEcPublicKeyInfo> {
+    private val generated = SurrogateEcPublicKeyInfo.generatedSerializer()
+    override val descriptor = generated.descriptor
+
+    override fun serialize(encoder: Encoder, value: SurrogateEcPublicKeyInfo) {
+        val raw = SurrogateEcPublicKeyInfoRaw(
+            algorithmIdentifier = Asn1.Sequence {
+                +KnownOIDs.ecPublicKey
+                +value.curve.oid
+            },
+            subjectPublicKey = byteArrayOf(0x04) + value.x + value.y
+        )
+        encoder.encodeSerializableValue(SurrogateEcPublicKeyInfoRaw.serializer(), raw)
+    }
+
+    override fun deserialize(decoder: Decoder): SurrogateEcPublicKeyInfo {
+        val raw = decoder.decodeSerializableValue(SurrogateEcPublicKeyInfoRaw.serializer())
+        val algorithmSequence = raw.algorithmIdentifier.asSequence()
+        require(algorithmSequence.children.size == 2) { "Invalid AlgorithmIdentifier in EC SPKI" }
+        require(algorithmSequence.children[0].asPrimitive().readOid() == KnownOIDs.ecPublicKey) {
+            "EC AlgorithmIdentifier must use id-ecPublicKey OID"
+        }
+        val curveOid = algorithmSequence.children[1].asPrimitive().readOid()
+        val curve = ECCurve.entries.firstOrNull { it.oid == curveOid }
+            ?: throw IllegalArgumentException("Curve not supported: $curveOid")
+        val coordinateLength = curve.coordinateLength.bytes.toInt()
+        val expectedLength = 1 + coordinateLength * 2
+        require(raw.subjectPublicKey.size == expectedLength) {
+            "Invalid EC point size for ${curve.name}: expected $expectedLength, got ${raw.subjectPublicKey.size}"
+        }
+        require(raw.subjectPublicKey.firstOrNull() == 0x04.toByte()) {
+            "EC key not prefixed with 0x04"
+        }
+        return SurrogateEcPublicKeyInfo(
+            curve = curve,
+            x = raw.subjectPublicKey.copyOfRange(1, 1 + coordinateLength),
+            y = raw.subjectPublicKey.copyOfRange(1 + coordinateLength, expectedLength)
+        )
+    }
+}
 
 @OptIn(ExperimentalSerializationApi::class)
 object SurrogateRsaPublicKeyInfoSerializer : KSerializer<SurrogateRsaPublicKeyInfo> {
@@ -444,7 +503,7 @@ object SurrogateSubjectPublicKeyInfoSerializer : KSerializer<SurrogateSubjectPub
     override fun serialize(encoder: Encoder, value: SurrogateSubjectPublicKeyInfo) {
         when (value) {
             is SurrogateEcPublicKeyInfo ->
-                encoder.encodeSerializableValue(SurrogateEcPublicKeyInfo.serializer(), value)
+                encoder.encodeSerializableValue(SurrogateEcPublicKeyInfoSerializer, value)
             is SurrogateRsaPublicKeyInfo ->
                 encoder.encodeSerializableValue(SurrogateRsaPublicKeyInfoSerializer, value)
             is SurrogateUnknownPublicKeyInfo ->
@@ -456,20 +515,20 @@ object SurrogateSubjectPublicKeyInfoSerializer : KSerializer<SurrogateSubjectPub
         val src = decoder.decodeSerializableValue(Asn1Element.serializer()).asSequence()
         if (src.children.size != 2) return SurrogateUnknownPublicKeyInfo(src)
 
-        val algorithmIdentifier = runCatching { src.children[0].asSequence() }.getOrElse {
+        val algorithmIdentifier = catchingUnwrapped { src.children[0].asSequence() }.getOrElse {
             return SurrogateUnknownPublicKeyInfo(src)
         }
         if (algorithmIdentifier.children.size != 2) return SurrogateUnknownPublicKeyInfo(src)
 
-        val algorithmOid = runCatching { algorithmIdentifier.children[0].asPrimitive().readOid() }.getOrElse {
+        val algorithmOid = catchingUnwrapped { algorithmIdentifier.children[0].asPrimitive().readOid() }.getOrElse {
             return SurrogateUnknownPublicKeyInfo(src)
         }
-        runCatching { src.children[1].asPrimitive().asAsn1BitString() }.getOrElse {
+        catchingUnwrapped { src.children[1].asPrimitive().asAsn1BitString() }.getOrElse {
             return SurrogateUnknownPublicKeyInfo(src)
         }
 
         return when (algorithmOid) {
-            KnownOIDs.ecPublicKey -> DER.decodeFromTlv(src, SurrogateEcPublicKeyInfo.serializer())
+            KnownOIDs.ecPublicKey -> DER.decodeFromTlv(src, SurrogateEcPublicKeyInfoSerializer)
             KnownOIDs.rsaEncryption -> DER.decodeFromTlv(src, SurrogateRsaPublicKeyInfoSerializer)
             else -> SurrogateUnknownPublicKeyInfo(src)
         }
