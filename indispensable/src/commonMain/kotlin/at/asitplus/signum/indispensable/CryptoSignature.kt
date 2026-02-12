@@ -108,6 +108,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         /** @see equals */
         override fun hashCode() = 31 * this.s.hashCode() + this.r.hashCode()
 
+        @Serializable(with = EC.Companion::class)
         class IndefiniteLength internal constructor(
             r: BigInteger, s: BigInteger
         ) : EC(r, s), NotRawByteEncodable {
@@ -178,7 +179,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             }
         }
 
-        companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength>, Asn1Serializer<Asn1Element,EC.IndefiniteLength> {
+        companion object : Asn1Serializer<Asn1Element, EC.IndefiniteLength> {
 
             fun fromRS(r: BigInteger, s: BigInteger) =
                 EC.IndefiniteLength(r, s)
@@ -251,7 +252,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             return signature == other.signature
         }
 
-        companion object : Asn1Decodable<Asn1Element, RSA> , Asn1Serializer<Asn1Element,RSA> {
+        companion object : Asn1Serializer<Asn1Element, RSA> {
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Element): RSA {
                 src as Asn1Primitive
@@ -260,7 +261,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
     }
 
-    companion object : Asn1Decodable<Asn1Element, CryptoSignature>, Asn1Serializer<Asn1Element, CryptoSignature> {
+    companion object : Asn1Serializer<Asn1Element, CryptoSignature> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {

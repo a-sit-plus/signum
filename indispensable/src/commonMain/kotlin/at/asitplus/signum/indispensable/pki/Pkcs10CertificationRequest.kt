@@ -64,7 +64,7 @@ data class TbsCertificationRequest(
         +ExplicitlyTagged(0u) { attributes.map { +it } }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest>, Asn1Serializer<Asn1Sequence, TbsCertificationRequest> {
+    companion object : Asn1Serializer<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val version = (next() as Asn1Primitive).decodeToInt()

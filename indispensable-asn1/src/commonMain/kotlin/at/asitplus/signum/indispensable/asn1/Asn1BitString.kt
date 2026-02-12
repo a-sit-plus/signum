@@ -75,7 +75,7 @@ class Asn1BitString private constructor(
         return bitset
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1BitString>, Asn1Serializer<Asn1Primitive, Asn1BitString> {
+    companion object : Asn1Serializer<Asn1Primitive, Asn1BitString> {
         private fun fromBitSet(bitSet: BitSet): Pair<Byte, ByteArray> {
             val rawBytes = bitSet.bytes.map {
                 var res = 0

@@ -147,7 +147,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
 
-    companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier>, Asn1Serializer<Asn1Primitive, ObjectIdentifier> {
+    companion object : Asn1Serializer<Asn1Primitive, ObjectIdentifier> {
 
         /**
          * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]

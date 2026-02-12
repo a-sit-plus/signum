@@ -102,7 +102,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
         }
     }
 
-    companion object: Asn1Decodable<Asn1Primitive, Asn1Integer>, Asn1Serializer<Asn1Primitive, Asn1Integer> {
+    companion object: Asn1Serializer<Asn1Primitive, Asn1Integer> {
 
         val ONE = Asn1Integer.Positive(VarUInt(1u))
         val ZERO = Asn1Integer.Positive(VarUInt(0u))

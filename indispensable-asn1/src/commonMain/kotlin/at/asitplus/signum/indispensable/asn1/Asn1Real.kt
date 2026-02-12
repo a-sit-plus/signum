@@ -85,7 +85,7 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         }
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1Real>, Asn1Serializer<Asn1Primitive, Asn1Real> {
+    companion object : Asn1Serializer<Asn1Primitive, Asn1Real> {
         /**
          * Converts a Double into an ASN.1 REAL.
          * **Beware of the fact that ASN.1 REAL zero knows no sign!**

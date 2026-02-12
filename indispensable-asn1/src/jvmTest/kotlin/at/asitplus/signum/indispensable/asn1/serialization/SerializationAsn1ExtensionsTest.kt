@@ -4,12 +4,14 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.Asn1Null
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
@@ -24,6 +26,7 @@ import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.invocation
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.security.KeyPairGenerator
@@ -54,6 +57,13 @@ val SerializationTestAsn1Extensions by testSuite(
 
             DER.decodeFromTlv<CryptoPrivateKey>(signumPrivateKey.encodeToTlv()) shouldBe signumPrivateKey
             DER.decodeFromTlv<CryptoPrivateKey.WithPublicKey<*>>(signumPrivateKey.encodeToTlv()) shouldBe signumPrivateKey
+
+            val rsaSignumPrivateKey = run {
+                val rsa = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.generateKeyPair().private
+                rsa.toCryptoPrivateKey().getOrThrow()
+            }
+            val mixedPrivateKeys: List<CryptoPrivateKey> = listOf(signumPrivateKey, rsaSignumPrivateKey)
+            DER.decodeFromDer<List<CryptoPrivateKey>>(DER.encodeToDer(mixedPrivateKeys)) shouldBe mixedPrivateKeys
 
             signumPublicKey.encodeToDer() shouldBe DER.encodeToDer(signumPublicKey)
             DER.decodeFromDer<CryptoPublicKey>(signumPublicKey.encodeToDer()) shouldBe signumPublicKey
@@ -122,6 +132,55 @@ val SerializationTestAsn1Extensions by testSuite(
             val csrEncoded = DER.encodeToDer(csr)
             csrEncoded shouldBe csr.encodeToDer()
             DER.decodeFromDer<Pkcs10CertificationRequest>(csrEncoded) shouldBe csr
+        }
+
+        "X509 signature algorithms and descriptions roundtrip" {
+            X509SignatureAlgorithm.entries.forEach { algorithm ->
+                val encoded = DER.encodeToDer(algorithm)
+                DER.decodeFromDer<X509SignatureAlgorithm>(encoded) shouldBe algorithm
+                DER.decodeFromDer<X509SignatureAlgorithmDescription>(encoded) shouldBe algorithm
+            }
+
+            val unknownDescription = X509SignatureAlgorithmDescription.decodeFromTlv(
+                Asn1.Sequence {
+                    +ObjectIdentifier("1.2.3.4.5.6.7.8.9")
+                    +Asn1.Null()
+                }
+            )
+            (unknownDescription is X509SignatureAlgorithm) shouldBe false
+
+            val unknownEncoded = DER.encodeToDer(unknownDescription)
+            DER.decodeFromDer<X509SignatureAlgorithmDescription>(unknownEncoded) shouldBe unknownDescription
+        }
+
+        "CryptoPrivateKey base and subtype serializers stay PKCS#8-only" {
+            val ecJca = KeyPairGenerator.getInstance("EC").also {
+                it.initialize(ECGenParameterSpec("secp256r1"))
+            }.generateKeyPair().private
+            val ec = ecJca.toCryptoPrivateKey().getOrThrow().shouldBeInstanceOf<CryptoPrivateKey.EC.WithPublicKey>()
+
+            val rsaJca = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.generateKeyPair().private
+            val rsa = rsaJca.toCryptoPrivateKey().getOrThrow().shouldBeInstanceOf<CryptoPrivateKey.RSA>()
+
+            DER.encodeToDer<CryptoPrivateKey>(ec) shouldBe ec.encodeToDer()
+            DER.encodeToDer<CryptoPrivateKey.EC>(ec) shouldBe ec.encodeToDer()
+            DER.decodeFromDer<CryptoPrivateKey>(ec.encodeToDer()) shouldBe ec
+            DER.decodeFromDer<CryptoPrivateKey.EC>(ec.encodeToDer()) shouldBe ec
+
+            DER.encodeToDer<CryptoPrivateKey>(rsa) shouldBe rsa.encodeToDer()
+            DER.encodeToDer<CryptoPrivateKey.RSA>(rsa) shouldBe rsa.encodeToDer()
+            DER.decodeFromDer<CryptoPrivateKey>(rsa.encodeToDer()) shouldBe rsa
+            DER.decodeFromDer<CryptoPrivateKey.RSA>(rsa.encodeToDer()) shouldBe rsa
+
+            val ecSec1 = ec.asSEC1.encodeToDer()
+            shouldThrow<Throwable> { DER.decodeFromDer<CryptoPrivateKey>(ecSec1) }
+            shouldThrow<Throwable> { DER.decodeFromDer<CryptoPrivateKey.EC>(ecSec1) }
+            CryptoPrivateKey.EC.FromSEC1.decodeFromDer(ecSec1).shouldBeInstanceOf<CryptoPrivateKey.EC>()
+
+            val rsaPkcs1 = rsa.asPKCS1.encodeToDer()
+            shouldThrow<Throwable> { DER.decodeFromDer<CryptoPrivateKey>(rsaPkcs1) }
+            shouldThrow<Throwable> { DER.decodeFromDer<CryptoPrivateKey.RSA>(rsaPkcs1) }
+            CryptoPrivateKey.RSA.FromPKCS1.decodeFromDer(rsaPkcs1) shouldBe rsa
         }
     }
 }

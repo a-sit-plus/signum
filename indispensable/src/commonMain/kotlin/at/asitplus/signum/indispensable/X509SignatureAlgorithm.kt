@@ -9,13 +9,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import kotlinx.serialization.KSerializer
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -24,6 +19,7 @@ private interface X509SignatureAlgorithmProvider {
     fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> X509SignatureAlgorithm?)?
 }
 
+@Serializable(with = X509SignatureAlgorithmDescription.Companion::class)
 sealed class X509SignatureAlgorithmDescription(
     override val oid: ObjectIdentifier
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
@@ -44,12 +40,13 @@ sealed class X509SignatureAlgorithmDescription(
 
     override fun hashCode() = (31 * oid.hashCode() + parameters.hashCode())
 
+    @Serializable(with = X509SignatureAlgorithmDescription.Companion::class)
     internal class Unknown(oid: ObjectIdentifier, override val parameters: List<Asn1Element>) :
         X509SignatureAlgorithmDescription(oid) {
         override fun toString() = "Unknown($oid)"
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
+    companion object : Asn1Serializer<Asn1Sequence, X509SignatureAlgorithmDescription> {
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val oid = next().asPrimitive().readOid()
             // future: SPI
@@ -80,7 +77,7 @@ fun X509SignatureAlgorithmDescription.requireSupported() {
 }
 
 // future: open
-@Serializable(with = X509SignatureAlgorithmSerializer::class)
+@Serializable(with = X509SignatureAlgorithm.Companion::class)
 sealed class X509SignatureAlgorithm(
     oid: ObjectIdentifier
 ) : X509SignatureAlgorithmDescription(oid), SpecializedSignatureAlgorithm, Enumerable {
@@ -109,6 +106,7 @@ sealed class X509SignatureAlgorithm(
     }
 
     // ECDSA with SHA-size
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     sealed class ECDSA(oid: ObjectIdentifier, val digest: Digest) :
         X509SignatureAlgorithm(oid) {
         override val parameters get() = emptyList<Asn1Element>()
@@ -128,6 +126,7 @@ sealed class X509SignatureAlgorithm(
     val isEc get() = this is ECDSA
 
     // RSASSA-PSS with SHA-size
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     sealed class RSAPSS(val digest: Digest) : X509SignatureAlgorithm(KnownOIDs.rsaPSS) {
 
         override val parameters by lazy {
@@ -169,6 +168,7 @@ sealed class X509SignatureAlgorithm(
     }
 
     // RSASSA-PKCS1-v1_5 with SHA-size
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     sealed class RSAPKCS1(oid: ObjectIdentifier, val digest: Digest) :
         X509SignatureAlgorithm(oid) {
         override val parameters get() = listOf(Asn1Null)
@@ -183,22 +183,31 @@ sealed class X509SignatureAlgorithm(
         }
     }
 
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object ES256 : ECDSA(KnownOIDs.ecdsaWithSHA256, Digest.SHA256)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object ES384 : ECDSA(KnownOIDs.ecdsaWithSHA384, Digest.SHA384)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object ES512 : ECDSA(KnownOIDs.ecdsaWithSHA512, Digest.SHA512)
 
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object PS256 : RSAPSS(Digest.SHA256)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object PS384 : RSAPSS(Digest.SHA384)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object PS512 : RSAPSS(Digest.SHA512)
 
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object RS1 : RSAPKCS1(KnownOIDs.sha1WithRSAEncryption, Digest.SHA1)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object RS256 : RSAPKCS1(KnownOIDs.sha256WithRSAEncryption, Digest.SHA256)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object RS384 : RSAPKCS1(KnownOIDs.sha384WithRSAEncryption, Digest.SHA384)
+    @Serializable(with = X509SignatureAlgorithm.Companion::class)
     object RS512 : RSAPKCS1(KnownOIDs.sha512WithRSAEncryption, Digest.SHA512)
 
 
-    companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm>,
-        Enumeration<X509SignatureAlgorithm> {
+    companion object : Enumeration<X509SignatureAlgorithm>, Asn1Serializer<Asn1Sequence, X509SignatureAlgorithm> {
 
         //make it lazy to break init cycle that causes the weirdest nullpointer ever
         override val entries: Set<X509SignatureAlgorithm> by lazy {
@@ -285,31 +294,3 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()
-
-/**
- * String-based kotlinx serializer for [X509SignatureAlgorithm].
- *
- * The serialized representation is the algorithm OID in dotted string form.
- */
-object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
-
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("X509SignatureAlgorithmSerializer", PrimitiveKind.STRING)
-
-    /**
-     * Encodes as dotted OID string.
-     */
-    override fun serialize(encoder: Encoder, value: X509SignatureAlgorithm) {
-        value.let { encoder.encodeString(it.oid.toString()) }
-    }
-
-    /**
-     * Resolves a dotted OID string to one of [X509SignatureAlgorithm.entries].
-     *
-     * @throws NoSuchElementException if no matching algorithm exists
-     */
-    override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
-        val decoded = decoder.decodeString()
-        return X509SignatureAlgorithm.entries.first { it.oid.toString() == decoded }
-    }
-}

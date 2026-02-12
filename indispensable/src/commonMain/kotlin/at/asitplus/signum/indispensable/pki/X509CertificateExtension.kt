@@ -46,7 +46,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         +value
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension>, Asn1Serializer<Asn1Sequence, X509CertificateExtension> {
+    companion object : Asn1Serializer<Asn1Sequence, X509CertificateExtension> {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {

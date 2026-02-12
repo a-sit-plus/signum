@@ -381,7 +381,7 @@ sealed class Asn1String(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1String>, Asn1Serializer<Asn1Primitive, Asn1String> {
+    companion object : Asn1Serializer<Asn1Primitive, Asn1String> {
 
         /**
          * Decodes an [Asn1Primitive] into a specific [Asn1String] subtype based on its tag.

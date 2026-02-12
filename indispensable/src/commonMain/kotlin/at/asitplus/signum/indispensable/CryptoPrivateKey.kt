@@ -41,6 +41,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
     /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
     val asPKCS8: PemEncodable<Asn1Sequence> get() = this
 
+    @Serializable(with = CryptoPrivateKey.Companion::class)
     sealed class Impl(
         /** optional attributes relevant when PKCS#8-encoding a private key */
         override val attributes: List<Asn1Element>?
@@ -229,7 +230,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                 }
             }
 
-            companion object : Asn1Decodable<Asn1Sequence, PrimeInfo>, Asn1Serializer<Asn1Sequence, PrimeInfo> {
+            companion object : Asn1Serializer<Asn1Sequence, PrimeInfo> {
 
                 @Throws(Asn1Exception::class)
                 override fun doDecode(src: Asn1Sequence): PrimeInfo = src.decodeRethrowing {
@@ -529,7 +530,12 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
-        ), Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8, Asn1Serializer<Asn1Sequence, CryptoPrivateKey> {
+        ),
+        // Special case: keep explicit delegation to make the default decode path
+        // unambiguously PKCS#8 for the base type and its serializers.
+        Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8,
+        Asn1Serializer<Asn1Sequence, CryptoPrivateKey> {
+
         /**
          * Tries to decode a private key as exported from iOS.
          * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).

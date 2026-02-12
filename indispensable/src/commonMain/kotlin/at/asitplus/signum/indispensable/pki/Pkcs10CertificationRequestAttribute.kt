@@ -36,7 +36,7 @@ data class Pkcs10CertificationRequestAttribute(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequestAttribute>, Asn1Serializer<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
+    companion object : Asn1Serializer<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = src.decodeRethrowing() {
             val id = (next() as Asn1Primitive).readOid()

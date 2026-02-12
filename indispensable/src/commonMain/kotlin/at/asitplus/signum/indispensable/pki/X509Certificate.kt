@@ -171,7 +171,7 @@ constructor(
         return "TbsCertificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificate>, Asn1Serializer<Asn1Sequence, TbsCertificate> {
+    companion object : Asn1Serializer<Asn1Sequence, TbsCertificate> {
 
         object Tags {
             val ISSUER_UID = Asn1.ImplicitTag(1uL)
