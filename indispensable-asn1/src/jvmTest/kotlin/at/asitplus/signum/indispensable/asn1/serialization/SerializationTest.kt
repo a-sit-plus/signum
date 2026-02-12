@@ -6,7 +6,15 @@ import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.serialization.*
 import at.asitplus.signum.indispensable.pki.*
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+
+import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.core.TestConfig
+import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
+import de.infix.testBalloon.framework.core.invocation
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.Serializable
@@ -19,7 +27,7 @@ import kotlin.random.Random
 //test with json serializer as well
 
 @OptIn(ExperimentalStdlibApi::class)
-class SerializationTest : FreeSpec({
+val SerializationTest by testSuite(testConfig = DefaultConfiguration.invocation(TestConfig.Invocation.Sequential)){
 
 
     "Number of elements" {
@@ -562,7 +570,7 @@ class SerializationTest : FreeSpec({
 
     }
 
-})
+}
 
 
 @Serializable

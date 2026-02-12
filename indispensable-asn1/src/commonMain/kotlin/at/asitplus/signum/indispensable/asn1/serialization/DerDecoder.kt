@@ -427,9 +427,9 @@ class DerDecoder internal constructor(
                             )
                         )
                     }
-                    val octetString = currentElement.asEncapsulatingOctetString()
-                    currentElement = octetString.nextChild()
-                    if (octetString.hasMoreChildren()) throw SerializationException(Asn1StructuralException("Octet string should only contain one child"))
+                    val octetString = currentElement.asEncapsulatingOctetString().iterator()
+                    currentElement = octetString.next()
+                    if (octetString.hasNext()) throw SerializationException(Asn1StructuralException("Octet string should only contain one child"))
                     currentTag = currentElement.tag
 
                 }
@@ -440,9 +440,9 @@ class DerDecoder internal constructor(
                     if (currentTag != expectedTag) {
                         throw Asn1TagMismatchException(expectedTag, currentElement.tag)
                     }
-                    val octetString = currentElement.asStructure()
-                    currentElement = octetString.nextChild()
-                    if (octetString.hasMoreChildren()) throw SerializationException(Asn1StructuralException("Explicit tag should only contain one child"))
+                    val octetString = currentElement.asStructure().iterator()
+                    currentElement = octetString.next()
+                    if (octetString.hasNext()) throw SerializationException(Asn1StructuralException("Explicit tag should only contain one child"))
                     currentTag = currentElement.tag
 
                 }

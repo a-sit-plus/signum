@@ -1,6 +1,32 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.GENERAL_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.GRAPHIC_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.UNRESTRICTED_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.VIDEOTEX_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToBmpString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToGeneralString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToGraphicString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToNumericString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToPrintableString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToTeletextString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToUniversalString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToUnrestrictedString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToUtf8String
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToVideotexString
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -353,7 +379,7 @@ sealed class Asn1String(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1String>, Asn1Serializer<Asn1Primitive, Asn1String>{
+    companion object : Asn1Decodable<Asn1Primitive, Asn1String>, Asn1Serializer<Asn1Primitive, Asn1String> {
 
         /**
          * Decodes an [Asn1Primitive] into a specific [Asn1String] subtype based on its tag.

@@ -9,7 +9,13 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -287,11 +293,11 @@ object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
         PrimitiveSerialDescriptor("X509SignatureAlgorithmSerializer", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: X509SignatureAlgorithm) {
-        value.let { encoder.encodeString(it.name) }
+        value.let { encoder.encodeString(it.oid.toString()) }
     }
 
     override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
         val decoded = decoder.decodeString()
-        return X509SignatureAlgorithm.entries.first { it.name == decoded }
+        return X509SignatureAlgorithm.entries.first { it.oid.toString() == decoded }
     }
 }
