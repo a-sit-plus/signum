@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.asn1.serialization.*
@@ -15,7 +13,11 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.KeyPurposeId
 import org.bouncycastle.asn1.x509.KeyUsage
@@ -97,6 +99,23 @@ val PkiKotlinxDerSurrogateTest by testSuite {
                 runCatching { Pkcs10CertificationRequest.decodeFromDer(der) }.isFailure shouldBe true
                 runCatching { DER.decodeFromDer<SurrogatePkcs10CertificationRequest>(der) }.isFailure shouldBe true
             }
+        }
+    }
+
+    "SubjectPublicKeyInfo surrogate decodes EC and RSA polymorphically" - {
+        withData("EC", "RSA") { keyType ->
+            val spki = when (keyType) {
+                "EC" -> KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair().public.encoded
+                "RSA" -> KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair().public.encoded
+                else -> error("Unsupported key type $keyType")
+            }
+            val decoded = DER.decodeFromDer<SurrogateSubjectPublicKeyInfo>(spki)
+
+            when (keyType) {
+                "EC" -> (decoded is SurrogateEcPublicKeyInfo) shouldBe true
+                "RSA" -> (decoded is SurrogateRsaPublicKeyInfo) shouldBe true
+            }
+            DER.encodeToDer(decoded) shouldBe spki
         }
     }
 }
@@ -278,7 +297,7 @@ data class SurrogateTbsCertificate(
     val issuer: List<RelativeDistinguishedName>,
     val validity: SurrogateValidity,
     val subject: List<RelativeDistinguishedName>,
-    val subjectPublicKeyInfo: Asn1Element,
+    val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
     @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1uL), asBitString = true)
     val issuerUniqueID: ByteArray? = null,
     @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 2uL), asBitString = true)
@@ -315,7 +334,144 @@ data class SurrogatePkcs10CertificationRequest(
 data class SurrogateCertificationRequestInfo(
     val version: Asn1Integer,
     val subject: Asn1Element,
-    val subjectPublicKeyInfo: Asn1Element,
+    val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
     @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 0uL))
     val attributes: Asn1Element
 )
+
+@Serializable(with = SurrogateSubjectPublicKeyInfoSerializer::class)
+sealed interface SurrogateSubjectPublicKeyInfo
+
+@Serializable
+data class SurrogateEcAlgorithmIdentifier(
+    val algorithm: ObjectIdentifier,
+    val parameters: ObjectIdentifier,
+) {
+    init {
+        require(algorithm == KnownOIDs.ecPublicKey) { "EC AlgorithmIdentifier must use id-ecPublicKey OID" }
+        require(ECCurve.entries.any { it.oid == parameters }) { "Curve not supported: $parameters" }
+    }
+}
+
+@Serializable
+data class SurrogateEcPublicKeyInfo(
+    val algorithmIdentifier: SurrogateEcAlgorithmIdentifier,
+    @Asn1nnotation(asBitString = true)
+    val subjectPublicKey: ByteArray,
+) : SurrogateSubjectPublicKeyInfo {
+    init {
+        val curve = ECCurve.entries.firstOrNull { it.oid == algorithmIdentifier.parameters }
+            ?: throw IllegalArgumentException("Curve not supported: ${algorithmIdentifier.parameters}")
+        val expectedLength = 1 + (curve.coordinateLength.bytes.toInt() * 2)
+        require(subjectPublicKey.size == expectedLength) {
+            "Invalid EC point size for ${curve.name}: expected $expectedLength, got ${subjectPublicKey.size}"
+        }
+        require(subjectPublicKey.firstOrNull() == 0x04.toByte()) {
+            "EC key not prefixed with 0x04"
+        }
+    }
+}
+
+@Serializable
+data class SurrogateRsaPublicKey(
+    val modulus: Asn1Integer,
+    val exponent: Asn1Integer,
+) {
+    init {
+        require(modulus is Asn1Integer.Positive) { "RSA modulus must be positive" }
+        require(exponent is Asn1Integer.Positive) { "RSA exponent must be positive" }
+    }
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable(with = SurrogateRsaPublicKeyInfoSerializer::class)
+@KeepGeneratedSerializer
+data class SurrogateRsaPublicKeyInfo(
+    val algorithmIdentifier: Asn1Element,
+    val subjectPublicKey: SurrogateRsaPublicKey,
+) : SurrogateSubjectPublicKeyInfo {
+    init {
+        val algorithmSequence = algorithmIdentifier.asSequence()
+        require(algorithmSequence.children.size == 2) { "Invalid AlgorithmIdentifier in RSA SPKI" }
+        require(algorithmSequence.children[0].asPrimitive().readOid() == KnownOIDs.rsaEncryption) {
+            "RSA AlgorithmIdentifier must use rsaEncryption OID"
+        }
+        algorithmSequence.children[1].asPrimitive().readNull()
+    }
+}
+
+@Serializable
+data class SurrogateUnknownPublicKeyInfo(
+    val rawSpki: Asn1Element,
+) : SurrogateSubjectPublicKeyInfo {
+    init {
+        require(rawSpki is Asn1Sequence) { "SubjectPublicKeyInfo must be a SEQUENCE" }
+    }
+}
+
+@Serializable
+private data class SurrogateRsaPublicKeyInfoRaw(
+    val algorithmIdentifier: Asn1Element,
+    @Asn1nnotation(asBitString = true)
+    val subjectPublicKey: ByteArray,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+object SurrogateRsaPublicKeyInfoSerializer : KSerializer<SurrogateRsaPublicKeyInfo> {
+    private val generated = SurrogateRsaPublicKeyInfo.generatedSerializer()
+    override val descriptor = generated.descriptor
+
+    override fun serialize(encoder: Encoder, value: SurrogateRsaPublicKeyInfo) {
+        val raw = SurrogateRsaPublicKeyInfoRaw(
+            algorithmIdentifier = value.algorithmIdentifier,
+            subjectPublicKey = DER.encodeToDer(SurrogateRsaPublicKey.serializer(), value.subjectPublicKey)
+        )
+        encoder.encodeSerializableValue(SurrogateRsaPublicKeyInfoRaw.serializer(), raw)
+    }
+
+    override fun deserialize(decoder: Decoder): SurrogateRsaPublicKeyInfo {
+        val raw = decoder.decodeSerializableValue(SurrogateRsaPublicKeyInfoRaw.serializer())
+        return SurrogateRsaPublicKeyInfo(
+            algorithmIdentifier = raw.algorithmIdentifier,
+            subjectPublicKey = DER.decodeFromDer(raw.subjectPublicKey, SurrogateRsaPublicKey.serializer())
+        )
+    }
+}
+
+object SurrogateSubjectPublicKeyInfoSerializer : KSerializer<SurrogateSubjectPublicKeyInfo> {
+    override val descriptor = Asn1Element.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: SurrogateSubjectPublicKeyInfo) {
+        when (value) {
+            is SurrogateEcPublicKeyInfo ->
+                encoder.encodeSerializableValue(SurrogateEcPublicKeyInfo.serializer(), value)
+            is SurrogateRsaPublicKeyInfo ->
+                encoder.encodeSerializableValue(SurrogateRsaPublicKeyInfoSerializer, value)
+            is SurrogateUnknownPublicKeyInfo ->
+                encoder.encodeSerializableValue(Asn1Element.serializer(), value.rawSpki)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): SurrogateSubjectPublicKeyInfo {
+        val src = decoder.decodeSerializableValue(Asn1Element.serializer()).asSequence()
+        if (src.children.size != 2) return SurrogateUnknownPublicKeyInfo(src)
+
+        val algorithmIdentifier = runCatching { src.children[0].asSequence() }.getOrElse {
+            return SurrogateUnknownPublicKeyInfo(src)
+        }
+        if (algorithmIdentifier.children.size != 2) return SurrogateUnknownPublicKeyInfo(src)
+
+        val algorithmOid = runCatching { algorithmIdentifier.children[0].asPrimitive().readOid() }.getOrElse {
+            return SurrogateUnknownPublicKeyInfo(src)
+        }
+        runCatching { src.children[1].asPrimitive().asAsn1BitString() }.getOrElse {
+            return SurrogateUnknownPublicKeyInfo(src)
+        }
+
+        return when (algorithmOid) {
+            KnownOIDs.ecPublicKey -> DER.decodeFromTlv(src, SurrogateEcPublicKeyInfo.serializer())
+            KnownOIDs.rsaEncryption -> DER.decodeFromTlv(src, SurrogateRsaPublicKeyInfoSerializer)
+            else -> SurrogateUnknownPublicKeyInfo(src)
+        }
+    }
+}

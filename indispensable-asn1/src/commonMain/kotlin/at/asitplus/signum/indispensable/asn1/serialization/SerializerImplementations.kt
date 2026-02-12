@@ -39,8 +39,7 @@ interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> : Asn1Decodable<
 
     override val descriptor: SerialDescriptor
         get() = SerialDescriptor(
-            this::class.qualifiedName ?: this::class.simpleName
-            ?: throw IllegalArgumentException("passed Asn1Decodable has no name!"), ByteArraySerializer().descriptor
+            "Asn1DerSerializer", ByteArraySerializer().descriptor
         )
 
     override fun deserialize(decoder: Decoder): T {
