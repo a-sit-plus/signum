@@ -13,6 +13,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
  * @param layers any encapsulating layers
  * @param asBitString only affects [ByteArray]s (and value classes over byte arrays): Whether to encode a byte array as bit string instead of an octet string
  * @param encodeNull whether to encode a null value as ANS.1 null (or omit it).
+ * @param asChoice whether this value should be encoded/decoded as ASN.1 CHOICE (sealed polymorphic without discriminator wrapper)
  */
 @SerialInfo
 @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
@@ -20,6 +21,7 @@ annotation class Asn1nnotation(
     vararg val layers: Layer,
     val asBitString: Boolean = false,
     val encodeNull: Boolean = false,
+    val asChoice: Boolean = false,
 )
 
 /**

@@ -5,10 +5,14 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import kotlinx.io.Sink
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.SealedClassSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.SetSerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.encoding.Encoder
@@ -188,6 +192,12 @@ internal class DerEncoder(
             return
         }
 
+        val inlineAnnotation = pendingInlineAnnotation
+        if (shouldEncodeAsChoice(serializer.descriptor, inlineAnnotation)) {
+            encodeChoiceSerializableValue(serializer, value, inlineAnnotation)
+            return
+        }
+
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
             val bitset = descriptorAndIndex?.let { (descriptor, index) ->
                 descriptor.isAsn1BitString(index)
@@ -196,6 +206,63 @@ internal class DerEncoder(
             else encodeValue(value as ByteArray)
         } else if (value is Asn1Encodable<*> || value is Asn1Element) encodeValue(value)
         else super.encodeSerializableValue(serializer, value as T)
+    }
+
+    private fun shouldEncodeAsChoice(
+        descriptor: SerialDescriptor,
+        inlineAnnotation: Asn1nnotation?
+    ): Boolean {
+        val propertyAnnotation = descriptorAndIndex?.let { (parentDescriptor, index) ->
+            parentDescriptor.asn1nnotation(index)
+        }
+        return inlineAnnotation?.asChoice == true ||
+                propertyAnnotation?.asChoice == true ||
+                descriptor.asn1nnotation?.asChoice == true
+    }
+
+    @OptIn(InternalSerializationApi::class)
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> encodeChoiceSerializableValue(
+        serializer: SerializationStrategy<T>,
+        value: T,
+        inlineAnnotation: Asn1nnotation?
+    ) {
+        pendingInlineAnnotation = null
+
+        if (serializer.descriptor.kind !is PolymorphicKind.SEALED) {
+            throw SerializationException(
+                "@Asn1nnotation(asChoice=true) requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
+            )
+        }
+        val sealedSerializer = serializer as? SealedClassSerializer<T>
+            ?: throw SerializationException(
+                "@Asn1nnotation(asChoice=true) only supports kotlinx SealedClassSerializer"
+            )
+
+        val propertyLayers = descriptorAndIndex?.let { (parentDescriptor, index) ->
+            parentDescriptor.getElementAnnotations(index).asn1Layers
+        } ?: emptyList()
+        descriptorAndIndex = null
+
+        val classLayers = serializer.descriptor.annotations.asn1Layers
+        val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList()) + classLayers
+        val targetBuffer = processAnnotationsAndGetTarget(allLayers)
+
+        val selectedSerializer = sealedSerializer.findPolymorphicSerializerOrNull(this, value)
+            ?: throw SerializationException(
+                "Could not resolve concrete serializer for CHOICE value of ${serializer.descriptor.serialName}: ${(value as Any)::class}"
+            )
+
+        val childSerializer = DerEncoder(serializersModule)
+        childSerializer.encodeSerializableValue(selectedSerializer as SerializationStrategy<Any?>, value as Any?)
+        val elements = childSerializer.encodeToTLV()
+        if (elements.size != 1) {
+            throw SerializationException(
+                "ASN.1 CHOICE arm must encode to exactly one element, got ${elements.size} for ${selectedSerializer.descriptor.serialName}"
+            )
+        }
+
+        targetBuffer += Asn1ElementHolder.Element(elements.first())
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {

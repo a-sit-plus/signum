@@ -6,6 +6,7 @@ import kotlinx.io.Source
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
@@ -116,7 +117,7 @@ class DerDecoder internal constructor(
         val inlineAnnotation = inlineAsn1nnotation
         inlineAsn1nnotation = null
 
-        val currentAnnotatedElement = elements[index++]
+        val currentAnnotatedElement = elements[index]
 
 
         // Process annotations to get the actual element and expected tag
@@ -128,7 +129,7 @@ class DerDecoder internal constructor(
             annotations
         )
 
-        return when (propertyDescriptor.kind) {
+        val decoded = when (propertyDescriptor.kind) {
             PolymorphicKind.OPEN -> TODO("Polymorphic decoding not yet implemented")
             PolymorphicKind.SEALED -> TODO("Sealed class decoding not yet implemented")
             PrimitiveKind.BOOLEAN -> processedElement.asPrimitive()
@@ -155,6 +156,8 @@ class DerDecoder internal constructor(
 
             else -> TODO("Unsupported kind: ${propertyDescriptor.kind}")
         } as Any
+        index++
+        return decoded
 
     }
 
@@ -205,6 +208,9 @@ class DerDecoder internal constructor(
         } catch (t: Asn1TagMismatchException) {
             if (nullable) null as T
             else throw SerializationException(t)
+        } catch (t: Asn1ChoiceNoMatchingAlternativeException) {
+            if (nullable) null as T
+            else throw t
         }
     }
 
@@ -220,6 +226,10 @@ class DerDecoder internal constructor(
         // Combine property and class-level annotations for processing
         val allAnnotations =
             (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
+
+        if (shouldDecodeAsChoice(deserializer.descriptor, inlineAnnotation)) {
+            return decodeChoiceSerializableValue(deserializer, currentAnnotatedElement, allAnnotations)
+        }
 
         if (deserializer.descriptor.isInline) {
             // Let the framework do its inline-class magic
@@ -332,6 +342,65 @@ class DerDecoder internal constructor(
         return value
     }
 
+    private fun shouldDecodeAsChoice(
+        descriptor: SerialDescriptor,
+        inlineAnnotation: Asn1nnotation?
+    ): Boolean {
+        return inlineAnnotation?.asChoice == true ||
+                propertyAsn1nnotation?.asChoice == true ||
+                descriptor.asn1nnotation?.asChoice == true
+    }
+
+    @OptIn(InternalSerializationApi::class)
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> decodeChoiceSerializableValue(
+        deserializer: DeserializationStrategy<T>,
+        currentAnnotatedElement: Asn1Element,
+        allAnnotations: List<Layer>,
+    ): T {
+        if (deserializer.descriptor.kind !is PolymorphicKind.SEALED) {
+            throw SerializationException(
+                "@Asn1nnotation(asChoice=true) requires a sealed polymorphic descriptor, but got ${deserializer.descriptor.kind}"
+            )
+        }
+
+        val sealedSerializer = deserializer as? SealedClassSerializer<T>
+            ?: throw SerializationException(
+                "@Asn1nnotation(asChoice=true) only supports kotlinx SealedClassSerializer"
+            )
+
+        val (processedElement, _) = processAnnotationsForDecoding(currentAnnotatedElement, allAnnotations)
+        val subtypeDescriptor = deserializer.descriptor.getElementDescriptor(1)
+        val matches = mutableListOf<Pair<String, T>>()
+        for (i in 0 until subtypeDescriptor.elementsCount) {
+            val serialName = subtypeDescriptor.getElementName(i)
+            val subtypeDeserializer = sealedSerializer.findPolymorphicSerializerOrNull(this, serialName) ?: continue
+            val candidate = runCatching {
+                DerDecoder(
+                    elements = listOf(processedElement),
+                    serializersModule = serializersModule
+                ).decodeSerializableValue(subtypeDeserializer)
+            }.getOrNull() ?: continue
+
+            matches += serialName to candidate
+        }
+
+        when (matches.size) {
+            0 -> throw Asn1ChoiceNoMatchingAlternativeException(
+                "No CHOICE alternative of ${deserializer.descriptor.serialName} matches tag ${processedElement.tag}"
+            )
+
+            1 -> {
+                index++
+                return matches.single().second
+            }
+
+            else -> throw SerializationException(
+                "Ambiguous CHOICE decode for ${deserializer.descriptor.serialName} and tag ${processedElement.tag}: ${matches.joinToString { it.first }}"
+            )
+        }
+    }
+
     /**
      * Process annotations to determine expected tag for primitives
      * Returns the processed element and the expected tag (if any)
@@ -405,6 +474,8 @@ class DerDecoder internal constructor(
         return currentElement to currentTag
     }
 }
+
+private class Asn1ChoiceNoMatchingAlternativeException(message: String) : SerializationException(message)
 
 private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Element.Tag? {
 

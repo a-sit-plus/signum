@@ -86,6 +86,24 @@ class SerializationTest : FreeSpec({
 
     }
 
+    "Choice polymorphism (sealed only)" {
+        val intChoice = ChoiceContainer(ChoiceInt(7))
+        val taggedStringChoice = ChoiceContainer(ChoiceTaggedString("foo"))
+
+        DER.decodeFromDer<ChoiceContainer>(DER.encodeToDer(intChoice)) shouldBe intChoice
+        DER.decodeFromDer<ChoiceContainer>(DER.encodeToDer(taggedStringChoice)) shouldBe taggedStringChoice
+
+        val list = listOf<ChoiceInterface>(ChoiceInt(1), ChoiceTaggedString("bar"))
+        DER.decodeFromDer<List<ChoiceInterface>>(DER.encodeToDer(list)) shouldBe list
+    }
+
+    "Choice ambiguity is rejected at runtime" {
+        val encoded = DER.encodeToDer<AmbiguousChoice>(AmbiguousChoiceA("foo"))
+        shouldThrow<SerializationException> {
+            DER.decodeFromDer<AmbiguousChoice>(encoded)
+        }
+    }
+
 
     "SET semantics" {
         val set = setOf("Foo", "Bar", "Baz")
@@ -956,3 +974,27 @@ sealed interface AnInterface
 
 @Serializable data class WithThreeNullable(val first:String, val second:Int?, val third:String)
 // @formatter:on
+
+@Serializable
+@Asn1nnotation(asChoice = true)
+sealed interface ChoiceInterface
+
+@Serializable
+data class ChoiceContainer(val choice: ChoiceInterface)
+
+@Serializable
+data class ChoiceInt(val value: Int) : ChoiceInterface
+
+@Serializable
+@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1uL))
+data class ChoiceTaggedString(val value: String) : ChoiceInterface
+
+@Serializable
+@Asn1nnotation(asChoice = true)
+sealed interface AmbiguousChoice
+
+@Serializable
+data class AmbiguousChoiceA(val value: String) : AmbiguousChoice
+
+@Serializable
+data class AmbiguousChoiceB(val value: String) : AmbiguousChoice
