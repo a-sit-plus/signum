@@ -5,6 +5,8 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
+import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.asn1.serialization.*
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.minus
@@ -287,7 +289,10 @@ data class SurrogateTbsCertificate(
     init {
 
         if(!extensions.isNullOrEmpty()) {
-         require(extensions.distinctBy { it.oid }.size==extensions.size)
+            require(extensions.distinctBy { it.oid }.size == extensions.size)
+            // Align surrogate strictness with legacy SAN/IAN structural validation.
+            extensions.findSubjectAltNames()
+            extensions.findIssuerAltNames()
         }
     }
 }
