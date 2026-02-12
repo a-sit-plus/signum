@@ -30,7 +30,8 @@ class DerDecoder internal constructor(
         serializersModule: SerializersModule = EmptySerializersModule()
     ) : this(source.readFullyToAsn1Elements().first, serializersModule)
 
-    private var index = 0
+    private var elementIndex = 0
+    private var descriptorIndex = 0
     private lateinit var propertyDescriptor: SerialDescriptor
     private var propertyAsn1nnotation: Asn1nnotation? = null
     private var inlineAsn1nnotation: Asn1nnotation? = null
@@ -47,10 +48,10 @@ class DerDecoder internal constructor(
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
 
         // 1. Pick the element that belongs to *this* level
-        val element = elements[index]
+        val element = elements[elementIndex]
 
         // 2. hand over decoding of the children to a *new* decoder
-        index++
+        elementIndex++
 
         return when (descriptor.kind) {
             is StructureKind.CLASS,
@@ -84,32 +85,56 @@ class DerDecoder internal constructor(
     }
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
+        return when (descriptor.kind) {
+            is StructureKind.CLASS, is StructureKind.OBJECT -> {
+                if (descriptorIndex >= descriptor.elementsCount) {
+                    if (elementIndex < elements.size) {
+                        throw SerializationException(
+                            "Too many ASN.1 elements for ${descriptor.serialName}: " +
+                                    "all ${descriptor.elementsCount} properties decoded, " +
+                                    "but ${elements.size - elementIndex} element(s) remain"
+                        )
+                    }
+                    return CompositeDecoder.DECODE_DONE
+                }
+                val currentDescriptorIndex = descriptorIndex++
+                val asn1nnotation = try {
+                    descriptor.asn1nnotation(currentDescriptorIndex)
+                } catch (t: IndexOutOfBoundsException) {
+                    throw SerializationException(t.toString())
+                }
 
-        //list-like descriptors always have elementCount =1 because they can never know how long the list actually is
-        val max = if (descriptor.elementsCount > elements.size) descriptor.elementsCount else elements.size
-        if (index >= max) return CompositeDecoder.DECODE_DONE
+                propertyDescriptor = descriptor.getElementDescriptor(currentDescriptorIndex)
+                propertyAsn1nnotation = asn1nnotation
+                couldBeNull = asn1nnotation?.encodeNull != true && propertyDescriptor.isNullable
 
+                if (elementIndex >= elements.size && !couldBeNull) {
+                    couldBeNull = false
+                    CompositeDecoder.DECODE_DONE
+                } else {
+                    currentDescriptorIndex
+                }
+            }
 
-        val asn1nnotation = try {
-            descriptor.asn1nnotation(index)
-        } catch (t: IndexOutOfBoundsException) {
-            throw SerializationException(t.toString())
+            else -> {
+                // list-like descriptors always have elementCount = 1 because
+                // they can never know how long the list actually is
+                val max = if (descriptor.elementsCount > elements.size) descriptor.elementsCount else elements.size
+                if (elementIndex >= max) return CompositeDecoder.DECODE_DONE
+
+                val asn1nnotation = try {
+                    descriptor.asn1nnotation(elementIndex)
+                } catch (t: IndexOutOfBoundsException) {
+                    throw SerializationException(t.toString())
+                }
+                if (elementIndex >= elements.size) return CompositeDecoder.DECODE_DONE
+                couldBeNull = false
+
+                propertyDescriptor = descriptor.getElementDescriptor(elementIndex)
+                propertyAsn1nnotation = asn1nnotation
+                if (elementIndex < elements.size) elementIndex else CompositeDecoder.DECODE_DONE
+            }
         }
-        if (asn1nnotation?.encodeNull != true && descriptor.getElementDescriptor(index).isNullable) {
-            propertyDescriptor = descriptor.getElementDescriptor(index)
-            propertyAsn1nnotation = descriptor.asn1nnotation(index)
-            couldBeNull = true
-            return index
-        }
-        //now that the nullable foo ist over with, do the proper checks again
-        if (index >= elements.size) return CompositeDecoder.DECODE_DONE
-        couldBeNull = false
-
-
-        propertyDescriptor = descriptor.getElementDescriptor(index)
-        propertyAsn1nnotation = descriptor.asn1nnotation(index)
-
-        return if (index < elements.size) index else CompositeDecoder.DECODE_DONE
     }
 
 
@@ -117,7 +142,7 @@ class DerDecoder internal constructor(
         val inlineAnnotation = inlineAsn1nnotation
         inlineAsn1nnotation = null
 
-        val currentAnnotatedElement = elements[index]
+        val currentAnnotatedElement = elements[elementIndex]
 
 
         // Process annotations to get the actual element and expected tag
@@ -156,7 +181,7 @@ class DerDecoder internal constructor(
 
             else -> TODO("Unsupported kind: ${propertyDescriptor.kind}")
         } as Any
-        index++
+        elementIndex++
         return decoded
 
     }
@@ -167,11 +192,10 @@ class DerDecoder internal constructor(
         previousValue: T?
     ): T {
 
-        if (couldBeNull) {
+        val nullableCouldBeAbsent = couldBeNull
+        if (nullableCouldBeAbsent) {
             couldBeNull = false
-            if (index == elements.size) {
-                index++
-
+            if (elementIndex == elements.size) {
                 return null as T
             }
             /*
@@ -192,24 +216,22 @@ class DerDecoder internal constructor(
                         }
             */
         }
-        val currentAnnotatedElement = elements[index]
+        val currentAnnotatedElement = elements[elementIndex]
         if (currentAnnotatedElement == Asn1Null) {
             if (propertyDescriptor.asn1nnotation?.encodeNull != true && !(propertyAsn1nnotation?.encodeNull ?: false)) {
                 throw SerializationException("Null value found, but target value should not have been present!")
             }
-            index++
+            elementIndex++
             return null as T
         }
-        //todo catch tag mismatch if nullable
-        val nullable = propertyDescriptor.isNullable
         return try {
             decodeSerializableValue(deserializer)
 
         } catch (t: Asn1TagMismatchException) {
-            if (nullable) null as T
+            if (nullableCouldBeAbsent) null as T
             else throw SerializationException(t)
         } catch (t: Asn1ChoiceNoMatchingAlternativeException) {
-            if (nullable) null as T
+            if (nullableCouldBeAbsent) null as T
             else throw t
         }
     }
@@ -217,7 +239,7 @@ class DerDecoder internal constructor(
     @OptIn(InternalSerializationApi::class)
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
-        val currentAnnotatedElement = elements[index]
+        val currentAnnotatedElement = elements[elementIndex]
         val inlineAnnotation = inlineAsn1nnotation.also { inlineAsn1nnotation = null }
         val isBitString = (inlineAnnotation?.asBitString ?: false) || (propertyAsn1nnotation?.asBitString ?: false)
         val propertyAnnotations = propertyAsn1nnotation?.layers?.toList() ?: emptyList()
@@ -250,7 +272,7 @@ class DerDecoder internal constructor(
                     is Asn1Primitive -> (deserializer as Asn1Decodable<Asn1Primitive, T>).decodeFromTlv(processedElement)
                     is Asn1Structure -> (deserializer as Asn1Decodable<Asn1Structure, T>).decodeFromTlv(processedElement)
                 }
-                index++
+                elementIndex++
                 return encodable
             }
 
@@ -281,7 +303,7 @@ class DerDecoder internal constructor(
            &&
            processedElement.length == 0
          ) {// @formatter:on
-            index++
+            elementIndex++
             return null as T
         }
         // (2) Fast paths for primitive *unsigned* surrogates & helpers
@@ -289,20 +311,20 @@ class DerDecoder internal constructor(
             UByte.serializer() -> return processedElement.asPrimitive()
                 .decodeToUInt(expectedTag ?: Asn1Element.Tag.INT)
                 .toUByte()
-                .also { index++ } as T
+                .also { elementIndex++ } as T
 
             UShort.serializer() -> return processedElement.asPrimitive()
                 .decodeToUInt(expectedTag ?: Asn1Element.Tag.INT)
                 .toUShort()
-                .also { index++ } as T
+                .also { elementIndex++ } as T
 
             UInt.serializer() -> return processedElement.asPrimitive()
                 .decodeToUInt(expectedTag ?: Asn1Element.Tag.INT)
-                .also { index++ } as T
+                .also { elementIndex++ } as T
 
             ULong.serializer() -> return processedElement.asPrimitive()
                 .decodeToULong(expectedTag ?: Asn1Element.Tag.INT)
-                .also { index++ } as T
+                .also { elementIndex++ } as T
 
             Asn1ElementSerializer -> return processedElement
                 .also {
@@ -310,16 +332,16 @@ class DerDecoder internal constructor(
                         if (it.tag != ex) throw SerializationException(Asn1TagMismatchException(ex, it.tag))
                     }
                 }
-                .also { index++ } as T
+                .also { elementIndex++ } as T
 
             ByteArraySerializer() -> {
                 // Decode BitSet from ASN.1 BitString and convert to ByteArray
                 return if (isBitString) {
                     processedElement.asPrimitive()
-                        .asAsn1BitString(tagToValidate ?: Asn1Element.Tag.BIT_STRING).rawBytes.also { index++ } as T
+                        .asAsn1BitString(tagToValidate ?: Asn1Element.Tag.BIT_STRING).rawBytes.also { elementIndex++ } as T
                 } else {
                     // Regular ByteArray decoding (OCTET STRING)
-                    processedElement.asPrimitive().content.also { index++ } as T
+                    processedElement.asPrimitive().content.also { elementIndex++ } as T
                 }
             }
         }
@@ -338,7 +360,7 @@ class DerDecoder internal constructor(
             serializersModule = serializersModule,
         )
         val value = deserializer.deserialize(childDecoder)
-        index++
+        elementIndex++
         return value
     }
 
@@ -391,7 +413,7 @@ class DerDecoder internal constructor(
             )
 
             1 -> {
-                index++
+                elementIndex++
                 return matches.single().second
             }
 
