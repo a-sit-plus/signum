@@ -223,10 +223,6 @@ constructor(
                 }
             } else null
 
-            if (hasNext()) {
-                throw Asn1StructuralException("Superfluous structure in TBSCertificate Structure")
-            }
-
             TbsCertificate(
                 version = version,
                 serialNumber = serialNumber,

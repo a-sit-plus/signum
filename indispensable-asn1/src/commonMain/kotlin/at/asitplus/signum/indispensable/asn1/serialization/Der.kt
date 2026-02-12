@@ -10,6 +10,12 @@ import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.serializer
 
 
+/**
+ * Marker format type for ASN.1 DER serialization via kotlinx.serialization.
+ *
+ * Use the top-level [at.asitplus.signum.indispensable.asn1.serialization.api.DER] instance
+ * or create a custom instance through `DER { }`.
+ */
 class Der {
     companion object {
 
@@ -18,23 +24,38 @@ class Der {
 
 //all of the below must be extensions that statically resolve to allow for shadowing
 
+/**
+ * Encodes [value] into DER using the inferred serializer for [T].
+ */
 @ExperimentalSerializationApi
 inline fun <reified T> Der.encodeToDer(value: T) = encodeToDer(serializer(), value)
 
+/**
+ * Encodes [value] into a single ASN.1 TLV element using the inferred serializer for [T].
+ */
 @ExperimentalSerializationApi
 inline fun <reified T> Der.encodeToTlv(value: T) = encodeToTlv(serializer(), value)
 
 
+/**
+ * Decodes [source] from DER using the inferred deserializer for [T].
+ */
 @ExperimentalSerializationApi
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 inline fun <reified T> Der.decodeFromDer(source: ByteArray): T = decodeFromDer(source, serializer())
 
+/**
+ * Decodes [source] from a single ASN.1 TLV element using the inferred deserializer for [T].
+ */
 @ExperimentalSerializationApi
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T = decodeFromTlv(source, serializer())
 
+/**
+ * Encodes [value] with the given [serializer] into DER bytes.
+ */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArray {
     val encoder = DerEncoder()
@@ -42,6 +63,11 @@ fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArr
     return Buffer().also { encoder.writeTo(it) }.readByteArray()
 }
 
+/**
+ * Encodes [value] with the given [serializer] into a single ASN.1 TLV element.
+ *
+ * @throws at.asitplus.signum.internals.ImplementationError if serialization produced more than one top-level element
+ */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Element {
     val encoder = DerEncoder()
@@ -51,12 +77,18 @@ fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Ele
 }
 
 
+/**
+ * Decodes [source] DER bytes using the given [deserializer].
+ */
 @ExperimentalSerializationApi
 fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
     val decoder = DerDecoder(Buffer().also { it.write(source) })
     return decoder.decodeSerializableValue(deserializer)
 }
 
+/**
+ * Decodes a single TLV [source] using the given [deserializer].
+ */
 @ExperimentalSerializationApi
 fun <T> Der.decodeFromTlv(source: Asn1Element, deserializer: DeserializationStrategy<T>): T {
     val decoder = DerDecoder(listOf(source))

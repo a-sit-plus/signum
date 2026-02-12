@@ -1,19 +1,20 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.internals.ImplementationError
 import kotlinx.serialization.SerialInfo
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
 
 /**
- * All-in-one ASN.1 kitchen sink annotation for serialization.
- * Required since the order of encapsulating [layers] is important and the order of toplevel annotations is not preserved.
+ * Unified ASN.1 serialization annotation.
  *
- * @param layers any encapsulating layers
- * @param asBitString only affects [ByteArray]s (and value classes over byte arrays): Whether to encode a byte array as bit string instead of an octet string
- * @param encodeNull whether to encode a null value as ANS.1 null (or omit it).
- * @param asChoice whether this value should be encoded/decoded as ASN.1 CHOICE (sealed polymorphic without discriminator wrapper)
+ * This bundles all ASN.1-specific serialization hints because annotation order on declarations
+ * is not stable, while [layers] order is semantically relevant.
+ *
+ * @param layers ordered encapsulation/tagging layers, outermost first
+ * @param asBitString only affects [ByteArray] values (including inline wrappers): encodes as BIT STRING instead of OCTET STRING
+ * @param encodeNull encodes nulls as explicit ASN.1 NULL instead of omitting the value
+ * @param asChoice enables ASN.1 CHOICE behavior for sealed polymorphism (no discriminator wrapper)
  */
 @SerialInfo
 @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
@@ -25,12 +26,12 @@ annotation class Asn1nnotation(
 )
 
 /**
- * Encapsulation layer allowing for:
- *   * EXPLICIT tagging requiring **a single tag value**
- *   * IMPLICIT tagging requiring **a single tag value**
- *   * OCTET STRING encapsulation **ignoring all provided tag values**
+ * Single ASN.1 layer used by [Asn1nnotation].
  *
- * through [Asn1nnotation].
+ * Depending on [type], this models:
+ * - EXPLICIT tagging (requires exactly one tag value in [singleTag])
+ * - IMPLICIT tagging (requires exactly one tag value in [singleTag])
+ * - OCTET STRING encapsulation (ignores [singleTag])
  */
 @SerialInfo
 @Target(allowedTargets = [])
@@ -40,15 +41,19 @@ annotation class Layer(
 )
 
 /**
- * checked access to tag, only use this one
+ * Validated access to a layer's effective tag.
+ *
+ * For [Type.EXPLICIT_TAG] and [Type.IMPLICIT_TAG], exactly one tag value must be present.
+ * For [Type.OCTET_STRING], this returns [Asn1Element.Tag.OCTET_STRING].
  */
 val Layer.tag: ULong
     get() = when (this.type) {
         Type.OCTET_STRING -> Asn1Element.Tag.OCTET_STRING.tagValue
         Type.EXPLICIT_TAG, Type.IMPLICIT_TAG -> if (singleTag.size != 1) throw SerializationException("Exactly one single tag value must be specified, got: ${singleTag.size}") else singleTag.first()
     }
+
 /**
- * Layer type crutch, since annotations are limited
+ * Layer mode used by [Layer].
  */
 enum class Type {
     OCTET_STRING,
@@ -56,8 +61,9 @@ enum class Type {
     IMPLICIT_TAG;
 }
 
-internal val SerialDescriptor.asn1nnotation get() =annotations.find { it is Asn1nnotation } as? Asn1nnotation
-internal fun SerialDescriptor.asn1nnotation(index:Int) = getElementAnnotations(index).find { it is Asn1nnotation } as? Asn1nnotation
+internal val SerialDescriptor.asn1nnotation get() = annotations.find { it is Asn1nnotation } as? Asn1nnotation
+internal fun SerialDescriptor.asn1nnotation(index: Int) =
+    getElementAnnotations(index).find { it is Asn1nnotation } as? Asn1nnotation
 
 internal val Iterable<Annotation>.asn1Layers: List<Layer>
     get() = filterIsInstance<Asn1nnotation>().firstOrNull()?.layers?.asList() ?: emptyList()

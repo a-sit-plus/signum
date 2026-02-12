@@ -286,16 +286,28 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()
 
-
+/**
+ * String-based kotlinx serializer for [X509SignatureAlgorithm].
+ *
+ * The serialized representation is the algorithm OID in dotted string form.
+ */
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("X509SignatureAlgorithmSerializer", PrimitiveKind.STRING)
 
+    /**
+     * Encodes as dotted OID string.
+     */
     override fun serialize(encoder: Encoder, value: X509SignatureAlgorithm) {
         value.let { encoder.encodeString(it.oid.toString()) }
     }
 
+    /**
+     * Resolves a dotted OID string to one of [X509SignatureAlgorithm.entries].
+     *
+     * @throws NoSuchElementException if no matching algorithm exists
+     */
     override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
         val decoded = decoder.decodeString()
         return X509SignatureAlgorithm.entries.first { it.oid.toString() == decoded }

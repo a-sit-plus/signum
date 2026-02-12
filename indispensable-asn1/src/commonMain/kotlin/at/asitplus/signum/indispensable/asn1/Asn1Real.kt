@@ -207,7 +207,11 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
     }
 }
 
-/**Serializes an ASN.1 REAL into a hunam-readable string*/
+/**
+ * String serializer for [Asn1Real].
+ *
+ * Intended as non-ASN.1 fallback representation for generic formats such as JSON.
+ */
 object Asn1RealStringSerializer : KSerializer<Asn1Real> {
     override val descriptor: SerialDescriptor
         get() = PrimitiveSerialDescriptor("Asn1Real", PrimitiveKind.STRING)

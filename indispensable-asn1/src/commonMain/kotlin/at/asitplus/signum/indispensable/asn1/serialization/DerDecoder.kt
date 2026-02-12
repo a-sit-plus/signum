@@ -19,6 +19,14 @@ import kotlinx.serialization.modules.SerializersModule
 
 
 @ExperimentalSerializationApi
+/**
+ * ASN.1 DER decoder used by [Der] format operations.
+ *
+ * This decoder supports:
+ * - annotation-driven tag/layer processing via [Asn1nnotation]
+ * - sealed CHOICE decoding (`asChoice = true`)
+ * - runtime ambiguity checks for nullable/optional class layouts
+ */
 class DerDecoder internal constructor(
     private val elements: List<Asn1Element>,
     override val serializersModule: SerializersModule = EmptySerializersModule()

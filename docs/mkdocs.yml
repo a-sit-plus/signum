@@ -80,6 +80,7 @@ nav:
   - Manual:
       - Overview: index.md
       - CHANGELOG.md
+      - Serialization API Delta: serialization-api-delta.md
       - Examples: examples.md
       - Modules:
           - Indispensable ASN.1: indispensable-asn1.md

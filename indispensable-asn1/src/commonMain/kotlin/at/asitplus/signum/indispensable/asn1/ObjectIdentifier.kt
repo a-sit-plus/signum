@@ -223,6 +223,11 @@ fun Asn1Primitive.readOid() = runRethrowing {
     decode(Asn1Element.Tag.OID) { ObjectIdentifier.decodeFromAsn1ContentBytes(it) }
 }
 
+/**
+ * String-based serializer for [ObjectIdentifier].
+ *
+ * The serialized representation is the dotted-decimal OID string (for example `1.2.840.113549`).
+ */
 object ObjectIdentifierStringSerializer : KSerializer<ObjectIdentifier> {
     override val descriptor = PrimitiveSerialDescriptor("OID", PrimitiveKind.STRING)
 

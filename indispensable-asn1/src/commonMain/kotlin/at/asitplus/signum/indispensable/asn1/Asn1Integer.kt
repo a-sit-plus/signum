@@ -429,7 +429,11 @@ internal value class VarUInt private constructor(val words: UByteArray) {
     }
 }
 
-/**serializes an ASN.1 Integer to a decimal String*/
+/**
+ * String serializer for [Asn1Integer].
+ *
+ * Intended as non-ASN.1 fallback representation for generic formats such as JSON.
+ */
 object Asn1IntegerStringSerializer : KSerializer<Asn1Integer> {
     override val descriptor = PrimitiveSerialDescriptor("ASN.1 Integer", PrimitiveKind.STRING)
 
