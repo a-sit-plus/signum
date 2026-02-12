@@ -61,36 +61,25 @@ val PkiKotlinxDerSurrogateTest by testSuite {
     "X509 surrogate reject/accept behavior stays aligned with legacy parser" - {
         val (_, faulty) = readGoogleDerCorpus()
 
-        withData(faulty) { (name, der) ->
+        withData(nameFn = {(name,_)->name}, faulty) { (name, der) ->
             val legacy = runCatching { X509Certificate.decodeFromDer(der) }
             val surrogate = runCatching { DER.decodeFromDer<SurrogateX509Certificate>(der) }
 
-            withClue(name) {
-                if (legacy.isFailure) {
-                    if (surrogate.isSuccess) {
-                        val surrogateValue = surrogate.getOrThrow()
-                        val surrogateDer = DER.encodeToDer(surrogateValue)
-                        if (!surrogateDer.contentEquals(der)) {
-                            println("W: DER mismatch for legacy-failing cert $name (possible non-canonical SET order)")
-                        }
-                        if (!surrogateValue.isConsistentWithX509Constraints()) {
-                            println("W: surrogate accepted semantically inconsistent cert: $name")
-                        }
-                        println("W: surrogate accepted legacy-failing cert: $name")
-                    }
-                } else {
+            withClue(name+" legacy failure ${legacy.isFailure}, surrogate failure: ${surrogate.isFailure}") {
+                if(legacy.isSuccess && !name.startsWith("ok-") && surrogate.isFailure) {
+                    return@withData
+                }
+                legacy.isFailure shouldBe surrogate.isFailure
+                if (legacy.isSuccess) {
                     surrogate.isSuccess shouldBe true
                     val surrogateValue = surrogate.getOrThrow()
-                    if (!surrogateValue.isConsistentWithX509Constraints()) {
-                        println("W: signatureAlgorithm mismatch in legacy-accepted cert $name")
-                    }
+                    //surrogateValue.isConsistentWithX509Constraints() shouldBe true
                     val surrogateDer = DER.encodeToDer(surrogateValue)
                     runCatching { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
 
                     val legacyDer = legacy.getOrThrow().encodeToDer()
-                    if (!surrogateDer.contentEquals(legacyDer)) {
-                        println("W: DER mismatch for legacy-accepted faulty cert $name (possible non-canonical SET order)")
-                    }
+                    surrogateDer shouldBe der
+                    surrogateDer shouldBe legacyDer
                 }
             }
         }
@@ -147,19 +136,13 @@ private fun assertX509SurrogateRoundtrip(label: String, der: ByteArray) {
     val surrogate = DER.decodeFromDer<SurrogateX509Certificate>(der)
     val surrogateDer = DER.encodeToDer(surrogate)
     withClue(label) {
-        if (!surrogate.isConsistentWithX509Constraints()) {
-            println("W: signatureAlgorithm mismatch in cert $label")
-        }
+        surrogate.isConsistentWithX509Constraints() shouldBe true
         runCatching { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
         DER.encodeToDer(DER.decodeFromDer<SurrogateX509Certificate>(surrogateDer)) shouldBe surrogateDer
 
         val legacyDer = legacy.encodeToDer()
-        if (!surrogateDer.contentEquals(der)) {
-            println("W: DER mismatch against input for $label (possible non-canonical SET order)")
-        }
-        if (!surrogateDer.contentEquals(legacyDer)) {
-            println("W: DER mismatch against legacy encoder for $label (possible non-canonical SET order)")
-        }
+        surrogateDer shouldBe der
+        surrogateDer shouldBe legacyDer
     }
 }
 
