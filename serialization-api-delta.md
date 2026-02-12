@@ -226,9 +226,6 @@ Practical implication:
 - For complex ASN.1 structures, use `DER.encodeToDer(...)` / `DER.decodeFromDer(...)`.
 
 ## 6. Build and Tooling Delta
-
-- `gradle/libs.versions.toml`
-  - Added `serialization = "1.9.0"` in `[versions]`.
 - `indispensable-asn1/build.gradle.kts`
   - Added compiler arg: `-Xemit-jvm-type-annotations`.
 

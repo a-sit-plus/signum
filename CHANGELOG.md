@@ -1,7 +1,13 @@
 # Changelog
 
 ## NEXT
-* fix build setup on non-macos
+* Introduce a full kotlinx-serialization DER codec (`DER`) with ASN.1-aware encoder/decoder, serializer infrastructure, and `@Asn1` annotation support.
+* Add runtime ambiguity detection for ASN.1 layouts (nullable fields, partial tagging, numeric collisions, maps, and CHOICE) with strict failure on ambiguous schemas.
+* Add polymorphism and sealed-CHOICE support for DER serialization, including strict disambiguation behavior.
+* Expand and split ASN.1 serialization tests (ambiguity, implicit tagging, map support, null/set behavior, format compatibility, polymorphism/choice, and extension roundtrips).
+* Align serializers across core ASN.1 and PKI/security types (keys, signatures, X.509 algorithms/certificates/CSR), including PKCS#8-specialized private-key handling.
+* Add strict X.509/DER surrogate coverage and parser hardening around trailing/superfluous children plus real-world certificate edge cases.
+* Build/docs updates: Kotlin 2.3 + serialization 1.9 version-catalog wiring, JVM type-annotation emission for ASN.1 module, and published serialization API delta docs.
 
 ## 3.19.3 / Supreme 0.11.3
 * Support CURSED X.509 Certificate extensions that encode critical=false instead of omitting it

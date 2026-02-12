@@ -222,7 +222,7 @@ sealed class X509SignatureAlgorithm(
             }
 
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing {
+        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing<X509SignatureAlgorithm> {
             val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
                 Triple(
                     next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
