@@ -139,7 +139,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
                             "property '${nullableOrOptionalField.name}' (index ${nullableOrOptionalField.index}) " +
                             "can be omitted and shares possible tag(s) ${formatTags(overlap)} with " +
                             "property '${candidateField.name}' (index ${candidateField.index}). " +
-                            "Add disambiguating @Asn1nnotation layers or set encodeNull=true for nullable fields."
+                            "Add disambiguating implicit @Asn1nnotation tags or set encodeNull=true for nullable fields."
                 )
             }
         }
@@ -165,12 +165,12 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
         )
     }
 
-    val allLayers =
-        (inlineAsn1nnotation?.layers?.toList() ?: emptyList()) +
-                (propertyAsn1nnotation?.layers?.toList() ?: emptyList()) +
-                annotations.asn1Layers
-
-    val usesImplicitNullSentinel = allLayers.usesImplicitNullSentinel()
+    val tagTemplate = resolveAsn1TagTemplate(
+        inlineAsn1nnotation = inlineAsn1nnotation,
+        propertyAsn1nnotation = propertyAsn1nnotation,
+        classAsn1nnotation = asn1nnotation
+    )
+    val usesImplicitNullSentinel = tagTemplate != null
     if (!usesImplicitNullSentinel) {
         return Asn1NullEncodingAnalysis(
             encodeNullEnabled = true,
@@ -186,7 +186,7 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
                 propertyAsn1nnotation?.asBitString == true ||
                 unwrapped.isAsn1BitString
 
-    val baseIsConstructed = unwrapped.asn1BaseIsConstructed()
+    val baseIsConstructed = tagTemplate.constructed ?: unwrapped.asn1BaseIsConstructed()
     val baseCanEncodeEmptyContent = unwrapped.asn1BaseCanEncodeEmptyContent(isBitString)
 
     return Asn1NullEncodingAnalysis(
@@ -199,21 +199,28 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
 
 internal fun SerialDescriptor.possibleLeadingTagsForAsn1(
     propertyAsn1nnotation: Asn1nnotation? = null,
+    inlineAsn1nnotation: Asn1nnotation? = null,
 ): Asn1LeadingTagsResolution = possibleLeadingTags(
     descriptor = this,
     propertyAsn1nnotation = propertyAsn1nnotation,
+    inlineAsn1nnotation = inlineAsn1nnotation,
 )
 
 private fun possibleLeadingTags(
     descriptor: SerialDescriptor,
     propertyAsn1nnotation: Asn1nnotation?,
+    inlineAsn1nnotation: Asn1nnotation? = null,
     inheritedBitString: Boolean = false,
     forcedChoice: Boolean? = null,
 ): Asn1LeadingTagsResolution {
-    val allLayers = (propertyAsn1nnotation?.layers?.toList() ?: emptyList()) + descriptor.annotations.asn1Layers
-
     val isBitString = inheritedBitString || propertyAsn1nnotation?.asBitString == true || descriptor.isAsn1BitString
     val choiceMode = forcedChoice ?: (propertyAsn1nnotation?.asChoice == true || descriptor.asn1nnotation?.asChoice == true)
+
+    val tagTemplate = resolveAsn1TagTemplate(
+        inlineAsn1nnotation = inlineAsn1nnotation,
+        propertyAsn1nnotation = propertyAsn1nnotation,
+        classAsn1nnotation = descriptor.asn1nnotation,
+    )
 
     val baseTags = possibleBaseLeadingTags(
         descriptor = descriptor,
@@ -221,7 +228,7 @@ private fun possibleLeadingTags(
         choiceMode = choiceMode,
     )
 
-    return applyLayers(baseTags, allLayers)
+    return applyImplicitTagOverride(baseTags, tagTemplate)
 }
 
 private fun possibleBaseLeadingTags(
@@ -310,34 +317,38 @@ private fun possibleSealedChoiceAlternativeLeadingTags(descriptor: SerialDescrip
     else Asn1LeadingTagsResolution.UnknownInfer
 }
 
-private fun applyLayers(
+private fun applyImplicitTagOverride(
     baseTags: Asn1LeadingTagsResolution,
-    layers: List<Layer>,
+    tagTemplate: Asn1Element.Tag.Template?,
 ): Asn1LeadingTagsResolution {
-    if (layers.isEmpty()) return baseTags
-
-    val innerTags = applyLayers(baseTags, layers.drop(1))
-    val current = layers.first()
-
-    return when (current.type) {
-        Type.OCTET_STRING -> Asn1LeadingTagsResolution.Exact(setOf(Asn1Element.Tag.OCTET_STRING))
-        Type.EXPLICIT_TAG -> Asn1LeadingTagsResolution.Exact(
-            setOf(Asn1Element.Tag(current.tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC))
+    if (tagTemplate == null) return baseTags
+    return when (baseTags) {
+        is Asn1LeadingTagsResolution.Exact -> Asn1LeadingTagsResolution.Exact(
+            baseTags.tags.map {
+                Asn1Element.Tag(
+                    tagValue = tagTemplate.tagValue,
+                    tagClass = tagTemplate.tagClass ?: it.tagClass,
+                    constructed = tagTemplate.constructed ?: it.isConstructed,
+                )
+            }.toSet()
         )
 
-        Type.IMPLICIT_TAG -> when (innerTags) {
-            is Asn1LeadingTagsResolution.Exact -> Asn1LeadingTagsResolution.Exact(
-                innerTags.tags.map {
-                    Asn1Element.Tag(current.tag, constructed = it.isConstructed, tagClass = TagClass.CONTEXT_SPECIFIC)
-                }.toSet()
-            )
-
-            Asn1LeadingTagsResolution.UnknownInfer -> Asn1LeadingTagsResolution.Exact(
-                setOf(
-                    Asn1Element.Tag(current.tag, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC),
-                    Asn1Element.Tag(current.tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC),
+        Asn1LeadingTagsResolution.UnknownInfer -> {
+            val tagClass = tagTemplate.tagClass
+            val constructed = tagTemplate.constructed
+            if (tagClass != null && constructed != null) {
+                Asn1LeadingTagsResolution.Exact(
+                    setOf(
+                        Asn1Element.Tag(
+                            tagValue = tagTemplate.tagValue,
+                            tagClass = tagClass,
+                            constructed = constructed,
+                        )
+                    )
                 )
-            )
+            } else {
+                Asn1LeadingTagsResolution.UnknownInfer
+            }
         }
     }
 }
@@ -384,19 +395,8 @@ internal fun ambiguousAsn1NullEncodingMessage(
         ""
     }
     return "Ambiguous ASN.1 null encoding for ${propertyPart}$ownerSerialName: " +
-            "nullable value with encodeNull=true uses IMPLICIT tagging where null and empty non-null values become indistinguishable. " +
+            "nullable value with encodeNull=true uses implicit tag override where null and empty non-null values become indistinguishable. " +
             "Use EXPLICIT tagging, avoid encodeNull=true, or choose a non-ambiguous value type."
-}
-
-private fun List<Layer>.usesImplicitNullSentinel(): Boolean {
-    if (isEmpty()) return false
-    for (layer in asReversed()) {
-        when (layer.type) {
-            Type.IMPLICIT_TAG -> return true
-            Type.EXPLICIT_TAG, Type.OCTET_STRING -> return false
-        }
-    }
-    return false
 }
 
 private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor =

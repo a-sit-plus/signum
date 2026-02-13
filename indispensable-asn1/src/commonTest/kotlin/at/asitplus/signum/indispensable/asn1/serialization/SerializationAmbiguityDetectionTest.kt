@@ -320,7 +320,7 @@ data class AmbiguousNullableStringLayout(
 @Serializable
 data class TaggedNullableStringLayout(
     val first: String,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 0uL))
+    @Asn1nnotation(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val second: String?,
     val third: String,
 )
@@ -337,33 +337,33 @@ data class ConsecutiveNumericNullables(
 
 @Serializable
 data class TaggedConsecutiveNumericNullables(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 10uL))
+    @Asn1nnotation(tagNumber = 10, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val longValue: Long?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 11uL))
+    @Asn1nnotation(tagNumber = 11, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val intValue: Int?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 12uL))
+    @Asn1nnotation(tagNumber = 12, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val shortValue: Short?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 13uL))
+    @Asn1nnotation(tagNumber = 13, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val byteValue: Byte?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 14uL))
+    @Asn1nnotation(tagNumber = 14, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val floatValue: Float?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 15uL))
+    @Asn1nnotation(tagNumber = 15, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val doubleValue: Double?,
 )
 
 @Serializable
 data class ExplicitTaggedConsecutiveNumericNullables(
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 50uL))
+    @Asn1nnotation(tagNumber = 50, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val longValue: Long?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 51uL))
+    @Asn1nnotation(tagNumber = 51, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val intValue: Int?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 52uL))
+    @Asn1nnotation(tagNumber = 52, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val shortValue: Short?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 53uL))
+    @Asn1nnotation(tagNumber = 53, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val byteValue: Byte?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 54uL))
+    @Asn1nnotation(tagNumber = 54, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val floatValue: Float?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 55uL))
+    @Asn1nnotation(tagNumber = 55, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val doubleValue: Double?,
 )
 
@@ -377,61 +377,61 @@ data class ConsecutiveDistinctNullableKinds(
 
 @Serializable
 data class PartiallyTaggedAmbiguousNumericNullables(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 20uL))
+    @Asn1nnotation(tagNumber = 20, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val longValue: Long?,
     val intValue: Int?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 21uL))
+    @Asn1nnotation(tagNumber = 21, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val shortValue: Short?,
     val byteValue: Byte?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 22uL))
+    @Asn1nnotation(tagNumber = 22, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val floatValue: Float?,
     val doubleValue: Double?,
 )
 
 @Serializable
 data class PartiallyExplicitTaggedAmbiguousNumericNullables(
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 60uL))
+    @Asn1nnotation(tagNumber = 60, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val longValue: Long?,
     val intValue: Int?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 61uL))
+    @Asn1nnotation(tagNumber = 61, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val shortValue: Short?,
     val byteValue: Byte?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 62uL))
+    @Asn1nnotation(tagNumber = 62, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val floatValue: Float?,
     val doubleValue: Double?,
 )
 
 @Serializable
 data class PartiallyTaggedUnambiguousNumericNullables(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 30uL))
+    @Asn1nnotation(tagNumber = 30, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val longValue: Long?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 31uL))
+    @Asn1nnotation(tagNumber = 31, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val intValue: Int?,
     val shortValue: Short?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 32uL))
+    @Asn1nnotation(tagNumber = 32, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val byteValue: Byte?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 33uL))
+    @Asn1nnotation(tagNumber = 33, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val floatValue: Float?,
     val doubleValue: Double?,
 )
 
 @Serializable
 data class PartiallyExplicitTaggedUnambiguousNumericNullables(
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 70uL))
+    @Asn1nnotation(tagNumber = 70, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val longValue: Long?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 71uL))
+    @Asn1nnotation(tagNumber = 71, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val intValue: Int?,
     val shortValue: Short?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 72uL))
+    @Asn1nnotation(tagNumber = 72, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val byteValue: Byte?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 73uL))
+    @Asn1nnotation(tagNumber = 73, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val floatValue: Float?,
     val doubleValue: Double?,
 )
 
 @Serializable
 data class ContextSpecificVsUniversalInt(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 2uL))
+    @Asn1nnotation(tagNumber = 2, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val maybeTaggedInt: Int?,
     val plainInt: Int,
 )
@@ -440,11 +440,11 @@ data class ContextSpecificVsUniversalInt(
 data class PlainIntBox(val value: Int)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 80uL))
+@Asn1nnotation(tagNumber = 80, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ClassTaggedIntBoxA(val value: Int)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 81uL))
+@Asn1nnotation(tagNumber = 81, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ClassTaggedIntBoxB(val value: Int)
 
 @Serializable
@@ -460,38 +460,38 @@ data class NullableClassTaggedIntBoxes(
 )
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 90uL))
+@Asn1nnotation(tagNumber = 90, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ClassImplicitIntBoxA(val value: Int)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 91uL))
+@Asn1nnotation(tagNumber = 91, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ClassImplicitIntBoxB(val value: Int)
 
 @Serializable
 data class NullableMixedTagLayeringStillAmbiguous(
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 100uL))
+    @Asn1nnotation(tagNumber = 100, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val first: ClassImplicitIntBoxA?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 100uL))
+    @Asn1nnotation(tagNumber = 100, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val second: ClassImplicitIntBoxB,
 )
 
 @Serializable
 data class NullableMixedTagLayeringDisambiguated(
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 100uL))
+    @Asn1nnotation(tagNumber = 100, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val first: ClassImplicitIntBoxA?,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 101uL))
+    @Asn1nnotation(tagNumber = 101, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val second: ClassImplicitIntBoxB,
 )
 
 @Serializable
-@Asn1nnotation(Layer(Type.EXPLICIT_TAG, 110uL))
+@Asn1nnotation(tagNumber = 110, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ClassExplicitIntBox(val value: Int)
 
 @Serializable
 data class NullablePropertyImplicitClassExplicit(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 111uL))
+    @Asn1nnotation(tagNumber = 111, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val first: ClassExplicitIntBox?,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 112uL))
+    @Asn1nnotation(tagNumber = 112, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val second: ClassExplicitIntBox,
 )
 

@@ -60,7 +60,8 @@ data class Simple(val a: String)
 data class SimpleOctet(val a: String)
 
 @Asn1nnotation(
-    Layer(Type.IMPLICIT_TAG, 99uL),
+    tagNumber = 99,
+    tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
 )
 @Serializable
 enum class Baz {
@@ -68,41 +69,26 @@ enum class Baz {
     BAR,
 }
 
-@Asn1nnotation(
-    Layer(Type.OCTET_STRING),
-    Layer(Type.EXPLICIT_TAG, 66uL),
-    Layer(Type.OCTET_STRING),
-    Layer(Type.IMPLICIT_TAG, 33uL)
-)
 @Serializable
 data class TypesUmbrella(
     val inner: Simple,
     @Asn1nnotation(
-        Layer(Type.IMPLICIT_TAG, 333uL),
+        tagNumber = 333,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val str: String,
-    @Asn1nnotation(
-        Layer(Type.OCTET_STRING),
-    )
     val i: UInt,
     @Asn1nnotation(encodeNull = true)
     val nullable: Double?,
     val list: List<String>,
     val map: Map<Int, Boolean>,
-    @Asn1nnotation(
-        Layer(Type.OCTET_STRING),
-    )
     val innersList: List<SimpleOctet>,
     val byteString: ByteArray,
     val byteArray: ByteArray,
     val innerImpl: SimpleLong,
     @Asn1nnotation(
-        Layer(Type.OCTET_STRING),
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.OCTET_STRING),
-        Layer(Type.IMPLICIT_TAG, 99uL),
-        Layer(Type.IMPLICIT_TAG, 66uL),
-        Layer(Type.IMPLICIT_TAG, 33uL),
+        tagNumber = 66,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val enum: Baz,
     val octet: Asn1OctetString

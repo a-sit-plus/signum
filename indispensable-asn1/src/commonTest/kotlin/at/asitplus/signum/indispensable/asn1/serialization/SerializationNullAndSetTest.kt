@@ -7,10 +7,8 @@ import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.invocation
 import de.infix.testBalloon.framework.core.testSuite
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 
 @OptIn(ExperimentalStdlibApi::class)
 val SerializationTestNullAndSet by testSuite(
@@ -21,46 +19,23 @@ val SerializationTestNullAndSet by testSuite(
         DER.decodeFromDer<Set<String>>(
             DER.encodeToDer(set).also { it.toHexString() shouldBe "310f0c03466f6f0c034261720c0342617a" }
         ) shouldBe set
-        DER.decodeFromDer<Set<String>>(
-            DER.encodeToDer(set).also { it.toHexString() shouldBe "310f0c03466f6f0c034261720c0342617a" }
-        ) shouldBe set
     }
 
     "Nulls and Noughts" {
-        val internalNullableAnnotatedOmit = InternalNullableAnnotatedOmit(null)
-        val omitEncoded = DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString() shouldBe "3000" }
-        DER.decodeFromDer<InternalNullableAnnotatedOmit>(omitEncoded) shouldBe internalNullableAnnotatedOmit
-
-        shouldThrow<SerializationException> {
-            DER.encodeToDer(InternalNullableAnnotated(null))
-        }
-        shouldThrow<SerializationException> {
-            DER.decodeFromDer<InternalNullableAnnotated>("300dbf8a39090407bf8a39039f5a00".hexToByteArray())
-        }
-
-        val internalNullableAnnotatedInt = InternalNullableAnnotatedInt(null)
-        val internalNullableAnnotatedIntEncoded =
-            DER.encodeToDer(internalNullableAnnotatedInt).apply { toHexString() shouldBe "300dbf8a39090407bf8a39039f5a00" }
-        DER.decodeFromDer<InternalNullableAnnotatedInt>(internalNullableAnnotatedIntEncoded) shouldBe internalNullableAnnotatedInt
-        val internalNullableAnnotatedIntSet = InternalNullableAnnotatedInt(5)
-        DER.decodeFromDer<InternalNullableAnnotatedInt>(DER.encodeToDer(internalNullableAnnotatedIntSet)) shouldBe internalNullableAnnotatedIntSet
-
-        val annotatedImplicit = DER.encodeToDer<NullableAnnotatedImplicit?>(null)
-            .apply { toHexString(HexFormat.UpperCase) shouldBe "BF8A39090407BF8A39039F5A00" }
-        DER.decodeFromDer<NullableAnnotatedImplicit?>(annotatedImplicit) shouldBe null
-
-        DER.encodeToDer<Nullable?>(null) shouldBe Asn1Null.derEncoded
+        DER.encodeToDer<NullAsAsn1Null?>(null) shouldBe Asn1Null.derEncoded
 
         val nullable: String? = null
         DER.encodeToDer(nullable) shouldBe byteArrayOf()
         DER.decodeFromDer<String?>(byteArrayOf()) shouldBe null
 
-        DER.encodeToDer<NullableAnnotatedImplicitOmit?>(null) shouldBe byteArrayOf()
-        DER.decodeFromDer<NullableAnnotatedImplicitOmit?>(byteArrayOf()) shouldBe null
+        val taggedNull = TaggedNullableInt(value = null)
+        DER.decodeFromDer<TaggedNullableInt>(DER.encodeToDer(taggedNull)) shouldBe taggedNull
 
-        val annotated = DER.encodeToDer<NullableAnnotated?>(null)
-            .apply { toHexString(HexFormat.UpperCase) shouldBe "0406BF8A39020500" }
-        DER.decodeFromDer<NullableAnnotated?>(annotated) shouldBe null
+        val taggedValue = TaggedNullableInt(value = 5)
+        DER.decodeFromDer<TaggedNullableInt>(DER.encodeToDer(taggedValue)) shouldBe taggedValue
+
+        val omitted = TaggedNullableIntOmit(value = null)
+        DER.decodeFromDer<TaggedNullableIntOmit>(DER.encodeToDer(omitted)) shouldBe omitted
 
         // Regression: empty primitive values must not be mistaken for null when encodeNull=false.
         val emptyString = NullablePlainString("")
@@ -73,68 +48,25 @@ val SerializationTestNullAndSet by testSuite(
 
 @Serializable
 @Asn1nnotation(encodeNull = true)
-object Nullable
+object NullAsAsn1Null
 
 @Serializable
-@Asn1nnotation(
-    Layer(Type.OCTET_STRING),
-    Layer(Type.EXPLICIT_TAG, 1337uL),
-    encodeNull = true
-)
-object NullableAnnotated
-
-@Serializable
-@Asn1nnotation(
-    Layer(Type.EXPLICIT_TAG, 1337uL),
-    Layer(Type.OCTET_STRING),
-    Layer(Type.EXPLICIT_TAG, 1337uL),
-    Layer(Type.IMPLICIT_TAG, 90uL),
-    encodeNull = true
-)
-object NullableAnnotatedImplicit
-
-@Serializable
-@Asn1nnotation(
-    Layer(Type.EXPLICIT_TAG, 1337uL),
-    Layer(Type.OCTET_STRING),
-    Layer(Type.EXPLICIT_TAG, 1337uL),
-    Layer(Type.IMPLICIT_TAG, 90uL),
-)
-object NullableAnnotatedImplicitOmit
-
-@Serializable
-data class InternalNullableAnnotated(
+data class TaggedNullableInt(
     @Asn1nnotation(
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.OCTET_STRING),
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.IMPLICIT_TAG, 90uL),
-        encodeNull = true
+        tagNumber = 90,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
+        encodeNull = true,
     )
-    val nullable: String?
+    val value: Int?
 )
 
 @Serializable
-data class InternalNullableAnnotatedOmit(
+data class TaggedNullableIntOmit(
     @Asn1nnotation(
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.OCTET_STRING),
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.IMPLICIT_TAG, 90uL),
+        tagNumber = 90,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
-    val nullable: String?
-)
-
-@Serializable
-data class InternalNullableAnnotatedInt(
-    @Asn1nnotation(
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.OCTET_STRING),
-        Layer(Type.EXPLICIT_TAG, 1337uL),
-        Layer(Type.IMPLICIT_TAG, 90uL),
-        encodeNull = true
-    )
-    val nullable: Int?
+    val value: Int?
 )
 
 @Serializable

@@ -63,19 +63,28 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
         DER.decodeFromDer<PrimitiveNoImplicitDoubleSafe>(DER.encodeToDer(doubleZero)) shouldBe doubleZero
     }
 
-    "Explicit layer disambiguates even when implicit is present" {
-        val valueNull = PrimitiveImplicitThenExplicitStringSafe(null)
-        DER.decodeFromDer<PrimitiveImplicitThenExplicitStringSafe>(DER.encodeToDer(valueNull)) shouldBe valueNull
-
-        val valueEmpty = PrimitiveImplicitThenExplicitStringSafe("")
-        DER.decodeFromDer<PrimitiveImplicitThenExplicitStringSafe>(DER.encodeToDer(valueEmpty)) shouldBe valueEmpty
+    "Explicit wrapper does not rescue an inner ambiguous primitive/null encoding" {
+        shouldThrow<SerializationException> {
+            DER.encodeToDer(
+                PrimitiveImplicitThenExplicitStringSafe(
+                    Asn1Explicit(PrimitiveInnerImplicitNullableString(null))
+                )
+            )
+        }
+        shouldThrow<SerializationException> {
+            DER.decodeFromDer<PrimitiveImplicitThenExplicitStringSafe>("3000".hexToByteArray())
+        }
     }
 
     "Octet wrapping without implicit tagging remains unambiguous" {
-        val valueNull = PrimitiveOctetStringSafe(null)
+        val valueNull = PrimitiveOctetStringSafe(
+            Asn1OctetWrapped(PrimitiveInnerPlainNullableString(null))
+        )
         DER.decodeFromDer<PrimitiveOctetStringSafe>(DER.encodeToDer(valueNull)) shouldBe valueNull
 
-        val valueEmpty = PrimitiveOctetStringSafe("")
+        val valueEmpty = PrimitiveOctetStringSafe(
+            Asn1OctetWrapped(PrimitiveInnerPlainNullableString(""))
+        )
         DER.decodeFromDer<PrimitiveOctetStringSafe>(DER.encodeToDer(valueEmpty)) shouldBe valueEmpty
 
         val octetsNull = PrimitiveNoImplicitOctetStringSafe(null)
@@ -89,7 +98,11 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
 
     "Octet wrapping does not disambiguate if implicit remains innermost" {
         shouldThrow<SerializationException> {
-            DER.encodeToDer(PrimitiveOctetThenImplicitStringAmbiguous(null))
+            DER.encodeToDer(
+                PrimitiveOctetThenImplicitStringAmbiguous(
+                    Asn1OctetWrapped(PrimitiveInnerImplicitNullableString41(null))
+                )
+            )
         }
         shouldThrow<SerializationException> {
             DER.decodeFromDer<PrimitiveOctetThenImplicitStringAmbiguous>("3000".hexToByteArray())
@@ -111,43 +124,43 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
 
 @Serializable
 data class PrimitiveImplicitStringAmbiguous(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 10uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 10, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: String?
 )
 
 @Serializable
 data class PrimitiveImplicitFloatAmbiguous(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 11uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 11, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: Float?
 )
 
 @Serializable
 data class PrimitiveImplicitDoubleAmbiguous(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 12uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 12, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: Double?
 )
 
 @Serializable
 data class PrimitiveImplicitOctetStringAmbiguous(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 13uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 13, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: ByteArray?
 )
 
 @Serializable
 data class PrimitiveImplicitLongSafe(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 20uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 20, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: Long?
 )
 
 @Serializable
 data class PrimitiveImplicitIntSafe(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 21uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 21, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: Int?
 )
 
 @Serializable
 data class PrimitiveImplicitShortSafe(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 22uL), encodeNull = true)
+    @Asn1nnotation(tagNumber = 22, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, encodeNull = true)
     val value: Short?
 )
 
@@ -172,19 +185,31 @@ data class PrimitiveNoImplicitDoubleSafe(
 @Serializable
 data class PrimitiveImplicitThenExplicitStringSafe(
     @Asn1nnotation(
-        Layer(Type.IMPLICIT_TAG, 30uL),
-        Layer(Type.EXPLICIT_TAG, 31uL),
-        encodeNull = true
+        tagNumber = 31,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
+        constructed = Asn1ConstructedBit.CONSTRUCTED,
+    )
+    val value: Asn1Explicit<PrimitiveInnerImplicitNullableString>
+)
+
+@Serializable
+data class PrimitiveInnerImplicitNullableString(
+    @Asn1nnotation(
+        tagNumber = 30,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
+        encodeNull = true,
     )
     val value: String?
 )
 
 @Serializable
 data class PrimitiveOctetStringSafe(
-    @Asn1nnotation(
-        Layer(Type.OCTET_STRING),
-        encodeNull = true
-    )
+    val value: Asn1OctetWrapped<PrimitiveInnerPlainNullableString>
+)
+
+@Serializable
+data class PrimitiveInnerPlainNullableString(
+    @Asn1nnotation(encodeNull = true)
     val value: String?
 )
 
@@ -196,10 +221,15 @@ data class PrimitiveNoImplicitOctetStringSafe(
 
 @Serializable
 data class PrimitiveOctetThenImplicitStringAmbiguous(
+    val value: Asn1OctetWrapped<PrimitiveInnerImplicitNullableString41>
+)
+
+@Serializable
+data class PrimitiveInnerImplicitNullableString41(
     @Asn1nnotation(
-        Layer(Type.OCTET_STRING),
-        Layer(Type.IMPLICIT_TAG, 41uL),
-        encodeNull = true
+        tagNumber = 41,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
+        encodeNull = true,
     )
     val value: String?
 )
@@ -207,9 +237,10 @@ data class PrimitiveOctetThenImplicitStringAmbiguous(
 @Serializable
 data class PrimitiveImplicitBitStringSafe(
     @Asn1nnotation(
-        Layer(Type.IMPLICIT_TAG, 50uL),
+        tagNumber = 50,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
         asBitString = true,
-        encodeNull = true
+        encodeNull = true,
     )
     val value: ByteArray?
 )

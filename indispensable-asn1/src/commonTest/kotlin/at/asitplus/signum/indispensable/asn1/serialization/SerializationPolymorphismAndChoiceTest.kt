@@ -125,7 +125,7 @@ data class ChoiceContainer(val choice: ChoiceInterface)
 data class ChoiceInt(val value: Int) : ChoiceInterface
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1uL))
+@Asn1nnotation(tagNumber = 1, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ChoiceTaggedString(val value: String) : ChoiceInterface
 
 @Serializable

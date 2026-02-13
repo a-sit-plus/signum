@@ -41,7 +41,7 @@ val SerializationTestShapeContract by testSuite(
 
         val withExtension = DisambiguatedMiddleNullableRawAsn1(
             prefix = 1,
-            extension = 99.encodeToAsn1Primitive(),
+            extension = Asn1Explicit(99.encodeToAsn1Primitive()),
             suffix = 2
         )
         DER.decodeFromDer<DisambiguatedMiddleNullableRawAsn1>(DER.encodeToDer(withExtension)) shouldBe withExtension
@@ -72,8 +72,8 @@ data class AmbiguousMiddleNullableRawAsn1(
 @Serializable
 data class DisambiguatedMiddleNullableRawAsn1(
     val prefix: Int,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 0uL))
-    val extension: Asn1Element?,
+    @Asn1nnotation(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
+    val extension: Asn1Explicit<Asn1Element>?,
     val suffix: Int,
 )
 

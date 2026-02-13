@@ -145,34 +145,34 @@ val SerializationTestImplicitTagging by testSuite(
 data class NothingOnClass(val a: String)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1337uL))
+@Asn1nnotation(tagNumber = 1337, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ImplicitOnClass(val a: String)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 7331uL))
+@Asn1nnotation(tagNumber = 7331, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ImplicitOnClassWrong(val a: String)
 
 @Serializable
-data class ImplicitOnProperty(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1338uL)) val a: String)
+data class ImplicitOnProperty(@Asn1nnotation(tagNumber = 1338, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: String)
 
 @Serializable
-data class ImplicitOnPropertyWrong(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 8331uL)) val a: String)
+data class ImplicitOnPropertyWrong(@Asn1nnotation(tagNumber = 8331, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: String)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1337uL))
-data class ImplicitOnBoth(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1338uL)) val a: String)
+@Asn1nnotation(tagNumber = 1337, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+data class ImplicitOnBoth(@Asn1nnotation(tagNumber = 1338, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: String)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 73331uL))
-data class ImplicitOnBothWrong(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 8331uL)) val a: String)
+@Asn1nnotation(tagNumber = 73331, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+data class ImplicitOnBothWrong(@Asn1nnotation(tagNumber = 8331, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: String)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 7331uL))
-data class ImplicitOnBothWrongClass(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1338uL)) val a: String)
+@Asn1nnotation(tagNumber = 7331, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+data class ImplicitOnBothWrongClass(@Asn1nnotation(tagNumber = 1338, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: String)
 
 @Serializable
-@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1337uL))
-data class ImplicitOnBothWrongProperty(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 8331uL)) val a: String)
+@Asn1nnotation(tagNumber = 1337, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+data class ImplicitOnBothWrongProperty(@Asn1nnotation(tagNumber = 8331, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: String)
 
 @Serializable
 data class NothingOnClassNested(val a: NothingOnClass)
@@ -184,46 +184,23 @@ data class NothingOnClassNestedOnClass(val a: ImplicitOnClass)
 data class NothingOnClassNestedOnClassWrong(val a: ImplicitOnClassWrong)
 
 @Serializable
-data class NothingOnClassNestedOnProperty(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1337uL)) val a: NothingOnClass)
+data class NothingOnClassNestedOnProperty(@Asn1nnotation(tagNumber = 1337, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: NothingOnClass)
 
 @Serializable
-data class NothingOnClassNestedOnPropertyWrong(@Asn1nnotation(Layer(Type.IMPLICIT_TAG, 333uL)) val a: NothingOnClass)
+data class NothingOnClassNestedOnPropertyWrong(@Asn1nnotation(tagNumber = 333, tagClass = Asn1TagClass.CONTEXT_SPECIFIC) val a: NothingOnClass)
 
 @Serializable
 data class NothingOnClassNestedOnPropertyOverride(
     @Asn1nnotation(
-        Layer(
-            Type.IMPLICIT_TAG,
-            666uL
-        )
+        tagNumber = 666,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     ) val a: ImplicitOnClass
 )
 
 @Serializable
 data class NothingOnClassNestedOnPropertyOverrideWrong(
     @Asn1nnotation(
-        Layer(
-            Type.IMPLICIT_TAG,
-            999uL
-        )
+        tagNumber = 999,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     ) val a: ImplicitOnClass
 )
-
-@Serializable
-@Asn1nnotation(
-    Layer(Type.IMPLICIT_TAG, 1337uL),
-    Layer(Type.OCTET_STRING),
-)
-class OuterTagInnerOctet
-
-@Serializable
-@Asn1nnotation(
-    Layer(Type.IMPLICIT_TAG, 1342uL),
-    Layer(Type.EXPLICIT_TAG, 1341uL),
-    Layer(Type.EXPLICIT_TAG, 1340uL),
-    Layer(Type.OCTET_STRING),
-    Layer(Type.EXPLICIT_TAG, 1339uL),
-    Layer(Type.IMPLICIT_TAG, 1337uL),
-    Layer(Type.IMPLICIT_TAG, 1336uL),
-)
-class OuterOctetInnerTag

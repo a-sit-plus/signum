@@ -13,7 +13,7 @@ Goal:
 
 ## 1. Why this is strict
 
-ASN.1 DER is schema-driven and position-sensitive.
+ASN.1 DER is schema-driven and position-sensitive.<
 
 For a `SEQUENCE`, decoding usually walks left to right:
 1. read next child element

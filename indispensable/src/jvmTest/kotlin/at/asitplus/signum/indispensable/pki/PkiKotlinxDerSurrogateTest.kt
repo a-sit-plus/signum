@@ -295,19 +295,24 @@ data class SurrogateX509Certificate(
 
 @Serializable
 data class SurrogateTbsCertificate(
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 0uL))
+    @Asn1nnotation(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
     val version: Int? = null,
+    @Asn1nnotation(
+        tagNumber = 2,
+        tagClass = Asn1TagClass.UNIVERSAL,
+        constructed = Asn1ConstructedBit.PRIMITIVE
+    )
     val serialNumber: Asn1Integer,
     val signature: Asn1Element,
     val issuer: List<RelativeDistinguishedName>,
     val validity: SurrogateValidity,
     val subject: List<RelativeDistinguishedName>,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 1uL), asBitString = true)
+    @Asn1nnotation(tagNumber = 1, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, asBitString = true)
     val issuerUniqueID: ByteArray? = null,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 2uL), asBitString = true)
+    @Asn1nnotation(tagNumber = 2, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, asBitString = true)
     val subjectUniqueID: ByteArray? = null,
-    @Asn1nnotation(Layer(Type.EXPLICIT_TAG, 3uL))
+    @Asn1nnotation(tagNumber = 3, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
     val extensions: List<X509CertificateExtension>? = null,
 ) {
     init {
@@ -340,7 +345,7 @@ data class SurrogateCertificationRequestInfo(
     val version: Asn1Integer,
     val subject: Asn1Element,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 0uL))
+    @Asn1nnotation(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val attributes: Asn1Element
 )
 

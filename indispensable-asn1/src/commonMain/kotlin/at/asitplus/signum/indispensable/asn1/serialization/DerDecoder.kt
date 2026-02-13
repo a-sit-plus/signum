@@ -24,7 +24,7 @@ import kotlinx.serialization.modules.SerializersModule
  * ASN.1 DER decoder used by [Der] format operations.
  *
  * This decoder supports:
- * - annotation-driven tag/layer processing via [Asn1nnotation]
+ * - annotation-driven implicit tag override processing via [Asn1nnotation]
  * - sealed CHOICE decoding (`asChoice = true`)
  * - runtime ambiguity checks for nullable/optional class layouts
  */
@@ -168,16 +168,7 @@ class DerDecoder internal constructor(
         inlineAsn1nnotation = null
 
         val currentAnnotatedElement = elements[elementIndex]
-
-
-        // Process annotations to get the actual element and expected tag
-        val annotations =
-            (propertyAsn1nnotation?.layers?.toList() ?: emptyList<Layer>()) + (inlineAnnotation?.layers?.toList()
-                ?: emptyList())
-        val (processedElement, expectedTag) = processAnnotationsForDecoding(
-            currentAnnotatedElement,
-            annotations
-        )
+        val processedElement = currentAnnotatedElement
 
         val effectiveDescriptor =
             if (propertyDescriptor.isInline && propertyDescriptor.elementsCount == 1) {
@@ -185,6 +176,13 @@ class DerDecoder internal constructor(
             } else {
                 propertyDescriptor
             }
+
+        val expectedTag = validateAndResolveImplicitTagOverride(
+            actualTag = processedElement.tag,
+            inlineAsn1nnotation = inlineAnnotation,
+            propertyAsn1nnotation = propertyAsn1nnotation,
+            classAsn1nnotation = effectiveDescriptor.asn1nnotation,
+        )
 
         val decoded = when (effectiveDescriptor.kind) {
             PolymorphicKind.OPEN -> TODO("Polymorphic decoding not yet implemented")
@@ -232,7 +230,10 @@ class DerDecoder internal constructor(
                 return null as T
             }
 
-            when (val expectedLeadingTags = propertyDescriptor.possibleLeadingTagsForAsn1(propertyAsn1nnotation)) {
+            when (val expectedLeadingTags = propertyDescriptor.possibleLeadingTagsForAsn1(
+                propertyAsn1nnotation = propertyAsn1nnotation,
+                inlineAsn1nnotation = inlineAsn1nnotation,
+            )) {
                 is Asn1LeadingTagsResolution.Exact -> {
                     val actualTag = elements[elementIndex].tag
                     if (actualTag !in expectedLeadingTags.tags) {
@@ -274,9 +275,19 @@ class DerDecoder internal constructor(
         if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[elementIndex]
         val inlineAnnotation = inlineAsn1nnotation.also { inlineAsn1nnotation = null }
+        val effectiveTagTemplate = resolveAsn1TagTemplate(
+            inlineAsn1nnotation = inlineAnnotation,
+            propertyAsn1nnotation = propertyAsn1nnotation,
+            classAsn1nnotation = deserializer.descriptor.asn1nnotation,
+        )
+        requireAsn1ExplicitWrapperTag(
+            descriptor = deserializer.descriptor,
+            tagTemplate = effectiveTagTemplate,
+            ownerSerialName = currentOwnerSerialName ?: deserializer.descriptor.serialName,
+            propertyName = currentPropertyName,
+            propertyIndex = currentPropertyIndex,
+        )
         val isBitString = (inlineAnnotation?.asBitString ?: false) || (propertyAsn1nnotation?.asBitString ?: false)
-        val propertyAnnotations = propertyAsn1nnotation?.layers?.toList() ?: emptyList()
-        val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
         val descriptorAllowsNull =
             deserializer.descriptor.isNullable || (::propertyDescriptor.isInitialized && propertyDescriptor.isNullable)
         val descriptorEncodesNull = descriptorAllowsNull && deserializer.descriptor.asn1nnotation?.encodeNull == true
@@ -302,12 +313,8 @@ class DerDecoder internal constructor(
             )
         }
 
-        // Combine property and class-level annotations for processing
-        val allAnnotations =
-            (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
-
         if (shouldDecodeAsChoice(deserializer.descriptor, inlineAnnotation)) {
-            return decodeChoiceSerializableValue(deserializer, currentAnnotatedElement, allAnnotations)
+            return decodeChoiceSerializableValue(deserializer, currentAnnotatedElement, inlineAnnotation)
         }
 
         if (deserializer.descriptor.isInline) {
@@ -315,11 +322,14 @@ class DerDecoder internal constructor(
             return deserializer.deserialize(this)
         }
 
-        /* your old custom handling for non-inline cases */
-        val (processedElement, expectedTag) = processAnnotationsForDecoding(
-            currentAnnotatedElement,
-            allAnnotations
+        val processedElement = currentAnnotatedElement
+        val expectedTag = validateAndResolveImplicitTagOverride(
+            actualTag = processedElement.tag,
+            inlineAsn1nnotation = inlineAnnotation,
+            propertyAsn1nnotation = propertyAsn1nnotation,
+            classAsn1nnotation = deserializer.descriptor.asn1nnotation,
         )
+        val hasTagOverride = expectedTag != null
 
         val isEncodedNull =
             processedElement.isAsn1NullElement() ||
@@ -355,7 +365,7 @@ class DerDecoder internal constructor(
 
             // If no explicit tag is specified, we should still validate against the default tag
             // for the type being deserialized (when no annotations are present)
-            if (allAnnotations.isEmpty()) {
+            if (!hasTagOverride) {
                 if (isBitString) Asn1Element.Tag.BIT_STRING
                 else getDefaultTagForDescriptor(deserializer.descriptor)
             } else {
@@ -449,7 +459,7 @@ class DerDecoder internal constructor(
     private fun <T> decodeChoiceSerializableValue(
         deserializer: DeserializationStrategy<T>,
         currentAnnotatedElement: Asn1Element,
-        allAnnotations: List<Layer>,
+        inlineAnnotation: Asn1nnotation?,
     ): T {
         if (deserializer.descriptor.kind !is PolymorphicKind.SEALED) {
             throw SerializationException(
@@ -462,7 +472,13 @@ class DerDecoder internal constructor(
                 "@Asn1nnotation(asChoice=true) only supports kotlinx SealedClassSerializer"
             )
 
-        val (processedElement, _) = processAnnotationsForDecoding(currentAnnotatedElement, allAnnotations)
+        validateAndResolveImplicitTagOverride(
+            actualTag = currentAnnotatedElement.tag,
+            inlineAsn1nnotation = inlineAnnotation,
+            propertyAsn1nnotation = propertyAsn1nnotation,
+            classAsn1nnotation = deserializer.descriptor.asn1nnotation,
+        )
+        val processedElement = currentAnnotatedElement
         val subtypeDescriptor = deserializer.descriptor.findLikelySealedAlternativesDescriptor()
             ?: throw SerializationException(
                 "Could not inspect sealed CHOICE alternatives for ${deserializer.descriptor.serialName}"
@@ -497,81 +513,61 @@ class DerDecoder internal constructor(
         }
     }
 
-    /**
-     * Process annotations to determine expected tag for primitives
-     * Returns the processed element and the expected tag (if any)
-     */
-    private fun processAnnotationsForDecoding(
-        element: Asn1Element,
-        annotations: List<Layer>
-    ): Pair<Asn1Element, Asn1Element.Tag?> {
-        if (annotations.isEmpty()) {
-            return element to null
-        }
-
-        var currentElement = element
-        var currentTag = currentElement.tag
-        annotations.forEachIndexed { i, annotation ->
-
-            when (annotation.type) {
-                Type.OCTET_STRING -> {
-                    if (currentTag != Asn1Element.Tag.OCTET_STRING) {
-                        throw SerializationException(
-                            Asn1TagMismatchException(
-                                Asn1Element.Tag.OCTET_STRING,
-                                currentElement.tag
-                            )
-                        )
-                    }
-                    val octetString = currentElement.asEncapsulatingOctetString().iterator()
-                    currentElement = octetString.next()
-                    if (octetString.hasNext()) throw SerializationException(Asn1StructuralException("Octet string should only contain one child"))
-                    currentTag = currentElement.tag
-
-                }
-
-                Type.EXPLICIT_TAG -> {
-                    val expectedTag =
-                        Asn1Element.Tag(annotation.tag, currentTag.isConstructed, currentTag.tagClass)
-                    if (currentTag != expectedTag) {
-                        throw Asn1TagMismatchException(expectedTag, currentElement.tag)
-                    }
-                    val octetString = currentElement.asStructure().iterator()
-                    currentElement = octetString.next()
-                    if (octetString.hasNext()) throw SerializationException(Asn1StructuralException("Explicit tag should only contain one child"))
-                    currentTag = currentElement.tag
-
-                }
-
-                Type.IMPLICIT_TAG -> {
-
-                    val expectedTag = Asn1Element.Tag(annotation.tag, currentTag.isConstructed, currentTag.tagClass)
-                    if (currentTag != expectedTag) {
-                        throw SerializationException(Asn1TagMismatchException(expectedTag, currentElement.tag))
-                    }
-                    if (annotations.size > i + 1) {
-                        val nextTag = annotations[i + 1]
-                        when (nextTag.type) {
-                            Type.OCTET_STRING -> currentTag = Asn1Element.Tag(nextTag.tag, false)
-                            Type.EXPLICIT_TAG -> currentTag =
-                                Asn1Element.Tag(nextTag.tag, true, tagClass = TagClass.CONTEXT_SPECIFIC)
-
-                            Type.IMPLICIT_TAG -> currentTag =
-                                Asn1Element.Tag(nextTag.tag, currentTag.isConstructed, tagClass = currentTag.tagClass)
-
-                        }
-                    } else {
-                        currentElement = currentElement.withImplicitTag(currentTag)
-                    }
-                }
-            }
-        }
-
-        return currentElement to currentTag
-    }
 }
 
 private class Asn1ChoiceNoMatchingAlternativeException(message: String) : SerializationException(message)
+
+private fun validateAndResolveImplicitTagOverride(
+    actualTag: Asn1Element.Tag,
+    inlineAsn1nnotation: Asn1nnotation? = null,
+    propertyAsn1nnotation: Asn1nnotation? = null,
+    classAsn1nnotation: Asn1nnotation? = null,
+): Asn1Element.Tag? {
+    val tagTemplate = resolveAsn1TagTemplate(
+        inlineAsn1nnotation = inlineAsn1nnotation,
+        propertyAsn1nnotation = propertyAsn1nnotation,
+        classAsn1nnotation = classAsn1nnotation,
+    ) ?: return null
+
+    val expectedTag = Asn1Element.Tag(
+        tagValue = tagTemplate.tagValue,
+        tagClass = tagTemplate.tagClass ?: actualTag.tagClass,
+        constructed = tagTemplate.constructed ?: actualTag.isConstructed,
+    )
+    if (actualTag != expectedTag) {
+        throw SerializationException(Asn1TagMismatchException(expectedTag, actualTag))
+    }
+    return expectedTag
+}
+
+private fun requireAsn1ExplicitWrapperTag(
+    descriptor: SerialDescriptor,
+    tagTemplate: Asn1Element.Tag.Template?,
+    ownerSerialName: String,
+    propertyName: String?,
+    propertyIndex: Int?,
+) {
+    if (!descriptor.isAsn1ExplicitWrapperDescriptor()) return
+    val location = if (propertyName != null && propertyIndex != null) {
+        "property '$propertyName' (index $propertyIndex) in $ownerSerialName"
+    } else {
+        ownerSerialName
+    }
+    if (tagTemplate == null) {
+        throw SerializationException(
+            "Asn1Explicit requires an implicit tag override at $location. " +
+                    "Provide @Asn1nnotation(tagNumber=..., tagClass=CONTEXT_SPECIFIC, constructed=CONSTRUCTED)."
+        )
+    }
+    val effectiveClass = tagTemplate.tagClass ?: TagClass.UNIVERSAL
+    val effectiveConstructed = tagTemplate.constructed ?: true
+    if (effectiveClass != TagClass.CONTEXT_SPECIFIC || !effectiveConstructed) {
+        throw SerializationException(
+            "Asn1Explicit requires CONTEXT_SPECIFIC + CONSTRUCTED tag at $location, " +
+                    "but effective override is class=$effectiveClass, constructed=$effectiveConstructed."
+        )
+    }
+}
 
 private fun Asn1Element.isAsn1NullElement(): Boolean =
     this is Asn1Primitive && tag == Asn1Element.Tag.NULL && length == 0

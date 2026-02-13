@@ -62,7 +62,7 @@ data class AmbiguousNullableMapThenList(
 
 @Serializable
 data class TaggedNullableMapThenList(
-    @Asn1nnotation(Layer(Type.IMPLICIT_TAG, 40uL))
+    @Asn1nnotation(tagNumber = 40, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val maybeMap: Map<Int, Boolean>?,
     val values: List<Int>,
 )
