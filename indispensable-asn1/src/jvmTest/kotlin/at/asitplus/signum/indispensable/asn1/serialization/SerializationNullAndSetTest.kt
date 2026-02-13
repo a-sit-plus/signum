@@ -50,6 +50,13 @@ val SerializationTestNullAndSet by testSuite(
         val annotated = DER.encodeToDer<NullableAnnotated?>(null)
             .apply { toHexString(HexFormat.UpperCase) shouldBe "0406BF8A39020500" }
         DER.decodeFromDer<NullableAnnotated?>(annotated) shouldBe null
+
+        // Regression: empty primitive values must not be mistaken for null when encodeNull=false.
+        val emptyString = NullablePlainString("")
+        DER.decodeFromDer<NullablePlainString>(DER.encodeToDer(emptyString)) shouldBe emptyString
+
+        val nullString = NullablePlainString(null)
+        DER.decodeFromDer<NullablePlainString>(DER.encodeToDer(nullString)) shouldBe nullString
     }
 }
 
@@ -105,4 +112,9 @@ data class InternalNullableAnnotatedOmit(
         Layer(Type.IMPLICIT_TAG, 90uL),
     )
     val nullable: String?
+)
+
+@Serializable
+data class NullablePlainString(
+    val value: String?
 )

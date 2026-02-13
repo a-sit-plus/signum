@@ -311,17 +311,17 @@ class DerDecoder internal constructor(
             }
         }
 
-        //TODO nullable from properties also if present
-        // @formatter:off
-        if (
-           (
-             (deserializer.descriptor.isNullable && deserializer.descriptor.asn1nnotation?.encodeNull == true)
-             ||
-             if(::propertyDescriptor.isInitialized) propertyDescriptor.isNullable || propertyAsn1nnotation?.encodeNull == true else false
-           )
-           &&
-           processedElement.length == 0
-         ) {// @formatter:on
+        val descriptorEncodesNull =
+            deserializer.descriptor.isNullable && deserializer.descriptor.asn1nnotation?.encodeNull == true
+        val propertyEncodesNull =
+            if (::propertyDescriptor.isInitialized) {
+                propertyDescriptor.isNullable &&
+                        (propertyAsn1nnotation?.encodeNull == true || propertyDescriptor.asn1nnotation?.encodeNull == true)
+            } else {
+                false
+            }
+
+        if ((descriptorEncodesNull || propertyEncodesNull) && processedElement.length == 0) {
             elementIndex++
             return null as T
         }
