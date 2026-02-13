@@ -54,7 +54,7 @@ object NullAsAsn1Null
 data class TaggedNullableInt(
     @Asn1EncodeNull
     @Asn1Tag(
-        tagNumber = 90,
+        tagNumber = 90u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val value: Int?
@@ -63,7 +63,7 @@ data class TaggedNullableInt(
 @Serializable
 data class TaggedNullableIntOmit(
     @Asn1Tag(
-        tagNumber = 90,
+        tagNumber = 90u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val value: Int?

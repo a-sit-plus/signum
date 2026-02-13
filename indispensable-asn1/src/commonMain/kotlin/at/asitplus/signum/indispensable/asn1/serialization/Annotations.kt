@@ -14,15 +14,16 @@ import kotlinx.serialization.descriptors.StructureKind
  * This annotation only controls tag override behavior.
  * Use [Asn1BitString], [Asn1EncodeNull], and [Asn1Choice] for additional ASN.1 semantics.
  *
- * @param tagNumber implicit ASN.1 tag number override; negative means "infer from underlying type"
- * @param tagClass implicit ASN.1 tag-class override; [Asn1TagClass.INFER] keeps underlying class
+ * @param tagNumber implicit ASN.1 tag number override
+ * @param tagClass implicit ASN.1 tag-class override; defaults to [Asn1TagClass.CONTEXT_SPECIFIC]
+ * while [Asn1TagClass.INFER] keeps underlying class
  * @param constructed implicit ASN.1 constructed-bit override; [Asn1ConstructedBit.INFER] keeps underlying form
  */
 @SerialInfo
 @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
 annotation class Asn1Tag(
-    val tagNumber: Long = -1,
-    val tagClass: Asn1TagClass = Asn1TagClass.INFER,
+    val tagNumber: ULong,
+    val tagClass: Asn1TagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     val constructed: Asn1ConstructedBit = Asn1ConstructedBit.INFER,
 )
 
@@ -110,19 +111,16 @@ internal fun SerialDescriptor.isAsn1BitStringCompatibleDescriptor(): Boolean {
 private tailrec fun SerialDescriptor.unwrapInlineDescriptorForAsn1(): SerialDescriptor =
     if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptorForAsn1() else this
 
-internal val Asn1Tag.tagNumberOrNull: ULong?
-    get() = tagNumber.takeIf { it >= 0 }?.toULong()
+internal val Asn1Tag.tagNumberAsULong: ULong
+    get() = tagNumber
 
 internal fun resolveAsn1TagTemplate(
     inlineAsn1Tag: Asn1Tag? = null,
     propertyAsn1Tag: Asn1Tag? = null,
     classAsn1Tag: Asn1Tag? = null,
 ): Asn1Element.Tag.Template? {
-    val tagNumber =
-        inlineAsn1Tag?.tagNumberOrNull
-            ?: propertyAsn1Tag?.tagNumberOrNull
-            ?: classAsn1Tag?.tagNumberOrNull
-            ?: return null
+    val selectedAsn1Tag = inlineAsn1Tag ?: propertyAsn1Tag ?: classAsn1Tag ?: return null
+    val tagNumber = selectedAsn1Tag.tagNumberAsULong
 
     val tagClass =
         inlineAsn1Tag?.tagClass?.toTagClassOrNull()

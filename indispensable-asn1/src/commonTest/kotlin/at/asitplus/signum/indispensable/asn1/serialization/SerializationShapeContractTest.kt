@@ -72,7 +72,7 @@ data class AmbiguousMiddleNullableRawAsn1(
 @Serializable
 data class DisambiguatedMiddleNullableRawAsn1(
     val prefix: Int,
-    @Asn1Tag(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
+    @Asn1Tag(tagNumber = 0u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
     val extension: Asn1Explicit<Asn1Element>?,
     val suffix: Int,
 )

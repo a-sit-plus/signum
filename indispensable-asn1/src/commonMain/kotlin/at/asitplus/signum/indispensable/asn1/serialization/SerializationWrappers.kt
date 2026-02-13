@@ -23,7 +23,7 @@ data class Asn1Explicit<T>(
  */
 @Serializable
 @Asn1Tag(
-    tagNumber = 4,
+    tagNumber = 4u,
     tagClass = Asn1TagClass.UNIVERSAL,
     constructed = Asn1ConstructedBit.PRIMITIVE,
 )

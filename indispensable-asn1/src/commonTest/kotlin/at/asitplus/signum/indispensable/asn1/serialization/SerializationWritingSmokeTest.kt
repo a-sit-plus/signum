@@ -60,7 +60,7 @@ data class Simple(val a: String)
 data class SimpleOctet(val a: String)
 
 @Asn1Tag(
-    tagNumber = 99,
+    tagNumber = 99u,
     tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
 )
 @Serializable
@@ -73,7 +73,7 @@ enum class Baz {
 data class TypesUmbrella(
     val inner: Simple,
     @Asn1Tag(
-        tagNumber = 333,
+        tagNumber = 333u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val str: String,
@@ -87,7 +87,7 @@ data class TypesUmbrella(
     val byteArray: ByteArray,
     val innerImpl: SimpleLong,
     @Asn1Tag(
-        tagNumber = 66,
+        tagNumber = 66u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val enum: Baz,

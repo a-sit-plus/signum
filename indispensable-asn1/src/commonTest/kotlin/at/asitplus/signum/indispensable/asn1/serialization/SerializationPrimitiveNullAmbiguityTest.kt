@@ -125,74 +125,71 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
 @Serializable
 data class PrimitiveImplicitStringAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 10, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 10u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: String?
 )
 
 @Serializable
 data class PrimitiveImplicitFloatAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 11, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 11u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: Float?
 )
 
 @Serializable
 data class PrimitiveImplicitDoubleAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 12, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 12u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: Double?
 )
 
 @Serializable
 data class PrimitiveImplicitOctetStringAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 13, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 13u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: ByteArray?
 )
 
 @Serializable
 data class PrimitiveImplicitLongSafe(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 20, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 20u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: Long?
 )
 
 @Serializable
 data class PrimitiveImplicitIntSafe(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 21, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 21u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: Int?
 )
 
 @Serializable
 data class PrimitiveImplicitShortSafe(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 22, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 22u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val value: Short?
 )
 
 @Serializable
 data class PrimitiveNoImplicitStringSafe(
-    @Asn1Tag
     val value: String?
 )
 
 @Serializable
 data class PrimitiveNoImplicitFloatSafe(
-    @Asn1Tag
     val value: Float?
 )
 
 @Serializable
 data class PrimitiveNoImplicitDoubleSafe(
-    @Asn1Tag
     val value: Double?
 )
 
 @Serializable
 data class PrimitiveImplicitThenExplicitStringSafe(
     @Asn1Tag(
-        tagNumber = 31,
+        tagNumber = 31u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
         constructed = Asn1ConstructedBit.CONSTRUCTED,
     )
@@ -203,7 +200,7 @@ data class PrimitiveImplicitThenExplicitStringSafe(
 data class PrimitiveInnerImplicitNullableString(
     @Asn1EncodeNull
     @Asn1Tag(
-        tagNumber = 30,
+        tagNumber = 30u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val value: String?
@@ -216,13 +213,11 @@ data class PrimitiveOctetStringSafe(
 
 @Serializable
 data class PrimitiveInnerPlainNullableString(
-    @Asn1Tag
     val value: String?
 )
 
 @Serializable
 data class PrimitiveNoImplicitOctetStringSafe(
-    @Asn1Tag
     val value: ByteArray?
 )
 
@@ -235,7 +230,7 @@ data class PrimitiveOctetThenImplicitStringAmbiguous(
 data class PrimitiveInnerImplicitNullableString41(
     @Asn1EncodeNull
     @Asn1Tag(
-        tagNumber = 41,
+        tagNumber = 41u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val value: String?
@@ -246,7 +241,7 @@ data class PrimitiveImplicitBitStringSafe(
     @Asn1BitString
     @Asn1EncodeNull
     @Asn1Tag(
-        tagNumber = 50,
+        tagNumber = 50u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )
     val value: ByteArray?
