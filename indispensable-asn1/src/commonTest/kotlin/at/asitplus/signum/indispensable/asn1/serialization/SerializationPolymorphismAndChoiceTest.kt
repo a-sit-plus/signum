@@ -115,7 +115,7 @@ sealed interface AnInterface
 // @formatter:on
 
 @Serializable
-@Asn1nnotation(asChoice = true)
+@Asn1Choice
 sealed interface ChoiceInterface
 
 @Serializable
@@ -125,11 +125,11 @@ data class ChoiceContainer(val choice: ChoiceInterface)
 data class ChoiceInt(val value: Int) : ChoiceInterface
 
 @Serializable
-@Asn1nnotation(tagNumber = 1, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 1, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class ChoiceTaggedString(val value: String) : ChoiceInterface
 
 @Serializable
-@Asn1nnotation(asChoice = true)
+@Asn1Choice
 sealed interface AmbiguousChoice
 
 @Serializable

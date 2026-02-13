@@ -69,8 +69,15 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
 
     val fields = (0 until elementsCount).map { index ->
         val fieldDescriptor = getElementDescriptor(index)
-        val propertyAsn1nnotation = asn1nnotation(index)
-        val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(propertyAsn1nnotation)
+        val propertyAsn1Tag = asn1Tag(index)
+        val propertyEncodeNull = isAsn1EncodeNull(index)
+        val propertyAsBitString = isAsn1BitString(index)
+        val propertyAsChoice = isAsn1Choice(index)
+        val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(
+            propertyAsn1Tag = propertyAsn1Tag,
+            propertyEncodeNull = propertyEncodeNull,
+            propertyAsBitString = propertyAsBitString,
+        )
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
                 ambiguousAsn1NullEncodingMessage(
@@ -82,8 +89,8 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
         }
 
         val omittableByNull = fieldDescriptor.isNullable &&
-                propertyAsn1nnotation?.encodeNull != true &&
-                fieldDescriptor.asn1nnotation?.encodeNull != true
+                !propertyEncodeNull &&
+                !fieldDescriptor.isAsn1EncodeNull
         val omittable = omittableByNull || isElementOptional(index)
         Asn1FieldShape(
             index = index,
@@ -91,7 +98,9 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
             omittable = omittable,
             possibleLeadingTags = possibleLeadingTags(
                 descriptor = fieldDescriptor,
-                propertyAsn1nnotation = propertyAsn1nnotation
+                propertyAsn1Tag = propertyAsn1Tag,
+                propertyAsBitString = propertyAsBitString,
+                propertyAsChoice = propertyAsChoice,
             )
         )
     }
@@ -139,7 +148,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
                             "property '${nullableOrOptionalField.name}' (index ${nullableOrOptionalField.index}) " +
                             "can be omitted and shares possible tag(s) ${formatTags(overlap)} with " +
                             "property '${candidateField.name}' (index ${candidateField.index}). " +
-                            "Add disambiguating implicit @Asn1nnotation tags or set encodeNull=true for nullable fields."
+                            "Add disambiguating implicit @Asn1Tag tags or mark nullable fields with @Asn1EncodeNull."
                 )
             }
         }
@@ -147,14 +156,18 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
 }
 
 internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
-    propertyAsn1nnotation: Asn1nnotation? = null,
-    inlineAsn1nnotation: Asn1nnotation? = null,
+    propertyAsn1Tag: Asn1Tag? = null,
+    inlineAsn1Tag: Asn1Tag? = null,
+    propertyEncodeNull: Boolean = false,
+    inlineEncodeNull: Boolean = false,
+    propertyAsBitString: Boolean = false,
+    inlineAsBitString: Boolean = false,
 ): Asn1NullEncodingAnalysis {
     val encodeNullEnabled =
         isNullable && (
-                inlineAsn1nnotation?.encodeNull == true ||
-                        propertyAsn1nnotation?.encodeNull == true ||
-                        asn1nnotation?.encodeNull == true
+                inlineEncodeNull ||
+                        propertyEncodeNull ||
+                        isAsn1EncodeNull
                 )
     if (!encodeNullEnabled) {
         return Asn1NullEncodingAnalysis(
@@ -166,9 +179,9 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
     }
 
     val tagTemplate = resolveAsn1TagTemplate(
-        inlineAsn1nnotation = inlineAsn1nnotation,
-        propertyAsn1nnotation = propertyAsn1nnotation,
-        classAsn1nnotation = asn1nnotation
+        inlineAsn1Tag = inlineAsn1Tag,
+        propertyAsn1Tag = propertyAsn1Tag,
+        classAsn1Tag = asn1Tag
     )
     val usesImplicitNullSentinel = tagTemplate != null
     if (!usesImplicitNullSentinel) {
@@ -182,8 +195,8 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
 
     val unwrapped = unwrapInlineDescriptor()
     val isBitString =
-        inlineAsn1nnotation?.asBitString == true ||
-                propertyAsn1nnotation?.asBitString == true ||
+        inlineAsBitString ||
+                propertyAsBitString ||
                 unwrapped.isAsn1BitString
 
     val baseIsConstructed = tagTemplate.constructed ?: unwrapped.asn1BaseIsConstructed()
@@ -198,28 +211,40 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
 }
 
 internal fun SerialDescriptor.possibleLeadingTagsForAsn1(
-    propertyAsn1nnotation: Asn1nnotation? = null,
-    inlineAsn1nnotation: Asn1nnotation? = null,
+    propertyAsn1Tag: Asn1Tag? = null,
+    inlineAsn1Tag: Asn1Tag? = null,
+    propertyAsBitString: Boolean = false,
+    inlineAsBitString: Boolean = false,
+    propertyAsChoice: Boolean = false,
+    inlineAsChoice: Boolean = false,
 ): Asn1LeadingTagsResolution = possibleLeadingTags(
     descriptor = this,
-    propertyAsn1nnotation = propertyAsn1nnotation,
-    inlineAsn1nnotation = inlineAsn1nnotation,
+    propertyAsn1Tag = propertyAsn1Tag,
+    inlineAsn1Tag = inlineAsn1Tag,
+    propertyAsBitString = propertyAsBitString,
+    inlineAsBitString = inlineAsBitString,
+    propertyAsChoice = propertyAsChoice,
+    inlineAsChoice = inlineAsChoice,
 )
 
 private fun possibleLeadingTags(
     descriptor: SerialDescriptor,
-    propertyAsn1nnotation: Asn1nnotation?,
-    inlineAsn1nnotation: Asn1nnotation? = null,
+    propertyAsn1Tag: Asn1Tag?,
+    inlineAsn1Tag: Asn1Tag? = null,
+    propertyAsBitString: Boolean = false,
+    inlineAsBitString: Boolean = false,
+    propertyAsChoice: Boolean = false,
+    inlineAsChoice: Boolean = false,
     inheritedBitString: Boolean = false,
     forcedChoice: Boolean? = null,
 ): Asn1LeadingTagsResolution {
-    val isBitString = inheritedBitString || propertyAsn1nnotation?.asBitString == true || descriptor.isAsn1BitString
-    val choiceMode = forcedChoice ?: (propertyAsn1nnotation?.asChoice == true || descriptor.asn1nnotation?.asChoice == true)
+    val isBitString = inheritedBitString || inlineAsBitString || propertyAsBitString || descriptor.isAsn1BitString
+    val choiceMode = forcedChoice ?: (inlineAsChoice || propertyAsChoice || descriptor.isAsn1Choice)
 
     val tagTemplate = resolveAsn1TagTemplate(
-        inlineAsn1nnotation = inlineAsn1nnotation,
-        propertyAsn1nnotation = propertyAsn1nnotation,
-        classAsn1nnotation = descriptor.asn1nnotation,
+        inlineAsn1Tag = inlineAsn1Tag,
+        propertyAsn1Tag = propertyAsn1Tag,
+        classAsn1Tag = descriptor.asn1Tag,
     )
 
     val baseTags = possibleBaseLeadingTags(
@@ -239,7 +264,11 @@ private fun possibleBaseLeadingTags(
     if (descriptor.isInline && descriptor.elementsCount == 1) {
         return possibleLeadingTags(
             descriptor = descriptor.getElementDescriptor(0),
-            propertyAsn1nnotation = null,
+            propertyAsn1Tag = null,
+            propertyAsBitString = false,
+            inlineAsBitString = false,
+            propertyAsChoice = false,
+            inlineAsChoice = false,
             inheritedBitString = isBitString,
             forcedChoice = choiceMode,
         )
@@ -305,8 +334,12 @@ private fun possibleSealedChoiceAlternativeLeadingTags(descriptor: SerialDescrip
         val alternativeDescriptor = alternativesDescriptor.getElementDescriptor(i)
         when (val resolution = possibleLeadingTags(
             descriptor = alternativeDescriptor,
-            propertyAsn1nnotation = null,
-            forcedChoice = alternativeDescriptor.asn1nnotation?.asChoice == true,
+            propertyAsn1Tag = null,
+            propertyAsBitString = false,
+            inlineAsBitString = false,
+            propertyAsChoice = false,
+            inlineAsChoice = false,
+            forcedChoice = alternativeDescriptor.isAsn1Choice,
         )) {
             is Asn1LeadingTagsResolution.Exact -> alternativeTags += resolution.tags
             Asn1LeadingTagsResolution.UnknownInfer -> return Asn1LeadingTagsResolution.UnknownInfer
@@ -395,8 +428,8 @@ internal fun ambiguousAsn1NullEncodingMessage(
         ""
     }
     return "Ambiguous ASN.1 null encoding for ${propertyPart}$ownerSerialName: " +
-            "nullable value with encodeNull=true uses implicit tag override where null and empty non-null values become indistinguishable. " +
-            "Use EXPLICIT tagging, avoid encodeNull=true, or choose a non-ambiguous value type."
+            "nullable value with @Asn1EncodeNull uses implicit tag override where null and empty non-null values become indistinguishable. " +
+            "Use EXPLICIT tagging, remove @Asn1EncodeNull, or choose a non-ambiguous value type."
 }
 
 private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor =

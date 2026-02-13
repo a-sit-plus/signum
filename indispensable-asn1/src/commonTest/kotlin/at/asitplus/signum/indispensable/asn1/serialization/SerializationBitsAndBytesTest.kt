@@ -47,14 +47,18 @@ val SerializationTestBitsAndBytes by testSuite(
 
 @JvmInline
 @Serializable
-@Asn1nnotation(asBitString = true)
-value class BitSetValue(val bytes: ByteArray)
+value class BitSetValue(
+    @Asn1BitString
+    val bytes: ByteArray
+)
 
 @JvmInline
 @Serializable
-@Asn1nnotation(
-    asBitString = true,
+@Asn1Tag(
     tagNumber = 1336,
     tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
 )
-value class BitSetValueTagged(val bytes: ByteArray)
+value class BitSetValueTagged(
+    @Asn1BitString
+    val bytes: ByteArray
+)

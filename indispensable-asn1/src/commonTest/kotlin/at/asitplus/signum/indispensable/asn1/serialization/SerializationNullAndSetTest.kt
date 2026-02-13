@@ -47,22 +47,22 @@ val SerializationTestNullAndSet by testSuite(
 }
 
 @Serializable
-@Asn1nnotation(encodeNull = true)
+@Asn1EncodeNull
 object NullAsAsn1Null
 
 @Serializable
 data class TaggedNullableInt(
-    @Asn1nnotation(
+    @Asn1EncodeNull
+    @Asn1Tag(
         tagNumber = 90,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
-        encodeNull = true,
     )
     val value: Int?
 )
 
 @Serializable
 data class TaggedNullableIntOmit(
-    @Asn1nnotation(
+    @Asn1Tag(
         tagNumber = 90,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     )

@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.asn1.serialization.*
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1BitString as Asn1BitStringAnnotation
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -289,15 +290,15 @@ private fun String.asUtf8String() = at.asitplus.signum.indispensable.asn1.Asn1St
 data class SurrogateX509Certificate(
     val tbsCertificate: SurrogateTbsCertificate,
     val signatureAlgorithm: Asn1Element,
-    @Asn1nnotation(asBitString = true)
+    @Asn1BitStringAnnotation
     val signatureValue: ByteArray
 )
 
 @Serializable
 data class SurrogateTbsCertificate(
-    @Asn1nnotation(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
+    @Asn1Tag(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
     val version: Int? = null,
-    @Asn1nnotation(
+    @Asn1Tag(
         tagNumber = 2,
         tagClass = Asn1TagClass.UNIVERSAL,
         constructed = Asn1ConstructedBit.PRIMITIVE
@@ -308,11 +309,13 @@ data class SurrogateTbsCertificate(
     val validity: SurrogateValidity,
     val subject: List<RelativeDistinguishedName>,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
-    @Asn1nnotation(tagNumber = 1, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, asBitString = true)
+    @Asn1BitStringAnnotation
+    @Asn1Tag(tagNumber = 1, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val issuerUniqueID: ByteArray? = null,
-    @Asn1nnotation(tagNumber = 2, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, asBitString = true)
+    @Asn1BitStringAnnotation
+    @Asn1Tag(tagNumber = 2, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val subjectUniqueID: ByteArray? = null,
-    @Asn1nnotation(tagNumber = 3, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
+    @Asn1Tag(tagNumber = 3, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
     val extensions: List<X509CertificateExtension>? = null,
 ) {
     init {
@@ -336,7 +339,7 @@ data class SurrogateValidity(
 data class SurrogatePkcs10CertificationRequest(
     val certificationRequestInfo: SurrogateCertificationRequestInfo,
     val signatureAlgorithm: Asn1Element,
-    @Asn1nnotation(asBitString = true)
+    @Asn1BitStringAnnotation
     val signature: ByteArray
 )
 
@@ -345,7 +348,7 @@ data class SurrogateCertificationRequestInfo(
     val version: Asn1Integer,
     val subject: Asn1Element,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
-    @Asn1nnotation(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 0, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
     val attributes: Asn1Element
 )
 
@@ -427,14 +430,14 @@ data class SurrogateUnknownPublicKeyInfo(
 @Serializable
 private data class SurrogateEcPublicKeyInfoRaw(
     val algorithmIdentifier: Asn1Element,
-    @Asn1nnotation(asBitString = true)
+    @Asn1BitStringAnnotation
     val subjectPublicKey: ByteArray,
 )
 
 @Serializable
 private data class SurrogateRsaPublicKeyInfoRaw(
     val algorithmIdentifier: Asn1Element,
-    @Asn1nnotation(asBitString = true)
+    @Asn1BitStringAnnotation
     val subjectPublicKey: ByteArray,
 )
 

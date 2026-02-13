@@ -22,7 +22,7 @@ data class Asn1Explicit<T>(
  * encoded payload value bytes as content.
  */
 @Serializable
-@Asn1nnotation(
+@Asn1Tag(
     tagNumber = 4,
     tagClass = Asn1TagClass.UNIVERSAL,
     constructed = Asn1ConstructedBit.PRIMITIVE,

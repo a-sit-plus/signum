@@ -40,34 +40,71 @@ internal class DerEncoder(
     private val formatConfiguration: DerConfiguration = DerConfiguration(),
 ) : AbstractEncoder() {
 
+    private data class InlineHints(
+        val tag: Asn1Tag?,
+        val asBitString: Boolean,
+        val encodeNull: Boolean,
+        val asChoice: Boolean,
+    )
+
     private val buffer = mutableListOf<Asn1ElementHolder>()
     private var descriptorAndIndex: Pair<SerialDescriptor, Int>? = null
 
-    private var pendingInlineAnnotation: Asn1nnotation? = null
+    private var pendingInlineTag: Asn1Tag? = null
+    private var pendingInlineAsBitString: Boolean = false
+    private var pendingInlineEncodeNull: Boolean = false
+    private var pendingInlineAsChoice: Boolean = false
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
-        descriptor.asn1nnotation?.let { pendingInlineAnnotation = it }
+        pendingInlineTag = descriptor.asn1Tag
+        pendingInlineAsBitString = descriptor.isAsn1BitString
+        pendingInlineEncodeNull = descriptor.isAsn1EncodeNull
+        pendingInlineAsChoice = descriptor.isAsn1Choice
         return this
     }
 
-    override fun encodeValue(value: Any) {
-        val inlineAnnotation = pendingInlineAnnotation
-        pendingInlineAnnotation = null
+    private fun consumeInlineHints(): InlineHints {
+        val hints = InlineHints(
+            tag = pendingInlineTag,
+            asBitString = pendingInlineAsBitString,
+            encodeNull = pendingInlineEncodeNull,
+            asChoice = pendingInlineAsChoice,
+        )
+        pendingInlineTag = null
+        pendingInlineAsBitString = false
+        pendingInlineEncodeNull = false
+        pendingInlineAsChoice = false
+        return hints
+    }
 
-        val propertyAnnotation = descriptorAndIndex
-            ?.let { (descriptor, index) -> descriptor.asn1nnotation(index) }
-            .also { descriptorAndIndex = null }
+    override fun encodeValue(value: Any) {
+        val inlineHints = consumeInlineHints()
+
+        val descriptorIndexSnapshot = descriptorAndIndex
+        val propertyAnnotation = descriptorIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.asn1Tag(index)
+        }
+        val propertyAsBitString = descriptorIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.isAsn1BitString(index)
+        } ?: false
+        descriptorAndIndex = null
+
+        if ((inlineHints.asBitString || propertyAsBitString) && value !is ByteArray) {
+            throw SerializationException(
+                "@Asn1BitString can only be used with ByteArray-compatible values, but got ${value::class}"
+            )
+        }
         val tagTemplate = resolveAsn1TagTemplate(
-            inlineAsn1nnotation = inlineAnnotation,
-            propertyAsn1nnotation = propertyAnnotation,
-            classAsn1nnotation = null
+            inlineAsn1Tag = inlineHints.tag,
+            propertyAsn1Tag = propertyAnnotation,
+            classAsn1Tag = null
         )
 
         val element = when (value) {
             is Asn1Element -> value
             is Asn1Encodable<*> -> value.encodeToTlv()
-            is ByteArray -> if (inlineAnnotation?.asBitString == true) Asn1BitString(value).encodeToTlv()
+            is ByteArray -> if (inlineHints.asBitString) Asn1BitString(value).encodeToTlv()
             else Asn1PrimitiveOctetString(value)
 
             is Boolean -> value.encodeToAsn1Primitive()
@@ -102,16 +139,19 @@ internal class DerEncoder(
     }
 
     override fun encodeNull() {
-        val inlineAnnotation = pendingInlineAnnotation
-        pendingInlineAnnotation = null
+        val inlineHints = consumeInlineHints()
 
         descriptorAndIndex?.let { (descriptor, index) ->
             descriptorAndIndex = null
             val propertyDescriptor = descriptor.getElementDescriptor(index)
-            val propertyAnnotation = descriptor.asn1nnotation(index)
+            val propertyAnnotation = descriptor.asn1Tag(index)
             val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
-                propertyAsn1nnotation = propertyAnnotation,
-                inlineAsn1nnotation = inlineAnnotation,
+                propertyAsn1Tag = propertyAnnotation,
+                inlineAsn1Tag = inlineHints.tag,
+                propertyEncodeNull = descriptor.isAsn1EncodeNull(index),
+                inlineEncodeNull = inlineHints.encodeNull,
+                propertyAsBitString = descriptor.isAsn1BitString(index),
+                inlineAsBitString = inlineHints.asBitString,
             )
             if (nullEncodingAnalysis.isAmbiguous) {
                 throw SerializationException(
@@ -125,9 +165,9 @@ internal class DerEncoder(
             if (!nullEncodingAnalysis.encodeNullEnabled) return
 
             val tagTemplate = resolveAsn1TagTemplate(
-                inlineAsn1nnotation = inlineAnnotation,
-                propertyAsn1nnotation = propertyAnnotation,
-                classAsn1nnotation = propertyDescriptor.asn1nnotation,
+                inlineAsn1Tag = inlineHints.tag,
+                propertyAsn1Tag = propertyAnnotation,
+                classAsn1Tag = propertyDescriptor.asn1Tag,
             )
             val nullElement = tagTemplate?.let { Asn1.Null().withImplicitTag(it) } ?: Asn1.Null()
             buffer += Asn1ElementHolder.Element(nullElement)
@@ -144,11 +184,11 @@ internal class DerEncoder(
 
     override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
         val propertyAnnotation = descriptorAndIndex
-            ?.let { (descriptor, elementIndex) -> descriptor.asn1nnotation(elementIndex) }
+            ?.let { (descriptor, elementIndex) -> descriptor.asn1Tag(elementIndex) }
             .also { descriptorAndIndex = null }
         val tagTemplate = resolveAsn1TagTemplate(
-            propertyAsn1nnotation = propertyAnnotation,
-            classAsn1nnotation = enumDescriptor.asn1nnotation,
+            propertyAsn1Tag = propertyAnnotation,
+            classAsn1Tag = enumDescriptor.asn1Tag,
         )
         val element = tagTemplate?.let { Asn1.Enumerated(index).withImplicitTag(it) } ?: Asn1.Enumerated(index)
         buffer += Asn1ElementHolder.Element(element)
@@ -156,19 +196,33 @@ internal class DerEncoder(
 
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
-        val inlineAnnotation = pendingInlineAnnotation
-        pendingInlineAnnotation = null
+        val inlineHints = consumeInlineHints()
         val descriptorAndIndexSnapshot = descriptorAndIndex
         val propertyAnnotation = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
-            descriptor.asn1nnotation(index)
+            descriptor.asn1Tag(index)
         }
+        val propertyEncodeNull = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.isAsn1EncodeNull(index)
+        } ?: false
+        val propertyAsBitString = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.isAsn1BitString(index)
+        } ?: false
+        val propertyAsChoice = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.isAsn1Choice(index)
+        } ?: false
         val propertyDescriptor = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
             descriptor.getElementDescriptor(index)
         }
+        val bitStringRequested = inlineHints.asBitString || propertyAsBitString || serializer.descriptor.isAsn1BitString
+        if (bitStringRequested && !serializer.descriptor.isAsn1BitStringCompatibleDescriptor()) {
+            throw SerializationException(
+                "@Asn1BitString can only be used with ByteArray-compatible serializers, but got ${serializer.descriptor.serialName}"
+            )
+        }
         val effectiveTagTemplate = resolveAsn1TagTemplate(
-            inlineAsn1nnotation = inlineAnnotation,
-            propertyAsn1nnotation = propertyAnnotation,
-            classAsn1nnotation = serializer.descriptor.asn1nnotation,
+            inlineAsn1Tag = inlineHints.tag,
+            propertyAsn1Tag = propertyAnnotation,
+            classAsn1Tag = serializer.descriptor.asn1Tag,
         )
         requireAsn1ExplicitWrapperTag(
             descriptor = serializer.descriptor,
@@ -181,8 +235,12 @@ internal class DerEncoder(
             else -> serializer.descriptor
         }
         val nullEncodingAnalysis = nullAnalysisDescriptor.analyzeAsn1NullableNullEncoding(
-            propertyAsn1nnotation = propertyAnnotation,
-            inlineAsn1nnotation = inlineAnnotation
+            propertyAsn1Tag = propertyAnnotation,
+            inlineAsn1Tag = inlineHints.tag,
+            propertyEncodeNull = propertyEncodeNull,
+            inlineEncodeNull = inlineHints.encodeNull,
+            propertyAsBitString = propertyAsBitString,
+            inlineAsBitString = inlineHints.asBitString,
         )
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
@@ -206,22 +264,18 @@ internal class DerEncoder(
             return
         }
 
-        if (shouldEncodeAsChoice(serializer.descriptor, inlineAnnotation, propertyAnnotation)) {
+        if (shouldEncodeAsChoice(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)) {
             encodeChoiceSerializableValue(
                 serializer = serializer,
                 value = value,
-                inlineAnnotation = inlineAnnotation,
+                inlineAnnotation = inlineHints.tag,
                 propertyAnnotation = propertyAnnotation,
             )
             return
         }
 
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
-            val bitset = inlineAnnotation?.asBitString == true ||
-                    propertyAnnotation?.asBitString == true ||
-                    (descriptorAndIndexSnapshot?.let { (descriptor, index) ->
-                        descriptor.isAsn1BitString(index)
-                    } ?: serializer.descriptor.isAsn1BitString)
+            val bitset = bitStringRequested
             val byteArrayValue = value as ByteArray
             val baseElement: Asn1Element = if (bitset) Asn1BitString(byteArrayValue).encodeToTlv()
             else Asn1PrimitiveOctetString(byteArrayValue)
@@ -235,12 +289,10 @@ internal class DerEncoder(
 
     private fun shouldEncodeAsChoice(
         descriptor: SerialDescriptor,
-        inlineAnnotation: Asn1nnotation?,
-        propertyAnnotation: Asn1nnotation?,
+        inlineAsChoice: Boolean,
+        propertyAsChoice: Boolean,
     ): Boolean {
-        return inlineAnnotation?.asChoice == true ||
-                propertyAnnotation?.asChoice == true ||
-                descriptor.asn1nnotation?.asChoice == true
+        return inlineAsChoice || propertyAsChoice || descriptor.isAsn1Choice
     }
 
     @OptIn(InternalSerializationApi::class)
@@ -248,27 +300,30 @@ internal class DerEncoder(
     private fun <T> encodeChoiceSerializableValue(
         serializer: SerializationStrategy<T>,
         value: T,
-        inlineAnnotation: Asn1nnotation?,
-        propertyAnnotation: Asn1nnotation?,
+        inlineAnnotation: Asn1Tag?,
+        propertyAnnotation: Asn1Tag?,
     ) {
-        pendingInlineAnnotation = null
+        pendingInlineTag = null
+        pendingInlineAsBitString = false
+        pendingInlineEncodeNull = false
+        pendingInlineAsChoice = false
 
         if (serializer.descriptor.kind !is PolymorphicKind.SEALED) {
             throw SerializationException(
-                "@Asn1nnotation(asChoice=true) requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
+                "@Asn1Choice requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
             )
         }
         val sealedSerializer = serializer as? SealedClassSerializer<T>
             ?: throw SerializationException(
-                "@Asn1nnotation(asChoice=true) only supports kotlinx SealedClassSerializer"
+                "@Asn1Choice only supports kotlinx SealedClassSerializer"
             )
 
         descriptorAndIndex = null
 
         val tagTemplate = resolveAsn1TagTemplate(
-            inlineAsn1nnotation = inlineAnnotation,
-            propertyAsn1nnotation = propertyAnnotation,
-            classAsn1nnotation = serializer.descriptor.asn1nnotation,
+            inlineAsn1Tag = inlineAnnotation,
+            propertyAsn1Tag = propertyAnnotation,
+            classAsn1Tag = serializer.descriptor.asn1Tag,
         )
 
         val selectedSerializer = sealedSerializer.findPolymorphicSerializerOrNull(this, value)
@@ -298,16 +353,15 @@ internal class DerEncoder(
         ) {
             descriptor.ensureNoAsn1AmbiguousOptionalLayout()
         }
-        val inlineAnnotation = pendingInlineAnnotation
-        pendingInlineAnnotation = null
+        val inlineAnnotation = consumeInlineHints().tag
         val propertyAnnotation = descriptorAndIndex?.let { (parentDescriptor, index) ->
-            parentDescriptor.asn1nnotation(index)
+            parentDescriptor.asn1Tag(index)
         }
         descriptorAndIndex = null
         val tagTemplate = resolveAsn1TagTemplate(
-            inlineAsn1nnotation = inlineAnnotation,
-            propertyAsn1nnotation = propertyAnnotation,
-            classAsn1nnotation = descriptor.asn1nnotation,
+            inlineAsn1Tag = inlineAnnotation,
+            propertyAsn1Tag = propertyAnnotation,
+            classAsn1Tag = descriptor.asn1Tag,
         )
 
         val childSerializer = DerEncoder(
@@ -357,7 +411,7 @@ private fun requireAsn1ExplicitWrapperTag(
     if (tagTemplate == null) {
         throw SerializationException(
             "Asn1Explicit requires an implicit tag override in $ownerSerialName. " +
-                    "Provide @Asn1nnotation(tagNumber=..., tagClass=CONTEXT_SPECIFIC, constructed=CONSTRUCTED)."
+                    "Provide @Asn1Tag(tagNumber=..., tagClass=CONTEXT_SPECIFIC, constructed=CONSTRUCTED)."
         )
     }
     val effectiveClass = tagTemplate.tagClass ?: TagClass.UNIVERSAL
