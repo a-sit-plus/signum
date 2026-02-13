@@ -16,10 +16,29 @@ import kotlinx.serialization.serializer
  * Use the top-level [at.asitplus.signum.indispensable.asn1.serialization.api.DER] instance
  * or create a custom instance through `DER { }`.
  */
-class Der {
-    companion object {
+class Der internal constructor(
+    internal val configuration: DerConfiguration = DerConfiguration()
+)
 
-    }
+/**
+ * DER format options.
+ *
+ * @property encodeDefaults if `true`, default-valued properties are encoded.
+ * If `false`, default-valued properties are omitted.
+ */
+data class DerConfiguration(
+    val encodeDefaults: Boolean = true,
+)
+
+/**
+ * Builder for [DerConfiguration], used by `DER { ... }`.
+ */
+class DerBuilder internal constructor() {
+    var encodeDefaults: Boolean = true
+
+    internal fun build() = DerConfiguration(
+        encodeDefaults = encodeDefaults,
+    )
 }
 
 //all of the below must be extensions that statically resolve to allow for shadowing
@@ -58,7 +77,7 @@ inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T = decodeFromTlv
  */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArray {
-    val encoder = DerEncoder()
+    val encoder = DerEncoder(formatConfiguration = configuration)
     encoder.encodeSerializableValue(serializer, value)
     return Buffer().also { encoder.writeTo(it) }.readByteArray()
 }
@@ -70,7 +89,7 @@ fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArr
  */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Element {
-    val encoder = DerEncoder()
+    val encoder = DerEncoder(formatConfiguration = configuration)
     encoder.encodeSerializableValue(serializer, value)
     return encoder.encodeToTLV()
         .also { if (it.size != 1) throw ImplementationError("DER serializer mutliple elements") }.first()

@@ -69,6 +69,7 @@ private class ImplicitTaggingBuffer(
 @ExperimentalSerializationApi
 internal class DerEncoder(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
+    private val formatConfiguration: DerConfiguration = DerConfiguration(),
 ) : AbstractEncoder() {
 
     private val buffer = mutableListOf<Asn1ElementHolder>()
@@ -171,6 +172,9 @@ internal class DerEncoder(
         this.descriptorAndIndex = descriptor to index
         return super.encodeElement(descriptor, index)
     }
+
+    override fun shouldEncodeElementDefault(descriptor: SerialDescriptor, index: Int): Boolean =
+        formatConfiguration.encodeDefaults
 
     override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
         val targetBuffer = processAnnotationsAndGetTarget(
@@ -285,7 +289,10 @@ internal class DerEncoder(
                 "Could not resolve concrete serializer for CHOICE value of ${serializer.descriptor.serialName}: ${(value as Any)::class}"
             )
 
-        val childSerializer = DerEncoder(serializersModule)
+        val childSerializer = DerEncoder(
+            serializersModule = serializersModule,
+            formatConfiguration = formatConfiguration
+        )
         childSerializer.encodeSerializableValue(selectedSerializer as SerializationStrategy<Any?>, value as Any?)
         val elements = childSerializer.encodeToTLV()
         if (elements.size != 1) {
@@ -314,7 +321,10 @@ internal class DerEncoder(
         val allAnnotations = propertyAnnotations + descriptor.annotations.asn1Layers
         val targetBuffer = processAnnotationsAndGetTarget(allAnnotations)
 
-        val childSerializer = DerEncoder(serializersModule)
+        val childSerializer = DerEncoder(
+            serializersModule = serializersModule,
+            formatConfiguration = formatConfiguration
+        )
         val placeholder = Asn1ElementHolder.StructurePlaceholder(childSerializer, descriptor)
         targetBuffer += placeholder
         return childSerializer
@@ -360,7 +370,10 @@ internal class DerEncoder(
                 processAnnotationsRecursively(remaining, ImplicitTaggingBuffer(targetBuffer, current.tag))
 
             Type.OCTET_STRING -> {
-                val childSerializer = DerEncoder(serializersModule)
+                val childSerializer = DerEncoder(
+                    serializersModule = serializersModule,
+                    formatConfiguration = formatConfiguration
+                )
                 targetBuffer += Asn1ElementHolder.NestedStructurePlaceholder.OctetString(
                     childSerializer
                 )
@@ -368,7 +381,10 @@ internal class DerEncoder(
             }
 
             Type.EXPLICIT_TAG -> {
-                val childSerializer = DerEncoder(serializersModule)
+                val childSerializer = DerEncoder(
+                    serializersModule = serializersModule,
+                    formatConfiguration = formatConfiguration
+                )
                 targetBuffer += Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag(
                     current.tag,
                     childSerializer

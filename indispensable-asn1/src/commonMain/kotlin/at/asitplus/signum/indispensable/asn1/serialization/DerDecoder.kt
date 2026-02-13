@@ -240,7 +240,6 @@ class DerDecoder internal constructor(
                     }
                 }
 
-                Asn1LeadingTagsResolution.ValueDependent,
                 Asn1LeadingTagsResolution.UnknownInfer -> {
                     if (!currentPropertyIsTrailing) {
                         throw SerializationException(
@@ -332,6 +331,16 @@ class DerDecoder internal constructor(
             return null as T
         }
 
+        if (deserializer == Asn1ElementSerializer) {
+            expectedTag?.let { ex ->
+                if (processedElement.tag != ex) {
+                    throw SerializationException(Asn1TagMismatchException(ex, processedElement.tag))
+                }
+            }
+            elementIndex++
+            return processedElement as T
+        }
+
         // Tag-check for explicitly / implicitly tagged primitives
         val tagToValidate = expectedTag ?: run {
 
@@ -377,14 +386,6 @@ class DerDecoder internal constructor(
 
             ULong.serializer() -> return processedElement.asPrimitive()
                 .decodeToULong(expectedTag ?: Asn1Element.Tag.INT)
-                .also { elementIndex++ } as T
-
-            Asn1ElementSerializer -> return processedElement
-                .also {
-                    expectedTag?.let { ex ->
-                        if (it.tag != ex) throw SerializationException(Asn1TagMismatchException(ex, it.tag))
-                    }
-                }
                 .also { elementIndex++ } as T
 
             ByteArraySerializer() -> {

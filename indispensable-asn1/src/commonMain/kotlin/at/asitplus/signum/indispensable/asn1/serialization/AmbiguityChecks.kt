@@ -19,7 +19,6 @@ private data class Asn1FieldShape(
 
 internal sealed interface Asn1LeadingTagsResolution {
     data class Exact(val tags: Set<Asn1Element.Tag>) : Asn1LeadingTagsResolution
-    data object ValueDependent : Asn1LeadingTagsResolution
     data object UnknownInfer : Asn1LeadingTagsResolution
 }
 
@@ -62,6 +61,8 @@ private val Asn1StringTags: Set<Asn1Element.Tag> = setOf(
     Asn1Element.Tag.STRING_VIDEOTEX,
 )
 private val ByteArraySerialName: String = ByteArraySerializer().descriptor.serialName
+private const val Asn1ElementSerializerSerialName = "Asn1ElementDerEncodedSerializer"
+private const val Asn1OpaqueSerializerSerialName = "Asn1DerSerializer"
 
 internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
     if (kind !is StructureKind.CLASS && kind !is StructureKind.OBJECT) return
@@ -185,19 +186,8 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
                 propertyAsn1nnotation?.asBitString == true ||
                 unwrapped.isAsn1BitString
 
-    val baseForm = resolveBaseForm(inlineAsn1nnotation, propertyAsn1nnotation, asn1nnotation)
-    val emptyNonNull = resolveEmptyNonNull(inlineAsn1nnotation, propertyAsn1nnotation, asn1nnotation)
-
-    val baseIsConstructed = when (baseForm) {
-        Asn1BaseForm.CONSTRUCTED -> true
-        Asn1BaseForm.PRIMITIVE -> false
-        Asn1BaseForm.INFER -> unwrapped.asn1BaseIsConstructed()
-    }
-    val baseCanEncodeEmptyContent = when (emptyNonNull) {
-        Asn1EmptyNonNull.MAY -> true
-        Asn1EmptyNonNull.NEVER -> false
-        Asn1EmptyNonNull.INFER -> unwrapped.asn1BaseCanEncodeEmptyContent(isBitString)
-    }
+    val baseIsConstructed = unwrapped.asn1BaseIsConstructed()
+    val baseCanEncodeEmptyContent = unwrapped.asn1BaseCanEncodeEmptyContent(isBitString)
 
     return Asn1NullEncodingAnalysis(
         encodeNullEnabled = true,
@@ -225,10 +215,7 @@ private fun possibleLeadingTags(
     val isBitString = inheritedBitString || propertyAsn1nnotation?.asBitString == true || descriptor.isAsn1BitString
     val choiceMode = forcedChoice ?: (propertyAsn1nnotation?.asChoice == true || descriptor.asn1nnotation?.asChoice == true)
 
-    val baseTags = resolveLeadingTagsFromShape(
-        propertyAsn1nnotation = propertyAsn1nnotation,
-        classAsn1nnotation = descriptor.asn1nnotation
-    ) ?: possibleBaseLeadingTags(
+    val baseTags = possibleBaseLeadingTags(
         descriptor = descriptor,
         isBitString = isBitString,
         choiceMode = choiceMode,
@@ -249,6 +236,10 @@ private fun possibleBaseLeadingTags(
             inheritedBitString = isBitString,
             forcedChoice = choiceMode,
         )
+    }
+
+    if (descriptor.isAsn1OpaqueSerializerDescriptor()) {
+        return Asn1LeadingTagsResolution.UnknownInfer
     }
 
     if (descriptor.isByteArrayLikeDescriptor()) {
@@ -311,7 +302,6 @@ private fun possibleSealedChoiceAlternativeLeadingTags(descriptor: SerialDescrip
             forcedChoice = alternativeDescriptor.asn1nnotation?.asChoice == true,
         )) {
             is Asn1LeadingTagsResolution.Exact -> alternativeTags += resolution.tags
-            Asn1LeadingTagsResolution.ValueDependent -> return Asn1LeadingTagsResolution.ValueDependent
             Asn1LeadingTagsResolution.UnknownInfer -> return Asn1LeadingTagsResolution.UnknownInfer
         }
     }
@@ -342,7 +332,6 @@ private fun applyLayers(
                 }.toSet()
             )
 
-            Asn1LeadingTagsResolution.ValueDependent,
             Asn1LeadingTagsResolution.UnknownInfer -> Asn1LeadingTagsResolution.Exact(
                 setOf(
                     Asn1Element.Tag(current.tag, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC),
@@ -353,69 +342,6 @@ private fun applyLayers(
     }
 }
 
-private fun resolveLeadingTagsFromShape(
-    propertyAsn1nnotation: Asn1nnotation?,
-    classAsn1nnotation: Asn1nnotation?,
-): Asn1LeadingTagsResolution? {
-    val propertyLeadingTags = propertyAsn1nnotation?.shape?.leadingTags ?: emptyArray()
-    val classLeadingTags = classAsn1nnotation?.shape?.leadingTags ?: emptyArray()
-    val configuredLeadingTags = when {
-        propertyLeadingTags.isNotEmpty() -> propertyLeadingTags
-        classLeadingTags.isNotEmpty() -> classLeadingTags
-        else -> return null
-    }
-
-    val hasValueDependent = configuredLeadingTags.any { it.kind == Asn1LeadingTagKind.VALUE_DEPENDENT }
-    if (hasValueDependent) {
-        if (configuredLeadingTags.size != 1 || configuredLeadingTags.first().kind != Asn1LeadingTagKind.VALUE_DEPENDENT) {
-            throw SerializationException(
-                "Invalid @Asn1Shape leadingTags: VALUE_DEPENDENT must be the only entry."
-            )
-        }
-        return Asn1LeadingTagsResolution.ValueDependent
-    }
-
-    val tags = mutableSetOf<Asn1Element.Tag>()
-    configuredLeadingTags.forEach { leadingTag ->
-        if (leadingTag.kind != Asn1LeadingTagKind.TAG) {
-            throw SerializationException("Invalid @Asn1Shape leadingTags entry kind: ${leadingTag.kind}")
-        }
-        when (leadingTag.constructed) {
-            Asn1ConstructedBit.INFER -> {
-                tags += Asn1Element.Tag(leadingTag.tag, constructed = false, tagClass = leadingTag.tagClass)
-                tags += Asn1Element.Tag(leadingTag.tag, constructed = true, tagClass = leadingTag.tagClass)
-            }
-
-            Asn1ConstructedBit.PRIMITIVE ->
-                tags += Asn1Element.Tag(leadingTag.tag, constructed = false, tagClass = leadingTag.tagClass)
-
-            Asn1ConstructedBit.CONSTRUCTED ->
-                tags += Asn1Element.Tag(leadingTag.tag, constructed = true, tagClass = leadingTag.tagClass)
-        }
-    }
-    return Asn1LeadingTagsResolution.Exact(tags)
-}
-
-private fun resolveBaseForm(
-    inlineAsn1nnotation: Asn1nnotation?,
-    propertyAsn1nnotation: Asn1nnotation?,
-    classAsn1nnotation: Asn1nnotation?,
-): Asn1BaseForm =
-    inlineAsn1nnotation?.shape?.baseForm?.takeIf { it != Asn1BaseForm.INFER }
-        ?: propertyAsn1nnotation?.shape?.baseForm?.takeIf { it != Asn1BaseForm.INFER }
-        ?: classAsn1nnotation?.shape?.baseForm?.takeIf { it != Asn1BaseForm.INFER }
-        ?: Asn1BaseForm.INFER
-
-private fun resolveEmptyNonNull(
-    inlineAsn1nnotation: Asn1nnotation?,
-    propertyAsn1nnotation: Asn1nnotation?,
-    classAsn1nnotation: Asn1nnotation?,
-): Asn1EmptyNonNull =
-    inlineAsn1nnotation?.shape?.emptyNonNull?.takeIf { it != Asn1EmptyNonNull.INFER }
-        ?: propertyAsn1nnotation?.shape?.emptyNonNull?.takeIf { it != Asn1EmptyNonNull.INFER }
-        ?: classAsn1nnotation?.shape?.emptyNonNull?.takeIf { it != Asn1EmptyNonNull.INFER }
-        ?: Asn1EmptyNonNull.INFER
-
 private fun formatTags(tags: Set<Asn1Element.Tag>): String = tags
     .sortedWith(compareBy<Asn1Element.Tag>({ it.tagClass.ordinal }, { it.tagValue }, { it.isConstructed }))
     .joinToString(prefix = "[", postfix = "]") { formatTag(it) }
@@ -425,9 +351,6 @@ private fun formatTag(tag: Asn1Element.Tag): String =
 
 internal fun Asn1LeadingTagsResolution.reason(): String = when (this) {
     is Asn1LeadingTagsResolution.Exact -> "exact leading tags are known"
-    Asn1LeadingTagsResolution.ValueDependent ->
-        "leading tags are value-dependent (@Asn1Shape VALUE_DEPENDENT)"
-
     Asn1LeadingTagsResolution.UnknownInfer ->
         "leading tags cannot be inferred from descriptor"
 }
@@ -439,7 +362,7 @@ internal fun undecidableAsn1OptionalLayoutMessage(
     reason: String,
 ): String =
     "Undecidable ASN.1 optional/nullable layout for property '$propertyName' (index $propertyIndex) in $ownerSerialName: " +
-            "$reason. Provide explicit @Asn1Shape leading tags or disambiguating ASN.1 tags."
+            "$reason. Add disambiguating ASN.1 tags (typically EXPLICIT/IMPLICIT context tags)."
 
 internal fun undecidableAsn1NullableDecodingMessage(
     ownerSerialName: String,
@@ -448,7 +371,7 @@ internal fun undecidableAsn1NullableDecodingMessage(
     reason: String,
 ): String =
     "Undecidable nullable ASN.1 decode for property '$propertyName' (index $propertyIndex) in $ownerSerialName: " +
-            "$reason. Provide explicit @Asn1Shape leading tags or disambiguating ASN.1 tags."
+            "$reason. Add disambiguating ASN.1 tags (typically EXPLICIT/IMPLICIT context tags)."
 
 internal fun ambiguousAsn1NullEncodingMessage(
     ownerSerialName: String,
@@ -480,7 +403,7 @@ private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor 
     if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptor() else this
 
 private fun SerialDescriptor.asn1BaseIsConstructed(): Boolean =
-    if (isByteArrayLikeDescriptor()) false
+    if (isAsn1OpaqueSerializerDescriptor() || isByteArrayLikeDescriptor()) false
     else isSetDescriptor || when (kind) {
         is StructureKind.CLASS,
         is StructureKind.OBJECT,
@@ -493,6 +416,7 @@ private fun SerialDescriptor.asn1BaseIsConstructed(): Boolean =
     }
 
 private fun SerialDescriptor.asn1BaseCanEncodeEmptyContent(isBitString: Boolean): Boolean {
+    if (isAsn1OpaqueSerializerDescriptor()) return true
     if (isByteArrayLikeDescriptor()) return !isBitString
     return when (kind) {
         PrimitiveKind.STRING -> true
@@ -509,3 +433,9 @@ private fun SerialDescriptor.isByteArrayLikeDescriptor(): Boolean =
             (kind is StructureKind.LIST &&
                     elementsCount == 1 &&
                     getElementDescriptor(0).kind == PrimitiveKind.BYTE)
+
+private fun SerialDescriptor.isAsn1OpaqueSerializerDescriptor(): Boolean {
+    val normalizedSerialName = serialName.removeSuffix("?")
+    return normalizedSerialName == Asn1ElementSerializerSerialName ||
+            normalizedSerialName == Asn1OpaqueSerializerSerialName
+}

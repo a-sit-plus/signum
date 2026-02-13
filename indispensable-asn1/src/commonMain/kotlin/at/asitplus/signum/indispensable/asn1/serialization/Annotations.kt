@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.TagClass
 import kotlinx.serialization.SerialInfo
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -16,7 +15,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
  * @param asBitString only affects [ByteArray] values (including inline wrappers): encodes as BIT STRING instead of OCTET STRING
  * @param encodeNull encodes nulls as explicit ASN.1 NULL instead of omitting the value
  * @param asChoice enables ASN.1 CHOICE behavior for sealed polymorphism (no discriminator wrapper)
- * @param shape optional ASN.1 shape contract used for strict ambiguity detection with custom serializers
  */
 @SerialInfo
 @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
@@ -25,55 +23,7 @@ annotation class Asn1nnotation(
     val asBitString: Boolean = false,
     val encodeNull: Boolean = false,
     val asChoice: Boolean = false,
-    val shape: Asn1Shape = Asn1Shape(),
 )
-
-/**
- * Optional explicit ASN.1 shape contract.
- *
- * [leadingTags] semantics:
- * - empty array: infer from descriptor and ASN.1 annotations
- * - one VALUE_DEPENDENT entry: leading tag is runtime-dependent and cannot be statically enumerated
- * - one or more TAG entries: exact base leading tag set
- */
-annotation class Asn1Shape(
-    val leadingTags: Array<Asn1LeadingTag> = [],
-    val baseForm: Asn1BaseForm = Asn1BaseForm.INFER,
-    val emptyNonNull: Asn1EmptyNonNull = Asn1EmptyNonNull.INFER,
-)
-
-/**
- * Single leading-tag contract entry for [Asn1Shape.leadingTags].
- */
-annotation class Asn1LeadingTag(
-    val kind: Asn1LeadingTagKind = Asn1LeadingTagKind.TAG,
-    val tagClass: TagClass = TagClass.UNIVERSAL,
-    val tag: ULong = 0uL,
-    val constructed: Asn1ConstructedBit = Asn1ConstructedBit.INFER,
-)
-
-enum class Asn1LeadingTagKind {
-    TAG,
-    VALUE_DEPENDENT,
-}
-
-enum class Asn1ConstructedBit {
-    INFER,
-    PRIMITIVE,
-    CONSTRUCTED,
-}
-
-enum class Asn1BaseForm {
-    INFER,
-    PRIMITIVE,
-    CONSTRUCTED,
-}
-
-enum class Asn1EmptyNonNull {
-    INFER,
-    NEVER,
-    MAY,
-}
 
 /**
  * Single ASN.1 layer used by [Asn1nnotation].
