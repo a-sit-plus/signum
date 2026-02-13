@@ -50,6 +50,14 @@ data class KeyAttestationJwt(
     val expiration: Instant? = null,
 
     /**
+     * Data class containing information for instance/unit attestation
+     * which are not part of the OID4VCI specification.
+     * See https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
+     */
+    @SerialName("eudi_wallet_info")
+    val eudiWalletInfo: EudiWalletInfo? = null,
+
+    /**
      * Array of attested keys from the same key storage component using the syntax of JWK as defined in RFC7517.
      */
     @SerialName("attested_keys")
@@ -101,6 +109,7 @@ data class KeyAttestationJwt(
         if (notBefore != other.notBefore) return false
         if (issuedAt != other.issuedAt) return false
         if (expiration != other.expiration) return false
+        if(eudiWalletInfo != other.eudiWalletInfo) return false
         if (attestedKeys != other.attestedKeys) return false
         if (keyStorage != other.keyStorage) return false
         if (userAuthentication != other.userAuthentication) return false
@@ -118,6 +127,7 @@ data class KeyAttestationJwt(
         result = 31 * result + (notBefore?.hashCode() ?: 0)
         result = 31 * result + issuedAt.hashCode()
         result = 31 * result + (expiration?.hashCode() ?: 0)
+        result = 31 * result + eudiWalletInfo.hashCode()
         result = 31 * result + attestedKeys.hashCode()
         result = 31 * result + (keyStorage?.hashCode() ?: 0)
         result = 31 * result + (userAuthentication?.hashCode() ?: 0)
