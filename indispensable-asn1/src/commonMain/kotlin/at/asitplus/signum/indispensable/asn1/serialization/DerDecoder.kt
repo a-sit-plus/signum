@@ -398,18 +398,22 @@ class DerDecoder internal constructor(
             return processedElement as T
         }
 
+        if (deserializer is Asn1Serializer<*, T>) {
+            expectedTag?.let { ex ->
+                if (processedElement.tag != ex) {
+                    throw SerializationException(Asn1TagMismatchException(ex, processedElement.tag))
+                }
+            }
+            val encodable = when (processedElement) {
+                is Asn1Primitive -> (deserializer as Asn1Decodable<Asn1Primitive, T>).decodeFromTlv(processedElement)
+                is Asn1Structure -> (deserializer as Asn1Decodable<Asn1Structure, T>).decodeFromTlv(processedElement)
+            }
+            elementIndex++
+            return encodable
+        }
+
         // Tag-check for explicitly / implicitly tagged primitives
         val tagToValidate = expectedTag ?: run {
-
-            if (deserializer is Asn1Serializer<*, T>) {
-                val encodable = when (processedElement) {
-                    is Asn1Primitive -> (deserializer as Asn1Decodable<Asn1Primitive, T>).decodeFromTlv(processedElement)
-                    is Asn1Structure -> (deserializer as Asn1Decodable<Asn1Structure, T>).decodeFromTlv(processedElement)
-                }
-                elementIndex++
-                return encodable
-            }
-
             // If no explicit tag is specified, we should still validate against the default tag
             // for the type being deserialized (when no annotations are present)
             if (!hasTagOverride) {

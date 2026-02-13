@@ -297,12 +297,7 @@ data class SurrogateX509Certificate(
 @Serializable
 data class SurrogateTbsCertificate(
     @Asn1Tag(tagNumber = 0u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
-    val version: Int? = null,
-    @Asn1Tag(
-        tagNumber = 2u,
-        tagClass = Asn1TagClass.UNIVERSAL,
-        constructed = Asn1ConstructedBit.PRIMITIVE
-    )
+    val version: Asn1Explicit<Int>? = null,
     val serialNumber: Asn1Integer,
     val signature: Asn1Element,
     val issuer: List<RelativeDistinguishedName>,
@@ -310,21 +305,21 @@ data class SurrogateTbsCertificate(
     val subject: List<RelativeDistinguishedName>,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
     @Asn1BitStringAnnotation
-    @Asn1Tag(tagNumber = 1u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 1u)
     val issuerUniqueID: ByteArray? = null,
     @Asn1BitStringAnnotation
-    @Asn1Tag(tagNumber = 2u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 2u)
     val subjectUniqueID: ByteArray? = null,
-    @Asn1Tag(tagNumber = 3u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
-    val extensions: List<X509CertificateExtension>? = null,
+    @Asn1Tag(tagNumber = 3u, constructed = Asn1ConstructedBit.CONSTRUCTED)
+    val extensions: Asn1Explicit<List<X509CertificateExtension>>? = null,
 ) {
     init {
-
-        if(!extensions.isNullOrEmpty()) {
-            require(extensions.distinctBy { it.oid }.size == extensions.size)
+        val extensionList = extensions?.value
+        if(!extensionList.isNullOrEmpty()) {
+            require(extensionList.distinctBy { it.oid }.size == extensionList.size)
             // Align surrogate strictness with legacy SAN/IAN structural validation.
-            extensions.findSubjectAltNames()
-            extensions.findIssuerAltNames()
+            extensionList.findSubjectAltNames()
+            extensionList.findIssuerAltNames()
         }
     }
 }
@@ -348,7 +343,7 @@ data class SurrogateCertificationRequestInfo(
     val version: Asn1Integer,
     val subject: Asn1Element,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
-    @Asn1Tag(tagNumber = 0u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 0u)
     val attributes: Asn1Element
 )
 

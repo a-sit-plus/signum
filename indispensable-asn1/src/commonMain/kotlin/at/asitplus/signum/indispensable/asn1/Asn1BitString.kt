@@ -76,6 +76,8 @@ class Asn1BitString private constructor(
     }
 
     companion object : Asn1Serializer<Asn1Primitive, Asn1BitString> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.BIT_STRING)
+
         private fun fromBitSet(bitSet: BitSet): Pair<Byte, ByteArray> {
             val rawBytes = bitSet.bytes.map {
                 var res = 0

@@ -37,6 +37,8 @@ data class Pkcs10CertificationRequestAttribute(
     }
 
     companion object : Asn1Serializer<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = src.decodeRethrowing() {
             val id = (next() as Asn1Primitive).readOid()

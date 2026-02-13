@@ -172,6 +172,7 @@ constructor(
     }
 
     companion object : Asn1Serializer<Asn1Sequence, TbsCertificate> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         object Tags {
             val ISSUER_UID = Asn1.ImplicitTag(1uL)
@@ -320,6 +321,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val signature: CryptoSignature get() = decodedSignature.getOrThrow()
 
     companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY),  Asn1Serializer<Asn1Sequence, X509Certificate> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE"

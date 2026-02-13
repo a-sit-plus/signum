@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.PemDecodable
 import at.asitplus.signum.indispensable.asn1.PemEncodable
@@ -22,6 +23,8 @@ sealed interface KeyAgreementPublicValue : PemEncodable<Asn1Sequence> {
         fun asCryptoPublicKey(): CryptoPublicKey.EC
     }
     companion object : PemDecodable<Asn1Sequence, ECDH>("PUBLIC KEY"), Asn1Serializer<Asn1Sequence,ECDH> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
         override fun doDecode(src: Asn1Sequence) = CryptoPublicKey.doDecode(src) as CryptoPublicKey.EC
     }
 }

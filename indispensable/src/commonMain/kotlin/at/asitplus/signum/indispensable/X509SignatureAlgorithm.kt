@@ -48,6 +48,8 @@ sealed class X509SignatureAlgorithmDescription(
     }
 
     companion object : Asn1Serializer<Asn1Sequence, X509SignatureAlgorithmDescription> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val oid = next().asPrimitive().readOid()
             // future: SPI
@@ -209,6 +211,7 @@ sealed class X509SignatureAlgorithm(
 
 
     companion object : Enumeration<X509SignatureAlgorithm>, Asn1Serializer<Asn1Sequence, X509SignatureAlgorithm> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         //make it lazy to break init cycle that causes the weirdest nullpointer ever
         override val entries: Set<X509SignatureAlgorithm> by lazy {

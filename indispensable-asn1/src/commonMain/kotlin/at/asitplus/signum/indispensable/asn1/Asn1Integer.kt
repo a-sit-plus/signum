@@ -103,6 +103,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
     }
 
     companion object: Asn1Serializer<Asn1Primitive, Asn1Integer> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.INT)
 
         val ONE = Asn1Integer.Positive(VarUInt(1u))
         val ZERO = Asn1Integer.Positive(VarUInt(0u))

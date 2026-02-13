@@ -6,6 +6,7 @@ It explains:
 - how DER encoding works with no ASN.1 annotations
 - what each ASN.1 annotation does now
 - why and when ambiguity is rejected
+- how serializer `leadingTags` participate in ambiguity checks
 - how to model EXPLICIT tagging, OCTET wrapping, polymorphism, and CHOICE
 
 ## 1. Big Picture
@@ -60,7 +61,7 @@ Tag override only:
 
 ```kotlin
 @Asn1Tag(
-    tagNumber = 0,
+    tagNumber = 0u,
     tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     constructed = Asn1ConstructedBit.INFER,
 )
@@ -110,7 +111,7 @@ Use `Asn1Explicit<T>` + an outer context-specific constructed tag.
 @Serializable
 data class TbsLike(
     @Asn1Tag(
-        tagNumber = 3,
+        tagNumber = 3u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
         constructed = Asn1ConstructedBit.CONSTRUCTED,
     )
@@ -169,6 +170,43 @@ It fails when:
 
 This is checked in encode and decode paths.
 
+### 7.1 Where leading tags come from
+
+The checker tries these sources:
+1. descriptor-derived defaults (primitive kinds, `SEQUENCE`/`SET`, `ByteArray`, etc.)
+2. annotation effects (`@Asn1Tag`, `@Asn1BitString`, `@Asn1Choice`)
+3. serializer-level contract from `Asn1Serializer.leadingTags`
+
+That third source is important for custom serializers, where `SerialDescriptor` alone is not enough to infer wire-leading tags safely.
+
+### 7.2 `Asn1Serializer.leadingTags` semantics
+
+Every `Asn1Serializer` now declares:
+- `leadingTags = setOf(...)` for exact known possible leading tags
+- `leadingTags = emptySet()` when unknown/value-dependent
+
+Meaning:
+- non-empty set -> checker treats tags as exact and can often prove determinism
+- empty set -> checker treats field as unknown; middle nullable/optional fields may be rejected as ambiguous
+
+Example (exact):
+
+```kotlin
+companion object : Asn1Serializer<Asn1Sequence, MyType> {
+    override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+    // ...
+}
+```
+
+Example (unknown):
+
+```kotlin
+companion object : Asn1Serializer<Asn1Element, MyExtensionPoint> {
+    override val leadingTags: Set<Asn1Element.Tag> = emptySet()
+    // ...
+}
+```
+
 ## 8. Polymorphism and CHOICE
 
 ### 8.1 Default polymorphism
@@ -188,7 +226,7 @@ sealed interface SubjectAltName
 data class DnsName(val value: String) : SubjectAltName
 
 @Serializable
-@Asn1Tag(tagNumber = 2, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 2u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
 data class Rfc822Name(val value: String) : SubjectAltName
 ```
 
@@ -196,6 +234,20 @@ Rules:
 - only sealed polymorphism is supported
 - each arm must decode unambiguously
 - if multiple arms match during decode, decode fails as ambiguous CHOICE
+
+### 8.3 Why this CHOICE model (and not protobuf-style `oneof`)
+
+We intentionally model CHOICE as sealed polymorphism (`@Asn1Choice`) instead of copying protobuf `oneof` shape.
+
+Why:
+- ASN.1 CHOICE has no discriminator field on the wire. Protobuf-style modeling is centered around field presence/index semantics and does not map naturally to DER tag-driven selection.
+- CHOICE arms in real schemas can be arbitrarily complex (tagged wrappers, nested `SEQUENCE`, explicit wrappers). A sealed arm type can express that directly; a flat `oneof`-like wrapper quickly becomes rigid.
+- We need runtime ambiguity detection at DER tag level. The current model can try all sealed arms, accept exactly one, and hard-fail on zero/multiple matches.
+- Protobuf-style wrappers tend to push users toward nullable sibling fields (`a: A?`, `b: B?`, ...), which is exactly the class layout style that creates optional/nullable ambiguity problems in ASN.1.
+
+Practical consequence:
+- `@Asn1Choice` keeps CHOICE extensible for PKI/CMS-style schemas without introducing synthetic wire artifacts.
+- It also keeps strict "no guesswork" semantics: unique arm match required, otherwise fail.
 
 ## 9. `@Asn1BitString` in Practice
 
@@ -242,6 +294,7 @@ Custom serializers are allowed, but ambiguity checks still apply to containing c
 
 Practical rule:
 - if a field has unknown/non-inferable leading tags and is nullable/optional in the middle of a class, expect hard rejection unless you add disambiguation (tagging/wrapping/design change)
+- if you write an `Asn1Serializer`, always set `leadingTags` accurately; this is the compact replacement for the old shape-style contract
 
 For extension points, prefer explicit tagging/wrappers or trailing positions.
 
@@ -256,6 +309,7 @@ Current model:
 - `@Asn1EncodeNull` for null policy
 - `@Asn1Choice` for CHOICE
 - explicit and octet wrappers via `Asn1Explicit<T>` and `Asn1OctetWrapped<T>`
+- serializer-level `leadingTags` on `Asn1Serializer` for custom-leading-tag determinism (`emptySet()` = unknown, non-empty = exact)
 
 If you still see old `@Asn1nnotation(...)` examples, treat them as outdated.
 

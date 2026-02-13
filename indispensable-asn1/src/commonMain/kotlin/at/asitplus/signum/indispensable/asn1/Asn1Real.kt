@@ -86,6 +86,8 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
     }
 
     companion object : Asn1Serializer<Asn1Primitive, Asn1Real> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.REAL)
+
         /**
          * Converts a Double into an ASN.1 REAL.
          * **Beware of the fact that ASN.1 REAL zero knows no sign!**

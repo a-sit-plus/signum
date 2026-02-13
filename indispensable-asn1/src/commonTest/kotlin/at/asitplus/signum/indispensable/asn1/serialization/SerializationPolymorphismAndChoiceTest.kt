@@ -125,7 +125,7 @@ data class ChoiceContainer(val choice: ChoiceInterface)
 data class ChoiceInt(val value: Int) : ChoiceInterface
 
 @Serializable
-@Asn1Tag(tagNumber = 1u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 1u)
 data class ChoiceTaggedString(val value: String) : ChoiceInterface
 
 @Serializable

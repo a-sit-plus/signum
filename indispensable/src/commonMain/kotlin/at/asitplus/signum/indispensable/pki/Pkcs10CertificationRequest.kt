@@ -65,6 +65,8 @@ data class TbsCertificationRequest(
     }
 
     companion object : Asn1Serializer<Asn1Sequence, TbsCertificationRequest> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val version = (next() as Asn1Primitive).decodeToInt()
@@ -125,6 +127,8 @@ data class Pkcs10CertificationRequest(
         EB_STRINGS.DEFAULT,
         EB_STRINGS.LEGACY
     ), Asn1Serializer<Asn1Sequence, Pkcs10CertificationRequest> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"

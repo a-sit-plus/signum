@@ -54,10 +54,7 @@ value class BitSetValue(
 
 @JvmInline
 @Serializable
-@Asn1Tag(
-    tagNumber = 1336u,
-    tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
-)
+@Asn1Tag(tagNumber = 1336u)
 value class BitSetValueTagged(
     @Asn1BitString
     val bytes: ByteArray

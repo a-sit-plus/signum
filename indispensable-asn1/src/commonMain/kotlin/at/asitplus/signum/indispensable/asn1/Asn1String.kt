@@ -382,6 +382,20 @@ sealed class Asn1String(
     }
 
     companion object : Asn1Serializer<Asn1Primitive, Asn1String> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(
+            Asn1Element.Tag.STRING_UTF8,
+            Asn1Element.Tag.STRING_BMP,
+            Asn1Element.Tag.STRING_NUMERIC,
+            Asn1Element.Tag.STRING_T61,
+            Asn1Element.Tag.STRING_VISIBLE,
+            Asn1Element.Tag.STRING_UNIVERSAL,
+            Asn1Element.Tag.STRING_PRINTABLE,
+            Asn1Element.Tag.STRING_IA5,
+            Asn1Element.Tag.STRING_GENERAL,
+            Asn1Element.Tag.STRING_GRAPHIC,
+            Asn1Element.Tag.STRING_UNRESTRICTED,
+            Asn1Element.Tag.STRING_VIDEOTEX,
+        )
 
         /**
          * Decodes an [Asn1Primitive] into a specific [Asn1String] subtype based on its tag.

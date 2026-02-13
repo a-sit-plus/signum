@@ -231,6 +231,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             }
 
             companion object : Asn1Serializer<Asn1Sequence, PrimeInfo> {
+                override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
                 @Throws(Asn1Exception::class)
                 override fun doDecode(src: Asn1Sequence): PrimeInfo = src.decodeRethrowing {
@@ -247,6 +248,8 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(FromPKCS1::decodeFromDer)
         ), Asn1Serializer<Asn1Sequence,RSA> {
+            override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
             override fun doDecode(src: Asn1Sequence): RSA =
                 checkedAs(CryptoPrivateKey.doDecode(src))
 
@@ -450,6 +453,8 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(FromSEC1::decodeFromDer)
         ),Asn1Serializer<Asn1Sequence, EC>  {
+            override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             @Throws(Asn1Exception::class)
@@ -535,6 +540,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         // unambiguously PKCS#8 for the base type and its serializers.
         Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8,
         Asn1Serializer<Asn1Sequence, CryptoPrivateKey> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         /**
          * Tries to decode a private key as exported from iOS.
@@ -598,6 +604,7 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
     }
 
     companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY), Asn1Serializer<Asn1Sequence, EncryptedPrivateKey> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = src.decodeRethrowing {

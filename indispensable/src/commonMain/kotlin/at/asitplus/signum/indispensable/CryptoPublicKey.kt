@@ -68,6 +68,8 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
         PEM_BOUNDARY to DEFAULT_PEM_DECODER,
         "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
         ),Asn1Serializer<Asn1Sequence, CryptoPublicKey> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
+
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it

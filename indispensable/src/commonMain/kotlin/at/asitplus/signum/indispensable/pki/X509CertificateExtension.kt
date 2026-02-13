@@ -47,6 +47,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
     }
 
     companion object : Asn1Serializer<Asn1Sequence, X509CertificateExtension> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {

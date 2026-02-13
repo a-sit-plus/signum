@@ -64,6 +64,7 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
 
 
     companion object : Enumeration<HMAC>, Asn1Serializer<Asn1Sequence, HMAC> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         fun byOID(oid: ObjectIdentifier): HMAC? = entries.find { it.oid == oid }
 

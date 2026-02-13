@@ -180,6 +180,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
 
         companion object : Asn1Serializer<Asn1Element, EC.IndefiniteLength> {
+            override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
             fun fromRS(r: BigInteger, s: BigInteger) =
                 EC.IndefiniteLength(r, s)
@@ -253,6 +254,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
 
         companion object : Asn1Serializer<Asn1Element, RSA> {
+            override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.BIT_STRING)
+
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Element): RSA {
                 src as Asn1Primitive
@@ -262,6 +265,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     }
 
     companion object : Asn1Serializer<Asn1Element, CryptoSignature> {
+        override val leadingTags: Set<Asn1Element.Tag> =
+            setOf(Asn1Element.Tag.BIT_STRING, Asn1Element.Tag.SEQUENCE)
+
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {

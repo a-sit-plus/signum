@@ -31,6 +31,9 @@ class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable
         formatOverride ?: if (this.instant > THRESHOLD_GENERALIZED_TIME) Format.GENERALIZED else Format.UTC
 
     companion object : Asn1Serializer<Asn1Primitive, Asn1Time> {
+        override val leadingTags: Set<Asn1Element.Tag> =
+            setOf(Asn1Element.Tag.TIME_UTC, Asn1Element.Tag.TIME_GENERALIZED)
+
         private val THRESHOLD_GENERALIZED_TIME = Instant.parse("2050-01-01T00:00:00Z")
 
         @Throws(Asn1Exception::class)

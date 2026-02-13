@@ -23,6 +23,8 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
     }
 
     companion object : Asn1Serializer<Asn1Set, RelativeDistinguishedName> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SET)
+
         override fun doDecode(src: Asn1Set): RelativeDistinguishedName = src.decodeRethrowing {
             buildList {
                 while (hasNext()) {
@@ -120,6 +122,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 
     companion object : Asn1Serializer<Asn1Sequence, AttributeTypeAndValue> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.SEQUENCE)
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): AttributeTypeAndValue = src.decodeRethrowing {

@@ -148,6 +148,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
 
     companion object : Asn1Serializer<Asn1Primitive, ObjectIdentifier> {
+        override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.OID)
 
         /**
          * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]

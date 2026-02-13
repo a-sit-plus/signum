@@ -125,49 +125,49 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
 @Serializable
 data class PrimitiveImplicitStringAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 10u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 10u)
     val value: String?
 )
 
 @Serializable
 data class PrimitiveImplicitFloatAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 11u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 11u)
     val value: Float?
 )
 
 @Serializable
 data class PrimitiveImplicitDoubleAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 12u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 12u)
     val value: Double?
 )
 
 @Serializable
 data class PrimitiveImplicitOctetStringAmbiguous(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 13u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 13u)
     val value: ByteArray?
 )
 
 @Serializable
 data class PrimitiveImplicitLongSafe(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 20u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 20u)
     val value: Long?
 )
 
 @Serializable
 data class PrimitiveImplicitIntSafe(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 21u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 21u)
     val value: Int?
 )
 
 @Serializable
 data class PrimitiveImplicitShortSafe(
     @Asn1EncodeNull
-    @Asn1Tag(tagNumber = 22u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 22u)
     val value: Short?
 )
 

@@ -274,6 +274,14 @@ private fun possibleBaseLeadingTags(
         )
     }
 
+    descriptor.asn1LeadingTagsOrNull?.let { serializerLeadingTags ->
+        return if (serializerLeadingTags.isEmpty()) {
+            Asn1LeadingTagsResolution.UnknownInfer
+        } else {
+            Asn1LeadingTagsResolution.Exact(serializerLeadingTags)
+        }
+    }
+
     if (descriptor.isAsn1OpaqueSerializerDescriptor()) {
         return Asn1LeadingTagsResolution.UnknownInfer
     }

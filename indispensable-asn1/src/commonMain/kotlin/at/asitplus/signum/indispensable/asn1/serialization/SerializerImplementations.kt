@@ -1,3 +1,7 @@
+@file:OptIn(
+    kotlinx.serialization.SealedSerializationApi::class,
+)
+
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
@@ -10,6 +14,20 @@ import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+
+private interface Asn1LeadingTagsDescriptor {
+    val leadingTags: Set<Asn1Element.Tag>
+}
+
+private val asn1OpaqueDelegateDescriptor: SerialDescriptor =
+    SerialDescriptor("Asn1DerSerializer", ByteArraySerializer().descriptor)
+
+private class Asn1OpaqueSerializerDescriptor(
+    override val leadingTags: Set<Asn1Element.Tag>
+) : SerialDescriptor by asn1OpaqueDelegateDescriptor, Asn1LeadingTagsDescriptor
+
+internal val SerialDescriptor.asn1LeadingTagsOrNull: Set<Asn1Element.Tag>?
+    get() = (this as? Asn1LeadingTagsDescriptor)?.leadingTags
 
 internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
     private val delegate = ByteArraySerializer()
@@ -37,10 +55,15 @@ internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
  */
 interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> : Asn1Decodable<A, T>, KSerializer<T> {
 
+    /**
+     * Leading ASN.1 tags this serializer can decode/encode.
+     *
+     * Use an empty set when leading tags cannot be inferred statically.
+     */
+    val leadingTags: Set<Asn1Element.Tag>
+
     override val descriptor: SerialDescriptor
-        get() = SerialDescriptor(
-            "Asn1DerSerializer", ByteArraySerializer().descriptor
-        )
+        get() = Asn1OpaqueSerializerDescriptor(leadingTags)
 
     override fun deserialize(decoder: Decoder): T {
         decoder.requireAsn1Decoder(descriptor.serialName)

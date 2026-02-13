@@ -73,28 +73,6 @@ val SerializationTestAmbiguityDetection by testSuite(
         DER.decodeFromDer<TaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlySet)) shouldBe mostlySet
     }
 
-    "Consecutive nullable numeric fields can be disambiguated with explicit tags" {
-        val mostlyNull = ExplicitTaggedConsecutiveNumericNullables(
-            longValue = null,
-            intValue = 9,
-            shortValue = null,
-            byteValue = 2,
-            floatValue = null,
-            doubleValue = 3.5
-        )
-        val mostlySet = ExplicitTaggedConsecutiveNumericNullables(
-            longValue = 11L,
-            intValue = 10,
-            shortValue = 9,
-            byteValue = 8,
-            floatValue = 7.5f,
-            doubleValue = 6.25
-        )
-
-        DER.decodeFromDer<ExplicitTaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlyNull)) shouldBe mostlyNull
-        DER.decodeFromDer<ExplicitTaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlySet)) shouldBe mostlySet
-    }
-
     "Consecutive nullable fields with distinct ASN.1 primitive kinds are unambiguous without tags" {
         val value = ConsecutiveDistinctNullableKinds(
             intValue = 3,
@@ -123,24 +101,6 @@ val SerializationTestAmbiguityDetection by testSuite(
         }
     }
 
-    "Partially explicit-tagged nullable numeric fields can still be ambiguous" {
-        val value = PartiallyExplicitTaggedAmbiguousNumericNullables(
-            longValue = 1L,
-            intValue = null,
-            shortValue = 2,
-            byteValue = null,
-            floatValue = 3.5f,
-            doubleValue = null
-        )
-
-        shouldThrow<SerializationException> {
-            DER.encodeToDer(value)
-        }
-        shouldThrow<SerializationException> {
-            DER.decodeFromDer<PartiallyExplicitTaggedAmbiguousNumericNullables>("3000".hexToByteArray())
-        }
-    }
-
     "Partially tagged nullable numeric fields can be unambiguous" {
         val mostlyNull = PartiallyTaggedUnambiguousNumericNullables(
             longValue = null,
@@ -161,28 +121,6 @@ val SerializationTestAmbiguityDetection by testSuite(
 
         DER.decodeFromDer<PartiallyTaggedUnambiguousNumericNullables>(DER.encodeToDer(mostlyNull)) shouldBe mostlyNull
         DER.decodeFromDer<PartiallyTaggedUnambiguousNumericNullables>(DER.encodeToDer(mostlySet)) shouldBe mostlySet
-    }
-
-    "Partially explicit-tagged nullable numeric fields can be unambiguous" {
-        val mostlyNull = PartiallyExplicitTaggedUnambiguousNumericNullables(
-            longValue = null,
-            intValue = 10,
-            shortValue = null,
-            byteValue = 3,
-            floatValue = null,
-            doubleValue = 2.25
-        )
-        val mostlySet = PartiallyExplicitTaggedUnambiguousNumericNullables(
-            longValue = 12L,
-            intValue = 11,
-            shortValue = 10,
-            byteValue = 9,
-            floatValue = 8.75f,
-            doubleValue = 7.5
-        )
-
-        DER.decodeFromDer<PartiallyExplicitTaggedUnambiguousNumericNullables>(DER.encodeToDer(mostlyNull)) shouldBe mostlyNull
-        DER.decodeFromDer<PartiallyExplicitTaggedUnambiguousNumericNullables>(DER.encodeToDer(mostlySet)) shouldBe mostlySet
     }
 
     "Tag class is considered for ambiguity disambiguation" {
@@ -320,7 +258,7 @@ data class AmbiguousNullableStringLayout(
 @Serializable
 data class TaggedNullableStringLayout(
     val first: String,
-    @Asn1Tag(tagNumber = 0u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 0u)
     val second: String?,
     val third: String,
 )
@@ -337,33 +275,17 @@ data class ConsecutiveNumericNullables(
 
 @Serializable
 data class TaggedConsecutiveNumericNullables(
-    @Asn1Tag(tagNumber = 10u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 10u)
     val longValue: Long?,
-    @Asn1Tag(tagNumber = 11u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 11u)
     val intValue: Int?,
-    @Asn1Tag(tagNumber = 12u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 12u)
     val shortValue: Short?,
-    @Asn1Tag(tagNumber = 13u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 13u)
     val byteValue: Byte?,
-    @Asn1Tag(tagNumber = 14u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 14u)
     val floatValue: Float?,
-    @Asn1Tag(tagNumber = 15u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val doubleValue: Double?,
-)
-
-@Serializable
-data class ExplicitTaggedConsecutiveNumericNullables(
-    @Asn1Tag(tagNumber = 50u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val longValue: Long?,
-    @Asn1Tag(tagNumber = 51u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val intValue: Int?,
-    @Asn1Tag(tagNumber = 52u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val shortValue: Short?,
-    @Asn1Tag(tagNumber = 53u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val byteValue: Byte?,
-    @Asn1Tag(tagNumber = 54u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val floatValue: Float?,
-    @Asn1Tag(tagNumber = 55u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 15u)
     val doubleValue: Double?,
 )
 
@@ -377,61 +299,34 @@ data class ConsecutiveDistinctNullableKinds(
 
 @Serializable
 data class PartiallyTaggedAmbiguousNumericNullables(
-    @Asn1Tag(tagNumber = 20u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 20u)
     val longValue: Long?,
     val intValue: Int?,
-    @Asn1Tag(tagNumber = 21u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 21u)
     val shortValue: Short?,
     val byteValue: Byte?,
-    @Asn1Tag(tagNumber = 22u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val floatValue: Float?,
-    val doubleValue: Double?,
-)
-
-@Serializable
-data class PartiallyExplicitTaggedAmbiguousNumericNullables(
-    @Asn1Tag(tagNumber = 60u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val longValue: Long?,
-    val intValue: Int?,
-    @Asn1Tag(tagNumber = 61u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val shortValue: Short?,
-    val byteValue: Byte?,
-    @Asn1Tag(tagNumber = 62u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 22u)
     val floatValue: Float?,
     val doubleValue: Double?,
 )
 
 @Serializable
 data class PartiallyTaggedUnambiguousNumericNullables(
-    @Asn1Tag(tagNumber = 30u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 30u)
     val longValue: Long?,
-    @Asn1Tag(tagNumber = 31u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 31u)
     val intValue: Int?,
     val shortValue: Short?,
-    @Asn1Tag(tagNumber = 32u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 32u)
     val byteValue: Byte?,
-    @Asn1Tag(tagNumber = 33u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val floatValue: Float?,
-    val doubleValue: Double?,
-)
-
-@Serializable
-data class PartiallyExplicitTaggedUnambiguousNumericNullables(
-    @Asn1Tag(tagNumber = 70u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val longValue: Long?,
-    @Asn1Tag(tagNumber = 71u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val intValue: Int?,
-    val shortValue: Short?,
-    @Asn1Tag(tagNumber = 72u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
-    val byteValue: Byte?,
-    @Asn1Tag(tagNumber = 73u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 33u)
     val floatValue: Float?,
     val doubleValue: Double?,
 )
 
 @Serializable
 data class ContextSpecificVsUniversalInt(
-    @Asn1Tag(tagNumber = 2u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 2u)
     val maybeTaggedInt: Int?,
     val plainInt: Int,
 )
@@ -440,11 +335,11 @@ data class ContextSpecificVsUniversalInt(
 data class PlainIntBox(val value: Int)
 
 @Serializable
-@Asn1Tag(tagNumber = 80u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 80u)
 data class ClassTaggedIntBoxA(val value: Int)
 
 @Serializable
-@Asn1Tag(tagNumber = 81u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 81u)
 data class ClassTaggedIntBoxB(val value: Int)
 
 @Serializable
@@ -460,38 +355,38 @@ data class NullableClassTaggedIntBoxes(
 )
 
 @Serializable
-@Asn1Tag(tagNumber = 90u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 90u)
 data class ClassImplicitIntBoxA(val value: Int)
 
 @Serializable
-@Asn1Tag(tagNumber = 91u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 91u)
 data class ClassImplicitIntBoxB(val value: Int)
 
 @Serializable
 data class NullableMixedTagLayeringStillAmbiguous(
-    @Asn1Tag(tagNumber = 100u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 100u)
     val first: ClassImplicitIntBoxA?,
-    @Asn1Tag(tagNumber = 100u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 100u)
     val second: ClassImplicitIntBoxB,
 )
 
 @Serializable
 data class NullableMixedTagLayeringDisambiguated(
-    @Asn1Tag(tagNumber = 100u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 100u)
     val first: ClassImplicitIntBoxA?,
-    @Asn1Tag(tagNumber = 101u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 101u)
     val second: ClassImplicitIntBoxB,
 )
 
 @Serializable
-@Asn1Tag(tagNumber = 110u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+@Asn1Tag(tagNumber = 110u)
 data class ClassExplicitIntBox(val value: Int)
 
 @Serializable
 data class NullablePropertyImplicitClassExplicit(
-    @Asn1Tag(tagNumber = 111u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 111u)
     val first: ClassExplicitIntBox?,
-    @Asn1Tag(tagNumber = 112u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC)
+    @Asn1Tag(tagNumber = 112u)
     val second: ClassExplicitIntBox,
 )
 
