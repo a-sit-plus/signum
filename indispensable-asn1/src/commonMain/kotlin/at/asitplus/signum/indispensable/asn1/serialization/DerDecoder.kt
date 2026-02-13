@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Source
@@ -436,7 +437,7 @@ class DerDecoder internal constructor(
         for (i in 0 until subtypeDescriptor.elementsCount) {
             val serialName = subtypeDescriptor.getElementName(i)
             val subtypeDeserializer = sealedSerializer.findPolymorphicSerializerOrNull(this, serialName) ?: continue
-            val candidate = runCatching {
+            val candidate = catchingUnwrapped {
                 DerDecoder(
                     elements = listOf(processedElement),
                     serializersModule = serializersModule
