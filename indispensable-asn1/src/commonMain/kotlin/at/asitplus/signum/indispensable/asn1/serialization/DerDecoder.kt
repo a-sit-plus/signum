@@ -45,6 +45,10 @@ class DerDecoder internal constructor(
     private var propertyAsn1nnotation: Asn1nnotation? = null
     private var inlineAsn1nnotation: Asn1nnotation? = null
     private var couldBeNull = false
+    private var currentOwnerSerialName: String? = null
+    private var currentPropertyName: String? = null
+    private var currentPropertyIndex: Int? = null
+    private var currentPropertyIsTrailing = true
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
@@ -116,6 +120,10 @@ class DerDecoder internal constructor(
 
                 propertyDescriptor = descriptor.getElementDescriptor(currentDescriptorIndex)
                 propertyAsn1nnotation = asn1nnotation
+                currentOwnerSerialName = descriptor.serialName
+                currentPropertyName = descriptor.getElementName(currentDescriptorIndex)
+                currentPropertyIndex = currentDescriptorIndex
+                currentPropertyIsTrailing = currentDescriptorIndex >= descriptor.elementsCount - 1
                 couldBeNull =
                     asn1nnotation?.encodeNull != true &&
                             propertyDescriptor.asn1nnotation?.encodeNull != true &&
@@ -145,6 +153,10 @@ class DerDecoder internal constructor(
 
                 propertyDescriptor = descriptor.getElementDescriptor(elementIndex)
                 propertyAsn1nnotation = asn1nnotation
+                currentOwnerSerialName = descriptor.serialName
+                currentPropertyName = runCatching { descriptor.getElementName(elementIndex) }.getOrNull()
+                currentPropertyIndex = elementIndex
+                currentPropertyIsTrailing = true
                 if (elementIndex < elements.size) elementIndex else CompositeDecoder.DECODE_DONE
             }
         }
@@ -214,20 +226,34 @@ class DerDecoder internal constructor(
 
         val nullableCouldBeAbsent = couldBeNull
         val descriptorEncodesNull = deserializer.descriptor.asn1nnotation?.encodeNull == true
-        var nullableAbsenceRequiresFallback = false
         if (nullableCouldBeAbsent) {
             couldBeNull = false
             if (elementIndex == elements.size) {
                 return null as T
             }
 
-            val expectedLeadingTags = propertyDescriptor.possibleLeadingTagsForAsn1(propertyAsn1nnotation)
-            if (expectedLeadingTags == null || expectedLeadingTags.isEmpty()) {
-                nullableAbsenceRequiresFallback = true
-            } else {
-                val actualTag = elements[elementIndex].tag
-                if (actualTag !in expectedLeadingTags) {
-                    return null as T
+            when (val expectedLeadingTags = propertyDescriptor.possibleLeadingTagsForAsn1(propertyAsn1nnotation)) {
+                is Asn1LeadingTagsResolution.Exact -> {
+                    val actualTag = elements[elementIndex].tag
+                    if (actualTag !in expectedLeadingTags.tags) {
+                        return null as T
+                    }
+                }
+
+                Asn1LeadingTagsResolution.ValueDependent,
+                Asn1LeadingTagsResolution.UnknownInfer -> {
+                    if (!currentPropertyIsTrailing) {
+                        throw SerializationException(
+                            undecidableAsn1NullableDecodingMessage(
+                                ownerSerialName = currentOwnerSerialName
+                                    ?: deserializer.descriptor.serialName,
+                                propertyName = currentPropertyName
+                                    ?: propertyDescriptor.serialName,
+                                propertyIndex = currentPropertyIndex ?: -1,
+                                reason = expectedLeadingTags.reason(),
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -241,25 +267,7 @@ class DerDecoder internal constructor(
             elementIndex++
             return null as T
         }
-        return try {
-            decodeSerializableValue(deserializer)
-
-        } catch (t: Asn1TagMismatchException) {
-            if (nullableCouldBeAbsent && nullableAbsenceRequiresFallback) null as T
-            else throw SerializationException(t)
-        } catch (t: SerializationException) {
-            val cause = t.cause
-            if (nullableCouldBeAbsent && nullableAbsenceRequiresFallback &&
-                (cause is Asn1TagMismatchException || cause is Asn1ChoiceNoMatchingAlternativeException)
-            ) {
-                null as T
-            } else {
-                throw t
-            }
-        } catch (t: Asn1ChoiceNoMatchingAlternativeException) {
-            if (nullableCouldBeAbsent && nullableAbsenceRequiresFallback) null as T
-            else throw t
-        }
+        return decodeSerializableValue(deserializer)
     }
 
     @OptIn(InternalSerializationApi::class)

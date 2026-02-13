@@ -75,7 +75,7 @@ val PkiKotlinxDerSurrogateTest by testSuite {
 
                     val legacyDer = legacy.getOrThrow().encodeToDer()
                     //we only check when encoding itself is kosher
-                    if(!name.contains("-nonminimal")) {
+                    if(!name.contains("-nonminimal") && !name.contains("-der-invalid-bitstring")) {
                         surrogateDer shouldBe der
                         surrogateDer shouldBe legacyDer
                     }
