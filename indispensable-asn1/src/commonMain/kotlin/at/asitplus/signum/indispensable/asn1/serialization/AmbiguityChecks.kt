@@ -55,6 +55,7 @@ private val Asn1StringTags: Set<Asn1Element.Tag> = setOf(
     Asn1Element.Tag.STRING_UNRESTRICTED,
     Asn1Element.Tag.STRING_VIDEOTEX,
 )
+private val ByteArraySerialName: String = ByteArraySerializer().descriptor.serialName
 
 internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
     if (kind !is StructureKind.CLASS && kind !is StructureKind.OBJECT) return
@@ -204,7 +205,7 @@ private fun possibleBaseLeadingTags(
         )
     }
 
-    if (descriptor == ByteArraySerializer().descriptor) {
+    if (descriptor.isByteArrayLikeDescriptor()) {
         return setOf(
             if (isBitString) Asn1Element.Tag.BIT_STRING
             else Asn1Element.Tag.OCTET_STRING
@@ -320,7 +321,8 @@ private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor 
     if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptor() else this
 
 private fun SerialDescriptor.asn1BaseIsConstructed(): Boolean =
-    isSetDescriptor || when (kind) {
+    if (isByteArrayLikeDescriptor()) false
+    else isSetDescriptor || when (kind) {
         is StructureKind.CLASS,
         is StructureKind.OBJECT,
         is StructureKind.LIST,
@@ -332,7 +334,7 @@ private fun SerialDescriptor.asn1BaseIsConstructed(): Boolean =
     }
 
 private fun SerialDescriptor.asn1BaseCanEncodeEmptyContent(isBitString: Boolean): Boolean {
-    if (this == ByteArraySerializer().descriptor) return !isBitString
+    if (isByteArrayLikeDescriptor()) return !isBitString
     return when (kind) {
         PrimitiveKind.STRING -> true
         PrimitiveKind.FLOAT,
@@ -341,3 +343,10 @@ private fun SerialDescriptor.asn1BaseCanEncodeEmptyContent(isBitString: Boolean)
         else -> false
     }
 }
+
+private fun SerialDescriptor.isByteArrayLikeDescriptor(): Boolean =
+    this == ByteArraySerializer().descriptor ||
+            serialName.removeSuffix("?") == ByteArraySerialName ||
+            (kind is StructureKind.LIST &&
+                    elementsCount == 1 &&
+                    getElementDescriptor(0).kind == PrimitiveKind.BYTE)
