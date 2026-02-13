@@ -7,8 +7,10 @@ import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.invocation
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 
 @OptIn(ExperimentalStdlibApi::class)
 val SerializationTestNullAndSet by testSuite(
@@ -29,10 +31,19 @@ val SerializationTestNullAndSet by testSuite(
         val omitEncoded = DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString() shouldBe "3000" }
         DER.decodeFromDer<InternalNullableAnnotatedOmit>(omitEncoded) shouldBe internalNullableAnnotatedOmit
 
-        val internalNullableAnnotated = InternalNullableAnnotated(null)
-        val internalNullableEncoded =
-            DER.encodeToDer(internalNullableAnnotated).apply { toHexString() shouldBe "300dbf8a39090407bf8a39039f5a00" }
-        DER.decodeFromDer<InternalNullableAnnotated>(internalNullableEncoded) shouldBe internalNullableAnnotated
+        shouldThrow<SerializationException> {
+            DER.encodeToDer(InternalNullableAnnotated(null))
+        }
+        shouldThrow<SerializationException> {
+            DER.decodeFromDer<InternalNullableAnnotated>("300dbf8a39090407bf8a39039f5a00".hexToByteArray())
+        }
+
+        val internalNullableAnnotatedInt = InternalNullableAnnotatedInt(null)
+        val internalNullableAnnotatedIntEncoded =
+            DER.encodeToDer(internalNullableAnnotatedInt).apply { toHexString() shouldBe "300dbf8a39090407bf8a39039f5a00" }
+        DER.decodeFromDer<InternalNullableAnnotatedInt>(internalNullableAnnotatedIntEncoded) shouldBe internalNullableAnnotatedInt
+        val internalNullableAnnotatedIntSet = InternalNullableAnnotatedInt(5)
+        DER.decodeFromDer<InternalNullableAnnotatedInt>(DER.encodeToDer(internalNullableAnnotatedIntSet)) shouldBe internalNullableAnnotatedIntSet
 
         val annotatedImplicit = DER.encodeToDer<NullableAnnotatedImplicit?>(null)
             .apply { toHexString(HexFormat.UpperCase) shouldBe "BF8A39090407BF8A39039F5A00" }
@@ -112,6 +123,18 @@ data class InternalNullableAnnotatedOmit(
         Layer(Type.IMPLICIT_TAG, 90uL),
     )
     val nullable: String?
+)
+
+@Serializable
+data class InternalNullableAnnotatedInt(
+    @Asn1nnotation(
+        Layer(Type.EXPLICIT_TAG, 1337uL),
+        Layer(Type.OCTET_STRING),
+        Layer(Type.EXPLICIT_TAG, 1337uL),
+        Layer(Type.IMPLICIT_TAG, 90uL),
+        encodeNull = true
+    )
+    val nullable: Int?
 )
 
 @Serializable

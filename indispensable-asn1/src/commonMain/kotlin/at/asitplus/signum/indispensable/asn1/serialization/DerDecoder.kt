@@ -280,6 +280,20 @@ class DerDecoder internal constructor(
             } else {
                 false
             }
+        val nullAnalysisDescriptor = when {
+            deserializer.descriptor.isNullable -> deserializer.descriptor
+            ::propertyDescriptor.isInitialized && propertyDescriptor.isNullable -> propertyDescriptor
+            else -> deserializer.descriptor
+        }
+        val nullEncodingAnalysis = nullAnalysisDescriptor.analyzeAsn1NullableNullEncoding(
+            propertyAsn1nnotation = propertyAsn1nnotation,
+            inlineAsn1nnotation = inlineAnnotation,
+        )
+        if (nullEncodingAnalysis.isAmbiguous) {
+            throw SerializationException(
+                ambiguousAsn1NullEncodingMessage(ownerSerialName = nullAnalysisDescriptor.serialName)
+            )
+        }
 
         // Combine property and class-level annotations for processing
         val allAnnotations =
@@ -302,7 +316,8 @@ class DerDecoder internal constructor(
 
         val isEncodedNull =
             processedElement.isAsn1NullElement() ||
-                    (allAnnotations.isNotEmpty() && processedElement.length == 0)
+                    (nullEncodingAnalysis.canDecodeNullByZeroLength && processedElement.length == 0) ||
+                    (nullEncodingAnalysis.canDecodeNullByConstructedBit && !processedElement.tag.isConstructed)
 
         if ((descriptorEncodesNull || propertyEncodesNull) && isEncodedNull) {
             elementIndex++

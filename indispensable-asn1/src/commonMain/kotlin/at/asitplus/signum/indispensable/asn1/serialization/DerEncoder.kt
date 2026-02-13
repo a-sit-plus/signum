@@ -142,12 +142,25 @@ internal class DerEncoder(
         descriptorAndIndex?.let { (descriptor, index) ->
             descriptorAndIndex = null
             val propertyDescriptor = descriptor.getElementDescriptor(index)
-            if (descriptor.asn1nnotation(index)?.encodeNull != true &&
-                propertyDescriptor.asn1nnotation?.encodeNull != true
-            ) return
+            val propertyAnnotation = descriptor.asn1nnotation(index)
+            val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
+                propertyAsn1nnotation = propertyAnnotation,
+                inlineAsn1nnotation = inlineAnnotation,
+            )
+            if (nullEncodingAnalysis.isAmbiguous) {
+                throw SerializationException(
+                    ambiguousAsn1NullEncodingMessage(
+                        ownerSerialName = descriptor.serialName,
+                        propertyName = descriptor.getElementName(index),
+                        propertyIndex = index,
+                    )
+                )
+            }
+            if (!nullEncodingAnalysis.encodeNullEnabled) return
 
             val propertyLayers = descriptor.getElementAnnotations(index).asn1Layers
-            val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList())
+            val classLayers = propertyDescriptor.annotations.asn1Layers
+            val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList()) + classLayers
 
             val targetBuffer = processAnnotationsAndGetTarget(allLayers)
             targetBuffer += Asn1ElementHolder.Element(Asn1.Null())
@@ -169,39 +182,52 @@ internal class DerEncoder(
 
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
+        val inlineAnnotation = pendingInlineAnnotation
+        val descriptorAndIndexSnapshot = descriptorAndIndex
+        val propertyAnnotation = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.asn1nnotation(index)
+        }
+        val propertyDescriptor = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
+            descriptor.getElementDescriptor(index)
+        }
+        val nullAnalysisDescriptor = when {
+            serializer.descriptor.isNullable -> serializer.descriptor
+            propertyDescriptor?.isNullable == true -> propertyDescriptor
+            else -> serializer.descriptor
+        }
+        val nullEncodingAnalysis = nullAnalysisDescriptor.analyzeAsn1NullableNullEncoding(
+            propertyAsn1nnotation = propertyAnnotation,
+            inlineAsn1nnotation = inlineAnnotation
+        )
+        if (nullEncodingAnalysis.isAmbiguous) {
+            throw SerializationException(
+                ambiguousAsn1NullEncodingMessage(
+                    ownerSerialName = descriptorAndIndexSnapshot?.first?.serialName ?: serializer.descriptor.serialName,
+                    propertyName = descriptorAndIndexSnapshot?.let { (descriptor, index) -> descriptor.getElementName(index) },
+                    propertyIndex = descriptorAndIndexSnapshot?.second,
+                )
+            )
+        }
+
         if (value == null) {
-            val propertyEncodesNull = descriptorAndIndex?.let { (descriptor, index) ->
-                descriptor.asn1nnotation(index)?.encodeNull == true ||
-                        descriptor.getElementDescriptor(index).asn1nnotation?.encodeNull == true
-            } ?: false
-
-            if (serializer.descriptor.asn1nnotation?.encodeNull == true || propertyEncodesNull) {
-                // Handle null values with layers similar to encodeNull()
-                val inlineAnnotation = pendingInlineAnnotation
-                pendingInlineAnnotation = null
-
-                // Get property-level annotations
-                val propertyLayers = descriptorAndIndex?.let { (descriptor, index) ->
-                    descriptor.getElementAnnotations(index).asn1Layers
-                } ?: emptyList()
-
-                // Get class-level annotations
-                val classLayers = serializer.descriptor.annotations.asn1Layers
-
-                // Combine property-level annotations with inline and class-level annotations
-                val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList()) + classLayers
-
-                // Process annotations and get target buffer
-                val targetBuffer = processAnnotationsAndGetTarget(allLayers)
-
-                // Add Asn1.Null() to the target buffer
-                targetBuffer += Asn1ElementHolder.Element(Asn1.Null())
+            pendingInlineAnnotation = null
+            if (!nullEncodingAnalysis.encodeNullEnabled) {
+                descriptorAndIndex = null
+                return
             }
+
+            val propertyLayers = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
+                descriptor.getElementAnnotations(index).asn1Layers
+            } ?: emptyList()
+            val classLayers = serializer.descriptor.annotations.asn1Layers
+            val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList()) + classLayers
+            val targetBuffer = processAnnotationsAndGetTarget(allLayers)
+            targetBuffer += Asn1ElementHolder.Element(Asn1.Null())
+            descriptorAndIndex = null
             return
         }
 
-        val inlineAnnotation = pendingInlineAnnotation
-        if (shouldEncodeAsChoice(serializer.descriptor, inlineAnnotation)) {
+        if (shouldEncodeAsChoice(serializer.descriptor, inlineAnnotation, propertyAnnotation)) {
             encodeChoiceSerializableValue(serializer, value, inlineAnnotation)
             return
         }
@@ -218,11 +244,9 @@ internal class DerEncoder(
 
     private fun shouldEncodeAsChoice(
         descriptor: SerialDescriptor,
-        inlineAnnotation: Asn1nnotation?
+        inlineAnnotation: Asn1nnotation?,
+        propertyAnnotation: Asn1nnotation?,
     ): Boolean {
-        val propertyAnnotation = descriptorAndIndex?.let { (parentDescriptor, index) ->
-            parentDescriptor.asn1nnotation(index)
-        }
         return inlineAnnotation?.asChoice == true ||
                 propertyAnnotation?.asChoice == true ||
                 descriptor.asn1nnotation?.asChoice == true

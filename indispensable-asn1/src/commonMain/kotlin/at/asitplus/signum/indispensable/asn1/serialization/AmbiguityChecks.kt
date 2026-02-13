@@ -17,6 +17,30 @@ private data class Asn1FieldShape(
     val possibleLeadingTags: Set<Asn1Element.Tag>?,
 )
 
+internal data class Asn1NullEncodingAnalysis(
+    val encodeNullEnabled: Boolean,
+    val usesImplicitNullSentinel: Boolean,
+    val baseIsConstructed: Boolean,
+    val baseCanEncodeEmptyContent: Boolean,
+) {
+    val isAmbiguous: Boolean
+        get() = encodeNullEnabled &&
+                usesImplicitNullSentinel &&
+                !baseIsConstructed &&
+                baseCanEncodeEmptyContent
+
+    val canDecodeNullByZeroLength: Boolean
+        get() = encodeNullEnabled &&
+                usesImplicitNullSentinel &&
+                !baseIsConstructed &&
+                !baseCanEncodeEmptyContent
+
+    val canDecodeNullByConstructedBit: Boolean
+        get() = encodeNullEnabled &&
+                usesImplicitNullSentinel &&
+                baseIsConstructed
+}
+
 private val Asn1StringTags: Set<Asn1Element.Tag> = setOf(
     Asn1Element.Tag.STRING_UTF8,
     Asn1Element.Tag.STRING_BMP,
@@ -38,6 +62,17 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
     val fields = (0 until elementsCount).map { index ->
         val fieldDescriptor = getElementDescriptor(index)
         val propertyAsn1nnotation = asn1nnotation(index)
+        val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(propertyAsn1nnotation)
+        if (nullEncodingAnalysis.isAmbiguous) {
+            throw SerializationException(
+                ambiguousAsn1NullEncodingMessage(
+                    ownerSerialName = serialName,
+                    propertyName = getElementName(index),
+                    propertyIndex = index,
+                )
+            )
+        }
+
         val omittableByNull = fieldDescriptor.isNullable &&
                 propertyAsn1nnotation?.encodeNull != true &&
                 fieldDescriptor.asn1nnotation?.encodeNull != true
@@ -78,6 +113,54 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
             }
         }
     }
+}
+
+internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
+    propertyAsn1nnotation: Asn1nnotation? = null,
+    inlineAsn1nnotation: Asn1nnotation? = null,
+): Asn1NullEncodingAnalysis {
+    val encodeNullEnabled =
+        isNullable && (
+                inlineAsn1nnotation?.encodeNull == true ||
+                        propertyAsn1nnotation?.encodeNull == true ||
+                        asn1nnotation?.encodeNull == true
+                )
+    if (!encodeNullEnabled) {
+        return Asn1NullEncodingAnalysis(
+            encodeNullEnabled = false,
+            usesImplicitNullSentinel = false,
+            baseIsConstructed = false,
+            baseCanEncodeEmptyContent = false,
+        )
+    }
+
+    val allLayers =
+        (inlineAsn1nnotation?.layers?.toList() ?: emptyList()) +
+                (propertyAsn1nnotation?.layers?.toList() ?: emptyList()) +
+                annotations.asn1Layers
+
+    val usesImplicitNullSentinel = allLayers.usesImplicitNullSentinel()
+    if (!usesImplicitNullSentinel) {
+        return Asn1NullEncodingAnalysis(
+            encodeNullEnabled = true,
+            usesImplicitNullSentinel = false,
+            baseIsConstructed = false,
+            baseCanEncodeEmptyContent = false,
+        )
+    }
+
+    val unwrapped = unwrapInlineDescriptor()
+    val isBitString =
+        inlineAsn1nnotation?.asBitString == true ||
+                propertyAsn1nnotation?.asBitString == true ||
+                unwrapped.isAsn1BitString
+
+    return Asn1NullEncodingAnalysis(
+        encodeNullEnabled = true,
+        usesImplicitNullSentinel = true,
+        baseIsConstructed = unwrapped.asn1BaseIsConstructed(),
+        baseCanEncodeEmptyContent = unwrapped.asn1BaseCanEncodeEmptyContent(isBitString),
+    )
 }
 
 internal fun SerialDescriptor.possibleLeadingTagsForAsn1(
@@ -206,3 +289,55 @@ private fun formatTags(tags: Set<Asn1Element.Tag>): String = tags
 
 private fun formatTag(tag: Asn1Element.Tag): String =
     "${tag.tagClass}:${tag.tagValue}${if (tag.isConstructed) "/C" else "/P"}"
+
+internal fun ambiguousAsn1NullEncodingMessage(
+    ownerSerialName: String,
+    propertyName: String? = null,
+    propertyIndex: Int? = null,
+): String {
+    val propertyPart = if (propertyName != null && propertyIndex != null) {
+        "property '$propertyName' (index $propertyIndex) in "
+    } else {
+        ""
+    }
+    return "Ambiguous ASN.1 null encoding for ${propertyPart}$ownerSerialName: " +
+            "nullable value with encodeNull=true uses IMPLICIT tagging where null and empty non-null values become indistinguishable. " +
+            "Use EXPLICIT tagging, avoid encodeNull=true, or choose a non-ambiguous value type."
+}
+
+private fun List<Layer>.usesImplicitNullSentinel(): Boolean {
+    if (isEmpty()) return false
+    for (layer in asReversed()) {
+        when (layer.type) {
+            Type.IMPLICIT_TAG -> return true
+            Type.EXPLICIT_TAG, Type.OCTET_STRING -> return false
+        }
+    }
+    return false
+}
+
+private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor =
+    if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptor() else this
+
+private fun SerialDescriptor.asn1BaseIsConstructed(): Boolean =
+    isSetDescriptor || when (kind) {
+        is StructureKind.CLASS,
+        is StructureKind.OBJECT,
+        is StructureKind.LIST,
+        is StructureKind.MAP,
+        is PolymorphicKind.OPEN,
+        is PolymorphicKind.SEALED -> true
+
+        else -> false
+    }
+
+private fun SerialDescriptor.asn1BaseCanEncodeEmptyContent(isBitString: Boolean): Boolean {
+    if (this == ByteArraySerializer().descriptor) return !isBitString
+    return when (kind) {
+        PrimitiveKind.STRING -> true
+        PrimitiveKind.FLOAT,
+        PrimitiveKind.DOUBLE -> true
+
+        else -> false
+    }
+}
