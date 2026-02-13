@@ -64,7 +64,9 @@ private val ByteArraySerialName: String = ByteArraySerializer().descriptor.seria
 private const val Asn1ElementSerializerSerialName = "Asn1ElementDerEncodedSerializer"
 private const val Asn1OpaqueSerializerSerialName = "Asn1DerSerializer"
 
-internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
+internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
+    formatExplicitNulls: Boolean = false,
+) {
     if (kind !is StructureKind.CLASS && kind !is StructureKind.OBJECT) return
 
     val fields = (0 until elementsCount).map { index ->
@@ -77,6 +79,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
             propertyAsn1Tag = propertyAsn1Tag,
             propertyEncodeNull = propertyEncodeNull,
             propertyAsBitString = propertyAsBitString,
+            formatExplicitNulls = formatExplicitNulls,
         )
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
@@ -89,8 +92,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
         }
 
         val omittableByNull = fieldDescriptor.isNullable &&
-                !propertyEncodeNull &&
-                !fieldDescriptor.isAsn1EncodeNull
+                !nullEncodingAnalysis.encodeNullEnabled
         val omittable = omittableByNull || isElementOptional(index)
         Asn1FieldShape(
             index = index,
@@ -148,7 +150,8 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout() {
                             "property '${nullableOrOptionalField.name}' (index ${nullableOrOptionalField.index}) " +
                             "can be omitted and shares possible tag(s) ${formatTags(overlap)} with " +
                             "property '${candidateField.name}' (index ${candidateField.index}). " +
-                            "Add disambiguating implicit @Asn1Tag tags or mark nullable fields with @Asn1EncodeNull."
+                            "Add disambiguating implicit @Asn1Tag tags or enable explicit null encoding " +
+                            "(@Asn1EncodeNull / DER { explicitNulls = true })."
                 )
             }
         }
@@ -162,12 +165,14 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
     inlineEncodeNull: Boolean = false,
     propertyAsBitString: Boolean = false,
     inlineAsBitString: Boolean = false,
+    formatExplicitNulls: Boolean = false,
 ): Asn1NullEncodingAnalysis {
     val encodeNullEnabled =
         isNullable && (
                 inlineEncodeNull ||
                         propertyEncodeNull ||
-                        isAsn1EncodeNull
+                        isAsn1EncodeNull ||
+                        formatExplicitNulls
                 )
     if (!encodeNullEnabled) {
         return Asn1NullEncodingAnalysis(
@@ -436,8 +441,9 @@ internal fun ambiguousAsn1NullEncodingMessage(
         ""
     }
     return "Ambiguous ASN.1 null encoding for ${propertyPart}$ownerSerialName: " +
-            "nullable value with @Asn1EncodeNull uses implicit tag override where null and empty non-null values become indistinguishable. " +
-            "Use EXPLICIT tagging, remove @Asn1EncodeNull, or choose a non-ambiguous value type."
+            "nullable value with explicit null encoding uses implicit tag override where null and empty non-null " +
+            "values become indistinguishable. Use EXPLICIT tagging, disable explicit null encoding " +
+            "(@Asn1EncodeNull / DER { explicitNulls = true }), or choose a non-ambiguous value type."
 }
 
 private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor =

@@ -61,14 +61,13 @@ Tag override only:
 
 ```kotlin
 @Asn1Tag(
-    tagNumber = 0u,
+    tagNumber,
     tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
     constructed = Asn1ConstructedBit.INFER,
 )
 ```
 
 - This is an IMPLICIT-style tag override.
-- It does not model CHOICE/null policy/bit-string policy by itself.
 
 ### 3.2 `@Asn1EncodeNull`
 
@@ -110,11 +109,7 @@ Use `Asn1Explicit<T>` + an outer context-specific constructed tag.
 ```kotlin
 @Serializable
 data class TbsLike(
-    @Asn1Tag(
-        tagNumber = 3u,
-        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
-        constructed = Asn1ConstructedBit.CONSTRUCTED,
-    )
+    @Asn1Tag(3u)
     val extensions: Asn1Explicit<List<MyExtension>>? = null,
 )
 ```
@@ -297,21 +292,6 @@ Practical rule:
 - if you write an `Asn1Serializer`, always set `leadingTags` accurately; this is the compact replacement for the old shape-style contract
 
 For extension points, prefer explicit tagging/wrappers or trailing positions.
-
-## 12. Migration from Old `@Asn1nnotation`
-
-Old model:
-- one annotation with `layers`, `asBitString`, `encodeNull`, `asChoice`, optional shape contract
-
-Current model:
-- `@Asn1Tag` for tag override only
-- `@Asn1BitString` for bit-string semantics
-- `@Asn1EncodeNull` for null policy
-- `@Asn1Choice` for CHOICE
-- explicit and octet wrappers via `Asn1Explicit<T>` and `Asn1OctetWrapped<T>`
-- serializer-level `leadingTags` on `Asn1Serializer` for custom-leading-tag determinism (`emptySet()` = unknown, non-empty = exact)
-
-If you still see old `@Asn1nnotation(...)` examples, treat them as outdated.
 
 ## 13. Quick Checklist
 

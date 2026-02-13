@@ -30,7 +30,8 @@ import kotlinx.serialization.modules.SerializersModule
  */
 class DerDecoder internal constructor(
     private val elements: List<Asn1Element>,
-    override val serializersModule: SerializersModule = EmptySerializersModule()
+    override val serializersModule: SerializersModule = EmptySerializersModule(),
+    private val formatConfiguration: DerConfiguration = DerConfiguration(),
 ) : AbstractDecoder() {
 
     private data class InlineHints(
@@ -43,8 +44,9 @@ class DerDecoder internal constructor(
 
     internal constructor(
         source: Source,
-        serializersModule: SerializersModule = EmptySerializersModule()
-    ) : this(source.readFullyToAsn1Elements().first, serializersModule)
+        serializersModule: SerializersModule = EmptySerializersModule(),
+        formatConfiguration: DerConfiguration = DerConfiguration(),
+    ) : this(source.readFullyToAsn1Elements().first, serializersModule, formatConfiguration)
 
     private var elementIndex = 0
     private var descriptorIndex = 0
@@ -103,7 +105,8 @@ class DerDecoder internal constructor(
                 if (element is Asn1Structure) {
                     DerDecoder(
                         element.children,
-                        serializersModule = serializersModule
+                        serializersModule = serializersModule,
+                        formatConfiguration = formatConfiguration,
                     )
                 } else {
                     throw SerializationException(
@@ -116,7 +119,8 @@ class DerDecoder internal constructor(
             is PolymorphicKind -> {
                 DerDecoder(
                     element.asStructure().children,
-                    serializersModule = serializersModule
+                    serializersModule = serializersModule,
+                    formatConfiguration = formatConfiguration,
                 )
             }
 
@@ -129,7 +133,11 @@ class DerDecoder internal constructor(
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         return when (descriptor.kind) {
             is StructureKind.CLASS, is StructureKind.OBJECT -> {
-                if (descriptorIndex == 0) descriptor.ensureNoAsn1AmbiguousOptionalLayout()
+                if (descriptorIndex == 0) {
+                    descriptor.ensureNoAsn1AmbiguousOptionalLayout(
+                        formatExplicitNulls = formatConfiguration.explicitNulls,
+                    )
+                }
                 if (descriptorIndex >= descriptor.elementsCount) {
                     if (elementIndex < elements.size) {
                         throw SerializationException(
@@ -156,10 +164,13 @@ class DerDecoder internal constructor(
                 currentPropertyName = descriptor.getElementName(currentDescriptorIndex)
                 currentPropertyIndex = currentDescriptorIndex
                 currentPropertyIsTrailing = currentDescriptorIndex >= descriptor.elementsCount - 1
-                couldBeNull =
-                    !propertyEncodeNull &&
-                            !propertyDescriptor.isAsn1EncodeNull &&
-                            propertyDescriptor.isNullable
+                val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
+                    propertyAsn1Tag = asn1Tag,
+                    propertyEncodeNull = propertyEncodeNull,
+                    propertyAsBitString = propertyAsBitString,
+                    formatExplicitNulls = formatConfiguration.explicitNulls,
+                )
+                couldBeNull = propertyDescriptor.isNullable && !nullEncodingAnalysis.encodeNullEnabled
 
                 if (elementIndex >= elements.size && !couldBeNull) {
                     couldBeNull = false
@@ -257,7 +268,9 @@ class DerDecoder internal constructor(
     ): T {
 
         val nullableCouldBeAbsent = couldBeNull
-        val descriptorEncodesNull = deserializer.descriptor.isAsn1EncodeNull
+        val descriptorNullEncodingAnalysis = deserializer.descriptor.analyzeAsn1NullableNullEncoding(
+            formatExplicitNulls = formatConfiguration.explicitNulls,
+        )
         if (nullableCouldBeAbsent) {
             couldBeNull = false
             if (elementIndex == elements.size) {
@@ -297,9 +310,14 @@ class DerDecoder internal constructor(
         }
         val currentAnnotatedElement = elements[elementIndex]
         if (currentAnnotatedElement.isAsn1NullElement()) {
-            val propertyDescriptorEncodesNull =
-                ::propertyDescriptor.isInitialized && propertyDescriptor.isAsn1EncodeNull
-            if (!propertyDescriptorEncodesNull && !propertyEncodeNull && !descriptorEncodesNull) {
+            val propertyDescriptorEncodesNull = ::propertyDescriptor.isInitialized &&
+                    propertyDescriptor.analyzeAsn1NullableNullEncoding(
+                        propertyAsn1Tag = propertyAsn1Tag,
+                        propertyEncodeNull = propertyEncodeNull,
+                        propertyAsBitString = propertyAsBitString,
+                        formatExplicitNulls = formatConfiguration.explicitNulls,
+                    ).encodeNullEnabled
+            if (!propertyDescriptorEncodesNull && !descriptorNullEncodingAnalysis.encodeNullEnabled) {
                 throw SerializationException("Null value found, but target value should not have been present!")
             }
             elementIndex++
@@ -331,32 +349,34 @@ class DerDecoder internal constructor(
                 "@Asn1BitString can only be used with ByteArray-compatible serializers, but got ${deserializer.descriptor.serialName}"
             )
         }
-        val descriptorAllowsNull =
-            deserializer.descriptor.isNullable || (::propertyDescriptor.isInitialized && propertyDescriptor.isNullable)
-        val descriptorEncodesNull = descriptorAllowsNull && deserializer.descriptor.isAsn1EncodeNull
-        val propertyEncodesNull =
-            if (::propertyDescriptor.isInitialized) {
-                propertyDescriptor.isNullable &&
-                        (propertyEncodeNull || propertyDescriptor.isAsn1EncodeNull)
-            } else {
-                false
-            }
-        val nullAnalysisDescriptor = when {
-            deserializer.descriptor.isNullable -> deserializer.descriptor
-            ::propertyDescriptor.isInitialized && propertyDescriptor.isNullable -> propertyDescriptor
-            else -> deserializer.descriptor
-        }
-        val nullEncodingAnalysis = nullAnalysisDescriptor.analyzeAsn1NullableNullEncoding(
-            propertyAsn1Tag = propertyAsn1Tag,
+        val descriptorNullEncodingAnalysis = deserializer.descriptor.analyzeAsn1NullableNullEncoding(
             inlineAsn1Tag = inlineHints.tag,
-            propertyEncodeNull = propertyEncodeNull,
             inlineEncodeNull = inlineHints.encodeNull,
-            propertyAsBitString = propertyAsBitString,
             inlineAsBitString = inlineHints.asBitString,
+            formatExplicitNulls = formatConfiguration.explicitNulls,
         )
+        val propertyNullEncodingAnalysis = if (::propertyDescriptor.isInitialized) {
+            propertyDescriptor.analyzeAsn1NullableNullEncoding(
+                propertyAsn1Tag = propertyAsn1Tag,
+                inlineAsn1Tag = inlineHints.tag,
+                propertyEncodeNull = propertyEncodeNull,
+                inlineEncodeNull = inlineHints.encodeNull,
+                propertyAsBitString = propertyAsBitString,
+                inlineAsBitString = inlineHints.asBitString,
+                formatExplicitNulls = formatConfiguration.explicitNulls,
+            )
+        } else {
+            null
+        }
+        val nullEncodingAnalysis = propertyNullEncodingAnalysis ?: descriptorNullEncodingAnalysis
+        val nullAnalysisOwnerSerialName = if (::propertyDescriptor.isInitialized) {
+            propertyDescriptor.serialName
+        } else {
+            deserializer.descriptor.serialName
+        }
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
-                ambiguousAsn1NullEncodingMessage(ownerSerialName = nullAnalysisDescriptor.serialName)
+                ambiguousAsn1NullEncodingMessage(ownerSerialName = nullAnalysisOwnerSerialName)
             )
         }
 
@@ -383,7 +403,7 @@ class DerDecoder internal constructor(
                     (nullEncodingAnalysis.canDecodeNullByZeroLength && processedElement.length == 0) ||
                     (nullEncodingAnalysis.canDecodeNullByConstructedBit && !processedElement.tag.isConstructed)
 
-        if ((descriptorEncodesNull || propertyEncodesNull) && isEncodedNull) {
+        if (nullEncodingAnalysis.encodeNullEnabled && isEncodedNull) {
             elementIndex++
             return null as T
         }
@@ -492,6 +512,7 @@ class DerDecoder internal constructor(
         val childDecoder = DerDecoder(
             elements = mutableListOf(processedElement),
             serializersModule = serializersModule,
+            formatConfiguration = formatConfiguration,
         )
         val value = deserializer.deserialize(childDecoder)
         elementIndex++
@@ -541,7 +562,8 @@ class DerDecoder internal constructor(
             val candidate = catchingUnwrapped {
                 DerDecoder(
                     elements = listOf(processedElement),
-                    serializersModule = serializersModule
+                    serializersModule = serializersModule,
+                    formatConfiguration = formatConfiguration,
                 ).decodeSerializableValue(subtypeDeserializer)
             }.getOrNull() ?: continue
 

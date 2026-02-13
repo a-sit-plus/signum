@@ -25,9 +25,12 @@ class Der internal constructor(
  *
  * @property encodeDefaults if `true`, default-valued properties are encoded.
  * If `false`, default-valued properties are omitted.
+ * @property explicitNulls if `true`, nullable properties are encoded as ASN.1 `NULL` by default.
+ * If `false`, nullable `null` values are omitted by default.
  */
 data class DerConfiguration(
     val encodeDefaults: Boolean = true,
+    val explicitNulls: Boolean = false,
 )
 
 /**
@@ -35,9 +38,11 @@ data class DerConfiguration(
  */
 class DerBuilder internal constructor() {
     var encodeDefaults: Boolean = true
+    var explicitNulls: Boolean = false
 
     internal fun build() = DerConfiguration(
         encodeDefaults = encodeDefaults,
+        explicitNulls = explicitNulls,
     )
 }
 
@@ -101,7 +106,10 @@ fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Ele
  */
 @ExperimentalSerializationApi
 fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
-    val decoder = DerDecoder(Buffer().also { it.write(source) })
+    val decoder = DerDecoder(
+        Buffer().also { it.write(source) },
+        formatConfiguration = configuration,
+    )
     return decoder.decodeSerializableValue(deserializer)
 }
 
@@ -110,6 +118,9 @@ fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrate
  */
 @ExperimentalSerializationApi
 fun <T> Der.decodeFromTlv(source: Asn1Element, deserializer: DeserializationStrategy<T>): T {
-    val decoder = DerDecoder(listOf(source))
+    val decoder = DerDecoder(
+        listOf(source),
+        formatConfiguration = configuration,
+    )
     return decoder.decodeSerializableValue(deserializer)
 }

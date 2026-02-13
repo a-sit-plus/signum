@@ -152,6 +152,7 @@ internal class DerEncoder(
                 inlineEncodeNull = inlineHints.encodeNull,
                 propertyAsBitString = descriptor.isAsn1BitString(index),
                 inlineAsBitString = inlineHints.asBitString,
+                formatExplicitNulls = formatConfiguration.explicitNulls,
             )
             if (nullEncodingAnalysis.isAmbiguous) {
                 throw SerializationException(
@@ -241,6 +242,7 @@ internal class DerEncoder(
             inlineEncodeNull = inlineHints.encodeNull,
             propertyAsBitString = propertyAsBitString,
             inlineAsBitString = inlineHints.asBitString,
+            formatExplicitNulls = formatConfiguration.explicitNulls,
         )
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
@@ -351,7 +353,9 @@ internal class DerEncoder(
         if (descriptor.kind is kotlinx.serialization.descriptors.StructureKind.CLASS ||
             descriptor.kind is kotlinx.serialization.descriptors.StructureKind.OBJECT
         ) {
-            descriptor.ensureNoAsn1AmbiguousOptionalLayout()
+            descriptor.ensureNoAsn1AmbiguousOptionalLayout(
+                formatExplicitNulls = formatConfiguration.explicitNulls,
+            )
         }
         val inlineAnnotation = consumeInlineHints().tag
         val propertyAnnotation = descriptorAndIndex?.let { (parentDescriptor, index) ->

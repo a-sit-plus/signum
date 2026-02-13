@@ -6,7 +6,8 @@ import at.asitplus.signum.indispensable.asn1.serialization.Der
 /**
  * Factory for the ASN.1 DER kotlinx-serialization format.
  *
- * @param config optional builder block for DER settings (for example `encodeDefaults`)
+ * @param config optional builder block for DER settings
+ * (for example `encodeDefaults` or `explicitNulls`)
  */
 fun DER(config: DerBuilder.() -> Unit = {}) =
     DerBuilder()
