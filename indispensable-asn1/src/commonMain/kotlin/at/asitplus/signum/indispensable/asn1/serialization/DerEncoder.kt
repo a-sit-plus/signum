@@ -141,7 +141,10 @@ internal class DerEncoder(
 
         descriptorAndIndex?.let { (descriptor, index) ->
             descriptorAndIndex = null
-            if (descriptor.asn1nnotation(index)?.encodeNull!=true) return
+            val propertyDescriptor = descriptor.getElementDescriptor(index)
+            if (descriptor.asn1nnotation(index)?.encodeNull != true &&
+                propertyDescriptor.asn1nnotation?.encodeNull != true
+            ) return
 
             val propertyLayers = descriptor.getElementAnnotations(index).asn1Layers
             val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList())
@@ -167,7 +170,12 @@ internal class DerEncoder(
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
         if (value == null) {
-            if (serializer.descriptor.asn1nnotation?.encodeNull==true) {
+            val propertyEncodesNull = descriptorAndIndex?.let { (descriptor, index) ->
+                descriptor.asn1nnotation(index)?.encodeNull == true ||
+                        descriptor.getElementDescriptor(index).asn1nnotation?.encodeNull == true
+            } ?: false
+
+            if (serializer.descriptor.asn1nnotation?.encodeNull == true || propertyEncodesNull) {
                 // Handle null values with layers similar to encodeNull()
                 val inlineAnnotation = pendingInlineAnnotation
                 pendingInlineAnnotation = null

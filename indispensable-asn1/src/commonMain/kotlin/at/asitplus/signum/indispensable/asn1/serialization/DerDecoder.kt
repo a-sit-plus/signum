@@ -116,7 +116,10 @@ class DerDecoder internal constructor(
 
                 propertyDescriptor = descriptor.getElementDescriptor(currentDescriptorIndex)
                 propertyAsn1nnotation = asn1nnotation
-                couldBeNull = asn1nnotation?.encodeNull != true && propertyDescriptor.isNullable
+                couldBeNull =
+                    asn1nnotation?.encodeNull != true &&
+                            propertyDescriptor.asn1nnotation?.encodeNull != true &&
+                            propertyDescriptor.isNullable
 
                 if (elementIndex >= elements.size && !couldBeNull) {
                     couldBeNull = false
@@ -210,6 +213,7 @@ class DerDecoder internal constructor(
     ): T {
 
         val nullableCouldBeAbsent = couldBeNull
+        val descriptorEncodesNull = deserializer.descriptor.asn1nnotation?.encodeNull == true
         var nullableAbsenceRequiresFallback = false
         if (nullableCouldBeAbsent) {
             couldBeNull = false
@@ -228,8 +232,10 @@ class DerDecoder internal constructor(
             }
         }
         val currentAnnotatedElement = elements[elementIndex]
-        if (currentAnnotatedElement == Asn1Null) {
-            if (propertyDescriptor.asn1nnotation?.encodeNull != true && !(propertyAsn1nnotation?.encodeNull ?: false)) {
+        if (currentAnnotatedElement.isAsn1NullElement()) {
+            val propertyDescriptorEncodesNull =
+                ::propertyDescriptor.isInitialized && propertyDescriptor.asn1nnotation?.encodeNull == true
+            if (!propertyDescriptorEncodesNull && !(propertyAsn1nnotation?.encodeNull ?: false) && !descriptorEncodesNull) {
                 throw SerializationException("Null value found, but target value should not have been present!")
             }
             elementIndex++
@@ -264,6 +270,16 @@ class DerDecoder internal constructor(
         val isBitString = (inlineAnnotation?.asBitString ?: false) || (propertyAsn1nnotation?.asBitString ?: false)
         val propertyAnnotations = propertyAsn1nnotation?.layers?.toList() ?: emptyList()
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
+        val descriptorAllowsNull =
+            deserializer.descriptor.isNullable || (::propertyDescriptor.isInitialized && propertyDescriptor.isNullable)
+        val descriptorEncodesNull = descriptorAllowsNull && deserializer.descriptor.asn1nnotation?.encodeNull == true
+        val propertyEncodesNull =
+            if (::propertyDescriptor.isInitialized) {
+                propertyDescriptor.isNullable &&
+                        (propertyAsn1nnotation?.encodeNull == true || propertyDescriptor.asn1nnotation?.encodeNull == true)
+            } else {
+                false
+            }
 
         // Combine property and class-level annotations for processing
         val allAnnotations =
@@ -283,6 +299,15 @@ class DerDecoder internal constructor(
             currentAnnotatedElement,
             allAnnotations
         )
+
+        val isEncodedNull =
+            processedElement.isAsn1NullElement() ||
+                    (allAnnotations.isNotEmpty() && processedElement.length == 0)
+
+        if ((descriptorEncodesNull || propertyEncodesNull) && isEncodedNull) {
+            elementIndex++
+            return null as T
+        }
 
         // Tag-check for explicitly / implicitly tagged primitives
         val tagToValidate = expectedTag ?: run {
@@ -310,21 +335,6 @@ class DerDecoder internal constructor(
             if (processedElement.tag != expected) {
                 throw SerializationException(Asn1TagMismatchException(expected, processedElement.tag))
             }
-        }
-
-        val descriptorEncodesNull =
-            deserializer.descriptor.isNullable && deserializer.descriptor.asn1nnotation?.encodeNull == true
-        val propertyEncodesNull =
-            if (::propertyDescriptor.isInitialized) {
-                propertyDescriptor.isNullable &&
-                        (propertyAsn1nnotation?.encodeNull == true || propertyDescriptor.asn1nnotation?.encodeNull == true)
-            } else {
-                false
-            }
-
-        if ((descriptorEncodesNull || propertyEncodesNull) && processedElement.length == 0) {
-            elementIndex++
-            return null as T
         }
         // (2) Fast paths for primitive *unsigned* surrogates & helpers
         when (deserializer) {
@@ -538,6 +548,9 @@ class DerDecoder internal constructor(
 }
 
 private class Asn1ChoiceNoMatchingAlternativeException(message: String) : SerializationException(message)
+
+private fun Asn1Element.isAsn1NullElement(): Boolean =
+    this is Asn1Primitive && tag == Asn1Element.Tag.NULL && length == 0
 
 private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Element.Tag? {
 
