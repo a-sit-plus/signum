@@ -12,7 +12,7 @@ import kotlinx.serialization.descriptors.StructureKind
  * ASN.1 implicit tag override annotation.
  *
  * This annotation only controls tag override behavior.
- * Use [Asn1BitString], [Asn1EncodeNull], and [Asn1Choice] for additional ASN.1 semantics.
+ * Use [Asn1BitString] and [Asn1Choice] for additional ASN.1 semantics.
  *
  * @param tagNumber implicit ASN.1 tag number override
  * @param tagClass implicit ASN.1 tag-class override; defaults to [Asn1TagClass.CONTEXT_SPECIFIC]
@@ -33,13 +33,6 @@ annotation class Asn1Tag(
 @SerialInfo
 @Target(AnnotationTarget.PROPERTY)
 annotation class Asn1BitString
-
-/**
- * Marks nullable values to encode/decode null as explicit ASN.1 NULL instead of omission.
- */
-@SerialInfo
-@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
-annotation class Asn1EncodeNull
 
 /**
  * Enables ASN.1 CHOICE behavior for sealed polymorphism (no discriminator wrapper).
@@ -86,10 +79,6 @@ internal val SerialDescriptor.isAsn1BitString: Boolean
 internal val List<Annotation>.isAsn1BitString: Boolean get() = any { it is Asn1BitString }
 internal fun SerialDescriptor.isAsn1BitString(index: Int): Boolean =
     getElementAnnotations(index).isAsn1BitString || getElementDescriptor(index).isAsn1BitString
-
-internal val SerialDescriptor.isAsn1EncodeNull: Boolean get() = annotations.isAsn1EncodeNull
-internal val List<Annotation>.isAsn1EncodeNull: Boolean get() = any { it is Asn1EncodeNull }
-internal fun SerialDescriptor.isAsn1EncodeNull(index: Int): Boolean = getElementAnnotations(index).isAsn1EncodeNull
 
 internal val SerialDescriptor.isAsn1Choice: Boolean get() = annotations.isAsn1Choice
 internal val List<Annotation>.isAsn1Choice: Boolean get() = any { it is Asn1Choice }

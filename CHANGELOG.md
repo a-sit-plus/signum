@@ -1,7 +1,7 @@
 # Changelog
 
 ## NEXT
-* Introduce a full kotlinx-serialization DER codec (`DER`) with ASN.1-aware encoder/decoder, serializer infrastructure, and `@Asn1nnotation` support.
+* Introduce a full kotlinx-serialization DER codec (`DER`) with ASN.1-aware encoder/decoder, serializer infrastructure, and ASN.1 annotation support (`@Asn1Tag`, `@Asn1Choice`, `@Asn1BitString`).
     * Add runtime ambiguity detection for ASN.1 layouts (nullable fields, partial tagging, numeric collisions, maps, and CHOICE) with strict failure on ambiguous schemas.
     * Add polymorphism and sealed-CHOICE support for DER serialization, including strict disambiguation behavior.
 

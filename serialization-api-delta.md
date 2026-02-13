@@ -31,36 +31,27 @@ fun <T> Der.decodeFromTlv(source: Asn1Element, deserializer: DeserializationStra
 ```
 
 Note:
-- `DER(config)` currently accepts a config lambda but does not apply any settings yet.
+- `DER(config)` applies `DerConfiguration` options (`encodeDefaults`, `explicitNulls`).
 
 ### 1.3 New ASN.1 annotation model
 Defined in `indispensable-asn1/src/commonMain/.../serialization/Annotations.kt`.
 
 ```kotlin
-@Asn1nnotation(
-  vararg layers: Layer,
-  asBitString: Boolean = false,
-  encodeNull: Boolean = false,
-  asChoice: Boolean = false
+@Asn1Tag(
+  tagNumber: ULong,
+  tagClass: Asn1TagClass = CONTEXT_SPECIFIC,
+  constructed: Asn1ConstructedBit = INFER
 )
+
+@Asn1BitString
+@Asn1Choice
 ```
 
-Layer model:
-- `Layer(Type.OCTET_STRING)`
-- `Layer(Type.EXPLICIT_TAG, <singleTag>)`
-- `Layer(Type.IMPLICIT_TAG, <singleTag>)`
-
-`Type` enum:
-- `OCTET_STRING`
-- `EXPLICIT_TAG`
-- `IMPLICIT_TAG`
-
 Behavior:
-- Class-level and property-level layers are both supported.
-- Layer order is significant and applied in declared order.
-- `asBitString` changes `ByteArray` encoding from OCTET STRING to BIT STRING.
-- `encodeNull` forces explicit ASN.1 NULL encoding for null values instead of omission.
-- `asChoice` enables CHOICE-mode sealed polymorphism (see below).
+- `@Asn1Tag` overrides the effective ASN.1 tag (IMPLICIT-style override).
+- `@Asn1BitString` changes `ByteArray` encoding from OCTET STRING to BIT STRING.
+- `@Asn1Choice` enables CHOICE-mode sealed polymorphism (see below).
+- Explicit null encoding is configured globally via `DER { explicitNulls = true }`.
 
 ### 1.4 New serializer SPI
 Defined in `indispensable-asn1/src/commonMain/.../serialization/SerializerImplementations.kt`.
@@ -91,12 +82,12 @@ Typical ambiguous examples:
 - Nullable `Map` followed by `List` without extra tagging
 
 How to disambiguate:
-- Add `@Asn1nnotation(Layer(Type.IMPLICIT_TAG, ...))` or explicit tagging layers
-- Or force explicit null representation with `encodeNull = true`
+- Add disambiguating `@Asn1Tag(...)` overrides
+- Or force explicit null representation with `DER { explicitNulls = true }`
 - Or use field types with disjoint ASN.1 leading tags
 
 ### 2.2 CHOICE modeling
-Implemented via `@Asn1nnotation(asChoice = true)`.
+Implemented via `@Asn1Choice`.
 
 Rules:
 - CHOICE mode is sealed-polymorphism only.
@@ -120,10 +111,10 @@ Behavior covered by branch tests and serializer implementation:
 - `List<T>` -> ASN.1 SEQUENCE
 - `Map<K,V>` -> supported (sequence-based structure)
 - `Set<T>` -> ASN.1 SET semantics
-- `ByteArray` -> OCTET STRING by default; BIT STRING with `asBitString = true`
+- `ByteArray` -> OCTET STRING by default; BIT STRING with `@Asn1BitString`
 - Nullable values:
   - Omitted by default
-  - Encoded as ASN.1 NULL with `encodeNull = true`
+  - Encoded as ASN.1 NULL with `DER { explicitNulls = true }`
 
 ## 4. Types Newly Wired for Kotlinx Serialization
 
@@ -233,7 +224,7 @@ Practical implication:
 
 If existing models start failing after switching to this branch:
 1. Check nullable/optional field ordering; ambiguity is now rejected at runtime.
-2. Add `@Asn1nnotation` tags (`IMPLICIT_TAG`/`EXPLICIT_TAG`) where needed.
-3. Use `encodeNull = true` for nullable fields that must stay positionally visible.
-4. For CHOICE semantics, use sealed hierarchies with `@Asn1nnotation(asChoice = true)`.
+2. Add `@Asn1Tag(...)` where needed for disambiguation.
+3. Use `DER { explicitNulls = true }` when nullable fields must stay positionally visible.
+4. For CHOICE semantics, use sealed hierarchies with `@Asn1Choice`.
 5. For non-ASN.1 formats, use only bridge serializers that explicitly support fallback.

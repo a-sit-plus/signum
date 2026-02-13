@@ -69,19 +69,13 @@ Tag override only:
 
 - This is an IMPLICIT-style tag override.
 
-### 3.2 `@Asn1EncodeNull`
-
-For nullable fields/types:
-- default nullable behavior is omission
-- with `@Asn1EncodeNull`, null is encoded as ASN.1 `NULL`
-
-### 3.3 `@Asn1Choice`
+### 3.2 `@Asn1Choice`
 
 Enables ASN.1 CHOICE semantics for sealed polymorphism.
 - no discriminator wrapper
 - exactly one choice arm is encoded
 
-### 3.4 `@Asn1BitString`
+### 3.3 `@Asn1BitString`
 
 Marks `ByteArray` as `BIT STRING` instead of `OCTET STRING`.
 - target is `PROPERTY` only
@@ -96,7 +90,7 @@ For tag override (`@Asn1Tag`), precedence is:
 
 This is resolved independently for tag number, tag class, and constructed bit.
 
-For marker annotations (`@Asn1EncodeNull`, `@Asn1Choice`, `@Asn1BitString`), property-level intent is what matters at field boundaries.
+For marker annotations (`@Asn1Choice`, `@Asn1BitString`), property-level intent is what matters at field boundaries.
 
 ## 5. EXPLICIT and OCTET Modeling
 
@@ -145,15 +139,16 @@ When both can start with overlapping leading tags, layout is ambiguous.
 Use one of:
 1. disambiguating tag overrides (`@Asn1Tag`)
 2. explicit wrappers (`Asn1Explicit<T>`)
-3. `@Asn1EncodeNull` where safe
+3. global explicit null encoding (`DER { explicitNulls = true }`) where safe
+4. model shaping (e.g., defaults + `encodeDefaults = false`, secondary constructors, or schema-faithful wrappers)
 
-### 6.3 Important caveat with `@Asn1EncodeNull`
+### 6.3 Important caveat with `explicitNulls = true`
 
-`@Asn1EncodeNull` with IMPLICIT tagging can be ambiguous for some primitive bases.
+`explicitNulls = true` with IMPLICIT tagging can be ambiguous for some primitive bases.
 
 The codec rejects ambiguous null-sentinel combinations, for example when null and a non-null empty value could become indistinguishable under the same implicit tag.
 
-In short: `@Asn1EncodeNull` is useful, but not a free pass.
+In short: explicit null encoding is useful, but not a free pass.
 
 ## 7. Optional Layout Checker
 
@@ -279,9 +274,9 @@ If `@Asn1BitString` is applied in a way that resolves to a non-`ByteArray` seria
 
 - Maps are supported (`SEQUENCE` encoding)
 - Sets use ASN.1 `SET`
-- Format config currently includes `encodeDefaults` (`Der { encodeDefaults = false }`)
-
-There is no global `explicitNulls` format toggle at this point.
+- Format config includes:
+  - `encodeDefaults` (`DER { encodeDefaults = false }`)
+  - `explicitNulls` (`DER { explicitNulls = true }`)
 
 ## 11. Custom Serializer Guidance
 
@@ -301,7 +296,7 @@ When modeling a schema:
 3. Model EXPLICIT with `Asn1Explicit<T>` + context-specific constructed tag.
 4. Model OCTET encapsulation with `Asn1OctetWrapped<T>`.
 5. Use `@Asn1Choice` only for sealed CHOICE hierarchies.
-6. Use `@Asn1EncodeNull` only where needed, and watch for implicit-tag null ambiguity.
+6. Use `DER { explicitNulls = true }` only where needed, and watch for implicit-tag null ambiguity.
 7. Use `@Asn1BitString` only on `ByteArray` properties.
 8. Run serialization tests and treat ambiguity failures as modeling bugs, not decoder bugs.
 

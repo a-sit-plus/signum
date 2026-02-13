@@ -72,12 +72,10 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
     val fields = (0 until elementsCount).map { index ->
         val fieldDescriptor = getElementDescriptor(index)
         val propertyAsn1Tag = asn1Tag(index)
-        val propertyEncodeNull = isAsn1EncodeNull(index)
         val propertyAsBitString = isAsn1BitString(index)
         val propertyAsChoice = isAsn1Choice(index)
         val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(
             propertyAsn1Tag = propertyAsn1Tag,
-            propertyEncodeNull = propertyEncodeNull,
             propertyAsBitString = propertyAsBitString,
             formatExplicitNulls = formatExplicitNulls,
         )
@@ -148,10 +146,10 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
                 throw SerializationException(
                     "Ambiguous ASN.1 layout for $serialName: " +
                             "property '${nullableOrOptionalField.name}' (index ${nullableOrOptionalField.index}) " +
-                            "can be omitted and shares possible tag(s) ${formatTags(overlap)} with " +
-                            "property '${candidateField.name}' (index ${candidateField.index}). " +
-                            "Add disambiguating implicit @Asn1Tag tags or enable explicit null encoding " +
-                            "(@Asn1EncodeNull / DER { explicitNulls = true })."
+                                    "can be omitted and shares possible tag(s) ${formatTags(overlap)} with " +
+                                    "property '${candidateField.name}' (index ${candidateField.index}). " +
+                                    "Add disambiguating implicit @Asn1Tag tags or enable explicit null encoding " +
+                                    "(DER { explicitNulls = true })."
                 )
             }
         }
@@ -161,19 +159,11 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
 internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
     propertyAsn1Tag: Asn1Tag? = null,
     inlineAsn1Tag: Asn1Tag? = null,
-    propertyEncodeNull: Boolean = false,
-    inlineEncodeNull: Boolean = false,
     propertyAsBitString: Boolean = false,
     inlineAsBitString: Boolean = false,
     formatExplicitNulls: Boolean = false,
 ): Asn1NullEncodingAnalysis {
-    val encodeNullEnabled =
-        isNullable && (
-                inlineEncodeNull ||
-                        propertyEncodeNull ||
-                        isAsn1EncodeNull ||
-                        formatExplicitNulls
-                )
+    val encodeNullEnabled = isNullable && formatExplicitNulls
     if (!encodeNullEnabled) {
         return Asn1NullEncodingAnalysis(
             encodeNullEnabled = false,
@@ -443,7 +433,7 @@ internal fun ambiguousAsn1NullEncodingMessage(
     return "Ambiguous ASN.1 null encoding for ${propertyPart}$ownerSerialName: " +
             "nullable value with explicit null encoding uses implicit tag override where null and empty non-null " +
             "values become indistinguishable. Use EXPLICIT tagging, disable explicit null encoding " +
-            "(@Asn1EncodeNull / DER { explicitNulls = true }), or choose a non-ambiguous value type."
+            "(DER { explicitNulls = false }), or choose a non-ambiguous value type."
 }
 
 private tailrec fun SerialDescriptor.unwrapInlineDescriptor(): SerialDescriptor =

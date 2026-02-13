@@ -37,7 +37,6 @@ class DerDecoder internal constructor(
     private data class InlineHints(
         val tag: Asn1Tag?,
         val asBitString: Boolean,
-        val encodeNull: Boolean,
         val asChoice: Boolean,
     )
 
@@ -53,11 +52,9 @@ class DerDecoder internal constructor(
     private lateinit var propertyDescriptor: SerialDescriptor
     private var propertyAsn1Tag: Asn1Tag? = null
     private var propertyAsBitString: Boolean = false
-    private var propertyEncodeNull: Boolean = false
     private var propertyAsChoice: Boolean = false
     private var inlineAsn1Tag: Asn1Tag? = null
     private var inlineAsBitString: Boolean = false
-    private var inlineEncodeNull: Boolean = false
     private var inlineAsChoice: Boolean = false
     private var couldBeNull = false
     private var currentOwnerSerialName: String? = null
@@ -69,7 +66,6 @@ class DerDecoder internal constructor(
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
         inlineAsn1Tag = descriptor.annotations.asn1Tag
         inlineAsBitString = descriptor.isAsn1BitString
-        inlineEncodeNull = descriptor.isAsn1EncodeNull
         inlineAsChoice = descriptor.isAsn1Choice
         return this
     }
@@ -78,12 +74,10 @@ class DerDecoder internal constructor(
         val hints = InlineHints(
             tag = inlineAsn1Tag,
             asBitString = inlineAsBitString,
-            encodeNull = inlineEncodeNull,
             asChoice = inlineAsChoice,
         )
         inlineAsn1Tag = null
         inlineAsBitString = false
-        inlineEncodeNull = false
         inlineAsChoice = false
         return hints
     }
@@ -158,7 +152,6 @@ class DerDecoder internal constructor(
                 propertyDescriptor = descriptor.getElementDescriptor(currentDescriptorIndex)
                 propertyAsn1Tag = asn1Tag
                 propertyAsBitString = descriptor.isAsn1BitString(currentDescriptorIndex)
-                propertyEncodeNull = descriptor.isAsn1EncodeNull(currentDescriptorIndex)
                 propertyAsChoice = descriptor.isAsn1Choice(currentDescriptorIndex)
                 currentOwnerSerialName = descriptor.serialName
                 currentPropertyName = descriptor.getElementName(currentDescriptorIndex)
@@ -166,7 +159,6 @@ class DerDecoder internal constructor(
                 currentPropertyIsTrailing = currentDescriptorIndex >= descriptor.elementsCount - 1
                 val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
                     propertyAsn1Tag = asn1Tag,
-                    propertyEncodeNull = propertyEncodeNull,
                     propertyAsBitString = propertyAsBitString,
                     formatExplicitNulls = formatConfiguration.explicitNulls,
                 )
@@ -197,7 +189,6 @@ class DerDecoder internal constructor(
                 propertyDescriptor = descriptor.getElementDescriptor(elementIndex)
                 propertyAsn1Tag = asn1Tag
                 propertyAsBitString = descriptor.isAsn1BitString(elementIndex)
-                propertyEncodeNull = descriptor.isAsn1EncodeNull(elementIndex)
                 propertyAsChoice = descriptor.isAsn1Choice(elementIndex)
                 currentOwnerSerialName = descriptor.serialName
                 currentPropertyName = runCatching { descriptor.getElementName(elementIndex) }.getOrNull()
@@ -313,7 +304,6 @@ class DerDecoder internal constructor(
             val propertyDescriptorEncodesNull = ::propertyDescriptor.isInitialized &&
                     propertyDescriptor.analyzeAsn1NullableNullEncoding(
                         propertyAsn1Tag = propertyAsn1Tag,
-                        propertyEncodeNull = propertyEncodeNull,
                         propertyAsBitString = propertyAsBitString,
                         formatExplicitNulls = formatConfiguration.explicitNulls,
                     ).encodeNullEnabled
@@ -351,7 +341,6 @@ class DerDecoder internal constructor(
         }
         val descriptorNullEncodingAnalysis = deserializer.descriptor.analyzeAsn1NullableNullEncoding(
             inlineAsn1Tag = inlineHints.tag,
-            inlineEncodeNull = inlineHints.encodeNull,
             inlineAsBitString = inlineHints.asBitString,
             formatExplicitNulls = formatConfiguration.explicitNulls,
         )
@@ -359,8 +348,6 @@ class DerDecoder internal constructor(
             propertyDescriptor.analyzeAsn1NullableNullEncoding(
                 propertyAsn1Tag = propertyAsn1Tag,
                 inlineAsn1Tag = inlineHints.tag,
-                propertyEncodeNull = propertyEncodeNull,
-                inlineEncodeNull = inlineHints.encodeNull,
                 propertyAsBitString = propertyAsBitString,
                 inlineAsBitString = inlineHints.asBitString,
                 formatExplicitNulls = formatConfiguration.explicitNulls,
@@ -499,7 +486,6 @@ class DerDecoder internal constructor(
             if (!::propertyDescriptor.isInitialized) {
                 propertyDescriptor = deserializer.descriptor
                 propertyAsBitString = deserializer.descriptor.isAsn1BitString
-                propertyEncodeNull = deserializer.descriptor.isAsn1EncodeNull
                 propertyAsChoice = deserializer.descriptor.isAsn1Choice
             }
             if (propertyAsn1Tag == null) {

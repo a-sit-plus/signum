@@ -78,7 +78,6 @@ data class TypesUmbrella(
     )
     val str: String,
     val i: UInt,
-    @Asn1EncodeNull
     val nullable: Double?,
     val list: List<String>,
     val map: Map<Int, Boolean>,

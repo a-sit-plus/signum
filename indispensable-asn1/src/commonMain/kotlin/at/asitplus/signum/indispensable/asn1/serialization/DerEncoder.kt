@@ -43,7 +43,6 @@ internal class DerEncoder(
     private data class InlineHints(
         val tag: Asn1Tag?,
         val asBitString: Boolean,
-        val encodeNull: Boolean,
         val asChoice: Boolean,
     )
 
@@ -52,14 +51,12 @@ internal class DerEncoder(
 
     private var pendingInlineTag: Asn1Tag? = null
     private var pendingInlineAsBitString: Boolean = false
-    private var pendingInlineEncodeNull: Boolean = false
     private var pendingInlineAsChoice: Boolean = false
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
         pendingInlineTag = descriptor.asn1Tag
         pendingInlineAsBitString = descriptor.isAsn1BitString
-        pendingInlineEncodeNull = descriptor.isAsn1EncodeNull
         pendingInlineAsChoice = descriptor.isAsn1Choice
         return this
     }
@@ -68,12 +65,10 @@ internal class DerEncoder(
         val hints = InlineHints(
             tag = pendingInlineTag,
             asBitString = pendingInlineAsBitString,
-            encodeNull = pendingInlineEncodeNull,
             asChoice = pendingInlineAsChoice,
         )
         pendingInlineTag = null
         pendingInlineAsBitString = false
-        pendingInlineEncodeNull = false
         pendingInlineAsChoice = false
         return hints
     }
@@ -148,8 +143,6 @@ internal class DerEncoder(
             val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
                 propertyAsn1Tag = propertyAnnotation,
                 inlineAsn1Tag = inlineHints.tag,
-                propertyEncodeNull = descriptor.isAsn1EncodeNull(index),
-                inlineEncodeNull = inlineHints.encodeNull,
                 propertyAsBitString = descriptor.isAsn1BitString(index),
                 inlineAsBitString = inlineHints.asBitString,
                 formatExplicitNulls = formatConfiguration.explicitNulls,
@@ -202,9 +195,6 @@ internal class DerEncoder(
         val propertyAnnotation = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
             descriptor.asn1Tag(index)
         }
-        val propertyEncodeNull = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
-            descriptor.isAsn1EncodeNull(index)
-        } ?: false
         val propertyAsBitString = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
             descriptor.isAsn1BitString(index)
         } ?: false
@@ -238,8 +228,6 @@ internal class DerEncoder(
         val nullEncodingAnalysis = nullAnalysisDescriptor.analyzeAsn1NullableNullEncoding(
             propertyAsn1Tag = propertyAnnotation,
             inlineAsn1Tag = inlineHints.tag,
-            propertyEncodeNull = propertyEncodeNull,
-            inlineEncodeNull = inlineHints.encodeNull,
             propertyAsBitString = propertyAsBitString,
             inlineAsBitString = inlineHints.asBitString,
             formatExplicitNulls = formatConfiguration.explicitNulls,
@@ -307,7 +295,6 @@ internal class DerEncoder(
     ) {
         pendingInlineTag = null
         pendingInlineAsBitString = false
-        pendingInlineEncodeNull = false
         pendingInlineAsChoice = false
 
         if (serializer.descriptor.kind !is PolymorphicKind.SEALED) {

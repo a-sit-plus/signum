@@ -22,22 +22,24 @@ val SerializationTestNullAndSet by testSuite(
     }
 
     "Nulls and Noughts" {
-        DER.encodeToDer<NullAsAsn1Null?>(null) shouldBe Asn1Null.derEncoded
+        val derExplicitNulls = DER { explicitNulls = true }
+        DER.encodeToDer<NullAsAsn1Null?>(null) shouldBe byteArrayOf()
+        derExplicitNulls.encodeToDer<NullAsAsn1Null?>(null) shouldBe Asn1Null.derEncoded
 
         val nullable: String? = null
         DER.encodeToDer(nullable) shouldBe byteArrayOf()
         DER.decodeFromDer<String?>(byteArrayOf()) shouldBe null
 
         val taggedNull = TaggedNullableInt(value = null)
-        DER.decodeFromDer<TaggedNullableInt>(DER.encodeToDer(taggedNull)) shouldBe taggedNull
+        derExplicitNulls.decodeFromDer<TaggedNullableInt>(derExplicitNulls.encodeToDer(taggedNull)) shouldBe taggedNull
 
         val taggedValue = TaggedNullableInt(value = 5)
-        DER.decodeFromDer<TaggedNullableInt>(DER.encodeToDer(taggedValue)) shouldBe taggedValue
+        derExplicitNulls.decodeFromDer<TaggedNullableInt>(derExplicitNulls.encodeToDer(taggedValue)) shouldBe taggedValue
 
         val omitted = TaggedNullableIntOmit(value = null)
         DER.decodeFromDer<TaggedNullableIntOmit>(DER.encodeToDer(omitted)) shouldBe omitted
 
-        // Regression: empty primitive values must not be mistaken for null when encodeNull=false.
+        // Regression: empty primitive values must not be mistaken for null when explicitNulls=false.
         val emptyString = NullablePlainString("")
         DER.decodeFromDer<NullablePlainString>(DER.encodeToDer(emptyString)) shouldBe emptyString
 
@@ -47,12 +49,10 @@ val SerializationTestNullAndSet by testSuite(
 }
 
 @Serializable
-@Asn1EncodeNull
 object NullAsAsn1Null
 
 @Serializable
 data class TaggedNullableInt(
-    @Asn1EncodeNull
     @Asn1Tag(
         tagNumber = 90u,
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,

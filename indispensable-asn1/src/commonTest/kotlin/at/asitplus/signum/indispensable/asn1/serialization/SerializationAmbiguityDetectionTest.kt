@@ -197,7 +197,9 @@ val SerializationTestAmbiguityDetection by testSuite(
         DER.decodeFromDer<NullablePropertyImplicitClassExplicit>(DER.encodeToDer(withFirst)) shouldBe withFirst
     }
 
-    "encodeNull=true on nullable properties removes omission ambiguity" {
+    "explicitNulls=true removes omission ambiguity for nullable properties" {
+        val derExplicitNulls = DER { explicitNulls = true }
+
         val ambiguous = NullableIntThenIntAmbiguous(
             first = null,
             second = 7
@@ -209,20 +211,26 @@ val SerializationTestAmbiguityDetection by testSuite(
             DER.decodeFromDer<NullableIntThenIntAmbiguous>("3000".hexToByteArray())
         }
 
-        val propertyEncodedNull = NullableIntThenIntPropertyEncodeNull(
+        val explicitNullsEncodedNull = NullableIntThenIntAmbiguous(
             first = null,
             second = 7
         )
-        val propertyEncodedSet = NullableIntThenIntPropertyEncodeNull(
+        val explicitNullsEncodedSet = NullableIntThenIntAmbiguous(
             first = 5,
             second = 7
         )
 
-        DER.decodeFromDer<NullableIntThenIntPropertyEncodeNull>(DER.encodeToDer(propertyEncodedNull)) shouldBe propertyEncodedNull
-        DER.decodeFromDer<NullableIntThenIntPropertyEncodeNull>(DER.encodeToDer(propertyEncodedSet)) shouldBe propertyEncodedSet
+        derExplicitNulls.decodeFromDer<NullableIntThenIntAmbiguous>(
+            derExplicitNulls.encodeToDer(explicitNullsEncodedNull)
+        ) shouldBe explicitNullsEncodedNull
+        derExplicitNulls.decodeFromDer<NullableIntThenIntAmbiguous>(
+            derExplicitNulls.encodeToDer(explicitNullsEncodedSet)
+        ) shouldBe explicitNullsEncodedSet
     }
 
-    "encodeNull=true on class-level annotations removes omission ambiguity" {
+    "explicitNulls=true also disambiguates nullable object omission layouts" {
+        val derExplicitNulls = DER { explicitNulls = true }
+
         val ambiguous = NullablePlainObjectThenPlainIntBox(
             first = null,
             second = PlainIntBox(7)
@@ -234,17 +242,21 @@ val SerializationTestAmbiguityDetection by testSuite(
             DER.decodeFromDer<NullablePlainObjectThenPlainIntBox>("3000".hexToByteArray())
         }
 
-        val classEncodedNull = NullableClassEncodedNullObjectThenPlainIntBox(
+        val explicitNullsEncodedNull = NullablePlainObjectThenPlainIntBox(
             first = null,
             second = PlainIntBox(7)
         )
-        val classEncodedSet = NullableClassEncodedNullObjectThenPlainIntBox(
-            first = ClassEncodedNullObject,
+        val explicitNullsEncodedSet = NullablePlainObjectThenPlainIntBox(
+            first = PlainObject,
             second = PlainIntBox(7)
         )
 
-        DER.decodeFromDer<NullableClassEncodedNullObjectThenPlainIntBox>(DER.encodeToDer(classEncodedNull)) shouldBe classEncodedNull
-        DER.decodeFromDer<NullableClassEncodedNullObjectThenPlainIntBox>(DER.encodeToDer(classEncodedSet)) shouldBe classEncodedSet
+        derExplicitNulls.decodeFromDer<NullablePlainObjectThenPlainIntBox>(
+            derExplicitNulls.encodeToDer(explicitNullsEncodedNull)
+        ) shouldBe explicitNullsEncodedNull
+        derExplicitNulls.decodeFromDer<NullablePlainObjectThenPlainIntBox>(
+            derExplicitNulls.encodeToDer(explicitNullsEncodedSet)
+        ) shouldBe explicitNullsEncodedSet
     }
 }
 
@@ -397,27 +409,10 @@ data class NullableIntThenIntAmbiguous(
 )
 
 @Serializable
-data class NullableIntThenIntPropertyEncodeNull(
-    @Asn1EncodeNull
-    val first: Int?,
-    val second: Int,
-)
-
-@Serializable
 object PlainObject
-
-@Serializable
-@Asn1EncodeNull
-object ClassEncodedNullObject
 
 @Serializable
 data class NullablePlainObjectThenPlainIntBox(
     val first: PlainObject?,
-    val second: PlainIntBox,
-)
-
-@Serializable
-data class NullableClassEncodedNullObjectThenPlainIntBox(
-    val first: ClassEncodedNullObject?,
     val second: PlainIntBox,
 )
