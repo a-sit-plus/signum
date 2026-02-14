@@ -14,6 +14,7 @@ import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.internal.AbstractPolymorphicSerializer
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlin.time.Instant
@@ -213,6 +214,25 @@ internal class DerEncoder(
             return
         }
 
+        resolveOpenPolymorphicAsn1SerializerOrNull(serializer)?.let { openSerializer ->
+            if (openSerializer.descriptor == serializer.descriptor) {
+                throw SerializationException(
+                    "Open polymorphism for ${serializer.descriptor.serialName} resolved to itself. " +
+                            "Register an ASN.1 open-polymorphic serializer in DER { serializersModule = ... }."
+                )
+            }
+            @Suppress("UNCHECKED_CAST")
+            return encodeSerializableValue(openSerializer as SerializationStrategy<T>, value)
+        }
+
+        if (serializer.descriptor.kind is PolymorphicKind.OPEN) {
+            throw SerializationException(
+                "Open polymorphism for ${serializer.descriptor.serialName} requires an ASN.1 serializer " +
+                        "registered in DER { serializersModule = ... } via asn1OpenPolymorphicByTag(...) " +
+                        "or asn1OpenPolymorphicByOid(...)."
+            )
+        }
+
         if (isAsn1ChoiceRequested(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)) {
             descriptorAndIndex = null
             encodeChoiceSerializableValue(
@@ -244,6 +264,15 @@ internal class DerEncoder(
     }
 
     @OptIn(InternalSerializationApi::class)
+    private fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
+        serializer: SerializationStrategy<T>,
+    ): SerializationStrategy<*>? {
+        if (serializer.descriptor.kind !is PolymorphicKind.OPEN) return null
+        val polymorphicSerializer = serializer as? AbstractPolymorphicSerializer<*> ?: return null
+        return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
+    }
+
+    @OptIn(InternalSerializationApi::class)
     @Suppress("UNCHECKED_CAST")
     private fun <T> encodeChoiceSerializableValue(
         serializer: SerializationStrategy<T>,
@@ -253,12 +282,12 @@ internal class DerEncoder(
     ) {
         if (serializer.descriptor.kind !is PolymorphicKind.SEALED) {
             throw SerializationException(
-                "@Asn1Choice requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
+                "ASN.1 CHOICE requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
             )
         }
         val sealedSerializer = serializer as? SealedClassSerializer<Any>
             ?: throw SerializationException(
-                "@Asn1Choice only supports kotlinx SealedClassSerializer"
+                "ASN.1 CHOICE only supports kotlinx SealedClassSerializer"
             )
 
         val tagTemplate = resolveAsn1TagTemplate(

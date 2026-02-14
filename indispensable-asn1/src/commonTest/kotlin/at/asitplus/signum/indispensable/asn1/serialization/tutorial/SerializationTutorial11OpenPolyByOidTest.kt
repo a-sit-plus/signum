@@ -1,8 +1,5 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.IdentifiedBy
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
@@ -10,6 +7,7 @@ import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfigur
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.SerializersModule
 
 private val tutorialOid = ObjectIdentifier("1.2.840.113549.1.1.1")
 
@@ -17,35 +15,25 @@ val SerializationTutorial11OpenPolyByOid by testSuite(
     testConfig = DefaultConfiguration
 ) {
     "Open polymorphism by OID" {
+        val derCodec = DER {
+            serializersModule = SerializersModule {
+                polymorphicByOid(TutorialOpenByOid::class, serialName = "TutorialOpenByOid") {
+                    subtype<TutorialOpenByOidInt>(oid = tutorialOid)
+                }
+            }
+        }
+
         val value: TutorialOpenByOid = TutorialOpenByOidInt(value = 9)
-        val der = DER.encodeToDer(value)
+        val der = derCodec.encodeToDer(value)
         der.toHexString() shouldBe "300e06092a864886f70d010101020109"
-        DER.decodeFromDer<TutorialOpenByOid>(der) shouldBe value
+        derCodec.decodeFromDer<TutorialOpenByOid>(der) shouldBe value
     }
 }
 
-@Serializable(with = TutorialOpenByOidSerializer::class)
-private interface TutorialOpenByOid : Identifiable, IdentifiedBy<ObjectIdentifier> {
-    override val oidSource: ObjectIdentifier
-        get() = oid
-}
+private interface TutorialOpenByOid
 
 @Serializable
 private data class TutorialOpenByOidInt(
-    override val oid: ObjectIdentifier = tutorialOid,
+    val oid: ObjectIdentifier = tutorialOid,
     val value: Int,
-) : TutorialOpenByOid {
-    override val oidSource: ObjectIdentifier
-        get() = oid
-}
-
-private object TutorialOpenByOidSerializer : Asn1OidDiscriminatedOpenPolymorphicSerializer<TutorialOpenByOid>(
-    serialName = "TutorialOpenByOid",
-    subtypes = listOf(
-        asn1OpenPolymorphicSubtypeByOid<TutorialOpenByOid, TutorialOpenByOidInt>(
-            serializer = TutorialOpenByOidInt.serializer(),
-            oid = tutorialOid,
-            leadingTags = setOf(Asn1Element.Tag.SEQUENCE),
-        )
-    ),
-)
+) : TutorialOpenByOid

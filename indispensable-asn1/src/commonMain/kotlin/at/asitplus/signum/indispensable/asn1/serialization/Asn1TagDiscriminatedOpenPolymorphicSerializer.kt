@@ -5,15 +5,9 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 
-/**
- * Tag-discriminated open polymorphism helper for ASN.1 DER.
- *
- * This serializer dispatches by leading ASN.1 tag at decode-time and by runtime value type at encode-time.
- * It is intended for open (non-sealed) polymorphic hierarchies where CHOICE-style tag dispatch is desired.
- */
-open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
+internal class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
     serialName: String,
-    subtypes: List<SubtypeRegistration<T>>,
+    subtypes: List<Asn1TagDiscriminatedSubtypeRegistration<T>>,
 ) : Asn1DiscriminatedOpenPolymorphicSerializer<T>(serialName) {
 
     private val dispatch = Asn1TagDiscriminatedDispatch(
@@ -24,13 +18,7 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
     override val leadingTags: Set<Asn1Element.Tag>
         get() = dispatch.leadingTags
 
-    /**
-     * Adds a new subtype registration after serializer construction.
-     *
-     * This is intentionally mutable to allow third-party libraries to extend open
-     * ASN.1 polymorphic mappings in application code.
-     */
-    fun registerSubtype(registration: SubtypeRegistration<T>) {
+    fun registerSubtype(registration: Asn1TagDiscriminatedSubtypeRegistration<T>) {
         dispatch.registerSubtype(registration)
     }
 
@@ -44,40 +32,4 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
         @Suppress("UNCHECKED_CAST")
         return selected as DeserializationStrategy<T>
     }
-
-    data class SubtypeRegistration<T : Any>(
-        internal val serializer: KSerializer<out T>,
-        internal val leadingTags: Set<Asn1Element.Tag>,
-        internal val matches: (T) -> Boolean,
-        internal val debugName: String,
-    )
-}
-
-inline fun <T : Any, reified S : T> asn1OpenPolymorphicSubtype(
-    serializer: KSerializer<S>,
-    vararg leadingTags: Asn1Element.Tag,
-): Asn1TagDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T> =
-    asn1OpenPolymorphicSubtype(serializer, leadingTags.toSet())
-
-inline fun <T : Any, reified S : T> asn1OpenPolymorphicSubtype(
-    serializer: KSerializer<S>,
-    leadingTags: Set<Asn1Element.Tag>,
-): Asn1TagDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T> =
-    Asn1TagDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration(
-        serializer = serializer,
-        leadingTags = leadingTags,
-        matches = { it is S },
-        debugName = serializer.descriptor.serialName
-    )
-
-inline fun <T : Any, reified S : T> Asn1TagDiscriminatedOpenPolymorphicSerializer<T>.registerSubtype(
-    serializer: KSerializer<S>,
-    vararg leadingTags: Asn1Element.Tag,
-) {
-    registerSubtype(
-        asn1OpenPolymorphicSubtype(
-            serializer = serializer,
-            leadingTags = leadingTags.toSet(),
-        )
-    )
 }

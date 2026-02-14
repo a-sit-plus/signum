@@ -74,7 +74,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
         val fieldDescriptor = getElementDescriptor(index)
         val propertyAsn1Tag = asn1Tag(index)
         val propertyAsBitString = isAsn1BitString(index)
-        val propertyAsChoice = isAsn1Choice(index)
+        val propertyAsChoice = getElementDescriptor(index).isAsn1Choice
         val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(
             propertyAsn1Tag = propertyAsn1Tag,
             propertyAsBitString = propertyAsBitString,

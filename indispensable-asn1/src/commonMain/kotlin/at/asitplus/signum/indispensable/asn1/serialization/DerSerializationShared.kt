@@ -15,7 +15,7 @@ import kotlinx.serialization.encoding.Encoder
 internal data class DerInlineHints(
     val tag: Asn1Tag?,
     val asBitString: Boolean,
-    val asChoice: Boolean,
+    val asChoice: Boolean = false,
 )
 
 internal data class DerPropertyContext(
@@ -24,7 +24,7 @@ internal data class DerPropertyContext(
     val propertyDescriptor: SerialDescriptor,
     val propertyAsn1Tag: Asn1Tag?,
     val propertyAsBitString: Boolean,
-    val propertyAsChoice: Boolean,
+    val propertyAsChoice: Boolean = false,
     val propertyName: String?,
 ) {
     val ownerSerialName: String
@@ -37,24 +37,20 @@ internal data class DerPropertyContext(
 internal class DerInlineHintState {
     private var inlineAsn1Tag: Asn1Tag? = null
     private var inlineAsBitString: Boolean = false
-    private var inlineAsChoice: Boolean = false
 
     fun recordFrom(descriptor: SerialDescriptor) {
         inlineAsn1Tag = descriptor.annotations.asn1Tag
         inlineAsBitString = descriptor.isAsn1BitString
-        inlineAsChoice = descriptor.isAsn1Choice
     }
 
     fun peek(): DerInlineHints = DerInlineHints(
         tag = inlineAsn1Tag,
         asBitString = inlineAsBitString,
-        asChoice = inlineAsChoice,
     )
 
     fun consume(): DerInlineHints = peek().also {
         inlineAsn1Tag = null
         inlineAsBitString = false
-        inlineAsChoice = false
     }
 }
 
@@ -73,7 +69,7 @@ internal fun Pair<SerialDescriptor, Int>.toDerPropertyContext(
         propertyDescriptor = ownerDescriptor.getElementDescriptor(index),
         propertyAsn1Tag = ownerDescriptor.asn1Tag(index),
         propertyAsBitString = ownerDescriptor.isAsn1BitString(index),
-        propertyAsChoice = ownerDescriptor.isAsn1Choice(index),
+        propertyAsChoice = ownerDescriptor.getElementDescriptor(index).isAsn1Choice,
         propertyName = propertyName,
     )
 }

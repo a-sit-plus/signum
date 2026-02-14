@@ -1,13 +1,17 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.IdentifiedBy
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 
-internal typealias Asn1OidDiscriminatedSubtypeRegistration<T> =
-        Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T>
+internal data class Asn1OidDiscriminatedSubtypeRegistration<T : Any>(
+    val serializer: KSerializer<out T>,
+    val oid: ObjectIdentifier,
+    val leadingTags: Set<Asn1Element.Tag>,
+    val matches: (T) -> Boolean,
+    val debugName: String,
+)
 
 /**
  * Shared strict dispatch table for OID-discriminated ASN.1 open polymorphism.
@@ -16,11 +20,11 @@ internal typealias Asn1OidDiscriminatedSubtypeRegistration<T> =
  * - encode dispatches by value.oid
  * - duplicate OID registrations are rejected
  */
-internal class Asn1OidDiscriminatedDispatch<T : IdentifiedBy<*>>(
+internal class Asn1OidDiscriminatedDispatch<T : Any>(
     private val serialName: String,
     subtypes: List<Asn1OidDiscriminatedSubtypeRegistration<T>>,
 ) {
-    private val serializersByOid = linkedMapOf<ObjectIdentifier, KSerializer<out T>>()
+    private val serializersByOid = linkedMapOf<ObjectIdentifier, Asn1OidDiscriminatedSubtypeRegistration<T>>()
     private val tagsByOid = linkedMapOf<ObjectIdentifier, Set<Asn1Element.Tag>>()
 
     val leadingTags: Set<Asn1Element.Tag>
@@ -40,16 +44,16 @@ internal class Asn1OidDiscriminatedDispatch<T : IdentifiedBy<*>>(
         if (existing != null) {
             throw IllegalArgumentException(
                 "Duplicate OID mapping for ${registration.oid} in $serialName: " +
-                        "${existing.descriptor.serialName} and ${registration.serializer.descriptor.serialName}"
+                        "${existing.serializer.descriptor.serialName} and ${registration.serializer.descriptor.serialName}"
             )
         }
 
-        serializersByOid[registration.oid] = registration.serializer
+        serializersByOid[registration.oid] = registration
         tagsByOid[registration.oid] = registration.leadingTags
     }
 
     fun serializerForDecodeOrNull(oid: ObjectIdentifier): KSerializer<out T>? =
-        serializersByOid[oid]
+        serializersByOid[oid]?.serializer
 
     fun serializerForDecode(oid: ObjectIdentifier): KSerializer<out T> =
         serializerForDecodeOrNull(oid)
@@ -58,10 +62,17 @@ internal class Asn1OidDiscriminatedDispatch<T : IdentifiedBy<*>>(
             )
 
     fun serializerForEncode(value: T): KSerializer<out T> {
-        return serializerForDecodeOrNull(value.oid)
-            ?: throw SerializationException(
-                "No registered open-polymorphic subtype in $serialName for runtime OID ${value.oid} " +
-                        "(value type: ${value::class})"
+        val matches = serializersByOid.values.filter { it.matches(value) }
+        return when (matches.size) {
+            1 -> matches.single().serializer
+            0 -> throw SerializationException(
+                "No registered open-polymorphic subtype matches runtime value ${value::class} for $serialName"
             )
+
+            else -> throw SerializationException(
+                "Multiple registered open-polymorphic subtypes match runtime value ${value::class} " +
+                        "for $serialName: ${matches.joinToString { it.debugName }}"
+            )
+        }
     }
 }

@@ -16,7 +16,7 @@ import kotlinx.serialization.encoding.Encoder
  * - encode-time serializer selection from runtime value
  * - decode-time serializer selection from current ASN.1 element
  */
-abstract class Asn1DiscriminatedOpenPolymorphicSerializer<T : Any>(
+internal abstract class Asn1DiscriminatedOpenPolymorphicSerializer<T : Any>(
     serialName: String,
 ) : KSerializer<T>, Asn1LeadingTagsDescriptor {
 

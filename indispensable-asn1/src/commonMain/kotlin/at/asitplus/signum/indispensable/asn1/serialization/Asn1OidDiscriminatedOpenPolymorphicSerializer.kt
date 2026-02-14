@@ -1,29 +1,18 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.IdentifiedBy
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Structure
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.readOid
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.serializer
-import kotlin.reflect.KClass
 
-/**
- * OID-discriminated open polymorphism helper for ASN.1 DER.
- *
- * This serializer dispatches by [ObjectIdentifier] at decode-time and by [IdentifiedBy.oid] at encode-time.
- * It is intended for open (non-sealed) polymorphic hierarchies where `ANY DEFINED BY`-style OID dispatch is needed.
- */
-open class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : IdentifiedBy<*>>(
+internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
     serialName: String,
-    subtypes: List<SubtypeRegistration<T>>,
+    subtypes: List<Asn1OidDiscriminatedSubtypeRegistration<T>>,
     private val oidSelector: (Asn1Element) -> ObjectIdentifier? = ::firstOidAlongFirstChildPathOrNull,
 ) : Asn1DiscriminatedOpenPolymorphicSerializer<T>(serialName) {
 
@@ -35,13 +24,7 @@ open class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : IdentifiedBy<*>>(
     override val leadingTags: Set<Asn1Element.Tag>
         get() = dispatch.leadingTags
 
-    /**
-     * Adds a new subtype registration after serializer construction.
-     *
-     * This is intentionally mutable to allow third-party libraries to extend open
-     * ASN.1 polymorphic mappings in application code.
-     */
-    fun registerSubtype(registration: SubtypeRegistration<T>) {
+    fun registerSubtype(registration: Asn1OidDiscriminatedSubtypeRegistration<T>) {
         dispatch.registerSubtype(registration)
     }
 
@@ -60,12 +43,6 @@ open class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : IdentifiedBy<*>>(
         return selected as DeserializationStrategy<T>
     }
 
-    data class SubtypeRegistration<T : IdentifiedBy<*>>(
-        internal val serializer: KSerializer<out T>,
-        internal val oid: ObjectIdentifier,
-        internal val leadingTags: Set<Asn1Element.Tag>,
-        internal val debugName: String,
-    )
 }
 
 /**
@@ -86,88 +63,6 @@ fun firstOidAlongFirstChildPathOrNull(element: Asn1Element): ObjectIdentifier? {
     return structure.children.firstOrNull()?.let(::firstOidAlongFirstChildPathOrNull)
 }
 
-fun <T : IdentifiedBy<*>, S : T> asn1OpenPolymorphicSubtypeByOid(
-    serializer: KSerializer<S>,
-    oid: ObjectIdentifier,
-    vararg leadingTags: Asn1Element.Tag,
-): Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T> =
-    asn1OpenPolymorphicSubtypeByOid(serializer, oid, leadingTags.toSet())
-
-fun <T : IdentifiedBy<*>, S : T> asn1OpenPolymorphicSubtypeByOid(
-    serializer: KSerializer<S>,
-    oid: ObjectIdentifier,
-    leadingTags: Set<Asn1Element.Tag>,
-): Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T> =
-    Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration(
-        serializer = serializer,
-        oid = oid,
-        leadingTags = leadingTags,
-        debugName = serializer.descriptor.serialName
-    )
-
-fun <T : IdentifiedBy<*>, S : T> Asn1OidDiscriminatedOpenPolymorphicSerializer<T>.registerSubtype(
-    serializer: KSerializer<S>,
-    oid: ObjectIdentifier,
-    vararg leadingTags: Asn1Element.Tag,
-) {
-    registerSubtype(
-        asn1OpenPolymorphicSubtypeByOid(
-            serializer = serializer,
-            oid = oid,
-            leadingTags = leadingTags.toSet(),
-        )
-    )
-}
-
-/**
- * Registers an OID-discriminated subtype with strict source typing.
- *
- * [oidSource] must match the subtype's declared [IdentifiedBy] source type [I].
- * When [leadingTags] are omitted, they are inferred from the subtype serializer descriptor.
- * If inference is not possible, explicit tags must be provided.
- */
-@OptIn(ExperimentalSerializationApi::class)
-inline fun <reified S, I : Identifiable, T> Asn1OidDiscriminatedOpenPolymorphicSerializer<T>.registerSubtype(
-    oidSource: I,
-    vararg leadingTags: Asn1Element.Tag,
-) where S : T, T : IdentifiedBy<I> {
-    val subtypeSerializer = serializer<S>()
-    val resolvedLeadingTags = leadingTags.toSet().ifEmpty {
-        inferOpenPolymorphicSubtypeLeadingTagsOrNull(subtypeSerializer.descriptor)
-            ?: throw IllegalArgumentException(
-                cannotInferOpenPolymorphicSubtypeLeadingTagsMessage(subtypeSerializer.descriptor.serialName)
-            )
-    }
-
-    registerSubtype(
-        asn1OpenPolymorphicSubtypeByOid(
-            serializer = subtypeSerializer,
-            oid = oidSource.oid,
-            leadingTags = resolvedLeadingTags,
-        )
-    )
-}
-
-/**
- * Registers an OID-discriminated subtype while letting call-sites infer [S] from a class literal.
- */
-@OptIn(ExperimentalSerializationApi::class)
-inline fun <I : Identifiable, T : IdentifiedBy<I>, reified S : T>
-        Asn1OidDiscriminatedOpenPolymorphicSerializer<T>.registerSubtype(
-    subtype: KClass<S>,
-    oidSource: I,
-    vararg leadingTags: Asn1Element.Tag,
-) {
-    // Uses the class literal for generic inference ergonomics.
-    @Suppress("UNUSED_VARIABLE")
-    val ignored = subtype
-    registerSubtype<S, I, T>(
-        oidSource = oidSource,
-        *leadingTags,
-    )
-}
-
-@PublishedApi
 internal fun inferOpenPolymorphicSubtypeLeadingTagsOrNull(
     descriptor: SerialDescriptor,
 ): Set<Asn1Element.Tag>? = when (val resolution = descriptor.possibleLeadingTagsForAsn1()) {
@@ -175,7 +70,6 @@ internal fun inferOpenPolymorphicSubtypeLeadingTagsOrNull(
     Asn1LeadingTagsResolution.UnknownInfer -> null
 }
 
-@PublishedApi
 internal fun cannotInferOpenPolymorphicSubtypeLeadingTagsMessage(
     serialName: String,
 ): String =

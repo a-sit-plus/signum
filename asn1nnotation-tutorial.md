@@ -19,7 +19,7 @@ Every documented feature below has a dedicated, self-contained test file that:
   [`SerializationTutorial04OctetWrappedTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial04OctetWrappedTest.kt)
 - `@Asn1BitString` mapping for `ByteArray`:
   [`SerializationTutorial05BitStringTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial05BitStringTest.kt)
-- Sealed CHOICE with `@Asn1Choice`:
+- Sealed CHOICE (default for sealed hierarchies):
   [`SerializationTutorial06ChoiceTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial06ChoiceTest.kt)
 - Ambiguity rejection (nullable/optional layout):
   [`SerializationTutorial07AmbiguityRejectTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial07AmbiguityRejectTest.kt)
@@ -29,7 +29,7 @@ Every documented feature below has a dedicated, self-contained test file that:
   [`SerializationTutorial09EncodeDefaultsTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial09EncodeDefaultsTest.kt)
 - Open polymorphism by leading tag:
   [`SerializationTutorial10OpenPolyByTagTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial10OpenPolyByTagTest.kt)
-- Open polymorphism by OID (`IdentifiedBy` + strict registration model):
+- Open polymorphism by OID (DER module registration):
   [`SerializationTutorial11OpenPolyByOidTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial11OpenPolyByOidTest.kt)
 - Default map/set structural mapping:
   [`SerializationTutorial12MapAndSetTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial12MapAndSetTest.kt)
@@ -40,13 +40,12 @@ Every documented feature below has a dedicated, self-contained test file that:
 - `@Asn1Tag` is implicit tag override.
 - EXPLICIT is modeled via wrapper (`Asn1Explicit<T>`) + outer context-specific constructed tag.
 - OCTET encapsulation is modeled via wrapper (`Asn1OctetWrapped<T>`).
-- CHOICE is sealed polymorphism with `@Asn1Choice`.
+- CHOICE is the default for sealed polymorphism (tag-dispatch, no discriminator wrapper).
 - Ambiguous nullable/optional layouts hard-fail.
 
 ## 2. Annotation Surface
 
 - `@Asn1Tag`: tag number/class/constructed override (implicit tagging model)
-- `@Asn1Choice`: sealed CHOICE dispatch by leading tags
 - `@Asn1BitString`: property-level `ByteArray` -> `BIT STRING`
 
 ## 3. Precedence and Shape
@@ -73,11 +72,11 @@ Disambiguation options:
 
 ## 5. Polymorphism Modes
 
-- CHOICE (`@Asn1Choice`, sealed): exactly one matching arm must decode
-- Open by tag: `Asn1TagDiscriminatedOpenPolymorphicSerializer`
-- Open by OID: `Asn1OidDiscriminatedOpenPolymorphicSerializer`
+- CHOICE (sealed): exactly one matching arm must decode
+- Open by tag: configure in `DER { serializersModule = SerializersModule { asn1OpenPolymorphicByTag(...) } }`
+- Open by OID: configure in `DER { serializersModule = SerializersModule { asn1OpenPolymorphicByOid(...) } }`
 
-For OID mode, strict registration follows `IdentifiedBy` contract and uses subtype OID + leading tags.
+OID mode is not tied to `IdentifiedBy`; registration is explicit and strict (OID + subtype + leading tags/inference).
 
 ## 6. DER Config Knobs
 

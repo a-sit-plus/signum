@@ -16,6 +16,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.internal.AbstractPolymorphicSerializer
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlin.time.Instant
@@ -27,7 +28,7 @@ import kotlin.time.Instant
  *
  * This decoder supports:
  * - annotation-driven implicit tag override processing via [Asn1Tag]
- * - sealed CHOICE decoding via [Asn1Choice]
+ * - sealed CHOICE decoding via sealed polymorphism
  * - runtime ambiguity checks for nullable/optional class layouts
  */
 class DerDecoder internal constructor(
@@ -206,16 +207,13 @@ class DerDecoder internal constructor(
         val decoded = when (effectiveDescriptor.kind) {
             PolymorphicKind.OPEN -> throw SerializationException(
                 "Open polymorphic decoding is not supported via primitive decode path for ${effectiveDescriptor.serialName}. " +
-                        "Use a dedicated open-polymorphic serializer such as " +
-                        "Asn1TagDiscriminatedOpenPolymorphicSerializer or " +
-                        "Asn1OidDiscriminatedOpenPolymorphicSerializer. " +
-                        "Either annotate the base type with @Serializable(with = ...) and call DER.decodeFromDer<T>(...), " +
-                        "or pass the serializer explicitly via DER.decodeFromDer(bytes, serializer)."
+                        "Register an ASN.1 open-polymorphic serializer in DER { serializersModule = ... } " +
+                        "via olymorphicByTag(...) or lymorphicByOid(...)."
             )
 
             PolymorphicKind.SEALED -> throw SerializationException(
                 "Sealed polymorphic decoding is not supported via primitive decode path for ${effectiveDescriptor.serialName}. " +
-                        "For ASN.1 CHOICE, annotate the sealed hierarchy/property with @Asn1Choice so decoding uses tag dispatch."
+                        "ASN.1 CHOICE is supported for sealed types in composite decoding paths."
             )
             PrimitiveKind.BOOLEAN -> processedElement.asPrimitive()
                 .decodeToBoolean(expectedTag ?: Asn1Element.Tag.BOOL)
@@ -362,6 +360,25 @@ class DerDecoder internal constructor(
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
                 ambiguousAsn1NullEncodingMessage(ownerSerialName = nullAnalysisOwnerSerialName)
+            )
+        }
+
+        resolveOpenPolymorphicAsn1SerializerOrNull(deserializer)?.let { openSerializer ->
+            if (openSerializer.descriptor == deserializer.descriptor) {
+                throw SerializationException(
+                    "Open polymorphism for ${deserializer.descriptor.serialName} resolved to itself. " +
+                            "Register a concrete ASN.1 open-polymorphic serializer in DER { serializersModule = ... }."
+                )
+            }
+            @Suppress("UNCHECKED_CAST")
+            return decodeCurrentElementWith(openSerializer as DeserializationStrategy<T>)
+        }
+
+        if (deserializer.descriptor.kind is PolymorphicKind.OPEN) {
+            throw SerializationException(
+                "Open polymorphism for ${deserializer.descriptor.serialName} requires an ASN.1 serializer " +
+                        "registered in DER { serializersModule = ... } via polymorphicByTag(...) " +
+                        "or polymorphicByOid(...)."
             )
         }
 
@@ -553,13 +570,13 @@ class DerDecoder internal constructor(
     ): T {
         if (deserializer.descriptor.kind !is PolymorphicKind.SEALED) {
             throw SerializationException(
-                "@Asn1Choice requires a sealed polymorphic descriptor, but got ${deserializer.descriptor.kind}"
+                "ASN.1 CHOICE requires a sealed polymorphic descriptor, but got ${deserializer.descriptor.kind}"
             )
         }
 
         val sealedSerializer = deserializer as? SealedClassSerializer<Any>
             ?: throw SerializationException(
-                "@Asn1Choice only supports kotlinx SealedClassSerializer"
+                "ASN.1 CHOICE only supports kotlinx SealedClassSerializer"
             )
 
         validateAndResolveImplicitTagOverride(
@@ -585,6 +602,15 @@ class DerDecoder internal constructor(
             )
 
         return decodeCurrentElementWith(selected as DeserializationStrategy<T>)
+    }
+
+    @OptIn(InternalSerializationApi::class)
+    private fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
+        deserializer: DeserializationStrategy<T>,
+    ): DeserializationStrategy<*>? {
+        if (deserializer.descriptor.kind !is PolymorphicKind.OPEN) return null
+        val polymorphicSerializer = deserializer as? AbstractPolymorphicSerializer<*> ?: return null
+        return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
     }
 
 }

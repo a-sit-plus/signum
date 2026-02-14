@@ -101,8 +101,7 @@ val SerializationTestPolymorphismAndChoice by testSuite(
     }
 }
 
-@Serializable
-sealed interface AnInterface
+interface AnInterface
 
 // @formatter:off
 @Serializable object Without : AnInterface
@@ -115,7 +114,6 @@ sealed interface AnInterface
 // @formatter:on
 
 @Serializable
-@Asn1Choice
 sealed interface ChoiceInterface
 
 @Serializable
@@ -129,7 +127,6 @@ data class ChoiceInt(val value: Int) : ChoiceInterface
 data class ChoiceTaggedString(val value: String) : ChoiceInterface
 
 @Serializable
-@Asn1Choice
 sealed interface AmbiguousChoice
 
 @Serializable

@@ -14,15 +14,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-/**
- * Descriptor contract for declaring leading ASN.1 tags for ambiguity analysis.
- *
- * Implement this on custom [SerialDescriptor] implementations when serializer logic
- * cannot be inferred from descriptor kind alone.
- *
- * Use an empty set when leading tags are unknown/value-dependent.
- */
-interface Asn1LeadingTagsDescriptor {
+internal interface Asn1LeadingTagsDescriptor {
     val leadingTags: Set<Asn1Element.Tag>
 }
 
@@ -51,10 +43,7 @@ private class Asn1OpaqueSerializerDescriptor(
     leadingTagsProvider: () -> Set<Asn1Element.Tag>,
 ) : Asn1LeadingTagsSerialDescriptor(asn1OpaqueDelegateDescriptor, leadingTagsProvider)
 
-/**
- * Returns a descriptor that carries ASN.1 leading-tag metadata for ambiguity checks.
- */
-fun SerialDescriptor.withAsn1LeadingTags(leadingTags: Set<Asn1Element.Tag>): SerialDescriptor =
+internal fun SerialDescriptor.withAsn1LeadingTags(leadingTags: Set<Asn1Element.Tag>): SerialDescriptor =
     Asn1LeadingTagsSerialDescriptor(this) { leadingTags }
 
 internal fun SerialDescriptor.withDynamicAsn1LeadingTags(
@@ -93,15 +82,14 @@ internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
  */
 interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> :
     Asn1Decodable<A, T>,
-    KSerializer<T>,
-    Asn1LeadingTagsDescriptor {
+    KSerializer<T> {
 
     /**
      * Leading ASN.1 tags this serializer can decode/encode.
      *
      * Use an empty set when leading tags cannot be inferred statically.
      */
-    override val leadingTags: Set<Asn1Element.Tag>
+    val leadingTags: Set<Asn1Element.Tag>
 
     override val descriptor: SerialDescriptor
         get() = Asn1OpaqueSerializerDescriptor { leadingTags }

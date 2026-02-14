@@ -4,8 +4,12 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 
-internal typealias Asn1TagDiscriminatedSubtypeRegistration<T> =
-        Asn1TagDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T>
+internal data class Asn1TagDiscriminatedSubtypeRegistration<T : Any>(
+    val serializer: KSerializer<out T>,
+    val leadingTags: Set<Asn1Element.Tag>,
+    val matches: (T) -> Boolean,
+    val debugName: String,
+)
 
 /**
  * Shared strict dispatch table for tag-discriminated ASN.1 polymorphism.

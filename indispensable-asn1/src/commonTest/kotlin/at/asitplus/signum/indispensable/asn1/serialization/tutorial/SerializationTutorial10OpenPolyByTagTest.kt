@@ -1,12 +1,12 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.SerializersModule
 import kotlin.jvm.JvmInline
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -14,14 +14,23 @@ val SerializationTutorial10OpenPolyByTag by testSuite(
     testConfig = DefaultConfiguration
 ) {
     "Open polymorphism by leading tag" {
+        val derCodec = DER {
+            serializersModule = SerializersModule {
+                polymorphicByTag(TutorialOpenByTag::class, serialName = "TutorialOpenByTag") {
+                    subtype<TutorialOpenByTagInt>()
+                    subtype<TutorialOpenByTagBool>()
+                    subtype<TutorialOpenByTagSeqNoInline>()
+                }
+            }
+        }
+
         val value: TutorialOpenByTag = TutorialOpenByTagInt(7)
-        val der = DER.encodeToDer(value)
+        val der = derCodec.encodeToDer(value)
         der.toHexString() shouldBe "020107"
-        DER.decodeFromDer<TutorialOpenByTag>(der) shouldBe value
+        derCodec.decodeFromDer<TutorialOpenByTag>(der) shouldBe value
     }
 }
 
-@Serializable(with = TutorialOpenByTagSerializer::class)
 private interface TutorialOpenByTag
 
 @Serializable
@@ -29,13 +38,13 @@ private interface TutorialOpenByTag
 private value class TutorialOpenByTagInt(
     val value: Int,
 ) : TutorialOpenByTag
+@Serializable
+@JvmInline
+private value class TutorialOpenByTagBool(
+    val value: Boolean,
+) : TutorialOpenByTag
 
-private object TutorialOpenByTagSerializer : Asn1TagDiscriminatedOpenPolymorphicSerializer<TutorialOpenByTag>(
-    serialName = "TutorialOpenByTag",
-    subtypes = listOf(
-        asn1OpenPolymorphicSubtype<TutorialOpenByTag, TutorialOpenByTagInt>(
-            serializer = TutorialOpenByTagInt.serializer(),
-            leadingTags = setOf(Asn1Element.Tag.INT),
-        )
-    ),
-)
+@Serializable
+private class TutorialOpenByTagSeqNoInline(
+    val value: Boolean,
+) : TutorialOpenByTag

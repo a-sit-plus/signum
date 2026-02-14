@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 val SerializationTutorial06Choice by testSuite(
     testConfig = DefaultConfiguration
 ) {
-    "Sealed CHOICE with @Asn1Choice" {
+    "Sealed CHOICE uses sealed polymorphism" {
         val value = TutorialChoiceContainer(TutorialChoiceInt(7))
         val der = DER.encodeToDer(value)
         der.toHexString() shouldBe "30053003020107"
@@ -25,10 +25,15 @@ private data class TutorialChoiceContainer(
 )
 
 @Serializable
-@Asn1Choice
 private sealed interface TutorialChoice
 
 @Serializable
 private data class TutorialChoiceInt(
     val value: Int,
+) : TutorialChoice
+
+@Serializable
+@Asn1Tag(1337u)
+private data class TutorialChoiceBool(
+    val value: Boolean,
 ) : TutorialChoice

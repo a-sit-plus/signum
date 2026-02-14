@@ -12,7 +12,7 @@ import kotlinx.serialization.descriptors.StructureKind
  * ASN.1 implicit tag override annotation.
  *
  * This annotation only controls tag override behavior.
- * Use [Asn1BitString] and [Asn1Choice] for additional ASN.1 semantics.
+ * Use [Asn1BitString] for additional ASN.1 semantics.
  *
  * @param tagNumber implicit ASN.1 tag number override
  * @param tagClass implicit ASN.1 tag-class override; defaults to [Asn1TagClass.CONTEXT_SPECIFIC]
@@ -33,13 +33,6 @@ annotation class Asn1Tag(
 @SerialInfo
 @Target(AnnotationTarget.PROPERTY)
 annotation class Asn1BitString
-
-/**
- * Enables ASN.1 CHOICE behavior for sealed polymorphism (no discriminator wrapper).
- */
-@SerialInfo
-@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
-annotation class Asn1Choice
 
 enum class Asn1TagClass {
     INFER,
@@ -80,9 +73,7 @@ internal val List<Annotation>.isAsn1BitString: Boolean get() = any { it is Asn1B
 internal fun SerialDescriptor.isAsn1BitString(index: Int): Boolean =
     getElementAnnotations(index).isAsn1BitString || getElementDescriptor(index).isAsn1BitString
 
-internal val SerialDescriptor.isAsn1Choice: Boolean get() = annotations.isAsn1Choice
-internal val List<Annotation>.isAsn1Choice: Boolean get() = any { it is Asn1Choice }
-internal fun SerialDescriptor.isAsn1Choice(index: Int): Boolean = getElementAnnotations(index).isAsn1Choice
+internal val SerialDescriptor.isAsn1Choice: Boolean get() = kind is kotlinx.serialization.descriptors.PolymorphicKind.SEALED
 
 private val byteArrayDescriptor = ByteArraySerializer().descriptor
 private val byteArraySerialName = byteArrayDescriptor.serialName.removeSuffix("?")

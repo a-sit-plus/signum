@@ -7,6 +7,8 @@ import kotlinx.io.readByteArray
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.modules.EmptySerializersModule
+import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
 
@@ -31,6 +33,7 @@ class Der internal constructor(
 data class DerConfiguration(
     val encodeDefaults: Boolean = true,
     val explicitNulls: Boolean = false,
+    val serializersModule: SerializersModule = EmptySerializersModule(),
 )
 
 /**
@@ -39,10 +42,12 @@ data class DerConfiguration(
 class DerBuilder internal constructor() {
     var encodeDefaults: Boolean = true
     var explicitNulls: Boolean = false
+    var serializersModule: SerializersModule = EmptySerializersModule()
 
     internal fun build() = DerConfiguration(
         encodeDefaults = encodeDefaults,
         explicitNulls = explicitNulls,
+        serializersModule = serializersModule,
     )
 }
 
@@ -82,7 +87,10 @@ inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T = decodeFromTlv
  */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArray {
-    val encoder = DerEncoder(formatConfiguration = configuration)
+    val encoder = DerEncoder(
+        serializersModule = configuration.serializersModule,
+        formatConfiguration = configuration
+    )
     encoder.encodeSerializableValue(serializer, value)
     return Buffer().also { encoder.writeTo(it) }.readByteArray()
 }
@@ -94,7 +102,10 @@ fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArr
  */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Element {
-    val encoder = DerEncoder(formatConfiguration = configuration)
+    val encoder = DerEncoder(
+        serializersModule = configuration.serializersModule,
+        formatConfiguration = configuration
+    )
     encoder.encodeSerializableValue(serializer, value)
     return encoder.encodeToTLV()
         .also { if (it.size != 1) throw ImplementationError("DER serializer mutliple elements") }.first()
@@ -108,6 +119,7 @@ fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Ele
 fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
     val decoder = DerDecoder(
         Buffer().also { it.write(source) },
+        serializersModule = configuration.serializersModule,
         formatConfiguration = configuration,
     )
     return decoder.decodeSerializableValue(deserializer)
@@ -120,6 +132,7 @@ fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrate
 fun <T> Der.decodeFromTlv(source: Asn1Element, deserializer: DeserializationStrategy<T>): T {
     val decoder = DerDecoder(
         listOf(source),
+        serializersModule = configuration.serializersModule,
         formatConfiguration = configuration,
     )
     return decoder.decodeSerializableValue(deserializer)
