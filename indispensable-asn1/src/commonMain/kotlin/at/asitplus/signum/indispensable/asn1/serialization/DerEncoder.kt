@@ -10,8 +10,6 @@ import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.builtins.SetSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
@@ -41,41 +39,19 @@ internal class DerEncoder(
     private val formatConfiguration: DerConfiguration = DerConfiguration(),
 ) : AbstractEncoder() {
 
-    private data class InlineHints(
-        val tag: Asn1Tag?,
-        val asBitString: Boolean,
-        val asChoice: Boolean,
-    )
-
     private val buffer = mutableListOf<Asn1ElementHolder>()
     private var descriptorAndIndex: Pair<SerialDescriptor, Int>? = null
 
-    private var pendingInlineTag: Asn1Tag? = null
-    private var pendingInlineAsBitString: Boolean = false
-    private var pendingInlineAsChoice: Boolean = false
+    private val inlineHintState = DerInlineHintState()
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
-        pendingInlineTag = descriptor.asn1Tag
-        pendingInlineAsBitString = descriptor.isAsn1BitString
-        pendingInlineAsChoice = descriptor.isAsn1Choice
+        inlineHintState.recordFrom(descriptor)
         return this
     }
 
-    private fun consumeInlineHints(): InlineHints {
-        val hints = InlineHints(
-            tag = pendingInlineTag,
-            asBitString = pendingInlineAsBitString,
-            asChoice = pendingInlineAsChoice,
-        )
-        pendingInlineTag = null
-        pendingInlineAsBitString = false
-        pendingInlineAsChoice = false
-        return hints
-    }
-
     override fun encodeValue(value: Any) {
-        val inlineHints = consumeInlineHints()
+        val inlineHints = inlineHintState.consume()
 
         val descriptorIndexSnapshot = descriptorAndIndex
         val propertyAnnotation = descriptorIndexSnapshot?.let { (descriptor, index) ->
@@ -135,7 +111,7 @@ internal class DerEncoder(
     }
 
     override fun encodeNull() {
-        val inlineHints = consumeInlineHints()
+        val inlineHints = inlineHintState.consume()
 
         descriptorAndIndex?.let { (descriptor, index) ->
             descriptorAndIndex = null
@@ -191,7 +167,7 @@ internal class DerEncoder(
 
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
-        val inlineHints = consumeInlineHints()
+        val inlineHints = inlineHintState.consume()
         val descriptorAndIndexSnapshot = descriptorAndIndex
         val propertyAnnotation = descriptorAndIndexSnapshot?.let { (descriptor, index) ->
             descriptor.asn1Tag(index)
@@ -263,7 +239,7 @@ internal class DerEncoder(
             return
         }
 
-        if (shouldEncodeAsChoice(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)) {
+        if (isAsn1ChoiceRequested(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)) {
             encodeChoiceSerializableValue(
                 serializer = serializer,
                 value = value,
@@ -286,14 +262,6 @@ internal class DerEncoder(
         else super.encodeSerializableValue(serializer, value as T)
     }
 
-    private fun shouldEncodeAsChoice(
-        descriptor: SerialDescriptor,
-        inlineAsChoice: Boolean,
-        propertyAsChoice: Boolean,
-    ): Boolean {
-        return inlineAsChoice || propertyAsChoice || descriptor.isAsn1Choice
-    }
-
     @OptIn(InternalSerializationApi::class)
     @Suppress("UNCHECKED_CAST")
     private fun <T> encodeChoiceSerializableValue(
@@ -302,10 +270,6 @@ internal class DerEncoder(
         inlineAnnotation: Asn1Tag?,
         propertyAnnotation: Asn1Tag?,
     ) {
-        pendingInlineTag = null
-        pendingInlineAsBitString = false
-        pendingInlineAsChoice = false
-
         if (serializer.descriptor.kind !is PolymorphicKind.SEALED) {
             throw SerializationException(
                 "@Asn1Choice requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
@@ -352,7 +316,7 @@ internal class DerEncoder(
                 formatExplicitNulls = formatConfiguration.explicitNulls,
             )
         }
-        val inlineAnnotation = consumeInlineHints().tag
+        val inlineAnnotation = inlineHintState.consume().tag
         val propertyAnnotation = descriptorAndIndex?.let { (parentDescriptor, index) ->
             parentDescriptor.asn1Tag(index)
         }
@@ -400,28 +364,3 @@ internal class DerEncoder(
         }
     }
 }
-
-private fun requireAsn1ExplicitWrapperTag(
-    descriptor: SerialDescriptor,
-    tagTemplate: Asn1Element.Tag.Template?,
-    ownerSerialName: String,
-) {
-    if (!descriptor.isAsn1ExplicitWrapperDescriptor()) return
-    if (tagTemplate == null) {
-        throw SerializationException(
-            "Asn1Explicit requires an implicit tag override in $ownerSerialName. " +
-                    "Provide @Asn1Tag(tagNumber=..., tagClass=CONTEXT_SPECIFIC, constructed=CONSTRUCTED)."
-        )
-    }
-    val effectiveClass = tagTemplate.tagClass ?: TagClass.UNIVERSAL
-    val effectiveConstructed = tagTemplate.constructed ?: true
-    if (effectiveClass != TagClass.CONTEXT_SPECIFIC || !effectiveConstructed) {
-        throw SerializationException(
-            "Asn1Explicit requires CONTEXT_SPECIFIC + CONSTRUCTED tag in $ownerSerialName, " +
-                    "but effective override is class=$effectiveClass, constructed=$effectiveConstructed."
-        )
-    }
-}
-
-private val setDescriptor: SerialDescriptor = SetSerializer(String.serializer()).descriptor
-internal val SerialDescriptor.isSetDescriptor: Boolean get() = setDescriptor::class.isInstance(this)
