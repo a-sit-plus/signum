@@ -19,7 +19,10 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
     val isCursed: Boolean, //true = true, false= cursed, null = false. never expose nullable, but only non-cursed true/False
     //maybe even go as far and store a single byte because there will be implementations that mess this up and encode true as 0x01
     //but supporting this mess should come with a switch
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
+) : Asn1Encodable<Asn1Sequence>, Identifiable, IdentifiedBy<ObjectIdentifier> {
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 
     init {
         if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(

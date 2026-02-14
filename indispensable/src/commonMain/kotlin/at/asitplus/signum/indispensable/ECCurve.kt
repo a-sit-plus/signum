@@ -28,7 +28,7 @@ inline fun Int.ceilDiv(other: Int) =
 enum class ECCurve(
     val jwkName: String,
     override val oid: ObjectIdentifier,
-) : Identifiable {
+) : Identifiable, IdentifiedBy<ObjectIdentifier> {
     /** NIST curve [secp256r1](https://neuromancer.sk/std/nist/P-256) */
     SECP_256_R_1("P-256", KnownOIDs.prime256v1),
 
@@ -205,6 +205,9 @@ enum class ECCurve(
         fun withOid(oid: ObjectIdentifier) = entries.find { it.oid == oid } ?:
             throw IllegalArgumentException("No curve with OID $oid is supported")
     }
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 
 }
 

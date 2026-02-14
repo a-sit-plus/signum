@@ -23,7 +23,7 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
  * Representation of a public key structure
  */
 @Serializable(with = CryptoPublicKey.Companion::class)
-sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable, IdentifiedBy<ObjectIdentifier> {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -42,6 +42,9 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
      * Representation of the key in the format used by iOS, EC compression is used if key was compressed on reception
      */
     abstract val iosEncoded: ByteArray
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 
     override fun encodeToTlv() = when (this) {
         is EC -> Asn1.Sequence {
@@ -206,10 +209,12 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             RSA_4096(4096u),
             RSA_8192(8192u);
 
-            companion object : Identifiable {
+            companion object : Identifiable, IdentifiedBy<ObjectIdentifier> {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
 
                 override val oid = KnownOIDs.rsaEncryption
+                override val oidSource: ObjectIdentifier
+                    get() = oid
             }
         }
 
@@ -235,7 +240,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             }.derEncoded
         }
 
-        companion object : Identifiable {
+        companion object : Identifiable, IdentifiedBy<ObjectIdentifier> {
             /**
              * decodes a PKCS#1-encoded RSA key
              *
@@ -255,6 +260,8 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
                 RSA(n, e.also { require(it > 0) }.toUInt())
 
             override val oid = KnownOIDs.rsaEncryption
+            override val oidSource: ObjectIdentifier
+                get() = oid
         }
     }
 
@@ -333,7 +340,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
         override fun hashCode() =
             publicPoint.hashCode()
 
-        companion object : Identifiable {
+        companion object : Identifiable, IdentifiedBy<ObjectIdentifier> {
 
             fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EC {
                 return EC(this.normalize(), preferCompressed)
@@ -393,6 +400,8 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             }
 
             override val oid = KnownOIDs.ecPublicKey
+            override val oidSource: ObjectIdentifier
+                get() = oid
         }
     }
 }

@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 
-enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifier) : Identifiable {
+enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifier) : Identifiable, IdentifiedBy<ObjectIdentifier> {
     SHA1(160.bit, KnownOIDs.sha1),
     SHA256(256.bit, KnownOIDs.sha_256),
     SHA384(384.bit, KnownOIDs.sha_384),
@@ -16,6 +16,9 @@ enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifie
         SHA384 -> 1024.bit
         SHA512 -> 1024.bit
     }
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 }
 
 /** A digest well-suited to operations on this curve, with output length near the curve's coordinate length. */

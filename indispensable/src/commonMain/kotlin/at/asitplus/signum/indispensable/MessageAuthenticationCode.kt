@@ -47,7 +47,7 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
  * RFC 2104 HMAC
  */
 @Serializable(with = HMAC.Companion::class)
-enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable,
+enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable, IdentifiedBy<ObjectIdentifier>,
     Asn1Encodable<Asn1Sequence> {
     SHA1(Digest.SHA1, KnownOIDs.hmacWithSHA1),
     SHA256(Digest.SHA256, KnownOIDs.hmacWithSHA256),
@@ -87,4 +87,7 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
     }
 
     override val outputLength: BitLength get() = digest.outputLength
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 }

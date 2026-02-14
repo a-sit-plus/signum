@@ -41,8 +41,11 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 
 //TODO: value should be Asn1Primitive???
 @Serializable(with = AttributeTypeAndValue.Companion::class)
-sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
+sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable, IdentifiedBy<ObjectIdentifier> {
     abstract val value: Asn1Element
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 
     override fun toString() = value.toString()
 

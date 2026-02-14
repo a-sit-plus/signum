@@ -23,8 +23,13 @@ import kotlin.jvm.JvmName
  * * its [name]
  */
 sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType> :
-    Identifiable, Enumerable {
+    Identifiable,
+    IdentifiedBy<ObjectIdentifier>,
+    Enumerable {
     val authCapability: A
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 
     /** Indicates if this algorithm requires a nonce.*/
     val nonceTrait: I

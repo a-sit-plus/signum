@@ -7,6 +7,7 @@ It explains:
 - what each ASN.1 annotation does now
 - why and when ambiguity is rejected
 - how serializer `leadingTags` participate in ambiguity checks
+- how strict OID-open-polymorphism registration works (`IdentifiedBy` + `registerSubtype`)
 - how to model EXPLICIT tagging, OCTET wrapping, polymorphism, and CHOICE
 
 ## 1. Big Picture
@@ -317,6 +318,139 @@ Practical rule:
 - if you write a non-`Asn1Serializer` custom serializer, implement `Asn1LeadingTagsDescriptor` on its descriptor so ambiguity checks and tag-override inference can stay deterministic
 
 For extension points, prefer explicit tagging/wrappers or trailing positions.
+
+## 12. OID Open Polymorphism and `leadingTags`
+
+This is the part that is easy to misunderstand.
+
+For OID-discriminated open polymorphism, the registry needs two things per subtype:
+1. OID mapping (decode dispatch and encode validation)
+2. possible leading ASN.1 tag(s) (for ambiguity checks in containing models)
+
+### 12.1 Strict registration API
+
+The strict API uses the `IdentifiedBy` contract:
+
+```kotlin
+extensibleSerializer.registerSubtype(
+    subtype = MySubtype::class,
+    oidSource = MySubtype.Companion, // must be Identifiable
+)
+```
+
+This is strict because:
+- `MySubtype` must satisfy the serializer's base type `T`
+- and `T` must be `IdentifiedBy<I>`
+- and `oidSource` must be that exact `I` (not any random `Identifiable`)
+
+So wrong source types fail at compile time.
+
+### 12.2 Why `leadingTags` often do not need to be passed
+
+In most cases, tags are inferred automatically from `serializer<MySubtype>().descriptor`.
+
+Tag inference order:
+1. serializer-declared ASN.1 leading tags metadata (for example `Asn1Serializer.leadingTags`)
+2. descriptor kind fallback (primitive/class/list/map/sealed-choice rules)
+
+So for normal `@Serializable` classes and normal `Asn1Serializer` companions, this works with no explicit tags argument.
+
+### 12.3 When explicit `leadingTags` are still required
+
+You must pass explicit tags when inference is unknown (`UnknownInfer`), for example:
+- custom serializer with value-dependent wire shape
+- serializer that intentionally declares `leadingTags = emptySet()`
+- descriptor that does not expose enough structure for deterministic tag inference
+
+Then use:
+
+```kotlin
+extensibleSerializer.registerSubtype(
+    subtype = MyWeirdSubtype::class,
+    oidSource = MyWeirdSubtype.Companion,
+    Asn1Element.Tag.SEQUENCE,
+    // add all possible leading tags here
+)
+```
+
+If tags are omitted in such a case, registration fails fast with a clear error.
+
+### 12.4 Concrete "works without tags" example
+
+```kotlin
+interface OpenByOidSource : Identifiable
+
+@Serializable(with = OpenByOidSerializer::class)
+interface OpenByOid : IdentifiedBy<OpenByOidSource>
+
+@Serializable
+data class OpenByOidInt(
+    val value: Int
+) : OpenByOid {
+    companion object : OpenByOidSource {
+        override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.1")
+    }
+
+    override val oidSource: OpenByOidSource
+        get() = Companion
+}
+
+object OpenByOidSerializer : Asn1OidDiscriminatedOpenPolymorphicSerializer<OpenByOid>(
+    serialName = "OpenByOid",
+    subtypes = listOf(
+        asn1OpenPolymorphicSubtypeByOid<OpenByOid, OpenByOidInt>(
+            serializer = OpenByOidInt.serializer(),
+            oid = OpenByOidInt.Companion.oid,
+            leadingTags = setOf(Asn1Element.Tag.SEQUENCE),
+        )
+    )
+)
+
+@Serializable
+data class OpenByOidBool(
+    val value: Boolean,
+) : OpenByOid {
+    companion object : OpenByOidSource {
+        override val oid: ObjectIdentifier = ObjectIdentifier("1.3.101.110")
+    }
+
+    override val oidSource: OpenByOidSource
+        get() = Companion
+}
+
+val extensibleSerializer = OpenByOidSerializer
+extensibleSerializer.registerSubtype(
+    subtype = OpenByOidBool::class,
+    oidSource = OpenByOidBool.Companion
+)
+```
+
+Here, `OpenByOidBool` is a normal class, so leading tag inference resolves to `SEQUENCE` and registration succeeds without explicit tags.
+
+### 12.5 Concrete "must pass tags" example
+
+```kotlin
+object AnyDefinedBySerializer : KSerializer<MyAnyDefinedByType> {
+    // descriptor/implementation intentionally value-dependent
+    // no stable leading tag contract exposed
+}
+
+// This may fail because leading tags are unknown:
+extensibleSerializer.registerSubtype(
+    subtype = MyAnyDefinedByType::class,
+    oidSource = MyAnyDefinedByType.Companion,
+)
+
+// Explicitly supply all possible leading tags instead:
+extensibleSerializer.registerSubtype(
+    subtype = MyAnyDefinedByType::class,
+    oidSource = MyAnyDefinedByType.Companion,
+    Asn1Element.Tag.SEQUENCE,
+    Asn1Element.Tag.SET,
+)
+```
+
+In other words: yes, there is a serializer tag-contract template already; explicit `leadingTags` are only needed when that contract is absent or intentionally unknown.
 
 ## 13. Quick Checklist
 

@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.IdentifiedBy
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
@@ -52,9 +54,8 @@ val SerializationTestOpenPolymorphismByOid by testSuite(
         }.message.shouldContain("for OID")
 
         extensibleSerializer.registerSubtype(
-            OpenByOidBool.serializer(),
-            oid = oidC,
-            Asn1Element.Tag.SEQUENCE,
+            subtype = OpenByOidBool::class,
+            oidSource = oidC,
         )
 
         val encoded = DER.encodeToDer(extensibleSerializer, boolValue)
@@ -93,25 +94,37 @@ val SerializationTestOpenPolymorphismByOid by testSuite(
 }
 
 @Serializable(with = OpenByOidSerializer::class)
-interface OpenByOid
+interface OpenByOid : Identifiable, IdentifiedBy<ObjectIdentifier> {
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 @Serializable
 data class OpenByOidInt(
-    val oid: ObjectIdentifier = oidA,
+    override val oid: ObjectIdentifier = oidA,
     val value: Int,
-) : OpenByOid
+) : OpenByOid {
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 @Serializable
 data class OpenByOidString(
-    val oid: ObjectIdentifier = oidB,
+    override val oid: ObjectIdentifier = oidB,
     val value: String,
-) : OpenByOid
+) : OpenByOid {
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 @Serializable
 data class OpenByOidBool(
-    val oid: ObjectIdentifier = oidC,
+    override val oid: ObjectIdentifier = oidC,
     val value: Boolean,
-) : OpenByOid
+) : OpenByOid {
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 private fun createOpenByOidSerializer(
     serialName: String,
@@ -158,7 +171,10 @@ data class NullableOpenByOidThenTaggedList(
 )
 
 @Serializable(with = OpenByNestedOidSerializer::class)
-interface OpenByNestedOid
+interface OpenByNestedOid : Identifiable, IdentifiedBy<ObjectIdentifier> {
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 @Serializable
 data class NestedAlgorithmIdentifier(
@@ -169,13 +185,23 @@ data class NestedAlgorithmIdentifier(
 data class OpenByNestedOidA(
     val algorithm: NestedAlgorithmIdentifier = NestedAlgorithmIdentifier(oidA),
     val payload: Int,
-) : OpenByNestedOid
+) : OpenByNestedOid {
+    override val oid: ObjectIdentifier
+        get() = algorithm.oid
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 @Serializable
 data class OpenByNestedOidB(
     val algorithm: NestedAlgorithmIdentifier = NestedAlgorithmIdentifier(oidB),
     val payload: String,
-) : OpenByNestedOid
+) : OpenByNestedOid {
+    override val oid: ObjectIdentifier
+        get() = algorithm.oid
+    override val oidSource: ObjectIdentifier
+        get() = oid
+}
 
 object OpenByNestedOidSerializer : Asn1OidDiscriminatedOpenPolymorphicSerializer<OpenByNestedOid>(
     serialName = "OpenByNestedOid",
@@ -192,4 +218,3 @@ object OpenByNestedOidSerializer : Asn1OidDiscriminatedOpenPolymorphicSerializer
         ),
     )
 )
-

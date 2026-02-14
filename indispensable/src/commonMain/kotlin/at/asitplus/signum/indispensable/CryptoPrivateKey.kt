@@ -27,7 +27,7 @@ private object EB_STRINGS {
  * Equality checks are performed wrt. cryptographic properties.
  */
 @Serializable(with = CryptoPrivateKey.Companion::class)
-sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
+sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable, IdentifiedBy<ObjectIdentifier> {
 
     @Serializable(with = CryptoPrivateKey.Companion::class)
     sealed interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
@@ -37,6 +37,9 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
     /** optional attributes relevant when PKCS#8-encoding a private key */
     val attributes: List<Asn1Element>?
+
+    override val oidSource: ObjectIdentifier
+        get() = oid
 
     /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
     val asPKCS8: PemEncodable<Asn1Sequence> get() = this
