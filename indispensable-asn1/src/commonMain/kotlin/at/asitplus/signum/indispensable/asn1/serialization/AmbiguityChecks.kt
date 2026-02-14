@@ -63,6 +63,7 @@ private val Asn1StringTags: Set<Asn1Element.Tag> = setOf(
 private val ByteArraySerialName: String = ByteArraySerializer().descriptor.serialName
 private const val Asn1ElementSerializerSerialName = "Asn1ElementDerEncodedSerializer"
 private const val Asn1OpaqueSerializerSerialName = "Asn1DerSerializer"
+private const val KotlinTimeInstantSerialName = "kotlin.time.Instant"
 
 internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
     formatExplicitNulls: Boolean = false,
@@ -290,6 +291,12 @@ private fun possibleBaseLeadingTags(
         )
     }
 
+    if (descriptor.isKotlinTimeInstantDescriptor()) {
+        return Asn1LeadingTagsResolution.Exact(
+            setOf(Asn1Element.Tag.TIME_UTC, Asn1Element.Tag.TIME_GENERALIZED)
+        )
+    }
+
     val tags = when (descriptor.kind) {
         PrimitiveKind.BOOLEAN -> setOf(Asn1Element.Tag.BOOL)
         PrimitiveKind.BYTE,
@@ -476,3 +483,6 @@ private fun SerialDescriptor.isAsn1OpaqueSerializerDescriptor(): Boolean {
     return normalizedSerialName == Asn1ElementSerializerSerialName ||
             normalizedSerialName == Asn1OpaqueSerializerSerialName
 }
+
+internal fun SerialDescriptor.isKotlinTimeInstantDescriptor(): Boolean =
+    serialName.removeSuffix("?") == KotlinTimeInstantSerialName

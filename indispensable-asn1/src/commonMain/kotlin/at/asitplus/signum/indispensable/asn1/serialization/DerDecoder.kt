@@ -17,6 +17,7 @@ import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.time.Instant
 
 
 @ExperimentalSerializationApi
@@ -419,6 +420,16 @@ class DerDecoder internal constructor(
             return encodable
         }
 
+        if (deserializer.descriptor.isKotlinTimeInstantDescriptor()) {
+            val primitive = processedElement as? Asn1Primitive
+                ?: throw SerializationException(
+                    "Expected ASN.1 primitive for kotlin.time.Instant, but got ${processedElement::class.simpleName}"
+                )
+            val decodedInstant = primitive.decodeInstantWithOptionalImplicitTag(expectedTag)
+            elementIndex++
+            return decodedInstant as T
+        }
+
         // Tag-check for explicitly / implicitly tagged primitives
         val tagToValidate = expectedTag ?: run {
             // If no explicit tag is specified, we should still validate against the default tag
@@ -632,6 +643,21 @@ private fun requireAsn1ExplicitWrapperTag(
 
 private fun Asn1Element.isAsn1NullElement(): Boolean =
     this is Asn1Primitive && tag == Asn1Element.Tag.NULL && length == 0
+
+private fun Asn1Primitive.decodeInstantWithOptionalImplicitTag(expectedTag: Asn1Element.Tag?): Instant {
+    if (expectedTag == null) return decodeToInstant()
+
+    val utc = catchingUnwrapped { Instant.decodeUtcTimeFromAsn1ContentBytes(content) }.getOrNull()
+    if (utc != null) return utc
+
+    val generalized = catchingUnwrapped { Instant.decodeGeneralizedTimeFromAsn1ContentBytes(content) }.getOrNull()
+    if (generalized != null) return generalized
+
+    throw SerializationException(
+        "Failed to decode implicitly tagged ASN.1 TIME for kotlin.time.Instant: " +
+                "content is neither UTCTime nor GeneralizedTime"
+    )
+}
 
 private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Element.Tag? {
 

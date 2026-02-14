@@ -18,6 +18,7 @@ import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.time.Instant
 
 
 /**
@@ -250,6 +251,14 @@ internal class DerEncoder(
 
             val nullElement = effectiveTagTemplate?.let { Asn1.Null().withImplicitTag(it) } ?: Asn1.Null()
             buffer += Asn1ElementHolder.Element(nullElement)
+            descriptorAndIndex = null
+            return
+        }
+
+        if (value is Instant && serializer.descriptor.isKotlinTimeInstantDescriptor()) {
+            val timeElement = Asn1Time(value).encodeToTlv()
+            val taggedElement = effectiveTagTemplate?.let { timeElement.withImplicitTag(it) } ?: timeElement
+            buffer += Asn1ElementHolder.Element(taggedElement)
             descriptorAndIndex = null
             return
         }
