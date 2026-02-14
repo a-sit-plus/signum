@@ -17,6 +17,33 @@ For class-like structures (`SEQUENCE`/`SET`), decoding walks children left-to-ri
 
 That strictness is intentional for PKI/crypto safety.
 
+### 1.1 Intentionally missing global DER knobs
+
+Some "nice-to-have" global format options are intentionally not exposed.
+This is deliberate, not an oversight.
+
+In security-critical DER contexts, permissive decoder behavior often creates:
+- silent downgrade/fallback paths
+- acceptance of malformed or ambiguous encodings
+- parser differentials between implementations
+- forward-compat behavior that hides schema violations
+
+Because of that, this codec intentionally does **not** provide global switches such as:
+- `ignoreUnknownElements` / "best effort" trailing element skipping
+- non-failing `unknownChoicePolicy` fallback modes for CHOICE
+- `ambiguityPolicy = WARN/ALLOW` for undecidable nullable/optional layouts
+- relaxed tag-mismatch behavior
+
+Current behavior is intentionally strict:
+- extra trailing children fail decode
+- CHOICE requires exactly one matching arm
+- ambiguous layouts fail fast
+- tag mismatches fail fast
+
+If you need compatibility variation, model it explicitly in schema/type design
+(for example dedicated extension points, explicit wrappers, or disambiguating tags),
+instead of a global permissive mode.
+
 ## 2. Baseline Mapping (No ASN.1 Annotations)
 
 Without ASN.1 annotations, the default mapping is:

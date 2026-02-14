@@ -63,6 +63,29 @@ class DerDecoder internal constructor(
     private var currentPropertyIndex: Int? = null
     private var currentPropertyIsTrailing = true
 
+    internal fun peekCurrentElementTagOrNull(): Asn1Element.Tag? = elements.getOrNull(elementIndex)?.tag
+    internal fun peekCurrentElementOrNull(): Asn1Element? = elements.getOrNull(elementIndex)
+
+    internal fun <T> decodeCurrentElementWith(deserializer: DeserializationStrategy<T>): T {
+        val current = elements.getOrNull(elementIndex)
+            ?: throw SerializationException("No ASN.1 element left while decoding ${deserializer.descriptor.serialName}")
+        val isolated = DerDecoder(
+            elements = listOf(current),
+            serializersModule = serializersModule,
+            formatConfiguration = formatConfiguration,
+        )
+        isolated.propertyDescriptor = deserializer.descriptor
+        isolated.propertyAsn1Tag = deserializer.descriptor.annotations.asn1Tag
+        isolated.propertyAsBitString = deserializer.descriptor.isAsn1BitString
+        isolated.propertyAsChoice = deserializer.descriptor.isAsn1Choice
+        isolated.currentOwnerSerialName = deserializer.descriptor.serialName
+        isolated.currentPropertyName = deserializer.descriptor.serialName
+        isolated.currentPropertyIndex = 0
+        val decoded = isolated.decodeSerializableValue(deserializer)
+        elementIndex++
+        return decoded
+    }
+
     @OptIn(ExperimentalSerializationApi::class)
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
         inlineAsn1Tag = descriptor.annotations.asn1Tag

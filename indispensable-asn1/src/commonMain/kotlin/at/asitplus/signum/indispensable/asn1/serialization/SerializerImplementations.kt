@@ -27,26 +27,46 @@ interface Asn1LeadingTagsDescriptor {
     val leadingTags: Set<Asn1Element.Tag>
 }
 
+private class Asn1LeadingTagsAnnotation(
+    private val provider: () -> Set<Asn1Element.Tag>
+) : Annotation {
+    val leadingTags: Set<Asn1Element.Tag>
+        get() = provider()
+}
+
 private val asn1OpaqueDelegateDescriptor: SerialDescriptor =
     SerialDescriptor("Asn1DerSerializer", ByteArraySerializer().descriptor)
 
 private open class Asn1LeadingTagsSerialDescriptor(
     private val delegate: SerialDescriptor,
+    private val leadingTagsProvider: () -> Set<Asn1Element.Tag>,
+) : SerialDescriptor by delegate, Asn1LeadingTagsDescriptor {
     override val leadingTags: Set<Asn1Element.Tag>
-) : SerialDescriptor by delegate, Asn1LeadingTagsDescriptor
+        get() = leadingTagsProvider()
+
+    override val annotations: List<Annotation>
+        get() = delegate.annotations + Asn1LeadingTagsAnnotation(leadingTagsProvider)
+}
 
 private class Asn1OpaqueSerializerDescriptor(
-    leadingTags: Set<Asn1Element.Tag>
-) : Asn1LeadingTagsSerialDescriptor(asn1OpaqueDelegateDescriptor, leadingTags)
+    leadingTagsProvider: () -> Set<Asn1Element.Tag>,
+) : Asn1LeadingTagsSerialDescriptor(asn1OpaqueDelegateDescriptor, leadingTagsProvider)
 
 /**
  * Returns a descriptor that carries ASN.1 leading-tag metadata for ambiguity checks.
  */
 fun SerialDescriptor.withAsn1LeadingTags(leadingTags: Set<Asn1Element.Tag>): SerialDescriptor =
-    Asn1LeadingTagsSerialDescriptor(this, leadingTags)
+    Asn1LeadingTagsSerialDescriptor(this) { leadingTags }
+
+internal fun SerialDescriptor.withDynamicAsn1LeadingTags(
+    leadingTagsProvider: () -> Set<Asn1Element.Tag>,
+): SerialDescriptor = Asn1LeadingTagsSerialDescriptor(this, leadingTagsProvider)
 
 internal val SerialDescriptor.asn1LeadingTagsOrNull: Set<Asn1Element.Tag>?
     get() = (this as? Asn1LeadingTagsDescriptor)?.leadingTags
+        ?: annotations.lastOrNull { it is Asn1LeadingTagsAnnotation }
+            ?.let { it as Asn1LeadingTagsAnnotation }
+            ?.leadingTags
 
 internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
     private val delegate = ByteArraySerializer()
@@ -85,7 +105,7 @@ interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> :
     override val leadingTags: Set<Asn1Element.Tag>
 
     override val descriptor: SerialDescriptor
-        get() = Asn1OpaqueSerializerDescriptor(leadingTags)
+        get() = Asn1OpaqueSerializerDescriptor { leadingTags }
 
     override fun deserialize(decoder: Decoder): T {
         decoder.requireAsn1Decoder(descriptor.serialName)
