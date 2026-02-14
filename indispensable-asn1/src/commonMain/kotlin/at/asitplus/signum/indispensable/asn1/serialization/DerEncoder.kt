@@ -311,7 +311,7 @@ internal class DerEncoder(
                 "@Asn1Choice requires a sealed polymorphic serializer, but got ${serializer.descriptor.kind}"
             )
         }
-        val sealedSerializer = serializer as? SealedClassSerializer<T>
+        val sealedSerializer = serializer as? SealedClassSerializer<Any>
             ?: throw SerializationException(
                 "@Asn1Choice only supports kotlinx SealedClassSerializer"
             )
@@ -323,8 +323,7 @@ internal class DerEncoder(
             propertyAsn1Tag = propertyAnnotation,
             classAsn1Tag = serializer.descriptor.asn1Tag,
         )
-
-        val selectedSerializer = sealedSerializer.findPolymorphicSerializerOrNull(this, value)
+        val selectedSerializer = sealedSerializer.findPolymorphicSerializerOrNull(this, value as Any)
             ?: throw SerializationException(
                 "Could not resolve concrete serializer for CHOICE value of ${serializer.descriptor.serialName}: ${(value as Any)::class}"
             )

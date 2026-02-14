@@ -21,20 +21,17 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
     subtypes: List<SubtypeRegistration<T>>,
 ) : KSerializer<T>, Asn1LeadingTagsDescriptor {
 
-    private val registrations = mutableListOf<SubtypeRegistration<T>>()
-    private val deserializersByTag = linkedMapOf<Asn1Element.Tag, KSerializer<out T>>()
+    private val dispatch = Asn1TagDiscriminatedDispatch(
+        serialName = serialName,
+        subtypes = subtypes,
+    )
 
     override val leadingTags: Set<Asn1Element.Tag>
-        get() = deserializersByTag.keys
+        get() = dispatch.leadingTags
 
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
             .withDynamicAsn1LeadingTags { leadingTags }
-
-    init {
-        require(subtypes.isNotEmpty()) { "At least one subtype registration is required" }
-        subtypes.forEach(::registerSubtype)
-    }
 
     /**
      * Adds a new subtype registration after serializer construction.
@@ -43,22 +40,7 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
      * ASN.1 polymorphic mappings in application code.
      */
     fun registerSubtype(registration: SubtypeRegistration<T>) {
-        require(registration.leadingTags.isNotEmpty()) {
-            "Subtype '${registration.debugName}' must declare at least one leading ASN.1 tag"
-        }
-        registration.leadingTags.forEach { tag ->
-            val existing = deserializersByTag[tag]
-            if (existing != null) {
-                throw IllegalArgumentException(
-                    "Duplicate tag mapping for $tag in ${descriptor.serialName}: " +
-                            "${existing.descriptor.serialName} and ${registration.serializer.descriptor.serialName}"
-                )
-            }
-        }
-        registrations += registration
-        registration.leadingTags.forEach { tag ->
-            deserializersByTag[tag] = registration.serializer
-        }
+        dispatch.registerSubtype(registration)
     }
 
     override fun serialize(encoder: Encoder, value: T) {
@@ -68,19 +50,7 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
                         "Use DER.encodeToDer(...) / DER.encodeToTlv(...) instead of non-ASN.1 formats."
             )
         }
-        val matches = registrations.filter { it.matches(value) }
-        val selected = when (matches.size) {
-            1 -> matches.single().serializer
-            0 -> throw SerializationException(
-                "No registered open-polymorphic subtype matches runtime value ${value::class} " +
-                        "for ${descriptor.serialName}"
-            )
-
-            else -> throw SerializationException(
-                "Multiple registered open-polymorphic subtypes match runtime value ${value::class} " +
-                        "for ${descriptor.serialName}: ${matches.joinToString { it.debugName }}"
-            )
-        }
+        val selected = dispatch.serializerForEncode(value)
         @Suppress("UNCHECKED_CAST")
         encoder.encodeSerializableValue(selected as KSerializer<Any?>, value as Any?)
     }
@@ -94,10 +64,7 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
         }
         val tag = decoder.peekCurrentElementTagOrNull()
             ?: throw SerializationException("No ASN.1 element left while decoding ${descriptor.serialName}")
-        val selected = deserializersByTag[tag]
-            ?: throw SerializationException(
-                "No registered open-polymorphic subtype in ${descriptor.serialName} for leading tag $tag"
-            )
+        val selected = dispatch.serializerForDecode(tag)
         @Suppress("UNCHECKED_CAST")
         return decoder.decodeCurrentElementWith(selected as DeserializationStrategy<T>)
     }

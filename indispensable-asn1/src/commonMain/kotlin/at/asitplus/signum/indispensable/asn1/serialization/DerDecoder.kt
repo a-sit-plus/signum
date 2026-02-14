@@ -7,6 +7,7 @@ import kotlinx.io.Source
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
@@ -561,7 +562,7 @@ class DerDecoder internal constructor(
             )
         }
 
-        val sealedSerializer = deserializer as? SealedClassSerializer<T>
+        val sealedSerializer = deserializer as? SealedClassSerializer<Any>
             ?: throw SerializationException(
                 "@Asn1Choice only supports kotlinx SealedClassSerializer"
             )
@@ -572,40 +573,23 @@ class DerDecoder internal constructor(
             propertyAsn1Tag = propertyAsn1Tag,
             classAsn1Tag = deserializer.descriptor.asn1Tag,
         )
-        val processedElement = currentAnnotatedElement
-        val subtypeDescriptor = deserializer.descriptor.findLikelySealedAlternativesDescriptor()
+        val alternativesDescriptor = deserializer.descriptor.findLikelySealedAlternativesDescriptor()
             ?: throw SerializationException(
                 "Could not inspect sealed CHOICE alternatives for ${deserializer.descriptor.serialName}"
             )
-        val matches = mutableListOf<Pair<String, T>>()
-        for (i in 0 until subtypeDescriptor.elementsCount) {
-            val serialName = subtypeDescriptor.getElementName(i)
-            val subtypeDeserializer = sealedSerializer.findPolymorphicSerializerOrNull(this, serialName) ?: continue
-            val candidate = catchingUnwrapped {
-                DerDecoder(
-                    elements = listOf(processedElement),
-                    serializersModule = serializersModule,
-                    formatConfiguration = formatConfiguration,
-                ).decodeSerializableValue(subtypeDeserializer)
-            }.getOrNull() ?: continue
-
-            matches += serialName to candidate
-        }
-
-        when (matches.size) {
-            0 -> throw Asn1ChoiceNoMatchingAlternativeException(
-                "No CHOICE alternative of ${deserializer.descriptor.serialName} matches tag ${processedElement.tag}"
+        val dispatch = buildSealedChoiceDispatch<Any>(
+            ownerSerialName = deserializer.descriptor.serialName,
+            alternativesDescriptor = alternativesDescriptor,
+            resolveSerializerByName = { serialName ->
+                sealedSerializer.findPolymorphicSerializerOrNull(this, serialName) as? KSerializer<out Any>
+            },
+        )
+        val selected = dispatch.serializerForDecodeOrNull(currentAnnotatedElement.tag)
+            ?: throw Asn1ChoiceNoMatchingAlternativeException(
+                "No CHOICE alternative of ${deserializer.descriptor.serialName} matches tag ${currentAnnotatedElement.tag}"
             )
 
-            1 -> {
-                elementIndex++
-                return matches.single().second
-            }
-
-            else -> throw SerializationException(
-                "Ambiguous CHOICE decode for ${deserializer.descriptor.serialName} and tag ${processedElement.tag}: ${matches.joinToString { it.first }}"
-            )
-        }
+        return decodeCurrentElementWith(selected as DeserializationStrategy<T>)
     }
 
 }

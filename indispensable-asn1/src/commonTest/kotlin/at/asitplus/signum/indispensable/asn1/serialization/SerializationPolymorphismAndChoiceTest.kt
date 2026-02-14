@@ -94,7 +94,7 @@ val SerializationTestPolymorphismAndChoice by testSuite(
     }
 
     "Choice ambiguity is rejected at runtime" {
-        val encoded = DER.encodeToDer<AmbiguousChoice>(AmbiguousChoiceA("foo"))
+        val encoded = DER.encodeToDer(AmbiguousChoiceA("foo"))
         shouldThrow<SerializationException> {
             DER.decodeFromDer<AmbiguousChoice>(encoded)
         }
