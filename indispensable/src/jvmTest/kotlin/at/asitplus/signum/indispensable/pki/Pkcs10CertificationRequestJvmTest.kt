@@ -4,6 +4,9 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
+import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -39,6 +42,38 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     val keyGen = KeyPairGenerator.getInstance("EC").also {
         it.initialize(ecCurve.coordinateLength.bits.toInt())
+    }
+
+    "Kotlinx DER bridge for CSR structures" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
+        val publicKey = (keyPair.public as ECPublicKey).toCryptoPublicKey().getOrThrow()
+        val algorithm = X509SignatureAlgorithm.ES256
+        val tbs = TbsCertificationRequest(
+            version = 0,
+            subjectName = listOf(
+                RelativeDistinguishedName(
+                    listOf(AttributeTypeAndValue.CommonName(Asn1String.UTF8("DefaultCryptoService")))
+                )
+            ),
+            publicKey = publicKey
+        )
+        val signature = algorithm.getJCASignatureInstance().getOrThrow().apply {
+            initSign(keyPair.private)
+            update(tbs.encodeToDer())
+        }.sign()
+        val csr = Pkcs10CertificationRequest(
+            tbsCsr = tbs,
+            signatureAlgorithm = algorithm,
+            signature = CryptoSignature.parseFromJca(signature, algorithm)
+        )
+
+        val tbsDer = tbs.encodeToDer()
+        DER.encodeToDer(tbs) shouldBe tbsDer
+        DER.decodeFromDer<TbsCertificationRequest>(tbsDer).encodeToDer() shouldBe tbsDer
+
+        val csrDer = csr.encodeToDer()
+        DER.encodeToDer(csr) shouldBe csrDer
+        DER.decodeFromDer<Pkcs10CertificationRequest>(csrDer).encodeToDer() shouldBe csrDer
     }
 
 

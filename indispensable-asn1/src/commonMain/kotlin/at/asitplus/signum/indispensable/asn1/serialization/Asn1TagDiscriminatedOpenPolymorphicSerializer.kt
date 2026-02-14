@@ -4,11 +4,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 /**
  * Tag-discriminated open polymorphism helper for ASN.1 DER.
@@ -19,7 +14,7 @@ import kotlinx.serialization.encoding.Encoder
 open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
     serialName: String,
     subtypes: List<SubtypeRegistration<T>>,
-) : KSerializer<T>, Asn1LeadingTagsDescriptor {
+) : Asn1DiscriminatedOpenPolymorphicSerializer<T>(serialName) {
 
     private val dispatch = Asn1TagDiscriminatedDispatch(
         serialName = serialName,
@@ -28,10 +23,6 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
 
     override val leadingTags: Set<Asn1Element.Tag>
         get() = dispatch.leadingTags
-
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
-            .withDynamicAsn1LeadingTags { leadingTags }
 
     /**
      * Adds a new subtype registration after serializer construction.
@@ -43,30 +34,15 @@ open class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
         dispatch.registerSubtype(registration)
     }
 
-    override fun serialize(encoder: Encoder, value: T) {
-        if (encoder !is DerEncoder) {
-            throw SerializationException(
-                "${descriptor.serialName} supports ASN.1 DER format only. " +
-                        "Use DER.encodeToDer(...) / DER.encodeToTlv(...) instead of non-ASN.1 formats."
-            )
-        }
-        val selected = dispatch.serializerForEncode(value)
-        @Suppress("UNCHECKED_CAST")
-        encoder.encodeSerializableValue(selected as KSerializer<Any?>, value as Any?)
-    }
+    override fun serializerForEncode(value: T): KSerializer<out T> =
+        dispatch.serializerForEncode(value)
 
-    override fun deserialize(decoder: Decoder): T {
-        if (decoder !is DerDecoder) {
-            throw SerializationException(
-                "${descriptor.serialName} supports ASN.1 DER format only. " +
-                        "Use DER.decodeFromDer(...) / DER.decodeFromTlv(...) instead of non-ASN.1 formats."
-            )
-        }
+    override fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T> {
         val tag = decoder.peekCurrentElementTagOrNull()
             ?: throw SerializationException("No ASN.1 element left while decoding ${descriptor.serialName}")
         val selected = dispatch.serializerForDecode(tag)
         @Suppress("UNCHECKED_CAST")
-        return decoder.decodeCurrentElementWith(selected as DeserializationStrategy<T>)
+        return selected as DeserializationStrategy<T>
     }
 
     data class SubtypeRegistration<T : Any>(

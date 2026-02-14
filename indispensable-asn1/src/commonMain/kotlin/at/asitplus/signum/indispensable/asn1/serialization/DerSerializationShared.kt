@@ -6,6 +6,8 @@ import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.TagClass
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 /**
  * Inline annotation hints captured by [DerEncoder]/[DerDecoder] from [SerialDescriptor]s.
@@ -15,6 +17,19 @@ internal data class DerInlineHints(
     val asBitString: Boolean,
     val asChoice: Boolean,
 )
+
+internal data class DerPropertyContext(
+    val ownerDescriptor: SerialDescriptor,
+    val index: Int,
+    val propertyDescriptor: SerialDescriptor,
+    val propertyAsn1Tag: Asn1Tag?,
+    val propertyAsBitString: Boolean,
+    val propertyAsChoice: Boolean,
+    val propertyName: String?,
+) {
+    val ownerSerialName: String
+        get() = ownerDescriptor.serialName
+}
 
 /**
  * Mutable holder for pending inline hints with explicit consume/peek semantics.
@@ -43,11 +58,51 @@ internal class DerInlineHintState {
     }
 }
 
+internal fun Pair<SerialDescriptor, Int>.toDerPropertyContext(
+    safePropertyNameLookup: Boolean = false,
+): DerPropertyContext {
+    val (ownerDescriptor, index) = this
+    val propertyName = if (safePropertyNameLookup) {
+        runCatching { ownerDescriptor.getElementName(index) }.getOrNull()
+    } else {
+        ownerDescriptor.getElementName(index)
+    }
+    return DerPropertyContext(
+        ownerDescriptor = ownerDescriptor,
+        index = index,
+        propertyDescriptor = ownerDescriptor.getElementDescriptor(index),
+        propertyAsn1Tag = ownerDescriptor.asn1Tag(index),
+        propertyAsBitString = ownerDescriptor.isAsn1BitString(index),
+        propertyAsChoice = ownerDescriptor.isAsn1Choice(index),
+        propertyName = propertyName,
+    )
+}
+
 internal fun isAsn1ChoiceRequested(
     descriptor: SerialDescriptor,
     inlineAsChoice: Boolean,
     propertyAsChoice: Boolean,
 ): Boolean = inlineAsChoice || propertyAsChoice || descriptor.isAsn1Choice
+
+internal fun Encoder.requireDerEncoder(serializerName: String): DerEncoder {
+    if (this !is DerEncoder) {
+        throw SerializationException(
+            "$serializerName supports ASN.1 DER format only. " +
+                    "Use DER.encodeToDer(...) / DER.encodeToTlv(...) instead of non-ASN.1 formats."
+        )
+    }
+    return this
+}
+
+internal fun Decoder.requireDerDecoder(serializerName: String): DerDecoder {
+    if (this !is DerDecoder) {
+        throw SerializationException(
+            "$serializerName supports ASN.1 DER format only. " +
+                    "Use DER.decodeFromDer(...) / DER.decodeFromTlv(...) instead of non-ASN.1 formats."
+        )
+    }
+    return this
+}
 
 internal fun validateAndResolveImplicitTagOverride(
     actualTag: Asn1Element.Tag,

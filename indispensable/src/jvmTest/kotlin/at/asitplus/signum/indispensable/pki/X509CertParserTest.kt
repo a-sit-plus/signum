@@ -5,6 +5,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
+import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
+import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -78,6 +81,23 @@ val X509CertParserTest  by testSuite {
                     input.readByteArray() shouldBe garbage
                 }
             }
+        }
+    }
+
+    "Kotlinx DER bridge for certificate structures" - {
+        withData("digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->
+            val certBytes = java.util.Base64.getMimeDecoder()
+                .decode(javaClass.classLoader.getResourceAsStream(crt).reader().readText())
+            val legacy = X509Certificate.decodeFromDer(certBytes)
+            val decoded = DER.decodeFromDer<X509Certificate>(certBytes)
+
+            decoded shouldBe legacy
+            DER.encodeToDer(decoded) shouldBe certBytes
+            DER.encodeToDer(legacy) shouldBe certBytes
+
+            val tbsDer = legacy.tbsCertificate.encodeToDer()
+            DER.encodeToDer(legacy.tbsCertificate) shouldBe tbsDer
+            DER.decodeFromDer<TbsCertificate>(tbsDer).encodeToDer() shouldBe tbsDer
         }
     }
 

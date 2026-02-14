@@ -66,10 +66,7 @@ class DerDecoder internal constructor(
             serializersModule = serializersModule,
             formatConfiguration = formatConfiguration,
         )
-        isolated.propertyDescriptor = deserializer.descriptor
-        isolated.propertyAsn1Tag = deserializer.descriptor.annotations.asn1Tag
-        isolated.propertyAsBitString = deserializer.descriptor.isAsn1BitString
-        isolated.propertyAsChoice = deserializer.descriptor.isAsn1Choice
+        isolated.initializeStandalonePropertyState(deserializer.descriptor)
         isolated.currentOwnerSerialName = deserializer.descriptor.serialName
         isolated.currentPropertyName = deserializer.descriptor.serialName
         isolated.currentPropertyIndex = 0
@@ -145,26 +142,17 @@ class DerDecoder internal constructor(
                     return CompositeDecoder.DECODE_DONE
                 }
                 val currentDescriptorIndex = descriptorIndex++
-                val asn1Tag = try {
-                    descriptor.asn1Tag(currentDescriptorIndex)
-                } catch (t: IndexOutOfBoundsException) {
-                    throw SerializationException(t.toString())
-                }
-
-                propertyDescriptor = descriptor.getElementDescriptor(currentDescriptorIndex)
-                propertyAsn1Tag = asn1Tag
-                propertyAsBitString = descriptor.isAsn1BitString(currentDescriptorIndex)
-                propertyAsChoice = descriptor.isAsn1Choice(currentDescriptorIndex)
-                currentOwnerSerialName = descriptor.serialName
-                currentPropertyName = descriptor.getElementName(currentDescriptorIndex)
-                currentPropertyIndex = currentDescriptorIndex
-                currentPropertyIsTrailing = currentDescriptorIndex >= descriptor.elementsCount - 1
-                val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
-                    propertyAsn1Tag = asn1Tag,
-                    propertyAsBitString = propertyAsBitString,
+                val propertyContext = applyCurrentPropertyContext(
+                    ownerDescriptor = descriptor,
+                    propertyIndex = currentDescriptorIndex,
+                    isTrailing = currentDescriptorIndex >= descriptor.elementsCount - 1,
+                )
+                val nullEncodingAnalysis = propertyContext.propertyDescriptor.analyzeAsn1NullableNullEncoding(
+                    propertyAsn1Tag = propertyContext.propertyAsn1Tag,
+                    propertyAsBitString = propertyContext.propertyAsBitString,
                     formatExplicitNulls = formatConfiguration.explicitNulls,
                 )
-                couldBeNull = propertyDescriptor.isNullable && !nullEncodingAnalysis.encodeNullEnabled
+                couldBeNull = propertyContext.propertyDescriptor.isNullable && !nullEncodingAnalysis.encodeNullEnabled
 
                 if (elementIndex >= elements.size && !couldBeNull) {
                     couldBeNull = false
@@ -180,22 +168,15 @@ class DerDecoder internal constructor(
                 val max = if (descriptor.elementsCount > elements.size) descriptor.elementsCount else elements.size
                 if (elementIndex >= max) return CompositeDecoder.DECODE_DONE
 
-                val asn1Tag = try {
-                    descriptor.asn1Tag(elementIndex)
-                } catch (t: IndexOutOfBoundsException) {
-                    throw SerializationException(t.toString())
-                }
                 if (elementIndex >= elements.size) return CompositeDecoder.DECODE_DONE
                 couldBeNull = false
 
-                propertyDescriptor = descriptor.getElementDescriptor(elementIndex)
-                propertyAsn1Tag = asn1Tag
-                propertyAsBitString = descriptor.isAsn1BitString(elementIndex)
-                propertyAsChoice = descriptor.isAsn1Choice(elementIndex)
-                currentOwnerSerialName = descriptor.serialName
-                currentPropertyName = runCatching { descriptor.getElementName(elementIndex) }.getOrNull()
-                currentPropertyIndex = elementIndex
-                currentPropertyIsTrailing = true
+                applyCurrentPropertyContext(
+                    ownerDescriptor = descriptor,
+                    propertyIndex = elementIndex,
+                    isTrailing = true,
+                    safePropertyNameLookup = true,
+                )
                 if (elementIndex < elements.size) elementIndex else CompositeDecoder.DECODE_DONE
             }
         }
@@ -513,9 +494,7 @@ class DerDecoder internal constructor(
         // with PrimitiveSerialDescriptor) instead of short-circuiting to raw primitive values.
         if (deserializer.descriptor.kind is PrimitiveKind) {
             if (!::propertyDescriptor.isInitialized) {
-                propertyDescriptor = deserializer.descriptor
-                propertyAsBitString = deserializer.descriptor.isAsn1BitString
-                propertyAsChoice = deserializer.descriptor.isAsn1Choice
+                initializeStandalonePropertyState(deserializer.descriptor)
             }
             if (propertyAsn1Tag == null) {
                 propertyAsn1Tag = deserializer.descriptor.annotations.asn1Tag
@@ -532,6 +511,37 @@ class DerDecoder internal constructor(
         val value = deserializer.deserialize(childDecoder)
         elementIndex++
         return value
+    }
+
+    private fun initializeStandalonePropertyState(descriptor: SerialDescriptor) {
+        propertyDescriptor = descriptor
+        propertyAsn1Tag = descriptor.annotations.asn1Tag
+        propertyAsBitString = descriptor.isAsn1BitString
+        propertyAsChoice = descriptor.isAsn1Choice
+    }
+
+    private fun applyCurrentPropertyContext(
+        ownerDescriptor: SerialDescriptor,
+        propertyIndex: Int,
+        isTrailing: Boolean,
+        safePropertyNameLookup: Boolean = false,
+    ): DerPropertyContext {
+        val context = try {
+            (ownerDescriptor to propertyIndex).toDerPropertyContext(
+                safePropertyNameLookup = safePropertyNameLookup
+            )
+        } catch (t: IndexOutOfBoundsException) {
+            throw SerializationException(t.toString())
+        }
+        propertyDescriptor = context.propertyDescriptor
+        propertyAsn1Tag = context.propertyAsn1Tag
+        propertyAsBitString = context.propertyAsBitString
+        propertyAsChoice = context.propertyAsChoice
+        currentOwnerSerialName = context.ownerSerialName
+        currentPropertyName = context.propertyName
+        currentPropertyIndex = context.index
+        currentPropertyIsTrailing = isTrailing
+        return context
     }
 
     @OptIn(InternalSerializationApi::class)

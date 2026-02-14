@@ -4,6 +4,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
+import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
@@ -53,6 +56,22 @@ val X509SignatureAlgorithmTest  by testSuite {
         }
     }
 
+    "Kotlinx DER bridge for signature algorithms" - {
+        withData(X509SignatureAlgorithm.entries.toList()) { algorithm ->
+            val der = algorithm.encodeToDer()
+            DER.encodeToDer(algorithm) shouldBe der
+            DER.decodeFromDer<X509SignatureAlgorithm>(der) shouldBe algorithm
+            DER.decodeFromDer<X509SignatureAlgorithmDescription>(der) shouldBe algorithm
+        }
+
+        withData(nameFn = { it.first }, certsUnsupported) { (_, derCert) ->
+            val signatureAlgorithm = X509Certificate.decodeFromDer(derCert).signatureAlgorithm
+            val der = signatureAlgorithm.encodeToDer()
+            DER.encodeToDer(signatureAlgorithm) shouldBe der
+            DER.decodeFromDer<X509SignatureAlgorithmDescription>(der) shouldBe signatureAlgorithm
+        }
+    }
+
 
 
 }
@@ -66,4 +85,3 @@ private fun readCerts(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, B
     val certsSupported = cert1.filter { it.name.startsWith("ok-") }
     return certsUnsupported.map { it.name to it.readBytes() } to certsSupported.map { it.name to it.readBytes() }
 }
-

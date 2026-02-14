@@ -5,6 +5,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
+import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
@@ -174,6 +177,26 @@ val KeyTest  by testSuite {
                 pubKey3 shouldNotBe pubKey2
                 pubKey4 shouldNotBe pubKey2
             }
+        }
+    }
+
+    "Kotlinx DER bridge for key structures" - {
+        withData("EC", "RSA") { algorithm ->
+            val keyPair = when (algorithm) {
+                "EC" -> KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
+                "RSA" -> KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
+                else -> error("Unsupported key algorithm: $algorithm")
+            }
+
+            val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
+            val privateKey = CryptoPrivateKey.decodeFromDer(keyPair.private.encoded)
+
+            DER.encodeToDer(publicKey) shouldBe publicKey.encodeToDer()
+            DER.decodeFromDer<CryptoPublicKey>(publicKey.encodeToDer()).encodeToDer() shouldBe publicKey.encodeToDer()
+
+            // Base type intentionally uses PKCS#8.
+            DER.encodeToDer(privateKey) shouldBe keyPair.private.encoded
+            DER.decodeFromDer<CryptoPrivateKey>(keyPair.private.encoded).encodeToDer() shouldBe keyPair.private.encoded
         }
     }
 }
