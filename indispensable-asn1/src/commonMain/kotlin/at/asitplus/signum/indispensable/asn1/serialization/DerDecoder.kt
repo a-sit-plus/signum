@@ -481,7 +481,9 @@ class DerDecoder internal constructor(
             return deserializer.deserialize(enumDecoder)
         }
 
-        // (3) Primitive kinds → defer to decodeValue()
+        // (3) Primitive kinds → let deserializer consume primitive decoder APIs.
+        // This preserves custom primitive-wrapper serializers (e.g. value classes / wrappers
+        // with PrimitiveSerialDescriptor) instead of short-circuiting to raw primitive values.
         if (deserializer.descriptor.kind is PrimitiveKind) {
             if (!::propertyDescriptor.isInitialized) {
                 propertyDescriptor = deserializer.descriptor
@@ -491,7 +493,7 @@ class DerDecoder internal constructor(
             if (propertyAsn1Tag == null) {
                 propertyAsn1Tag = deserializer.descriptor.annotations.asn1Tag
             }
-            return decodeValue() as T
+            return deserializer.deserialize(this)
         }
 
 

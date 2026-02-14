@@ -15,16 +15,35 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-private interface Asn1LeadingTagsDescriptor {
+/**
+ * Descriptor contract for declaring leading ASN.1 tags for ambiguity analysis.
+ *
+ * Implement this on custom [SerialDescriptor] implementations when serializer logic
+ * cannot be inferred from descriptor kind alone.
+ *
+ * Use an empty set when leading tags are unknown/value-dependent.
+ */
+interface Asn1LeadingTagsDescriptor {
     val leadingTags: Set<Asn1Element.Tag>
 }
 
 private val asn1OpaqueDelegateDescriptor: SerialDescriptor =
     SerialDescriptor("Asn1DerSerializer", ByteArraySerializer().descriptor)
 
-private class Asn1OpaqueSerializerDescriptor(
+private open class Asn1LeadingTagsSerialDescriptor(
+    private val delegate: SerialDescriptor,
     override val leadingTags: Set<Asn1Element.Tag>
-) : SerialDescriptor by asn1OpaqueDelegateDescriptor, Asn1LeadingTagsDescriptor
+) : SerialDescriptor by delegate, Asn1LeadingTagsDescriptor
+
+private class Asn1OpaqueSerializerDescriptor(
+    leadingTags: Set<Asn1Element.Tag>
+) : Asn1LeadingTagsSerialDescriptor(asn1OpaqueDelegateDescriptor, leadingTags)
+
+/**
+ * Returns a descriptor that carries ASN.1 leading-tag metadata for ambiguity checks.
+ */
+fun SerialDescriptor.withAsn1LeadingTags(leadingTags: Set<Asn1Element.Tag>): SerialDescriptor =
+    Asn1LeadingTagsSerialDescriptor(this, leadingTags)
 
 internal val SerialDescriptor.asn1LeadingTagsOrNull: Set<Asn1Element.Tag>?
     get() = (this as? Asn1LeadingTagsDescriptor)?.leadingTags
@@ -53,14 +72,17 @@ internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
  * companion objects of classes implementing [Asn1Encodable] and set it as the [Asn1Encodable]'s
  * serializer to get full kotlinx-serialization support!
  */
-interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> : Asn1Decodable<A, T>, KSerializer<T> {
+interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> :
+    Asn1Decodable<A, T>,
+    KSerializer<T>,
+    Asn1LeadingTagsDescriptor {
 
     /**
      * Leading ASN.1 tags this serializer can decode/encode.
      *
      * Use an empty set when leading tags cannot be inferred statically.
      */
-    val leadingTags: Set<Asn1Element.Tag>
+    override val leadingTags: Set<Asn1Element.Tag>
 
     override val descriptor: SerialDescriptor
         get() = Asn1OpaqueSerializerDescriptor(leadingTags)

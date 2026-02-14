@@ -175,6 +175,8 @@ Every `Asn1Serializer` now declares:
 - `leadingTags = setOf(...)` for exact known possible leading tags
 - `leadingTags = emptySet()` when unknown/value-dependent
 
+For non-`Asn1Serializer` custom serializers, expose the same contract by making the serializer descriptor implement `Asn1LeadingTagsDescriptor`.
+
 Meaning:
 - non-empty set -> checker treats tags as exact and can often prove determinism
 - empty set -> checker treats field as unknown; middle nullable/optional fields may be rejected as ambiguous
@@ -284,7 +286,8 @@ Custom serializers are allowed, but ambiguity checks still apply to containing c
 
 Practical rule:
 - if a field has unknown/non-inferable leading tags and is nullable/optional in the middle of a class, expect hard rejection unless you add disambiguation (tagging/wrapping/design change)
-- if you write an `Asn1Serializer`, always set `leadingTags` accurately; this is the compact replacement for the old shape-style contract
+- if you write an `Asn1Serializer`, always set `leadingTags` accurately
+- if you write a non-`Asn1Serializer` custom serializer, implement `Asn1LeadingTagsDescriptor` on its descriptor so ambiguity checks and tag-override inference can stay deterministic
 
 For extension points, prefer explicit tagging/wrappers or trailing positions.
 

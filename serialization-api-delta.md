@@ -64,6 +64,10 @@ interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>>
 Default contract:
 - Uses ASN.1 DER only (`DerEncoder`/`DerDecoder`).
 - Throws `SerializationException` for non-ASN.1 formats unless a type overrides `serialize/deserialize` for fallback behavior.
+- Publishes `leadingTags` for ambiguity/disambiguation checks.
+
+Also available for non-`Asn1Serializer` custom serializers:
+- `Asn1LeadingTagsDescriptor` (implemented on custom descriptors to expose exact or unknown leading tags).
 
 Also added:
 - `Asn1ElementSerializer` (DER-only serializer for raw `Asn1Element` values).
