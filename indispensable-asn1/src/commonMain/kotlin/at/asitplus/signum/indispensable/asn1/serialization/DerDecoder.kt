@@ -225,7 +225,9 @@ class DerDecoder internal constructor(
         val decoded = when (effectiveDescriptor.kind) {
             PolymorphicKind.OPEN -> throw SerializationException(
                 "Open polymorphic decoding is not supported via primitive decode path for ${effectiveDescriptor.serialName}. " +
-                        "Use a dedicated open-polymorphic serializer such as Asn1TagDiscriminatedOpenPolymorphicSerializer. " +
+                        "Use a dedicated open-polymorphic serializer such as " +
+                        "Asn1TagDiscriminatedOpenPolymorphicSerializer or " +
+                        "Asn1OidDiscriminatedOpenPolymorphicSerializer. " +
                         "Either annotate the base type with @Serializable(with = ...) and call DER.decodeFromDer<T>(...), " +
                         "or pass the serializer explicitly via DER.decodeFromDer(bytes, serializer)."
             )

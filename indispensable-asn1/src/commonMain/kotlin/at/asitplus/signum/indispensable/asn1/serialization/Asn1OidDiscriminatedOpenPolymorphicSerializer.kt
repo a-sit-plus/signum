@@ -1,0 +1,141 @@
+package at.asitplus.signum.indispensable.asn1.serialization
+
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Structure
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.readOid
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+
+/**
+ * OID-discriminated open polymorphism helper for ASN.1 DER.
+ *
+ * This serializer dispatches by [ObjectIdentifier] at decode-time and by runtime value type at encode-time.
+ * It is intended for open (non-sealed) polymorphic hierarchies where `ANY DEFINED BY`-style OID dispatch is needed.
+ */
+open class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
+    serialName: String,
+    subtypes: List<SubtypeRegistration<T>>,
+    private val oidSelector: (Asn1Element) -> ObjectIdentifier? = ::firstOidAlongFirstChildPathOrNull,
+) : KSerializer<T>, Asn1LeadingTagsDescriptor {
+
+    private val dispatch = Asn1OidDiscriminatedDispatch(
+        serialName = serialName,
+        subtypes = subtypes,
+    )
+
+    override val leadingTags: Set<Asn1Element.Tag>
+        get() = dispatch.leadingTags
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
+            .withDynamicAsn1LeadingTags { leadingTags }
+
+    /**
+     * Adds a new subtype registration after serializer construction.
+     *
+     * This is intentionally mutable to allow third-party libraries to extend open
+     * ASN.1 polymorphic mappings in application code.
+     */
+    fun registerSubtype(registration: SubtypeRegistration<T>) {
+        dispatch.registerSubtype(registration)
+    }
+
+    override fun serialize(encoder: Encoder, value: T) {
+        if (encoder !is DerEncoder) {
+            throw SerializationException(
+                "${descriptor.serialName} supports ASN.1 DER format only. " +
+                        "Use DER.encodeToDer(...) / DER.encodeToTlv(...) instead of non-ASN.1 formats."
+            )
+        }
+        val selected = dispatch.serializerForEncode(value)
+        @Suppress("UNCHECKED_CAST")
+        encoder.encodeSerializableValue(selected as KSerializer<Any?>, value as Any?)
+    }
+
+    override fun deserialize(decoder: Decoder): T {
+        if (decoder !is DerDecoder) {
+            throw SerializationException(
+                "${descriptor.serialName} supports ASN.1 DER format only. " +
+                        "Use DER.decodeFromDer(...) / DER.decodeFromTlv(...) instead of non-ASN.1 formats."
+            )
+        }
+        val element = decoder.peekCurrentElementOrNull()
+            ?: throw SerializationException("No ASN.1 element left while decoding ${descriptor.serialName}")
+        val oid = oidSelector(element)
+            ?: throw SerializationException(
+                "Could not extract discriminator OID from current ASN.1 element while decoding ${descriptor.serialName}"
+            )
+        val selected = dispatch.serializerForDecode(oid)
+        @Suppress("UNCHECKED_CAST")
+        return decoder.decodeCurrentElementWith(selected as DeserializationStrategy<T>)
+    }
+
+    data class SubtypeRegistration<T : Any>(
+        internal val serializer: KSerializer<out T>,
+        internal val oid: ObjectIdentifier,
+        internal val leadingTags: Set<Asn1Element.Tag>,
+        internal val matches: (T) -> Boolean,
+        internal val debugName: String,
+    )
+}
+
+/**
+ * Default OID selector for OID-discriminated open polymorphism.
+ *
+ * It follows the first-child path until it finds an ASN.1 OID primitive.
+ * This covers common shapes such as:
+ * - `SEQUENCE { OBJECT IDENTIFIER, ... }`
+ * - `SEQUENCE { SEQUENCE { OBJECT IDENTIFIER, ... }, ... }`
+ */
+fun firstOidAlongFirstChildPathOrNull(element: Asn1Element): ObjectIdentifier? {
+    val primitive = element as? Asn1Primitive
+    if (primitive?.tag == Asn1Element.Tag.OID) {
+        return runCatching { primitive.readOid() }.getOrNull()
+    }
+
+    val structure = element as? Asn1Structure ?: return null
+    return structure.children.firstOrNull()?.let(::firstOidAlongFirstChildPathOrNull)
+}
+
+inline fun <T : Any, reified S : T> asn1OpenPolymorphicSubtypeByOid(
+    serializer: KSerializer<S>,
+    oid: ObjectIdentifier,
+    vararg leadingTags: Asn1Element.Tag,
+): Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T> =
+    asn1OpenPolymorphicSubtypeByOid(serializer, oid, leadingTags.toSet())
+
+inline fun <T : Any, reified S : T> asn1OpenPolymorphicSubtypeByOid(
+    serializer: KSerializer<S>,
+    oid: ObjectIdentifier,
+    leadingTags: Set<Asn1Element.Tag>,
+): Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration<T> =
+    Asn1OidDiscriminatedOpenPolymorphicSerializer.SubtypeRegistration(
+        serializer = serializer,
+        oid = oid,
+        leadingTags = leadingTags,
+        matches = { it is S },
+        debugName = serializer.descriptor.serialName
+    )
+
+inline fun <T : Any, reified S : T> Asn1OidDiscriminatedOpenPolymorphicSerializer<T>.registerSubtype(
+    serializer: KSerializer<S>,
+    oid: ObjectIdentifier,
+    vararg leadingTags: Asn1Element.Tag,
+) {
+    registerSubtype(
+        asn1OpenPolymorphicSubtypeByOid(
+            serializer = serializer,
+            oid = oid,
+            leadingTags = leadingTags.toSet(),
+        )
+    )
+}
+
