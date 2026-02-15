@@ -31,8 +31,10 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
         dispatch.registerSubtype(registration)
     }
 
-    override fun serializerForEncode(value: T): KSerializer<out T> =
-        dispatch.serializerForEncode(value)
+    override fun serializerForEncode(encoder: DerEncoder,value: T): KSerializer<out T> =
+        dispatch.registrationForEncode(value).also {
+            encoder.prependOidToNextStructure(it.oid)
+        }.serializer
 
     override fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T> {
         val element = decoder.peekCurrentElementOrNull()

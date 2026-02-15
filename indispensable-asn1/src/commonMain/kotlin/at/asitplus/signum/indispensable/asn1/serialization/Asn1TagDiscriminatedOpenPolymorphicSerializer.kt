@@ -22,7 +22,7 @@ internal class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
         dispatch.registerSubtype(registration)
     }
 
-    override fun serializerForEncode(value: T): KSerializer<out T> =
+    override fun serializerForEncode(encoder: DerEncoder, value: T): KSerializer<out T> =
         dispatch.serializerForEncode(value)
 
     override fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T> {

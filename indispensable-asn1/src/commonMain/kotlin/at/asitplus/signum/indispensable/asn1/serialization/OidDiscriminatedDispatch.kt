@@ -61,7 +61,6 @@ internal class Asn1OidDiscriminatedDispatch<T : Any>(
                 "No registered open-polymorphic subtype in $serialName for OID $oid"
             )
 
-//TODO merge the methods
     fun registrationForEncode(value: T): Asn1OidDiscriminatedSubtypeRegistration<T> {
         val matches = serializersByOid.values.filter { it.matches(value) }
         return when (matches.size) {
@@ -75,8 +74,5 @@ internal class Asn1OidDiscriminatedDispatch<T : Any>(
             )
         }
     }
-
-
-    fun serializerForEncode(value: T): KSerializer<out T> =registrationForEncode(value).serializer
 
 }
