@@ -44,6 +44,12 @@ internal class DerEncoder(
     private var descriptorAndIndex: Pair<SerialDescriptor, Int>? = null
 
     private val inlineHintState = DerInlineHintState()
+    private var prependOid: ObjectIdentifier? = null
+    internal fun prependOidToNextStructure(oid: ObjectIdentifier) {
+       prependOid = oid
+    }
+
+
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
@@ -335,6 +341,13 @@ internal class DerEncoder(
             serializersModule = serializersModule,
             formatConfiguration = formatConfiguration
         )
+
+        prependOid?.let { elem ->
+            // prepend as the *first* element in the child structure
+            childSerializer.buffer.add(0, Asn1ElementHolder.Element(elem.encodeToTlv()))
+            prependOid = null
+        }
+
         val placeholder = Asn1ElementHolder.StructurePlaceholder(
             childSerializer = childSerializer,
             descriptor = descriptor,

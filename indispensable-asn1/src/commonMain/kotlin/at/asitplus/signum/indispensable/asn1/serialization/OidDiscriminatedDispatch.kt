@@ -61,19 +61,22 @@ internal class Asn1OidDiscriminatedDispatch<T : Any>(
                 "No registered open-polymorphic subtype in $serialName for OID $oid"
             )
 
-    fun serializerForEncode(value: T): KSerializer<out T> {
+//TODO merge the methods
+    fun registrationForEncode(value: T): Asn1OidDiscriminatedSubtypeRegistration<T> {
         val matches = serializersByOid.values.filter { it.matches(value) }
         return when (matches.size) {
-            1 -> matches.single().serializer
+            1 -> matches.single()
             0 -> throw SerializationException(
                 "No registered open-polymorphic subtype matches runtime value ${value::class} for $serialName"
             )
-
             else -> throw SerializationException(
                 "Multiple registered open-polymorphic subtypes match runtime value ${value::class} " +
                         "for $serialName: ${matches.joinToString { it.debugName }}"
             )
         }
     }
+
+
+    fun serializerForEncode(value: T): KSerializer<out T> =registrationForEncode(value).serializer
 
 }

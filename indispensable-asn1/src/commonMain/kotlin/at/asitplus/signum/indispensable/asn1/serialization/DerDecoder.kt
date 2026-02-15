@@ -55,6 +55,12 @@ class DerDecoder internal constructor(
     private var currentPropertyName: String? = null
     private var currentPropertyIndex: Int? = null
     private var currentPropertyIsTrailing = true
+    private var dropFirstChildInNextStructure: Boolean = false
+    internal fun dropOidFromNextStructure() {
+        dropFirstChildInNextStructure = true
+    }
+
+
 
     internal fun peekCurrentElementTagOrNull(): Asn1Element.Tag? = elements.getOrNull(elementIndex)?.tag
     internal fun peekCurrentElementOrNull(): Asn1Element? = elements.getOrNull(elementIndex)
@@ -97,8 +103,16 @@ class DerDecoder internal constructor(
             is StructureKind.LIST,
             is StructureKind.MAP -> {
                 if (element is Asn1Structure) {
+                    val children = element.children
+
+                    val effectiveChildren =
+                        if (dropFirstChildInNextStructure) {
+                            dropFirstChildInNextStructure = false
+                            if (children.isEmpty()) children else children.drop(1)
+                        } else children
+
                     DerDecoder(
-                        element.children,
+                        effectiveChildren,
                         serializersModule = serializersModule,
                         formatConfiguration = formatConfiguration,
                     )
@@ -111,8 +125,15 @@ class DerDecoder internal constructor(
             }
 
             is PolymorphicKind -> {
+                val children = element.asStructure().children
+                val effectiveChildren =
+                    if (dropFirstChildInNextStructure) {
+                        dropFirstChildInNextStructure = false
+                        if (children.isEmpty()) children else children.drop(1)
+                    } else children
+
                 DerDecoder(
-                    element.asStructure().children,
+                    effectiveChildren,
                     serializersModule = serializersModule,
                     formatConfiguration = formatConfiguration,
                 )
