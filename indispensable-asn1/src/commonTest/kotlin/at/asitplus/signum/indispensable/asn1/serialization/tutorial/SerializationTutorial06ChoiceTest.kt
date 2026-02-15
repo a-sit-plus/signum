@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -11,18 +12,21 @@ import kotlinx.serialization.Serializable
 val SerializationTutorial06Choice by testSuite(
     testConfig = DefaultConfiguration
 ) {
-    "Sealed CHOICE uses sealed polymorphism" {
-        val value = TutorialChoiceContainer(TutorialChoiceInt(7))
-        val der = DER.encodeToDer(value)
-        der.toHexString() shouldBe "30053003020107"
-        DER.decodeFromDer<TutorialChoiceContainer>(der) shouldBe value
+    "Sealed CHOICE uses sealed polymorphism" - {
+        "INT" {
+            val value = (TutorialChoiceInt(7))
+            val der = DER.encodeToDer(value)
+            der.toHexString() shouldBe "3003020107"
+            DER.decodeFromDer<TutorialChoice>(der) shouldBe value
+        }
+        "BOOL" {
+            val value = (TutorialChoiceBool(true))
+            val der = DER.encodeToDer(value)
+            der.toHexString() shouldBe "bf8a39030101ff"
+            DER.decodeFromDer<TutorialChoice>(der) shouldBe value
+        }
     }
 }
-
-@Serializable
-private data class TutorialChoiceContainer(
-    val value: TutorialChoice,
-)
 
 @Serializable
 private sealed interface TutorialChoice

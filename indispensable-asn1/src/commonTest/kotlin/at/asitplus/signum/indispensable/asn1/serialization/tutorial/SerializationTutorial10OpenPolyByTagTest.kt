@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -13,7 +14,7 @@ import kotlin.jvm.JvmInline
 val SerializationTutorial10OpenPolyByTag by testSuite(
     testConfig = DefaultConfiguration
 ) {
-    "Open polymorphism by leading tag" {
+    "Open polymorphism by leading tag" - {
         val derCodec = DER {
             serializersModule = SerializersModule {
                 polymorphicByTag(TutorialOpenByTag::class, serialName = "TutorialOpenByTag") {
@@ -24,10 +25,27 @@ val SerializationTutorial10OpenPolyByTag by testSuite(
             }
         }
 
-        val value: TutorialOpenByTag = TutorialOpenByTagInt(7)
-        val der = derCodec.encodeToDer(value)
-        der.toHexString() shouldBe "020107"
-        derCodec.decodeFromDer<TutorialOpenByTag>(der) shouldBe value
+        "INT value class" {
+            val value: TutorialOpenByTag = TutorialOpenByTagInt(7)
+            val der = derCodec.encodeToDer(value)
+            der.toHexString() shouldBe "020107"
+            derCodec.decodeFromDer<TutorialOpenByTag>(der) shouldBe value
+        }
+
+        "BOOL value class" {
+            val value: TutorialOpenByTag = TutorialOpenByTagBool(true)
+            val der = derCodec.encodeToDer(value)
+            der.toHexString() shouldBe "0101ff"
+            derCodec.decodeFromDer<TutorialOpenByTag>(der) shouldBe value
+        }
+
+        "SEQUEENCE regular class" {
+            val value: TutorialOpenByTag = TutorialOpenByTagSeqNoInline(true)
+            val der = derCodec.encodeToDer(value)
+            der.toHexString() shouldBe "30030101ff"
+            derCodec.decodeFromDer<TutorialOpenByTag>(der) shouldBe value
+        }
+
     }
 }
 
@@ -45,6 +63,6 @@ private value class TutorialOpenByTagBool(
 ) : TutorialOpenByTag
 
 @Serializable
-private class TutorialOpenByTagSeqNoInline(
+private data class TutorialOpenByTagSeqNoInline(
     val value: Boolean,
 ) : TutorialOpenByTag
