@@ -228,8 +228,8 @@ internal class DerEncoder(
         if (serializer.descriptor.kind is PolymorphicKind.OPEN) {
             throw SerializationException(
                 "Open polymorphism for ${serializer.descriptor.serialName} requires an ASN.1 serializer " +
-                        "registered in DER { serializersModule = ... } via asn1OpenPolymorphicByTag(...) " +
-                        "or asn1OpenPolymorphicByOid(...)."
+                        "registered in DER { serializersModule = ... } via polymorphicByTag(...) " +
+                        "or polymorphicByOid(...)."
             )
         }
 

@@ -121,7 +121,7 @@ fun <T : Any> asn1OpenPolymorphicByTagSerializer(
 
 fun <T : Any> asn1OpenPolymorphicByOidSerializer(
     serialName: String,
-    oidSelector: (Asn1Element) -> ObjectIdentifier? = ::firstOidAlongFirstChildPathOrNull,
+    oidSelector: (Asn1Element) -> ObjectIdentifier? = ::oidFrom,
     block: Asn1OpenPolymorphismByOidBuilder<T>.() -> Unit,
 ): KSerializer<T> = Asn1OpenPolymorphismByOidBuilder<T>()
     .apply(block)
@@ -138,7 +138,7 @@ fun <T : Any> SerializersModuleBuilder.polymorphicByTag(
 fun <T : Any> SerializersModuleBuilder.polymorphicByOid(
     baseClass: KClass<T>,
     serialName: String = baseClass.qualifiedName ?: "Asn1OpenPolymorphicByOid",
-    oidSelector: (Asn1Element) -> ObjectIdentifier? = ::firstOidAlongFirstChildPathOrNull,
+    oidSelector: (Asn1Element) -> ObjectIdentifier? = ::oidFrom,
     block: Asn1OpenPolymorphismByOidBuilder<T>.() -> Unit,
 ) {
     contextual(baseClass, asn1OpenPolymorphicByOidSerializer(serialName, oidSelector, block))

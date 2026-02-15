@@ -9,11 +9,14 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.CompositeEncoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
     serialName: String,
     subtypes: List<Asn1OidDiscriminatedSubtypeRegistration<T>>,
-    private val oidSelector: (Asn1Element) -> ObjectIdentifier? = ::firstOidAlongFirstChildPathOrNull,
+    private val oidSelector: (Asn1Element) -> ObjectIdentifier? = ::oidFrom,
 ) : Asn1DiscriminatedOpenPolymorphicSerializer<T>(serialName) {
 
     private val dispatch = Asn1OidDiscriminatedDispatch(
@@ -48,19 +51,19 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
 /**
  * Default OID selector for OID-discriminated open polymorphism.
  *
- * It follows the first-child path until it finds an ASN.1 OID primitive.
- * This covers common shapes such as:
- * - `SEQUENCE { OBJECT IDENTIFIER, ... }`
- * - `SEQUENCE { SEQUENCE { OBJECT IDENTIFIER, ... }, ... }`
+ * This covers the common shape `SEQUENCE { OBJECT IDENTIFIER, ... }`
  */
-fun firstOidAlongFirstChildPathOrNull(element: Asn1Element): ObjectIdentifier? {
-    val primitive = element as? Asn1Primitive
+internal fun oidFrom(element: Asn1Element): ObjectIdentifier? {
+
+    val structure = element as? Asn1Structure ?: return null
+
+    val primitive = structure.firstOrNull() as? Asn1Primitive
     if (primitive?.tag == Asn1Element.Tag.OID) {
         return runCatching { primitive.readOid() }.getOrNull()
     }
 
-    val structure = element as? Asn1Structure ?: return null
-    return structure.children.firstOrNull()?.let(::firstOidAlongFirstChildPathOrNull)
+
+    return null
 }
 
 internal fun inferOpenPolymorphicSubtypeLeadingTagsOrNull(

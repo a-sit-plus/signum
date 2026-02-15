@@ -8,7 +8,6 @@ import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.testing.Test
-import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -253,6 +252,9 @@ private fun Project.silence() {
         (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets
             .filter { it.name.endsWith("Test") }
             .forEach { it.dependencies { addTestExtensions() } }
+        kmp.compilerOptions {
+            freeCompilerArgs.add("-Xcontext-parameters")
+        }
     }
 
 }

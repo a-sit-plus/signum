@@ -31,15 +31,6 @@ val SerializationTestOpenPolymorphismByOid by testSuite(
         der.decodeFromDer<OpenByOid>(der.encodeToDer(strValue)) shouldBe strValue
     }
 
-    "Default OID selector follows first-child path for nested algorithm identifiers" {
-        val der = derWithOpenByNestedOid()
-        val nestedA: OpenByNestedOid = OpenByNestedOidA(payload = 1)
-        val nestedB: OpenByNestedOid = OpenByNestedOidB(payload = "x")
-
-        der.decodeFromDer<OpenByNestedOid>(der.encodeToDer(nestedA)) shouldBe nestedA
-        der.decodeFromDer<OpenByNestedOid>(der.encodeToDer(nestedB)) shouldBe nestedB
-    }
-
     "Additional OID subtype can be enabled by extending the DER serializers module" {
         val strictDer = derWithOpenByOid(includeBool = false)
         val extendedDer = derWithOpenByOid(includeBool = true)
@@ -118,15 +109,6 @@ private fun derWithOpenByOid(includeBool: Boolean) = DER {
             if (includeBool) {
                 subtype<OpenByOidBool>(oid = oidC)
             }
-        }
-    }
-}
-
-private fun derWithOpenByNestedOid() = DER {
-    serializersModule = SerializersModule {
-        polymorphicByOid(OpenByNestedOid::class, serialName = "OpenByNestedOid") {
-            subtype<OpenByNestedOidA>(oid = oidA)
-            subtype<OpenByNestedOidB>(oid = oidB)
         }
     }
 }

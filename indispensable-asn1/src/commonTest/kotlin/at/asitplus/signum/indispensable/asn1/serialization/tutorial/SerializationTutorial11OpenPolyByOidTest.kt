@@ -25,8 +25,8 @@ val SerializationTutorial11OpenPolyByOid by testSuite(
 
         val value: TutorialOpenByOid = TutorialOpenByOidInt(value = 9)
         val der = derCodec.encodeToDer(value)
+        derCodec.decodeFromDer<TutorialOpenByOid>("300e06092a864886f70d010101020109".hexToByteArray()) shouldBe value
         der.toHexString() shouldBe "300e06092a864886f70d010101020109"
-        derCodec.decodeFromDer<TutorialOpenByOid>(der) shouldBe value
     }
 }
 
@@ -34,6 +34,6 @@ private interface TutorialOpenByOid
 
 @Serializable
 private data class TutorialOpenByOidInt(
-    val oid: ObjectIdentifier = tutorialOid,
+  //  val oid: ObjectIdentifier = tutorialOid,
     val value: Int,
 ) : TutorialOpenByOid
