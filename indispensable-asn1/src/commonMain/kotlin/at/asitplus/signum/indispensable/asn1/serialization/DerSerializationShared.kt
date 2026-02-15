@@ -69,7 +69,7 @@ internal fun Pair<SerialDescriptor, Int>.toDerPropertyContext(
         propertyDescriptor = ownerDescriptor.getElementDescriptor(index),
         propertyAsn1Tag = ownerDescriptor.asn1Tag(index),
         propertyAsBitString = ownerDescriptor.isAsn1BitString(index),
-        propertyAsChoice = ownerDescriptor.getElementDescriptor(index).isAsn1Choice,
+        propertyAsChoice = ownerDescriptor.getElementDescriptor(index).isSealed,
         propertyName = propertyName,
     )
 }
@@ -78,7 +78,7 @@ internal fun isAsn1ChoiceRequested(
     descriptor: SerialDescriptor,
     inlineAsChoice: Boolean,
     propertyAsChoice: Boolean,
-): Boolean = inlineAsChoice || propertyAsChoice || descriptor.isAsn1Choice
+): Boolean = inlineAsChoice || propertyAsChoice || descriptor.isSealed
 
 internal fun Encoder.requireDerEncoder(serializerName: String): DerEncoder {
     if (this !is DerEncoder) {

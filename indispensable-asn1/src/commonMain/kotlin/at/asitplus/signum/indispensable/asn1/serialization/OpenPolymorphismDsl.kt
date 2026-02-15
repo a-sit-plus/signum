@@ -10,6 +10,9 @@ import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
+
+interface OidProvider<out S : Identifiable> : Identifiable
+
 @DslMarker
 annotation class Asn1OpenPolymorphismDsl
 
@@ -57,15 +60,17 @@ class Asn1OpenPolymorphismByTagBuilder<T : Any> internal constructor() {
             subtypes = registrations.toList(),
         )
     }
+
 }
 
 @Asn1OpenPolymorphismDsl
 class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() {
     private val registrations = mutableListOf<Asn1OidDiscriminatedSubtypeRegistration<T>>()
 
+
     fun <S : T> subtype(
         serializer: KSerializer<S>,
-        identifiable: Identifiable,
+        provider: OidProvider<S>,
         leadingTags: Set<Asn1Element.Tag>,
         matches: (T) -> Boolean,
     ) {
@@ -77,7 +82,7 @@ class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() 
         }
         registrations += Asn1OidDiscriminatedSubtypeRegistration(
             serializer = serializer,
-            oid = identifiable.oid,
+            oid = provider.oid,
             leadingTags = resolvedLeadingTags,
             matches = matches,
             debugName = serializer.descriptor.serialName,
@@ -86,13 +91,13 @@ class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() 
 
     @OptIn(ExperimentalSerializationApi::class)
     inline fun <reified S : T> subtype(
-        identifiable: Identifiable,
+        provider: OidProvider<S>,
         vararg leadingTags: Asn1Element.Tag,
         noinline matches: (T) -> Boolean = { it is S },
     ) {
         subtype(
             serializer = serializer<S>(),
-            identifiable = identifiable,
+            provider = provider,
             leadingTags = leadingTags.toSet(),
             matches = matches,
         )

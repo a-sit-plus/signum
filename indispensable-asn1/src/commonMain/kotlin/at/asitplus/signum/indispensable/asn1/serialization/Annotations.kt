@@ -73,7 +73,7 @@ internal val List<Annotation>.isAsn1BitString: Boolean get() = any { it is Asn1B
 internal fun SerialDescriptor.isAsn1BitString(index: Int): Boolean =
     getElementAnnotations(index).isAsn1BitString || getElementDescriptor(index).isAsn1BitString
 
-internal val SerialDescriptor.isAsn1Choice: Boolean get() = kind is kotlinx.serialization.descriptors.PolymorphicKind.SEALED
+internal val SerialDescriptor.isSealed: Boolean get() = kind is kotlinx.serialization.descriptors.PolymorphicKind.SEALED
 
 private val byteArrayDescriptor = ByteArraySerializer().descriptor
 private val byteArraySerialName = byteArrayDescriptor.serialName.removeSuffix("?")
@@ -91,16 +91,13 @@ internal fun SerialDescriptor.isAsn1BitStringCompatibleDescriptor(): Boolean {
 private tailrec fun SerialDescriptor.unwrapInlineDescriptorForAsn1(): SerialDescriptor =
     if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptorForAsn1() else this
 
-internal val Asn1Tag.tagNumberAsULong: ULong
-    get() = tagNumber
-
 internal fun resolveAsn1TagTemplate(
     inlineAsn1Tag: Asn1Tag? = null,
     propertyAsn1Tag: Asn1Tag? = null,
     classAsn1Tag: Asn1Tag? = null,
 ): Asn1Element.Tag.Template? {
     val selectedAsn1Tag = inlineAsn1Tag ?: propertyAsn1Tag ?: classAsn1Tag ?: return null
-    val tagNumber = selectedAsn1Tag.tagNumberAsULong
+    val tagNumber = selectedAsn1Tag.tagNumber
 
     val tagClass =
         inlineAsn1Tag?.tagClass?.toTagClassOrNull()

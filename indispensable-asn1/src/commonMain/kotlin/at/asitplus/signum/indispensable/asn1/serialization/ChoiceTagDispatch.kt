@@ -21,7 +21,7 @@ internal fun <T : Any> buildSealedChoiceDispatch(
 
         val alternativeDescriptor = alternativesDescriptor.getElementDescriptor(i)
         val leadingTags = when (val resolution = alternativeDescriptor.possibleLeadingTagsForAsn1(
-            propertyAsChoice = alternativeDescriptor.isAsn1Choice,
+            propertyAsChoice = alternativeDescriptor.isSealed,
         )) {
             is Asn1LeadingTagsResolution.Exact -> resolution.tags
             Asn1LeadingTagsResolution.UnknownInfer -> throw SerializationException(

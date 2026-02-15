@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.TagClass
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.PolymorphicKind
@@ -74,7 +73,7 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
         val fieldDescriptor = getElementDescriptor(index)
         val propertyAsn1Tag = asn1Tag(index)
         val propertyAsBitString = isAsn1BitString(index)
-        val propertyAsChoice = getElementDescriptor(index).isAsn1Choice
+        val propertyAsChoice = getElementDescriptor(index).isSealed
         val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(
             propertyAsn1Tag = propertyAsn1Tag,
             propertyAsBitString = propertyAsBitString,
@@ -235,7 +234,7 @@ private fun possibleLeadingTags(
     forcedChoice: Boolean? = null,
 ): Asn1LeadingTagsResolution {
     val isBitString = inheritedBitString || inlineAsBitString || propertyAsBitString || descriptor.isAsn1BitString
-    val choiceMode = forcedChoice ?: (inlineAsChoice || propertyAsChoice || descriptor.isAsn1Choice)
+    val choiceMode = forcedChoice ?: (inlineAsChoice || propertyAsChoice || descriptor.isSealed)
 
     val tagTemplate = resolveAsn1TagTemplate(
         inlineAsn1Tag = inlineAsn1Tag,
@@ -349,7 +348,7 @@ private fun possibleSealedChoiceAlternativeLeadingTags(descriptor: SerialDescrip
             inlineAsBitString = false,
             propertyAsChoice = false,
             inlineAsChoice = false,
-            forcedChoice = alternativeDescriptor.isAsn1Choice,
+            forcedChoice = alternativeDescriptor.isSealed,
         )) {
             is Asn1LeadingTagsResolution.Exact -> alternativeTags += resolution.tags
             Asn1LeadingTagsResolution.UnknownInfer -> return Asn1LeadingTagsResolution.UnknownInfer

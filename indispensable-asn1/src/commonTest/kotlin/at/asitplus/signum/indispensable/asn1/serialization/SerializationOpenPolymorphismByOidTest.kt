@@ -62,7 +62,7 @@ data class OpenByOidInt(
     val value: Int,
 ) : OpenByOid, Identifiable by Companion {
 
-    companion object : Identifiable {
+    companion object : OidProvider<OpenByOidInt> {
 
     override val oid: ObjectIdentifier
         get() = ObjectIdentifier("1.2.840.113549.1.1.1")
@@ -73,7 +73,7 @@ data class OpenByOidInt(
 data class OpenByOidString(
     val value: String,
 ) : OpenByOid, Identifiable by Companion {
-    companion object : Identifiable {
+    companion object : OidProvider<OpenByOidString> {
         override val oid: ObjectIdentifier
             get() = ObjectIdentifier("1.2.840.10045.2.1")
     }
@@ -82,7 +82,7 @@ data class OpenByOidString(
 data class OpenByOidBool(
     val value: Boolean,
 ) : OpenByOid, Identifiable by Companion {
-    companion object : Identifiable {
+    companion object : OidProvider<OpenByOidBool> {
         override val oid: ObjectIdentifier get() = ObjectIdentifier("1.3.101.110")
     }
 }

@@ -9,6 +9,8 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 val SerializationTutorial11OpenPolyByOid by testSuite(
@@ -19,14 +21,15 @@ val SerializationTutorial11OpenPolyByOid by testSuite(
             serializersModule = SerializersModule {
                 polymorphicByOid(TutorialOpenByOid::class, serialName = "TutorialOpenByOid") {
                     subtype<TutorialOpenByOidInt>(TutorialOpenByOidInt)
+                    subtype<TutorialOpenByOidOtherInt>(TutorialOpenByOidOtherInt)
                 }
             }
         }
 
         val value: TutorialOpenByOid = TutorialOpenByOidInt(value = 9)
-        derCodec.decodeFromDer<TutorialOpenByOid>("300e06092a864886f70d010101020109".hexToByteArray()) shouldBe value
         val der = derCodec.encodeToDer(value)
-        der.toHexString() shouldBe "300e06092a864886f70d010101020109"
+        der.toHexString() shouldBe "30190614698192b2e2c8dbfcf294f58cc9b5f2ac87948247020109"
+        derCodec.decodeFromDer<TutorialOpenByOid>("30190614698192b2e2c8dbfcf294f58cc9b5f2ac87948247020109".hexToByteArray()) shouldBe value
     }
 }
 
@@ -34,11 +37,21 @@ private interface TutorialOpenByOid: Identifiable
 
 @Serializable
 private data class TutorialOpenByOidInt(
-  //  val oid: ObjectIdentifier = tutorialOid,
     val value: Int,
-) : TutorialOpenByOid,  Identifiable by Companion {
-    companion object: Identifiable {
-        override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.1")
+) : TutorialOpenByOid, Identifiable by Companion {
+    companion object: OidProvider<TutorialOpenByOidInt> {
+        @OptIn(ExperimentalUuidApi::class)
+        override val oid: ObjectIdentifier = ObjectIdentifier(Uuid.parse("4932c522-dfce-453a-8c92-d792c0e50147"))
+
+    }
+}
+@Serializable
+private data class TutorialOpenByOidOtherInt(
+    val value: Int,
+) : TutorialOpenByOid, Identifiable by Companion {
+    companion object: OidProvider<TutorialOpenByOidOtherInt> {
+        @OptIn(ExperimentalUuidApi::class)
+        override val oid: ObjectIdentifier =  ObjectIdentifier(Uuid.parse("c29b4beb-1446-446a-b017-f5bda01d9a26"))
 
     }
 }

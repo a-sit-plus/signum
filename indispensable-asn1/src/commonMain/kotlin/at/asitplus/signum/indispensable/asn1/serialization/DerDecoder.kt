@@ -561,7 +561,7 @@ class DerDecoder internal constructor(
         propertyDescriptor = descriptor
         propertyAsn1Tag = descriptor.annotations.asn1Tag
         propertyAsBitString = descriptor.isAsn1BitString
-        propertyAsChoice = descriptor.isAsn1Choice
+        propertyAsChoice = descriptor.isSealed
     }
 
     private fun applyCurrentPropertyContext(
