@@ -27,8 +27,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
     nodes: List<VarUInt>?
 ) :
-    Asn1Encodable<Asn1Primitive>,
-    IdentifiedBy<ObjectIdentifier> {
+    Asn1Encodable<Asn1Primitive> {
     init {
         if ((bytes == null) && (nodes == null)) {
             //we're not even declaring this, since this is an implementation error on our end
@@ -148,12 +147,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
 
-    override val oid: ObjectIdentifier
-        get() = this
-
-    override val oidSource: ObjectIdentifier
-        get() = this
-
     companion object : Asn1Serializer<Asn1Primitive, ObjectIdentifier> {
         override val leadingTags: Set<Asn1Element.Tag> = setOf(Asn1Element.Tag.OID)
 
@@ -219,15 +212,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
  */
 interface Identifiable {
     val oid: ObjectIdentifier
-}
-
-/**
- * Declares that this type's [oid] originates from [oidSource].
- * This allows implementations to expose a dedicated OID owner (for example a companion object).
- */
-interface IdentifiedBy<out I : Identifiable> : Identifiable {
-    val oidSource: I
-    override val oid: ObjectIdentifier get() = oidSource.oid
 }
 
 /**

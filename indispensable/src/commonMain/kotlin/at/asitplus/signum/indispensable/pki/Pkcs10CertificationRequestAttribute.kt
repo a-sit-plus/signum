@@ -9,11 +9,8 @@ import kotlinx.serialization.Serializable
 data class Pkcs10CertificationRequestAttribute(
     override val oid: ObjectIdentifier,
     val value: List<Asn1Element>
-) : Asn1Encodable<Asn1Sequence>, Identifiable, IdentifiedBy<ObjectIdentifier> {
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
     constructor(id: ObjectIdentifier, value: Asn1Element) : this(id, listOf(value))
-
-    override val oidSource: ObjectIdentifier
-        get() = oid
 
     override fun encodeToTlv() = Asn1.Sequence {
         +oid

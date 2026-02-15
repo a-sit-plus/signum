@@ -42,6 +42,7 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
                 "Could not extract discriminator OID from current ASN.1 element while decoding ${descriptor.serialName}"
             )
         val selected = dispatch.serializerForDecode(oid)
+        decoder.dropOidFromNextStructure()
         @Suppress("UNCHECKED_CAST")
         return selected as DeserializationStrategy<T>
     }
@@ -57,27 +58,6 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
         @Suppress("UNCHECKED_CAST")
         val ser = reg.serializer as KSerializer<T>
         derEncoder.encodeSerializableValue(ser, value)
-    }
-
-    override fun deserialize(decoder: Decoder): T {
-        val derDecoder = decoder as? DerDecoder
-            ?: throw SerializationException("Expected DerDecoder while decoding ${descriptor.serialName}")
-
-        val element = derDecoder.peekCurrentElementOrNull()
-            ?: throw SerializationException("No ASN.1 element left while decoding ${descriptor.serialName}")
-
-        val oid = oidSelector(element)
-            ?: throw SerializationException(
-                "Could not extract discriminator OID from current ASN.1 element while decoding ${descriptor.serialName}"
-            )
-
-        val selected = dispatch.serializerForDecode(oid)
-
-        // IMPORTANT: consume+skip the leading discriminator OID for the subtype decode
-        derDecoder.dropOidFromNextStructure()
-
-        @Suppress("UNCHECKED_CAST")
-        return derDecoder.decodeCurrentElementWith(selected as DeserializationStrategy<T>)
     }
 
 

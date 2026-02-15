@@ -26,16 +26,18 @@ internal abstract class Asn1DiscriminatedOpenPolymorphicSerializer<T : Any>(
 
     protected abstract fun serializerForEncode(value: T): KSerializer<out T>
     protected abstract fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T>
-//TODO oid
-     override fun serialize(encoder: Encoder, value: T) {
+
+    //TODO OID
+    override fun serialize(encoder: Encoder, value: T) {
         val derEncoder = encoder.requireDerEncoder(descriptor.serialName)
         val selected = serializerForEncode(value)
         @Suppress("UNCHECKED_CAST")
         derEncoder.encodeSerializableValue(selected as KSerializer<Any?>, value as Any?)
     }
-//TODO oid
-     override fun deserialize(decoder: Decoder): T {
+
+    final override fun deserialize(decoder: Decoder): T {
         val derDecoder = decoder.requireDerDecoder(descriptor.serialName)
-        return derDecoder.decodeCurrentElementWith(serializerForDecode(derDecoder))
+        val selected = serializerForDecode(derDecoder)
+        return derDecoder.decodeCurrentElementWith(selected)
     }
 }

@@ -77,6 +77,8 @@ class DerDecoder internal constructor(
         isolated.currentOwnerSerialName = deserializer.descriptor.serialName
         isolated.currentPropertyName = deserializer.descriptor.serialName
         isolated.currentPropertyIndex = 0
+        isolated.dropFirstChildInNextStructure = this.dropFirstChildInNextStructure
+        this.dropFirstChildInNextStructure = false
         val decoded = isolated.decodeSerializableValue(deserializer)
         elementIndex++
         return decoded
@@ -546,6 +548,10 @@ class DerDecoder internal constructor(
             serializersModule = serializersModule,
             formatConfiguration = formatConfiguration,
         )
+        if(dropFirstChildInNextStructure){
+            childDecoder.dropFirstChildInNextStructure = dropFirstChildInNextStructure
+            dropFirstChildInNextStructure = false
+        }
         val value = deserializer.deserialize(childDecoder)
         elementIndex++
         return value

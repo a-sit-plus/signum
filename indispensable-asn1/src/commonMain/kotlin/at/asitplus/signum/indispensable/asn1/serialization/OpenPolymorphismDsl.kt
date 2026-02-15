@@ -1,12 +1,13 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.serializer
 import kotlinx.serialization.modules.SerializersModuleBuilder
+import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
 @DslMarker
@@ -59,12 +60,12 @@ class Asn1OpenPolymorphismByTagBuilder<T : Any> internal constructor() {
 }
 
 @Asn1OpenPolymorphismDsl
-class Asn1OpenPolymorphismByOidBuilder<T : Any> internal constructor() {
+class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() {
     private val registrations = mutableListOf<Asn1OidDiscriminatedSubtypeRegistration<T>>()
 
     fun <S : T> subtype(
         serializer: KSerializer<S>,
-        oid: ObjectIdentifier,
+        identifiable: Identifiable,
         leadingTags: Set<Asn1Element.Tag>,
         matches: (T) -> Boolean,
     ) {
@@ -76,7 +77,7 @@ class Asn1OpenPolymorphismByOidBuilder<T : Any> internal constructor() {
         }
         registrations += Asn1OidDiscriminatedSubtypeRegistration(
             serializer = serializer,
-            oid = oid,
+            oid = identifiable.oid,
             leadingTags = resolvedLeadingTags,
             matches = matches,
             debugName = serializer.descriptor.serialName,
@@ -85,13 +86,13 @@ class Asn1OpenPolymorphismByOidBuilder<T : Any> internal constructor() {
 
     @OptIn(ExperimentalSerializationApi::class)
     inline fun <reified S : T> subtype(
-        oid: ObjectIdentifier,
+        identifiable: Identifiable,
         vararg leadingTags: Asn1Element.Tag,
         noinline matches: (T) -> Boolean = { it is S },
     ) {
         subtype(
             serializer = serializer<S>(),
-            oid = oid,
+            identifiable = identifiable,
             leadingTags = leadingTags.toSet(),
             matches = matches,
         )
@@ -119,7 +120,7 @@ fun <T : Any> asn1OpenPolymorphicByTagSerializer(
     .apply(block)
     .build(serialName)
 
-fun <T : Any> asn1OpenPolymorphicByOidSerializer(
+fun <T : Identifiable> asn1OpenPolymorphicByOidSerializer(
     serialName: String,
     oidSelector: (Asn1Element) -> ObjectIdentifier? = ::oidFrom,
     block: Asn1OpenPolymorphismByOidBuilder<T>.() -> Unit,
@@ -135,7 +136,7 @@ fun <T : Any> SerializersModuleBuilder.polymorphicByTag(
     contextual(baseClass, asn1OpenPolymorphicByTagSerializer(serialName, block))
 }
 
-fun <T : Any> SerializersModuleBuilder.polymorphicByOid(
+fun <T : Identifiable> SerializersModuleBuilder.polymorphicByOid(
     baseClass: KClass<T>,
     serialName: String = baseClass.qualifiedName ?: "Asn1OpenPolymorphicByOid",
     oidSelector: (Asn1Element) -> ObjectIdentifier? = ::oidFrom,

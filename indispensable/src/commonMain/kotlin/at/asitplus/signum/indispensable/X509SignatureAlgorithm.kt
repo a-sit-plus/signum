@@ -23,13 +23,10 @@ private interface X509SignatureAlgorithmProvider {
 @Serializable(with = X509SignatureAlgorithmDescription.Companion::class)
 sealed class X509SignatureAlgorithmDescription(
     override val oid: ObjectIdentifier
-) : Asn1Encodable<Asn1Sequence>, Identifiable, IdentifiedBy<ObjectIdentifier> {
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     /** Additional algorithm parameters, if any. */
     abstract val parameters: List<Asn1Element>
-
-    override val oidSource: ObjectIdentifier
-        get() = oid
 
     override fun encodeToTlv() = Asn1.Sequence {
         +oid
