@@ -39,7 +39,7 @@ Every documented feature below has a dedicated, self-contained test file that:
 - Codec is strict: no guessing for ambiguous layouts.
 - `@Asn1Tag` is implicit tag override.
 - EXPLICIT is modeled via wrapper (`Asn1Explicit<T>`) + outer context-specific constructed tag.
-- OCTET encapsulation is modeled via wrapper (`Asn1OctetWrapped<T>`).
+- OCTET STRING encapsulation is modeled via wrapper (`Asn1OctetWrapped<T>`).
 - CHOICE is the default for sealed polymorphism (tag-dispatch, no discriminator wrapper).
 - Ambiguous nullable/optional layouts hard-fail.
 
@@ -73,10 +73,18 @@ Disambiguation options:
 ## 5. Polymorphism Modes
 
 - CHOICE (sealed): exactly one matching arm must decode
-- Open by tag: configure in `DER { serializersModule = SerializersModule { asn1OpenPolymorphicByTag(...) } }`
-- Open by OID: configure in `DER { serializersModule = SerializersModule { asn1OpenPolymorphicByOid(...) } }`
+- Open by tag: configure in `DER { serializersModule = SerializersModule { polymorphicByTag(...) } }`
+- Open by OID: configure in `DER { serializersModule = SerializersModule { polymorphicByOid(...) } }`
 
-OID mode is not tied to `IdentifiedBy`; registration is explicit and strict (OID + subtype + leading tags/inference).
+**OID mode is tied to `Identifiable` / `OidProvider<Identifiable>` pair; registration is explicit and strict (OID + subtype + leading tags/inference):**  
+Every polymorphic hierarchy identified by OID must be an `Identifiable` hierarchy with explicit registration.
+A synthetic `ObjectIdentifier` is created as the first child node of an ASN.1 sequence during serialization and used for discrimination on deserialization. Be sure not to add a proper OID property! but ise a getter or delegate!  
+See  [`SerializationTutorial11OpenPolyByOidTest.kt`](indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial11OpenPolyByOidTest.kt)
+
+There is no shortcut for sealed OID-discriminated hierarchies for multiple reasons:
+1. Signum's `ObjectIdentifier` is a powerful validating class, so we cannot add an `@Oid("1.2.43.4.3453.87.4.2")`.
+2. There is `KnownOIDs` registry that comes with a gazillion OIDs, none of which could be referenced inside a hypothetical `@Oid` annotation
+3. We want the OID to be accesssible from the code, not just serialization, typically from a Companion object on the identifiable-by-oid class.
 
 ## 6. DER Config Knobs
 
