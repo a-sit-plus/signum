@@ -38,7 +38,7 @@ private sealed class Asn1ElementHolder {
 @ExperimentalSerializationApi
 internal class DerEncoder(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
-    private val formatConfiguration: DerConfiguration = DerConfiguration(),
+    internal val formatConfiguration: DerConfiguration = DerConfiguration(),
 ) : AbstractEncoder() {
 
     private val buffer = mutableListOf<Asn1ElementHolder>()
@@ -414,7 +414,7 @@ internal class DerEncoder(
     private fun consumePropertyContextOrNull(): DerPropertyContext? =
         descriptorAndIndex?.toDerPropertyContext().also { descriptorAndIndex = null }
 
-    private fun appendElement(
+    internal fun appendElement(
         element: Asn1Element,
         tagTemplate: Asn1Element.Tag.Template? = null,
     ) {

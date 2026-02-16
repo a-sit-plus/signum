@@ -34,6 +34,7 @@ class Der internal constructor(
 data class DerConfiguration(
     val encodeDefaults: Boolean = true,
     val explicitNulls: Boolean = false,
+    val reEmitAsn1Backed: Boolean = false,
     val serializersModule: SerializersModule = EmptySerializersModule(),
 )
 
@@ -43,11 +44,13 @@ data class DerConfiguration(
 class DerBuilder internal constructor() {
     var encodeDefaults: Boolean = true
     var explicitNulls: Boolean = false
+    var reEmitAsn1Backed: Boolean = false
     var serializersModule: SerializersModule = EmptySerializersModule()
 
     internal fun build() = DerConfiguration(
         encodeDefaults = encodeDefaults,
         explicitNulls = explicitNulls,
+        reEmitAsn1Backed = reEmitAsn1Backed,
         serializersModule = serializersModule,
     )
 }
