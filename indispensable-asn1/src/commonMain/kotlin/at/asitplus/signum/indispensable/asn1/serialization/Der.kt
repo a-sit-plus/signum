@@ -10,6 +10,7 @@ import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
+import kotlin.reflect.typeOf
 
 
 /**
@@ -19,7 +20,7 @@ import kotlinx.serialization.serializer
  * or create a custom instance through `DER { }`.
  */
 class Der internal constructor(
-    internal val configuration: DerConfiguration = DerConfiguration()
+    val configuration: DerConfiguration = DerConfiguration()
 )
 
 /**
@@ -57,13 +58,15 @@ class DerBuilder internal constructor() {
  * Encodes [value] into DER using the inferred serializer for [T].
  */
 @ExperimentalSerializationApi
-inline fun <reified T> Der.encodeToDer(value: T) = encodeToDer(serializer(), value)
+inline fun <reified T> Der.encodeToDer(value: T) =
+    encodeToDer(configuration.serializersModule.serializer(typeOf<T>()), value)
 
 /**
  * Encodes [value] into a single ASN.1 TLV element using the inferred serializer for [T].
  */
 @ExperimentalSerializationApi
-inline fun <reified T> Der.encodeToTlv(value: T) = encodeToTlv(serializer(), value)
+inline fun <reified T> Der.encodeToTlv(value: T) =
+    encodeToTlv(configuration.serializersModule.serializer(typeOf<T>()), value)
 
 
 /**
@@ -72,7 +75,8 @@ inline fun <reified T> Der.encodeToTlv(value: T) = encodeToTlv(serializer(), val
 @ExperimentalSerializationApi
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
-inline fun <reified T> Der.decodeFromDer(source: ByteArray): T = decodeFromDer(source, serializer())
+inline fun <reified T> Der.decodeFromDer(source: ByteArray): T =
+    decodeFromDer(source, configuration.serializersModule.serializer(typeOf<T>())) as T
 
 /**
  * Decodes [source] from a single ASN.1 TLV element using the inferred deserializer for [T].
@@ -80,7 +84,8 @@ inline fun <reified T> Der.decodeFromDer(source: ByteArray): T = decodeFromDer(s
 @ExperimentalSerializationApi
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
-inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T = decodeFromTlv(source, serializer())
+inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T =
+    decodeFromTlv(source, configuration.serializersModule.serializer(typeOf<T>())) as T
 
 /**
  * Encodes [value] with the given [serializer] into DER bytes.
