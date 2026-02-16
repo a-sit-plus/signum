@@ -108,7 +108,7 @@ fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Ele
     )
     encoder.encodeSerializableValue(serializer, value)
     return encoder.encodeToTLV()
-        .also { if (it.size != 1) throw ImplementationError("DER serializer mutliple elements") }.first()
+        .also { if (it.size != 1) throw ImplementationError("DER serializer multiple elements") }.first()
 }
 
 

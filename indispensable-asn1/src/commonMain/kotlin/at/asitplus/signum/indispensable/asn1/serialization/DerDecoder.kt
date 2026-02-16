@@ -231,7 +231,7 @@ class DerDecoder internal constructor(
             PolymorphicKind.OPEN -> throw SerializationException(
                 "Open polymorphic decoding is not supported via primitive decode path for ${effectiveDescriptor.serialName}. " +
                         "Register an ASN.1 open-polymorphic serializer in DER { serializersModule = ... } " +
-                        "via olymorphicByTag(...) or lymorphicByOid(...)."
+                        "via polymorphicByTag(...) or polymorphicByOid(...)."
             )
 
             PolymorphicKind.SEALED -> throw SerializationException(

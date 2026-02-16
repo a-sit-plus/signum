@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import kotlinx.io.Sink
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
