@@ -58,12 +58,40 @@ internal class DerEncoder(
         return this
     }
 
+    override fun encodeBoolean(value: Boolean) {
+        encodeValue(value)
+    }
+
+    override fun encodeByte(value: Byte) {
+        encodeValue(value)
+    }
+
+    override fun encodeShort(value: Short) {
+        encodeValue(value)
+    }
+
+    override fun encodeInt(value: Int) {
+        encodeValue(value)
+    }
+
+    override fun encodeLong(value: Long) {
+        encodeValue(value)
+    }
+
     override fun encodeDouble(value: Double) {
         encodeRealValue(value.encodeToAsn1Primitive())
     }
 
     override fun encodeFloat(value: Float) {
         encodeRealValue(value.encodeToAsn1Primitive())
+    }
+
+    override fun encodeChar(value: Char) {
+        encodeValue(value)
+    }
+
+    override fun encodeString(value: String) {
+        encodeValue(value)
     }
 
     override fun encodeValue(value: Any) {
