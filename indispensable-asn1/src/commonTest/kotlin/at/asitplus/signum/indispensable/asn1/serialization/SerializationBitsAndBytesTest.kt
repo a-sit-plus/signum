@@ -9,6 +9,7 @@ import de.infix.testBalloon.framework.core.invocation
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
 
 @OptIn(ExperimentalStdlibApi::class)
 val SerializationTestBitsAndBytes by testSuite(
