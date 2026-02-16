@@ -9,6 +9,8 @@ import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.invocation
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
@@ -37,15 +39,24 @@ val MixedPolyTests by testSuite(testConfig = DefaultConfiguration.invocation(Tes
         }
     }
 
-    withData(a, b, withNestedProperties) {
-        val encoded = der.encodeToDer(it)
-        println(encoded.toHexString())
-        der.decodeFromDer<Choice>(encoded)
+    withData(
+        a to "3000",
+        b to "bf7b00",
+        withNestedProperties to "bf861522302006146983f0e8e892e5b7bab4e9bbd7d0cad8e8918c19bf83480602012abf7b00"
+    ) { (obj, hex) ->
+        val encoded = der.encodeToDer(obj)
+        encoded shouldNotBe hex
+        der.decodeFromDer<Choice>(encoded) shouldBe obj
+
     }
-    withData(nestedA, nestedB, nestedC) {
-        val encoded = der.encodeToDer(it as Choice.Nested)
-        println(encoded.toHexString())
-        der.decodeFromDer<Choice.Nested>(encoded)
+    withData(
+        nestedA to "3015061369a0eb8c9fe9f082a4e5a9ff95ebb6ead5ad4a",
+        nestedB to "301e0614698195cc998e8698d284d1b9e29380b68cbbdc640c06466f6f626172",
+        nestedC to "302006146983f0e8e892e5b7bab4e9bbd7d0cad8e8918c19bf83480602012abf7b00"
+    ) {(obj, hex) ->
+        val encoded = der.encodeToDer(obj)
+        encoded shouldNotBe hex
+        der.decodeFromDer<Choice.Nested>(encoded) shouldBe obj
     }
 }
 
@@ -67,7 +78,8 @@ sealed interface Choice {
 
     @Serializable
     @Asn1Tag(789u)
-    class WithNestedProperties(val nested: Nested) : Choice
+    data class WithNestedProperties(val nested: Nested) : Choice
+
     @Asn1Tag(10_11_12u)
     interface Nested : Choice, Identifiable {
         @Serializable
@@ -78,7 +90,7 @@ sealed interface Choice {
         }
 
         @Serializable
-        class B(val bar: String) : Nested, Identifiable by Companion {
+        data class B(val bar: String) : Nested, Identifiable by Companion {
             companion object : OidProvider<B> {
                 @OptIn(ExperimentalUuidApi::class)
                 override val oid: ObjectIdentifier
@@ -88,7 +100,7 @@ sealed interface Choice {
 
 
         @Serializable
-        class Cnested( val c: C) : Nested, Identifiable by Companion {
+        data class Cnested(val c: C) : Nested, Identifiable by Companion {
             companion object : OidProvider<Cnested> {
                 @OptIn(ExperimentalUuidApi::class)
                 override val oid: ObjectIdentifier
