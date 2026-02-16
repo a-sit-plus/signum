@@ -69,8 +69,8 @@ val SerializationTestAmbiguityDetection by testSuite(
             doubleValue = 6.25
         )
 
-        DER.decodeFromDer<TaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlyNull)) shouldBe mostlyNull
-        DER.decodeFromDer<TaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlySet)) shouldBe mostlySet
+        DER.decodeFromDer<TaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlyNull).also { println("!: "+it.toHexString()) }) shouldBe mostlyNull
+        DER.decodeFromDer<TaggedConsecutiveNumericNullables>(DER.encodeToDer(mostlySet).also { println("2: "+it.toHexString()) }) shouldBe mostlySet
     }
 
     "Consecutive nullable fields with distinct ASN.1 primitive kinds are unambiguous without tags" {

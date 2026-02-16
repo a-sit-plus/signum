@@ -58,6 +58,14 @@ internal class DerEncoder(
         return this
     }
 
+    override fun encodeDouble(value: Double) {
+        encodeRealValue(value.encodeToAsn1Primitive())
+    }
+
+    override fun encodeFloat(value: Float) {
+        encodeRealValue(value.encodeToAsn1Primitive())
+    }
+
     override fun encodeValue(value: Any) {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull()
@@ -107,6 +115,23 @@ internal class DerEncoder(
             }
         }
 
+        appendElement(element, tagTemplate)
+    }
+
+    private fun encodeRealValue(element: Asn1Element) {
+        val inlineHints = inlineHintState.consume()
+        val propertyContext = consumePropertyContextOrNull()
+        val propertyAsBitString = propertyContext?.propertyAsBitString == true
+        if (inlineHints.asBitString || propertyAsBitString) {
+            throw SerializationException(
+                "@Asn1BitString can only be used with ByteArray-compatible values, but got ${element::class}"
+            )
+        }
+        val tagTemplate = resolveAsn1TagTemplate(
+            inlineAsn1Tag = inlineHints.tag,
+            propertyAsn1Tag = propertyContext?.propertyAsn1Tag,
+            classAsn1Tag = null
+        )
         appendElement(element, tagTemplate)
     }
 

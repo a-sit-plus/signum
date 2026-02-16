@@ -148,14 +148,14 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         fun decodeFromAsn1ContentBytes(bytes: ByteArray): Asn1Real = runRethrowing {
             if (bytes.isEmpty()) return Asn1Real.Zero
 
-            val identifierOctet = bytes.first().toInt()
+            val identifierOctet = bytes.first().toInt() and 0xFF
             when (identifierOctet) {
                 0x40 -> Asn1Real.PositiveInfinity
                 0x41 -> Asn1Real.NegativeInfinity
                 else -> {
-                    require(identifierOctet < 0) { "ASN.1 REAL is not binary encoded" }
+                    require((identifierOctet and 0x80) != 0) { "ASN.1 REAL is not binary encoded" }
                     val sign =
-                        if (0x40 and identifierOctet == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
+                        if ((0x40 and identifierOctet) == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
                     val exponentLength = when (identifierOctet and 0b11) {
                         0 -> 1
                         1 -> 2
