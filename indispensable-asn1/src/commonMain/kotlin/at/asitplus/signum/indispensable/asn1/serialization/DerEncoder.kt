@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import Asn1Backed
+import Asn1BackedSerializer
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
@@ -38,7 +40,7 @@ private sealed class Asn1ElementHolder {
 @ExperimentalSerializationApi
 internal class DerEncoder(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
-    internal val formatConfiguration: DerConfiguration = DerConfiguration(),
+    private val formatConfiguration: DerConfiguration = DerConfiguration(),
 ) : AbstractEncoder() {
 
     private val buffer = mutableListOf<Asn1ElementHolder>()
@@ -211,7 +213,26 @@ internal class DerEncoder(
     }
 
 
+    @OptIn(InternalSerializationApi::class)
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
+
+        if (serializer is Asn1BackedSerializer<*> && value is Asn1Backed<*>) {
+
+            // raw re-emit fast-path (consume state so it doesn’t leak)
+            if (formatConfiguration.reEmitAsn1Backed && value.asn1Element != null) {
+                inlineHintState.consume()
+                descriptorAndIndex = null
+                appendElement(value.asn1Element) // no tagTemplate: “emit exactly as decoded”
+                return
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            return encodeSerializableValue(
+                serializer.valueSer as SerializationStrategy<Any?>,
+                value.value as Any?
+            )
+        }
+
         val inlineHints = inlineHintState.consume()
         val propertyContext = descriptorAndIndex?.toDerPropertyContext()
         val propertyAnnotation = propertyContext?.propertyAsn1Tag
@@ -285,7 +306,7 @@ internal class DerEncoder(
             return encodeSerializableValue(openSerializer as SerializationStrategy<T>, value)
         }
 
-        if (serializer.descriptor.kind is PolymorphicKind.OPEN) {
+        if (serializer.descriptor.kind is PolymorphicKind.OPEN && serializer is AbstractPolymorphicSerializer<*>) {
             throw SerializationException(
                 "Open polymorphism for ${serializer.descriptor.serialName} requires an ASN.1 serializer " +
                         "registered in DER { serializersModule = ... } via polymorphicByTag(...) " +
@@ -293,7 +314,8 @@ internal class DerEncoder(
             )
         }
 
-        if (isAsn1ChoiceRequested(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)) {
+        if (isAsn1ChoiceRequested(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)
+            && serializer is SealedClassSerializer<*>) {
             descriptorAndIndex = null
             encodeChoiceSerializableValue(
                 serializer = serializer,

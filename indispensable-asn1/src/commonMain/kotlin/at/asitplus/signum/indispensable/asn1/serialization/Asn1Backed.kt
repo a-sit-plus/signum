@@ -9,20 +9,34 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = Asn1BackedSerializer::class)
-class Asn1Backed<T : Any> internal constructor(
+data class Asn1Backed<T : Any> internal constructor(
     val value: T,
     @Transient val asn1Element: Asn1Element?
 ) {
     constructor(value: T) : this(value, null)
 
-    companion object {
-        fun <T : Any> serializer(valueSerializer: KSerializer<T>): KSerializer<Asn1Backed<T>> =
-            Asn1BackedSerializer(valueSerializer)
+    override fun toString(): String {
+        return "Asn1Backed(" +
+                "value=$value, " +
+                "asn1Element=${asn1Element?.prettyPrint()}" +
+                ")"
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Asn1Backed<*>) return false
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+
 }
 
 class Asn1BackedSerializer<T : Any>(
-    private val valueSer: KSerializer<T>
+    internal val valueSer: KSerializer<T>
 ) : KSerializer<Asn1Backed<T>> {
 
     // look like T to the format.
@@ -30,17 +44,11 @@ class Asn1BackedSerializer<T : Any>(
 
     override fun deserialize(decoder: Decoder): Asn1Backed<T> {
         val raw = (decoder as? DerDecoder)?.peekCurrentElementOrNull()
-        val v = valueSer.deserialize(decoder)
+        val v = decoder.decodeSerializableValue(valueSer)
         return Asn1Backed(v, raw)
     }
 
     override fun serialize(encoder: Encoder, value: Asn1Backed<T>) {
-
-        if ((encoder is DerEncoder) &&
-            (encoder.formatConfiguration.reEmitAsn1Backed && value.asn1Element != null)
-        ) encoder.appendElement(value.asn1Element)
-        else valueSer.serialize(encoder, value.value)
-
-
+        encoder.encodeSerializableValue(valueSer, value.value)
     }
 }

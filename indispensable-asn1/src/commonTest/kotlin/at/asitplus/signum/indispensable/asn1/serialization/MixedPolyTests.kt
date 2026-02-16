@@ -45,7 +45,7 @@ val MixedPolyTests by testSuite(testConfig = DefaultConfiguration.invocation(Tes
         withNestedProperties to "bf861522302006146983f0e8e892e5b7bab4e9bbd7d0cad8e8918c19bf83480602012abf7b00"
     ) { (obj, hex) ->
         val encoded = der.encodeToDer(obj)
-        encoded shouldNotBe hex
+        encoded.toHexString() shouldBe hex
         der.decodeFromDer<Choice>(encoded) shouldBe obj
 
     }
@@ -55,7 +55,7 @@ val MixedPolyTests by testSuite(testConfig = DefaultConfiguration.invocation(Tes
         nestedC to "302006146983f0e8e892e5b7bab4e9bbd7d0cad8e8918c19bf83480602012abf7b00"
     ) {(obj, hex) ->
         val encoded = der.encodeToDer(obj)
-        encoded shouldNotBe hex
+        encoded.toHexString() shouldBe hex
         der.decodeFromDer<Choice.Nested>(encoded) shouldBe obj
     }
 }

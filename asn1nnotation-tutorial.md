@@ -86,12 +86,32 @@ There is no shortcut for sealed OID-discriminated hierarchies for multiple reaso
 2. There is `KnownOIDs` registry that comes with a gazillion OIDs, none of which could be referenced inside a hypothetical `@Oid` annotation
 3. We want the OID to be accesssible from the code, not just serialization, typically from a Companion object on the identifiable-by-oid class.
 
-## 6. DER Config Knobs
+
+## 6. Accessing and Re-Emitting Deserialized ASN.1 Elements
+> Garbage in, garbage out…
+
+…is actually what you want for production DER/ASN.1 handling: you want to parse DER-encoded data, like a certificate,
+separate TbsCertificate from the signature bytes and verify the byte-representation of the TbsCertificate against the signature.
+This means that ever after serialization, when re-encoding the TbsCertificate to DER for signature verification, you actually don't
+really want to re-encode. You want to take the TbsCertificate's bytes, even if they are [rotten to the core](https://a-sit-plus.github.io/warden-supreme/technical/quirks/#encoding-flaws),
+keep them as haunted by Jon Postel's ghost as can be, and use those bytes, warts and all, for signature verification.  
+So Signum needs to offer a way to keep the original ASN.1 structure.
+
+Enter: [`Asn1Backed`](indispensable-asn1/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/serialization/Asn1Backed.kt)!
+Just declare any property like so `val myNeverToBeReEncodedProperty: Asn1Backed<SomeNeverToBeReEncodedType>` and
+anything deserialized there will have an `asn1Element` property populated with the original, unmodified data. Just access it for signature verification.
+To other serialization formats, it will be completely invisible.
+
+Setting `DER.reEmitAsn1Backed = true` will cause re-seriaization to just re-emit the previeously deserialized element.
+
+
+## 7. DER Config Knobs
 
 - `encodeDefaults`: include/omit default-valued properties
 - `explicitNulls`: include/omit explicit ASN.1 NULL for nullable values
+- `reEmitAsn1Backed`: serialize `Asn1Backed` values or re-emit deserialized ones
 
-## 7. Running the Tutorial-backed Tests
+## 8. Running the Tutorial-backed Tests
 
 Fast JVM run (covers all tutorial examples):
 

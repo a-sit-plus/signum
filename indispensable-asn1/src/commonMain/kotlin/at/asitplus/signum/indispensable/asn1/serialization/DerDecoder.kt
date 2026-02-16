@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import Asn1Backed
+import Asn1BackedSerializer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -337,6 +339,16 @@ class DerDecoder internal constructor(
 
     @OptIn(InternalSerializationApi::class)
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        if (deserializer is Asn1BackedSerializer<*>) {
+            // don’t consume inline hints here – they must apply to the inner value
+            val raw = peekCurrentElementOrNull()
+
+            @Suppress("UNCHECKED_CAST")
+            val inner = decodeSerializableValue(deserializer.valueSer as DeserializationStrategy<Any?>)
+
+            @Suppress("UNCHECKED_CAST")
+            return Asn1Backed(inner as Any, raw) as T
+        }
         if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[elementIndex]
         val inlineHints = inlineHintState.consume()
@@ -397,7 +409,7 @@ class DerDecoder internal constructor(
             return decodeCurrentElementWith(openSerializer as DeserializationStrategy<T>)
         }
 
-        if (deserializer.descriptor.kind is PolymorphicKind.OPEN) {
+        if (deserializer.descriptor.kind is PolymorphicKind.OPEN && deserializer is AbstractPolymorphicSerializer<*>) {
             throw SerializationException(
                 "Open polymorphism for ${deserializer.descriptor.serialName} requires an ASN.1 serializer " +
                         "registered in DER { serializersModule = ... } via polymorphicByTag(...) " +
@@ -405,7 +417,8 @@ class DerDecoder internal constructor(
             )
         }
 
-        if (isAsn1ChoiceRequested(deserializer.descriptor, inlineHints.asChoice, propertyAsChoice)) {
+        if (isAsn1ChoiceRequested(deserializer.descriptor, inlineHints.asChoice, propertyAsChoice)
+            && deserializer is SealedClassSerializer<*>) {
             return decodeChoiceSerializableValue(deserializer, currentAnnotatedElement, inlineHints.tag)
         }
 
