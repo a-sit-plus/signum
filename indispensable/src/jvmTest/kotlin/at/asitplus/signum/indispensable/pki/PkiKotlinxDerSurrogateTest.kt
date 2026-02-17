@@ -1,29 +1,26 @@
 package at.asitplus.signum.indispensable.pki
 
+import Asn1Backed
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.serialization.*
+import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
-import at.asitplus.signum.indispensable.asn1.serialization.*
-import at.asitplus.signum.indispensable.asn1.serialization.Asn1BitString as Asn1BitStringAnnotation
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.KeepGeneratedSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.KeyPurposeId
 import org.bouncycastle.asn1.x509.KeyUsage
@@ -33,6 +30,7 @@ import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1BitString as Asn1BitStringAnnotation
 
 @OptIn(ExperimentalSerializationApi::class, ExperimentalEncodingApi::class)
 val PkiKotlinxDerSurrogateTest by testSuite {
@@ -57,30 +55,30 @@ val PkiKotlinxDerSurrogateTest by testSuite {
     "X509 surrogate reject/accept behavior stays aligned with legacy parser" - {
         val (_, faulty) = readGoogleDerCorpus()
 
-        withData(nameFn = { (name, _) -> name }, faulty) { (name, der) ->
+        withData(nameFn = { (name, _) -> name }, faulty) - { (name, der) ->
             val legacy = catchingUnwrapped { X509Certificate.decodeFromDer(der) }
             val surrogate = catchingUnwrapped { DER.decodeFromDer<SurrogateX509Certificate>(der) }
 
-            withClue(name+" legacy failure ${legacy.isFailure}, surrogate failure: ${surrogate.isFailure}") {
-                if(legacy.isSuccess && !name.startsWith("ok-") && surrogate.isFailure) {
-                    return@withData
-                }
-                legacy.isFailure shouldBe surrogate.isFailure
-                if (legacy.isSuccess) {
-                    surrogate.isSuccess shouldBe true
-                    val surrogateValue = surrogate.getOrThrow()
-                    //these are invalid, so checks for conformance are not relevant
-                    //surrogateValue.isConsistentWithX509Constraints() shouldBe true
-                    val surrogateDer = DER.encodeToDer(surrogateValue)
-                    catchingUnwrapped { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
-
-                    val legacyDer = legacy.getOrThrow().encodeToDer()
-                    //we only check when encoding itself is kosher
-                    if(!name.contains("-nonminimal") && !name.contains("-der-invalid-bitstring")) {
+            withClue(name + " legacy failure ${legacy.isFailure}, surrogate failure: ${surrogate.isFailure}") {
+                "byte-equal" {
+                    surrogate.getOrNull()?.let {
+                        val surrogateDer = DER { reEmitAsn1Backed = true }.encodeToDer(it)
                         surrogateDer shouldBe der
-                        surrogateDer shouldBe legacyDer
                     }
                 }
+                "same pass/fail but stricter" - {
+                    if (legacy.isSuccess && !name.startsWith("ok-") && surrogate.isFailure) {
+                        "we are better for $name" {}
+                        //we are better than the old!!!
+                    } else "legacy always was strict" { legacy.isFailure shouldBe surrogate.isFailure }
+                }
+                if (legacy.isSuccess && surrogate.isSuccess) {
+                    "Too lenient" {
+                        val legacyDer = legacy.getOrThrow().encodeToDer()
+                        //we only check when encoding itself is kosher
+                        DER { reEmitAsn1Backed = true }.encodeToDer(surrogate.getOrThrow()) shouldBe legacyDer
+                    }
+                } else "Strict as should be" {}
             }
         }
     }
@@ -145,14 +143,15 @@ private fun readGoogleDerCorpus(): Pair<List<Pair<String, ByteArray>>, List<Pair
     val ok = all.filter { it.name.startsWith("ok-") }
     val faulty = all.filter { !it.name.startsWith("ok-") }
 
-    return ok.filterNot { it.name=="ok-uniqueid-incomplete-byte.der" }.map { it.name to it.readBytes() } to faulty.map { it.name to it.readBytes() }
+    return ok.filterNot { it.name == "ok-uniqueid-incomplete-byte.der" }
+        .map { it.name to it.readBytes() } to faulty.map { it.name to it.readBytes() }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
 private fun assertX509SurrogateRoundtrip(label: String, der: ByteArray) {
     val legacy = X509Certificate.decodeFromDer(der)
     val surrogate = DER.decodeFromDer<SurrogateX509Certificate>(der)
-    val surrogateDer = DER.encodeToDer(surrogate)
+    val surrogateDer = DER { reEmitAsn1Backed = true }.encodeToDer(surrogate)
     withClue(label) {
         surrogate.isConsistentWithX509Constraints() shouldBe true
         catchingUnwrapped { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
@@ -165,7 +164,7 @@ private fun assertX509SurrogateRoundtrip(label: String, der: ByteArray) {
 }
 
 private fun SurrogateX509Certificate.isConsistentWithX509Constraints(): Boolean =
-    tbsCertificate.signature == signatureAlgorithm
+    tbsCertificate.value.signature == signatureAlgorithm
 
 private fun generatedCsrVectors(): List<Pair<String, ByteArray>> {
     val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
@@ -287,12 +286,18 @@ private fun malformedCsrVectors(validDer: ByteArray): List<Pair<String, ByteArra
 private fun String.asUtf8String() = at.asitplus.signum.indispensable.asn1.Asn1String.UTF8(this)
 
 @Serializable
-data class SurrogateX509Certificate(
-    val tbsCertificate: SurrogateTbsCertificate,
+data class SurrogateX509Certificate private constructor(
+    val tbsCertificate: Asn1Backed<SurrogateTbsCertificate>,
     val signatureAlgorithm: Asn1Element,
     @Asn1BitStringAnnotation
     val signatureValue: ByteArray
-)
+) {
+    constructor(
+        tbsCertificate: SurrogateTbsCertificate,
+        signatureAlgorithm: Asn1Element,
+        signatureValue: ByteArray
+    ) : this(Asn1Backed(tbsCertificate), signatureAlgorithm, signatureValue)
+}
 
 @Serializable
 data class SurrogateTbsCertificate(
@@ -315,7 +320,7 @@ data class SurrogateTbsCertificate(
 ) {
     init {
         val extensionList = extensions?.value
-        if(!extensionList.isNullOrEmpty()) {
+        if (!extensionList.isNullOrEmpty()) {
             require(extensionList.distinctBy { it.oid }.size == extensionList.size)
             // Align surrogate strictness with legacy SAN/IAN structural validation.
             extensionList.findSubjectAltNames()
@@ -507,8 +512,10 @@ object SurrogateSubjectPublicKeyInfoSerializer : KSerializer<SurrogateSubjectPub
         when (value) {
             is SurrogateEcPublicKeyInfo ->
                 encoder.encodeSerializableValue(SurrogateEcPublicKeyInfoSerializer, value)
+
             is SurrogateRsaPublicKeyInfo ->
                 encoder.encodeSerializableValue(SurrogateRsaPublicKeyInfoSerializer, value)
+
             is SurrogateUnknownPublicKeyInfo ->
                 encoder.encodeSerializableValue(Asn1Element.serializer(), value.rawSpki)
         }
