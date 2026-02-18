@@ -237,7 +237,6 @@ internal class DerEncoder(
         val propertyContext = descriptorAndIndex?.toDerPropertyContext()
         val propertyAnnotation = propertyContext?.propertyAsn1Tag
         val propertyAsBitString = propertyContext?.propertyAsBitString == true
-        val propertyAsChoice = propertyContext?.propertyAsChoice == true
         val propertyDescriptor = propertyContext?.propertyDescriptor
         val bitStringRequested = inlineHints.asBitString || propertyAsBitString || serializer.descriptor.isAsn1BitString
         if (bitStringRequested && !serializer.descriptor.isAsn1BitStringCompatibleDescriptor()) {
@@ -314,7 +313,7 @@ internal class DerEncoder(
             )
         }
 
-        if (isAsn1ChoiceRequested(serializer.descriptor, inlineHints.asChoice, propertyAsChoice)
+        if (isAsn1ChoiceRequested(serializer.descriptor)
             && serializer is SealedClassSerializer<*>) {
             descriptorAndIndex = null
             encodeChoiceSerializableValue(

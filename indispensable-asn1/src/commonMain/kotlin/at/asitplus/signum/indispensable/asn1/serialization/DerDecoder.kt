@@ -50,7 +50,6 @@ class DerDecoder internal constructor(
     private lateinit var propertyDescriptor: SerialDescriptor
     private var propertyAsn1Tag: Asn1Tag? = null
     private var propertyAsBitString: Boolean = false
-    private var propertyAsChoice: Boolean = false
     private val inlineHintState = DerInlineHintState()
     private var couldBeNull = false
     private var currentOwnerSerialName: String? = null
@@ -294,8 +293,6 @@ class DerDecoder internal constructor(
                 inlineAsn1Tag = pendingInlineHints.tag,
                 propertyAsBitString = propertyAsBitString,
                 inlineAsBitString = pendingInlineHints.asBitString,
-                propertyAsChoice = propertyAsChoice,
-                inlineAsChoice = pendingInlineHints.asChoice,
             )) {
                 is Asn1LeadingTagsResolution.Exact -> {
                     val actualTag = elements[elementIndex].tag
@@ -417,7 +414,7 @@ class DerDecoder internal constructor(
             )
         }
 
-        if (isAsn1ChoiceRequested(deserializer.descriptor, inlineHints.asChoice, propertyAsChoice)
+        if (isAsn1ChoiceRequested(deserializer.descriptor)
             && deserializer is SealedClassSerializer<*>) {
             return decodeChoiceSerializableValue(deserializer, currentAnnotatedElement, inlineHints.tag)
         }
@@ -574,7 +571,6 @@ class DerDecoder internal constructor(
         propertyDescriptor = descriptor
         propertyAsn1Tag = descriptor.annotations.asn1Tag
         propertyAsBitString = descriptor.isAsn1BitString
-        propertyAsChoice = descriptor.isSealed
     }
 
     private fun applyCurrentPropertyContext(
@@ -593,7 +589,6 @@ class DerDecoder internal constructor(
         propertyDescriptor = context.propertyDescriptor
         propertyAsn1Tag = context.propertyAsn1Tag
         propertyAsBitString = context.propertyAsBitString
-        propertyAsChoice = context.propertyAsChoice
         currentOwnerSerialName = context.ownerSerialName
         currentPropertyName = context.propertyName
         currentPropertyIndex = context.index

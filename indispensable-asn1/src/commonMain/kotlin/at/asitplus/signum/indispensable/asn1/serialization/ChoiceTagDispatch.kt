@@ -20,9 +20,7 @@ internal fun <T : Any> buildSealedChoiceDispatch(
             )
 
         val alternativeDescriptor = alternativesDescriptor.getElementDescriptor(i)
-        val leadingTags = when (val resolution = alternativeDescriptor.possibleLeadingTagsForAsn1(
-            propertyAsChoice = alternativeDescriptor.isSealed,
-        )) {
+        val leadingTags = when (val resolution = alternativeDescriptor.possibleLeadingTagsForAsn1()) {
             is Asn1LeadingTagsResolution.Exact -> resolution.tags
             Asn1LeadingTagsResolution.UnknownInfer -> throw SerializationException(
                 "Undecidable CHOICE tag dispatch for alternative '$alternativeSerialName' in $ownerSerialName: " +

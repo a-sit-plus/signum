@@ -15,7 +15,6 @@ import kotlinx.serialization.encoding.Encoder
 internal data class DerInlineHints(
     val tag: Asn1Tag?,
     val asBitString: Boolean,
-    val asChoice: Boolean = false,
 )
 
 internal data class DerPropertyContext(
@@ -24,7 +23,6 @@ internal data class DerPropertyContext(
     val propertyDescriptor: SerialDescriptor,
     val propertyAsn1Tag: Asn1Tag?,
     val propertyAsBitString: Boolean,
-    val propertyAsChoice: Boolean = false,
     val propertyName: String?,
 ) {
     val ownerSerialName: String
@@ -69,16 +67,13 @@ internal fun Pair<SerialDescriptor, Int>.toDerPropertyContext(
         propertyDescriptor = ownerDescriptor.getElementDescriptor(index),
         propertyAsn1Tag = ownerDescriptor.asn1Tag(index),
         propertyAsBitString = ownerDescriptor.isAsn1BitString(index),
-        propertyAsChoice = ownerDescriptor.getElementDescriptor(index).isSealed,
         propertyName = propertyName,
     )
 }
 
 internal fun isAsn1ChoiceRequested(
     descriptor: SerialDescriptor,
-    inlineAsChoice: Boolean,
-    propertyAsChoice: Boolean,
-): Boolean = inlineAsChoice || propertyAsChoice || descriptor.isSealed
+): Boolean = descriptor.isSealed
 
 internal fun Encoder.requireDerEncoder(serializerName: String): DerEncoder {
     if (this !is DerEncoder) {

@@ -73,7 +73,6 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
         val fieldDescriptor = getElementDescriptor(index)
         val propertyAsn1Tag = asn1Tag(index)
         val propertyAsBitString = isAsn1BitString(index)
-        val propertyAsChoice = getElementDescriptor(index).isSealed
         val nullEncodingAnalysis = fieldDescriptor.analyzeAsn1NullableNullEncoding(
             propertyAsn1Tag = propertyAsn1Tag,
             propertyAsBitString = propertyAsBitString,
@@ -100,7 +99,6 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
                 descriptor = fieldDescriptor,
                 propertyAsn1Tag = propertyAsn1Tag,
                 propertyAsBitString = propertyAsBitString,
-                propertyAsChoice = propertyAsChoice,
             )
         )
     }
@@ -210,16 +208,12 @@ internal fun SerialDescriptor.possibleLeadingTagsForAsn1(
     inlineAsn1Tag: Asn1Tag? = null,
     propertyAsBitString: Boolean = false,
     inlineAsBitString: Boolean = false,
-    propertyAsChoice: Boolean = false,
-    inlineAsChoice: Boolean = false,
 ): Asn1LeadingTagsResolution = possibleLeadingTags(
     descriptor = this,
     propertyAsn1Tag = propertyAsn1Tag,
     inlineAsn1Tag = inlineAsn1Tag,
     propertyAsBitString = propertyAsBitString,
     inlineAsBitString = inlineAsBitString,
-    propertyAsChoice = propertyAsChoice,
-    inlineAsChoice = inlineAsChoice,
 )
 
 private fun possibleLeadingTags(
@@ -228,13 +222,11 @@ private fun possibleLeadingTags(
     inlineAsn1Tag: Asn1Tag? = null,
     propertyAsBitString: Boolean = false,
     inlineAsBitString: Boolean = false,
-    propertyAsChoice: Boolean = false,
-    inlineAsChoice: Boolean = false,
     inheritedBitString: Boolean = false,
     forcedChoice: Boolean? = null,
 ): Asn1LeadingTagsResolution {
     val isBitString = inheritedBitString || inlineAsBitString || propertyAsBitString || descriptor.isAsn1BitString
-    val choiceMode = forcedChoice ?: (inlineAsChoice || propertyAsChoice || descriptor.isSealed)
+    val choiceMode = forcedChoice ?: descriptor.isSealed
 
     val tagTemplate = resolveAsn1TagTemplate(
         inlineAsn1Tag = inlineAsn1Tag,
@@ -262,8 +254,6 @@ private fun possibleBaseLeadingTags(
             propertyAsn1Tag = null,
             propertyAsBitString = false,
             inlineAsBitString = false,
-            propertyAsChoice = false,
-            inlineAsChoice = false,
             inheritedBitString = isBitString,
             forcedChoice = choiceMode,
         )
@@ -346,8 +336,6 @@ private fun possibleSealedChoiceAlternativeLeadingTags(descriptor: SerialDescrip
             propertyAsn1Tag = null,
             propertyAsBitString = false,
             inlineAsBitString = false,
-            propertyAsChoice = false,
-            inlineAsChoice = false,
             forcedChoice = alternativeDescriptor.isSealed,
         )) {
             is Asn1LeadingTagsResolution.Exact -> alternativeTags += resolution.tags
