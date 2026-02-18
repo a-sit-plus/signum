@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -59,7 +58,6 @@ private val Asn1StringTags: Set<Asn1Element.Tag> = setOf(
     Asn1Element.Tag.STRING_UNRESTRICTED,
     Asn1Element.Tag.STRING_VIDEOTEX,
 )
-private val ByteArraySerialName: String = ByteArraySerializer().descriptor.serialName
 private const val Asn1ElementSerializerSerialName = "Asn1ElementDerEncodedSerializer"
 private const val Asn1OpaqueSerializerSerialName = "Asn1DerSerializer"
 private const val KotlinTimeInstantSerialName = "kotlin.time.Instant"
@@ -457,13 +455,6 @@ private fun SerialDescriptor.asn1BaseCanEncodeEmptyContent(isBitString: Boolean)
         else -> false
     }
 }
-
-private fun SerialDescriptor.isByteArrayLikeDescriptor(): Boolean =
-    this == ByteArraySerializer().descriptor ||
-            serialName.removeSuffix("?") == ByteArraySerialName ||
-            (kind is StructureKind.LIST &&
-                    elementsCount == 1 &&
-                    getElementDescriptor(0).kind == PrimitiveKind.BYTE)
 
 private fun SerialDescriptor.isAsn1OpaqueSerializerDescriptor(): Boolean {
     val normalizedSerialName = serialName.removeSuffix("?")

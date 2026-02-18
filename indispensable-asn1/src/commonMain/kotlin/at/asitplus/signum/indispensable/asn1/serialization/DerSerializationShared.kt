@@ -4,10 +4,19 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.TagClass
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.descriptors.PolymorphicKind
+import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.internal.AbstractPolymorphicSerializer
+import kotlinx.serialization.modules.SerializersModule
 
 /**
  * Inline annotation hints captured by [DerEncoder]/[DerDecoder] from [SerialDescriptor]s.
@@ -74,6 +83,42 @@ internal fun Pair<SerialDescriptor, Int>.toDerPropertyContext(
 internal fun isAsn1ChoiceRequested(
     descriptor: SerialDescriptor,
 ): Boolean = descriptor.isSealed
+
+private val byteArrayDescriptor = ByteArraySerializer().descriptor
+private val byteArraySerialName = byteArrayDescriptor.serialName.removeSuffix("?")
+
+internal fun SerialDescriptor.isByteArrayLikeDescriptor(): Boolean {
+    val descriptor = unwrapInlineDescriptorForAsn1()
+    val normalizedName = descriptor.serialName.removeSuffix("?")
+    return descriptor == byteArrayDescriptor ||
+            normalizedName == byteArraySerialName ||
+            (descriptor.kind is StructureKind.LIST &&
+                    descriptor.elementsCount == 1 &&
+                    descriptor.getElementDescriptor(0).kind == PrimitiveKind.BYTE)
+}
+
+private tailrec fun SerialDescriptor.unwrapInlineDescriptorForAsn1(): SerialDescriptor =
+    if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptorForAsn1() else this
+
+@OptIn(InternalSerializationApi::class)
+internal fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
+    serializer: SerializationStrategy<T>,
+    serializersModule: SerializersModule,
+): SerializationStrategy<*>? {
+    if (serializer.descriptor.kind !is PolymorphicKind.OPEN) return null
+    val polymorphicSerializer = serializer as? AbstractPolymorphicSerializer<*> ?: return null
+    return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
+}
+
+@OptIn(InternalSerializationApi::class)
+internal fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
+    deserializer: DeserializationStrategy<T>,
+    serializersModule: SerializersModule,
+): DeserializationStrategy<*>? {
+    if (deserializer.descriptor.kind !is PolymorphicKind.OPEN) return null
+    val polymorphicSerializer = deserializer as? AbstractPolymorphicSerializer<*> ?: return null
+    return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
+}
 
 internal fun Encoder.requireDerEncoder(serializerName: String): DerEncoder {
     if (this !is DerEncoder) {

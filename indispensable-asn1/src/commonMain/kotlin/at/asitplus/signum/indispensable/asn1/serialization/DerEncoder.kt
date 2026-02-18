@@ -294,7 +294,7 @@ internal class DerEncoder(
             return
         }
 
-        resolveOpenPolymorphicAsn1SerializerOrNull(serializer)?.let { openSerializer ->
+        resolveOpenPolymorphicAsn1SerializerOrNull(serializer, serializersModule)?.let { openSerializer ->
             if (openSerializer.descriptor == serializer.descriptor) {
                 throw SerializationException(
                     "Open polymorphism for ${serializer.descriptor.serialName} resolved to itself. " +
@@ -342,15 +342,6 @@ internal class DerEncoder(
             appendElement(baseElement, effectiveTagTemplate)
         }
         else super.encodeSerializableValue(serializer, value as T)
-    }
-
-    @OptIn(InternalSerializationApi::class)
-    private fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
-        serializer: SerializationStrategy<T>,
-    ): SerializationStrategy<*>? {
-        if (serializer.descriptor.kind !is PolymorphicKind.OPEN) return null
-        val polymorphicSerializer = serializer as? AbstractPolymorphicSerializer<*> ?: return null
-        return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
     }
 
     @OptIn(InternalSerializationApi::class)

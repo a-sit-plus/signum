@@ -3,10 +3,7 @@ package at.asitplus.signum.indispensable.asn1.serialization
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.TagClass
 import kotlinx.serialization.SerialInfo
-import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.StructureKind
 
 /**
  * ASN.1 implicit tag override annotation.
@@ -75,21 +72,7 @@ internal fun SerialDescriptor.isAsn1BitString(index: Int): Boolean =
 
 internal val SerialDescriptor.isSealed: Boolean get() = kind is kotlinx.serialization.descriptors.PolymorphicKind.SEALED
 
-private val byteArrayDescriptor = ByteArraySerializer().descriptor
-private val byteArraySerialName = byteArrayDescriptor.serialName.removeSuffix("?")
-
-internal fun SerialDescriptor.isAsn1BitStringCompatibleDescriptor(): Boolean {
-    val descriptor = unwrapInlineDescriptorForAsn1()
-    val normalizedName = descriptor.serialName.removeSuffix("?")
-    return descriptor == byteArrayDescriptor ||
-            normalizedName == byteArraySerialName ||
-            (descriptor.kind is StructureKind.LIST &&
-                    descriptor.elementsCount == 1 &&
-                    descriptor.getElementDescriptor(0).kind == PrimitiveKind.BYTE)
-}
-
-private tailrec fun SerialDescriptor.unwrapInlineDescriptorForAsn1(): SerialDescriptor =
-    if (isInline && elementsCount == 1) getElementDescriptor(0).unwrapInlineDescriptorForAsn1() else this
+internal fun SerialDescriptor.isAsn1BitStringCompatibleDescriptor(): Boolean = isByteArrayLikeDescriptor()
 
 internal fun resolveAsn1TagTemplate(
     inlineAsn1Tag: Asn1Tag? = null,

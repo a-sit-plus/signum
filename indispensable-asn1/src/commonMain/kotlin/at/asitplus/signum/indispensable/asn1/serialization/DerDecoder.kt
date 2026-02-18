@@ -395,7 +395,7 @@ class DerDecoder internal constructor(
             )
         }
 
-        resolveOpenPolymorphicAsn1SerializerOrNull(deserializer)?.let { openSerializer ->
+        resolveOpenPolymorphicAsn1SerializerOrNull(deserializer, serializersModule)?.let { openSerializer ->
             if (openSerializer.descriptor == deserializer.descriptor) {
                 throw SerializationException(
                     "Open polymorphism for ${deserializer.descriptor.serialName} resolved to itself. " +
@@ -637,15 +637,6 @@ class DerDecoder internal constructor(
             )
 
         return decodeCurrentElementWith(selected as DeserializationStrategy<T>)
-    }
-
-    @OptIn(InternalSerializationApi::class)
-    private fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
-        deserializer: DeserializationStrategy<T>,
-    ): DeserializationStrategy<*>? {
-        if (deserializer.descriptor.kind !is PolymorphicKind.OPEN) return null
-        val polymorphicSerializer = deserializer as? AbstractPolymorphicSerializer<*> ?: return null
-        return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
     }
 
 }
