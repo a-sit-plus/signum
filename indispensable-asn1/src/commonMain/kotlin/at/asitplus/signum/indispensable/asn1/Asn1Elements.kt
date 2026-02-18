@@ -390,8 +390,8 @@ sealed class Asn1Element(
 
         /**
          * As per ITU-T X.680 8824-1 8.6
-         * (class, then tag number). The constructed bit is only used as a deterministic
-         * tie-breaker when class and tag number are equal.
+         * (class, then tag number). The constructed bit is intentionally ignored for canonical
+         * tag ordering.
          */
         override fun compareTo(other: Tag) = EncodedTagComparator.compare(this, other)
 
@@ -400,14 +400,7 @@ sealed class Asn1Element(
                 val classCompare = a.tagClass.ordinal.compareTo(b.tagClass.ordinal)
                 if (classCompare != 0) return classCompare
 
-                val tagValueCompare = a.tagValue.compareTo(b.tagValue)
-                if (tagValueCompare != 0) return tagValueCompare
-
-                return when {
-                    a.isConstructed == b.isConstructed -> 0
-                    !a.isConstructed && b.isConstructed -> -1
-                    else -> 1
-                }
+                return a.tagValue.compareTo(b.tagValue)
             }
 
         }

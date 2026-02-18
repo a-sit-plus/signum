@@ -5,6 +5,7 @@ import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
+import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
 
@@ -42,7 +43,7 @@ val TagSortingTest by testSuite {
             )
 
 
-            tagA shouldBeLessThan tagAC
+            tagA.compareTo(tagAC) shouldBe 0
 
             tagA shouldBeLessThan tagAAPP
             tagAAPP shouldBeLessThan tagACTX
