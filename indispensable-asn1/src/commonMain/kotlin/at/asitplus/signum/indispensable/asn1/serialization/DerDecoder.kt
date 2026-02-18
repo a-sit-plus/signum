@@ -68,6 +68,12 @@ class DerDecoder internal constructor(
     internal fun peekCurrentElementTagOrNull(): Asn1Element.Tag? = elements.getOrNull(elementIndex)?.tag
     internal fun peekCurrentElementOrNull(): Asn1Element? = elements.getOrNull(elementIndex)
 
+    /**
+     * Decodes the current element in an isolated child decoder context.
+     *
+     * @throws SerializationException if no current element exists or decoding fails for [deserializer]
+     */
+    @Throws(SerializationException::class)
     internal fun <T> decodeCurrentElementWith(deserializer: DeserializationStrategy<T>): T {
         val current = elements.getOrNull(elementIndex)
             ?: throw SerializationException("No ASN.1 element left while decoding ${deserializer.descriptor.serialName}")
@@ -94,7 +100,12 @@ class DerDecoder internal constructor(
         return this
     }
 
-
+    /**
+     * Begins structure decoding by materializing a child decoder for structure children.
+     *
+     * @throws SerializationException if a structure descriptor is mapped to a non-structure ASN.1 element
+     */
+    @Throws(SerializationException::class)
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
 
         // 1. Pick the element that belongs to *this* level
@@ -153,6 +164,12 @@ class DerDecoder internal constructor(
         }
     }
 
+    /**
+     * Resolves next property index and validates optional/nullable layout constraints.
+     *
+     * @throws SerializationException if class/object layout is ambiguous or trailing input remains unexpectedly
+     */
+    @Throws(SerializationException::class)
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         return when (descriptor.kind) {
             is StructureKind.CLASS, is StructureKind.OBJECT -> {
@@ -210,7 +227,12 @@ class DerDecoder internal constructor(
         }
     }
 
-
+    /**
+     * Primitive decode path for descriptors consumed through `decodeValue`.
+     *
+     * @throws SerializationException on unsupported descriptor shapes or ASN.1 tag/value mismatches
+     */
+    @Throws(SerializationException::class)
     override fun decodeValue(): Any {
         val inlineAnnotation = inlineHintState.consume().tag
 
@@ -273,8 +295,13 @@ class DerDecoder internal constructor(
         return decoded
 
     }
-
     @OptIn(InternalSerializationApi::class)
+    /**
+     * Handles nullable/absent semantics before delegating to the main decode pipeline.
+     *
+     * @throws SerializationException if nullable omission/encoding is undecidable or invalid for current property
+     */
+    @Throws(SerializationException::class)
     override fun <T : Any?> decodeSerializableValue(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
@@ -335,8 +362,13 @@ class DerDecoder internal constructor(
         }
         return decodeSerializableValue(deserializer)
     }
-
     @OptIn(InternalSerializationApi::class)
+    /**
+     * Main serialization pipeline for DER decoding.
+     *
+     * @throws SerializationException if serializer/tag/nullability/polymorphism constraints are violated
+     */
+    @Throws(SerializationException::class)
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (deserializer is Asn1BackedSerializer<*>) {
             // don’t consume inline hints here – they must apply to the inner value
@@ -596,6 +628,12 @@ class DerDecoder internal constructor(
 
     @OptIn(InternalSerializationApi::class)
     @Suppress("UNCHECKED_CAST")
+    /**
+     * Decodes sealed-polymorphic CHOICE values by tag-based arm selection.
+     *
+     * @throws SerializationException if CHOICE descriptors/arms cannot be resolved or matched
+     */
+    @Throws(SerializationException::class)
     private fun <T> decodeChoiceSerializableValue(
         deserializer: DeserializationStrategy<T>,
         currentAnnotatedElement: Asn1Element,
@@ -641,6 +679,12 @@ class DerDecoder internal constructor(
 
 private class Asn1ChoiceNoMatchingAlternativeException(message: String) : SerializationException(message)
 
+/**
+ * Decodes ASN.1 TIME content into [Instant], optionally under an implicit tag override.
+ *
+ * @throws SerializationException if content is neither UTCTime nor GeneralizedTime
+ */
+@Throws(SerializationException::class)
 private fun Asn1Primitive.decodeInstantWithOptionalImplicitTag(expectedTag: Asn1Element.Tag?): Instant {
     if (expectedTag == null) return decodeToInstant()
 
@@ -656,6 +700,12 @@ private fun Asn1Primitive.decodeInstantWithOptionalImplicitTag(expectedTag: Asn1
     )
 }
 
+/**
+ * Decodes ASN.1 string content while honoring optional implicit tag override.
+ *
+ * @throws SerializationException if tag does not match expected string/override tag
+ */
+@Throws(SerializationException::class)
 private fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): String =
     if (implicitTagOverride == null) {
         when (tag) {

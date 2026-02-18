@@ -20,6 +20,12 @@ annotation class Asn1OpenPolymorphismDsl
 class Asn1OpenPolymorphismByTagBuilder<T : Any> internal constructor() {
     private val registrations = mutableListOf<Asn1TagDiscriminatedSubtypeRegistration<T>>()
 
+    /**
+     * Registers one tag-discriminated subtype.
+     *
+     * @throws IllegalArgumentException if leading tags cannot be inferred for empty [leadingTags]
+     */
+    @Throws(IllegalArgumentException::class)
     fun <S : T> subtype(
         serializer: KSerializer<S>,
         leadingTags: Set<Asn1Element.Tag>,
@@ -51,6 +57,12 @@ class Asn1OpenPolymorphismByTagBuilder<T : Any> internal constructor() {
         )
     }
 
+    /**
+     * Builds the serializer from collected registrations.
+     *
+     * @throws SerializationException if no subtype has been registered
+     */
+    @Throws(SerializationException::class)
     internal fun build(serialName: String): KSerializer<T> {
         if (registrations.isEmpty()) {
             throw SerializationException("At least one subtype registration is required for $serialName")
@@ -68,6 +80,12 @@ class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() 
     private val registrations = mutableListOf<Asn1OidDiscriminatedSubtypeRegistration<T>>()
 
 
+    /**
+     * Registers one OID-discriminated subtype.
+     *
+     * @throws IllegalArgumentException if leading tags cannot be inferred for empty [leadingTags]
+     */
+    @Throws(IllegalArgumentException::class)
     fun <S : T> subtype(
         serializer: KSerializer<S>,
         provider: OidProvider<S>,
@@ -103,6 +121,12 @@ class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() 
         )
     }
 
+    /**
+     * Builds the serializer from collected registrations.
+     *
+     * @throws SerializationException if no subtype has been registered
+     */
+    @Throws(SerializationException::class)
     internal fun build(
         serialName: String,
         oidSelector: (Asn1Element) -> ObjectIdentifier?,
@@ -118,6 +142,13 @@ class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() 
     }
 }
 
+/**
+ * Builds a tag-discriminated ASN.1 open-polymorphic serializer.
+ *
+ * @throws SerializationException if no subtype is registered
+ * @throws IllegalArgumentException if subtype tag inference fails
+ */
+@Throws(SerializationException::class, IllegalArgumentException::class)
 fun <T : Any> asn1OpenPolymorphicByTagSerializer(
     serialName: String,
     block: Asn1OpenPolymorphismByTagBuilder<T>.() -> Unit,
@@ -125,6 +156,13 @@ fun <T : Any> asn1OpenPolymorphicByTagSerializer(
     .apply(block)
     .build(serialName)
 
+/**
+ * Builds an OID-discriminated ASN.1 open-polymorphic serializer.
+ *
+ * @throws SerializationException if no subtype is registered
+ * @throws IllegalArgumentException if subtype tag inference fails
+ */
+@Throws(SerializationException::class, IllegalArgumentException::class)
 fun <T : Identifiable> asn1OpenPolymorphicByOidSerializer(
     serialName: String,
     oidSelector: (Asn1Element) -> ObjectIdentifier? = ::oidFrom,
@@ -133,6 +171,13 @@ fun <T : Identifiable> asn1OpenPolymorphicByOidSerializer(
     .apply(block)
     .build(serialName, oidSelector)
 
+/**
+ * Registers a tag-discriminated ASN.1 open-polymorphic serializer as contextual serializer.
+ *
+ * @throws SerializationException if no subtype is registered
+ * @throws IllegalArgumentException if subtype tag inference fails
+ */
+@Throws(SerializationException::class, IllegalArgumentException::class)
 fun <T : Any> SerializersModuleBuilder.polymorphicByTag(
     baseClass: KClass<T>,
     serialName: String = "Asn1OpenPolymorphicByTag",
@@ -141,6 +186,13 @@ fun <T : Any> SerializersModuleBuilder.polymorphicByTag(
     contextual(baseClass, asn1OpenPolymorphicByTagSerializer(serialName, block))
 }
 
+/**
+ * Registers an OID-discriminated ASN.1 open-polymorphic serializer as contextual serializer.
+ *
+ * @throws SerializationException if no subtype is registered
+ * @throws IllegalArgumentException if subtype tag inference fails
+ */
+@Throws(SerializationException::class, IllegalArgumentException::class)
 fun <T : Identifiable> SerializersModuleBuilder.polymorphicByOid(
     baseClass: KClass<T>,
     serialName: String = "Asn1OpenPolymorphicByOid",

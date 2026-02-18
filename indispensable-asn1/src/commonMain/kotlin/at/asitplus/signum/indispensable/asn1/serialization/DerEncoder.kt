@@ -90,6 +90,12 @@ internal class DerEncoder(
         encodeValue(value)
     }
 
+    /**
+     * Encodes primitive/runtime values into ASN.1 elements.
+     *
+     * @throws SerializationException if tag/annotation constraints are invalid for the current value
+     */
+    @Throws(SerializationException::class)
     override fun encodeValue(value: Any) {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull()
@@ -151,6 +157,12 @@ internal class DerEncoder(
         appendElement(element, tagTemplate)
     }
 
+    /**
+     * Encodes null according to nullable layout analysis and explicit-null configuration.
+     *
+     * @throws SerializationException if nullable null encoding is ambiguous at current property location
+     */
+    @Throws(SerializationException::class)
     override fun encodeNull() {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull() ?: return
@@ -198,8 +210,13 @@ internal class DerEncoder(
         appendElement(Asn1.Enumerated(index), tagTemplate)
     }
 
-
     @OptIn(InternalSerializationApi::class)
+    /**
+     * Main serialization pipeline for DER encoding.
+     *
+     * @throws SerializationException if serializer/value/tag/nullability/polymorphism constraints are violated
+     */
+    @Throws(SerializationException::class)
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
 
         if (serializer is Asn1BackedSerializer<*> && value is Asn1Backed<*>) {
@@ -332,6 +349,12 @@ internal class DerEncoder(
 
     @OptIn(InternalSerializationApi::class)
     @Suppress("UNCHECKED_CAST")
+    /**
+     * Encodes sealed-polymorphic CHOICE values as exactly one ASN.1 element.
+     *
+     * @throws SerializationException if no concrete arm can be resolved or arm encoding is invalid
+     */
+    @Throws(SerializationException::class)
     private fun <T> encodeChoiceSerializableValue(
         serializer: SerializationStrategy<T>,
         value: T,
@@ -374,6 +397,12 @@ internal class DerEncoder(
         appendElement(elements.first(), tagTemplate)
     }
 
+    /**
+     * Starts structure encoding by creating a child encoder placeholder.
+     *
+     * @throws SerializationException if optional layout is ambiguous for class/object descriptors
+     */
+    @Throws(SerializationException::class)
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
         if (descriptor.kind is kotlinx.serialization.descriptors.StructureKind.CLASS ||
             descriptor.kind is kotlinx.serialization.descriptors.StructureKind.OBJECT
@@ -420,6 +449,9 @@ internal class DerEncoder(
         buffer += Asn1ElementHolder.Element(taggedElement)
     }
 
+    /**
+     * Writes fully encoded DER bytes to [destination].
+     */
     internal fun writeTo(destination: Sink) {
         encodeToTLV().forEach { it.encodeTo(destination) }
     }

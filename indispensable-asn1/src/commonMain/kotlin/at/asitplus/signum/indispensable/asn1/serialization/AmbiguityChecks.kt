@@ -62,6 +62,12 @@ private const val Asn1ElementSerializerSerialName = "Asn1ElementDerEncodedSerial
 private const val Asn1OpaqueSerializerSerialName = "Asn1DerSerializer"
 private const val KotlinTimeInstantSerialName = "kotlin.time.Instant"
 
+/**
+ * Validates that omittable fields of class/object descriptors remain unambiguous under DER decoding.
+ *
+ * @throws SerializationException if optional/nullable omissions can collide on leading tags
+ */
+@Throws(SerializationException::class)
 internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
     formatExplicitNulls: Boolean = false,
 ) {
@@ -152,6 +158,9 @@ internal fun SerialDescriptor.ensureNoAsn1AmbiguousOptionalLayout(
     }
 }
 
+/**
+ * Computes null encoding/decoding behavior for nullable descriptors under current tagging hints.
+ */
 internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
     propertyAsn1Tag: Asn1Tag? = null,
     inlineAsn1Tag: Asn1Tag? = null,
@@ -201,6 +210,9 @@ internal fun SerialDescriptor.analyzeAsn1NullableNullEncoding(
     )
 }
 
+/**
+ * Resolves possible leading ASN.1 tags for this descriptor under current hinting/tagging context.
+ */
 internal fun SerialDescriptor.possibleLeadingTagsForAsn1(
     propertyAsn1Tag: Asn1Tag? = null,
     inlineAsn1Tag: Asn1Tag? = null,

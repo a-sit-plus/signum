@@ -27,6 +27,12 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
     override val leadingTags: Set<Asn1Element.Tag>
         get() = dispatch.leadingTags
 
+    /**
+     * Adds one subtype registration at runtime.
+     *
+     * @throws IllegalArgumentException on duplicate/invalid OID mapping
+     */
+    @Throws(IllegalArgumentException::class)
     fun registerSubtype(registration: Asn1OidDiscriminatedSubtypeRegistration<T>) {
         dispatch.registerSubtype(registration)
     }
@@ -36,6 +42,12 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
             encoder.prependOidToNextStructure(it.oid)
         }.serializer
 
+    /**
+     * Selects decode serializer by extracting discriminator OID from current ASN.1 element.
+     *
+     * @throws SerializationException if no current element exists, OID extraction fails, or no subtype is registered
+     */
+    @Throws(SerializationException::class)
     override fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T> {
         val element = decoder.peekCurrentElementOrNull()
             ?: throw SerializationException("No ASN.1 element left while decoding ${descriptor.serialName}")
@@ -49,7 +61,12 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
         return selected as DeserializationStrategy<T>
     }
 
-
+    /**
+     * Serializes [value] and prepends OID discriminator to the next encoded structure.
+     *
+     * @throws SerializationException if encoder is not DER or runtime subtype matching is ambiguous/missing
+     */
+    @Throws(SerializationException::class)
     override fun serialize(encoder: Encoder, value: T) {
         val derEncoder = encoder as? DerEncoder
             ?: throw SerializationException("Expected DerEncoder while encoding ${descriptor.serialName}")

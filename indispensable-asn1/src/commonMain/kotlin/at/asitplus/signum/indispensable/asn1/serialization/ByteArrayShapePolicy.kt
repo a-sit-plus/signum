@@ -33,6 +33,12 @@ internal object ByteArrayShapePolicy {
         else -> ByteArrayShape.NOT_APPLICABLE
     }
 
+    /**
+     * Resolves byte-array shape from a runtime [value] and bit-string hints.
+     *
+     * @throws SerializationException if `@Asn1BitString` is requested for a non-ByteArray runtime value
+     */
+    @Throws(SerializationException::class)
     fun resolveRuntimeValueShape(
         value: Any,
         inlineAsBitString: Boolean = false,
@@ -59,6 +65,12 @@ internal object ByteArrayShapePolicy {
             ByteArrayShape.NOT_APPLICABLE
         }
 
+    /**
+     * Resolves byte-array shape from serializer [descriptor] and bit-string hints.
+     *
+     * @throws SerializationException if `@Asn1BitString` is requested for a serializer that is not byte-array compatible
+     */
+    @Throws(SerializationException::class)
     fun resolveSerializerShape(
         descriptor: SerialDescriptor,
         layoutPlan: DerLayoutPlanContext,
@@ -89,6 +101,12 @@ internal object ByteArrayShapePolicy {
         )
     }
 
+    /**
+     * Ensures bit-string hint usage is compatible with runtime [value].
+     *
+     * @throws SerializationException if bit-string mode is requested for non-ByteArray runtime values
+     */
+    @Throws(SerializationException::class)
     fun requireBitStringCompatibleValue(
         bitStringRequested: Boolean,
         value: Any,
@@ -100,6 +118,12 @@ internal object ByteArrayShapePolicy {
         }
     }
 
+    /**
+     * Ensures bit-string hint usage is compatible with serializer [descriptor].
+     *
+     * @throws SerializationException if bit-string mode is requested for a non-byte-array-compatible descriptor
+     */
+    @Throws(SerializationException::class)
     fun requireBitStringCompatibleSerializer(
         bitStringRequested: Boolean,
         descriptor: SerialDescriptor,
@@ -112,6 +136,12 @@ internal object ByteArrayShapePolicy {
         }
     }
 
+    /**
+     * Encodes [bytes] according to [shape].
+     *
+     * @throws IllegalStateException when [shape] is [ByteArrayShape.NOT_APPLICABLE]
+     */
+    @Throws(IllegalStateException::class)
     fun encodeByteArray(
         bytes: ByteArray,
         shape: ByteArrayShape,
@@ -121,6 +151,13 @@ internal object ByteArrayShapePolicy {
         ByteArrayShape.NOT_APPLICABLE -> error("Byte-array shape is not applicable")
     }
 
+    /**
+     * Decodes [primitive] into bytes according to [shape].
+     *
+     * @throws SerializationException when BIT STRING decoding fails for invalid ASN.1 payload/tag
+     * @throws IllegalStateException when [shape] is [ByteArrayShape.NOT_APPLICABLE]
+     */
+    @Throws(SerializationException::class, IllegalStateException::class)
     fun decodeByteArray(
         primitive: Asn1Primitive,
         shape: ByteArrayShape,

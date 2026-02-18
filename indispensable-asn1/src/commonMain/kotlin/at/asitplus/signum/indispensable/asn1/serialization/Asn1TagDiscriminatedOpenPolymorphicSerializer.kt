@@ -18,6 +18,12 @@ internal class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
     override val leadingTags: Set<Asn1Element.Tag>
         get() = dispatch.leadingTags
 
+    /**
+     * Adds one subtype registration at runtime.
+     *
+     * @throws IllegalArgumentException on duplicate/invalid tag mapping
+     */
+    @Throws(IllegalArgumentException::class)
     fun registerSubtype(registration: Asn1TagDiscriminatedSubtypeRegistration<T>) {
         dispatch.registerSubtype(registration)
     }
@@ -25,6 +31,12 @@ internal class Asn1TagDiscriminatedOpenPolymorphicSerializer<T : Any>(
     override fun serializerForEncode(encoder: DerEncoder, value: T): KSerializer<out T> =
         dispatch.serializerForEncode(value)
 
+    /**
+     * Selects decode serializer from current leading ASN.1 tag.
+     *
+     * @throws SerializationException when no current element exists or no subtype matches the tag
+     */
+    @Throws(SerializationException::class)
     override fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T> {
         val tag = decoder.peekCurrentElementTagOrNull()
             ?: throw SerializationException("No ASN.1 element left while decoding ${descriptor.serialName}")

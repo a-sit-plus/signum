@@ -18,6 +18,12 @@ internal class DerLayoutPlanContext(
     private val nullAnalysis = mutableMapOf<NullAnalysisKey, Asn1NullEncodingAnalysis>()
     private val leadingTagAnalysis = mutableMapOf<LeadingTagKey, Asn1LeadingTagsResolution>()
 
+    /**
+     * Primes descriptor-derived analyses recursively for one encode/decode operation.
+     *
+     * @throws kotlinx.serialization.SerializationException if primed descriptors contain ambiguous optional layouts
+     */
+    @Throws(kotlinx.serialization.SerializationException::class)
     fun prime(descriptor: SerialDescriptor) {
         if (!primed.add(descriptor)) return
 
@@ -35,6 +41,12 @@ internal class DerLayoutPlanContext(
         }
     }
 
+    /**
+     * Validates that optional/nullable field omission is unambiguous for DER decoding.
+     *
+     * @throws kotlinx.serialization.SerializationException if omitting fields can lead to ambiguous tag layouts
+     */
+    @Throws(kotlinx.serialization.SerializationException::class)
     fun ensureNoAmbiguousOptionalLayout(descriptor: SerialDescriptor) {
         if (!optionalLayoutChecked.add(descriptor)) return
         descriptor.ensureNoAsn1AmbiguousOptionalLayout(
@@ -112,4 +124,3 @@ internal class DerLayoutPlanContext(
         val inlineAsBitString: Boolean,
     )
 }
-

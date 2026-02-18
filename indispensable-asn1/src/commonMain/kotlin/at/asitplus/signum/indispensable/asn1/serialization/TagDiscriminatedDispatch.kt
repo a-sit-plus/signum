@@ -33,6 +33,12 @@ internal class Asn1TagDiscriminatedDispatch<T : Any>(
         subtypes.forEach(::registerSubtype)
     }
 
+    /**
+     * Registers one subtype in the dispatch table.
+     *
+     * @throws IllegalArgumentException if no leading tag is declared or if a tag is already mapped
+     */
+    @Throws(IllegalArgumentException::class)
     fun registerSubtype(registration: Asn1TagDiscriminatedSubtypeRegistration<T>) {
         require(registration.leadingTags.isNotEmpty()) {
             "Subtype '${registration.debugName}' must declare at least one leading ASN.1 tag"
@@ -55,12 +61,24 @@ internal class Asn1TagDiscriminatedDispatch<T : Any>(
     fun serializerForDecodeOrNull(tag: Asn1Element.Tag): KSerializer<out T>? =
         serializersByTag[tag]
 
+    /**
+     * Resolves decode serializer for [tag].
+     *
+     * @throws SerializationException if no subtype is registered for [tag]
+     */
+    @Throws(SerializationException::class)
     fun serializerForDecode(tag: Asn1Element.Tag): KSerializer<out T> =
         serializerForDecodeOrNull(tag)
             ?: throw SerializationException(
                 "No registered open-polymorphic subtype in $serialName for leading tag $tag"
             )
 
+    /**
+     * Resolves encode serializer for runtime [value].
+     *
+     * @throws SerializationException if zero or multiple subtype matchers match [value]
+     */
+    @Throws(SerializationException::class)
     fun serializerForEncode(value: T): KSerializer<out T> {
         val matches = registrations.filter { it.matches(value) }
         return when (matches.size) {

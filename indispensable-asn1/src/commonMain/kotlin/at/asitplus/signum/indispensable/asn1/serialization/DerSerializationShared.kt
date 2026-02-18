@@ -45,22 +45,37 @@ internal class DerInlineHintState {
     private var inlineAsn1Tag: Asn1Tag? = null
     private var inlineAsBitString: Boolean = false
 
+    /**
+     * Captures inline ASN.1 hints from [descriptor] for later consumption.
+     */
     fun recordFrom(descriptor: SerialDescriptor) {
         inlineAsn1Tag = descriptor.annotations.asn1Tag
         inlineAsBitString = descriptor.isAsn1BitString
     }
 
+    /**
+     * Returns currently pending inline hints without consuming them.
+     */
     fun peek(): DerInlineHints = DerInlineHints(
         tag = inlineAsn1Tag,
         asBitString = inlineAsBitString,
     )
 
+    /**
+     * Returns currently pending inline hints and resets internal state.
+     */
     fun consume(): DerInlineHints = peek().also {
         inlineAsn1Tag = null
         inlineAsBitString = false
     }
 }
 
+/**
+ * Resolves property-level ASN.1 context from a `(descriptor, index)` pair.
+ *
+ * @throws IndexOutOfBoundsException when [safePropertyNameLookup] is false and [index] is outside descriptor bounds
+ */
+@Throws(IndexOutOfBoundsException::class)
 internal fun Pair<SerialDescriptor, Int>.toDerPropertyContext(
     safePropertyNameLookup: Boolean = false,
 ): DerPropertyContext {
@@ -120,6 +135,12 @@ internal fun <T> resolveOpenPolymorphicAsn1SerializerOrNull(
     return serializersModule.getContextual(polymorphicSerializer.baseClass, emptyList())
 }
 
+/**
+ * Ensures encoder is [DerEncoder] and returns it.
+ *
+ * @throws SerializationException if called with a non-DER encoder
+ */
+@Throws(SerializationException::class)
 internal fun Encoder.requireDerEncoder(serializerName: String): DerEncoder {
     if (this !is DerEncoder) {
         throw SerializationException(
@@ -130,6 +151,12 @@ internal fun Encoder.requireDerEncoder(serializerName: String): DerEncoder {
     return this
 }
 
+/**
+ * Ensures decoder is [DerDecoder] and returns it.
+ *
+ * @throws SerializationException if called with a non-DER decoder
+ */
+@Throws(SerializationException::class)
 internal fun Decoder.requireDerDecoder(serializerName: String): DerDecoder {
     if (this !is DerDecoder) {
         throw SerializationException(
@@ -140,6 +167,14 @@ internal fun Decoder.requireDerDecoder(serializerName: String): DerDecoder {
     return this
 }
 
+/**
+ * Applies effective implicit tag override and validates [actualTag] against it.
+ *
+ * Returns `null` when no override is effective.
+ *
+ * @throws SerializationException if [actualTag] does not match the resolved implicit override
+ */
+@Throws(SerializationException::class)
 internal fun validateAndResolveImplicitTagOverride(
     actualTag: Asn1Element.Tag,
     inlineAsn1Tag: Asn1Tag? = null,
@@ -163,6 +198,13 @@ internal fun validateAndResolveImplicitTagOverride(
     return expectedTag
 }
 
+/**
+ * Validates [Asn1Explicit] wrapper tag requirements at the current location.
+ *
+ * @throws SerializationException if no effective tag override exists or if override is not
+ * CONTEXT_SPECIFIC + CONSTRUCTED
+ */
+@Throws(SerializationException::class)
 internal fun requireAsn1ExplicitWrapperTag(
     descriptor: SerialDescriptor,
     tagTemplate: Asn1Element.Tag.Template?,

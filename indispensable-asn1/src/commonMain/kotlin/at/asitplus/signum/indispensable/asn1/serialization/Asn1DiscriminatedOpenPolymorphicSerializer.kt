@@ -28,6 +28,12 @@ internal abstract class Asn1DiscriminatedOpenPolymorphicSerializer<T : Any>(
     protected abstract fun serializerForEncode(encoder: DerEncoder, value: T): KSerializer<out T>
     protected abstract fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T>
 
+    /**
+     * Serializes [value] using discriminator-based subtype selection.
+     *
+     * @throws SerializationException if encoder is not DER or subtype selection fails
+     */
+    @Throws(SerializationException::class)
     override fun serialize(encoder: Encoder, value: T) {
         val derEncoder = encoder.requireDerEncoder(descriptor.serialName)
         val selected = serializerForEncode(derEncoder, value)
@@ -35,6 +41,12 @@ internal abstract class Asn1DiscriminatedOpenPolymorphicSerializer<T : Any>(
         derEncoder.encodeSerializableValue(selected as KSerializer<Any?>, value as Any?)
     }
 
+    /**
+     * Deserializes one value using discriminator-based subtype selection.
+     *
+     * @throws SerializationException if decoder is not DER or subtype selection fails
+     */
+    @Throws(SerializationException::class)
     final override fun deserialize(decoder: Decoder): T {
         val derDecoder = decoder.requireDerDecoder(descriptor.serialName)
         val selected = serializerForDecode(derDecoder)

@@ -60,6 +60,12 @@ internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
     private val delegate = ByteArraySerializer()
     override val descriptor: SerialDescriptor = SerialDescriptor("Asn1ElementDerEncodedSerializer", delegate.descriptor)
 
+    /**
+     * Serializes an already materialized ASN.1 element as DER bytes.
+     *
+     * @throws kotlinx.serialization.SerializationException if encoder is not DER
+     */
+    @Throws(kotlinx.serialization.SerializationException::class)
     override fun serialize(
         encoder: Encoder,
         value: Asn1Element
@@ -68,6 +74,12 @@ internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
         encoder.encodeSerializableValue(delegate, value.derEncoded)
     }
 
+    /**
+     * Deserializes DER bytes into an ASN.1 element.
+     *
+     * @throws kotlinx.serialization.SerializationException if decoder is not DER or input bytes are invalid ASN.1 DER
+     */
+    @Throws(kotlinx.serialization.SerializationException::class)
     override fun deserialize(decoder: Decoder): Asn1Element {
         decoder.requireDerDecoder("Asn1ElementSerializer")
         return delegate.deserialize(decoder).let { Asn1Element.Companion.parse(it) }
@@ -94,11 +106,23 @@ interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> :
     override val descriptor: SerialDescriptor
         get() = Asn1OpaqueSerializerDescriptor { leadingTags }
 
+    /**
+     * Decodes one ASN.1-backed value via DER bytes.
+     *
+     * @throws kotlinx.serialization.SerializationException if decoder is not DER or ASN.1 decoding fails
+     */
+    @Throws(kotlinx.serialization.SerializationException::class)
     override fun deserialize(decoder: Decoder): T {
         decoder.requireDerDecoder(descriptor.serialName)
         return ByteArraySerializer().deserialize(decoder).let { decodeFromDer(it) }
     }
 
+    /**
+     * Encodes one ASN.1-backed value via DER bytes.
+     *
+     * @throws kotlinx.serialization.SerializationException if encoder is not DER
+     */
+    @Throws(kotlinx.serialization.SerializationException::class)
     override fun serialize(encoder: Encoder, value: T) {
         encoder.requireDerEncoder(descriptor.serialName)
         encoder.encodeSerializableValue(ByteArraySerializer(), value.encodeToDer())

@@ -4,6 +4,12 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
 
+/**
+ * Builds strict tag dispatch for sealed CHOICE alternatives.
+ *
+ * @throws SerializationException if alternative serializers/tags are undecidable or overlapping
+ */
+@Throws(SerializationException::class)
 internal fun <T : Any> buildSealedChoiceDispatch(
     ownerSerialName: String,
     alternativesDescriptor: SerialDescriptor,
