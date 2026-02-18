@@ -31,6 +31,9 @@ annotation class Asn1Tag(
 @Target(AnnotationTarget.PROPERTY)
 annotation class Asn1BitString
 
+/**
+ * ASN.1 tag-class override domain for [Asn1Tag].
+ */
 enum class Asn1TagClass {
     INFER,
     UNIVERSAL,
@@ -47,6 +50,9 @@ enum class Asn1TagClass {
     }
 }
 
+/**
+ * ASN.1 constructed-bit override domain for [Asn1Tag].
+ */
 enum class Asn1ConstructedBit {
     INFER,
     PRIMITIVE,

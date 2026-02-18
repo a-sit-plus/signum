@@ -30,6 +30,9 @@ class Der internal constructor(
  * If `false`, default-valued properties are omitted.
  * @property explicitNulls if `true`, nullable properties are encoded as ASN.1 `NULL` by default.
  * If `false`, nullable `null` values are omitted by default.
+ * @property reEmitAsn1Backed if `true`, [Asn1Backed] values with preserved source TLV are emitted
+ * exactly as originally decoded.
+ * @property serializersModule serializers used for contextual/open-polymorphic resolution.
  */
 data class DerConfiguration(
     val encodeDefaults: Boolean = true,
@@ -40,6 +43,11 @@ data class DerConfiguration(
 
 /**
  * Builder for [DerConfiguration], used by `DER { ... }`.
+ *
+ * - [encodeDefaults]: include/exclude default-valued properties.
+ * - [explicitNulls]: encode `null` as ASN.1 `NULL` or omit nullable values.
+ * - [reEmitAsn1Backed]: enable exact raw re-emission for [Asn1Backed] values.
+ * - [serializersModule]: module used for contextual/open-polymorphic serializers.
  */
 class DerBuilder internal constructor() {
     var encodeDefaults: Boolean = true

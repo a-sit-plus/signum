@@ -17,7 +17,7 @@ internal data class Asn1OidDiscriminatedSubtypeRegistration<T : Any>(
  * Shared strict dispatch table for OID-discriminated ASN.1 open polymorphism.
  *
  * - decode dispatches by exact ObjectIdentifier
- * - encode dispatches by value.oid
+ * - encode dispatches by exactly one runtime [matches] predicate
  * - duplicate OID registrations are rejected
  */
 internal class Asn1OidDiscriminatedDispatch<T : Any>(

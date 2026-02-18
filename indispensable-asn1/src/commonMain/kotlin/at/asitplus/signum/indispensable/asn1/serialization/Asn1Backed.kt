@@ -8,6 +8,11 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * Wrapper that carries a decoded value plus optional raw ASN.1 TLV source.
+ *
+ * Equality/hashCode are based on [value] only; [asn1Element] is transport metadata.
+ */
 @Serializable(with = Asn1BackedSerializer::class)
 data class Asn1Backed<T : Any> internal constructor(
     val value: T,
@@ -34,7 +39,9 @@ data class Asn1Backed<T : Any> internal constructor(
     override fun hashCode(): Int = value.hashCode()
 
 }
-
+/**
+ * Serializer for [Asn1Backed] that preserves raw ASN.1 element information in DER decode paths.
+ */
 class Asn1BackedSerializer<T : Any>(
     internal val valueSer: KSerializer<T>
 ) : KSerializer<Asn1Backed<T>> {

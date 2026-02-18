@@ -10,12 +10,22 @@ import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
-
+/**
+ * Supplies discriminator OIDs for OID-discriminated open polymorphism DSL registrations.
+ */
 interface OidProvider<out S : Identifiable> : Identifiable
 
+/**
+ * Marker for ASN.1 open-polymorphism registration DSL scopes.
+ */
 @DslMarker
 annotation class Asn1OpenPolymorphismDsl
 
+/**
+ * DSL builder for tag-discriminated open polymorphism.
+ *
+ * Each registered subtype must contribute at least one leading tag (explicitly or inferable).
+ */
 @Asn1OpenPolymorphismDsl
 class Asn1OpenPolymorphismByTagBuilder<T : Any> internal constructor() {
     private val registrations = mutableListOf<Asn1TagDiscriminatedSubtypeRegistration<T>>()
@@ -75,6 +85,11 @@ class Asn1OpenPolymorphismByTagBuilder<T : Any> internal constructor() {
 
 }
 
+/**
+ * DSL builder for OID-discriminated open polymorphism.
+ *
+ * Each registered subtype binds one OID plus one or more leading tags.
+ */
 @Asn1OpenPolymorphismDsl
 class Asn1OpenPolymorphismByOidBuilder<T : Identifiable> internal constructor() {
     private val registrations = mutableListOf<Asn1OidDiscriminatedSubtypeRegistration<T>>()
