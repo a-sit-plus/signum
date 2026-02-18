@@ -95,9 +95,11 @@ inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T =
  */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArray {
+    val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(serializer.descriptor) }
     val encoder = DerEncoder(
         serializersModule = configuration.serializersModule,
-        formatConfiguration = configuration
+        formatConfiguration = configuration,
+        layoutPlan = layoutPlan,
     )
     encoder.encodeSerializableValue(serializer, value)
     return Buffer().also { encoder.writeTo(it) }.readByteArray()
@@ -110,9 +112,11 @@ fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArr
  */
 @ExperimentalSerializationApi
 fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Element {
+    val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(serializer.descriptor) }
     val encoder = DerEncoder(
         serializersModule = configuration.serializersModule,
-        formatConfiguration = configuration
+        formatConfiguration = configuration,
+        layoutPlan = layoutPlan,
     )
     encoder.encodeSerializableValue(serializer, value)
     return encoder.encodeToTLV()
@@ -125,10 +129,12 @@ fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Ele
  */
 @ExperimentalSerializationApi
 fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
+    val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(deserializer.descriptor) }
     val decoder = DerDecoder(
         Buffer().also { it.write(source) },
         serializersModule = configuration.serializersModule,
         formatConfiguration = configuration,
+        layoutPlan = layoutPlan,
     )
     return decoder.decodeSerializableValue(deserializer)
 }
@@ -138,10 +144,12 @@ fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrate
  */
 @ExperimentalSerializationApi
 fun <T> Der.decodeFromTlv(source: Asn1Element, deserializer: DeserializationStrategy<T>): T {
+    val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(deserializer.descriptor) }
     val decoder = DerDecoder(
         listOf(source),
         serializersModule = configuration.serializersModule,
         formatConfiguration = configuration,
+        layoutPlan = layoutPlan,
     )
     return decoder.decodeSerializableValue(deserializer)
 }

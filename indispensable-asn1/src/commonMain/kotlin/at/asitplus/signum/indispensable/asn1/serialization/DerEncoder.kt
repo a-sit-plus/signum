@@ -41,6 +41,7 @@ private sealed class Asn1ElementHolder {
 internal class DerEncoder(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
     private val formatConfiguration: DerConfiguration = DerConfiguration(),
+    private val layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(formatConfiguration),
 ) : AbstractEncoder() {
 
     private val buffer = mutableListOf<Asn1ElementHolder>()
@@ -169,12 +170,12 @@ internal class DerEncoder(
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull() ?: return
         val propertyDescriptor = propertyContext.propertyDescriptor
-        val nullEncodingAnalysis = propertyDescriptor.analyzeAsn1NullableNullEncoding(
+        val nullEncodingAnalysis = layoutPlan.analyzeNullable(
+            descriptor = propertyDescriptor,
             propertyAsn1Tag = propertyContext.propertyAsn1Tag,
             inlineAsn1Tag = inlineHints.tag,
             propertyAsBitString = propertyContext.propertyAsBitString,
             inlineAsBitString = inlineHints.asBitString,
-            formatExplicitNulls = formatConfiguration.explicitNulls,
         )
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
@@ -239,7 +240,7 @@ internal class DerEncoder(
         val propertyAsBitString = propertyContext?.propertyAsBitString == true
         val propertyDescriptor = propertyContext?.propertyDescriptor
         val bitStringRequested = inlineHints.asBitString || propertyAsBitString || serializer.descriptor.isAsn1BitString
-        if (bitStringRequested && !serializer.descriptor.isAsn1BitStringCompatibleDescriptor()) {
+        if (bitStringRequested && !layoutPlan.isBitStringCompatible(serializer.descriptor)) {
             throw SerializationException(
                 "@Asn1BitString can only be used with ByteArray-compatible serializers, but got ${serializer.descriptor.serialName}"
             )
@@ -259,12 +260,12 @@ internal class DerEncoder(
             propertyDescriptor?.isNullable == true -> propertyDescriptor
             else -> serializer.descriptor
         }
-        val nullEncodingAnalysis = nullAnalysisDescriptor.analyzeAsn1NullableNullEncoding(
+        val nullEncodingAnalysis = layoutPlan.analyzeNullable(
+            descriptor = nullAnalysisDescriptor,
             propertyAsn1Tag = propertyAnnotation,
             inlineAsn1Tag = inlineHints.tag,
             propertyAsBitString = propertyAsBitString,
             inlineAsBitString = inlineHints.asBitString,
-            formatExplicitNulls = formatConfiguration.explicitNulls,
         )
         if (nullEncodingAnalysis.isAmbiguous) {
             throw SerializationException(
@@ -374,7 +375,8 @@ internal class DerEncoder(
 
         val childSerializer = DerEncoder(
             serializersModule = serializersModule,
-            formatConfiguration = formatConfiguration
+            formatConfiguration = formatConfiguration,
+            layoutPlan = layoutPlan,
         )
         childSerializer.encodeSerializableValue(selectedSerializer as SerializationStrategy<Any?>, value as Any?)
         val elements = childSerializer.encodeToTLV()
@@ -391,9 +393,7 @@ internal class DerEncoder(
         if (descriptor.kind is kotlinx.serialization.descriptors.StructureKind.CLASS ||
             descriptor.kind is kotlinx.serialization.descriptors.StructureKind.OBJECT
         ) {
-            descriptor.ensureNoAsn1AmbiguousOptionalLayout(
-                formatExplicitNulls = formatConfiguration.explicitNulls,
-            )
+            layoutPlan.ensureNoAmbiguousOptionalLayout(descriptor)
         }
         val inlineAnnotation = inlineHintState.consume().tag
         val propertyAnnotation = consumePropertyContextOrNull()?.propertyAsn1Tag
@@ -405,7 +405,8 @@ internal class DerEncoder(
 
         val childSerializer = DerEncoder(
             serializersModule = serializersModule,
-            formatConfiguration = formatConfiguration
+            formatConfiguration = formatConfiguration,
+            layoutPlan = layoutPlan,
         )
 
         prependOid?.let { elem ->
