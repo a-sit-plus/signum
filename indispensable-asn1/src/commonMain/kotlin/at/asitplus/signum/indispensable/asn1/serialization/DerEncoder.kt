@@ -6,13 +6,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import kotlinx.io.Sink
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SealedClassSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
@@ -50,9 +44,8 @@ internal class DerEncoder(
     private val inlineHintState = DerInlineHintState()
     private var prependOid: ObjectIdentifier? = null
     internal fun prependOidToNextStructure(oid: ObjectIdentifier) {
-       prependOid = oid
+        prependOid = oid
     }
-
 
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -100,13 +93,6 @@ internal class DerEncoder(
     override fun encodeValue(value: Any) {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull()
-        val propertyAsBitString = propertyContext?.propertyAsBitString == true
-
-        if ((inlineHints.asBitString || propertyAsBitString) && value !is ByteArray) {
-            throw SerializationException(
-                "@Asn1BitString can only be used with ByteArray-compatible values, but got ${value::class}"
-            )
-        }
         val tagTemplate = resolveAsn1TagTemplate(
             inlineAsn1Tag = inlineHints.tag,
             propertyAsn1Tag = propertyContext?.propertyAsn1Tag,
@@ -116,8 +102,13 @@ internal class DerEncoder(
         val element = when (value) {
             is Asn1Element -> value
             is Asn1Encodable<*> -> value.encodeToTlv()
-            is ByteArray -> if (inlineHints.asBitString) Asn1BitString(value).encodeToTlv()
-            else Asn1PrimitiveOctetString(value)
+            is ByteArray -> ByteArrayShapePolicy.encodeByteArray(
+                value, ByteArrayShapePolicy.resolveRuntimeValueShape(
+                    value = value,
+                    inlineAsBitString = inlineHints.asBitString,
+                    propertyAsBitString = propertyContext?.propertyAsBitString == true,
+                )
+            )
 
             is Boolean -> value.encodeToAsn1Primitive()
 
@@ -152,12 +143,6 @@ internal class DerEncoder(
     private fun encodeRealValue(element: Asn1Element) {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull()
-        val propertyAsBitString = propertyContext?.propertyAsBitString == true
-        if (inlineHints.asBitString || propertyAsBitString) {
-            throw SerializationException(
-                "@Asn1BitString can only be used with ByteArray-compatible values, but got ${element::class}"
-            )
-        }
         val tagTemplate = resolveAsn1TagTemplate(
             inlineAsn1Tag = inlineHints.tag,
             propertyAsn1Tag = propertyContext?.propertyAsn1Tag,
@@ -239,12 +224,13 @@ internal class DerEncoder(
         val propertyAnnotation = propertyContext?.propertyAsn1Tag
         val propertyAsBitString = propertyContext?.propertyAsBitString == true
         val propertyDescriptor = propertyContext?.propertyDescriptor
-        val bitStringRequested = inlineHints.asBitString || propertyAsBitString || serializer.descriptor.isAsn1BitString
-        if (bitStringRequested && !layoutPlan.isBitStringCompatible(serializer.descriptor)) {
-            throw SerializationException(
-                "@Asn1BitString can only be used with ByteArray-compatible serializers, but got ${serializer.descriptor.serialName}"
-            )
-        }
+        val byteArrayShape = ByteArrayShapePolicy.resolveSerializerShape(
+            descriptor = serializer.descriptor,
+            layoutPlan = layoutPlan,
+            inlineAsBitString = inlineHints.asBitString,
+            propertyAsBitString = propertyAsBitString,
+            includeDescriptorAsBitString = true,
+        )
         val effectiveTagTemplate = resolveAsn1TagTemplate(
             inlineAsn1Tag = inlineHints.tag,
             propertyAsn1Tag = propertyAnnotation,
@@ -315,7 +301,8 @@ internal class DerEncoder(
         }
 
         if (isAsn1ChoiceRequested(serializer.descriptor)
-            && serializer is SealedClassSerializer<*>) {
+            && serializer is SealedClassSerializer<*>
+        ) {
             descriptorAndIndex = null
             encodeChoiceSerializableValue(
                 serializer = serializer,
@@ -326,11 +313,10 @@ internal class DerEncoder(
             return
         }
 
-        if (serializer.descriptor == ByteArraySerializer().descriptor) {
+        if (byteArrayShape != ByteArrayShape.NOT_APPLICABLE) {
             descriptorAndIndex = null
             val byteArrayValue = value as ByteArray
-            val baseElement: Asn1Element = if (bitStringRequested) Asn1BitString(byteArrayValue).encodeToTlv()
-            else Asn1PrimitiveOctetString(byteArrayValue)
+            val baseElement: Asn1Element = ByteArrayShapePolicy.encodeByteArray(byteArrayValue, byteArrayShape)
             appendElement(baseElement, effectiveTagTemplate)
             return
         } else if (value is Asn1Encodable<*> || value is Asn1Element) {
@@ -341,8 +327,7 @@ internal class DerEncoder(
                 else -> error("unreachable")
             }
             appendElement(baseElement, effectiveTagTemplate)
-        }
-        else super.encodeSerializableValue(serializer, value as T)
+        } else super.encodeSerializableValue(serializer, value as T)
     }
 
     @OptIn(InternalSerializationApi::class)
@@ -452,7 +437,8 @@ internal class DerEncoder(
 
             is Asn1ElementHolder.StructurePlaceholder -> {
                 val childElements = holder.childSerializer.buffer.finalizeElements()
-                val structureElement = if (holder.descriptor.isSetDescriptor) Asn1Set(childElements) else Asn1Sequence(childElements)
+                val structureElement =
+                    if (holder.descriptor.isSetDescriptor) Asn1Set(childElements) else Asn1Sequence(childElements)
                 holder.tagTemplate?.let { structureElement.withImplicitTag(it) } ?: structureElement
             }
 

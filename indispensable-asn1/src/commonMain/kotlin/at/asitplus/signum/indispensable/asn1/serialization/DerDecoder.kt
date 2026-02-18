@@ -363,12 +363,12 @@ class DerDecoder internal constructor(
             propertyName = currentPropertyName,
             propertyIndex = currentPropertyIndex,
         )
-        val isBitString = inlineHints.asBitString || propertyAsBitString
-        if (isBitString && !layoutPlan.isBitStringCompatible(deserializer.descriptor)) {
-            throw SerializationException(
-                "@Asn1BitString can only be used with ByteArray-compatible serializers, but got ${deserializer.descriptor.serialName}"
-            )
-        }
+        val byteArrayShape = ByteArrayShapePolicy.resolveSerializerShape(
+            descriptor = deserializer.descriptor,
+            layoutPlan = layoutPlan,
+            inlineAsBitString = inlineHints.asBitString,
+            propertyAsBitString = propertyAsBitString,
+        )
         val descriptorNullEncodingAnalysis = layoutPlan.analyzeNullable(
             descriptor = deserializer.descriptor,
             inlineAsn1Tag = inlineHints.tag,
@@ -484,8 +484,7 @@ class DerDecoder internal constructor(
             // If no explicit tag is specified, we should still validate against the default tag
             // for the type being deserialized (when no annotations are present)
             if (!hasTagOverride) {
-                if (isBitString) Asn1Element.Tag.BIT_STRING
-                else getDefaultTagForDescriptor(deserializer.descriptor)
+                ByteArrayShapePolicy.defaultTagForDescriptor(deserializer.descriptor, byteArrayShape)
             } else {
                 null
             }
@@ -516,16 +515,12 @@ class DerDecoder internal constructor(
                 .decodeToULong(expectedTag ?: Asn1Element.Tag.INT)
                 .also { elementIndex++ } as T
 
-            ByteArraySerializer() -> {
-                // Decode BitSet from ASN.1 BitString and convert to ByteArray
-                return if (isBitString) {
-                    processedElement.asPrimitive()
-                        .asAsn1BitString(tagToValidate ?: Asn1Element.Tag.BIT_STRING).rawBytes.also { elementIndex++ } as T
-                } else {
-                    // Regular ByteArray decoding (OCTET STRING)
-                    processedElement.asPrimitive().content.also { elementIndex++ } as T
-                }
-            }
+            ByteArraySerializer() ->
+                return ByteArrayShapePolicy.decodeByteArray(
+                    primitive = processedElement.asPrimitive(),
+                    shape = byteArrayShape,
+                    tagToValidate = tagToValidate,
+                ).also { elementIndex++ } as T
         }
 
         if (deserializer.descriptor.kind == SerialKind.ENUM) {
@@ -660,19 +655,6 @@ private fun Asn1Primitive.decodeInstantWithOptionalImplicitTag(expectedTag: Asn1
                 "content is neither UTCTime nor GeneralizedTime"
     )
 }
-
-private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Element.Tag? {
-
-    return if (descriptor.isSetDescriptor) Asn1Element.Tag.SET
-    else if (descriptor == ByteArraySerializer().descriptor) if (descriptor.isAsn1BitString) Asn1Element.Tag.BIT_STRING else Asn1Element.Tag.OCTET_STRING
-    else when (descriptor.kind) {
-        is StructureKind.CLASS, is StructureKind.OBJECT -> Asn1Element.Tag.SEQUENCE
-        is StructureKind.LIST -> Asn1Element.Tag.SEQUENCE
-        is StructureKind.MAP -> Asn1Element.Tag.SEQUENCE
-        else -> null // For primitive types, tag validation happens in decodeValue()
-    }
-}
-
 
 private fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): String =
     if (implicitTagOverride == null) {
