@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
@@ -29,9 +30,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Clock
-import de.infix.testBalloon.framework.core.TestConfig
-import de.infix.testBalloon.framework.core.testScope
-import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
 val SymmetricTest by testSuite {
@@ -646,6 +644,9 @@ val SymmetricTest by testSuite {
             SymmetricEncryptionAlgorithm.AES_128.ECB,
             SymmetricEncryptionAlgorithm.AES_192.ECB,
             SymmetricEncryptionAlgorithm.AES_256.ECB,
+            SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING,
+            SymmetricEncryptionAlgorithm.AES_192.ECB_NOPADDING,
+            SymmetricEncryptionAlgorithm.AES_256.ECB_NOPADDING,
             SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
             SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
             SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
@@ -672,8 +673,8 @@ val SymmetricTest by testSuite {
 
                 val secretKey = alg.randomKey(InsecureRandom)
 
-                //CBC
-                if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
+                //EBC
+                if (alg is SymmetricEncryptionAlgorithm.AES.ECB) {
 
                     val own = secretKey.encrypt(data).getOrThrow()
 
@@ -686,6 +687,21 @@ val SymmetricTest by testSuite {
                     }
 
                     alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                } else if (alg is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING) {
+                    if (data.size % AES.blockSize.bytes.toInt() == 0) {
+
+                        val own = secretKey.encrypt(data).getOrThrow()
+
+
+                        own.decrypt(secretKey).getOrThrow() shouldBe data
+
+                        //we might get lucky here
+                        own.decrypt(own.algorithm.randomKey(InsecureRandom)).onSuccess {
+                            it shouldNotBe data
+                        }
+
+                        alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                    }
                 } else {
 
 

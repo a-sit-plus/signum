@@ -10,14 +10,13 @@ import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
-import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -28,12 +27,9 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
-val JvmSymmetricTest  by testSuite {
+val JvmSymmetricTest by testSuite {
 
     "Against JCA" - {
         "AES" - {
@@ -47,14 +43,14 @@ val JvmSymmetricTest  by testSuite {
                 SymmetricEncryptionAlgorithm.AES_192.GCM,
                 SymmetricEncryptionAlgorithm.AES_256.GCM,
 
-                )  { alg ->
+                ) { alg ->
                 withDataSuites(
                     nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
                 ) { iv ->
                     withDataSuites(
                         nameFn = { "aad: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
                         Random.nextBytes(19), null
-                    )  { aad ->
+                    ) { aad ->
                         withData(
                             nameFn = { "data: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
                             Random.nextBytes(19),
@@ -161,6 +157,9 @@ val JvmSymmetricTest  by testSuite {
                     SymmetricEncryptionAlgorithm.AES_128.ECB,
                     SymmetricEncryptionAlgorithm.AES_192.ECB,
                     SymmetricEncryptionAlgorithm.AES_256.ECB,
+                    SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING,
+                    SymmetricEncryptionAlgorithm.AES_192.ECB_NOPADDING,
+                    SymmetricEncryptionAlgorithm.AES_256.ECB_NOPADDING,
                     SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
                     SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
                     SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
@@ -183,62 +182,23 @@ val JvmSymmetricTest  by testSuite {
                         Random.nextBytes(48),
                         Random.nextBytes(24),
                         Random.nextBytes(72),
-                    ) { data ->
+                    ) - { data ->
 
-                        val secretKey = alg.randomKey(random = InsecureRandom)
+                        val secretKey = runBlocking { alg.randomKey(random = InsecureRandom) }
 
-                        //CBC
-                        if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
-                            val jcaCipher =
-                                Cipher.getInstance("AES/ECB/PKCS5PADDING")
+                        //EBC
+                        if (alg is SymmetricEncryptionAlgorithm.AES.ECB) {
+                            "ECB" {
+                                val jcaCipher =
+                                    Cipher.getInstance("AES/ECB/PKCS5PADDING")
 
-                            val own = secretKey.encrypt(data).getOrThrow()
-                            jcaCipher.init(
-                                Cipher.ENCRYPT_MODE,
-                                SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
-                            )
-                            val encrypted = jcaCipher.doFinal(data)
+                                val own = secretKey.encrypt(data).getOrThrow()
+                                jcaCipher.init(
+                                    Cipher.ENCRYPT_MODE,
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                )
+                                val encrypted = jcaCipher.doFinal(data)
 
-                            own.encryptedData shouldBe encrypted
-
-                            jcaCipher.init(
-                                Cipher.DECRYPT_MODE,
-                                SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
-                            )
-                            own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
-
-                            //we might get lucky here
-                            own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
-                                it shouldNotBe data
-                            }
-
-                            alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
-                        } else {
-
-
-                            val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
-                            val jcaCipher =
-                                Cipher.getInstance("AESWrap")
-                            val trial = secretKey.encrypt(data)
-
-                            if (shouldSucceed)
-                                trial should succeed
-                            else trial shouldNot succeed
-
-                            jcaCipher.init(
-                                Cipher.ENCRYPT_MODE,
-                                SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
-                            )
-                            val jcaTrail = catching {
-                                jcaCipher.doFinal(data)
-                            }
-                            if (shouldSucceed)
-                                jcaTrail should succeed
-                            else jcaTrail shouldNot succeed
-
-                            if (shouldSucceed) {
-                                val own = trial.getOrThrow()
-                                val encrypted = jcaTrail.getOrThrow()
                                 own.encryptedData shouldBe encrypted
 
                                 jcaCipher.init(
@@ -254,6 +214,81 @@ val JvmSymmetricTest  by testSuite {
 
                                 alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                             }
+                        } else if (alg is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING) {
+                            "ECB NoPadding" - {
+                                if (data.size % alg.blockSize.bytes.toInt() == 0) {
+                                    "OK" {
+                                        val jcaCipher =
+                                            Cipher.getInstance("AES/ECB/NoPadding")
+
+                                        val own = secretKey.encrypt(data).getOrThrow()
+                                        jcaCipher.init(
+                                            Cipher.ENCRYPT_MODE,
+                                            SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                        )
+                                        val encrypted = jcaCipher.doFinal(data)
+
+                                        own.encryptedData shouldBe encrypted
+
+                                        jcaCipher.init(
+                                            Cipher.DECRYPT_MODE,
+                                            SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                        )
+                                        own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+
+                                        //we might get lucky here
+                                        own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
+                                            it shouldNotBe data
+                                        }
+
+                                        alg.sealedBox.from(own.encryptedData).getOrThrow()
+                                            .decrypt(secretKey) should succeed
+                                    }
+                                } else "Illegal input size" {
+                                    shouldThrow<Throwable> { secretKey.encrypt(data).getOrThrow() }
+                                }
+                            }
+                        } else {
+                            "WRAP" {
+                                val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
+                                val jcaCipher =
+                                    Cipher.getInstance("AESWrap")
+                                val trial = secretKey.encrypt(data)
+
+                                if (shouldSucceed)
+                                    trial should succeed
+                                else trial shouldNot succeed
+
+                                jcaCipher.init(
+                                    Cipher.ENCRYPT_MODE,
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                )
+                                val jcaTrail = catching {
+                                    jcaCipher.doFinal(data)
+                                }
+                                if (shouldSucceed)
+                                    jcaTrail should succeed
+                                else jcaTrail shouldNot succeed
+
+                                if (shouldSucceed) {
+                                    val own = trial.getOrThrow()
+                                    val encrypted = jcaTrail.getOrThrow()
+                                    own.encryptedData shouldBe encrypted
+
+                                    jcaCipher.init(
+                                        Cipher.DECRYPT_MODE,
+                                        SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    )
+                                    own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+
+                                    //we might get lucky here
+                                    own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
+                                        it shouldNotBe data
+                                    }
+
+                                    alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                                }
+                            }
                         }
                     }
                 }
@@ -265,9 +300,10 @@ val JvmSymmetricTest  by testSuite {
         val alg = SymmetricEncryptionAlgorithm.ChaCha20Poly1305
         withDataSuites(
             nameFn = { "iv: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(), null
-        )  { nonce ->
-            withDataSuites(Random.nextBytes(19), null)  { aad ->
-                withData( nameFn={"Random ${it.size} bytes"},
+        ) { nonce ->
+            withDataSuites(Random.nextBytes(19), null) { aad ->
+                withData(
+                    nameFn = { "Random ${it.size} bytes" },
                     Random.nextBytes(19),
                     Random.nextBytes(1),
                     Random.nextBytes(0),

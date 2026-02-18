@@ -3,6 +3,7 @@
 ## NEXT
 * fix build setup on non-macos
 * Fix ASN.1 SET ordering and Tag comparator
+* Add AES.ECB_NOPADDING
 
 ## 3.19.3 / Supreme 0.11.3
 * Support CURSED X.509 Certificate extensions that encode critical=false instead of omitting it

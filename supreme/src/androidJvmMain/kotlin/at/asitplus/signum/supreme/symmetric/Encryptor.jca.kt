@@ -35,7 +35,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
 
             else -> {
                 @OptIn(HazardousMaterials::class)
-                if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394))
+                if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) && (algorithm !is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING))
                     TODO("$algorithm is UNSUPPORTED")
                 AESJCA.initCipher(mode, algorithm, key, nonce, aad)
             }

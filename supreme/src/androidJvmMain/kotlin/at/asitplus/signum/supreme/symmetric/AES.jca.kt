@@ -33,7 +33,7 @@ internal object AESJCA {
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 IvParameterSpec(nonce)
             )
-        else if ((algorithm is SymmetricEncryptionAlgorithm.AES.ECB) || algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
+        else if ((algorithm is SymmetricEncryptionAlgorithm.AES.ECB) || algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394|| algorithm is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING) {
             init(
                 mode.jcaCipherMode,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
