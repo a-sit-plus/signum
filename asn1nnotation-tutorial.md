@@ -86,35 +86,13 @@ There is no shortcut for sealed OID-discriminated hierarchies for multiple reaso
 2. There is `KnownOIDs` registry that comes with a gazillion OIDs, none of which could be referenced inside a hypothetical `@Oid` annotation
 3. We want the OID to be accesssible from the code, not just serialization, typically from a Companion object on the identifiable-by-oid class.
 
-## 6. Accessing and Re-Emitting Deserialized ASN.1 Elements
-
-> Garbage in, garbage out…
-
-In production DER/ASN.1 handling, that is exactly what you want. When parsing DER-encoded data—such as a certificate—you must separate the `TbsCertificate` from the signature bytes and verify the signature against the *exact byte representation* of the `TbsCertificate`.
-
-This has an important consequence: after deserialization, when preparing the `TbsCertificate` for signature verification, you do not actually want to re-encode it. Instead, you must reuse the original bytes of the `TbsCertificate`, even if they are [rotten to the core](https://a-sit-plus.github.io/warden-supreme/technical/quirks/#encoding-flaws). Keep them exactly as they were parsed—haunted by Jon Postel’s ghost if necessary—and use those bytes, warts and all, for verification.
-
-To support this, Signum provides a way to retain the original ASN.1 structure.
-
-Enter: [`Asn1Backed`](indispensable-asn1/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/serialization/Asn1Backed.kt).
-
-Declare a property like this:
-
-`val myNeverToBeReEncodedProperty: Asn1Backed<SomeNeverToBeReEncodedType>`
-
-Anything deserialized into such a property will have its `asn1Element` field populated with the original, unmodified ASN.1 element. You can then access those preserved bytes directly for signature verification. In other serialization formats, this mechanism remains completely invisible.
-
-Setting `DER.reEmitAsn1Backed = true` causes serialization to re-emit the previously deserialized ASN.1 element instead of performing a fresh encoding.
-
-
-
-## 7. DER Config Knobs
+## 6. DER Config Knobs
 
 - `encodeDefaults`: include/omit default-valued properties
 - `explicitNulls`: include/omit explicit ASN.1 NULL for nullable values
 - `reEmitAsn1Backed`: serialize `Asn1Backed` values or re-emit deserialized ones
 
-## 8. Running the Tutorial-backed Tests
+## 7. Running the Tutorial-backed Tests
 
 Fast JVM run (covers all tutorial examples):
 
