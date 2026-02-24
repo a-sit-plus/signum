@@ -18,7 +18,6 @@ pluginManagement {
     }
 }
 
-includeBuild("..")
 
 dependencyResolutionManagement {
     repositories {
