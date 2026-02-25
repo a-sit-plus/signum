@@ -1,12 +1,17 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.Der
+import at.asitplus.signum.indispensable.asn1.serialization.asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.resolveAsn1TagTemplate
 import kotlinx.io.Sink
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.internal.AbstractPolymorphicSerializer
@@ -30,11 +35,11 @@ private sealed class Asn1ElementHolder {
 
 
 @ExperimentalSerializationApi
-internal class DerEncoder(
+class DerEncoder internal constructor(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
-    private val formatConfiguration: DerConfiguration = DerConfiguration(),
-    private val layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(formatConfiguration),
-) : AbstractEncoder() {
+    override val der: Der = Der(),
+    private val layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(der.configuration),
+) : AbstractEncoder(), at.asitplus.signum.indispensable.asn1.serialization.DerEncoder {
 
     private val buffer = mutableListOf<Asn1ElementHolder>()
     private var descriptorAndIndex: Pair<SerialDescriptor, Int>? = null
@@ -195,7 +200,7 @@ internal class DerEncoder(
     }
 
     override fun shouldEncodeElementDefault(descriptor: SerialDescriptor, index: Int): Boolean =
-        formatConfiguration.encodeDefaults
+        der.configuration.encodeDefaults
 
     override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
         val propertyAnnotation = consumePropertyContextOrNull()?.propertyAsn1Tag
@@ -332,7 +337,7 @@ internal class DerEncoder(
                 else -> error("unreachable")
             }
             appendElement(baseElement, effectiveTagTemplate)
-        } else super.encodeSerializableValue(serializer, value as T)
+        } else super<AbstractEncoder>.encodeSerializableValue(serializer, value as T)
     }
 
     @OptIn(InternalSerializationApi::class)
@@ -371,7 +376,7 @@ internal class DerEncoder(
 
         val childSerializer = DerEncoder(
             serializersModule = serializersModule,
-            formatConfiguration = formatConfiguration,
+            der = der,
             layoutPlan = layoutPlan,
         )
         childSerializer.encodeSerializableValue(selectedSerializer as SerializationStrategy<Any?>, value as Any?)
@@ -391,8 +396,8 @@ internal class DerEncoder(
      * @throws SerializationException if optional layout is ambiguous for class/object descriptors
      */
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
-        if (descriptor.kind is kotlinx.serialization.descriptors.StructureKind.CLASS ||
-            descriptor.kind is kotlinx.serialization.descriptors.StructureKind.OBJECT
+        if (descriptor.kind is StructureKind.CLASS ||
+            descriptor.kind is StructureKind.OBJECT
         ) {
             layoutPlan.ensureNoAmbiguousOptionalLayout(descriptor)
         }
@@ -406,7 +411,7 @@ internal class DerEncoder(
 
         val childSerializer = DerEncoder(
             serializersModule = serializersModule,
-            formatConfiguration = formatConfiguration,
+            der = der,
             layoutPlan = layoutPlan,
         )
 

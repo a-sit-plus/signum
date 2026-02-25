@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.TagClass
+import at.asitplus.signum.indispensable.asn1.serialization.internal.isByteArrayLikeDescriptor
 import kotlinx.serialization.SerialInfo
 import kotlinx.serialization.descriptors.SerialDescriptor
 

@@ -1,6 +1,12 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.asn1LeadingTagsOrNull
+import at.asitplus.signum.indispensable.asn1.serialization.asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.isAsn1BitString
+import at.asitplus.signum.indispensable.asn1.serialization.isSealed
+import at.asitplus.signum.indispensable.asn1.serialization.resolveAsn1TagTemplate
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.PrimitiveKind

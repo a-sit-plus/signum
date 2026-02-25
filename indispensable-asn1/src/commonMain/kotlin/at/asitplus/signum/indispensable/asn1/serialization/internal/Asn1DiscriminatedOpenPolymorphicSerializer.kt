@@ -1,5 +1,7 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1LeadingTagsDescriptor
+import at.asitplus.signum.indispensable.asn1.serialization.withDynamicAsn1LeadingTags
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException

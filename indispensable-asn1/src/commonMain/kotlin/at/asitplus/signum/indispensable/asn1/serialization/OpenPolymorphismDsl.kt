@@ -3,6 +3,13 @@ package at.asitplus.signum.indispensable.asn1.serialization
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.serialization.internal.Asn1OidDiscriminatedOpenPolymorphicSerializer
+import at.asitplus.signum.indispensable.asn1.serialization.internal.Asn1OidDiscriminatedSubtypeRegistration
+import at.asitplus.signum.indispensable.asn1.serialization.internal.Asn1TagDiscriminatedOpenPolymorphicSerializer
+import at.asitplus.signum.indispensable.asn1.serialization.internal.Asn1TagDiscriminatedSubtypeRegistration
+import at.asitplus.signum.indispensable.asn1.serialization.internal.cannotInferOpenPolymorphicSubtypeLeadingTagsMessage
+import at.asitplus.signum.indispensable.asn1.serialization.internal.inferOpenPolymorphicSubtypeLeadingTagsOrNull
+import at.asitplus.signum.indispensable.asn1.serialization.internal.oidFrom
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException

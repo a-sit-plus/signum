@@ -1,5 +1,9 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.DerConfiguration
+import at.asitplus.signum.indispensable.asn1.serialization.isAsn1BitStringCompatibleDescriptor
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 
@@ -23,7 +27,7 @@ internal class DerLayoutPlanContext(
      *
      * @throws kotlinx.serialization.SerializationException if primed descriptors contain ambiguous optional layouts
      */
-    @Throws(kotlinx.serialization.SerializationException::class)
+    @Throws(SerializationException::class)
     fun prime(descriptor: SerialDescriptor) {
         if (!primed.add(descriptor)) return
 
@@ -44,9 +48,9 @@ internal class DerLayoutPlanContext(
     /**
      * Validates that optional/nullable field omission is unambiguous for DER decoding.
      *
-     * @throws kotlinx.serialization.SerializationException if omitting fields can lead to ambiguous tag layouts
+     * @throws SerializationException if omitting fields can lead to ambiguous tag layouts
      */
-    @Throws(kotlinx.serialization.SerializationException::class)
+    @Throws(SerializationException::class)
     fun ensureNoAmbiguousOptionalLayout(descriptor: SerialDescriptor) {
         if (!optionalLayoutChecked.add(descriptor)) return
         descriptor.ensureNoAsn1AmbiguousOptionalLayout(

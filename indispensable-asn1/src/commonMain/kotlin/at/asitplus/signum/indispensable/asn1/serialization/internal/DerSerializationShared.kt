@@ -1,9 +1,15 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.TagClass
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.isAsn1BitString
+import at.asitplus.signum.indispensable.asn1.serialization.isAsn1ExplicitWrapperDescriptor
+import at.asitplus.signum.indispensable.asn1.serialization.isSealed
+import at.asitplus.signum.indispensable.asn1.serialization.resolveAsn1TagTemplate
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -199,7 +205,7 @@ internal fun validateAndResolveImplicitTagOverride(
 }
 
 /**
- * Validates [ExplicitlyTagged] wrapper tag requirements at the current location.
+ * Validates [at.asitplus.signum.indispensable.asn1.serialization.ExplicitlyTagged] wrapper tag requirements at the current location.
  *
  * @throws SerializationException if no effective tag override exists or if override is not
  * CONTEXT_SPECIFIC + CONSTRUCTED

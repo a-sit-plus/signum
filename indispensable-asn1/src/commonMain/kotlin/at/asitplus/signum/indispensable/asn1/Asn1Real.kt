@@ -4,8 +4,8 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
-import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
-import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerEncoder
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind

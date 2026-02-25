@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
@@ -9,8 +9,6 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.CompositeEncoder
-import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
@@ -37,7 +35,7 @@ internal class Asn1OidDiscriminatedOpenPolymorphicSerializer<T : Any>(
         dispatch.registerSubtype(registration)
     }
 
-    override fun serializerForEncode(encoder: DerEncoder,value: T): KSerializer<out T> =
+    override fun serializerForEncode(encoder: DerEncoder, value: T): KSerializer<out T> =
         dispatch.registrationForEncode(value).also {
             encoder.prependOidToNextStructure(it.oid)
         }.serializer

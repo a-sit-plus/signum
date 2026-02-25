@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import kotlinx.serialization.builtins.SetSerializer
 import kotlinx.serialization.builtins.serializer

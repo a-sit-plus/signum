@@ -1,8 +1,9 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlin.collections.plusAssign
 
 /**
  * Builds strict tag dispatch for sealed CHOICE alternatives.

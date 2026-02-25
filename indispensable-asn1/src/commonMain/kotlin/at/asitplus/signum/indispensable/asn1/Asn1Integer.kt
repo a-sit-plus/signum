@@ -9,8 +9,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
-import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
-import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerEncoder
 import kotlinx.io.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable

@@ -12,7 +12,6 @@ import at.asitplus.signum.indispensable.asn1.BERTags.UNRESTRICTED_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VIDEOTEX_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBmpString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToGeneralString
@@ -27,9 +26,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToUtf8String
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToVideotexString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
 import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
-import at.asitplus.signum.indispensable.asn1.serialization.DerDecoder
-import at.asitplus.signum.indispensable.asn1.serialization.DerEncoder
-import kotlinx.serialization.SerialName
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerEncoder
 import kotlinx.serialization.Serializable
 
 

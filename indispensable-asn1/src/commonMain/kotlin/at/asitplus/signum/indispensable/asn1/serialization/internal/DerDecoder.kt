@@ -1,8 +1,15 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.internal
 
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1ElementSerializer
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.indispensable.asn1.serialization.Der
+import at.asitplus.signum.indispensable.asn1.serialization.asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.isAsn1BitString
+import at.asitplus.signum.indispensable.asn1.serialization.resolveAsn1TagTemplate
 import kotlinx.io.Source
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ByteArraySerializer
@@ -22,23 +29,23 @@ import kotlin.time.Instant
  * ASN.1 DER decoder used by [Der] format operations.
  *
  * This decoder supports:
- * - annotation-driven implicit tag override processing via [Asn1Tag]
+ * - annotation-driven implicit tag override processing via [at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag]
  * - sealed CHOICE decoding via sealed polymorphism
  * - runtime ambiguity checks for nullable/optional class layouts
  */
 class DerDecoder internal constructor(
     private val elements: List<Asn1Element>,
     override val serializersModule: SerializersModule = EmptySerializersModule(),
-    private val formatConfiguration: DerConfiguration = DerConfiguration(),
-    private val layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(formatConfiguration),
-) : AbstractDecoder() {
+    override val der: Der = Der(),
+    private val layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(der.configuration),
+) : AbstractDecoder(), at.asitplus.signum.indispensable.asn1.serialization.DerDecoder {
 
     internal constructor(
         source: Source,
         serializersModule: SerializersModule = EmptySerializersModule(),
-        formatConfiguration: DerConfiguration = DerConfiguration(),
-        layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(formatConfiguration),
-    ) : this(source.readFullyToAsn1Elements().first, serializersModule, formatConfiguration, layoutPlan)
+        der: Der = Der(),
+        layoutPlan: DerLayoutPlanContext = DerLayoutPlanContext(der.configuration),
+    ) : this(source.readFullyToAsn1Elements().first, serializersModule, der, layoutPlan)
 
     private var elementIndex = 0
     private var descriptorIndex = 0
@@ -72,7 +79,7 @@ class DerDecoder internal constructor(
         val isolated = DerDecoder(
             elements = listOf(current),
             serializersModule = serializersModule,
-            formatConfiguration = formatConfiguration,
+            der = der,
             layoutPlan = layoutPlan,
         )
         isolated.initializeStandalonePropertyState(deserializer.descriptor)
@@ -125,7 +132,7 @@ class DerDecoder internal constructor(
                     DerDecoder(
                         effectiveChildren,
                         serializersModule = serializersModule,
-                        formatConfiguration = formatConfiguration,
+                        der = der,
                         layoutPlan = layoutPlan,
                     )
                 } else {
@@ -147,7 +154,7 @@ class DerDecoder internal constructor(
                 DerDecoder(
                     effectiveChildren,
                     serializersModule = serializersModule,
-                    formatConfiguration = formatConfiguration,
+                    der = der,
                     layoutPlan = layoutPlan,
                 )
             }
@@ -580,7 +587,7 @@ class DerDecoder internal constructor(
         val childDecoder = DerDecoder(
             elements = mutableListOf(processedElement),
             serializersModule = serializersModule,
-            formatConfiguration = formatConfiguration,
+            der = der,
             layoutPlan = layoutPlan,
         )
         if (dropFirstChildInNextStructure) {

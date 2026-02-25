@@ -1,12 +1,18 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerDecoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerEncoder
+import at.asitplus.signum.indispensable.asn1.serialization.internal.DerLayoutPlanContext
 import at.asitplus.signum.internals.ImplementationError
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
@@ -30,14 +36,12 @@ class Der internal constructor(
  * If `false`, default-valued properties are omitted.
  * @property explicitNulls if `true`, nullable properties are encoded as ASN.1 `NULL` by default.
  * If `false`, nullable `null` values are omitted by default.
- * @property reEmitAsn1Backed if `true`, [Asn1Backed] values with preserved source TLV are emitted
  * exactly as originally decoded.
  * @property serializersModule serializers used for contextual/open-polymorphic resolution.
  */
 data class DerConfiguration(
     val encodeDefaults: Boolean = true,
     val explicitNulls: Boolean = false,
-    val reEmitAsn1Backed: Boolean = false,
     val serializersModule: SerializersModule = EmptySerializersModule(),
 )
 
@@ -101,12 +105,12 @@ inline fun <reified T> Der.decodeFromTlv(source: Asn1Element): T =
  * @throws kotlinx.serialization.SerializationException if descriptor/tag/nullability constraints are violated
  */
 @ExperimentalSerializationApi
-@Throws(kotlinx.serialization.SerializationException::class)
+@Throws(SerializationException::class)
 fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArray {
     val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(serializer.descriptor) }
     val encoder = DerEncoder(
         serializersModule = configuration.serializersModule,
-        formatConfiguration = configuration,
+        der = this,
         layoutPlan = layoutPlan,
     )
     encoder.encodeSerializableValue(serializer, value)
@@ -116,16 +120,16 @@ fun <T> Der.encodeToDer(serializer: SerializationStrategy<T>, value: T): ByteArr
 /**
  * Encodes [value] with the given [serializer] into a single ASN.1 TLV element.
  *
- * @throws kotlinx.serialization.SerializationException if descriptor/tag/nullability constraints are violated
- * @throws at.asitplus.signum.internals.ImplementationError if serialization produced more than one top-level element
+ * @throws SerializationException if descriptor/tag/nullability constraints are violated
+ * @throws ImplementationError if serialization produced more than one top-level element
  */
 @ExperimentalSerializationApi
-@Throws(kotlinx.serialization.SerializationException::class, ImplementationError::class)
+@Throws(SerializationException::class, ImplementationError::class)
 fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Element {
     val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(serializer.descriptor) }
     val encoder = DerEncoder(
         serializersModule = configuration.serializersModule,
-        formatConfiguration = configuration,
+        der = this,
         layoutPlan = layoutPlan,
     )
     encoder.encodeSerializableValue(serializer, value)
@@ -137,16 +141,16 @@ fun <T> Der.encodeToTlv(serializer: SerializationStrategy<T>, value: T): Asn1Ele
 /**
  * Decodes [source] DER bytes using the given [deserializer].
  *
- * @throws kotlinx.serialization.SerializationException if input bytes or descriptor/tag/nullability constraints are invalid
+ * @throws SerializationException if input bytes or descriptor/tag/nullability constraints are invalid
  */
 @ExperimentalSerializationApi
-@Throws(kotlinx.serialization.SerializationException::class)
+@Throws(SerializationException::class)
 fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
     val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(deserializer.descriptor) }
     val decoder = DerDecoder(
         Buffer().also { it.write(source) },
         serializersModule = configuration.serializersModule,
-        formatConfiguration = configuration,
+        der = this,
         layoutPlan = layoutPlan,
     )
     return decoder.decodeSerializableValue(deserializer)
@@ -155,17 +159,25 @@ fun <T> Der.decodeFromDer(source: ByteArray, deserializer: DeserializationStrate
 /**
  * Decodes a single TLV [source] using the given [deserializer].
  *
- * @throws kotlinx.serialization.SerializationException if descriptor/tag/nullability constraints are violated
+ * @throws SerializationException if descriptor/tag/nullability constraints are violated
  */
 @ExperimentalSerializationApi
-@Throws(kotlinx.serialization.SerializationException::class)
+@Throws(SerializationException::class)
 fun <T> Der.decodeFromTlv(source: Asn1Element, deserializer: DeserializationStrategy<T>): T {
     val layoutPlan = DerLayoutPlanContext(configuration).also { it.prime(deserializer.descriptor) }
     val decoder = DerDecoder(
         listOf(source),
         serializersModule = configuration.serializersModule,
-        formatConfiguration = configuration,
+        der = this,
         layoutPlan = layoutPlan,
     )
     return decoder.decodeSerializableValue(deserializer)
+}
+
+interface DerEncoder : Encoder {
+    val der: Der
+}
+
+interface DerDecoder : Decoder {
+    val der: Der
 }
