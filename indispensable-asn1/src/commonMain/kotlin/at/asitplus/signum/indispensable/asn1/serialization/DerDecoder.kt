@@ -96,6 +96,9 @@ class DerDecoder internal constructor(
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
+        if (!::propertyDescriptor.isInitialized) {
+            initializeStandalonePropertyState(descriptor)
+        }
         inlineHintState.recordFrom(descriptor)
         return this
     }

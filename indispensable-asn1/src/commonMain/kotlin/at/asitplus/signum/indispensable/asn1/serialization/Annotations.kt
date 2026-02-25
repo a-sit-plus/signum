@@ -17,7 +17,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
  * @param constructed implicit ASN.1 constructed-bit override; [Asn1ConstructedBit.INFER] keeps underlying form
  */
 @SerialInfo
-@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
 annotation class Asn1Tag(
     val tagNumber: ULong,
     val tagClass: Asn1TagClass = Asn1TagClass.CONTEXT_SPECIFIC,

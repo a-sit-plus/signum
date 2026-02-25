@@ -4,6 +4,7 @@ import Asn1Backed
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.serialization.*
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
@@ -15,6 +16,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
+import kotlin.jvm.JvmInline
 
 
 val TaggedTest by testSuite {
@@ -51,11 +53,14 @@ val TaggedTest by testSuite {
             }
         }
 
-        "TypeAliasedImplicitlyTaggedElement" {
-            DER.encodeToDer(TypeAliasedImplicitlyTaggedElement(int)).toHexString() shouldBe "300389010$int".also {
-                DER.decodeFromDer<TypeAliasedImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe TypeAliasedImplicitlyTaggedElement(
+        "ValueClassImplicitlyTaggedElement" {
+            DER.encodeToDer(ValueClassImplicitlyTaggedElement(int)).toHexString() shouldBe "300389010$int".also {
+                DER.decodeFromDer<ValueClassImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe ValueClassImplicitlyTaggedElement(
                     int
                 )
+                shouldThrow<SerializationException> {
+                    DER.decodeFromDer<ValueClassImplicitlyTaggedElement>("300302010$int".hexToByteArray())
+                }
             }
         }
 
@@ -128,13 +133,15 @@ data class Asn1BackedImplicitlyTagged private constructor(@Asn1Tag(9u) val rawVa
     val value = rawValue.value
 }
 
-
-typealias ImplicitInt = @Asn1Tag(9u) Int
+@Asn1Tag(9u)
+@Serializable
+@JvmInline
+value class ImplicitlyTaggedInt(val value: Int)
 
 @Serializable
-data class TypeAliasedImplicitlyTaggedElement private constructor(val rawValue: Asn1Element) {
-    constructor(value: Int) : this(DER.encodeToTlv<ImplicitInt>(value))
+data class ValueClassImplicitlyTaggedElement private constructor(val rawValue: Asn1Element) {
+    constructor(value: Int) : this((DER.encodeToTlv(ImplicitlyTaggedInt(value))))
 
     @Transient
-    val value: Int = DER.decodeFromTlv<ImplicitInt>(rawValue)
+    val value: Int = DER.decodeFromTlv<ImplicitlyTaggedInt>(rawValue).value
 }
