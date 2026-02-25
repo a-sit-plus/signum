@@ -46,19 +46,16 @@ data class DerConfiguration(
  *
  * - [encodeDefaults]: include/exclude default-valued properties.
  * - [explicitNulls]: encode `null` as ASN.1 `NULL` or omit nullable values.
- * - [reEmitAsn1Backed]: enable exact raw re-emission for [Asn1Backed] values.
  * - [serializersModule]: module used for contextual/open-polymorphic serializers.
  */
 class DerBuilder internal constructor() {
     var encodeDefaults: Boolean = true
     var explicitNulls: Boolean = false
-    var reEmitAsn1Backed: Boolean = false
     var serializersModule: SerializersModule = EmptySerializersModule()
 
     internal fun build() = DerConfiguration(
         encodeDefaults = encodeDefaults,
         explicitNulls = explicitNulls,
-        reEmitAsn1Backed = reEmitAsn1Backed,
         serializersModule = serializersModule,
     )
 }
