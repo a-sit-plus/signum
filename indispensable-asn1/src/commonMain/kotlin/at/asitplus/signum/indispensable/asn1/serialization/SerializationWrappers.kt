@@ -31,7 +31,8 @@ data class OctetStringEncapsulated<T>(
     val value: T,
 )
 
-private const val Asn1ExplicitSerialName = "at.asitplus.signum.indispensable.asn1.serialization.Asn1Explicit"
+private const val ExplicitlyTaggedSerialName =
+    "at.asitplus.signum.indispensable.asn1.serialization.ExplicitlyTagged"
 
 internal fun SerialDescriptor.isAsn1ExplicitWrapperDescriptor(): Boolean =
-    serialName.removeSuffix("?").substringBefore('<') == Asn1ExplicitSerialName
+    serialName.removeSuffix("?").substringBefore('<').let { rawName -> rawName == ExplicitlyTaggedSerialName }

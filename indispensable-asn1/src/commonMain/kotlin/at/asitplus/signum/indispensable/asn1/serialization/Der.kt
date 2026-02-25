@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.asn1.serialization.internal.DerLayoutPla
 import at.asitplus.signum.internals.ImplementationError
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import kotlinx.serialization.BinaryFormat
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException

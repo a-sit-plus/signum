@@ -226,7 +226,7 @@ internal fun requireAsn1ExplicitWrapperTag(
     }
     if (tagTemplate == null) {
         throw SerializationException(
-            "Asn1Explicit requires an implicit tag override at $location. " +
+            "ExplicitlyTagged requires an implicit tag override at $location. " +
                     "Provide @Asn1Tag(tagNumber=..., tagClass=CONTEXT_SPECIFIC, constructed=CONSTRUCTED)."
         )
     }
@@ -234,7 +234,7 @@ internal fun requireAsn1ExplicitWrapperTag(
     val effectiveConstructed = tagTemplate.constructed ?: true
     if (effectiveClass != TagClass.CONTEXT_SPECIFIC || !effectiveConstructed) {
         throw SerializationException(
-            "Asn1Explicit requires CONTEXT_SPECIFIC + CONSTRUCTED tag at $location, " +
+            "ExplicitlyTagged requires CONTEXT_SPECIFIC + CONSTRUCTED tag at $location, " +
                     "but effective override is class=$effectiveClass, constructed=$effectiveConstructed."
         )
     }
