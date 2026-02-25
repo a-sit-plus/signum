@@ -1,10 +1,17 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import Asn1Backed
+import Asn1BackedSerializer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Source
-import kotlinx.serialization.*
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SealedClassSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.*
@@ -55,6 +62,7 @@ class DerDecoder internal constructor(
     internal fun dropOidFromNextStructure() {
         dropFirstChildInNextStructure = true
     }
+
 
 
     internal fun peekCurrentElementTagOrNull(): Asn1Element.Tag? = elements.getOrNull(elementIndex)?.tag
@@ -256,7 +264,6 @@ class DerDecoder internal constructor(
                 "Sealed polymorphic decoding is not supported via primitive decode path for ${effectiveDescriptor.serialName}. " +
                         "ASN.1 CHOICE is supported for sealed types in composite decoding paths."
             )
-
             PrimitiveKind.BOOLEAN -> processedElement.asPrimitive()
                 .decodeToBoolean(expectedTag ?: Asn1Element.Tag.BOOL)
 
@@ -288,7 +295,6 @@ class DerDecoder internal constructor(
         return decoded
 
     }
-
     @OptIn(InternalSerializationApi::class)
     /**
      * Handles nullable/absent semantics before delegating to the main decode pipeline.
@@ -356,7 +362,6 @@ class DerDecoder internal constructor(
         }
         return decodeSerializableValue(deserializer)
     }
-
     @OptIn(InternalSerializationApi::class)
     /**
      * Main serialization pipeline for DER decoding.
@@ -365,6 +370,16 @@ class DerDecoder internal constructor(
      */
     @Throws(SerializationException::class)
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        if (deserializer is Asn1BackedSerializer<*>) {
+            // don’t consume inline hints here – they must apply to the inner value
+            val raw = peekCurrentElementOrNull()
+
+            @Suppress("UNCHECKED_CAST")
+            val inner = decodeSerializableValue(deserializer.valueSer as DeserializationStrategy<Any?>)
+
+            @Suppress("UNCHECKED_CAST")
+            return Asn1Backed(inner as Any, raw) as T
+        }
         if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[elementIndex]
         val inlineHints = inlineHintState.consume()
@@ -434,8 +449,7 @@ class DerDecoder internal constructor(
         }
 
         if (isAsn1ChoiceRequested(deserializer.descriptor)
-            && deserializer is SealedClassSerializer<*>
-        ) {
+            && deserializer is SealedClassSerializer<*>) {
             return decodeChoiceSerializableValue(deserializer, currentAnnotatedElement, inlineHints.tag)
         }
 
@@ -574,7 +588,7 @@ class DerDecoder internal constructor(
             formatConfiguration = formatConfiguration,
             layoutPlan = layoutPlan,
         )
-        if (dropFirstChildInNextStructure) {
+        if(dropFirstChildInNextStructure){
             childDecoder.dropFirstChildInNextStructure = dropFirstChildInNextStructure
             dropFirstChildInNextStructure = false
         }

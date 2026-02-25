@@ -1,7 +1,7 @@
 [versions]
 
 biometric = "1.2.0-alpha05"
-kotlin = "2.3.0"
+kotlin = "2.2.21"
 compose = "1.7.3"
 agp = "8.12.3"
 androidx-appcompat = "1.7.0"

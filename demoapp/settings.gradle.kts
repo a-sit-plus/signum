@@ -18,6 +18,7 @@ pluginManagement {
     }
 }
 
+includeBuild("..")
 
 dependencyResolutionManagement {
     repositories {

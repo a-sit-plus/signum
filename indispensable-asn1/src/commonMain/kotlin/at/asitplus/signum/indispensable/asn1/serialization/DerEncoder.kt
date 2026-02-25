@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import Asn1Backed
+import Asn1BackedSerializer
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
@@ -216,6 +218,23 @@ internal class DerEncoder(
      */
     @Throws(SerializationException::class)
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
+
+        if (serializer is Asn1BackedSerializer<*> && value is Asn1Backed<*>) {
+
+            // raw re-emit fast-path (consume state so it doesn’t leak)
+            if (formatConfiguration.reEmitAsn1Backed && value.asn1Element != null) {
+                inlineHintState.consume()
+                descriptorAndIndex = null
+                appendElement(value.asn1Element) // no tagTemplate: “emit exactly as decoded”
+                return
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            return encodeSerializableValue(
+                serializer.valueSer as SerializationStrategy<Any?>,
+                value.value as Any?
+            )
+        }
 
         val inlineHints = inlineHintState.consume()
         val propertyContext = descriptorAndIndex?.toDerPropertyContext()

@@ -1,7 +1,6 @@
-package io.kotest.property.at.asitplus.signum.indispensable.serialization
+package io.kotest.property.at.asitplus.signum.indispensable.asn1.serialization.backed
 
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.Asn1String
+import Asn1Backed
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.serialization.*
@@ -20,6 +19,9 @@ import kotlin.uuid.Uuid
 
 @OptIn(InternalSerializationApi::class)
 val MixedPolyTests by testSuite(testConfig = DefaultConfiguration.invocation(TestConfig.Invocation.Sequential)) {
+    withData(nameFn = { "re-emit: $it" }, true, false) - {
+
+
         val a = Choice.A
         val b = Choice.B
 
@@ -30,6 +32,7 @@ val MixedPolyTests by testSuite(testConfig = DefaultConfiguration.invocation(Tes
         val withNestedProperties = Choice.WithNestedProperties(nestedC)
 
         val der = DER {
+            reEmitAsn1Backed = it
             serializersModule = SerializersModule {
                 polymorphicByOid(Choice.Nested::class, serialName = "NestedBacked") {
                     subtype<Choice.Nested.A>(Choice.Nested.A)
@@ -60,6 +63,7 @@ val MixedPolyTests by testSuite(testConfig = DefaultConfiguration.invocation(Tes
             encoded.toHexString() shouldBe hex
             der.decodeFromDer<Choice.Nested>(encoded) shouldBe obj
         }
+    }
 }
 
 @Serializable
@@ -75,13 +79,15 @@ sealed interface Choice {
 
     @Serializable
     @Asn1Tag(456u)
-    data class C private constructor(val foo: Asn1Integer, val b: B) : Choice {
-        constructor(foo: Int, b: B) : this(Asn1Integer(foo), b)
+    data class C private constructor(val foo: Asn1Backed<Int>, val b: Asn1Backed<B>) : Choice {
+        constructor(foo: Int, b: B) : this(Asn1Backed(foo), Asn1Backed(b))
     }
 
     @Serializable
     @Asn1Tag(789u)
-    data class WithNestedProperties(val nested: Nested) : Choice
+    data class WithNestedProperties private constructor(val nested: Asn1Backed<Nested>) : Choice {
+        constructor(nested: Nested) : this(Asn1Backed(nested))
+    }
 
     @Asn1Tag(10_11_12u)
     interface Nested : Choice, Identifiable {
@@ -93,8 +99,8 @@ sealed interface Choice {
         }
 
         @Serializable
-        data class B private constructor(val bar: Asn1String.UTF8) : Nested, Identifiable by Companion {
-            constructor(bar: String) : this(Asn1String.UTF8(bar))
+        data class B private constructor(val bar: Asn1Backed<String>) : Nested, Identifiable by Companion {
+            constructor(bar: String) : this(Asn1Backed(bar))
 
             companion object : OidProvider<B> {
                 @OptIn(ExperimentalUuidApi::class)
@@ -105,7 +111,8 @@ sealed interface Choice {
 
 
         @Serializable
-        data class Cnested(val c: C) : Nested, Identifiable by Companion {
+        data class Cnested private constructor(val c: Asn1Backed<C>) : Nested, Identifiable by Companion {
+            constructor(c: C) : this(Asn1Backed(c))
 
             companion object : OidProvider<Cnested> {
                 @OptIn(ExperimentalUuidApi::class)

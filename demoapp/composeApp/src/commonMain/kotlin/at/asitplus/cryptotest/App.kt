@@ -86,8 +86,6 @@ import kotlin.time.Duration.Companion.seconds
 you don't need this workaround for ios/android, just use PlatformSigningProvider directly */
 expect val Provider: SigningProvider
 
-expect fun attestAndAssert(): Unit
-
 const val ALIAS = "Bartschlüssel"
 val SIGNER_CONFIG: (SignerConfiguration.() -> Unit) = {
     if (this is PlatformSignerConfigurationBase) {
@@ -484,17 +482,6 @@ internal fun App() {
                 modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
                 enabled = signingPossible
             ) { Text("Sign") }
-
-            Button(
-                onClick = {
-
-                    CoroutineScope(context).launch {
-                       attestAndAssert()
-                    }
-                },
-                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-                enabled = true
-            ) { Text("Atttttest") }
 
             if (signingPossible && (currentKey?.getOrNull() is CryptoPublicKey.EC)) {
                 Napier.i { "Ephemeral key: $ephemeralKey" }

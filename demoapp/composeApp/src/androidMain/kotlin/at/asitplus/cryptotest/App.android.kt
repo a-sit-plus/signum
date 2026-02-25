@@ -19,6 +19,3 @@ class AppActivity : FragmentActivity() {
         }
     }
 }
-
-actual fun attestAndAssert() {
-}
