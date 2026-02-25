@@ -13,7 +13,7 @@ val SerializationTutorial03ExplicitWrapper by testSuite(
 ) {
     "EXPLICIT modeling with Asn1Explicit + context-specific constructed tag" {
         val value = TutorialExplicitCarrier(
-            wrapped = Asn1Explicit(5),
+            wrapped = ExplicitlyTagged(5),
         )
         val der = DER.encodeToDer(value)
         der.toHexString() shouldBe "3005a003020105"
@@ -28,5 +28,5 @@ private data class TutorialExplicitCarrier(
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
         constructed = Asn1ConstructedBit.CONSTRUCTED,
     )
-    val wrapped: Asn1Explicit<Int>,
+    val wrapped: ExplicitlyTagged<Int>,
 )

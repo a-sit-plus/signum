@@ -30,6 +30,128 @@ Simply declare the desired dependency to get going:
 implementation("at.asitplus.signum:indispensable-asn1:$version")
 ```
 
+## Using kotlinx.serialization
+
+This branch adds a DER `SerialFormat` for `kotlinx.serialization`, exposed as `DER`.
+It complements the low-level `Asn1Encodable`/`Asn1Decodable` APIs. You can use both styles in the same codebase.
+
+### 1. Basic usage
+
+```kotlin
+import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class Person(val name: String, val age: Int)
+
+val encoded: ByteArray = DER.encodeToDer(Person("Alice", 42))
+val decoded: Person = DER.decodeFromDer(encoded)
+```
+
+Configuration works similarly to other `kotlinx.serialization` formats:
+
+```kotlin
+val der = DER {
+    encodeDefaults = false
+    explicitNulls = true
+}
+```
+
+### 2. Implicit tagging with `@Asn1Tag`
+
+Use `@Asn1Tag` to override the effective ASN.1 tag for a class or property.
+
+```kotlin
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1ConstructedBit
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Tag
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1TagClass
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class TaggedIntBox(
+    @Asn1Tag(
+        tagNumber = 9u,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
+        constructed = Asn1ConstructedBit.PRIMITIVE
+    )
+    val value: Int
+)
+```
+
+### 3. EXPLICIT tagging via wrapper class
+
+EXPLICIT tagging is modeled with a wrapper value (`ExplicitlyTagged<T>`) plus an outer tag override.
+
+```kotlin
+@Serializable
+data class ExplicitCarrier(
+    @Asn1Tag(
+        tagNumber = 0u,
+        tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
+        constructed = Asn1ConstructedBit.CONSTRUCTED
+    )
+    val value: ExplicitlyTagged<Int>
+)
+```
+
+### 4. OCTET STRING encapsulation via `OctetStringEncapsulated`
+
+To model encapsulated structures (`OCTET STRING` containing DER-encoded inner content), use `OctetStringEncapsulated<T>`.
+
+```kotlin
+
+@Serializable
+data class OctetCarrier(
+    val wrapped: OctetStringEncapsulated<Int>
+)
+```
+
+### 5. Open polymorphism by OID
+
+For OID-discriminated open polymorphism, register subtypes in a `SerializersModule` using `polymorphicByOid`.
+
+```kotlin
+interface AlgorithmParameters : Identifiable
+
+@Serializable
+data class RsaParams(val bits: Int) : AlgorithmParameters, Identifiable by Companion {
+    companion object : OidProvider<RsaParams> {
+        override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.1")
+    }
+}
+
+@Serializable
+data class EcParams(val curve: String) : AlgorithmParameters, Identifiable by Companion {
+    companion object : OidProvider<EcParams> {
+        override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.10045.2.1")
+    }
+}
+
+val der = DER {
+    serializersModule = SerializersModule {
+        polymorphicByOid(AlgorithmParameters::class, serialName = "AlgorithmParameters") {
+            subtype<RsaParams>(RsaParams)
+            subtype<EcParams>(EcParams)
+        }
+    }
+}
+```
+
+### 6. Important semantics
+
+* Sealed polymorphism is treated as ASN.1 `CHOICE` by default.
+* Ambiguous optional/nullable layouts are rejected at runtime (hard fail).
+* `@Asn1Tag` on raw `Asn1Element` fields is rejected.
+* `ExplicitlyTagged<T>` requires effective `CONTEXT_SPECIFIC + CONSTRUCTED` tagging.
+
+For executable end-to-end examples, see:
+
+* `indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial02TagOverrideTest.kt`
+* `indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial03ExplicitWrapperTest.kt`
+* `indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial04OctetWrappedTest.kt`
+* `indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/tutorial/SerializationTutorial11OpenPolyByOidTest.kt`
+* `indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/serialization/SerializationCoverageGapsTest.kt`
+
 ## Structure and Class Overview
 As the name _Indispensable ASN.1_ implies, this module is indispensable, if you work with ASN.1 structures.
 
@@ -53,7 +175,7 @@ The `asn1` package contains a 100% pure Kotlin (read: no platform dependencies) 
 
 In addition, some convenience types are also present:
 
-* `Asn1ExplicitlyTagged`, which is essentially a sequence, but with a user-defined `CONTEXT_SPECIFIC` tag
+* `ExplicitlyTaggedlyTagged`, which is essentially a sequence, but with a user-defined `CONTEXT_SPECIFIC` tag
 * `Asn1BitString`, wich is an ASN.1 primitive containing bit strings, which are not necessarily byte-aligned.
   Heavily relies on the included `BitSet` type to work its magic.
 * `Asn1OctetString`, wich is often encountered in one of two flavours:
@@ -75,8 +197,8 @@ The ASN.1 engine allows decoding and encoding arbitrary structures from/to `Byte
 
 Relevant _Indispensable_ classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-This is an essential pattern, making the ASN.1 engine work the way it does.
-We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  
+This remains an essential pattern and is fully supported.
+In addition, this module now also provides first-class DER integration for `kotlinx.serialization` (see section above).  
 The following section provides more details on the various patterns used for ASN.1 encoding and decoding.
 
 ### Generic Patterns

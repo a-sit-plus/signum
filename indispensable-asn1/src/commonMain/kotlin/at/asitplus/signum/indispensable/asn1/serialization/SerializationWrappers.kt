@@ -11,7 +11,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
  * at runtime by the DER serializer/decoder.
  */
 @Serializable
-data class Asn1Explicit<T>(
+data class ExplicitlyTagged<T>(
     val value: T,
 )
 
@@ -27,7 +27,7 @@ data class Asn1Explicit<T>(
     tagClass = Asn1TagClass.UNIVERSAL,
     constructed = Asn1ConstructedBit.PRIMITIVE,
 )
-data class Asn1OctetWrapped<T>(
+data class OctetStringEncapsulated<T>(
     val value: T,
 )
 

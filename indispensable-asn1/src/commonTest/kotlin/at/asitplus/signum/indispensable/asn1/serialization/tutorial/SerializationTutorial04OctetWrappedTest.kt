@@ -13,7 +13,7 @@ val SerializationTutorial04OctetWrapped by testSuite(
 ) {
     "OCTET STRING encapsulation with Asn1OctetWrapped" {
         val value = TutorialOctetCarrier(
-            wrapped = Asn1OctetWrapped(5),
+            wrapped = OctetStringEncapsulated(5),
         )
         val der = DER.encodeToDer(value)
         der.toHexString() shouldBe "30050403020105"
@@ -23,5 +23,5 @@ val SerializationTutorial04OctetWrapped by testSuite(
 
 @Serializable
 private data class TutorialOctetCarrier(
-    val wrapped: Asn1OctetWrapped<Int>,
+    val wrapped: OctetStringEncapsulated<Int>,
 )

@@ -48,19 +48,19 @@ val SerializationTestCoverageGaps by testSuite(
 
     "Asn1Explicit requires an explicit context-specific constructed tag" {
         shouldThrow<SerializationException> {
-            DER.encodeToDer(ExplicitNoTag(Asn1Explicit(5)))
+            DER.encodeToDer(ExplicitNoTag(ExplicitlyTagged(5)))
         }
         shouldThrow<SerializationException> {
             DER.encodeToDer(
                 ExplicitWrongClass(
-                    Asn1Explicit(5)
+                    ExplicitlyTagged(5)
                 )
             )
         }
         shouldThrow<SerializationException> {
             DER.encodeToDer(
                 ExplicitWrongConstructed(
-                    Asn1Explicit(5)
+                    ExplicitlyTagged(5)
                 )
             )
         }
@@ -158,7 +158,7 @@ private data class InferConstructedOnClass(
 
 @Serializable
 private data class ExplicitNoTag(
-    val wrapped: Asn1Explicit<Int>,
+    val wrapped: ExplicitlyTagged<Int>,
 )
 
 @Serializable
@@ -168,7 +168,7 @@ private data class ExplicitWrongClass(
         tagClass = Asn1TagClass.UNIVERSAL,
         constructed = Asn1ConstructedBit.CONSTRUCTED,
     )
-    val wrapped: Asn1Explicit<Int>,
+    val wrapped: ExplicitlyTagged<Int>,
 )
 
 @Serializable
@@ -178,7 +178,7 @@ private data class ExplicitWrongConstructed(
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
         constructed = Asn1ConstructedBit.PRIMITIVE,
     )
-    val wrapped: Asn1Explicit<Int>,
+    val wrapped: ExplicitlyTagged<Int>,
 )
 
 @Serializable

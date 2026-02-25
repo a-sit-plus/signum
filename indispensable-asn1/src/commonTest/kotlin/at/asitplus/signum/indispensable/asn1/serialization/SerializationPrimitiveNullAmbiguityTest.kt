@@ -71,7 +71,7 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
         shouldThrow<SerializationException> {
             derExplicitNulls.encodeToDer(
                 PrimitiveImplicitThenExplicitStringSafe(
-                    Asn1Explicit(PrimitiveInnerImplicitNullableString(null))
+                    ExplicitlyTagged(PrimitiveInnerImplicitNullableString(null))
                 )
             )
         }
@@ -82,12 +82,12 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
 
     "Octet wrapping without implicit tagging remains unambiguous" {
         val valueNull = PrimitiveOctetStringSafe(
-            Asn1OctetWrapped(PrimitiveInnerPlainNullableString(null))
+            OctetStringEncapsulated(PrimitiveInnerPlainNullableString(null))
         )
         DER.decodeFromDer<PrimitiveOctetStringSafe>(DER.encodeToDer(valueNull)) shouldBe valueNull
 
         val valueEmpty = PrimitiveOctetStringSafe(
-            Asn1OctetWrapped(PrimitiveInnerPlainNullableString(""))
+            OctetStringEncapsulated(PrimitiveInnerPlainNullableString(""))
         )
         DER.decodeFromDer<PrimitiveOctetStringSafe>(DER.encodeToDer(valueEmpty)) shouldBe valueEmpty
 
@@ -104,7 +104,7 @@ val SerializationTestPrimitiveNullAmbiguity by testSuite(
         shouldThrow<SerializationException> {
             derExplicitNulls.encodeToDer(
                 PrimitiveOctetThenImplicitStringAmbiguous(
-                    Asn1OctetWrapped(PrimitiveInnerImplicitNullableString41(null))
+                    OctetStringEncapsulated(PrimitiveInnerImplicitNullableString41(null))
                 )
             )
         }
@@ -190,7 +190,7 @@ data class PrimitiveImplicitThenExplicitStringSafe(
         tagClass = Asn1TagClass.CONTEXT_SPECIFIC,
         constructed = Asn1ConstructedBit.CONSTRUCTED,
     )
-    val value: Asn1Explicit<PrimitiveInnerImplicitNullableString>
+    val value: ExplicitlyTagged<PrimitiveInnerImplicitNullableString>
 )
 
 @Serializable
@@ -204,7 +204,7 @@ data class PrimitiveInnerImplicitNullableString(
 
 @Serializable
 data class PrimitiveOctetStringSafe(
-    val value: Asn1OctetWrapped<PrimitiveInnerPlainNullableString>
+    val value: OctetStringEncapsulated<PrimitiveInnerPlainNullableString>
 )
 
 @Serializable
@@ -219,7 +219,7 @@ data class PrimitiveNoImplicitOctetStringSafe(
 
 @Serializable
 data class PrimitiveOctetThenImplicitStringAmbiguous(
-    val value: Asn1OctetWrapped<PrimitiveInnerImplicitNullableString41>
+    val value: OctetStringEncapsulated<PrimitiveInnerImplicitNullableString41>
 )
 
 @Serializable

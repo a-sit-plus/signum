@@ -199,7 +199,7 @@ internal fun validateAndResolveImplicitTagOverride(
 }
 
 /**
- * Validates [Asn1Explicit] wrapper tag requirements at the current location.
+ * Validates [ExplicitlyTagged] wrapper tag requirements at the current location.
  *
  * @throws SerializationException if no effective tag override exists or if override is not
  * CONTEXT_SPECIFIC + CONSTRUCTED

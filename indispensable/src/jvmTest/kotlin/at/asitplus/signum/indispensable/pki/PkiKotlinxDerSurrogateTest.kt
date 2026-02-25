@@ -302,7 +302,7 @@ data class SurrogateX509Certificate private constructor(
 @Serializable
 data class SurrogateTbsCertificate(
     @Asn1Tag(tagNumber = 0u, tagClass = Asn1TagClass.CONTEXT_SPECIFIC, constructed = Asn1ConstructedBit.CONSTRUCTED)
-    val version: Asn1Explicit<Int>? = null,
+    val version: ExplicitlyTagged<Int>? = null,
     val serialNumber: Asn1Integer,
     val signature: Asn1Element,
     val issuer: List<RelativeDistinguishedName>,
@@ -316,7 +316,7 @@ data class SurrogateTbsCertificate(
     @Asn1Tag(tagNumber = 2u)
     val subjectUniqueID: ByteArray? = null,
     @Asn1Tag(tagNumber = 3u, constructed = Asn1ConstructedBit.CONSTRUCTED)
-    val extensions: Asn1Explicit<List<X509CertificateExtension>>? = null,
+    val extensions: ExplicitlyTagged<List<X509CertificateExtension>>? = null,
 ) {
     init {
         val extensionList = extensions?.value
