@@ -8,8 +8,11 @@ import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 
 
@@ -52,6 +55,14 @@ val TaggedTest by testSuite {
                 } shouldBe Asn1BackedImplicitlyTagged(
                     int
                 )
+            }
+
+            withClue("missing implicit tag, default int tag") {
+                //As you can see, this throws, because the int was not implicitly tagged. so ALL the validations are done
+                //as if there were no Asn1Backed in place
+                shouldThrow<SerializationException> {
+                    DER.decodeFromDer<Asn1BackedImplicitlyTagged>("300302010$int".hexToByteArray())
+                }
             }
         }
     }
