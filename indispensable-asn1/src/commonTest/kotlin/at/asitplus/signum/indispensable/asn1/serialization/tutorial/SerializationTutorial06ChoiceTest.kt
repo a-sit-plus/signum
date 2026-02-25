@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration

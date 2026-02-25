@@ -3,12 +3,10 @@ package io.kotest.property.at.asitplus.signum.indispensable.asn1.serialization
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.serialization.*
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException

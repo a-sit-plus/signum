@@ -3,7 +3,6 @@ package io.kotest.property.at.asitplus.signum.indispensable.asn1.serialization
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.serialization.*
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration

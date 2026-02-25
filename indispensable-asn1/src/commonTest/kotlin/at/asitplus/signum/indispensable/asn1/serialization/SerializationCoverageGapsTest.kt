@@ -1,14 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1Structure
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.TagClass
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.readOid
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration

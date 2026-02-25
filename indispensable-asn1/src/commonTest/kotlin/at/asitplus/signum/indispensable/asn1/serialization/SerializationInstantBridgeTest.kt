@@ -3,9 +3,7 @@ package at.asitplus.signum.indispensable.asn1.serialization
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.invocation

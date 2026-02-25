@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.asn1.serialization.internal.DerLayoutPla
 import at.asitplus.signum.internals.ImplementationError
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
+import kotlinx.serialization.BinaryFormat
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -181,3 +182,16 @@ interface DerEncoder : Encoder {
 interface DerDecoder : Decoder {
     val der: Der
 }
+
+/**
+ * Factory for the ASN.1 DER kotlinx-serialization format.
+ *
+ * @param config optional builder block for DER settings
+ * (for example `encodeDefaults`, `explicitNulls`, or `reEmitAsn1Backed`)
+ */
+fun DER(config: DerBuilder.() -> Unit = {}) =
+    DerBuilder()
+        .apply(config)
+        .build()
+        .let { Der(it) }
+val DER = DER{}

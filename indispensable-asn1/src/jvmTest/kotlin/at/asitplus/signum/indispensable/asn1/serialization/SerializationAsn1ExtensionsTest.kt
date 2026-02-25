@@ -13,7 +13,6 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.Asn1Null
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequestAttribute
