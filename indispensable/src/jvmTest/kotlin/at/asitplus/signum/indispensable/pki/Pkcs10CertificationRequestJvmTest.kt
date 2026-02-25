@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import at.asitplus.signum.indispensable.asn1.serialization.DER
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite

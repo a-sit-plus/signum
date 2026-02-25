@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import at.asitplus.signum.indispensable.asn1.serialization.DER
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
@@ -30,9 +30,6 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val KeyTest  by testSuite {

@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import at.asitplus.signum.indispensable.asn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke

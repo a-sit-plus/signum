@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
 import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import at.asitplus.signum.indispensable.asn1.serialization.DER
 import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue

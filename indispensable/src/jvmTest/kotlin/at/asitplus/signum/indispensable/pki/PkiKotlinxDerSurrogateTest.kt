@@ -1,12 +1,11 @@
 package at.asitplus.signum.indispensable.pki
 
-import Asn1Backed
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.serialization.*
-import at.asitplus.signum.indispensable.asn1.serialization.api.DER
+import at.asitplus.signum.indispensable.asn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.testballoon.invoke
@@ -62,7 +61,7 @@ val PkiKotlinxDerSurrogateTest by testSuite {
             withClue(name + " legacy failure ${legacy.isFailure}, surrogate failure: ${surrogate.isFailure}") {
                 "byte-equal" {
                     surrogate.getOrNull()?.let {
-                        val surrogateDer = DER { reEmitAsn1Backed = true }.encodeToDer(it)
+                        val surrogateDer = DER.encodeToDer(it)
                         surrogateDer shouldBe der
                     }
                 }
@@ -76,7 +75,7 @@ val PkiKotlinxDerSurrogateTest by testSuite {
                     "Too lenient" {
                         val legacyDer = legacy.getOrThrow().encodeToDer()
                         //we only check when encoding itself is kosher
-                        DER { reEmitAsn1Backed = true }.encodeToDer(surrogate.getOrThrow()) shouldBe legacyDer
+                        DER.encodeToDer(surrogate.getOrThrow()) shouldBe legacyDer
                     }
                 } else "Strict as should be" {}
             }
@@ -151,7 +150,7 @@ private fun readGoogleDerCorpus(): Pair<List<Pair<String, ByteArray>>, List<Pair
 private fun assertX509SurrogateRoundtrip(label: String, der: ByteArray) {
     val legacy = X509Certificate.decodeFromDer(der)
     val surrogate = DER.decodeFromDer<SurrogateX509Certificate>(der)
-    val surrogateDer = DER { reEmitAsn1Backed = true }.encodeToDer(surrogate)
+    val surrogateDer = DER.encodeToDer(surrogate)
     withClue(label) {
         surrogate.isConsistentWithX509Constraints() shouldBe true
         catchingUnwrapped { X509Certificate.decodeFromDer(surrogateDer) }.isSuccess shouldBe true
@@ -164,7 +163,7 @@ private fun assertX509SurrogateRoundtrip(label: String, der: ByteArray) {
 }
 
 private fun SurrogateX509Certificate.isConsistentWithX509Constraints(): Boolean =
-    tbsCertificate.value.signature == signatureAlgorithm
+    tbsCertificate.signature == signatureAlgorithm
 
 private fun generatedCsrVectors(): List<Pair<String, ByteArray>> {
     val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
@@ -285,9 +284,12 @@ private fun malformedCsrVectors(validDer: ByteArray): List<Pair<String, ByteArra
 
 private fun String.asUtf8String() = at.asitplus.signum.indispensable.asn1.Asn1String.UTF8(this)
 
+@JvmInline
+value class Asn1BackedTbsCert(val tbsCert: SurrogateTbsCertificate)
+
 @Serializable
 data class SurrogateX509Certificate private constructor(
-    val tbsCertificate: Asn1Backed<SurrogateTbsCertificate>,
+    val rawTbsCert: Asn1Element,
     val signatureAlgorithm: Asn1Element,
     @Asn1BitStringAnnotation
     val signatureValue: ByteArray
@@ -296,7 +298,10 @@ data class SurrogateX509Certificate private constructor(
         tbsCertificate: SurrogateTbsCertificate,
         signatureAlgorithm: Asn1Element,
         signatureValue: ByteArray
-    ) : this(Asn1Backed(tbsCertificate), signatureAlgorithm, signatureValue)
+    ) : this(DER.encodeToTlv(Asn1BackedTbsCert(tbsCertificate)), signatureAlgorithm, signatureValue)
+
+    //we could use a getter to be VEEEEEEEERY lenient, but we want to be strict
+    @Transient val tbsCertificate : SurrogateTbsCertificate = DER.decodeFromTlv<SurrogateTbsCertificate>(rawTbsCert)
 }
 
 @Serializable
@@ -349,7 +354,7 @@ data class SurrogateCertificationRequestInfo(
     val subject: Asn1Element,
     val subjectPublicKeyInfo: SurrogateSubjectPublicKeyInfo,
     @Asn1Tag(tagNumber = 0u)
-    val attributes: Asn1Element
+    val attributes: List<Asn1Element>?
 )
 
 @Serializable(with = SurrogateSubjectPublicKeyInfoSerializer::class)
