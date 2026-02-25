@@ -55,12 +55,14 @@ val TaggedTest by testSuite {
 
         "ValueClassImplicitlyTaggedElement" {
             DER.encodeToDer(ValueClassImplicitlyTaggedElement(int)).toHexString() shouldBe "300389010$int".also {
-                DER.decodeFromDer<ValueClassImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe ValueClassImplicitlyTaggedElement(
+               val decoded=  DER.decodeFromDer<ValueClassImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe ValueClassImplicitlyTaggedElement(
                     int
                 )
                 shouldThrow<SerializationException> {
                     DER.decodeFromDer<ValueClassImplicitlyTaggedElement>("300302010$int".hexToByteArray())
                 }
+
+                decoded.rawValue.tag.tagValue shouldBe 9uL
             }
         }
 
