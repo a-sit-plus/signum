@@ -1,0 +1,45 @@
+{
+  "include": [
+    {
+      "os": "ubuntu-latest",
+      "name": "linuxNativeRunner",
+      "testCommand": "./gradlew linuxX64Test --scan"
+    },
+    {
+      "os": "ubuntu-latest",
+      "name": "jvmRunner",
+      "testCommand": "./gradlew jvmTest --scan"
+    },
+    {
+      "os": "ubuntu-latest",
+      "name": "androidRunner",
+      "enableKvm": true,
+      "testCommand": "./gradlew pixelAVDAndroidDeviceTest --scan"
+    },
+    {
+      "os": "ubuntu-latest",
+      "name": "jsRunner",
+      "testCommand": "./gradlew jsTest --scan"
+    },
+    {
+      "os": "windows-latest",
+      "name": "mingwRunner",
+      "testCommand": "./gradlew mingwX64Test --scan"
+    },
+    {
+      "os": "macos-latest",
+      "name": "iosRunner",
+      "testCommand": "./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary iosSimulatorArm64Test --scan"
+    },
+    {
+      "os": "macos-latest",
+      "name": "appleOtherRunner",
+      "testCommand": "./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary tvosX64Test tvosSimulatorArm64Test watchosSimulatorArm64Test watchosX64Test iosX64Test macosArm64Test macosX64Test --scan"
+    },
+    {
+      "os": "macos-latest",
+      "name": "macRunner",
+      "testCommand": "./gradlew allTests -x iosX64Test -x jvmTest -x jsTest --scan"
+    }
+  ]
+}
