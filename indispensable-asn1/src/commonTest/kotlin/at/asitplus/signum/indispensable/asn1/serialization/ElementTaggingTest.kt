@@ -3,6 +3,7 @@ package io.kotest.property.at.asitplus.signum.indispensable.asn1.serialization
 import Asn1Backed
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
+import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.serialization.*
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
@@ -42,7 +43,17 @@ val TaggedTest by testSuite {
         }
         "ImplicitlyTaggedElement" {
             DER.encodeToDer(ImplicitlyTaggedElement(int)).toHexString() shouldBe "300389010$int".also {
-                DER.decodeFromDer<ImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe ImplicitlyTaggedElement(
+                shouldThrow<Asn1TagMismatchException> {
+                    DER.decodeFromDer<ImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe ImplicitlyTaggedElement(
+                        int
+                    )
+                }
+            }
+        }
+
+        "TypeAliasedImplicitlyTaggedElement" {
+            DER.encodeToDer(TypeAliasedImplicitlyTaggedElement(int)).toHexString() shouldBe "300389010$int".also {
+                DER.decodeFromDer<TypeAliasedImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe TypeAliasedImplicitlyTaggedElement(
                     int
                 )
             }
@@ -77,16 +88,16 @@ data class UntaggedAsn1Integer private constructor(val value: Asn1Integer) {
 }
 
 @Serializable
-data class UntaggedElement private constructor(private val value_: Asn1Element) {
+data class UntaggedElement private constructor(private val rawValue: Asn1Element) {
     //this is fine: default int tag, default int serializer, so everything just works, no manual parsing or custom serializer required
     constructor(value: Int) : this(DER.encodeToTlv(value))
 
     @Transient
-    val value = DER.decodeFromTlv<Int>(value_)
+    val value = DER.decodeFromTlv<Int>(rawValue)
 }
 
 @Serializable
-data class ImplicitlyTaggedElement private constructor(@Asn1Tag(9u) private val _value: Asn1Element) {
+data class ImplicitlyTaggedElement private constructor(@Asn1Tag(9u) private val rawValue: Asn1Element) {
     //The encoding path also works fine. default it serializer, no manual parsing or custom serializer required
     constructor(value: Int) : this(DER.encodeToTlv(value))
 
@@ -96,7 +107,7 @@ data class ImplicitlyTaggedElement private constructor(@Asn1Tag(9u) private val 
 
     //For this simple example this is not an issue, because there is such an int decoding function, but imagine we don't have int, but TbsCertificate, whose
     //raw ASN.1 representation is required (And yes, we want ASN.1 that round-trip deserializes and serializes to bytes, so we have structural guarantees; hence: raw bytes are not an option)
-    val value = DER.decodeFromTlv<Int>(_value)
+    val value = DER.decodeFromTlv<Int>(rawValue)
 }
 
 
@@ -115,4 +126,15 @@ data class Asn1BackedImplicitlyTagged private constructor(@Asn1Tag(9u) val rawVa
     @Transient
     //This also works perfectly fine and we can encode and decode as often as we want: If an Asn1Backed's asn1Element is present, it can just be re-emitted as-is, to keep byte-level faults that don't impact the TLV tree (like sorting issues, or illegal characters inside a string, etc.)
     val value = rawValue.value
+}
+
+
+typealias ImplicitInt = @Asn1Tag(9u) Int
+
+@Serializable
+data class TypeAliasedImplicitlyTaggedElement private constructor(val rawValue: Asn1Element) {
+    constructor(value: Int) : this(DER.encodeToTlv<ImplicitInt>(value))
+
+    @Transient
+    val value: Int = DER.decodeFromTlv<ImplicitInt>(rawValue)
 }
