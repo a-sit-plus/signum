@@ -1,12 +1,18 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.json.JsonElement
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 val testvec1 = """
     {
@@ -41,8 +47,65 @@ val testvec2 = """
 """.trimIndent()
 
 val JwsGeneralTest by testSuite {
-    withData(listOf(testvec1, testvec2)) {
-        val jwsGeneral = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(it)
-        jwsGeneral.signatures.size shouldBe 2
+    "deserializes vector with correct algorithms, raw signatures, and plainSignatureInput" {
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val source = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), testvec1)
+        val payloadPart = source["payload"]!!.jsonPrimitive.content
+        val sourceSignatures = source["signatures"]!!.jsonArray
+
+        parsed.signatures.size shouldBe 2
+        parsed.signatures[0].protectedHeader.algorithm shouldBe JwsAlgorithm.Signature.RS256
+        parsed.signatures[1].protectedHeader.algorithm shouldBe JwsAlgorithm.Signature.ES256
+
+        parsed.signatures[0].signature.shouldBeInstanceOf<CryptoSignature.RSA>()
+        parsed.signatures[1].signature.shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
+
+        parsed.signatures.forEachIndexed { index, signatureElement ->
+            val sourceSignature = sourceSignatures[index].jsonObject
+            val expectedProtected = sourceSignature["protected"]!!.jsonPrimitive.content
+            val expectedRawSignature = sourceSignature["signature"]!!
+                .jsonPrimitive
+                .content
+                .decodeToByteArray(Base64UrlStrict)
+
+            signatureElement.plainSignatureInput.decodeToString() shouldBe "$expectedProtected.$payloadPart"
+            signatureElement.signature.rawByteArray.contentEquals(expectedRawSignature) shouldBe true
+        }
+    }
+
+    "round-trips semantically for vector 1" {
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val reserialized = joseCompliantSerializer.encodeToString(parsed)
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(reserialized)
+
+        reparsed shouldBe parsed
+    }
+
+    "plainSignatureInput is transient and recomputed on deserialize" {
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val modified = parsed.copy(
+            signatures = parsed.signatures.map {
+                it.copy(plainSignatureInput = "not.serialized".encodeToByteArray())
+            }
+        )
+
+        val encoded = joseCompliantSerializer.encodeToString(modified)
+        (encoded.contains("plainSignatureInput")) shouldBe false
+
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(encoded)
+        reparsed.signatures.size shouldBe 2
+        reparsed.signatures.forEach { signatureElement ->
+            val psi = signatureElement.plainSignatureInput.decodeToString()
+            psi.shouldContain(".")
+        }
+    }
+
+    "fails to deserialize MAC-based test vector into RawByteEncodable signatures" {
+        val result = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec2)
+        }
+
+        if (result.isSuccess) throw AssertionError("Expected MAC-based vector to fail deserialization")
+        result.exceptionOrNull()?.message?.shouldContain("Unsupported algorithm")
     }
 }

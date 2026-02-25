@@ -53,13 +53,27 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
             encodedPayload.decodeToByteArray(Base64UrlStrict).decodeToString(),
         )
 
-        val signatures = jsonObject["signatures"]?.let {
-            jsonDecoder.json.decodeFromJsonElement(signaturesSerializer, it)
-        } ?: throw SerializationException("Missing required field 'signatures'")
+        val signaturesElement = jsonObject["signatures"]
+            ?: throw SerializationException("Missing required field 'signatures'")
+        val signatures = jsonDecoder.json.decodeFromJsonElement(signaturesSerializer, signaturesElement)
+        val signatureObjects = signaturesElement.jsonArray
+
+        if (signatureObjects.size != signatures.size) {
+            throw SerializationException("Invalid 'signatures' field")
+        }
+
+        val signaturesWithInput = signatures.mapIndexed { index, signature ->
+            val protectedPart = signatureObjects[index]
+                .jsonObject["protected"]
+                ?.jsonPrimitive
+                ?.content
+                ?: throw SerializationException("Missing required field 'protected' in signatures[$index]")
+            signature.copy(plainSignatureInput = "$protectedPart.$encodedPayload".encodeToByteArray())
+        }
 
         return JwsGeneral(
             payload = payload,
-            signatures = signatures,
+            signatures = signaturesWithInput,
         )
     }
 }
