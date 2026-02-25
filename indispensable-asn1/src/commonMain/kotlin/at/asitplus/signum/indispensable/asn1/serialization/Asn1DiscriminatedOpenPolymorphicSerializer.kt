@@ -25,7 +25,9 @@ internal abstract class Asn1DiscriminatedOpenPolymorphicSerializer<T : Any>(
         PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
             .withDynamicAsn1LeadingTags { leadingTags }
 
+    @Throws(SerializationException::class)
     protected abstract fun serializerForEncode(encoder: DerEncoder, value: T): KSerializer<out T>
+    @Throws(SerializationException::class)
     protected abstract fun serializerForDecode(decoder: DerDecoder): DeserializationStrategy<T>
 
     /**

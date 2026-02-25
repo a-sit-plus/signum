@@ -95,7 +95,6 @@ internal class DerEncoder(
      *
      * @throws SerializationException if tag/annotation constraints are invalid for the current value
      */
-    @Throws(SerializationException::class)
     override fun encodeValue(value: Any) {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull()
@@ -162,7 +161,6 @@ internal class DerEncoder(
      *
      * @throws SerializationException if nullable null encoding is ambiguous at current property location
      */
-    @Throws(SerializationException::class)
     override fun encodeNull() {
         val inlineHints = inlineHintState.consume()
         val propertyContext = consumePropertyContextOrNull() ?: return
@@ -252,6 +250,15 @@ internal class DerEncoder(
             inlineAsn1Tag = inlineHints.tag,
             propertyAsn1Tag = propertyAnnotation,
             classAsn1Tag = serializer.descriptor.asn1Tag,
+        )
+        requireNoAsn1TagOnRawElement(
+            descriptor = serializer.descriptor,
+            inlineAsn1Tag = inlineHints.tag,
+            propertyAsn1Tag = propertyAnnotation,
+            classAsn1Tag = serializer.descriptor.asn1Tag,
+            ownerSerialName = propertyContext?.ownerSerialName ?: serializer.descriptor.serialName,
+            propertyName = propertyContext?.propertyName,
+            propertyIndex = propertyContext?.index,
         )
         requireAsn1ExplicitWrapperTag(
             descriptor = serializer.descriptor,
@@ -402,7 +409,6 @@ internal class DerEncoder(
      *
      * @throws SerializationException if optional layout is ambiguous for class/object descriptors
      */
-    @Throws(SerializationException::class)
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
         if (descriptor.kind is kotlinx.serialization.descriptors.StructureKind.CLASS ||
             descriptor.kind is kotlinx.serialization.descriptors.StructureKind.OBJECT

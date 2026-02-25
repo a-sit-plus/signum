@@ -108,7 +108,6 @@ class DerDecoder internal constructor(
      *
      * @throws SerializationException if a structure descriptor is mapped to a non-structure ASN.1 element
      */
-    @Throws(SerializationException::class)
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
 
         // 1. Pick the element that belongs to *this* level
@@ -235,7 +234,6 @@ class DerDecoder internal constructor(
      *
      * @throws SerializationException on unsupported descriptor shapes or ASN.1 tag/value mismatches
      */
-    @Throws(SerializationException::class)
     override fun decodeValue(): Any {
         val inlineAnnotation = inlineHintState.consume().tag
 
@@ -304,7 +302,6 @@ class DerDecoder internal constructor(
      *
      * @throws SerializationException if nullable omission/encoding is undecidable or invalid for current property
      */
-    @Throws(SerializationException::class)
     override fun <T : Any?> decodeSerializableValue(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
@@ -390,6 +387,15 @@ class DerDecoder internal constructor(
             inlineAsn1Tag = inlineHints.tag,
             propertyAsn1Tag = propertyAsn1Tag,
             classAsn1Tag = deserializer.descriptor.asn1Tag,
+        )
+        requireNoAsn1TagOnRawElement(
+            descriptor = deserializer.descriptor,
+            inlineAsn1Tag = inlineHints.tag,
+            propertyAsn1Tag = propertyAsn1Tag,
+            classAsn1Tag = deserializer.descriptor.asn1Tag,
+            ownerSerialName = currentOwnerSerialName ?: deserializer.descriptor.serialName,
+            propertyName = currentPropertyName,
+            propertyIndex = currentPropertyIndex,
         )
         requireAsn1ExplicitWrapperTag(
             descriptor = deserializer.descriptor,

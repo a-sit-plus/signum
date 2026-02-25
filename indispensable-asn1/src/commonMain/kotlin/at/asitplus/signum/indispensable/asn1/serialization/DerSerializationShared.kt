@@ -234,6 +234,37 @@ internal fun requireAsn1ExplicitWrapperTag(
     }
 }
 
+@Throws(SerializationException::class)
+internal fun requireNoAsn1TagOnRawElement(
+    descriptor: SerialDescriptor,
+    inlineAsn1Tag: Asn1Tag? = null,
+    propertyAsn1Tag: Asn1Tag? = null,
+    classAsn1Tag: Asn1Tag? = null,
+    ownerSerialName: String,
+    propertyName: String? = null,
+    propertyIndex: Int? = null,
+) {
+    val normalizedSerialName = descriptor.serialName.removeSuffix("?")
+    if (normalizedSerialName != "Asn1ElementDerEncodedSerializer") return
+
+    val tagTemplate = resolveAsn1TagTemplate(
+        inlineAsn1Tag = inlineAsn1Tag,
+        propertyAsn1Tag = propertyAsn1Tag,
+        classAsn1Tag = classAsn1Tag,
+    ) ?: return
+
+    val location = if (propertyName != null && propertyIndex != null) {
+        "property '$propertyName' (index $propertyIndex) in $ownerSerialName"
+    } else {
+        ownerSerialName
+    }
+    throw SerializationException(
+        "Raw Asn1Element must not use @Asn1Tag at $location. " +
+                "Remove the tag override or use a strongly typed value/wrapper instead. " +
+                "Resolved tag override was $tagTemplate."
+    )
+}
+
 internal fun Asn1Element.isAsn1NullElement(): Boolean =
     this is Asn1Primitive &&
             tag == Asn1Element.Tag.NULL &&

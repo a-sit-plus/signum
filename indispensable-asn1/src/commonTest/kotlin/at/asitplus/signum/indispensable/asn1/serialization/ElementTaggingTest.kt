@@ -3,8 +3,6 @@ package io.kotest.property.at.asitplus.signum.indispensable.asn1.serialization
 import Asn1Backed
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.serialization.*
 import at.asitplus.signum.indispensable.asn1.serialization.api.DER
 import at.asitplus.testballoon.invoke
@@ -44,12 +42,11 @@ val TaggedTest by testSuite {
             }
         }
         "ImplicitlyTaggedElement" {
-            DER.encodeToDer(ImplicitlyTaggedElement(int)).toHexString() shouldBe "300389010$int".also {
-                shouldThrow<Asn1TagMismatchException> {
-                    DER.decodeFromDer<ImplicitlyTaggedElement>(it.hexToByteArray()) shouldBe ImplicitlyTaggedElement(
-                        int
-                    )
-                }
+            shouldThrow<SerializationException> {
+                DER.encodeToDer(ImplicitlyTaggedElement(int))
+            }
+            shouldThrow<SerializationException> {
+                DER.decodeFromDer<ImplicitlyTaggedElement>("300389010$int".hexToByteArray())
             }
         }
 
