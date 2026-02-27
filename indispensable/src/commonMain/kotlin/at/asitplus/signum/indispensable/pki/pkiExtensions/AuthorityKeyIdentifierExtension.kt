@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.decode
@@ -42,11 +43,14 @@ class AuthorityKeyIdentifierExtension(
             val inner = base.value.asEncapsulatingOctetString().single().asSequence()
 
             val (keyIdentifier, authorityCertIssuer, pathLenConstraint) = inner.decodeRethrowing {
-                val keyIdentifier = nextOrNull()?.asPrimitive()?.content
-                val authorityCertIssuer: List<GeneralName> = nextOrNull()?.asSequence()?.children
-                    ?.map { GeneralName.decodeFromTlv(it.asSequence()) }
+                val contents = listOfNotNull(nextOrNull(), nextOrNull(), nextOrNull())
+                val keyIdentifier = contents.firstOrNull { it.tag.tagValue == 0uL }?.asPrimitive()
+                    ?.decode(Asn1Element.Tag(0UL, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)) { it }
+                val authorityCertIssuer = contents.firstOrNull { it.tag.tagValue == 1uL }?.asExplicitlyTagged()?.children
+                    ?.map { GeneralName.decodeFromTlv(it) }
                     ?: emptyList()
-                val authorityCertSerialNumber  = nextOrNull()?.asPrimitive()?.decode(Asn1Element.Tag.INT) { it }
+                val authorityCertSerialNumber = contents.firstOrNull { it.tag.tagValue == 2uL }?.asPrimitive()
+                    ?.decode(Asn1Element.Tag(2UL, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)) { it }
                 Triple(keyIdentifier, authorityCertIssuer, authorityCertSerialNumber)
             }
 
