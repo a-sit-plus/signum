@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.pki.validate
+package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.ExperimentalPkiApi
@@ -11,31 +11,34 @@ import kotlin.time.Instant
  * Checks the validity of the each certificate in the chain based on the given date and
  * confirms that each certificate was issued within the validity period of its issuer
  */
-class TimeValidityValidator(
-    val date: Instant,
-    private val certChain: CertificateChain,
-    private var currentCertIndex: Int = 0,
-) : CertificateValidator {
+class TimeValidityValidator: CertificateChainValidator {
 
-    @ExperimentalPkiApi
-    override suspend fun check(
-        currCert: X509Certificate,
-        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
+    override suspend fun validate(
+        chain: CertificateChain,
+        context: CertificateValidationContext,
+        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
     ) {
-        currCert.checkValidityAt(date)
+        val date = context.date
+        var currentCertIndex = 0
 
-        if (currentCertIndex < certChain.lastIndex) {
-            val childCert = certChain[currentCertIndex + 1]
-            currentCertIndex++
-            wasCertificateIssuedWithinIssuerValidityPeriod(
-                dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
-                issuer = currCert)
+        for (currCert in chain) {
+            currCert.checkValidityAt(date)
+
+            if (currentCertIndex < chain.lastIndex) {
+                val childCert = chain[currentCertIndex + 1]
+                currentCertIndex++
+                wasCertificateIssuedWithinIssuerValidityPeriod(
+                    dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
+                    issuer = currCert,
+                    currentCertIndex)
+            }
         }
     }
 
     private fun wasCertificateIssuedWithinIssuerValidityPeriod(
         dateOfIssuance: Instant,
-        issuer: X509Certificate
+        issuer: X509Certificate,
+        currentCertIndex: Int
     ) {
         val beginValidity = issuer.tbsCertificate.validFrom.instant
         val endValidity = issuer.tbsCertificate.validUntil.instant

@@ -1,13 +1,10 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CriticalAuthorityKeyIdentifierException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.KeyIdentifierException
-import at.asitplus.signum.MissingAuthorityKeyIdentifierException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.*
 import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
@@ -16,7 +13,6 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.json.Json
 import kotlin.jvm.Throws
 import kotlin.time.Clock

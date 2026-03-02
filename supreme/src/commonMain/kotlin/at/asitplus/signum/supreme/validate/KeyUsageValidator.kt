@@ -1,48 +1,53 @@
-package at.asitplus.signum.indispensable.pki.validate
+package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.ExtendedKeyUsageException
 import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
+import kotlin.math.exp
 
 /**
  * Ensures that intermediate CA certificates have the necessary key usage extensions.
  * Checks Expected Key Usage in leaf certificate only
  * Key usage to sign certificates (keyCertSign) and CRLSign is required according to RFC 5280.
  */
-class KeyUsageValidator (
-    private val certPathLen: Int,
-    private var currentCertIndex: Int = 0,
-    private val expectedEku: Set<ObjectIdentifier> = emptySet(),
-    private val leafKeyUsageCheck: suspend (X509Certificate) -> Unit,
-    private val supportRevocationChecking: Boolean
-) : CertificateValidator {
+class KeyUsageValidator: CertificateChainValidator {
 
     private val supportedExtensions: Set<ObjectIdentifier> = setOf(
         KnownOIDs.keyUsage,
         KnownOIDs.extKeyUsage
     )
 
-    @ExperimentalPkiApi
-    override suspend fun check(currCert: X509Certificate, checkedCriticalExtensions: MutableSet<ObjectIdentifier>) {
-        checkedCriticalExtensions.addAll(supportedExtensions)
-        currentCertIndex++
-        if (currentCertIndex <= certPathLen - 1) {
-            verifySignatureKeyUsage(currCert)
-        }
-        else {
-            verifyExpectedEKU(currCert)
-            leafKeyUsageCheck(currCert)
+    override suspend fun validate(
+        chain: CertificateChain,
+        context: CertificateValidationContext,
+        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
+    ) {
+        val certPathLen = chain.size
+        var currentCertIndex = 0
+
+        for (currCert in chain) {
+            checkedCriticalExtensions
+                .getOrPut(currCert) { mutableSetOf() }
+                .addAll(supportedExtensions)
+            currentCertIndex++
+            if (currentCertIndex <= certPathLen - 1) {
+                verifySignatureKeyUsage(currCert, context.supportRevocationChecking, currentCertIndex)
+            }
+            else {
+                verifyExpectedEKU(currCert, context.expectedEku)
+                context.leafKeyUsageCheck(currCert)
+            }
         }
     }
 
-    private fun verifySignatureKeyUsage(currCert: X509Certificate) {
+    private fun verifySignatureKeyUsage(currCert: X509Certificate, supportRevocationChecking: Boolean, currentCertIndex: Int) {
         if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
             throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
         }
@@ -51,7 +56,7 @@ class KeyUsageValidator (
         }
     }
 
-    private fun verifyExpectedEKU(currCert: X509Certificate) {
+    private fun verifyExpectedEKU(currCert: X509Certificate, expectedEku: Set<ObjectIdentifier>) {
         val eku = currCert.findExtension<ExtendedKeyUsageExtension>()
         if (eku != null && eku.keyUsages.isEmpty()) throw ExtendedKeyUsageException("Empty EKU extension in leaf certificate.")
         for (identifier in expectedEku) {

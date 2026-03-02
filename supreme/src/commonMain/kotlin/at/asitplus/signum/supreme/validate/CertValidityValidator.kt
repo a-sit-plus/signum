@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.pki.validate
+package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateSerialNumberException
 import at.asitplus.signum.ExperimentalPkiApi
@@ -16,12 +16,11 @@ class CertValidityValidator: CertificateValidator {
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
-        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
-    ) {
-        checkedCriticalExtensions.add(KnownOIDs.subjectAltName_2_5_29_17)
+    ): Set<ObjectIdentifier> {
         checkSerialNumber(currCert)
         isSanCriticalWhenNameIsEmpty(currCert)
         checkTimeValidity(currCert)
+        return setOf(KnownOIDs.subjectAltName_2_5_29_17)
     }
 
     @Throws(CertificateSerialNumberException::class)

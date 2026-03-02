@@ -6,64 +6,65 @@ import at.asitplus.signum.TrustAnchorKeyMismatchException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
-import at.asitplus.signum.indispensable.pki.validate.checkCaBasicConstraints
-import at.asitplus.signum.indispensable.pki.validate.checkTrustAnchorAndChild
+import kotlin.text.compareTo
+import kotlin.text.get
 import kotlin.time.Instant
 
 /**
  * This validator checks whether any certificate in the chain is issued by a trusted anchor
  * from the provided [trustAnchors] set
  */
-class TrustAnchorValidator(
-    private val trustAnchors: Set<TrustAnchor>,
-    private val certChain: CertificateChain,
-    private var currentCertIndex: Int = 0,
-    var trustAnchor: TrustAnchor? = null,
-    val date: Instant
-) : CertificateValidator {
+class TrustAnchorValidator: CertificateChainValidator {
 
     var foundTrusted: Boolean = false
+    var trustAnchor: TrustAnchor? = null
 
-    @ExperimentalPkiApi
-    override suspend fun check(
-        currCert: X509Certificate,
-        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
+    override suspend fun validate(
+        chain: CertificateChain,
+        context: CertificateValidationContext,
+        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
     ) {
-        if (foundTrusted) return
-        val issuingAnchor = trustAnchors.firstOrNull { anchor ->
-            anchor.isIssuerOf(currCert)
-        }
+        val trustAnchors = context.trustAnchors
+        var currentCertIndex= 0
+        val date = context.date
+        foundTrusted = false
+        trustAnchor = null
 
-        if (issuingAnchor != null) {
-            foundTrusted = true
-
-            if (currentCertIndex < certChain.lastIndex) {
-                val nextCert = certChain[currentCertIndex + 1]
-
-                val anchorKey = issuingAnchor.publicKey
-                val nextIssuerKey = nextCert.decodedPublicKey.getOrThrow()
-
-                if (anchorKey != nextIssuerKey) {
-                    throw TrustAnchorKeyMismatchException("Public key of certificate at index ${currentCertIndex + 1} does not match the issuing trust anchor.")
-
-                }
+        for (currCert in chain) {
+            if (foundTrusted) continue
+            val issuingAnchor = trustAnchors.firstOrNull { anchor ->
+                anchor.isIssuerOf(currCert)
             }
 
-            trustAnchor = issuingAnchor
+            if (issuingAnchor != null) {
+                foundTrusted = true
 
-            issuingAnchor.cert?.let { checkCaBasicConstraints(it) }
+                if (currentCertIndex < chain.lastIndex) {
+                    val nextCert = chain[currentCertIndex + 1]
 
-            issuingAnchor.cert?.checkValidityAt(date)
+                    val anchorKey = issuingAnchor.publicKey
+                    val nextIssuerKey = nextCert.decodedPublicKey.getOrThrow()
 
-            issuingAnchor.cert?.let { checkTrustAnchorAndChild(it, currCert) }
+                    if (anchorKey != nextIssuerKey) {
+                        throw TrustAnchorKeyMismatchException("Public key of certificate at index ${currentCertIndex + 1} does not match the issuing trust anchor.")
+
+                    }
+                }
+
+                trustAnchor = issuingAnchor
+
+                issuingAnchor.cert?.let { checkCaBasicConstraints(it) }
+
+                issuingAnchor.cert?.checkValidityAt(date)
+
+                issuingAnchor.cert?.let { checkTrustAnchorAndChild(it, currCert) }
+            }
+
+            if (currentCertIndex == chain.lastIndex && !foundTrusted) {
+                throw NoTrustedIssuerFoundException("No trusted issuer found in the trust anchor chain.")
+            }
+
+            currentCertIndex++
         }
-
-        if (currentCertIndex == certChain.lastIndex && !foundTrusted) {
-            throw NoTrustedIssuerFoundException("No trusted issuer found in the trust anchor chain.")
-        }
-
-        currentCertIndex++
-
     }
 }

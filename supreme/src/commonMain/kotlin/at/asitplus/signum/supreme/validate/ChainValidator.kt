@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
-import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 
@@ -18,21 +17,22 @@ import at.asitplus.signum.supreme.sign.verify
  * This validator verifies that each certificate is properly signed by its issuer,
  * ensures that the subject of the issuer certificate matches the issuer of the child certificate.
  */
-class ChainValidator(
-    private val certChain: CertificateChain,
-    private var currentCertIndex: Int = 0
-) : CertificateValidator {
+class ChainValidator: CertificateChainValidator {
 
-    @ExperimentalPkiApi
-    override suspend fun check(
-        currCert: X509Certificate,
-        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
+    override suspend fun validate(
+        chain: CertificateChain,
+        context: CertificateValidationContext,
+        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
     ) {
-        if (currentCertIndex < certChain.lastIndex) {
-            val childCert = certChain[currentCertIndex + 1]
-            verifySignature(childCert, issuer = currCert, childCert == certChain.last())
-            subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
-            currentCertIndex++
+        var currentCertIndex = 0
+
+        for (currCert in chain) {
+            if (currentCertIndex < chain.lastIndex) {
+                val childCert = chain[currentCertIndex + 1]
+                verifySignature(childCert, issuer = currCert, childCert == chain.last())
+                subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
+                currentCertIndex++
+            }
         }
     }
 

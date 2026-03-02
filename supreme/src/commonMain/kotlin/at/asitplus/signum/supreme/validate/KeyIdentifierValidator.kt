@@ -1,26 +1,28 @@
-package at.asitplus.signum.indispensable.pki.validate
+package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CriticalAuthorityKeyIdentifierException
 import at.asitplus.signum.CriticalSubjectKeyIdentifierException
 import at.asitplus.signum.KeyIdentifierException
-import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.MissingAuthorityKeyIdentifierException
 import at.asitplus.signum.MissingSubjectKeyIdentifierException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 
-class KeyIdentifierValidator(
-    private var currentCertIndex: Int = 0
-): CertificateValidator {
-    @ExperimentalPkiApi
-    override suspend fun check(
-        currCert: X509Certificate,
-        checkedCriticalExtensions: MutableSet<ObjectIdentifier>
+class KeyIdentifierValidator: CertificateChainValidator {
+
+    override suspend fun validate(
+        chain: CertificateChain,
+        context: CertificateValidationContext,
+        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
     ) {
-        currentCertIndex++
-        checkSubjectKeyIdentifier(currCert)
+        var currentCertIndex = 0
+        for (currCert in chain) {
+            currentCertIndex++
+            checkSubjectKeyIdentifier(currCert, currentCertIndex)
+        }
     }
 }
 
