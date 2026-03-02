@@ -59,7 +59,8 @@ data class JwsSigned<out P : Any>(
 
     companion object {
         /**
-         * Creates a compact-style [JwsSigned] view from one signature entry in a [JwsGeneral].
+         * Creates a compact-style [JwsSigned] view from one signature entry in
+         * a [JwsGeneral].
          */
         fun <P : Any> fromJwsGeneral(
             jwsGeneral: JwsGeneral<P>,

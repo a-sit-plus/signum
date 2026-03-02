@@ -88,7 +88,7 @@ data class JwsGeneral<P>(
 
 private fun ByteArray.payloadPart(): String {
     val separator = indexOf('.'.code.toByte())
-    require(separator > 0 && separator < lastIndex) {
+    require(separator > 0) {
         "Invalid JWS signature input format"
     }
     return copyOfRange(separator + 1, size).decodeToString()

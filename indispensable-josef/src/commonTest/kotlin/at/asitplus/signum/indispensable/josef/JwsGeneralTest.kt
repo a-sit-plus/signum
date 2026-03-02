@@ -81,22 +81,20 @@ val JwsGeneralTest by testSuite {
         reparsed shouldBe parsed
     }
 
-    "plainSignatureInput is transient and recomputed on deserialize" {
+    "re-serializing preserves payload and protected encoding" {
         val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
-        val modified = parsed.copy(
-            signatures = parsed.signatures.map {
-                it.copy(plainSignatureInput = "not.serialized".encodeToByteArray())
-            }
-        )
+        val source = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), testvec1)
+        val reserialized = joseCompliantSerializer.encodeToString(parsed)
+        val reparsed = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), reserialized)
 
-        val encoded = joseCompliantSerializer.encodeToString(modified)
-        (encoded.contains("plainSignatureInput")) shouldBe false
+        reparsed["payload"]!!.jsonPrimitive.content shouldBe source["payload"]!!.jsonPrimitive.content
 
-        val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(encoded)
-        reparsed.signatures.size shouldBe 2
-        reparsed.signatures.forEach { signatureElement ->
-            val psi = signatureElement.plainSignatureInput.decodeToString()
-            psi.shouldContain(".")
+        val sourceSignatures = source["signatures"]!!.jsonArray
+        val reparsedSignatures = reparsed["signatures"]!!.jsonArray
+        reparsedSignatures.size shouldBe sourceSignatures.size
+        reparsedSignatures.forEachIndexed { index, signatureElement ->
+            signatureElement.jsonObject["protected"]!!.jsonPrimitive.content shouldBe
+                    sourceSignatures[index].jsonObject["protected"]!!.jsonPrimitive.content
         }
     }
 
@@ -133,5 +131,22 @@ val JwsGeneralTest by testSuite {
 
         result.isSuccess shouldBe false
         result.exceptionOrNull().shouldBeInstanceOf<IndexOutOfBoundsException>()
+    }
+
+    "accepts empty payload in compact signature input when creating general JWS" {
+        val header = JwsHeader(algorithm = JwsAlgorithm.Signature.RS256)
+        val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, byteArrayOf())
+        plainSignatureInput.decodeToString().endsWith(".") shouldBe true
+
+        val signed = JwsSigned(
+            header = header,
+            payload = byteArrayOf(),
+            signature = CryptoSignature.RSA(byteArrayOf(1)),
+            plainSignatureInput = plainSignatureInput,
+        )
+
+        val general = JwsGeneral.fromSignedJws(signed)
+        general.signatures.size shouldBe 1
+        general.signatures.single().plainSignatureInput.decodeToString() shouldBe plainSignatureInput.decodeToString()
     }
 }
