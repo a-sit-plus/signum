@@ -26,9 +26,7 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
         val jsonEncoder = encoder as? JsonEncoder
             ?: throw SerializationException("JwsGeneral can only be serialized to JSON")
 
-        val encodedPayload = jsonEncoder.json.encodeToString(payloadSerializer, value.payload)
-            .encodeToByteArray()
-            .encodeToString(Base64UrlStrict)
+        val encodedPayload = value.signatures.first().plainSignatureInput.decodeToString().split(".")[1]
 
         jsonEncoder.encodeJsonElement(
             buildJsonObject {

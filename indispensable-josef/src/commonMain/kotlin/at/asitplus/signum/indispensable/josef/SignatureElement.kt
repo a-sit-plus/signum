@@ -13,7 +13,9 @@ import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
-import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 
 
 /**
@@ -76,10 +78,20 @@ object SignatureElementSerializer : KSerializer<SignatureElement> {
     }
 
     override fun serialize(encoder: Encoder, value: SignatureElement) {
-        encoder.encodeStructure(descriptor) {
-            encodeSerializableElement(descriptor, 0, JwsProtectedHeaderSerializer, value.protectedHeader)
-            encodeSerializableElement(descriptor, 1, ByteArrayBase64UrlSerializer, value.signature.rawByteArray)
-        }
+        val jsonEncoder = encoder as? JsonEncoder
+            ?: throw SerializationException("SignatureElement can only be serialized to JSON")
+
+        val parsedSigInput = value.plainSignatureInput.decodeToString().split(".")
+
+        jsonEncoder.encodeJsonElement(
+            buildJsonObject {
+                put("protected", JsonPrimitive(parsedSigInput[0]))
+                put(
+                    "signature",
+                    jsonEncoder.json.encodeToJsonElement(ByteArrayBase64UrlSerializer, value.signature.rawByteArray),
+                )
+            }
+        )
     }
 
     override fun deserialize(decoder: Decoder): SignatureElement = decoder.decodeStructure(descriptor) {
