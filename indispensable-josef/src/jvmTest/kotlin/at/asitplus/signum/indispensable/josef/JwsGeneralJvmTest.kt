@@ -7,6 +7,7 @@ import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withFixtureGenerator
+import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSObjectJSON
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import de.infix.testBalloon.framework.core.testSuite
@@ -118,6 +119,10 @@ val JwsGeneralJvmTest by testSuite {
         "JwsSigned round-trip" { it ->
             val first = createSignedJws(it.signer1, it.payloadBob, "kid-1")
             val roundtrip = JwsSigned.fromJwsGeneral(JwsGeneral.fromSignedJws(first), 0)
+
+            val verifier = it.verifierByKid["kid-1"]
+                ?: throw IllegalStateException("Missing verifier for key id 'kid-1'")
+            JWSObject.parse(roundtrip.serialize()).verify(verifier).shouldBeTrue()
             roundtrip shouldBeEqual first
         }
 
