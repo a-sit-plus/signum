@@ -1,6 +1,7 @@
 # Changelog
 
 ## NEXT
+* Introduce General JWS Json data class to allow transportation of multiple signatures on a single payload
 * fix build setup on non-macos
 
 ## 3.19.3 / Supreme 0.11.3
