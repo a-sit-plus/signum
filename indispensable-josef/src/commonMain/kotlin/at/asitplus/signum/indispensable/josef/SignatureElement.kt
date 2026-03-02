@@ -14,8 +14,9 @@ import kotlinx.serialization.Transient
  * impacts JWS data class representation and verification
  * (The header in JWS is the union of protected and unprotected header elements)
  */
+@ConsistentCopyVisibility
 @Serializable(with = SignatureElementSerializer::class)
-data class SignatureElement(
+data class SignatureElement private constructor(
     /**
      * The [protectedHeader] member MUST be present ...when the JWS Protected
      * Header value is non-empty; otherwise, it MUST be absent.  These
@@ -36,10 +37,14 @@ data class SignatureElement(
 
     /**
      * ASCII string `<BASE64URL(protected)>.<BASE64URL(payload)>` as used for signature verification.
+     * See [JwsSigned.prepareJwsSignatureInput]
+     *
+     * This parameter is required for correct serialization!
      */
     @Transient
-    val plainSignatureInput: ByteArray = byteArrayOf(),
+    val plainSignatureInput: ByteArray,
 ) {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
