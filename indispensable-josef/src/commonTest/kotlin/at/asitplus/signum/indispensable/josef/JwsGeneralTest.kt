@@ -108,4 +108,30 @@ val JwsGeneralTest by testSuite {
         if (result.isSuccess) throw AssertionError("Expected MAC-based vector to fail deserialization")
         result.exceptionOrNull()?.message?.shouldContain("Unsupported algorithm")
     }
+
+    "creates JwsSigned from general JWS by signature index" {
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val jwsSigned0 = JwsSigned.fromJwsGeneral(parsed, 0)
+        val jwsSigned1 = JwsSigned.fromJwsGeneral(parsed, 1)
+
+        jwsSigned0.payload shouldBe parsed.payload
+        jwsSigned1.payload shouldBe parsed.payload
+
+        jwsSigned0.header shouldBe parsed.signatures[0].protectedHeader
+        jwsSigned1.header shouldBe parsed.signatures[1].protectedHeader
+
+        jwsSigned0.signature shouldBe parsed.signatures[0].signature
+        jwsSigned1.signature shouldBe parsed.signatures[1].signature
+
+        jwsSigned0.plainSignatureInput.contentEquals(parsed.signatures[0].plainSignatureInput) shouldBe true
+        jwsSigned1.plainSignatureInput.contentEquals(parsed.signatures[1].plainSignatureInput) shouldBe true
+    }
+
+    "fails to create JwsSigned from general JWS with out-of-bounds index" {
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val result = runCatching { JwsSigned.fromJwsGeneral(parsed, 2) }
+
+        result.isSuccess shouldBe false
+        result.exceptionOrNull().shouldBeInstanceOf<IndexOutOfBoundsException>()
+    }
 }

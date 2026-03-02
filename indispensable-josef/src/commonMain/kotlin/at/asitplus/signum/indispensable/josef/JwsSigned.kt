@@ -59,6 +59,28 @@ data class JwsSigned<out P : Any>(
 
     companion object {
         /**
+         * Creates a compact-style [JwsSigned] view from one signature entry in a [JwsGeneral].
+         */
+        fun <P : Any> fromJwsGeneral(
+            jwsGeneral: JwsGeneral<P>,
+            signatureIndex: Int,
+        ): JwsSigned<P> {
+            val signatureElement = jwsGeneral.signatures.getOrNull(signatureIndex)
+                ?: throw IndexOutOfBoundsException(
+                    "Signature index $signatureIndex out of bounds for ${jwsGeneral.signatures.size} signatures"
+                )
+            require(signatureElement.plainSignatureInput.isNotEmpty()) {
+                "Missing plainSignatureInput on signature index $signatureIndex"
+            }
+            return JwsSigned(
+                header = signatureElement.protectedHeader,
+                payload = jwsGeneral.payload,
+                signature = signatureElement.signature,
+                plainSignatureInput = signatureElement.plainSignatureInput,
+            )
+        }
+
+        /**
          * Deserializes the input, expected to contain a valid JWS (three Base64-URL strings joined by `.`),
          * into a [JwsSigned] with [ByteArray] as the type of the payload.
          */
@@ -106,7 +128,6 @@ data class JwsSigned<out P : Any>(
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
-        @Suppress("unused")
         fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): ByteArray =
             (joseCompliantSerializer.encodeToString(header).encodeToByteArray().encodeToString(Base64UrlStrict) +
                     ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
@@ -115,7 +136,7 @@ data class JwsSigned<out P : Any>(
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
-        @Suppress("unused", "NOTHING_TO_INLINE")
+        @Suppress("NOTHING_TO_INLINE")
         inline fun <T : Any> prepareJwsSignatureInput(
             header: JwsHeader,
             payload: T,
@@ -124,4 +145,3 @@ data class JwsSigned<out P : Any>(
         ): ByteArray = prepareJwsSignatureInput(header, json.encodeToString(serializer, payload).encodeToByteArray())
     }
 }
-
