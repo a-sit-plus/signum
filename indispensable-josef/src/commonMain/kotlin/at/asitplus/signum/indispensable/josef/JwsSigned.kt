@@ -70,14 +70,14 @@ data class JwsSigned<out P : Any>(
                 ?: throw IndexOutOfBoundsException(
                     "Signature index $signatureIndex out of bounds for ${jwsGeneral.signatures.size} signatures"
                 )
-            require(signatureElement.plainSignatureInput.isNotEmpty()) {
+            require(signatureElement.plainHeaderInput.isNotEmpty()) {
                 "Missing plainSignatureInput on signature index $signatureIndex"
             }
             return JwsSigned(
                 header = signatureElement.protectedHeader,
                 payload = jwsGeneral.payload,
                 signature = signatureElement.signature,
-                plainSignatureInput = signatureElement.plainSignatureInput,
+                plainSignatureInput = signatureElement.plainHeaderInput,
             )
         }
 

@@ -68,7 +68,7 @@ val JwsGeneralTest by testSuite {
                 .content
                 .decodeToByteArray(Base64UrlStrict)
 
-            signatureElement.plainSignatureInput.decodeToString() shouldBe "$expectedProtected.$payloadPart"
+            signatureElement.plainHeaderInput.decodeToString() shouldBe "$expectedProtected.$payloadPart"
             signatureElement.signature.rawByteArray.contentEquals(expectedRawSignature) shouldBe true
         }
     }
@@ -121,8 +121,8 @@ val JwsGeneralTest by testSuite {
         jwsSigned0.signature shouldBe parsed.signatures[0].signature
         jwsSigned1.signature shouldBe parsed.signatures[1].signature
 
-        jwsSigned0.plainSignatureInput.contentEquals(parsed.signatures[0].plainSignatureInput) shouldBe true
-        jwsSigned1.plainSignatureInput.contentEquals(parsed.signatures[1].plainSignatureInput) shouldBe true
+        jwsSigned0.plainSignatureInput.contentEquals(parsed.signatures[0].plainHeaderInput) shouldBe true
+        jwsSigned1.plainSignatureInput.contentEquals(parsed.signatures[1].plainHeaderInput) shouldBe true
     }
 
     "fails to create JwsSigned from general JWS with out-of-bounds index" {
@@ -147,6 +147,6 @@ val JwsGeneralTest by testSuite {
 
         val general = JwsGeneral.fromSignedJws(signed)
         general.signatures.size shouldBe 1
-        general.signatures.single().plainSignatureInput.decodeToString() shouldBe plainSignatureInput.decodeToString()
+        general.signatures.single().plainHeaderInput.decodeToString() shouldBe plainSignatureInput.decodeToString()
     }
 }

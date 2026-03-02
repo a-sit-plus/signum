@@ -14,9 +14,8 @@ import kotlinx.serialization.Transient
  * impacts JWS data class representation and verification
  * (The header in JWS is the union of protected and unprotected header elements)
  */
-@ConsistentCopyVisibility
 @Serializable(with = SignatureElementSerializer::class)
-data class SignatureElement private constructor(
+data class SignatureElement(
     /**
      * The [protectedHeader] member MUST be present ...when the JWS Protected
      * Header value is non-empty; otherwise, it MUST be absent.  These
@@ -24,7 +23,7 @@ data class SignatureElement private constructor(
      *
      * Serialization: BASE64URL(UTF8(JWS Protected Header))
      */
-    @SerialName("protected")
+    @SerialName(SerialNames.JWS_PROTECTED_HEADER)
     @Serializable(with = JwsProtectedHeaderSerializer::class)
     val protectedHeader: JwsHeader,
 
@@ -33,16 +32,17 @@ data class SignatureElement private constructor(
      *
      * Serialization: BASE64URL(JWS Signature).
      */
+    @SerialName(SerialNames.JWS_SIGNATURE)
     val signature: CryptoSignature.RawByteEncodable,
 
     /**
-     * ASCII string `<BASE64URL(protected)>.<BASE64URL(payload)>` as used for signature verification.
-     * See [JwsSigned.prepareJwsSignatureInput]
+     * ASCII string `<BASE64URL(protected)>` as used for signature verification.
+     * See first part of [JwsSigned.prepareJwsSignatureInput]
      *
      * This parameter is required for correct serialization!
      */
     @Transient
-    val plainSignatureInput: ByteArray,
+    val plainHeaderInput: ByteArray,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -61,5 +61,10 @@ data class SignatureElement private constructor(
         var result = protectedHeader.hashCode()
         result = 31 * result + signature.hashCode()
         return result
+    }
+
+    object SerialNames {
+        const val JWS_PROTECTED_HEADER = "protected"
+        const val JWS_SIGNATURE = "signature"
     }
 }
