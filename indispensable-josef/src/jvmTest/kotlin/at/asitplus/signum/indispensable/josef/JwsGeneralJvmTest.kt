@@ -118,12 +118,15 @@ val JwsGeneralJvmTest by testSuite {
 
         "JwsSigned round-trip" { it ->
             val first = createSignedJws(it.signer1, it.payloadBob, "kid-1")
-            val roundtrip = JwsSigned.fromJwsGeneral(JwsGeneral.fromSignedJws(first), 0)
+            val intermediate = JwsGeneral.fromSignedJws(first)
+            val roundtrip = JwsSigned.fromJwsGeneral(intermediate, 0)
 
             val verifier = it.verifierByKid["kid-1"]
                 ?: throw IllegalStateException("Missing verifier for key id 'kid-1'")
             JWSObject.parse(roundtrip.serialize()).verify(verifier).shouldBeTrue()
             roundtrip shouldBeEqual first
+            roundtrip.plainSignatureInput.contentEquals(first.plainSignatureInput).shouldBeTrue()
+            intermediate.getPlainSignatureInputAt(0).contentEquals(first.plainSignatureInput).shouldBeTrue()
         }
 
         "adding signatures with different payloads fails" { it ->

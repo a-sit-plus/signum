@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.Transient
@@ -58,9 +56,7 @@ data class JwsGeneral<P>(
 
     @Suppress("UNUSED")
     fun getPlainSignatureInputAt(index: Int): ByteArray =
-        "${signatures[index].plainHeaderInput.encodeToString(Base64UrlStrict)}.${
-            plainPayload.encodeToString(Base64UrlStrict)
-        }".encodeToByteArray()
+        "${signatures[index].plainHeaderInput.decodeToString()}.${plainPayload.decodeToString()}".encodeToByteArray()
 
     /**
      * Returns a new [JwsGeneral] with [jwsSigned] appended as an additional signature.

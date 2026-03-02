@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -26,7 +25,7 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
         val jsonEncoder = encoder as? JsonEncoder
             ?: throw SerializationException("JwsGeneral can only be serialized to JSON")
 
-        val encodedPayload = value.plainPayload.encodeToString(Base64UrlStrict)
+        val encodedPayload = value.plainPayload.decodeToString()
         jsonEncoder.encodeJsonElement(
             buildJsonObject {
                 put(JwsGeneral.SerialNames.PAYLOAD, JsonPrimitive(encodedPayload))
