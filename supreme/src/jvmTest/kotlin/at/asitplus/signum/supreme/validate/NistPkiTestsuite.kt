@@ -8,6 +8,7 @@ import at.asitplus.signum.supreme.shouldBeInvalid
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 
 @OptIn(ExperimentalPkiApi::class)
 /**
@@ -55,7 +56,11 @@ val NistPkiTestSuite by testSuite{
                     }
 
                 validatorFailure shouldNotBe null
-                validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                if (testCase.failedValidator == "TimeValidityValidator") {
+                    validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
+                } else {
+                    validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                }
             }
         }
     }

@@ -31,7 +31,7 @@ class TrustAnchorValidator: CertificateChainValidator {
         trustAnchor = null
 
         for (currCert in chain) {
-            if (foundTrusted) continue
+            if (foundTrusted) break
             val issuingAnchor = trustAnchors.firstOrNull { anchor ->
                 anchor.isIssuerOf(currCert)
             }
@@ -39,15 +39,14 @@ class TrustAnchorValidator: CertificateChainValidator {
             if (issuingAnchor != null) {
                 foundTrusted = true
 
-                if (currentCertIndex < chain.lastIndex) {
-                    val nextCert = chain[currentCertIndex + 1]
+                if (currentCertIndex > 0) {
+                    val nextCert = chain[currentCertIndex - 1]
 
                     val anchorKey = issuingAnchor.publicKey
                     val nextIssuerKey = nextCert.decodedPublicKey.getOrThrow()
 
                     if (anchorKey != nextIssuerKey) {
-                        throw TrustAnchorKeyMismatchException("Public key of certificate at index ${currentCertIndex + 1} does not match the issuing trust anchor.")
-
+                        throw TrustAnchorKeyMismatchException("Public key of certificate at index ${currentCertIndex - 1} does not match the issuing trust anchor.")
                     }
                 }
 

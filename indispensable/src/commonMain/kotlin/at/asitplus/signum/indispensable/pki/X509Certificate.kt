@@ -356,7 +356,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
             throw CertificateExpiredException(
                 "certificate expired on " +
                         tbsCertificate.validUntil.instant
-                            .toLocalDateTime(TimeZone.UTC)
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
             )
         }
 
@@ -364,7 +364,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
             throw CertificateNotYetValidException(
                 "certificate not valid till " +
                         tbsCertificate.validFrom.instant
-                            .toLocalDateTime(TimeZone.UTC)
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
             )
         }
     }
