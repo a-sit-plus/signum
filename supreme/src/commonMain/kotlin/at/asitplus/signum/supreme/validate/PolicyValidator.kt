@@ -30,11 +30,11 @@ class PolicyValidator(
 
     var explicitPolicy = 0
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var certIndex = 1
         val certPathLen = chain.size
         val rejectPolicyQualifiers = context.policyQualifiersRejected
@@ -43,6 +43,7 @@ class PolicyValidator(
         explicitPolicy = if (context.explicitPolicyRequired) 0 else certPathLen + 1
         var policyMapping = if (context.policyMappingInhibited) 0 else certPathLen + 1
         var inhibitAnyPolicy = if (context.anyPolicyInhibited) 0 else certPathLen + 1
+        val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
         for (currCert in chain) {
             checkedCriticalExtensions
@@ -67,6 +68,8 @@ class PolicyValidator(
             }
             certIndex++
         }
+
+        return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 
     /**

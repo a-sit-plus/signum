@@ -19,11 +19,11 @@ class TrustAnchorValidator: CertificateChainValidator {
     var foundTrusted: Boolean = false
     var trustAnchor: TrustAnchor? = null
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val trustAnchors = context.trustAnchors
         var currentCertIndex= 0
         val date = context.date
@@ -66,5 +66,7 @@ class TrustAnchorValidator: CertificateChainValidator {
 
             currentCertIndex++
         }
+
+        return emptyMap()
     }
 }

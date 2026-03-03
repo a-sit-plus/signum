@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CriticalAuthorityKeyIdentifierException
 import at.asitplus.signum.CriticalSubjectKeyIdentifierException
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.KeyIdentifierException
 import at.asitplus.signum.MissingAuthorityKeyIdentifierException
 import at.asitplus.signum.MissingSubjectKeyIdentifierException
@@ -13,16 +14,17 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierEx
 
 class KeyIdentifierValidator: CertificateChainValidator {
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var currentCertIndex = 0
         for (currCert in chain) {
             currentCertIndex++
             checkSubjectKeyIdentifier(currCert, currentCertIndex)
         }
+        return emptyMap()
     }
 }
 

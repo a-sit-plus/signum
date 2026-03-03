@@ -19,11 +19,11 @@ import at.asitplus.signum.supreme.sign.verify
  */
 class ChainValidator: CertificateChainValidator {
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var currentCertIndex = 0
 
         for (currCert in chain) {
@@ -34,6 +34,7 @@ class ChainValidator: CertificateChainValidator {
                 currentCertIndex++
             }
         }
+        return emptyMap()
     }
 
     private suspend fun verifySignature(

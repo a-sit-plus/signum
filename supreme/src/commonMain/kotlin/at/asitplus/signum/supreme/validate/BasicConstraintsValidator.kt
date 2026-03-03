@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.BasicConstraintsException
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.MissingBasicConstraintsException
 import at.asitplus.signum.MissingCaFlagException
 import at.asitplus.signum.NonCriticalBasicConstraintsException
@@ -16,15 +17,15 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtens
  */
 class BasicConstraintsValidator: CertificateChainValidator {
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var remainingPathLength: UInt? = null
         var currentCertIndex = 0
         val certPathLen = chain.size
-
+        val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
         for (currCert in chain) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
@@ -51,6 +52,7 @@ class BasicConstraintsValidator: CertificateChainValidator {
                 }
             }
         }
+        return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 }
 

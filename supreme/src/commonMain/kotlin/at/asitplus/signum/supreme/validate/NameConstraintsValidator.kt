@@ -14,19 +14,24 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtensi
 /**
  * Ensures that each certificate conforms to the permitted and excluded
  * subtrees specified in previous NameConstraints extensions, according to RFC 5280.
+ *
+ * This validator is stateful with respect to the `startingNameConstraints`
+ * property. Callers are responsible for configuring it appropriately
+ * before the invocation (typically derived from the selected trust anchor)
  */
 class NameConstraintsValidator(
     var startingNameConstraints: NameConstraintsExtension? = null
     ) : CertificateChainValidator {
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val certPathLen = chain.size
         var currentCertIndex = 0
         var previousNameConstraints: NameConstraintsExtension? = startingNameConstraints
+        val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
         for (currCert in chain) {
             checkedCriticalExtensions
@@ -60,6 +65,8 @@ class NameConstraintsValidator(
 
             previousNameConstraints = mergeNameConstraints(currCert, currentCertIndex, previousNameConstraints)
         }
+
+        return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 
     @OptIn(ExperimentalPkiApi::class)

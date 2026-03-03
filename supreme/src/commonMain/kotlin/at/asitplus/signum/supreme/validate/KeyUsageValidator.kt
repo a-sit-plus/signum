@@ -24,13 +24,14 @@ class KeyUsageValidator: CertificateChainValidator {
         KnownOIDs.extKeyUsage
     )
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val certPathLen = chain.size
         var currentCertIndex = 0
+        val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
         for (currCert in chain) {
             checkedCriticalExtensions
@@ -45,6 +46,7 @@ class KeyUsageValidator: CertificateChainValidator {
                 context.leafKeyUsageCheck(currCert)
             }
         }
+        return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 
     private fun verifySignatureKeyUsage(currCert: X509Certificate, supportRevocationChecking: Boolean, currentCertIndex: Int) {

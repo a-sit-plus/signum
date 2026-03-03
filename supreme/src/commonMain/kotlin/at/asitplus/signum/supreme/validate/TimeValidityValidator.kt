@@ -13,11 +13,11 @@ import kotlin.time.Instant
  */
 class TimeValidityValidator: CertificateChainValidator {
 
+    @ExperimentalPkiApi
     override suspend fun validate(
         chain: CertificateChain,
-        context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val date = context.date
         var currentCertIndex = 0
 
@@ -33,6 +33,8 @@ class TimeValidityValidator: CertificateChainValidator {
                     currentCertIndex)
             }
         }
+
+        return emptyMap()
     }
 
     private fun wasCertificateIssuedWithinIssuerValidityPeriod(

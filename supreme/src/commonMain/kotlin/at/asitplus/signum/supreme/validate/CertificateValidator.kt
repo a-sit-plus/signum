@@ -1,21 +1,28 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * A stateless specialization of [CertificateChainValidator] that applies
+ * the same validation logic independently to each certificate in the chain.
+ *
+ * This interface should be used when validation:
+ * - Does not depend on inter-certificate relationships
+ * - Does not require state accumulation across the chain
+ * - Can be expressed as a pure function of a single certificate
+ *
+ * The default [validate] implementation iterates over the chain and
+ * applies [check] to each certificate.
+ */
 interface CertificateValidator : CertificateChainValidator {
 
     /**
-     * Performs certificate validation for the given certificate
-     * Every validator adds checked critical extensions
-     *
-     * @throws CertificateException If the certificate fails validation according to the rules implemented by this validator
-     * @throws CancellationException
-     * @throws Throwable For multiplatform safety (e.g., Kotlin/Native to Swift), this allows catching all exceptions without crashing the application.
+     * Performs validation for a single certificate
+     * Implementations must return the set of critical extensions
+     * that were processed during validation of that certificate
      */
     @ExperimentalPkiApi
     @Throws(Throwable::class)
@@ -25,12 +32,13 @@ interface CertificateValidator : CertificateChainValidator {
     override suspend fun validate(
         chain: CertificateChain,
         context: CertificateValidationContext,
-        checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>>
-    ) {
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
+        val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
         chain.forEach {
             checkedCriticalExtensions
                 .getOrPut(it) { mutableSetOf() }
                 .addAll(check(it))
         }
+        return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 }
