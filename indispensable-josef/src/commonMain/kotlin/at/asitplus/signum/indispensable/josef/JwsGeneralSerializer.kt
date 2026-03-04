@@ -5,6 +5,7 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -44,10 +45,16 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
 
         val encodedPayload = jsonObject[JwsGeneral.SerialNames.PAYLOAD]?.jsonPrimitive?.content
             ?: throw SerializationException("Missing required field 'payload'")
-        val payload = jsonDecoder.json.decodeFromString(
-            payloadSerializer,
-            encodedPayload.decodeToByteArray(Base64UrlStrict).decodeToString(),
-        )
+        val decodedPayload = encodedPayload.decodeToByteArray(Base64UrlStrict)
+        val payload = if (payloadSerializer.descriptor.serialName == ByteArraySerializer().descriptor.serialName) {
+            @Suppress("UNCHECKED_CAST")
+            decodedPayload as P
+        } else {
+            jsonDecoder.json.decodeFromString(
+                payloadSerializer,
+                decodedPayload.decodeToString(),
+            )
+        }
 
         val signaturesElement = jsonObject[JwsGeneral.SerialNames.JWS_SIGNATURES]
             ?: throw SerializationException("Missing required field 'signatures'")
