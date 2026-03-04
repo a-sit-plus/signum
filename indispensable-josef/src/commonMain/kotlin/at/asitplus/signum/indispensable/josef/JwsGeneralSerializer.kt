@@ -62,7 +62,11 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
         val signatureObjects = signaturesElement.jsonArray
 
         if (signatureObjects.size != signatures.size) {
-            throw SerializationException("Invalid 'signatures' field")
+            throw SerializationException("Invalid 'signatures' field: Cannot deserialize all signatures")
+        }
+
+        if (signatureObjects.isEmpty()) {
+            throw SerializationException("Invalid 'signatures' field: Must not be empty")
         }
 
         val signaturesWithInput = signatures.mapIndexed { index, signature ->

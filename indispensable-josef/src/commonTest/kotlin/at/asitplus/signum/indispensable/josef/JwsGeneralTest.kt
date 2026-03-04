@@ -61,6 +61,25 @@ val testvecWithUnprotectedHeader = """
     }
 """.trimIndent()
 
+val testvecWithEmptySignatures = """
+    {
+      "payload": "e30",
+      "signatures": []
+    }
+""".trimIndent()
+
+val testvecWithEmptySignatureString = """
+    {
+      "payload": "e30",
+      "signatures": [
+        {
+          "protected": "eyJhbGciOiJSUzI1NiJ9",
+          "signature": ""
+        }
+      ]
+    }
+""".trimIndent()
+
 val JwsGeneralTest by testSuite {
     "deserializes vector with correct algorithms, raw signatures, and plainSignatureInput" {
         val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
@@ -150,6 +169,22 @@ val JwsGeneralTest by testSuite {
             joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithUnprotectedHeader)
         }
         result.exceptionOrNull().shouldBe(IllegalArgumentException("Unprotected headers are currently not supported"))
+    }
+
+    "fails to deserialize general JWS when signatures is empty" {
+        val result = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithEmptySignatures)
+        }
+
+        result.isSuccess shouldBe false
+    }
+
+    "allows empty signature string in signature element" {
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithEmptySignatureString)
+
+        parsed.signatures.size shouldBe 1
+        parsed.signatures.single().signature.shouldBeInstanceOf<CryptoSignature.RSA>()
+        parsed.signatures.single().signature.rawByteArray.size shouldBe 0
     }
 
     "creates JwsSigned from general JWS by signature index" {
