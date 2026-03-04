@@ -13,8 +13,8 @@ import kotlinx.serialization.json.*
 
 object SignatureElementSerializer : KSerializer<SignatureElement> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("SignatureElement") {
-        element("protected", JwsProtectedHeaderSerializer.descriptor)
-        element("signature", ByteArrayBase64UrlSerializer.descriptor)
+        element(SignatureElement.SerialNames.PROTECTED, JwsProtectedHeaderSerializer.descriptor)
+        element(SignatureElement.SerialNames.SIGNATURE, ByteArrayBase64UrlSerializer.descriptor)
     }
 
     override fun serialize(encoder: Encoder, value: SignatureElement) {
@@ -25,9 +25,9 @@ object SignatureElementSerializer : KSerializer<SignatureElement> {
 
         jsonEncoder.encodeJsonElement(
             buildJsonObject {
-                put("protected", JsonPrimitive(parsedSigInput[0]))
+                put(SignatureElement.SerialNames.PROTECTED, JsonPrimitive(parsedSigInput[0]))
                 put(
-                    "signature",
+                    SignatureElement.SerialNames.SIGNATURE,
                     jsonEncoder.json.encodeToJsonElement(ByteArrayBase64UrlSerializer, value.signature.rawByteArray),
                 )
             }
@@ -38,11 +38,13 @@ object SignatureElementSerializer : KSerializer<SignatureElement> {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("JwsGeneral can only be deserialized from JSON")
         val jsonObject = jsonDecoder.decodeJsonElement().jsonObject
-        val rawHeader = jsonObject[SignatureElement.SerialNames.JWS_PROTECTED_HEADER]
+        require(jsonObject[SignatureElement.SerialNames.HEADER] == null) { "Unprotected headers are currently not supported" }
+
+        val rawHeader = jsonObject[SignatureElement.SerialNames.PROTECTED]
             ?: throw SerializationException("Missing required field 'protected'")
         val rawSignature = Json.decodeFromJsonElement(
             ByteArrayBase64UrlSerializer,
-            jsonObject[SignatureElement.SerialNames.JWS_SIGNATURE]
+            jsonObject[SignatureElement.SerialNames.SIGNATURE]
                 ?: throw SerializationException("Missing required field 'signature'")
         )
 

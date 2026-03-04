@@ -70,9 +70,8 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
         }
 
         val signaturesWithInput = signatures.mapIndexed { index, signature ->
-            require(signatureObjects[index].jsonObject["header"] == null) { "Unprotected headers are currently not supported" }
             val protectedPart = signatureObjects[index]
-                .jsonObject["protected"]
+                .jsonObject[SignatureElement.SerialNames.PROTECTED]
                 ?.jsonPrimitive
                 ?.content
                 ?: throw SerializationException("Missing required field 'protected' in signatures[$index]")

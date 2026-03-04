@@ -23,7 +23,7 @@ data class SignatureElement(
      *
      * Serialization: BASE64URL(UTF8(JWS Protected Header))
      */
-    @SerialName(SerialNames.JWS_PROTECTED_HEADER)
+    @SerialName(SerialNames.PROTECTED)
     @Serializable(with = JwsProtectedHeaderSerializer::class)
     val protectedHeader: JwsHeader,
 
@@ -32,7 +32,7 @@ data class SignatureElement(
      *
      * Serialization: BASE64URL(JWS Signature).
      */
-    @SerialName(SerialNames.JWS_SIGNATURE)
+    @SerialName(SerialNames.SIGNATURE)
     val signature: CryptoSignature.RawByteEncodable,
 
     /**
@@ -64,7 +64,9 @@ data class SignatureElement(
     }
 
     object SerialNames {
-        const val JWS_PROTECTED_HEADER = "protected"
-        const val JWS_SIGNATURE = "signature"
+        const val PROTECTED = "protected"
+        const val SIGNATURE = "signature"
+        @Suppress("unused")
+        const val HEADER = "header"
     }
 }
