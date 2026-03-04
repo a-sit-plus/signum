@@ -82,6 +82,28 @@ val JwsGeneralTest by testSuite {
         reparsed shouldBe parsed
     }
 
+    "Can deserialize general JWS with valid ByteArray payload" {
+        val header = JwsHeader(algorithm = JwsAlgorithm.Signature.RS256)
+        val payload = byteArrayOf(0xff.toByte(), 0xfe.toByte(), 0x00, 0x61)
+        val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, payload)
+        val signed = JwsSigned(
+            header = header,
+            payload = payload,
+            signature = CryptoSignature.RSA(byteArrayOf(0x01)),
+            plainSignatureInput = plainSignatureInput,
+        )
+
+        JwsSigned.deserialize(signed.serialize()).getOrThrow() shouldBe signed
+
+        val serializedGeneral = joseCompliantSerializer.encodeToString(JwsGeneral.fromSignedJws(signed))
+        val generalResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral<ByteArray>>(serializedGeneral)
+        }
+
+        generalResult.isSuccess shouldBe true
+        JwsSigned.fromJwsGeneral(generalResult.getOrThrow(),0) shouldBe signed
+    }
+
     "re-serializing preserves payload and protected encoding" {
         val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
         val source = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), testvec1)
