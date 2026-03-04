@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.Transient
@@ -40,7 +42,7 @@ data class JwsGeneral<P>(
 
         other as JwsGeneral<*>
 
-        if (payload != other.payload) return false
+        if (!payload.contentEqualsIfArray(other.payload)) return false
         if (signatures != other.signatures) return false
         if (!plainPayload.contentEquals(other.plainPayload)) return false
 
@@ -48,7 +50,7 @@ data class JwsGeneral<P>(
     }
 
     override fun hashCode(): Int {
-        var result = payload?.hashCode() ?: 0
+        var result = payload?.contentHashCodeIfArray() ?: 0
         result = 31 * result + signatures.hashCode()
         result = 31 * result + plainPayload.contentHashCode()
         return result
@@ -65,7 +67,7 @@ data class JwsGeneral<P>(
      * the payload bytes encoded in existing [signatures]' [SignatureElement.plainHeaderInput].
      */
     fun appendSignature(jwsSigned: JwsSigned<*>): JwsGeneral<P> {
-        require(payloadMatches(jwsSigned.payload, payload)) {
+        require(payload.contentEqualsIfArray(jwsSigned.payload)) {
             "Additional signed JWS payload must match existing payload"
         }
 
@@ -83,7 +85,7 @@ data class JwsGeneral<P>(
         )
     }
 
-    object SerialNames{
+    object SerialNames {
         const val PAYLOAD = "payload"
         const val JWS_SIGNATURES = "signatures"
     }
@@ -144,15 +146,6 @@ private fun ByteArray.headerPart(): ByteArray {
     return copyOfRange(0, separator)
 }
 
-private fun payloadMatches(left: Any?, right: Any?): Boolean = when (left) {
-    is Array<*> -> right is Array<*> && left.contentEquals(right)
-    is ByteArray -> right is ByteArray && left.contentEquals(right)
-    is ShortArray -> right is ShortArray && left.contentEquals(right)
-    is IntArray -> right is IntArray && left.contentEquals(right)
-    is LongArray -> right is LongArray && left.contentEquals(right)
-    is FloatArray -> right is FloatArray && left.contentEquals(right)
-    is DoubleArray -> right is DoubleArray && left.contentEquals(right)
-    is CharArray -> right is CharArray && left.contentEquals(right)
-    is BooleanArray -> right is BooleanArray && left.contentEquals(right)
-    else -> left == right
-}
+//Allows to circumvent reified generic in `fromJwsSigned`
+private fun payloadMatches(left: Any?, right: Any?): Boolean =
+    left.contentEqualsIfArray(right)

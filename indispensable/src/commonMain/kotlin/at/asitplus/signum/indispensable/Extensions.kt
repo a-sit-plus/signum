@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-inline infix fun <reified T> Any.contentEqualsIfArray(other: T) = when(this) {
+inline infix fun <reified T> Any?.contentEqualsIfArray(other: T) = when(this) {
     is Array<*> -> (other is Array<*>) && this.contentEquals(other)
     is ByteArray -> (other is ByteArray) && this.contentEquals(other)
     is ShortArray -> (other is ShortArray) && this.contentEquals(other)
