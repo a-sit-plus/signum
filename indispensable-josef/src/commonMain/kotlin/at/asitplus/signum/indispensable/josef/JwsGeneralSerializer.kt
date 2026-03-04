@@ -42,7 +42,6 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("JwsGeneral can only be deserialized from JSON")
         val jsonObject = jsonDecoder.decodeJsonElement().jsonObject
-        require(jsonObject["header"] == null) { "Unprotected headers are currently not supported" }
 
         val encodedPayload = jsonObject[JwsGeneral.SerialNames.PAYLOAD]?.jsonPrimitive?.content
             ?: throw SerializationException("Missing required field 'payload'")
@@ -67,6 +66,7 @@ class JwsGeneralSerializer<P>(private val payloadSerializer: KSerializer<P>) : K
         }
 
         val signaturesWithInput = signatures.mapIndexed { index, signature ->
+            require(signatureObjects[index].jsonObject["header"] == null) { "Unprotected headers are currently not supported" }
             val protectedPart = signatureObjects[index]
                 .jsonObject["protected"]
                 ?.jsonPrimitive

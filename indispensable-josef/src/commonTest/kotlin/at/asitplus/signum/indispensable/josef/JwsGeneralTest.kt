@@ -46,6 +46,21 @@ val testvec2 = """
     }
 """.trimIndent()
 
+val testvecWithUnprotectedHeader = """
+    {
+      "payload": "e30",
+      "signatures": [
+        {
+          "protected": "eyJhbGciOiJSUzI1NiJ9",
+          "header": {
+            "kid": "test-key"
+          },
+          "signature": "AQ"
+        }
+      ]
+    }
+""".trimIndent()
+
 val JwsGeneralTest by testSuite {
     "deserializes vector with correct algorithms, raw signatures, and plainSignatureInput" {
         val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
@@ -128,6 +143,13 @@ val JwsGeneralTest by testSuite {
 
         if (result.isSuccess) throw AssertionError("Expected MAC-based vector to fail deserialization")
         result.exceptionOrNull()?.message?.shouldContain("Unsupported algorithm")
+    }
+
+    "Reject deserialization of signature elements that contain unprotected header" {
+        val result = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithUnprotectedHeader)
+        }
+        result.exceptionOrNull().shouldBe(IllegalArgumentException("Unprotected headers are currently not supported"))
     }
 
     "creates JwsSigned from general JWS by signature index" {
