@@ -4,7 +4,16 @@ sealed class CryptoException(message: String? = null, cause: Throwable? = null) 
 open class CryptoOperationFailed(message: String) : CryptoException(message)
 open class UnsupportedCryptoException(message: String? = null, cause: Throwable? = null) : CryptoException(message, cause)
 
-open class CertificateException(message: String? = null, cause: Throwable? = null) : Throwable(message, cause)
+open class CertificateException(
+    message: String? = null,
+    cause: Throwable? = null,
+    var certificateIndex: Int? = null
+) : Throwable(message, cause) {
+    override val message: String?
+        get() = super.message?.let { msg ->
+            if (certificateIndex != null) "$msg (certificate index $certificateIndex)" else msg
+        } ?: if (certificateIndex != null) "Certificate error at index $certificateIndex" else null
+}
 class CertificateChainValidatorException(message: String) : CertificateException(message)
 sealed class CertificateValidityException(message: String) : CertificateException(message)
 class CertificateSerialNumberException(message: String) : CertificateValidityException(message)

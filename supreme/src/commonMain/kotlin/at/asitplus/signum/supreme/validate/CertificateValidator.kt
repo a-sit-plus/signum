@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CertificateException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -34,10 +35,16 @@ interface CertificateValidator : CertificateChainValidator {
         context: CertificateValidationContext,
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
-        chain.forEach {
-            checkedCriticalExtensions
-                .getOrPut(it) { mutableSetOf() }
-                .addAll(check(it))
+        chain.forEachIndexed { index, cert ->
+            try {
+                val checked = check(cert)
+                checkedCriticalExtensions
+                    .getOrPut(cert) { mutableSetOf() }
+                    .addAll(checked)
+            } catch (e: CertificateException) {
+                e.certificateIndex = index
+                throw e
+            }
         }
         return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
