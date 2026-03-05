@@ -14,6 +14,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtens
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
+import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
 * PolicyValidator checks policy information on X509Certificate path
@@ -45,7 +46,7 @@ class PolicyValidator(
         var inhibitAnyPolicy = if (context.anyPolicyInhibited) 0 else certPathLen + 1
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
-        for (currCert in chain) {
+        for (currCert in chain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
                 .addAll(supportedExtensions)

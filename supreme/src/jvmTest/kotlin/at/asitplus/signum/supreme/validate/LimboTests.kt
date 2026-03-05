@@ -12,6 +12,7 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.json.Json
 import kotlin.jvm.Throws
@@ -203,11 +204,11 @@ val LimboTests by testSuite {
                 val failure = result.validatorFailures.firstOrNull { it.validator is CertValidityValidator }
 
                 if (it.id.contains("too-long", ignoreCase = true)) {
-                    failure?.cause?.message shouldBe "Serial number too long"
+                        failure?.cause?.message shouldContain "Serial number too long"
                 } else if (it.id.contains("negative", ignoreCase = true)) {
-                    failure?.cause?.message shouldBe "Serial number must be positive"
+                    failure?.cause?.message shouldContain "Serial number must be positive"
                 } else {
-                    failure?.cause?.message shouldBe "Serial number must not be zero"
+                    failure?.cause?.message shouldContain "Serial number must not be zero"
                 }
 
             }

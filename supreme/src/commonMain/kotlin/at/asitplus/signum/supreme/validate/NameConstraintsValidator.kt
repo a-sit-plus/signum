@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.asn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
+import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
  * Ensures that each certificate conforms to the permitted and excluded
@@ -33,10 +34,11 @@ class NameConstraintsValidator(
         var previousNameConstraints: NameConstraintsExtension? = startingNameConstraints
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
-        for (currCert in chain) {
+        for (currCert in chain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
                 .add(KnownOIDs.nameConstraints_2_5_29_30)
+            val originalIndex = certPathLen - 1 - currentCertIndex
             currentCertIndex++
 
             if (previousNameConstraints?.isValid == false) {
@@ -44,14 +46,14 @@ class NameConstraintsValidator(
             }
             // enforcing that all SANs are valid, since our parsing fails softly
             if (currCert.tbsCertificate.subjectAlternativeNames?.generalNames?.all { it.name.isValid != false } == false) {
-                throw GeneralNameException("Invalid GeneralName in Subject Alternative Name at index $currentCertIndex")
+                throw GeneralNameException("Invalid GeneralName in Subject Alternative Name at index $originalIndex")
             }
 
             if (previousNameConstraints != null && (currentCertIndex == certPathLen || !currCert.isSelfIssued)) {
 
                 try {
                     if (!previousNameConstraints.verify(currCert, currentCertIndex == certPathLen)) {
-                        throw NameConstraintsException("NameConstraints violation at cert index $currentCertIndex")
+                        throw NameConstraintsException("NameConstraints violation at cert index $originalIndex")
                     }
                 } catch (e: Throwable) {
                     throw CertificateChainValidatorException(

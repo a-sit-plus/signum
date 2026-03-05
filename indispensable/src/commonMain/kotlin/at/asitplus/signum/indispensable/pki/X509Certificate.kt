@@ -413,6 +413,7 @@ typealias CertificateChain = List<X509Certificate>
 
 val CertificateChain.leaf: X509Certificate get() = first()
 val CertificateChain.root: X509Certificate get() = last()
+val CertificateChain.validationPath: CertificateChain get() = reversed()
 
 private
 /** De-/serializes Base64 strings to/from [ByteArray] */

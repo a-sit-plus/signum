@@ -12,19 +12,12 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 
-class KeyIdentifierValidator: CertificateChainValidator {
+class KeyIdentifierValidator: CertificateValidator {
 
     @ExperimentalPkiApi
-    override suspend fun validate(
-        chain: CertificateChain,
-        context: CertificateValidationContext
-    ): Map<X509Certificate, Set<ObjectIdentifier>> {
-        var currentCertIndex = 0
-        for (currCert in chain) {
-            currentCertIndex++
-            checkSubjectKeyIdentifier(currCert, currentCertIndex)
-        }
-        return emptyMap()
+    override suspend fun check(currCert: X509Certificate): Set<ObjectIdentifier> {
+        checkSubjectKeyIdentifier(currCert)
+        return emptySet()
     }
 }
 
@@ -44,10 +37,9 @@ fun checkTrustAnchorAndChild(trustAnchor: X509Certificate?, childCert: X509Certi
 }
 
 @Throws(KeyIdentifierException::class)
-private fun checkSubjectKeyIdentifier(cert: X509Certificate, currentCertIndex: Int? = null) {
-    val location = currentCertIndex?.let { " at index $it" }.orEmpty()
+private fun checkSubjectKeyIdentifier(cert: X509Certificate) {
     cert.findExtension<SubjectKeyIdentifierExtension>().let {
-        if (it == null) throw  MissingSubjectKeyIdentifierException("Missing SubjectKeyIdentifier extension in certificate$location.")
-        if (it.critical) throw CriticalSubjectKeyIdentifierException("SubjectKeyIdentifier extension must not be critical$location.")
+        if (it == null) throw  MissingSubjectKeyIdentifierException("Missing SubjectKeyIdentifier extension in certificate.")
+        if (it.critical) throw CriticalSubjectKeyIdentifierException("SubjectKeyIdentifier extension must not be critical.")
     }
 }

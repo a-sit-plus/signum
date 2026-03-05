@@ -171,11 +171,11 @@ val AllowIncludedTrustAnchorTest by testSuite{
 
         validatorFailure shouldNotBe null
         validatorFailureWithRoot shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 4."
-        validatorFailureWithRoot!!.errorMessage shouldBe "pathLenConstraint violated at cert index 4."
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
+        validatorFailureWithRoot!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
 
         val resultNotAllowed = chainWithRoot.validate(contextNotAllowedRoot)
         resultNotAllowed.shouldBeInvalid()
-        resultNotAllowed.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}!!.errorMessage shouldBe "pathLenConstraint violated at cert index 5."
+        resultNotAllowed.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
     }
 }

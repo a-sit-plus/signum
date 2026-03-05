@@ -102,7 +102,7 @@ suspend fun CertificateChain.validate(
     val validators = with(validatorFactory) { this@validate.generate(context) }
     val processingChain = if (context.allowIncludedTrustAnchor && context.trustAnchors.any {
             it.matchesCertificate(this.root)
-        }) this.dropLast(1).reversed() else this.reversed()
+        }) this.dropLast(1) else this
 
     val activeValidators = validators.toMutableList()
     val validatorFailures = mutableListOf<ValidatorFailure>()
@@ -114,12 +114,7 @@ suspend fun CertificateChain.validate(
 
     trustAnchorValidator?.let { trustAnchorValidator ->
         catchingUnwrapped {
-            val result = trustAnchorValidator.validate(processingChain, context)
-            for ((cert, oids) in result) {
-                checkedCriticalExtensions
-                    .getOrPut(cert) { mutableSetOf() }
-                    .addAll(oids)
-            }
+            trustAnchorValidator.validate(processingChain, context)
         }.onFailure {
             validatorFailures.add(
                 ValidatorFailure(
@@ -130,7 +125,6 @@ suspend fun CertificateChain.validate(
                 )
             )
         }
-
         nameConstraintsValidator?.startingNameConstraints = trustAnchorValidator.trustAnchor?.nameConstraints
         activeValidators.remove(trustAnchorValidator)
     }

@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
+import at.asitplus.signum.indispensable.pki.validationPath
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 
@@ -25,11 +26,10 @@ class ChainValidator: CertificateChainValidator {
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var currentCertIndex = 0
-
-        for (currCert in chain) {
-            if (currentCertIndex < chain.lastIndex) {
-                val childCert = chain[currentCertIndex + 1]
-                verifySignature(childCert, issuer = currCert, childCert == chain.last())
+        for (currCert in chain.validationPath) {
+            if (currentCertIndex < chain.validationPath.lastIndex) {
+                val childCert = chain.validationPath[currentCertIndex + 1]
+                verifySignature(childCert, issuer = currCert, childCert == chain.validationPath.last())
                 subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
                 currentCertIndex++
             }

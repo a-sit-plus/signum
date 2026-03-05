@@ -5,6 +5,7 @@ import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.validationPath
 import kotlin.time.Instant
 
 /**
@@ -21,16 +22,16 @@ class TimeValidityValidator: CertificateChainValidator {
         val date = context.date
         var currentCertIndex = 0
 
-        for (currCert in chain) {
+        for (currCert in chain.validationPath) {
             currCert.checkValidityAt(date)
 
-            if (currentCertIndex < chain.lastIndex) {
-                val childCert = chain[currentCertIndex + 1]
+            if (currentCertIndex < chain.validationPath.lastIndex) {
+                val childCert = chain.validationPath[currentCertIndex + 1]
                 currentCertIndex++
                 wasCertificateIssuedWithinIssuerValidityPeriod(
                     dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
                     issuer = currCert,
-                    currentCertIndex)
+                    chain.size - 1 - currentCertIndex)
             }
         }
 

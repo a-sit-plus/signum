@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
+import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
  * Enforces the X.509 Basic Constraints extension rules for a certificate chain
@@ -26,22 +27,22 @@ class BasicConstraintsValidator: CertificateChainValidator {
         var currentCertIndex = 0
         val certPathLen = chain.size
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
-        for (currCert in chain) {
+        for (currCert in chain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
                 .add(KnownOIDs.basicConstraints_2_5_29_19)
             if (currentCertIndex >= certPathLen - 1) break
-
+            val originalIndex = certPathLen - 1 - currentCertIndex
             currentCertIndex++
 
             val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
-                ?: throw MissingBasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
+                ?: throw MissingBasicConstraintsException("Missing basicConstraints extension at cert index $originalIndex.")
 
-            checkCaBasicConstraints(currCert, currentCertIndex)
+            checkCaBasicConstraints(currCert, originalIndex)
 
             if (remainingPathLength != null && !currCert.isSelfIssued) {
                 if (remainingPathLength.toInt() == 0) {
-                    throw PathLenConstraintViolationException("pathLenConstraint violated at cert index $currentCertIndex.")
+                    throw PathLenConstraintViolationException("pathLenConstraint violated at cert index $originalIndex.")
                 }
                 remainingPathLength = remainingPathLength.minus(1u)
             }

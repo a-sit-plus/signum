@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
+import at.asitplus.signum.indispensable.pki.validationPath
 import kotlin.math.exp
 
 /**
@@ -33,13 +34,14 @@ class KeyUsageValidator: CertificateChainValidator {
         var currentCertIndex = 0
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
-        for (currCert in chain) {
+        for (currCert in chain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
                 .addAll(supportedExtensions)
             currentCertIndex++
+            val originalIndex = certPathLen - 1 - currentCertIndex
             if (currentCertIndex <= certPathLen - 1) {
-                verifySignatureKeyUsage(currCert, context.supportRevocationChecking, currentCertIndex)
+                verifySignatureKeyUsage(currCert, context.supportRevocationChecking, originalIndex)
             }
             else {
                 verifyExpectedEKU(currCert, context.expectedEku)
