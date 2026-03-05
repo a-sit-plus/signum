@@ -16,10 +16,12 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ArraySerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborLabel
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
@@ -506,9 +508,10 @@ object CoseKeySerializer : KSerializer<CoseKey> {
     }
 
     override val descriptor: SerialDescriptor
-        get() = UncompressedCompoundCoseKeySerialContainer.serializer().descriptor
+        get() = CoseUncompressedEcKeySerialContainer.serializer().descriptor
 
     override fun deserialize(decoder: Decoder): CoseKey {
+        val mapDescriptor = MapSerializer(Long.serializer(), ByteArraySerializer()).descriptor
         val labels = mapOf<String, Long>(
             "kty" to 1,
             "kid" to 2,
@@ -518,7 +521,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             "k/n/crv" to -1,
             "x/e" to -2,
             "y" to -3,
-            "d" to 4
+            "d" to -4
         )
 
         var type: CoseKeyType? = null
@@ -533,109 +536,114 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         var d: ByteArray? = null
         var isCompressed = false
 
-        decoder.decodeStructure(descriptor) {
-
-
+        decoder.decodeStructure(mapDescriptor) {
+            var currentLabel: Long? = null
             while (true) {
-                val index = decodeElementIndex(descriptor)
-                if (index == -1) break
-                val label = descriptor.getElementAnnotations(index)
-                    .filterIsInstance<CborLabel>().first().label
-                when (label) {
-                    labels["kty"] -> type =
-                        decodeSerializableElement(
-                            descriptor,
-                            index,
-                            CoseKeyTypeSerializer
-                        )
+                val index = decodeElementIndex(mapDescriptor)
+                when {
+                    index == CompositeDecoder.DECODE_DONE -> break
+                    index % 2 == 0 -> currentLabel = decodeLongElement(mapDescriptor, index)
+                    else -> {
+                        val label = currentLabel
+                            ?: throw SerializationException("Malformed COSE key map: value without key label")
+                        when (label) {
+                            labels["kty"] -> type =
+                                decodeSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    CoseKeyTypeSerializer
+                                )
 
-                    labels["kid"] -> keyId =
-                        decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-
-                    labels["alg"] -> alg =
-                        decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            CoseAlgorithmSerializer
-                        )
-
-                    labels["key_ops"] -> keyOps =
-                        decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            ArraySerializer(CoseKeyOperationSerializer)
-                        )
-
-                    labels["k/n/crv"] -> {
-                        if (type != null) {
-                            val deser = when (type) {
-                                CoseKeyType.EC2 -> CoseEllipticCurveSerializer
-                                CoseKeyType.RSA, CoseKeyType.SYMMETRIC -> ByteArraySerializer()
-                            }
-                            nKCrv = decodeNullableSerializableElement(
-                                descriptor,
-                                index,
-                                deser
-                            )
-                        } else {
-                            // We don't know yet if its EC2 or RSA, so try bytes first, then Curve
-                            nKCrv = catchingUnwrapped {
+                            labels["kid"] -> keyId =
                                 decodeNullableSerializableElement(
-                                    descriptor,
+                                    mapDescriptor,
                                     index,
                                     ByteArraySerializer()
                                 )
-                            }.getOrNull() ?: decodeNullableSerializableElement(
-                                descriptor,
-                                index,
-                                CoseEllipticCurveSerializer
-                            )
+
+                            labels["alg"] -> alg =
+                                decodeNullableSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    CoseAlgorithmSerializer
+                                )
+
+                            labels["key_ops"] -> keyOps =
+                                decodeNullableSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    ArraySerializer(CoseKeyOperationSerializer)
+                                )
+
+                            labels["k/n/crv"] -> {
+                                val currentType = type
+                                if (currentType != null) {
+                                    val deser = when (currentType) {
+                                        CoseKeyType.EC2 -> CoseEllipticCurveSerializer
+                                        CoseKeyType.RSA, CoseKeyType.SYMMETRIC -> ByteArraySerializer()
+                                    }
+                                    nKCrv = decodeNullableSerializableElement(
+                                        mapDescriptor,
+                                        index,
+                                        deser
+                                    )
+                                } else {
+                                    // We don't know yet if its EC2 or RSA, so try bytes first, then Curve
+                                    nKCrv = catchingUnwrapped {
+                                        decodeNullableSerializableElement(
+                                            mapDescriptor,
+                                            index,
+                                            ByteArraySerializer()
+                                        )
+                                    }.getOrNull() ?: decodeNullableSerializableElement(
+                                        mapDescriptor,
+                                        index,
+                                        CoseEllipticCurveSerializer
+                                    )
+                                }
+                            }
+
+                            labels["x/e"] -> xOrE =
+                                decodeNullableSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    ByteArraySerializer()
+                                )
+
+                            labels["y"] -> catchingUnwrapped {
+                                y = decodeNullableSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    ByteArraySerializer()
+                                )
+                            }.getOrElse {
+                                isCompressed = true
+                                yBool = decodeNullableSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    Boolean.serializer()
+                                )
+                            }
+
+                            labels["d"] -> d =
+                                decodeNullableSerializableElement(
+                                    mapDescriptor,
+                                    index,
+                                    ByteArraySerializer()
+                                )
+
+                            else -> throw SerializationException("Unsupported COSE key label: $label")
                         }
-                    }
-
-                    labels["x/e"] -> xOrE =
-                        decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-
-                    labels["y"] -> catchingUnwrapped {
-                        y = decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-                    }.getOrElse {
-                        isCompressed = true
-                        yBool = decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            Boolean.serializer()
-                        )
-                    }
-
-                    labels["d"] -> d =
-                        decodeNullableSerializableElement(
-                            descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-
-                    else -> {
-                        break
+                        currentLabel = null
                     }
                 }
             }
         }
-        return when (type) {
+        val decodedType = type ?: throw SerializationException("No key type specified!")
+        return when (decodedType) {
             CoseKeyType.EC2 -> {
                 if (!isCompressed) CoseUncompressedEcKeySerialContainer(
-                    type,
+                    decodedType,
                     keyId,
                     alg?.let { it as CoseAlgorithm.Signature },
                     keyOps,
@@ -646,7 +654,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                     d
                 ).toCoseKey()
                 else CoseCompressedEcKeySerialContainer(
-                    type,
+                    decodedType,
                     keyId,
                     alg?.let { it as CoseAlgorithm.Signature },
                     keyOps,
@@ -660,7 +668,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
             CoseKeyType.RSA -> {
                 CoseRsaKeySerialContainer(
-                    type,
+                    decodedType,
                     keyId,
                     alg?.let { it as CoseAlgorithm.Signature },
                     keyOps,
@@ -673,7 +681,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
             CoseKeyType.SYMMETRIC -> {
                 CoseSymmKeySerialContainer(
-                    type,
+                    decodedType,
                     keyId,
                     alg?.let { it as CoseAlgorithm.Symmetric },
                     keyOps,
@@ -682,7 +690,6 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 ).toCoseKey()
             }
 
-            null -> throw SerializationException("No key type specified!")
         }
     }
 
