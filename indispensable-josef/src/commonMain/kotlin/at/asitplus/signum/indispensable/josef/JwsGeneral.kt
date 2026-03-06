@@ -38,7 +38,7 @@ data class JwsGeneral(
     val plainPayload: ByteArray,
 ) {
     init {
-        if (signatures.isEmpty()) throw AssertionError()
+        if (signatures.isEmpty()) throw AssertionError("Signatures cannot be empty")
     }
 
     override fun equals(other: Any?): Boolean {
