@@ -1,15 +1,12 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -26,21 +23,6 @@ data class JwsCompact(
     @Serializable(ByteArrayBase64UrlSerializer::class)
     val plainSignature: ByteArray,
 ) : JWS() {
-
-    @Transient
-    private val protectedHeader: JwsHeader =
-        joseCompliantSerializer.decodeFromString(plainProtectedHeader.encodeToString(Base64UrlStrict))
-
-    /**
-     * Lenient Signature Parsing
-     */
-    @Transient
-    val signature: CryptoSignature.RawByteEncodable
-        get() = when (val alg = protectedHeader.algorithm) {
-            is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
-            is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
-            else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
-        }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
