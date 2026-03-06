@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 
@@ -62,9 +63,10 @@ data class JwsSigned<out P : Any>(
          * Creates a compact-style [JwsSigned] view from one signature entry in
          * a [JwsGeneral].
          */
-        fun <P : Any> fromJwsGeneral(
-            jwsGeneral: JwsGeneral<P>,
+        inline fun <reified P : Any> fromJwsGeneral(
+            jwsGeneral: JwsGeneral,
             signatureIndex: Int,
+            payloadSerializer: KSerializer<P>,
         ): JwsSigned<P> {
             val signatureElement = jwsGeneral.signatures.getOrNull(signatureIndex)
                 ?: throw IndexOutOfBoundsException(
@@ -76,7 +78,7 @@ data class JwsSigned<out P : Any>(
             }
             return JwsSigned(
                 header = signatureElement.protectedHeader,
-                payload = jwsGeneral.payload,
+                payload = jwsGeneral.getPayload(payloadSerializer),
                 signature = signatureElement.signature,
                 plainSignatureInput = plainSignatureInput,
             )

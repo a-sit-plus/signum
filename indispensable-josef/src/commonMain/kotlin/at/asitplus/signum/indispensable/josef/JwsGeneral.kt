@@ -1,23 +1,26 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
-import at.asitplus.signum.indispensable.contentHashCodeIfArray
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.pki.X509Certificate
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.jvm.Transient
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.builtins.ByteArraySerializer
 
 /**
  * [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1)
  * Allows multiple digital signatures and/or MACs for the same payload
  */
-@Serializable(with = JwsGeneralSerializer::class)
-data class JwsGeneral<P>(
-    /**
-     * The [payload] member MUST be present and contain the value BASE64URL(JWS Payload).
-     */
-    @SerialName(SerialNames.PAYLOAD)
-    val payload: P,
-
+@Serializable
+data class JwsGeneral(
     /**
      * The [signatures] member value MUST be an array of JSON objects.
      * Each object represents a signature or MAC over the JWS Payload and
@@ -29,20 +32,21 @@ data class JwsGeneral<P>(
     /**
      * ASCII string `<BASE64URL(payload)>` as used for signature verification.
      * See second part of [JwsSigned.prepareJwsSignatureInput]
-     *
-     * This parameter is required for correct serialization!
      */
-    @Transient
+    @SerialName(SerialNames.PAYLOAD)
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val plainPayload: ByteArray,
 ) {
+    init {
+        if (signatures.isEmpty()) throw AssertionError()
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as JwsGeneral<*>
+        other as JwsGeneral
 
-        if (!payload.contentEqualsIfArray(other.payload)) return false
         if (signatures != other.signatures) return false
         if (!plainPayload.contentEquals(other.plainPayload)) return false
 
@@ -50,15 +54,23 @@ data class JwsGeneral<P>(
     }
 
     override fun hashCode(): Int {
-        var result = payload?.contentHashCodeIfArray() ?: 0
-        result = 31 * result + signatures.hashCode()
+        var result = signatures.hashCode()
         result = 31 * result + plainPayload.contentHashCode()
         return result
     }
 
-    @Suppress("UNUSED")
+    inline fun <reified P> getPayload(serializer: KSerializer<P>): P =
+        if (serializer.descriptor.serialName == ByteArrayBase64UrlSerializer.descriptor.serialName) {
+            plainPayload as P
+        } else {
+            joseCompliantSerializer.decodeFromString(
+                serializer,
+                plainPayload.decodeToString(),
+            )
+        }
+
     fun getPlainSignatureInputAt(index: Int): ByteArray =
-        "${signatures[index].plainHeaderInput.decodeToString()}.${plainPayload.decodeToString()}".encodeToByteArray()
+        "${signatures[index].plainHeaderInput.decodeToString()}.${plainPayload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
 
     /**
      * Returns a new [JwsGeneral] with [jwsSigned] appended as an additional signature.
@@ -66,14 +78,9 @@ data class JwsGeneral<P>(
      * The payload of [jwsSigned] must match this object's payload and, if available,
      * the payload bytes encoded in existing [signatures]' [SignatureElement.plainHeaderInput].
      */
-    fun appendSignature(jwsSigned: JwsSigned<*>): JwsGeneral<P> {
-        require(payload.contentEqualsIfArray(jwsSigned.payload)) {
+    fun appendSignature(jwsSigned: JwsSigned<*>): JwsGeneral {
+        require(plainPayload.contentEqualsIfArray(jwsSigned.plainSignatureInput.payloadPart())) {
             "Additional signed JWS payload must match existing payload"
-        }
-
-        val additionalPayloadPart = jwsSigned.plainSignatureInput.payloadPart()
-        require(plainPayload.contentEquals(additionalPayloadPart)) {
-            "Additional signed JWS must sign the same payload bytes as existing signatures"
         }
 
         return copy(
@@ -97,7 +104,7 @@ data class JwsGeneral<P>(
          *
          * All inputs must represent signatures over exactly the same payload bytes.
          */
-        fun <P : Any> fromSignedJws(jwsSigned: List<JwsSigned<P>>): JwsGeneral<P> {
+        fun <P : Any> fromSignedJws(jwsSigned: List<JwsSigned<P>>): JwsGeneral {
             require(jwsSigned.isNotEmpty()) { "At least one signed JWS is required" }
 
             val first = jwsSigned.first()
@@ -107,13 +114,9 @@ data class JwsGeneral<P>(
                 require(payloadMatches(current.payload, first.payload)) {
                     "All signed JWS payloads must match (mismatch at index ${index + 1})"
                 }
-                require(current.plainSignatureInput.payloadPart().contentEquals(payloadPart)) {
-                    "All signed JWS objects must sign the same payload bytes (mismatch at index ${index + 1})"
-                }
             }
 
             return JwsGeneral(
-                payload = first.payload,
                 signatures = jwsSigned.map {
                     SignatureElement(
                         protectedHeader = it.header,
@@ -125,7 +128,7 @@ data class JwsGeneral<P>(
             )
         }
 
-        fun <P : Any> fromSignedJws(vararg jwsSigned: JwsSigned<P>): JwsGeneral<P> =
+        fun <P : Any> fromSignedJws(vararg jwsSigned: JwsSigned<P>): JwsGeneral =
             fromSignedJws(jwsSigned.toList())
     }
 }
@@ -135,7 +138,7 @@ private fun ByteArray.payloadPart(): ByteArray {
     require(separator > 0) {
         "Invalid JWS signature input format"
     }
-    return copyOfRange(separator + 1, size)
+    return copyOfRange(separator + 1, size).decodeToString().decodeToByteArray(Base64UrlStrict)
 }
 
 private fun ByteArray.headerPart(): ByteArray {

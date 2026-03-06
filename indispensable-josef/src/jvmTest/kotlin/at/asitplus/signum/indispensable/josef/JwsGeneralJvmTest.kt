@@ -119,7 +119,7 @@ val JwsGeneralJvmTest by testSuite {
         "JwsSigned round-trip" { it ->
             val first = createSignedJws(it.signer1, it.payloadBob, "kid-1")
             val intermediate = JwsGeneral.fromSignedJws(first)
-            val roundtrip = JwsSigned.fromJwsGeneral(intermediate, 0)
+            val roundtrip = JwsSigned.fromJwsGeneral(intermediate, 0, JsonObject.serializer())
 
             val verifier = it.verifierByKid["kid-1"]
                 ?: throw IllegalStateException("Missing verifier for key id 'kid-1'")

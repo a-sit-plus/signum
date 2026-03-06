@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -82,7 +83,7 @@ val testvecWithEmptySignatureString = """
 
 val JwsGeneralTest by testSuite {
     "deserializes vector with correct algorithms, raw signatures, and plainSignatureInput" {
-        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(testvec1)
         val source = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), testvec1)
         val payloadPart = source["payload"]!!.jsonPrimitive.content
         val sourceSignatures = source["signatures"]!!.jsonArray
@@ -109,9 +110,9 @@ val JwsGeneralTest by testSuite {
     }
 
     "round-trips semantically for vector 1" {
-        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(testvec1)
         val reserialized = joseCompliantSerializer.encodeToString(parsed)
-        val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(reserialized)
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(reserialized)
 
         reparsed shouldBe parsed
     }
@@ -131,15 +132,15 @@ val JwsGeneralTest by testSuite {
 
         val serializedGeneral = joseCompliantSerializer.encodeToString(JwsGeneral.fromSignedJws(signed))
         val generalResult = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsGeneral<ByteArray>>(serializedGeneral)
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(serializedGeneral)
         }
 
         generalResult.isSuccess shouldBe true
-        JwsSigned.fromJwsGeneral(generalResult.getOrThrow(),0) shouldBe signed
+        JwsSigned.fromJwsGeneral(generalResult.getOrThrow(), 0, ByteArrayBase64UrlSerializer) shouldBe signed
     }
 
     "re-serializing preserves payload and protected encoding" {
-        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(testvec1)
         val source = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), testvec1)
         val reserialized = joseCompliantSerializer.encodeToString(parsed)
         val reparsed = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), reserialized)
@@ -157,7 +158,7 @@ val JwsGeneralTest by testSuite {
 
     "fails to deserialize MAC-based test vector into RawByteEncodable signatures" {
         val result = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec2)
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(testvec2)
         }
 
         if (result.isSuccess) throw AssertionError("Expected MAC-based vector to fail deserialization")
@@ -166,21 +167,21 @@ val JwsGeneralTest by testSuite {
 
     "Reject deserialization of signature elements that contain unprotected header" {
         val result = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithUnprotectedHeader)
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(testvecWithUnprotectedHeader)
         }
         result.exceptionOrNull().shouldBe(IllegalArgumentException("Unprotected headers are currently not supported"))
     }
 
     "fails to deserialize general JWS when signatures is empty" {
         val result = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithEmptySignatures)
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(testvecWithEmptySignatures)
         }
 
         result.isSuccess shouldBe false
     }
 
     "allows empty signature string in signature element" {
-        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvecWithEmptySignatureString)
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(testvecWithEmptySignatureString)
 
         parsed.signatures.size shouldBe 1
         parsed.signatures.single().signature.shouldBeInstanceOf<CryptoSignature.RSA>()
@@ -188,12 +189,12 @@ val JwsGeneralTest by testSuite {
     }
 
     "creates JwsSigned from general JWS by signature index" {
-        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
-        val jwsSigned0 = JwsSigned.fromJwsGeneral(parsed, 0)
-        val jwsSigned1 = JwsSigned.fromJwsGeneral(parsed, 1)
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(testvec1)
+        val jwsSigned0 = JwsSigned.fromJwsGeneral(parsed, 0, JsonObject.serializer())
+        val jwsSigned1 = JwsSigned.fromJwsGeneral(parsed, 1, JsonObject.serializer())
 
-        jwsSigned0.payload shouldBe parsed.payload
-        jwsSigned1.payload shouldBe parsed.payload
+        jwsSigned0.payload shouldBe parsed.getPayload(JsonObject.serializer())
+        jwsSigned1.payload shouldBe parsed.getPayload(JsonObject.serializer())
 
         jwsSigned0.header shouldBe parsed.signatures[0].protectedHeader
         jwsSigned1.header shouldBe parsed.signatures[1].protectedHeader
@@ -206,8 +207,8 @@ val JwsGeneralTest by testSuite {
     }
 
     "fails to create JwsSigned from general JWS with out-of-bounds index" {
-        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral<JsonObject>>(testvec1)
-        val result = runCatching { JwsSigned.fromJwsGeneral(parsed, 2) }
+        val parsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(testvec1)
+        val result = runCatching { JwsSigned.fromJwsGeneral(parsed, 2, JsonObject.serializer()) }
 
         result.isSuccess shouldBe false
         result.exceptionOrNull().shouldBeInstanceOf<IndexOutOfBoundsException>()
@@ -227,7 +228,8 @@ val JwsGeneralTest by testSuite {
 
         val general = JwsGeneral.fromSignedJws(signed)
         general.signatures.size shouldBe 1
-        general.signatures.single().plainHeaderInput.decodeToString() shouldBe plainSignatureInput.decodeToString().substringBefore(".")
+        general.signatures.single().plainHeaderInput.decodeToString() shouldBe plainSignatureInput.decodeToString()
+            .substringBefore(".")
         general.getPlainSignatureInputAt(0).decodeToString() shouldBe plainSignatureInput.decodeToString()
     }
 }
