@@ -24,6 +24,28 @@ data class JwsFlattened(
     @Transient
     val combinedHeader: JwsHeader =
         joseCompliantSerializer.decodeFromJsonElement(unprotectedHeader.strictUnion(protectedHeader))
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as JwsFlattened
+
+        if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
+        if (unprotectedHeader != other.unprotectedHeader) return false
+        if (!payload.contentEquals(other.payload)) return false
+        if (!plainSignature.contentEquals(other.plainSignature)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = plainProtectedHeader?.contentHashCode() ?: 0
+        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
+        result = 31 * result + payload.contentHashCode()
+        result = 31 * result + plainSignature.contentHashCode()
+        return result
+    }
 }
 
 fun JwsFlattened.toJwsCompact(): JwsCompact =
