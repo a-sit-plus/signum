@@ -1,14 +1,9 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 
 
 /**
@@ -26,7 +21,7 @@ data class SignatureElement(
     val plainSignature: ByteArray,
 
     /**
-     * The [protectedHeader] member MUST be present ...when the JWS Protected
+     * The [plainProtectedHeader] member MUST be present ...when the JWS Protected
      * Header value is non-empty; otherwise, it MUST be absent.  These
      * Header Parameter values are integrity protected.
      *
@@ -55,26 +50,4 @@ data class SignatureElement(
         result = 31 * result + plainProtectedHeader.contentHashCode()
         return result
     }
-
-    @Transient
-    val protectedHeader: JsonObject? =
-        plainProtectedHeader?.let { joseCompliantSerializer.decodeFromString(it.decodeToString()) }
-
-    /**
-     * Only the combined header must be a valid [JwsHeader]
-     */
-    @Transient
-    val combinedHeader: JwsHeader =
-        joseCompliantSerializer.decodeFromJsonElement(unprotectedHeader.strictUnion(protectedHeader))
-
-    /**
-     * Lenient Signature Parsing
-     */
-    @Transient
-    val signature: CryptoSignature.RawByteEncodable
-        get() = when (val alg = combinedHeader.algorithm) {
-            is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
-            is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
-            else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
-        }
 }

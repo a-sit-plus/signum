@@ -1,12 +1,17 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.contentEqualsIfArray
-import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
+
+/**
+ * Wrapper for all JWS formats.
+ */
 sealed class JWS {
     abstract val payload: ByteArray
 
@@ -23,11 +28,32 @@ sealed class JWS {
     inline fun <reified P> getPayload(serialFormat: SerialFormat): P =
         getPayload(serialFormat.serializersModule.serializer(), serialFormat)
 
+    /**
+     * Lenient Signature Parsing
+     */
+    fun getSignature(combinedHeader: JwsHeader, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
+        when (val alg = combinedHeader.algorithm) {
+            is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
+            is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
+            else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
+        }
+
+    fun getCombinedHeader(unprotectedHeader: JsonObject, protectedHeader: ByteArray): JwsHeader =
+        joseCompliantSerializer.decodeFromJsonElement(
+            unprotectedHeader.strictUnion(
+                joseCompliantSerializer.decodeFromString(protectedHeader.decodeToString())
+            )
+        )
+
+    fun getSignatureInput(protectedHeader: ByteArray, payload: ByteArray) =
+        "${protectedHeader.encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
+
     object SerialNames {
         const val PROTECTED = "protected"
         const val HEADER = "header"
         const val SIGNATURE = "signature"
         const val SIGNATURES = "signatures"
+        const val PAYLOAD = "payload"
     }
 }
 

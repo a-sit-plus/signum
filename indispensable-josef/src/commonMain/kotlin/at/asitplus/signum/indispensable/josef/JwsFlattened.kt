@@ -1,30 +1,25 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import kotlinx.serialization.Transient
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 
 
 data class JwsFlattened(
+    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @SerialName(JWS.SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
+    @SerialName(JWS.SerialNames.HEADER)
     val unprotectedHeader: JsonObject? = null,
-    val payload: ByteArray,
+    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @SerialName(JWS.SerialNames.PAYLOAD)
+    override val payload: ByteArray,
+    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @SerialName(JWS.SerialNames.SIGNATURE)
     val plainSignature: ByteArray
-) {
-
-    @Transient
-    private val protectedHeader: JsonObject? =
-        plainProtectedHeader?.let { joseCompliantSerializer.decodeFromString(it.decodeToString()) }
-
-    /**
-     * Only the combined header must be a valid [JwsHeader]
-     */
-    @Transient
-    val combinedHeader: JwsHeader =
-        joseCompliantSerializer.decodeFromJsonElement(unprotectedHeader.strictUnion(protectedHeader))
-
+) : JWS() {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -50,9 +45,9 @@ data class JwsFlattened(
 
 fun JwsFlattened.toJwsCompact(): JwsCompact =
     JwsCompact(
-        protected = plainProtectedHeader!!,
+        plainProtectedHeader = plainProtectedHeader!!,
         payload = payload,
-        signature = plainSignature,
+        plainSignature = plainSignature,
     )
 
 fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {

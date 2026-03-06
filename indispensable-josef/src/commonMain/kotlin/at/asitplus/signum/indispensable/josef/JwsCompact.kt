@@ -67,15 +67,12 @@ data class JwsCompact(
             PrimitiveSerialDescriptor("JwsCompact", PrimitiveKind.STRING)
 
         override fun serialize(encoder: Encoder, value: JwsCompact) {
-            val compact = buildString {
-                append(value.plainProtectedHeader.encodeToString(Base64UrlStrict))
-                append('.')
-                append(value.payload.encodeToString(Base64UrlStrict))
-                append('.')
-                append(value.plainSignature.encodeToString(Base64UrlStrict))
-            }
+            val signingInput =
+                value.getSignatureInput(value.plainProtectedHeader, value.payload).decodeToString()
+            val signature =
+                value.plainSignature.encodeToString(Base64UrlStrict)
 
-            encoder.encodeString(compact)
+            encoder.encodeString("$signingInput.$signature")
         }
 
         override fun deserialize(decoder: Decoder): JwsCompact {
