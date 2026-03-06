@@ -1,11 +1,22 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class JwsGeneral(
-    val payload: ByteArray,
+    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @SerialName(JWS.SerialNames.PAYLOAD)
+    override val payload: ByteArray,
+    @Serializable
+    @SerialName(JWS.SerialNames.SIGNATURES)
     val signatures: List<SignatureElement>
-) {
+) : JWS() {
+    /**
+     * @return New [JwsGeneral] object with appended Signature
+     */
     fun appendSignature(jwsFlattened: JwsFlattened): JwsGeneral {
         require(payload.contentEqualsIfArray(jwsFlattened.payload)) {
             "Additional signed JWS payload must match existing payload"
