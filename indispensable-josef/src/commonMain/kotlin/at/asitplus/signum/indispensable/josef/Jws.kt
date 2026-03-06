@@ -28,32 +28,31 @@ sealed class JWS {
     inline fun <reified P> getPayload(serialFormat: SerialFormat): P =
         getPayload(serialFormat.serializersModule.serializer(), serialFormat)
 
-    /**
-     * Lenient Signature Parsing
-     */
-    fun getSignature(combinedHeader: JwsHeader, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
-        when (val alg = combinedHeader.algorithm) {
-            is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
-            is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
-            else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
-        }
-
-    fun getCombinedHeader(unprotectedHeader: JsonObject, protectedHeader: ByteArray): JwsHeader =
-        joseCompliantSerializer.decodeFromJsonElement(
-            unprotectedHeader.strictUnion(
-                joseCompliantSerializer.decodeFromString(protectedHeader.decodeToString())
-            )
-        )
-
-    fun getSignatureInput(protectedHeader: ByteArray, payload: ByteArray) =
-        "${protectedHeader.encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
-
     object SerialNames {
         const val PROTECTED = "protected"
         const val HEADER = "header"
         const val SIGNATURE = "signature"
         const val SIGNATURES = "signatures"
         const val PAYLOAD = "payload"
+    }
+
+    companion object {
+        fun getSignature(combinedHeader: JwsHeader, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
+            when (val alg = combinedHeader.algorithm) {
+                is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
+                is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
+                else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
+            }
+
+        fun getCombinedHeader(unprotectedHeader: JsonObject, protectedHeader: ByteArray): JwsHeader =
+            joseCompliantSerializer.decodeFromJsonElement(
+                unprotectedHeader.strictUnion(
+                    joseCompliantSerializer.decodeFromString(protectedHeader.decodeToString())
+                )
+            )
+
+        fun getSignatureInput(protectedHeader: ByteArray, payload: ByteArray) =
+            "${protectedHeader.encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
 }
 

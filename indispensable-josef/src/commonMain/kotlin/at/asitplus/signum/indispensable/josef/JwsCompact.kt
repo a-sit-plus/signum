@@ -50,7 +50,7 @@ data class JwsCompact(
 
         override fun serialize(encoder: Encoder, value: JwsCompact) {
             val signingInput =
-                value.getSignatureInput(value.plainProtectedHeader, value.payload).decodeToString()
+                getSignatureInput(value.plainProtectedHeader, value.payload).decodeToString()
             val signature =
                 value.plainSignature.encodeToString(Base64UrlStrict)
 
