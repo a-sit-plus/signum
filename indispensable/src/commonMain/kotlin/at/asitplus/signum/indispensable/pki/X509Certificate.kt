@@ -2,12 +2,13 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.*
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.isSupported
@@ -273,7 +274,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
     val rawSignature: Asn1Primitive,
-) : PemEncodable<Asn1Sequence> {
+) : Asn1PemEncodable<Asn1Sequence> {
 
     constructor(
         tbsCertificate: TbsCertificate,
@@ -282,7 +283,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     ) : this(tbsCertificate, signatureAlgorithm,
         signature.x509Encoded)
 
-    override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
+    override val pemLabel: String = EB_STRINGS.DEFAULT
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
@@ -315,7 +316,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         level = DeprecationLevel.ERROR)
     val signature: CryptoSignature get() = decodedSignature.getOrThrow()
 
-    companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
+    companion object : LabelPemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
 
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE"
@@ -339,7 +340,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
         }.getOrNull() ?: catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
-        }.getOrNull() ?: X509Certificate.decodeFromPem(src.decodeToString()).getOrNull()
+        }.getOrNull() ?: catchingUnwrapped { X509Certificate.decodeFromPem(src.decodeToString()).getOrThrow() }.getOrNull()
     }
 }
 

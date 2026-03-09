@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.asn1.encoding.bitLength
+import at.asitplus.awesn1.encoding.bitLength
 import at.asitplus.signum.indispensable.misc.BitLength
 import org.kotlincrypto.random.CryptoRand
 import kotlin.jvm.JvmName

@@ -1,11 +1,16 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.Int
+import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
+import at.asitplus.signum.indispensable.asn1.decodeToBigInteger
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.internals.checkedAs
 import at.asitplus.signum.internals.checkedAsFn
@@ -24,7 +29,7 @@ private object EB_STRINGS {
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  * Equality checks are performed wrt. cryptographic properties.
  */
-sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
+sealed interface CryptoPrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
 
     sealed interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
         /** [CryptoPublicKey] matching this private key. */
@@ -35,13 +40,13 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
     val attributes: List<Asn1Element>?
 
     /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
-    val asPKCS8: PemEncodable<Asn1Sequence> get() = this
+    val asPKCS8: Asn1PemEncodable<Asn1Sequence> get() = this
 
     sealed class Impl(
         /** optional attributes relevant when PKCS#8-encoding a private key */
         override val attributes: List<Asn1Element>?
     ) : CryptoPrivateKey {
-        override val canonicalPEMBoundary get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
+        override val pemLabel get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
 
         /**
          * PKCS#8 encoding of a private key:
@@ -158,8 +163,8 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         }
 
         /** Encodes this private key into a PKCS#1-encoded private key */
-        val asPKCS1 = object : PemEncodable<Asn1Sequence> {
-            override val canonicalPEMBoundary get() = EB_STRINGS.RSA_PRIVATE_KEY_PKCS1
+        val asPKCS1 = object : Asn1PemEncodable<Asn1Sequence> {
+            override val pemLabel get() = EB_STRINGS.RSA_PRIVATE_KEY_PKCS1
 
             /**
              * ```asn1
@@ -236,7 +241,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             }
         }
 
-        companion object : PemDecodable<Asn1Sequence, RSA>(
+        companion object : LabelPemDecodable<Asn1Sequence, RSA>(
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(FromPKCS1::decodeFromDer)
         ) {
@@ -311,8 +316,8 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         override fun hashCode() = privateKey.hashCode()
 
         /** Encodes this private key into a SEC1-encoded private key */
-        val asSEC1 = object : PemEncodable<Asn1Sequence> {
-            override val canonicalPEMBoundary get() = EB_STRINGS.EC_PRIVATE_KEY_SEC1
+        val asSEC1 = object : Asn1PemEncodable<Asn1Sequence> {
+            override val pemLabel get() = EB_STRINGS.EC_PRIVATE_KEY_SEC1
 
             /**
              * ```asn1
@@ -436,7 +441,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         }
 
 
-        companion object : PemDecodable<Asn1Sequence, EC>(
+        companion object : LabelPemDecodable<Asn1Sequence, EC>(
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(FromSEC1::decodeFromDer)
         ) {
@@ -516,7 +521,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
     }
 
     companion object :
-        PemDecodable<Asn1Sequence, CryptoPrivateKey>(
+        LabelPemDecodable<Asn1Sequence, CryptoPrivateKey>(
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
@@ -569,9 +574,9 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
 /** Representation of an encrypted private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208) */
 class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encryptedData: ByteArray) :
-    PemEncodable<Asn1Sequence> {
+    Asn1PemEncodable<Asn1Sequence> {
 
-    override val canonicalPEMBoundary get() = EB_STRINGS.ENCRYPTED_PRIVATE_KEY
+    override val pemLabel get() = EB_STRINGS.ENCRYPTED_PRIVATE_KEY
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv(): Asn1Sequence = runRethrowing {
@@ -581,7 +586,7 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
         }
     }
 
-    companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY) {
+    companion object : LabelPemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY) {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = src.decodeRethrowing {

@@ -1,15 +1,17 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.Asn1Time
 import at.asitplus.catching
+import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1Time
+import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
@@ -138,7 +140,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initialize(jcaSpec)
                 generateKeyPair()
             }
-            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(alias))))
+            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(alias))))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextBytes(ByteArray(32)),

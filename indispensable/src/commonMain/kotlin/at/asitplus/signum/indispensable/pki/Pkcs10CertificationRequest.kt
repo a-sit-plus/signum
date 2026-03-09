@@ -1,16 +1,17 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.Asn1.BitString
+import at.asitplus.awesn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.awesn1.encoding.asAsn1BitString
+import at.asitplus.awesn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.requireSupported
 
 /**
@@ -90,7 +91,7 @@ data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
     val rawSignature: Asn1Primitive
-) : PemEncodable<Asn1Sequence> {
+) : Asn1PemEncodable<Asn1Sequence> {
 
     constructor(
         tbsCsr: TbsCertificationRequest,
@@ -107,7 +108,7 @@ data class Pkcs10CertificationRequest(
         level = DeprecationLevel.ERROR)
     val signature get() = decodedSignature.getOrThrow()
 
-    override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
+    override val pemLabel: String = EB_STRINGS.DEFAULT
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
@@ -116,7 +117,7 @@ data class Pkcs10CertificationRequest(
         +rawSignature
     }
 
-    companion object : PemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
+    companion object : LabelPemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
         EB_STRINGS.DEFAULT,
         EB_STRINGS.LEGACY
     ) {

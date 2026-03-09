@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.asAsn1String
 
 /**
  * X.500 Name (used in X.509 Certificates)

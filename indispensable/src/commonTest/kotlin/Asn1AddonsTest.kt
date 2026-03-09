@@ -1,4 +1,5 @@
 package at.asitplus.signum
+import at.asitplus.awesn1.Asn1Integer as Awesn1Integer
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.testballoon.checkAll
@@ -11,7 +12,6 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.common.Platform
 import io.kotest.common.platform
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 
@@ -59,31 +59,31 @@ val Asn1AddonsTest by testSuite {
             "Generic values" - {
                 checkAll(iterations = 2500, Arb.uLong()) {
                     val bigint = BigInteger.fromULong(it)
-                    val asn1int = Asn1Integer(it)
-                    asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
+                    val asn1int = bigint.toAsn1Integer()
+                    asn1int.sign shouldBe Awesn1Integer.Sign.POSITIVE
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
                 checkAll(iterations = 2500, Arb.nonPositiveLong()) {
                     val bigint = BigInteger.fromLong(it)
-                    val asn1int = Asn1Integer(it)
+                    val asn1int = bigint.toAsn1Integer()
                     if (it < 0)
-                        asn1int.shouldBeTypeOf<Asn1Integer.Negative>()
+                        asn1int.sign shouldBe Awesn1Integer.Sign.NEGATIVE
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
                 checkAll(iterations = 500, Arb.byteArray(Arb.int(1500..2500), Arb.byte())) {
                     val bigint = BigInteger.fromByteArray(it, Sign.NEGATIVE)
-                    val asn1int = Asn1Integer.fromByteArray(it, Asn1Integer.Sign.NEGATIVE)
+                    val asn1int = Asn1Integer.fromByteArray(it, Awesn1Integer.Sign.NEGATIVE)
                     if (!asn1int.isZero())
-                        asn1int.shouldBeTypeOf<Asn1Integer.Negative>()
+                        asn1int.sign shouldBe Awesn1Integer.Sign.NEGATIVE
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
                 checkAll(iterations = 1000, Arb.byteArray(Arb.int(1500..2500), Arb.byte())) {
                     val bigint = BigInteger.fromByteArray(it, Sign.POSITIVE)
                     val asn1int = Asn1Integer.fromUnsignedByteArray(it)
-                    asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
+                    asn1int.sign shouldBe Awesn1Integer.Sign.POSITIVE
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }

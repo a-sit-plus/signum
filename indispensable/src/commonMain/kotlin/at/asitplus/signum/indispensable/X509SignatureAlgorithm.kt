@@ -1,14 +1,14 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.catching
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.awesn1.encoding.Asn1.Null
+import at.asitplus.awesn1.encoding.decodeToInt
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 

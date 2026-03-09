@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.Asn1.Bool
+import at.asitplus.awesn1.encoding.decodeToBoolean
 
 /**
  * X.509 Certificate Extension

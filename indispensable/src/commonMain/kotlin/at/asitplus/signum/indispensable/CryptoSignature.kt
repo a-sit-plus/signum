@@ -1,7 +1,11 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.decodeToBigInteger
+import at.asitplus.signum.indispensable.asn1.encodeToAsn1Primitive
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength

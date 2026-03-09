@@ -1,12 +1,16 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.*
+import at.asitplus.awesn1.encoding.Asn1.BitString
+import at.asitplus.awesn1.encoding.Asn1.Null
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
+import at.asitplus.signum.indispensable.asn1.DEFAULT_PEM_DECODER
+import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
 import at.asitplus.signum.internals.checkedAsFn
@@ -19,7 +23,7 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -60,7 +64,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     }
 
 
-    companion object : PemDecodable<Asn1Sequence, CryptoPublicKey>(
+    companion object : LabelPemDecodable<Asn1Sequence, CryptoPublicKey>(
         PEM_BOUNDARY to DEFAULT_PEM_DECODER,
         "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
     ) {
@@ -172,7 +176,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
         val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
 
-        override val canonicalPEMBoundary: String = PEM_BOUNDARY
+        override val pemLabel: String = PEM_BOUNDARY
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -265,7 +269,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
         override fun asCryptoPublicKey() = this
 
-        override val canonicalPEMBoundary: String = PEM_BOUNDARY
+        override val pemLabel: String = PEM_BOUNDARY
 
         val curve get() = publicPoint.curve
         val x get() = publicPoint.x

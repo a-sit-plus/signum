@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
