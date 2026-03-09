@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.pki
 
+
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1EncapsulatingOctetString
 import at.asitplus.awesn1.Asn1Primitive

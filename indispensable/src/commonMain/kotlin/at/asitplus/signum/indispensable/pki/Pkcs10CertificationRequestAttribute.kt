@@ -1,44 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.*
-import at.asitplus.awesn1.encoding.Asn1
-
-data class Pkcs10CertificationRequestAttribute(
-    override val oid: ObjectIdentifier,
-    val value: List<Asn1Element>
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
-    constructor(id: ObjectIdentifier, value: Asn1Element) : this(id, listOf(value))
-
-    override fun encodeToTlv() = Asn1.Sequence {
-        +oid
-        +Asn1.Set { value.forEach { +it } }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null) return false
-        if (this::class != other::class) return false
-
-        other as Pkcs10CertificationRequestAttribute
-
-        if (oid != other.oid) return false
-        if (value != other.value) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = oid.hashCode()
-        result = 31 * result + value.hashCode()
-        return result
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = src.decodeRethrowing() {
-            val id = (next() as Asn1Primitive).readOid()
-            val value = (next() as Asn1Set).children
-            Pkcs10CertificationRequestAttribute(id, value)
-        }
-    }
-}
+@Deprecated(
+    "Moved to awesn1 raw crypto model.",
+    ReplaceWith(
+        "Attribute",
+        "at.asitplus.awesn1.crypto.pki.Attribute"
+    )
+)
+typealias Pkcs10CertificationRequestAttribute = at.asitplus.awesn1.crypto.pki.Attribute

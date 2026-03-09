@@ -12,8 +12,9 @@ import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.isSupported
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
+import at.asitplus.awesn1.crypto.pki.GeneralNames
+import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findIssuerAltNames
+import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
@@ -78,7 +79,7 @@ constructor(
      * this is too lenient.
      */
     @Transient
-    val subjectAlternativeNames: AlternativeNames? = extensions?.findSubjectAltNames()
+    val subjectAlternativeNames: GeneralNames? = extensions?.findSubjectAltNames()
 
     /**
      * Contains `IssuerAlternativeName`s parsed from extensions. This property is initialized right away.
@@ -87,7 +88,7 @@ constructor(
      * this is too lenient.
      */
     @Transient
-    val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
+    val issuerAlternativeNames: GeneralNames? = extensions?.findIssuerAltNames()
 
 
     private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }

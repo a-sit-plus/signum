@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.io.decodeFromDer
+
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode

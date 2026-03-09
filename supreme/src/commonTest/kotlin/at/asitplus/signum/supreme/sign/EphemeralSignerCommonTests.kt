@@ -1,5 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
+
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
 import at.asitplus.awesn1.Asn1OctetString
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.signum.indispensable.Digest

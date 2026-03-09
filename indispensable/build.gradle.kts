@@ -23,6 +23,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api("at.asitplus.awesn1:core:${libs.versions.awesn1.get()}")
+            api("at.asitplus.awesn1:crypto:${libs.versions.awesn1.get()}")
             api("at.asitplus.awesn1:io:${libs.versions.awesn1.get()}")
             api("at.asitplus.awesn1:oids:${libs.versions.awesn1.get()}")
             api(project(":indispensable-asn1"))

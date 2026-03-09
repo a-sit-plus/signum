@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
+
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -7,9 +9,6 @@ import at.asitplus.testballoon.withDataSuites
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val DistinguishedNameTest by testSuite {
     "DistinguishedName test equals and hashCode" - {
