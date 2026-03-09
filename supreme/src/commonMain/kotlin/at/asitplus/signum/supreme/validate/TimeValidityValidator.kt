@@ -21,17 +21,18 @@ class TimeValidityValidator: CertificateChainValidator {
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val date = context.date
         var currentCertIndex = 0
+        val processingChain = context.selectedTrustAnchor?.cert?.let { chain + it } ?: chain
 
-        for (currCert in chain.validationPath) {
+        for (currCert in processingChain.validationPath) {
             currCert.checkValidityAt(date)
 
-            if (currentCertIndex < chain.validationPath.lastIndex) {
-                val childCert = chain.validationPath[currentCertIndex + 1]
+            if (currentCertIndex < processingChain.validationPath.lastIndex) {
+                val childCert = processingChain.validationPath[currentCertIndex + 1]
                 currentCertIndex++
                 wasCertificateIssuedWithinIssuerValidityPeriod(
                     dateOfIssuance = childCert.tbsCertificate.validFrom.instant,
                     issuer = currCert,
-                    chain.size - 1 - currentCertIndex)
+                    processingChain.size - 1 - currentCertIndex)
             }
         }
 

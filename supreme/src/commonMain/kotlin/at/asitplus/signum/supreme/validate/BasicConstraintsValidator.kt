@@ -25,9 +25,10 @@ class BasicConstraintsValidator: CertificateChainValidator {
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var remainingPathLength: UInt? = null
         var currentCertIndex = 0
-        val certPathLen = chain.size
+        val processingChain = context.selectedTrustAnchor?.cert?.let { chain + it } ?: chain
+        val certPathLen = processingChain.size
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
-        for (currCert in chain.validationPath) {
+        for (currCert in processingChain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
                 .add(KnownOIDs.basicConstraints_2_5_29_19)

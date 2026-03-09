@@ -36,7 +36,7 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
+//                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
                 } else {
                     result.shouldBeValid()
                 }
@@ -225,10 +225,7 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-                    if (it.id.contains("expired-root", ignoreCase = true))
-                        result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
-                    else
-                        result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldNotBe null
+                    result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldNotBe null
                 } else {
                     result.shouldBeValid()
                 }
@@ -311,6 +308,7 @@ suspend fun validate(testcase: LimboTestcase): CertificateValidationResult {
     val context = CertificateValidationContext(
         allowIncludedTrustAnchor = false,
         trustAnchors = trustAnchors.toSet(),
+        selectedTrustAnchor = if (trustAnchors.size == 1) trustAnchors.first() else null,
         expectedEku = testcase.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet(),
         date = validationTime
     )

@@ -47,6 +47,8 @@ class CertificateValidationContext(
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
     val allowIncludedTrustAnchor: Boolean = true,
     val trustAnchors: Set<TrustAnchor> = SystemTrustStore,
+    /** use this property to specify which trust anchor to use */
+    var selectedTrustAnchor: TrustAnchor? = null,
     val expectedEku: Set<ObjectIdentifier> = emptySet(),
     /** use this lambda to specify how to handle leaf key usage check */
     val leafKeyUsageCheck: suspend (X509Certificate) -> Unit = { currCert ->

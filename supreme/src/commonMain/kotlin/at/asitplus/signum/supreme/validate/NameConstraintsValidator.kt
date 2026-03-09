@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.validationPath
-
 /**
  * Ensures that each certificate conforms to the permitted and excluded
  * subtrees specified in previous NameConstraints extensions, according to RFC 5280.
@@ -20,9 +19,7 @@ import at.asitplus.signum.indispensable.pki.validationPath
  * property. Callers are responsible for configuring it appropriately
  * before the invocation (typically derived from the selected trust anchor)
  */
-class NameConstraintsValidator(
-    var startingNameConstraints: NameConstraintsExtension? = null
-    ) : CertificateChainValidator {
+class NameConstraintsValidator: CertificateChainValidator {
 
     @ExperimentalPkiApi
     override suspend fun validate(
@@ -31,7 +28,7 @@ class NameConstraintsValidator(
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val certPathLen = chain.size
         var currentCertIndex = 0
-        var previousNameConstraints: NameConstraintsExtension? = startingNameConstraints
+        var previousNameConstraints = context.selectedTrustAnchor?.nameConstraints
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
         for (currCert in chain.validationPath) {
@@ -94,3 +91,4 @@ class NameConstraintsValidator(
         }
     }
 }
+

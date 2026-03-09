@@ -7,6 +7,7 @@ import at.asitplus.signum.SanNotCriticalWithEmptySubjectException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.subjectAltName_2_5_29_17
+import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 
 /**

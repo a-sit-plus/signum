@@ -22,7 +22,7 @@ val NistPkiTestSuite by testSuite{
     testSuite.forEach { testCase ->
         test(testCase.name) {
 
-            val trustAnchors = TrustAnchor.Certificate(
+            val trustAnchor = TrustAnchor.Certificate(
                 X509Certificate.decodeFromPem(testCase.root).getOrThrow()
             )
 
@@ -36,7 +36,7 @@ val NistPkiTestSuite by testSuite{
 
             val context = CertificateValidationContext(
                 allowIncludedTrustAnchor = false,
-                trustAnchors = setOf(trustAnchors),
+                selectedTrustAnchor = trustAnchor,
                 explicitPolicyRequired = testCase.explicitPolicyRequired,
                 initialPolicies = testCase.initialPolicies.map { ObjectIdentifier(it) }.toSet(),
                 anyPolicyInhibited = testCase.anyPolicyInhibited,
@@ -45,7 +45,7 @@ val NistPkiTestSuite by testSuite{
             )
 
             val result = chain.validate(context)
-
+//            if (testCase.name.contains("Valid Policy Mapping Test3 Part 1"))
             if (testCase.isSuccessful) {
                 result.isValid shouldBe true
             } else {

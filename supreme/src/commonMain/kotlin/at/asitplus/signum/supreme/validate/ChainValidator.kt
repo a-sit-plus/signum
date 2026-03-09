@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
+import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validationPath
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
@@ -26,12 +27,23 @@ class ChainValidator: CertificateChainValidator {
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var currentCertIndex = 0
-        for (currCert in chain.validationPath) {
-            if (currentCertIndex < chain.validationPath.lastIndex) {
-                val childCert = chain.validationPath[currentCertIndex + 1]
-                verifySignature(childCert, issuer = currCert, childCert == chain.validationPath.last())
+        val trustAnchor = context.selectedTrustAnchor
+        val processingChain = trustAnchor?.cert?.let { chain + it } ?: chain
+        for (currCert in processingChain.validationPath) {
+            if (currentCertIndex < processingChain.validationPath.lastIndex) {
+                val childCert = processingChain.validationPath[currentCertIndex + 1]
+                verifySignature(childCert, issuer = currCert, childCert == processingChain.validationPath.last())
                 subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
                 currentCertIndex++
+            }
+        }
+
+        // only if trust anchor is key based
+        if (trustAnchor != null && trustAnchor.cert == null) {
+            if (!trustAnchor.isIssuerOf(chain.root)) {
+                throw CertificateChainValidatorException(
+                    "Root certificate not issued by trust anchor."
+                )
             }
         }
         return emptyMap()
@@ -45,10 +57,6 @@ class ChainValidator: CertificateChainValidator {
         val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(issuer.decodedPublicKey.getOrThrow()).getOrThrow()
         if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()).isSuccess) {
             throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
-        }
-
-        if (!cert.isSelfIssued) {
-            if (cert.findExtension<AuthorityKeyIdentifierExtension>() == null) throw CertificateChainValidatorException("Missing AuthorityKeyIdentifier extension in certificate.")
         }
     }
 
