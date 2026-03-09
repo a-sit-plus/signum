@@ -15,6 +15,11 @@ import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.awesn1.crypto.pki.GeneralNames
 import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findIssuerAltNames
 import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findSubjectAltNames
+import at.asitplus.awesn1.crypto.pki.TbsCertificate as RawTbsCertificate
+import at.asitplus.awesn1.crypto.pki.X509Certificate as RawX509Certificate
+import at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier as RawSignatureAlgorithmIdentifier
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo as RawSubjectPublicKeyInfo
+import at.asitplus.signum.indispensable.Awesn1Backed
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
@@ -29,9 +34,8 @@ import kotlinx.serialization.builtins.serializer
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
-data class TbsCertificate
-@Throws(Asn1Exception::class)
-constructor(
+class TbsCertificate internal constructor(
+    override val raw: RawTbsCertificate,
     val version: Int? = 2,
     val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
@@ -43,7 +47,47 @@ constructor(
     val issuerUniqueID: Asn1BitString? = null,
     val subjectUniqueID: Asn1BitString? = null,
     val extensions: List<X509CertificateExtension>? = null,
-) : Asn1Encodable<Asn1Sequence> {
+) : Asn1Encodable<Asn1Sequence>, Awesn1Backed<RawTbsCertificate> {
+
+    @Throws(Asn1Exception::class)
+    constructor(
+        version: Int? = 2,
+        serialNumber: ByteArray,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        issuerName: List<RelativeDistinguishedName>,
+        validFrom: Asn1Time,
+        validUntil: Asn1Time,
+        subjectName: List<RelativeDistinguishedName>,
+        rawPublicKey: Asn1Sequence,
+        issuerUniqueID: Asn1BitString? = null,
+        subjectUniqueID: Asn1BitString? = null,
+        extensions: List<X509CertificateExtension>? = null,
+    ) : this(
+        raw = RawTbsCertificate(
+            version = version,
+            serialNumber = serialNumber,
+            signatureAlgorithm = signatureAlgorithm.toRawSignatureAlgorithmIdentifier(),
+            issuerName = issuerName,
+            validFrom = validFrom,
+            validUntil = validUntil,
+            subjectName = subjectName,
+            subjectPublicKeyInfo = RawSubjectPublicKeyInfo.decodeFromTlv(rawPublicKey),
+            issuerUniqueID = issuerUniqueID,
+            subjectUniqueID = subjectUniqueID,
+            extensions = extensions,
+        ),
+        version = version,
+        serialNumber = serialNumber,
+        signatureAlgorithm = signatureAlgorithm,
+        issuerName = issuerName,
+        validFrom = validFrom,
+        validUntil = validUntil,
+        subjectName = subjectName,
+        rawPublicKey = rawPublicKey,
+        issuerUniqueID = issuerUniqueID,
+        subjectUniqueID = subjectUniqueID,
+        extensions = extensions,
+    )
 
     constructor(
         version: Int? = 2,
@@ -95,37 +139,7 @@ constructor(
 
 
     @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = runRethrowing {
-        Asn1.Sequence {
-            version?.let { +Version(it) }
-            +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
-            +signatureAlgorithm
-            +Asn1.Sequence { issuerName.forEach { +it } }
-
-            +Asn1.Sequence {
-                +validFrom
-                +validUntil
-            }
-
-            +Asn1.Sequence { subjectName.forEach { +it } }
-
-            //subject public key
-            +rawPublicKey
-
-            issuerUniqueID?.let { +(it withImplicitTag ISSUER_UID) }
-            subjectUniqueID?.let { +(it withImplicitTag SUBJECT_UID) }
-
-            extensions?.let {
-                if (it.isNotEmpty()) {
-                    +Asn1.ExplicitlyTagged(EXTENSIONS.tagValue) {
-                        +Asn1.Sequence {
-                            it.forEach { ext -> +ext }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    override fun encodeToTlv() = raw.encodeToTlv()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -223,6 +237,19 @@ constructor(
             } else null
 
             TbsCertificate(
+                raw = RawTbsCertificate(
+                    version = version,
+                    serialNumber = serialNumber,
+                    signatureAlgorithm = sigAlg.toRawSignatureAlgorithmIdentifier(),
+                    issuerName = issuerNames,
+                    validFrom = timestamps.first,
+                    validUntil = timestamps.second,
+                    subjectName = subject,
+                    subjectPublicKeyInfo = RawSubjectPublicKeyInfo.decodeFromTlv(publicKey),
+                    issuerUniqueID = issuerUniqueID,
+                    subjectUniqueID = subjectUniqueID,
+                    extensions = extensions,
+                ),
                 version = version,
                 serialNumber = serialNumber,
                 signatureAlgorithm = sigAlg,
@@ -271,11 +298,28 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 /**
  * Very simple implementation of an X.509 Certificate
  */
-data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
+class X509Certificate internal constructor(
+    override val raw: RawX509Certificate,
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
     val rawSignature: Asn1Primitive,
-) : Asn1PemEncodable<Asn1Sequence> {
+) : Asn1PemEncodable<Asn1Sequence>, Awesn1Backed<RawX509Certificate> {
+
+    @Throws(IllegalArgumentException::class, Asn1Exception::class)
+    constructor(
+        tbsCertificate: TbsCertificate,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        rawSignature: Asn1Primitive,
+    ) : this(
+        raw = RawX509Certificate(
+            tbsCertificate = tbsCertificate.raw,
+            signatureAlgorithm = signatureAlgorithm.toRawSignatureAlgorithmIdentifier(),
+            signatureValue = Asn1BitString.decodeFromTlv(rawSignature),
+        ),
+        tbsCertificate = tbsCertificate,
+        signatureAlgorithm = signatureAlgorithm,
+        rawSignature = rawSignature,
+    )
 
     constructor(
         tbsCertificate: TbsCertificate,
@@ -287,10 +331,24 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     override val pemLabel: String = EB_STRINGS.DEFAULT
 
     @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = Asn1.Sequence {
-        +tbsCertificate
-        +signatureAlgorithm
-        +rawSignature
+    override fun encodeToTlv() = raw.encodeToTlv()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is X509Certificate) return false
+
+        if (tbsCertificate != other.tbsCertificate) return false
+        if (signatureAlgorithm != other.signatureAlgorithm) return false
+        if (rawSignature != other.rawSignature) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = tbsCertificate.hashCode()
+        result = 31 * result + signatureAlgorithm.hashCode()
+        result = 31 * result + rawSignature.hashCode()
+        return result
     }
 
     /**
@@ -326,10 +384,36 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509Certificate = src.decodeRethrowing {
-            val tbs = TbsCertificate.decodeFromTlv(next().asSequence())
-            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
+            val tbsSequence = next().asSequence()
+            val tbsRaw = RawTbsCertificate.decodeFromTlv(tbsSequence)
+            val tbs = TbsCertificate(
+                raw = tbsRaw,
+                version = tbsRaw.version,
+                serialNumber = tbsRaw.serialNumber,
+                signatureAlgorithm = X509SignatureAlgorithmDescription.decodeFromTlv(tbsRaw.signatureAlgorithm.encodeToTlv()),
+                issuerName = tbsRaw.issuerName,
+                validFrom = tbsRaw.validFrom,
+                validUntil = tbsRaw.validUntil,
+                subjectName = tbsRaw.subjectName,
+                rawPublicKey = tbsRaw.subjectPublicKeyInfo.encodeToTlv(),
+                issuerUniqueID = tbsRaw.issuerUniqueID,
+                subjectUniqueID = tbsRaw.subjectUniqueID,
+                extensions = tbsRaw.extensions,
+            )
+            val sigAlgRaw = RawSignatureAlgorithmIdentifier.decodeFromTlv(next().asSequence())
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(sigAlgRaw.encodeToTlv())
             val signature = next().asPrimitive()
-            X509Certificate(tbs, sigAlg, signature)
+            if (hasNext()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
+            X509Certificate(
+                raw = RawX509Certificate(
+                    tbsCertificate = tbsRaw,
+                    signatureAlgorithm = sigAlgRaw,
+                    signatureValue = Asn1BitString.decodeFromTlv(signature),
+                ),
+                tbsCertificate = tbs,
+                signatureAlgorithm = sigAlg,
+                rawSignature = signature,
+            )
         }
 
         /**
@@ -360,3 +444,6 @@ object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, 
         else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
     }
 )
+
+private fun X509SignatureAlgorithmDescription.toRawSignatureAlgorithmIdentifier() =
+    RawSignatureAlgorithmIdentifier(oid, parameters)

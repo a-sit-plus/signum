@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.PrivateKeyInfo
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
@@ -45,7 +46,9 @@ sealed interface CryptoPrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable
     sealed class Impl(
         /** optional attributes relevant when PKCS#8-encoding a private key */
         override val attributes: List<Asn1Element>?
-    ) : CryptoPrivateKey {
+    ) : CryptoPrivateKey, Awesn1Backed<PrivateKeyInfo> {
+        internal var rawOverride: PrivateKeyInfo? = null
+
         override val pemLabel get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
 
         /**
@@ -71,38 +74,37 @@ sealed interface CryptoPrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable
          */
 
         @Throws(Asn1Exception::class)
-        override fun encodeToTlv() = runRethrowing {
-            Asn1.Sequence {
-                +Asn1.Int(0)
-                +Asn1.Sequence {
-                    when (this@Impl) {
-                        is RSA -> {
-                            +RSA.oid
-                            +Asn1.Null()
-                        }
+        override fun encodeToTlv() = raw.encodeToTlv()
 
-                        is EC.WithPublicKey -> {
-                            +EC.oid
-                            +curve.oid
-                        }
+        override val raw: PrivateKeyInfo
+            get() = rawOverride ?: runRethrowing {
+                PrivateKeyInfo(
+                    version = 0,
+                    privateKeyAlgorithm = Asn1.Sequence {
+                        when (this@Impl) {
+                            is RSA -> {
+                                +RSA.oid
+                                +Asn1.Null()
+                            }
 
-                        is EC.WithoutPublicKey ->
-                            throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
-                    }
-                }
-                +Asn1.OctetStringEncapsulating {
-                    when (this@Impl) {
-                        is RSA -> +asPKCS1.encodeToTlv()
-                        is EC -> +asSEC1.encodeToTlv()
-                    }
-                }
-                attributes?.let {
-                    +(Asn1.SetOf {
-                        it.forEach { attr -> +attr }
-                    } withImplicitTag 0uL)
-                }
+                            is EC.WithPublicKey -> {
+                                +EC.oid
+                                +curve.oid
+                            }
+
+                            is EC.WithoutPublicKey ->
+                                throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
+                        }
+                    },
+                    privateKey = Asn1.OctetStringEncapsulating {
+                        when (this@Impl) {
+                            is RSA -> +asPKCS1.encodeToTlv()
+                            is EC -> +asSEC1.encodeToTlv()
+                        }
+                    },
+                    attributes = attributes
+                )
             }
-        }
     }
 
     /**
@@ -540,17 +542,17 @@ sealed interface CryptoPrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable
 
     object FromPKCS8 : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> {
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = src.decodeRethrowing<CryptoPrivateKey> {
-            require(next().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
-            val (algIdentifier, algParams) = next().asSequence().decodeRethrowing {
+        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey {
+            val raw = PrivateKeyInfo.decodeFromTlv(src)
+            require(raw.version == 0) { "PKCS#8 Private Key VERSION must be 0" }
+            val (algIdentifier, algParams) = raw.privateKeyAlgorithm.decodeRethrowing {
                 ObjectIdentifier.decodeFromTlv(next().asPrimitive()) to next().asPrimitive()
             }
 
-            val privateKeyStructure = next().asEncapsulatingOctetString().decodeRethrowing { next().asSequence() }
-            val attributes: List<Asn1Element>? =
-                if (hasNext()) next().asStructure().assertTag(0uL).children
-                else null
-            when (algIdentifier) {
+            val privateKeyStructure = raw.privateKey.asEncapsulatingOctetString().decodeRethrowing { next().asSequence() }
+            val attributes = raw.attributes
+
+            val decoded = when (algIdentifier) {
                 RSA.oid -> {
                     algParams.readNull()
                     RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
@@ -568,6 +570,8 @@ sealed interface CryptoPrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable
 
                 else -> throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
             }
+            (decoded as? Impl)?.rawOverride = raw
+            return decoded
         }
     }
 }

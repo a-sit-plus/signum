@@ -1,6 +1,9 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.BitStringSignatureValue
+import at.asitplus.awesn1.crypto.EcdsaSignatureValue
+import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.decodeToBigInteger
 import at.asitplus.signum.indispensable.asn1.encodeToAsn1Primitive
@@ -31,7 +34,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 
 @Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
-sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
+sealed interface CryptoSignature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureValue> {
 
 
         /**
@@ -92,7 +95,14 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             require(s.isPositive) { "s must be positive" }
         }
 
-        override fun encodeToTlv() = Asn1.Sequence { +r.encodeToAsn1Primitive(); +s.encodeToAsn1Primitive() }
+        override val raw: SignatureValue by lazy {
+            EcdsaSignatureValue(
+                r.toAsn1Integer() as Asn1Integer.Positive,
+                s.toAsn1Integer() as Asn1Integer.Positive
+            )
+        }
+
+        override fun encodeToTlv() = (raw as EcdsaSignatureValue).encodeToTlv()
 
         /**
          * Two signatures are considered equal if `r` and `s` are equal.
@@ -229,10 +239,16 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         constructor(rawBytes: ByteArray) : this(rawBytes, null)
         constructor(x509Element: Asn1Primitive) : this(null, x509Element)
 
-        /** the signature encoded as an ASN.1 BIT STRING */
-        val signature: Asn1Primitive by x509Element orLazy {
-            Asn1BitString(rawByteArray).encodeToTlv()
+        override val raw: SignatureValue by lazy {
+            when (x509Element) {
+                null -> BitStringSignatureValue(Asn1BitString(rawByteArray))
+                else -> BitStringSignatureValue(x509Element.asAsn1BitString())
+            }
         }
+
+        /** the signature encoded as an ASN.1 BIT STRING */
+        val signature: Asn1Primitive
+            get() = (raw as BitStringSignatureValue).encodeToTlv()
 
         override fun encodeToTlv() = signature
 

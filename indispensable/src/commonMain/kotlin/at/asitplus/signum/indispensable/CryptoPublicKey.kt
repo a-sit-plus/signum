@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.awesn1.encoding.Asn1.BitString
 import at.asitplus.awesn1.encoding.Asn1.Null
@@ -23,7 +24,7 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn1Backed<SubjectPublicKeyInfo> {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -43,25 +44,7 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
      */
     abstract val iosEncoded: ByteArray
 
-    override fun encodeToTlv() = when (this) {
-        is EC -> Asn1.Sequence {
-            +Asn1.Sequence {
-                +oid
-                +curve.oid
-            }
-            +BitString(iosEncoded)
-        }
-
-        is RSA -> {
-            Asn1.Sequence {
-                +Asn1.Sequence {
-                    +oid
-                    +Null()
-                }
-                +BitString(iosEncoded)
-            }
-        }
-    }
+    override fun encodeToTlv() = raw.encodeToTlv()
 
 
     companion object : LabelPemDecodable<Asn1Sequence, CryptoPublicKey>(
@@ -110,39 +93,37 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
 
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = src.decodeRethrowing {
-            if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
-            val keyInfo = next() as Asn1Sequence
+        override fun doDecode(src: Asn1Sequence): CryptoPublicKey {
+            val raw = SubjectPublicKeyInfo.decodeFromTlv(src)
+            val keyInfo = raw.algorithmIdentifier
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
-
-            when (val oid = (keyInfo.children.first() as Asn1Primitive).readOid()) {
+            return when (val oid = (keyInfo.children.first() as Asn1Primitive).readOid()) {
                 EC.oid -> {
                     val curveOid = (keyInfo.children[1] as Asn1Primitive).readOid()
                     val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
-                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
+                    val bitString = raw.subjectPublicKey
                     if (!bitString.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLength.bytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    EC.fromUncompressed(curve, x, y)
+                    EC.fromUncompressed(curve, x, y).apply { rawOverride = raw }
                 }
 
                 RSA.oid -> {
                     (keyInfo.children[1] as Asn1Primitive).readNull()
-                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
+                    val bitString = raw.subjectPublicKey
                     Asn1Element.parse(bitString.rawBytes).asSequence().decodeRethrowing {
                         RSA(
                             (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive,
                             (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                        )
+                        ).apply { rawOverride = raw }
                     }
                 }
 
                 else -> throw Asn1Exception("Unsupported Key Type: $oid")
-
             }
         }
 
@@ -175,6 +156,7 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
         /** public exponent */
         val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
+        internal var rawOverride: SubjectPublicKeyInfo? = null
 
         override val pemLabel: String = PEM_BOUNDARY
 
@@ -191,6 +173,15 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
         constructor(n: BigInteger, e: UInt) : this(n.toAsn1Integer(), Asn1Integer(e))
 
         override val oid = RSA.oid
+
+        override val raw: SubjectPublicKeyInfo
+            get() = rawOverride ?: SubjectPublicKeyInfo(
+                algorithmIdentifier = Asn1.Sequence {
+                    +oid
+                    +Null()
+                },
+                subjectPublicKey = Asn1BitString(pkcsEncoded)
+            )
 
         /**
          * enum of supported RSA key sizes. For sanity checks!
@@ -266,6 +257,7 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true
     ) : CryptoPublicKey(), KeyAgreementPublicValue.ECDH {
+        internal var rawOverride: SubjectPublicKeyInfo? = null
 
         override fun asCryptoPublicKey() = this
 
@@ -279,6 +271,15 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
         val yCompressed get() = publicPoint.yCompressed
 
         override val oid = EC.oid
+
+        override val raw: SubjectPublicKeyInfo
+            get() = rawOverride ?: SubjectPublicKeyInfo(
+                algorithmIdentifier = Asn1.Sequence {
+                    +oid
+                    +curve.oid
+                },
+                subjectPublicKey = Asn1BitString(iosEncoded)
+            )
 
         /**
          * ANSI X9.63 Encoding as used by iOS
