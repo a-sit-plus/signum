@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.Asn1String
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -10,9 +11,9 @@ import de.infix.testBalloon.framework.core.testScope
 
 val Asn1StringTest by testSuite {
 
-    val utf8 = at.asitplus.awesn1.Asn1String.UTF8("uÄasdiu3")
+    val utf8 = Asn1String.UTF8("uÄasdiu3")
     val universal = Asn1String.Universal("adsa4")
-    val visible = at.asitplus.awesn1.Asn1String.Visible("hkjjhk7")
+    val visible = Asn1String.Visible("hkjjhk7")
     val ia5 = Asn1String.IA5("m5z5zgth")
     val teletex = Asn1String.Teletex("sdf45")
     val bmp = Asn1String.BMP("asdf")

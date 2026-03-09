@@ -30,6 +30,7 @@ import kotlinx.io.Source
 import kotlinx.io.readByteArray
 import kotlin.experimental.and
 import kotlin.experimental.or
+import kotlin.jvm.JvmInline
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 

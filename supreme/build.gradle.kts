@@ -65,6 +65,8 @@ kotlin {
         }
 
         commonTest.dependencies {
+
+            api(serialization("json"))
             implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
         }
 

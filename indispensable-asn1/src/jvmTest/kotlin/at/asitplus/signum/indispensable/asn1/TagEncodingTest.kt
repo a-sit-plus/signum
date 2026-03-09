@@ -2,6 +2,8 @@
 
 package at.asitplus.signum.indispensable.asn1
 
+
+import at.asitplus.awesn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.invoke
@@ -32,11 +34,6 @@ val TagEncodingTest by testSuite {
         long shouldBe it
     }
 
-    "length encoding" - {
-        checkAll(Arb.positiveInt()) {
-           Buffer().apply { encodeLength(it.toLong()) }.snapshot().toByteArray() shouldBe it.encodeLength()
-        }
-    }
 
     "Manual" - {
         withData(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL) {

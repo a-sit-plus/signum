@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.memDumpView as awesn1MemDumpView
 import at.asitplus.awesn1.readOid as awesn1ReadOid
 import at.asitplus.awesn1.toBitSet as awesn1ToBitSet
@@ -329,67 +330,67 @@ fun Asn1Primitive.readOid(): ObjectIdentifier = awesn1ReadOid()
     "Moved to at.asitplus.awesn1.Asn1String.UTF8(value).",
     ReplaceWith("Asn1String.UTF8(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun UTF8(value: String): Asn1String = at.asitplus.awesn1.Asn1String.UTF8(value)
+fun UTF8(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.UTF8(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Universal(value).",
     ReplaceWith("Asn1String.Universal(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Universal(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Universal(value)
+fun Universal(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Universal(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Visible(value).",
     ReplaceWith("Asn1String.Visible(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Visible(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Visible(value)
+fun Visible(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Visible(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.IA5(value).",
     ReplaceWith("Asn1String.IA5(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun IA5(value: String): Asn1String = at.asitplus.awesn1.Asn1String.IA5(value)
+fun IA5(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.IA5(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Teletex(value).",
     ReplaceWith("Asn1String.Teletex(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Teletex(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Teletex(value)
+fun Teletex(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Teletex(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.BMP(value).",
     ReplaceWith("Asn1String.BMP(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun BMP(value: String): Asn1String = at.asitplus.awesn1.Asn1String.BMP(value)
+fun BMP(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.BMP(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.General(value).",
     ReplaceWith("Asn1String.General(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun General(value: String): Asn1String = at.asitplus.awesn1.Asn1String.General(value)
+fun General(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.General(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Graphic(value).",
     ReplaceWith("Asn1String.Graphic(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Graphic(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Graphic(value)
+fun Graphic(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Graphic(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Unrestricted(value).",
     ReplaceWith("Asn1String.Unrestricted(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Unrestricted(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Unrestricted(value)
+fun Unrestricted(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Unrestricted(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Videotex(value).",
     ReplaceWith("Asn1String.Videotex(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Videotex(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Videotex(value)
+fun Videotex(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Videotex(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Printable(value).",
     ReplaceWith("Asn1String.Printable(value)", "at.asitplus.awesn1.Asn1String")
 )
-fun Printable(value: String): Asn1String = at.asitplus.awesn1.Asn1String.Printable(value)
+fun Printable(value: String): at.asitplus.awesn1.Asn1String = at.asitplus.awesn1.Asn1String.Printable(value)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.Asn1String.Numeric(value).",

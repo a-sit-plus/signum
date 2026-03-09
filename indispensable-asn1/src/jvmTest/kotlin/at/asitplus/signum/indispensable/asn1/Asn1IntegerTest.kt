@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
@@ -57,53 +58,7 @@ val Asn1IntegerTest by testSuite {
             it.magnitude shouldBe byteArrayOf(0x00)
         }
     }
-    "UVarInt Operations" - {
-        "Fixed values" - {
-            "XOR producing two zero high bytes" {
-                (
-                        VarUInt(ubyteArrayOf(0x80u, 0x7Fu, 0x03u)) xor
-                                VarUInt(ubyteArrayOf(0x80u, 0x7Fu, 0x05u))
-                        ).words shouldBe ubyteArrayOf(0x06u)
-            }
-            "AND producing two zero high bytes" {
-                (
-                        VarUInt(ubyteArrayOf(0x80u, 0x4Fu, 0x15u)) and
-                                VarUInt(ubyteArrayOf(0x03u, 0xA0u, 0x34u))
-                        ).words shouldBe ubyteArrayOf(0x14u)
-            }
-            "Left Shift producing a zero high byte" {
-                VarUInt(ubyteArrayOf(0x18u, 0x43u)).shl(3).words shouldBe ubyteArrayOf(0xC2u, 0x18u)
-            }
-            "Right Shift producing a zero high byte" {
-                VarUInt(ubyteArrayOf(0x05u, 0xFCu)).shr(3).words shouldBe ubyteArrayOf(0xBFu)
-            }
-        }
-        "Random values" - {
-            checkAll(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) - {
-                val bigint = JavaBigInteger(1, it)
-                val varuint = VarUInt(it)
-                "Left Bitshift" - {
-                    checkAll(iterations = 50, Arb.nonNegativeInt(max = 128)) { i ->
-                        varuint.shl(i).words shouldBe bigint.shiftLeft(i).toByteArray().stripLeadingZeros()
-                    }
-                }
-                "Right Bitshift" - {
-                    checkAll(iterations = 50, Arb.nonNegativeInt()) { i ->
-                        varuint.shr(i).words shouldBe bigint.shiftRight(i).toByteArray().stripLeadingZeros()
-                    }
-                }
-                "Binary Operators" - {
-                    checkAll(iterations = 10, Arb.byteArray(Arb.int(100, 200), Arb.byte())) { it2 ->
-                        val bigint2 = JavaBigInteger(1, it2)
-                        val varuint2 = VarUInt(it2)
-                        varuint.xor(varuint2).words shouldBe bigint.xor(bigint2).toByteArray().stripLeadingZeros()
-                        varuint.or(varuint2).words shouldBe bigint.or(bigint2).toByteArray().stripLeadingZeros()
-                        varuint.and(varuint2).words shouldBe bigint.and(bigint2).toByteArray().stripLeadingZeros()
-                    }
-                }
-            }
-        }
-    }
+
     "Java BigInteger from and to Asn1Integer" - {
         "Specific values" - {
             withData(

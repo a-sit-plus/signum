@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest

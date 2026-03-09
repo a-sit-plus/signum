@@ -22,6 +22,7 @@ kotlin {
             dependencies {
                 api(project(":indispensable"))
                 implementation(project(":internals"))
+                api(serialization("json"))
                 api(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around
             }

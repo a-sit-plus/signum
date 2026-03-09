@@ -1,5 +1,9 @@
 package at.asitplus.signum.indispensable.asn1
 
+
+import at.asitplus.awesn1.Asn1Element
+
+import at.asitplus.awesn1.Asn1Real
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToDouble
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
@@ -48,27 +52,6 @@ val RealTest by testSuite {
     }
 
     "Special values" - {
-         {
-            val number = "1.1897314953572317650857593266280070162123456789009876543456789098765432123456789876543212345678987654323456789876532345678765432345678876543234567"
-            val bigDecimal = BigDecimal.parseString(number)
-            bigDecimal.precision shouldBeGreaterThan 64L
-            val wrongScaledMantissa = bigDecimal.significand.toAsn1Integer()
-            val exponent = bigDecimal.exponent
-            bigDecimal.toString() shouldBe number
-            val encoded = Asn1Real.Finite(wrongScaledMantissa, exponent).encodeToDer()
-            Asn1Real.decodeFromDer(encoded).apply {
-                this.shouldBeInstanceOf<Asn1Real.Finite>()
-                this.normalizedMantissa shouldBe wrongScaledMantissa
-                this.normalizedExponent shouldBe exponent
-
-                val real = Json.encodeToString(this)
-                println(real)
-                Json.decodeFromString<Asn1Real>(real) shouldBe this
-            }
-
-
-        }
-
         withData(
             0.0 to byteArrayOf(9, 0),
             Double.NEGATIVE_INFINITY to byteArrayOf(9, 1, 0x41),

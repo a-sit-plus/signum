@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.indispensable.encodeToPEM
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite

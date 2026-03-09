@@ -1,11 +1,19 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.io.decodeFromDer
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toJcaCertificate
+import at.asitplus.signum.indispensable.toKmpCertificate
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -57,7 +65,7 @@ val X509CertificateJvmTest by testSuite {
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
-        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm.encoded)
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 

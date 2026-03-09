@@ -5,14 +5,17 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.awesn1.PemBlock
+import at.asitplus.awesn1.Asn1PemDecodable as Awesn1Asn1PemDecodable
+import at.asitplus.awesn1.Asn1PemEncodable as Awesn1Asn1PemEncodable
+import kotlin.jvm.JvmInline
 import at.asitplus.awesn1.decodeFromPem as awesn1DecodeFromPem
-import at.asitplus.awesn1.encodeToPem as awesn1EncodeToPem
 import at.asitplus.awesn1.decodeFromTlvOrNull as awesn1DecodeFromTlvOrNull
 import at.asitplus.awesn1.encoding.decodeFromDer as awesn1DecodeFromDer
 import at.asitplus.awesn1.encoding.decodeFromDerOrNull as awesn1DecodeFromDerOrNull
 import at.asitplus.awesn1.encoding.encodeToDer as awesn1EncodeToDer
 import at.asitplus.awesn1.encoding.encodeToDerOrNull as awesn1EncodeToDerOrNull
 import at.asitplus.awesn1.encoding.encodeToTlvOrNull as awesn1EncodeToTlvOrNull
+import at.asitplus.awesn1.encodeToPem as awesn1EncodeToPem
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.encoding.encodeToTlvOrNull().",
@@ -81,8 +84,11 @@ fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromDerSaf
     "Moved to awesn1 PEM support.",
     ReplaceWith("at.asitplus.awesn1.Asn1PemEncodable")
 )
-interface PemEncodable<A : Asn1Element> : Asn1Encodable<A> {
+interface PemEncodable<A : Asn1Element> : Asn1Encodable<A>, Awesn1Asn1PemEncodable<A> {
     val canonicalPEMBoundary: String
+
+    override val pemLabel: String
+        get() = canonicalPEMBoundary
 }
 
 private sealed interface PemDecoder<out T> {
@@ -104,7 +110,8 @@ private sealed interface PemDecoder<out T> {
     ReplaceWith("at.asitplus.awesn1.Asn1PemDecodable")
 )
 abstract class PemDecodable<A : Asn1Element, out T : PemEncodable<A>>
-private constructor(private val decoders: Map<String, PemDecoder<T>>) : Asn1Decodable<A, T> {
+private constructor(private val decoders: Map<String, PemDecoder<T>>) : Asn1Decodable<A, T>,
+    Awesn1Asn1PemDecodable<A, T> {
 
     constructor(vararg ebStrings: String) : this(ebStrings.associateWith { PemDecoder.Default })
 
@@ -116,12 +123,16 @@ private constructor(private val decoders: Map<String, PemDecoder<T>>) : Asn1Deco
         ReplaceWith("at.asitplus.awesn1.decodeFromPem(src)")
     )
     fun decodeFromPem(src: String): KmmResult<T> = catching {
-        val pemBlock = awesn1DecodeFromPem(src)
-        val decoder = decoders[pemBlock.label]
-            ?: throw IllegalArgumentException("Unknown encapsulation boundary string ${pemBlock.label}")
-        when (decoder) {
-            PemDecoder.Default -> decodeFromDer(pemBlock.payload)
-            is PemDecoder.Real<T> -> decoder.fn(pemBlock.payload)
+        val pemBlock: PemBlock = at.asitplus.awesn1.decodeFromPem(src)
+        this@PemDecodable.decodeFromPem(pemBlock)
+    }
+
+    override fun decodeFromPem(src: PemBlock): T {
+        val decoder = decoders[src.label]
+            ?: throw IllegalArgumentException("Unknown encapsulation boundary string ${src.label}")
+        return when (decoder) {
+            PemDecoder.Default -> super<Awesn1Asn1PemDecodable>.decodeFromPem(src)
+            is PemDecoder.Real<T> -> decoder.fn(src.payload)
         }
     }
 }
@@ -132,6 +143,4 @@ private constructor(private val decoders: Map<String, PemDecoder<T>>) : Asn1Deco
         "at.asitplus.awesn1.encodeToPem(at.asitplus.awesn1.PemBlock(label = canonicalPEMBoundary, payload = at.asitplus.awesn1.encoding.encodeToDer(this)))"
     )
 )
-fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching {
-    awesn1EncodeToPem(PemBlock(label = canonicalPEMBoundary, payload = encodeToDer()))
-}
+fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching { awesn1EncodeToPem() }

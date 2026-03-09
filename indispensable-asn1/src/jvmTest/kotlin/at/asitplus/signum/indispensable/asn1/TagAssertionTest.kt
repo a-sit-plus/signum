@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.assertTag
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.minus

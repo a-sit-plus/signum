@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.awesn1.encoding.decodeFromDerOrNull
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm

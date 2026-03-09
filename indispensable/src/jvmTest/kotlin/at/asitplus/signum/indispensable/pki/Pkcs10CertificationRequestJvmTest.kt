@@ -1,8 +1,15 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1EncapsulatingOctetString
+import at.asitplus.awesn1.Asn1Primitive
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.extKeyUsage
+import at.asitplus.awesn1.keyUsage
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize

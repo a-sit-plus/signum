@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Real
-import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.awesn1.TagClass
 import at.asitplus.awesn1.encoding.asAsn1BitString as awesn1AsAsn1BitString
 import at.asitplus.awesn1.encoding.asAsn1String as awesn1AsAsn1String
@@ -55,6 +54,9 @@ import at.asitplus.awesn1.encoding.decodeToUtf8String as awesn1DecodeToUtf8Strin
 import at.asitplus.awesn1.encoding.decodeToVideotexString as awesn1DecodeToVideotexString
 import at.asitplus.awesn1.encoding.decodeToVisibleString as awesn1DecodeToVisibleString
 import at.asitplus.awesn1.encoding.decodeUtcTimeFromAsn1ContentBytes as awesn1DecodeUtcTimeFromAsn1ContentBytes
+import at.asitplus.awesn1.encoding.parse as awesn1Parse
+import at.asitplus.awesn1.encoding.parseAll as awesn1ParseAll
+import at.asitplus.awesn1.encoding.parseFirst as awesn1ParseFirst
 import at.asitplus.awesn1.encoding.readNull as awesn1ReadNull
 import at.asitplus.awesn1.encoding.readNullOrNull as awesn1ReadNullOrNull
 import at.asitplus.awesn1.io.readAsn1Element as awesn1ReadAsn1Element
@@ -77,7 +79,7 @@ fun at.asitplus.awesn1.Asn1Element.Companion.parse(input: ByteIterator): Asn1Ele
 )
 @Throws(Asn1Exception::class)
 fun at.asitplus.awesn1.Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
-    at.asitplus.awesn1.Asn1Element.parse(source)
+    awesn1Parse(source)
 
 @Deprecated(
     "Use a ByteArray or a kotlinx.io Source directly instead.",
@@ -93,7 +95,7 @@ fun at.asitplus.awesn1.Asn1Element.Companion.parseAll(input: ByteIterator): List
 )
 @Throws(Asn1Exception::class)
 fun at.asitplus.awesn1.Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> =
-    at.asitplus.awesn1.Asn1Element.parseAll(source)
+    awesn1ParseAll(source)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.encoding.parseFirst(source).",
@@ -101,7 +103,7 @@ fun at.asitplus.awesn1.Asn1Element.Companion.parseAll(source: ByteArray): List<A
 )
 @Throws(Asn1Exception::class)
 fun at.asitplus.awesn1.Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteArray> =
-    at.asitplus.awesn1.Asn1Element.parseFirst(source)
+    awesn1ParseFirst(source)
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.io.readFullyToAsn1Elements().",
@@ -244,7 +246,7 @@ inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: at.asitplus.awesn1.Asn1E
     "Moved to at.asitplus.awesn1.encoding.asAsn1String().",
     ReplaceWith("at.asitplus.awesn1.encoding.asAsn1String(this)")
 )
-fun Asn1Primitive.asAsn1String(): Asn1String = awesn1AsAsn1String()
+fun Asn1Primitive.asAsn1String(): at.asitplus.awesn1.Asn1String = awesn1AsAsn1String()
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.encoding.decodeToUtf8String().",

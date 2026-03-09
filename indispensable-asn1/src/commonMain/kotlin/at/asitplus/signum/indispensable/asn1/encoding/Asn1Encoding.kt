@@ -17,7 +17,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Real
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1Set
-import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.BitSet
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.TagClass

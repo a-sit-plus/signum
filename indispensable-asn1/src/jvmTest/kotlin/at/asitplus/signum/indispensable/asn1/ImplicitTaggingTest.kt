@@ -1,7 +1,10 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
-import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.without
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.Asn1Element.Tag
+import at.asitplus.awesn1.Asn1Element.Tag.Template.Companion.withClass
+import at.asitplus.awesn1.Asn1Element.Tag.Template.Companion.without
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.testballoon.checkAllSuites
 import at.asitplus.testballoon.invoke
@@ -171,10 +174,8 @@ val ImplicitTaggingTest by testSuite {
 
                 }
 
-
             }
         }
     }
-
 
 }

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.BitSet
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -10,9 +11,9 @@ import de.infix.testBalloon.framework.core.testScope
 
 val Asn1BitStringTest by testSuite {
 
-    val bitSet1 = BitSet.fromBitString("011011100101110111")
-    val bitSet2 = BitSet.fromBitString("011011100101110111")
-    val bitSet3 = BitSet.fromBitString("011011100101110101")
+    val bitSet1 = BitSet.fromString("011011100101110111")
+    val bitSet2 = BitSet.fromString("011011100101110111")
+    val bitSet3 = BitSet.fromString("011011100101110101")
 
     "Bit String Test" {
         val fromBitSet1 = Asn1BitString(bitSet1)
