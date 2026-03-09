@@ -13,6 +13,9 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+
 /** DSL for configuring a signing key.
  *
  * Defaults to an elliptic-curve key with a reasonable default configuration.

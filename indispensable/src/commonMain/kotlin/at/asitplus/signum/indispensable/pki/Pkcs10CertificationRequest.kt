@@ -19,6 +19,11 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.requireSupported
 
+@Deprecated(
+    "Renamed to CertificationRequestInfo.",
+    ReplaceWith("CertificationRequestInfo", "at.asitplus.signum.indispensable.CertificationRequestInfo")
+)
+typealias TbsCertificationRequest = CertificationRequestInfo
 /**
  * The meat of a PKCS#10 Certification Request:
  * The structure that gets signed
@@ -27,12 +32,8 @@ import at.asitplus.signum.indispensable.requireSupported
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */
-class TbsCertificationRequest internal constructor(
+class CertificationRequestInfo internal constructor(
     override val raw: RawPkcs10CertificationRequestInfo,
-    val version: Int = 0,
-    val subjectName: List<RelativeDistinguishedName>,
-    val publicKey: CryptoPublicKey,
-    val attributes: List<Pkcs10CertificationRequestAttribute> = listOf()
 ) : Asn1Encodable<Asn1Sequence>, Awesn1Backed<RawPkcs10CertificationRequestInfo> {
 
     @Throws(Asn1Exception::class)
@@ -45,14 +46,14 @@ class TbsCertificationRequest internal constructor(
         raw = RawPkcs10CertificationRequestInfo(
             version = version,
             subjectName = subjectName,
-            publicKey = RawSubjectPublicKeyInfo.decodeFromTlv(publicKey.encodeToTlv()),
+            publicKey = publicKey.raw,
             attributes = attributes
-        ),
-        version = version,
-        subjectName = subjectName,
-        publicKey = publicKey,
-        attributes = attributes
+        )
     )
+    val version: Int get() = raw.version
+    val subjectName: List<RelativeDistinguishedName> get() = raw.subjectName
+    val publicKey: CryptoPublicKey get() = CryptoPublicKey.decodeFromTlv(raw.publicKey.encodeToTlv()) //TODO
+    val attributes: List<Pkcs10CertificationRequestAttribute> = raw.attributes
 
     /**
      * Convenience constructor for adding [X509CertificateExtension]`s` to a CSR (in addition to generic attributes
@@ -101,28 +102,9 @@ class TbsCertificationRequest internal constructor(
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
-            val version = (next() as Asn1Primitive).decodeToInt()
-            val subject = (next() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next() as Asn1Sequence)
-            val attributes = if (hasNext()) {
-                (next() as Asn1ExplicitlyTagged).verifyTag(0u)
-                    .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
-            } else null
-            TbsCertificationRequest(
-                raw = RawPkcs10CertificationRequestInfo(
-                    version = version,
-                    subjectName = subject,
-                    publicKey = RawSubjectPublicKeyInfo.decodeFromTlv(cryptoPublicKey.encodeToTlv()),
-                    attributes = attributes ?: emptyList(),
-                ),
-                version = version,
-                subjectName = subject,
-                publicKey = cryptoPublicKey,
-                attributes = attributes ?: emptyList(),
-            )
+        override fun doDecode(src: Asn1Sequence): TbsCertificationRequest {
+            val raw = RawPkcs10CertificationRequestInfo.decodeFromTlv(src)
+            return TbsCertificationRequest(                raw = raw            )
         }
     }
 }
@@ -131,6 +113,10 @@ class TbsCertificationRequest internal constructor(
 /**
  * Very simple implementation of a PKCS#10 Certification Request
  */
+@Deprecated(
+    "Renamed to CertificationRequest.",
+    ReplaceWith("CertificationRequest", "at.asitplus.signum.indispensable.CertificationRequest")
+)
 class Pkcs10CertificationRequest internal constructor(
     override val raw: RawPkcs10CertificationRequest,
     val tbsCsr: TbsCertificationRequest,
@@ -201,30 +187,18 @@ class Pkcs10CertificationRequest internal constructor(
             const val LEGACY = "NEW CERTIFICATE REQUEST"
         }
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = src.decodeRethrowing {
-            val tbsSequence = next() as Asn1Sequence
-            val tbsRaw = RawPkcs10CertificationRequestInfo.decodeFromTlv(tbsSequence)
-            val publicKey = CryptoPublicKey.decodeFromTlv(tbsRaw.publicKey.encodeToTlv())
+        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest {
+            val raw = RawPkcs10CertificationRequest.decodeFromTlv(src)
+            val tbsRaw = raw.certificationRequestInfo
             val tbsCsr = TbsCertificationRequest(
                 raw = tbsRaw,
-                version = tbsRaw.version,
-                subjectName = tbsRaw.subjectName,
-                publicKey = publicKey,
-                attributes = tbsRaw.attributes,
             )
-            val sigAlgRaw = RawSignatureAlgorithmIdentifier.decodeFromTlv(next() as Asn1Sequence)
-            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(sigAlgRaw.encodeToTlv())
-            val signature = next() as Asn1Primitive
-            if (hasNext()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
-            Pkcs10CertificationRequest(
-                raw = RawPkcs10CertificationRequest(
-                    certificationRequestInfo = tbsRaw,
-                    signatureAlgorithm = sigAlgRaw,
-                    signatureValue = Asn1BitString.decodeFromTlv(signature),
-                ),
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(raw.signatureAlgorithm.encodeToTlv())
+            return Pkcs10CertificationRequest(
+                raw = raw,
                 tbsCsr = tbsCsr,
                 signatureAlgorithm = sigAlg,
-                rawSignature = signature,
+                rawSignature = raw.signatureValue.encodeToTlv(),
             )
         }
     }

@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer

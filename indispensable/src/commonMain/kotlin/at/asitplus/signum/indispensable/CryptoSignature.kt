@@ -33,8 +33,14 @@ import kotlinx.serialization.encoding.Encoder
  * Allows simple ASN1 - Raw transformation of signature values
  */
 
-@Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
-sealed interface CryptoSignature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureValue> {
+@Deprecated(
+    "Renamed to Signature.",
+    ReplaceWith("Signature", "at.asitplus.signum.indispensable.Signature")
+)
+typealias CryptoSignature = Signature
+
+@Serializable(with = Signature.CryptoSignatureSerializer::class)
+sealed interface Signature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureValue> {
 
 
         /**

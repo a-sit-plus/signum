@@ -12,6 +12,9 @@ import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
 import platform.Security.*
 
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+
 
 val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when (this) {
     is AsymmetricEncryptionAlgorithm.RSA -> when(padding){

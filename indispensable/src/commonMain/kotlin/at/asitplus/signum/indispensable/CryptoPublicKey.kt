@@ -24,7 +24,12 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn1Backed<SubjectPublicKeyInfo> {
+@Deprecated(
+    "Renamed to PublicKey.",
+    ReplaceWith("PublicKey", "at.asitplus.signum.indispensable.PublicKey")
+)
+typealias CryptoPublicKey = PublicKey
+sealed class PublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn1Backed<SubjectPublicKeyInfo> {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -109,7 +114,7 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
                     val coordLen = curve.coordinateLength.bytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    EC.fromUncompressed(curve, x, y).apply { rawOverride = raw }
+                    EC.fromUncompressed(curve, x, y, raw)
                 }
 
                 RSA.oid -> {
@@ -118,8 +123,9 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
                     Asn1Element.parse(bitString.rawBytes).asSequence().decodeRethrowing {
                         RSA(
                             (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive,
-                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                        ).apply { rawOverride = raw }
+                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive,
+                            rawBacking = raw
+                        )
                     }
                 }
 
@@ -155,8 +161,8 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
 
         /** public exponent */
         val e: Asn1Integer.Positive,
+        private val rawBacking: SubjectPublicKeyInfo? = null,
     ) : CryptoPublicKey() {
-        internal var rawOverride: SubjectPublicKeyInfo? = null
 
         override val pemLabel: String = PEM_BOUNDARY
 
@@ -175,13 +181,7 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
         override val oid = RSA.oid
 
         override val raw: SubjectPublicKeyInfo
-            get() = rawOverride ?: SubjectPublicKeyInfo(
-                algorithmIdentifier = Asn1.Sequence {
-                    +oid
-                    +Null()
-                },
-                subjectPublicKey = Asn1BitString(pkcsEncoded)
-            )
+            get() = rawBacking ?: SubjectPublicKeyInfo.rsa(n, e)
 
         /**
          * enum of supported RSA key sizes. For sanity checks!
@@ -255,10 +255,9 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
     @ConsistentCopyVisibility
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
-        val preferCompressedRepresentation: Boolean = true
+        val preferCompressedRepresentation: Boolean = true,
+        private val rawBacking: SubjectPublicKeyInfo? = null,
     ) : CryptoPublicKey(), KeyAgreementPublicValue.ECDH {
-        internal var rawOverride: SubjectPublicKeyInfo? = null
-
         override fun asCryptoPublicKey() = this
 
         override val pemLabel: String = PEM_BOUNDARY
@@ -273,13 +272,7 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
         override val oid = EC.oid
 
         override val raw: SubjectPublicKeyInfo
-            get() = rawOverride ?: SubjectPublicKeyInfo(
-                algorithmIdentifier = Asn1.Sequence {
-                    +oid
-                    +curve.oid
-                },
-                subjectPublicKey = Asn1BitString(iosEncoded)
-            )
+            get() = rawBacking ?: SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
 
         /**
          * ANSI X9.63 Encoding as used by iOS
@@ -332,24 +325,24 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awe
 
         companion object : Identifiable {
 
-            fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EC {
-                return EC(this.normalize(), preferCompressed)
+            fun ECPoint.asPublicKey(preferCompressed: Boolean = false, raw: SubjectPublicKeyInfo? = null): EC {
+                return EC(this.normalize(), preferCompressed, raw)
             }
 
             /** Decodes key from big-endian X and sign of Y */
             @Suppress("NOTHING_TO_INLINE")
-            inline fun fromCompressed(curve: ECCurve, x: ByteArray, sign: Sign) =
-                ECPoint.fromCompressed(curve, x, sign).asPublicKey(true)
+            inline fun fromCompressed(curve: ECCurve, x: ByteArray, sign: Sign, raw: SubjectPublicKeyInfo? = null) =
+                ECPoint.fromCompressed(curve, x, sign).asPublicKey(true, raw)
 
             /** Decodes key from big-endian X and sign of Y */
             @Suppress("NOTHING_TO_INLINE")
-            inline fun fromCompressed(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
-                ECPoint.fromCompressed(curve, x, usePositiveY).asPublicKey(true)
+            inline fun fromCompressed(curve: ECCurve, x: ByteArray, usePositiveY: Boolean, raw: SubjectPublicKeyInfo? = null) =
+                ECPoint.fromCompressed(curve, x, usePositiveY).asPublicKey(true, raw)
 
             /** Decodes key from big-endian X and big-endian Y */
             @Suppress("NOTHING_TO_INLINE")
-            inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
-                ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
+            inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray, raw: SubjectPublicKeyInfo? = null) =
+                ECPoint.fromUncompressed(curve, x, y).asPublicKey(false, raw)
 
             @Deprecated(
                 "Explicitly specify what you want",

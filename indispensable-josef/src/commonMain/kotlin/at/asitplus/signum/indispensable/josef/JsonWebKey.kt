@@ -5,8 +5,9 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.PublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
@@ -304,7 +305,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                CryptoPublicKey.RSA(
+                PublicKey.RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")
                     ),
@@ -403,7 +404,7 @@ val SymmetricKey<*, *, *>.jsonWebKeyBytes
  */
 fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
-        is CryptoPublicKey.EC ->
+        is PublicKey.EC ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = keyId,
@@ -413,7 +414,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
 
 
-        is CryptoPublicKey.RSA ->
+        is PublicKey.RSA ->
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,

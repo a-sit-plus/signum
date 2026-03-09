@@ -1,7 +1,8 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
+
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithm
 import at.asitplus.signum.indispensable.toSecKey

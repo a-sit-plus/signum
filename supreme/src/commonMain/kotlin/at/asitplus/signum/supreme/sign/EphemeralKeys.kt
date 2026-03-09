@@ -2,8 +2,9 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
+
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm

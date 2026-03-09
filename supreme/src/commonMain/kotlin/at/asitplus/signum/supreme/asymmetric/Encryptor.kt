@@ -2,9 +2,11 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.dsl.DSL
+
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 
 
 sealed interface Encryptor {

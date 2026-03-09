@@ -2,6 +2,9 @@ package at.asitplus.signum.supreme.agree
 
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.*
+
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.signerFor
 import kotlin.jvm.JvmName

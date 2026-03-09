@@ -1,9 +1,13 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.pki.GeneralNames
+import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findIssuerAltNames
+import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findSubjectAltNames
+import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.awesn1.*
-import at.asitplus.awesn1.encoding.*
+import at.asitplus.signum.indispensable.Awesn1Backed
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -11,43 +15,31 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.isSupported
-import at.asitplus.awesn1.crypto.pki.GeneralNames
-import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findIssuerAltNames
-import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findSubjectAltNames
-import at.asitplus.awesn1.crypto.pki.TbsCertificate as RawTbsCertificate
-import at.asitplus.awesn1.crypto.pki.X509Certificate as RawX509Certificate
-import at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier as RawSignatureAlgorithmIdentifier
-import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo as RawSubjectPublicKeyInfo
-import at.asitplus.signum.indispensable.Awesn1Backed
-import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
-import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
-import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
+import at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier as RawSignatureAlgorithmIdentifier
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo as RawSubjectPublicKeyInfo
+import at.asitplus.awesn1.crypto.pki.TbsCertificate as RawTbsCertificate
+import at.asitplus.awesn1.crypto.pki.X509Certificate as RawX509Certificate
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
-class TbsCertificate internal constructor(
+@Deprecated(
+    "Renamed to CertificateInfo.",
+    ReplaceWith("CertificateInfo", "at.asitplus.signum.indispensable.CertificateInfo")
+)
+typealias TbsCertificate = CertificateInfo
+
+class CertificateInfo internal constructor(
     override val raw: RawTbsCertificate,
-    val version: Int? = 2,
-    val serialNumber: ByteArray,
-    val signatureAlgorithm: X509SignatureAlgorithmDescription,
-    val issuerName: List<RelativeDistinguishedName>,
-    val validFrom: Asn1Time,
-    val validUntil: Asn1Time,
-    val subjectName: List<RelativeDistinguishedName>,
-    val rawPublicKey: Asn1Sequence,
-    val issuerUniqueID: Asn1BitString? = null,
-    val subjectUniqueID: Asn1BitString? = null,
-    val extensions: List<X509CertificateExtension>? = null,
-) : Asn1Encodable<Asn1Sequence>, Awesn1Backed<RawTbsCertificate> {
+
+    ) : Asn1Encodable<Asn1Sequence>, Awesn1Backed<RawTbsCertificate> {
 
     @Throws(Asn1Exception::class)
     constructor(
@@ -75,18 +67,7 @@ class TbsCertificate internal constructor(
             issuerUniqueID = issuerUniqueID,
             subjectUniqueID = subjectUniqueID,
             extensions = extensions,
-        ),
-        version = version,
-        serialNumber = serialNumber,
-        signatureAlgorithm = signatureAlgorithm,
-        issuerName = issuerName,
-        validFrom = validFrom,
-        validUntil = validUntil,
-        subjectName = subjectName,
-        rawPublicKey = rawPublicKey,
-        issuerUniqueID = issuerUniqueID,
-        subjectUniqueID = subjectUniqueID,
-        extensions = extensions,
+        )
     )
 
     constructor(
@@ -101,19 +82,41 @@ class TbsCertificate internal constructor(
         issuerUniqueID: Asn1BitString? = null,
         subjectUniqueID: Asn1BitString? = null,
         extensions: List<X509CertificateExtension>? = null,
-    ) : this(version, serialNumber, signatureAlgorithm, issuerName, validFrom, validUntil, subjectName,
-            publicKey.encodeToTlv(), issuerUniqueID, subjectUniqueID, extensions)
+    ) : this(
+        version, serialNumber, signatureAlgorithm, issuerName, validFrom, validUntil, subjectName,
+        publicKey.raw.encodeToTlv(), issuerUniqueID, subjectUniqueID, extensions
+    )
+
+
+    val version: Int? get() = raw.version
+    val serialNumber: ByteArray get() = raw.serialNumber
+    val signatureAlgorithm: X509SignatureAlgorithmDescription
+        get() = X509SignatureAlgorithmDescription.decodeFromTlv(
+            raw.signatureAlgorithm.encodeToTlv()
+        )//TODO
+    val issuerName: List<RelativeDistinguishedName> get() = raw.issuerName
+    val validFrom: Asn1Time get() = raw.validFrom
+    val validUntil: Asn1Time get() = raw.validUntil
+    val subjectName: List<RelativeDistinguishedName> get() = raw.subjectName
+    val rawPublicKey: RawSubjectPublicKeyInfo get() = raw.subjectPublicKeyInfo
+    val issuerUniqueID: Asn1BitString? = raw.issuerUniqueID
+    val subjectUniqueID: Asn1BitString? = raw.subjectUniqueID
+    val extensions: List<X509CertificateExtension>? = raw.extensions
 
     init {
         if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
 
-    val decodedPublicKey by lazy { catching {
-        CryptoPublicKey.decodeFromTlv(rawPublicKey)
-    }}
+    val decodedPublicKey by lazy {
+        catching {
+            CryptoPublicKey.decodeFromTlv(rawPublicKey.encodeToTlv()) //TODO
+        }
+    }
 
-    @Deprecated("Imprecisely named and does not support unknown algorithms; use `rawPublicKey` or `decodedPublicKey`",
-        level = DeprecationLevel.ERROR)
+    @Deprecated(
+        "Imprecisely named and does not support unknown algorithms; use `rawPublicKey` or `decodedPublicKey`",
+        level = DeprecationLevel.ERROR
+    )
     val publicKey get() = decodedPublicKey.getOrThrow()
 
     /**
@@ -194,82 +197,10 @@ class TbsCertificate internal constructor(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
-            val version = peek().let {
-                if (it is Asn1ExplicitlyTagged) {
-                    it.verifyTag(Tags.VERSION).single().asPrimitive().decodeToInt()
-                        .also { next() } // actually read it, so next child is serial number
-                } else {
-                    null
-                }
-            }
-            val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
-            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
-            val issuerNames = next().asSequence().children.map {
-                RelativeDistinguishedName.decodeFromTlv(it.asSet())
-            }
-
-            val timestamps = decodeTimestamps(next().asSequence())
-            val subject = (next().asSequence()).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it.asSet())
-            }
-
-            val publicKey = next().asSequence()
-
-            val issuerUniqueID = peek()?.let { next ->
-                if (next.tag == ISSUER_UID) {
-                    next()
-                        .asPrimitive().let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
-                } else null
-            }
-
-            val subjectUniqueID = peek()?.let { next ->
-                if (next.tag == SUBJECT_UID) {
-                    next()
-                        .asPrimitive().let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
-                } else null
-            }
-            val extensions = if (hasNext()) {
-                next().asExplicitlyTagged().verifyTag(EXTENSIONS.tagValue)
-                    .single().asSequence().children.map {
-                    X509CertificateExtension.decodeFromTlv(it.asSequence())
-                }
-            } else null
-
-            TbsCertificate(
-                raw = RawTbsCertificate(
-                    version = version,
-                    serialNumber = serialNumber,
-                    signatureAlgorithm = sigAlg.toRawSignatureAlgorithmIdentifier(),
-                    issuerName = issuerNames,
-                    validFrom = timestamps.first,
-                    validUntil = timestamps.second,
-                    subjectName = subject,
-                    subjectPublicKeyInfo = RawSubjectPublicKeyInfo.decodeFromTlv(publicKey),
-                    issuerUniqueID = issuerUniqueID,
-                    subjectUniqueID = subjectUniqueID,
-                    extensions = extensions,
-                ),
-                version = version,
-                serialNumber = serialNumber,
-                signatureAlgorithm = sigAlg,
-                issuerName = issuerNames,
-                validFrom = timestamps.first,
-                validUntil = timestamps.second,
-                subjectName = subject,
-                rawPublicKey = publicKey,
-                issuerUniqueID = issuerUniqueID,
-                subjectUniqueID = subjectUniqueID,
-                extensions = extensions,
-            )
+        override fun doDecode(src: Asn1Sequence): TbsCertificate {
+            val raw = RawTbsCertificate.decodeFromTlv(src)
+            return TbsCertificate(raw = raw)
         }
-
-        private fun decodeTimestamps(input: Asn1Sequence): Pair<Asn1Time, Asn1Time> =
-            input.decodeRethrowing {
-                val firstInstant = Asn1Time.decodeFromTlv(next() as Asn1Primitive)
-                val secondInstant = Asn1Time.decodeFromTlv(next() as Asn1Primitive)
-                Pair(firstInstant, secondInstant)
-            }
     }
 }
 
@@ -298,6 +229,10 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 /**
  * Very simple implementation of an X.509 Certificate
  */
+@Deprecated(
+    "Renamed to Certificate.",
+    ReplaceWith("Certificate", "at.asitplus.signum.indispensable.Certificate")
+)
 class X509Certificate internal constructor(
     override val raw: RawX509Certificate,
     val tbsCertificate: TbsCertificate,
@@ -325,8 +260,10 @@ class X509Certificate internal constructor(
         tbsCertificate: TbsCertificate,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
         signature: CryptoSignature
-    ) : this(tbsCertificate, signatureAlgorithm,
-        signature.x509Encoded)
+    ) : this(
+        tbsCertificate, signatureAlgorithm,
+        signature.x509Encoded
+    )
 
     override val pemLabel: String = EB_STRINGS.DEFAULT
 
@@ -358,21 +295,27 @@ class X509Certificate internal constructor(
         return "X509Certificate(${encodeToDerOrNull()?.encodeToString(Base64Strict)})"
     }
 
-    @Deprecated("Confusingly named, and lacks support for unsupported signature algorithms; use `decodedPublicKey` or `rawPublicKey`",
-        level = DeprecationLevel.ERROR)
+    @Deprecated(
+        "Confusingly named, and lacks support for unsupported signature algorithms; use `decodedPublicKey` or `rawPublicKey`",
+        level = DeprecationLevel.ERROR
+    )
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
 
-    val decodedSignature by lazy { catching {
-        signatureAlgorithm.requireSupported()
-        CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
-    }}
+    val decodedSignature by lazy {
+        catching {
+            signatureAlgorithm.requireSupported()
+            CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
+        }
+    }
 
-    @Deprecated("Confusingly named, and lacks supported for unsupported signature algorithms; use `decodedSignature` or `rawSignature`",
-        level = DeprecationLevel.ERROR)
+    @Deprecated(
+        "Confusingly named, and lacks supported for unsupported signature algorithms; use `decodedSignature` or `rawSignature`",
+        level = DeprecationLevel.ERROR
+    )
     val signature: CryptoSignature get() = decodedSignature.getOrThrow()
 
     companion object : LabelPemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
@@ -383,36 +326,18 @@ class X509Certificate internal constructor(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509Certificate = src.decodeRethrowing {
-            val tbsSequence = next().asSequence()
-            val tbsRaw = RawTbsCertificate.decodeFromTlv(tbsSequence)
+        override fun doDecode(src: Asn1Sequence): X509Certificate {
+            val raw = RawX509Certificate.decodeFromTlv(src)
+            val tbsRaw = raw.tbsCertificate
             val tbs = TbsCertificate(
-                raw = tbsRaw,
-                version = tbsRaw.version,
-                serialNumber = tbsRaw.serialNumber,
-                signatureAlgorithm = X509SignatureAlgorithmDescription.decodeFromTlv(tbsRaw.signatureAlgorithm.encodeToTlv()),
-                issuerName = tbsRaw.issuerName,
-                validFrom = tbsRaw.validFrom,
-                validUntil = tbsRaw.validUntil,
-                subjectName = tbsRaw.subjectName,
-                rawPublicKey = tbsRaw.subjectPublicKeyInfo.encodeToTlv(),
-                issuerUniqueID = tbsRaw.issuerUniqueID,
-                subjectUniqueID = tbsRaw.subjectUniqueID,
-                extensions = tbsRaw.extensions,
+                raw = tbsRaw
             )
-            val sigAlgRaw = RawSignatureAlgorithmIdentifier.decodeFromTlv(next().asSequence())
-            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(sigAlgRaw.encodeToTlv())
-            val signature = next().asPrimitive()
-            if (hasNext()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
-            X509Certificate(
-                raw = RawX509Certificate(
-                    tbsCertificate = tbsRaw,
-                    signatureAlgorithm = sigAlgRaw,
-                    signatureValue = Asn1BitString.decodeFromTlv(signature),
-                ),
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(raw.signatureAlgorithm.encodeToTlv())
+            return X509Certificate(
+                raw = raw,
                 tbsCertificate = tbs,
                 signatureAlgorithm = sigAlg,
-                rawSignature = signature,
+                rawSignature = raw.signatureValue.encodeToTlv(),
             )
         }
 
@@ -425,7 +350,9 @@ class X509Certificate internal constructor(
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
         }.getOrNull() ?: catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
-        }.getOrNull() ?: catchingUnwrapped { X509Certificate.decodeFromPem(src.decodeToString()).getOrThrow() }.getOrNull()
+        }.getOrNull() ?: catchingUnwrapped {
+            X509Certificate.decodeFromPem(src.decodeToString()).getOrThrow()
+        }.getOrNull()
     }
 }
 

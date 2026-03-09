@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.recoverCatching
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
@@ -12,6 +11,8 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
 
 sealed interface Verifier {

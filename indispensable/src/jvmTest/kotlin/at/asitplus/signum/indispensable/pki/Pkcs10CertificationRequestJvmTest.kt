@@ -301,7 +301,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         csr.tbsCsr.version shouldBe 0
         (csr.tbsCsr.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
-        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        parsedPublicKey.shouldBeInstanceOf<PublicKey.EC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
     }

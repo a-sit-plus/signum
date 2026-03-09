@@ -15,9 +15,9 @@ sealed interface KeyAgreementPublicValue : Asn1PemEncodable<Asn1Sequence> {
         /**
          * Returns this value ad a [CryptoPublicKey.EC]
          */
-        fun asCryptoPublicKey(): CryptoPublicKey.EC
+        fun asCryptoPublicKey(): PublicKey.EC
     }
     companion object : LabelPemDecodable<Asn1Sequence, ECDH>("PUBLIC KEY") {
-        override fun doDecode(src: Asn1Sequence) = CryptoPublicKey.doDecode(src) as CryptoPublicKey.EC
+        override fun doDecode(src: Asn1Sequence) = PublicKey.doDecode(src) as PublicKey.EC
     }
 }
