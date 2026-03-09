@@ -8,10 +8,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class JwsGeneral(
     @Serializable(ByteArrayBase64UrlSerializer::class)
-    @SerialName(JWS.SerialNames.PAYLOAD)
+    @SerialName(SerialNames.PAYLOAD)
     override val payload: ByteArray,
     @Serializable
-    @SerialName(JWS.SerialNames.SIGNATURES)
+    @SerialName(SerialNames.SIGNATURES)
     val signatures: List<SignatureElement>
 ) : JWS() {
     /**
