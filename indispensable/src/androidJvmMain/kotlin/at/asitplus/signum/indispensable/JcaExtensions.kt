@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
@@ -63,6 +64,7 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): KmmRes
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
 
         is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
+        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
     }
 }
 
@@ -77,6 +79,7 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
+        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
     }
 }
 
@@ -320,7 +323,9 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
 
             @OptIn(HazardousMaterials::class)
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
+            else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding")
         }
+        else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
     }
 
 /**
@@ -366,7 +371,9 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
 
                 @OptIn(HazardousMaterials::class)
                 at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
+                else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding")
             }
+            else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
         }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */

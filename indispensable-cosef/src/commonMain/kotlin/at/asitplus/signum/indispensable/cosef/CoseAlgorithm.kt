@@ -253,7 +253,11 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
                 else -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
             }
+
+            else -> throw UnsupportedCryptoException("RSA padding ${this.padding} is unsupported by COSE")
         }
+
+        else -> throw UnsupportedCryptoException("$this has no COSE signature mapping")
     }
 }
 
@@ -261,6 +265,7 @@ fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegr
     when (this) {
         is SignatureAlgorithm -> toCoseAlgorithm()
         is MessageAuthenticationCode -> toCoseAlgorithm()
+        else -> KmmResult.failure(UnsupportedCryptoException("$this has no COSE data integrity mapping"))
     }
 
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
@@ -274,6 +279,7 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
             (inner == HMAC.SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
             else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
         }
+        else -> throw UnsupportedCryptoException("$this has no COSE MAC mapping")
     }
 }
 

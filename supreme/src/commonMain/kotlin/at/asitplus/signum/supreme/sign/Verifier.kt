@@ -191,6 +191,7 @@ private fun SignatureAlgorithm.verifierForImpl
             else
                 verifierForImpl(publicKey, configure, allowKotlin)
         }
+        else -> KmmResult.failure(UnsupportedCryptoException("Unsupported signature algorithm $this"))
     }
 
 /**

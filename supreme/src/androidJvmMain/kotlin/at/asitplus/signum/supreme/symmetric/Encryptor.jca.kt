@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.*
 import javax.crypto.Cipher
 
@@ -30,6 +31,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
                 when (algorithm) {
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce, aad)
                     is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
+                    else -> throw UnsupportedCryptoException("Unsupported symmetric algorithm ${algorithm.name}")
                 }
             }
 
@@ -96,4 +98,3 @@ internal val PlatformCipher.Mode.jcaCipherMode
         PlatformCipher.Mode.ENCRYPT -> Cipher.ENCRYPT_MODE
         PlatformCipher.Mode.DECRYPT -> Cipher.DECRYPT_MODE
     }
-

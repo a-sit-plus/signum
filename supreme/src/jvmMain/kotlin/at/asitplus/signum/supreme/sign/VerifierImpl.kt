@@ -67,6 +67,7 @@ private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifier
         RSAPadding.PSS -> getSigInstance("RSASSA-PSS", config.provider).apply {
             setParameter(alg.digest.jcaPSSParams)
         }
+        else -> throw UnsupportedCryptoException("Unsupported RSA signature padding ${alg.padding}")
     }
 
 @Throws(UnsupportedCryptoException::class)

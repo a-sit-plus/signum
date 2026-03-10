@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.supreme.dsl.DSL
@@ -61,6 +62,7 @@ private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
             publicKey.let { require(it is PublicKey.RSA);it },
             config
         )
+        else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
     }
 
 /**

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.UnsupportedCryptoException
 import java.security.Signature
 
 
@@ -11,5 +12,6 @@ internal actual fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provi
         RSAPadding.PSS -> sigGetInstance("RSASSA-PSS", provider).also {
             it.setParameter(this.digest.jcaPSSParams)
         }
-    }
 
+        else -> throw UnsupportedCryptoException("Unsupported RSA signature padding ${this.padding}")
+    }

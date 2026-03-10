@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
@@ -38,6 +39,8 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
         is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
             secretKey = @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
         )
+
+        else -> throw UnsupportedCryptoException("Unsupported symmetric auth capability ${algorithm.authCapability}")
     }
 }
 
@@ -104,6 +107,8 @@ suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyTyp
                 authenticatedData
             )
         }
+
+        else -> throw UnsupportedCryptoException("Unsupported symmetric auth capability ${algorithm.authCapability}")
     }
 }
 

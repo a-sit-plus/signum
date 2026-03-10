@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.mac
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
@@ -34,6 +35,7 @@ fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): Kmm
     when (this@mac) {
         is HMAC -> catching { hmac(key, msg) }
         is MessageAuthenticationCode.Truncated -> inner.mac(key, msg).map { it.truncateTo(outputLength) }
+        else -> KmmResult.failure(UnsupportedCryptoException("Unsupported MAC algorithm $this"))
     }
 
 internal fun HMAC.hmac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray {
@@ -45,5 +47,4 @@ internal fun HMAC.hmac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray {
     val outerHash = digest.digest(sequenceOf(realKey xor outerPad, innerHash))
     return outerHash
 }
-
 

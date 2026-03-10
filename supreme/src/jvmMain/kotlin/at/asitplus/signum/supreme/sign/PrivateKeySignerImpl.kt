@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -40,13 +41,12 @@ fun SignatureAlgorithm.signerFor(
     privateKey: PrivateKey.WithPublicKey<*>,
     configure: DSLConfigureFn<JvmEphemeralSignerCompatibleConfiguration>
 ) = catching {
-    require(
-        (this is SignatureAlgorithm.ECDSA && privateKey is PrivateKey.EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is PrivateKey.RSA)
-    ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
-
     when (this) {
-        is SignatureAlgorithm.ECDSA -> EphemeralSigner.EC(
+        is SignatureAlgorithm.ECDSA -> {
+            require(privateKey is PrivateKey.EC) {
+                "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
+            }
+            EphemeralSigner.EC(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
                 configure
@@ -55,8 +55,13 @@ fun SignatureAlgorithm.signerFor(
             publicKey = privateKey.publicKey as PublicKey.EC,
             signatureAlgorithm = this
         )
+        }
 
-        is SignatureAlgorithm.RSA -> EphemeralSigner.RSA(
+        is SignatureAlgorithm.RSA -> {
+            require(privateKey is PrivateKey.RSA) {
+                "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
+            }
+            EphemeralSigner.RSA(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
                 configure
@@ -65,5 +70,8 @@ fun SignatureAlgorithm.signerFor(
             publicKey = privateKey.publicKey as PublicKey.RSA,
             signatureAlgorithm = this
         )
+        }
+
+        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
     }
 }

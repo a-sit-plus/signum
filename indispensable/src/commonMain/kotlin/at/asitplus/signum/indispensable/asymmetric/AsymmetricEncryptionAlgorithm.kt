@@ -1,12 +1,13 @@
 package at.asitplus.signum.indispensable.asymmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.AlgorithmRegistry
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
 
-sealed interface RSAPadding : Enumerable {
+interface RSAPadding : Enumerable {
     @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
     object PKCS1 : RSAPadding {
         override fun toString(): String = "PKCS1"
@@ -18,7 +19,7 @@ sealed interface RSAPadding : Enumerable {
     }
 
 
-    sealed class OAEP(val digest: Digest) : RSAPadding {
+    open class OAEP(val digest: Digest) : RSAPadding {
         object SHA1 : OAEP(Digest.SHA1)
         object SHA256 : OAEP(Digest.SHA256)
         object SHA384 : OAEP(Digest.SHA384)
@@ -28,10 +29,23 @@ sealed interface RSAPadding : Enumerable {
     }
 
     companion object : Enumeration<RSAPadding> {
-        override val entries: List<RSAPadding> by lazy {
-            @OptIn(HazardousMaterials::class)
-            listOf(PKCS1, NONE, OAEP.SHA1, OAEP.SHA256, OAEP.SHA384, OAEP.SHA512)
+        @OptIn(HazardousMaterials::class)
+        private val builtIns: List<RSAPadding> by lazy {
+            listOf(
+                AlgorithmRegistry.registerAsymmetricRsaPadding(PKCS1),
+                AlgorithmRegistry.registerAsymmetricRsaPadding(NONE),
+                AlgorithmRegistry.registerAsymmetricRsaPadding(OAEP.SHA1),
+                AlgorithmRegistry.registerAsymmetricRsaPadding(OAEP.SHA256),
+                AlgorithmRegistry.registerAsymmetricRsaPadding(OAEP.SHA384),
+                AlgorithmRegistry.registerAsymmetricRsaPadding(OAEP.SHA512)
+            )
         }
+
+        override val entries: List<RSAPadding>
+            get() {
+                builtIns
+                return AlgorithmRegistry.asymmetricRsaPaddings
+            }
 
         fun fromString(string: String) = entries.firstOrNull { it.toString() == string }
     }
@@ -39,28 +53,34 @@ sealed interface RSAPadding : Enumerable {
 
 }
 
-sealed interface AsymmetricEncryptionAlgorithm {
-    data class RSA(
+interface AsymmetricEncryptionAlgorithm {
+    open class RSA(
         /** The padding to apply to the data. */
         val padding: RSAPadding
     ) : AsymmetricEncryptionAlgorithm {
+        override fun equals(other: Any?): Boolean = other is RSA && padding == other.padding
+
+        override fun hashCode(): Int = padding.hashCode()
+
+        override fun toString(): String = "RSA($padding)"
+
         companion object {
 
             @HazardousMaterials("This is almost always insecure and can leak your private key!")
-            val NoPadding = RSA(RSAPadding.NONE)
+            val NoPadding = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RSA(RSAPadding.NONE))
 
             @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
-            val Pkcs1Padding = RSA(RSAPadding.PKCS1)
+            val Pkcs1Padding = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RSA(RSAPadding.PKCS1))
 
             val OAEP = OAEPWith()
         }
 
         /** Pre-configured RSA algorithm instance with OAEP-SHAXXX  */
         class OAEPWith {
-            val SHA1 = RSA(RSAPadding.OAEP.SHA1)
-            val SHA256 = RSA(RSAPadding.OAEP.SHA256)
-            val SHA384 = RSA(RSAPadding.OAEP.SHA384)
-            val SHA512 = RSA(RSAPadding.OAEP.SHA512)
+            val SHA1 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RSA(RSAPadding.OAEP.SHA1))
+            val SHA256 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RSA(RSAPadding.OAEP.SHA256))
+            val SHA384 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RSA(RSAPadding.OAEP.SHA384))
+            val SHA512 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RSA(RSAPadding.OAEP.SHA512))
         }
     }
 

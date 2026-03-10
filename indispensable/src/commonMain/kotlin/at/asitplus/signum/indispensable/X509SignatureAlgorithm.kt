@@ -166,7 +166,9 @@ private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgor
                 RSAPadding.PKCS1 ->
                     parameters.isEmpty() || (parameters.size == 1 && parameters.single() == Asn1Null)
                 RSAPadding.PSS -> parameters == candidate.parameters
+                else -> false
             }
+            else -> false
         }
     }
 }
@@ -195,7 +197,11 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 Digest.SHA512 -> X509SignatureAlgorithm.PS512
                 else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
             }
+
+            else -> throw IllegalArgumentException("Padding ${this.padding} is unsupported by X.509 RSA")
         }
+
+        else -> throw IllegalArgumentException("$this is unsupported by X.509")
     }
 }
 

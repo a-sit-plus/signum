@@ -28,7 +28,7 @@ val RSAVerifierCommonTests  by testSuite {
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.valueOf(test.dig)
-        val padding = RSAPadding.valueOf(test.pad)
+        val padding = RSAPadding.entries.first { it.toString() == test.pad }
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.RSA
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)

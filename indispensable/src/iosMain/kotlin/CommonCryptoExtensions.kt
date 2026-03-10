@@ -7,6 +7,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.UnsupportedCryptoException
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
@@ -22,7 +23,9 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
         at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> kSecKeyAlgorithmRSAEncryptionPKCS1
         @OptIn(HazardousMaterials::class)
         at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> kSecKeyAlgorithmRSAEncryptionRaw
+        else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding on iOS")
     }!!
+    else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this on iOS")
 }
 
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
@@ -54,6 +57,7 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
                 }
             }
         }
+        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this on iOS")
     }!!
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithm
@@ -89,6 +93,7 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
                 }
             }
         }
+        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this on iOS")
     }!!
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed

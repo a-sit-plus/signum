@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -155,6 +156,7 @@ fun SignatureAlgorithm.signerFor(privateKey: PrivateKey.WithPublicKey<*>): KmmRe
         when (this) {
             is SignatureAlgorithm.ECDSA -> this.signerFor(privateKey as PrivateKey.EC.WithPublicKey)
             is SignatureAlgorithm.RSA -> this.signerFor(privateKey as PrivateKey.RSA)
+            else -> KmmResult.failure(UnsupportedCryptoException("Unsupported signature algorithm $this"))
         }
     } else {
         KmmResult.failure(IllegalArgumentException("Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"))

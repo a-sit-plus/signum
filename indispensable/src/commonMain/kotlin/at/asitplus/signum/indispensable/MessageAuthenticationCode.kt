@@ -9,20 +9,27 @@ import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
-sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
+interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
     /** output size of MAC */
     val outputLength: BitLength
 
     companion object : Enumeration<MessageAuthenticationCode> {
-        // lazy due to https://youtrack.jetbrains.com/issue/KT-79161
-        override val entries: Iterable<MessageAuthenticationCode> by lazy {  HMAC.entries }
+        override val entries: Iterable<MessageAuthenticationCode>
+            get() {
+                HMAC.entries
+                return AlgorithmRegistry.messageAuthenticationCodes
+            }
     }
 
-    @ConsistentCopyVisibility
-    data class Truncated
+    open class Truncated
         internal constructor(val inner: MessageAuthenticationCode, override val outputLength: BitLength)
         : MessageAuthenticationCode
     {
+        override fun equals(other: Any?): Boolean =
+            other is Truncated && inner == other.inner && outputLength == other.outputLength
+
+        override fun hashCode(): Int = 31 * inner.hashCode() + outputLength.hashCode()
+
         override fun toString() = "$inner (truncated to $outputLength)"
     }
 
@@ -79,7 +86,12 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
             byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
 
-        override val entries: Iterable<HMAC> by lazy { HMAC.entries }
+        private val registeredEntries: List<HMAC> by lazy {
+            HMAC.entries.onEach { AlgorithmRegistry.registerMessageAuthenticationCode(it) }
+        }
+
+        override val entries: Iterable<HMAC>
+            get() = registeredEntries
     }
 
     override val outputLength: BitLength get() = digest.outputLength

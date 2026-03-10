@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.encodeTo8Bytes
+import at.asitplus.signum.indispensable.AlgorithmRegistry
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -22,7 +23,7 @@ import kotlin.jvm.JvmName
  * * the [keySize]
  * * its [name]
  */
-sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType> :
+interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType> :
     Identifiable, Enumerable {
     val authCapability: A
 
@@ -33,9 +34,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
     companion object : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
 
-        override val entries: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
-            listOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
+        private val builtIns: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
+            (listOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries)
+                .onEach { AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(it) }
         }
+
+        override val entries: List<SymmetricEncryptionAlgorithm<*, *, *>>
+            get() {
+                builtIns
+                return AlgorithmRegistry.symmetricEncryptionAlgorithms
+            }
 
         //ChaCha20Poly1305 is already an object, so we don't need to redeclare here
 
@@ -132,13 +140,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
      */
     val keySize: BitLength
 
-    sealed interface Unauthenticated<out I : NonceTrait> :
+    interface Unauthenticated<out I : NonceTrait> :
         SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated> {
 
         override val authCapability get() = AuthCapability.Unauthenticated
     }
 
-    sealed interface Authenticated<out A : AuthCapability.Authenticated<out K>, out I : NonceTrait, out K : KeyType> :
+    interface Authenticated<out A : AuthCapability.Authenticated<out K>, out I : NonceTrait, out K : KeyType> :
         SymmetricEncryptionAlgorithm<A, I, K> {
 
         val authTagSize: BitLength
@@ -178,14 +186,14 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         }
     }
 
-    sealed interface RequiringNonce<out A : AuthCapability<out K>, K : KeyType> :
+    interface RequiringNonce<out A : AuthCapability<out K>, K : KeyType> :
         SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>
     {
         override val nonceTrait get() = NonceTrait.Required
         val nonceSize: BitLength
     }
 
-    sealed interface WithoutNonce<out A : AuthCapability<out K>, K : KeyType> :
+    interface WithoutNonce<out A : AuthCapability<out K>, K : KeyType> :
         SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K>
     {
         override val nonceTrait get() = NonceTrait.Without
@@ -194,7 +202,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
     /**
      * Advanced Encryption Standard
      */
-    sealed class AES<I : NonceTrait, K : KeyType, A : AuthCapability<K>>(
+    abstract class AES<I : NonceTrait, K : KeyType, A : AuthCapability<K>>(
         modeOfOps: ModeOfOperation,
         override val keySize: BitLength
     ) :
@@ -221,7 +229,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             }
         }
 
-        sealed class WRAP(keySize: BitLength) :
+        abstract class WRAP(keySize: BitLength) :
             AES<NonceTrait.Without, KeyType.Integrated, AuthCapability.Unauthenticated>(ModeOfOperation.ECB, keySize),
             SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
             SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Without> {
@@ -255,7 +263,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             }
         }
 
-        sealed class CBC<K : KeyType, A : AuthCapability<K>>(keySize: BitLength) :
+        abstract class CBC<K : KeyType, A : AuthCapability<K>>(keySize: BitLength) :
             AES<NonceTrait.Required, K, A>(ModeOfOperation.CBC, keySize) {
             /*override*/ val nonceSize = 128u.bit
             override val oid: ObjectIdentifier = when (keySize.bits) {
@@ -344,13 +352,17 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         override fun toString() = name
         override val keySize = 256u.bit
         override val oid = KnownOIDs.chaCha20Poly1305
+
+        init {
+            AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(this)
+        }
     }
 }
 
 /**
  * Defines whether a cipher is authenticated or not
  */
-sealed interface AuthCapability<K : KeyType> {
+interface AuthCapability<K : KeyType> {
     /**
      * accessor to get the key type due to type erasure
      */
@@ -359,7 +371,7 @@ sealed interface AuthCapability<K : KeyType> {
     /**
      * Indicates an authenticated cipher
      */
-    sealed class Authenticated<K : KeyType>(override val keyType: K) : AuthCapability<K> {
+    open class Authenticated<K : KeyType>(override val keyType: K) : AuthCapability<K> {
 
         /**
          * An authenticated cipher construction that is inherently authenticated and thus permits no dedicated MAC key
@@ -411,7 +423,7 @@ val DefaultMacInputCalculation: MacInputCalculation =
 /**
  * Marker, indicating whether a symmetric encryption algorithms requires or prohibits the use of a nonce/IV
  */
-sealed interface NonceTrait {
+interface NonceTrait {
     data object Required : NonceTrait
     data object Without : NonceTrait
 }
