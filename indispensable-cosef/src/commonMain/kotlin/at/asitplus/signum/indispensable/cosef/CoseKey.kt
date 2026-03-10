@@ -5,10 +5,14 @@ import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithmSerializer
+import at.asitplus.signum.indispensable.cosef.algorithm.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -99,7 +103,7 @@ data class CoseKey(
      * [CoseKeyParams.EcYBoolParams.toPublicKey] or [CoseKeyParams.EcYByteArrayParams.toPublicKey]
      */
     override fun toCryptoPublicKey(): KmmResult<PublicKey> =
-        keyParams?.toPublicKey()?.map { it.coseKid = this.keyId; it }
+        keyParams?.toCryptoPublicKey()?.map { it.coseKid = this.keyId; it }
             ?: failure(IllegalArgumentException("No public key parameters!"))
 
 

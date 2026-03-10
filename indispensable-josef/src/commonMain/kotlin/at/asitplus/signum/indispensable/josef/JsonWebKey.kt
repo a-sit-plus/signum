@@ -4,19 +4,22 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.PublicKey.EC.Companion.fromUncompressed
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SpecializedPublicKey
-import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
+import at.asitplus.signum.indispensable.ec.ECCurve
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
+import at.asitplus.signum.indispensable.josef.algorithm.JsonWebAlgorithm
+import at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm
+import at.asitplus.signum.indispensable.josef.algorithm.toJweKwAlgorithm
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.io.sha256
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.PublicKey.EC.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.key.SpecializedPublicKey
+import at.asitplus.signum.indispensable.key.toPublicKey
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString

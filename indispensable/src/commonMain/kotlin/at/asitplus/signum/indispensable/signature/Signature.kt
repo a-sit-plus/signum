@@ -1,14 +1,17 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.signature
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.BitStringSignatureValue
 import at.asitplus.awesn1.crypto.EcdsaSignatureValue
 import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.encoding.*
+import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.asn1.decodeToBigInteger
 import at.asitplus.signum.indispensable.asn1.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toBigInteger
+import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.ec.ECCurve
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength

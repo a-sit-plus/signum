@@ -2,13 +2,13 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.signature.Signature
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -132,4 +132,3 @@ data class CoseSigned<P : Any?> internal constructor(
         )
     }
 }
-

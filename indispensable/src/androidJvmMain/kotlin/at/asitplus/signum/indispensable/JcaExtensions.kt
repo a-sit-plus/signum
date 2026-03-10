@@ -9,6 +9,10 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.*
+import at.asitplus.signum.indispensable.ec.ECCurve
+import at.asitplus.signum.indispensable.key.PrivateKey
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.signature.Signature
 import at.asitplus.signum.indispensable.symmetric.AesCbcBase
 import at.asitplus.signum.indispensable.symmetric.AesEcbAlgorithm
 import at.asitplus.signum.indispensable.symmetric.AesGcmAlgorithm

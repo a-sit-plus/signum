@@ -11,11 +11,11 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo as RawPkcs10
 import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.Awesn1Backed
-import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.signature.Signature
 import at.asitplus.signum.indispensable.toSignatureAlgorithmIdentifier
 
 @Deprecated(

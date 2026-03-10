@@ -10,6 +10,7 @@ There are two major migration themes:
 
 1. the ASN.1 implementation moved out of Signum into the dedicated `awesn1` modules
 2. many formerly closed, enum-like or sealed-style algorithm surfaces are now intentionally extensible
+3. package regrouping moved several public types into more specific subpackages
 
 The second point is the more important semantic change.
 
@@ -20,6 +21,8 @@ Signum now supports third-party algorithm definitions and mapping registration. 
 - `entries` is now the canonical way to enumerate built-ins plus custom registrations
 - exhaustive `when` expressions over these types are no longer a safe design assumption
 - custom algorithms will not automatically get JWS, COSE, X.509, JCA, or platform mappings unless you register them
+
+Package cleanup in this branch affects `indispensable`, `indispensable-josef`, and `indispensable-cosef`. The `supreme` module is intentionally not being reorganized.
 
 ## Version and module overview
 
@@ -41,6 +44,183 @@ Current dependency structure:
 - `indispensable` re-exports `at.asitplus.awesn1:io`
 - `indispensable` re-exports `at.asitplus.awesn1:oids`
 - `indispensable-asn1` is now primarily a compatibility facade on top of `awesn1`
+
+## Package hierarchy cleanup in `indispensable`, `indispensable-josef`, and `indispensable-cosef`
+
+The `indispensable` module historically accumulated many unrelated types directly in the root package:
+
+```kotlin
+at.asitplus.signum.indispensable
+```
+
+This branch now performs a real regrouping. The goals are:
+
+- make package ownership clearer
+- keep source compatibility where Kotlin allows it through deprecated outer aliases and forwarding APIs
+- document the cases where nested old names cannot be preserved cleanly
+
+Current scope:
+
+- `indispensable`
+  - `PublicKey` -> `at.asitplus.signum.indispensable.key.PublicKey`
+  - `PrivateKey` -> `at.asitplus.signum.indispensable.key.PrivateKey`
+  - `Signature` -> `at.asitplus.signum.indispensable.signature.Signature`
+  - `ECCurve` -> `at.asitplus.signum.indispensable.ec.ECCurve`
+  - `ECPoint` -> `at.asitplus.signum.indispensable.ec.ECPoint`
+  - `Attestation`, `SelfAttestation`, `AndroidKeystoreAttestation`, `IosHomebrewAttestation` -> `at.asitplus.signum.indispensable.attestation.*`
+- `indispensable-josef`
+  - `JsonWebAlgorithm` -> `at.asitplus.signum.indispensable.josef.algorithm.JsonWebAlgorithm`
+  - `JwsAlgorithm` -> `at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm`
+  - `JweAlgorithm` -> `at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm`
+- `indispensable-cosef`
+  - `CoseAlgorithm` -> `at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm`
+
+The old outer names remain as deprecated typealiases in their previous packages where that is possible.
+
+The cleanup intentionally excludes `supreme`. `supreme` package structure is unchanged.
+
+### What remains source-compatible
+
+These old imports still compile for the outer type names and will give deprecation-guided IDE migration:
+
+```kotlin
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.Attestation
+
+import at.asitplus.signum.indispensable.josef.JwsAlgorithm
+import at.asitplus.signum.indispensable.josef.JweAlgorithm
+import at.asitplus.signum.indispensable.josef.JsonWebAlgorithm
+
+import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
+```
+
+### What cannot be preserved via typealias
+
+Kotlin does not preserve nested members reliably through deprecated typealiases once the outer type moves packages. That means old nested names must be migrated manually.
+
+Important examples:
+
+- `at.asitplus.signum.indispensable.PublicKey.EC`
+- `at.asitplus.signum.indispensable.PrivateKey.WithPublicKey`
+- `at.asitplus.signum.indispensable.Signature.EC`
+- `at.asitplus.signum.indispensable.Signature.RawByteEncodable`
+- `at.asitplus.signum.indispensable.josef.JwsAlgorithm.Signature`
+- `at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC`
+- `at.asitplus.signum.indispensable.josef.JweAlgorithm.Symmetric`
+- `at.asitplus.signum.indispensable.cosef.CoseAlgorithm.Signature`
+- `at.asitplus.signum.indispensable.cosef.CoseAlgorithm.MAC`
+- `at.asitplus.signum.indispensable.cosef.CoseAlgorithm.Symmetric`
+- `at.asitplus.signum.indispensable.cosef.CoseAlgorithm.SymmetricEncryption`
+
+For these names, update imports to the relocated outer type package.
+
+### Recommended import rewrites
+
+Before:
+
+```kotlin
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.josef.JwsAlgorithm
+import at.asitplus.signum.indispensable.josef.JweAlgorithm
+import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
+```
+
+After:
+
+```kotlin
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.signature.Signature
+import at.asitplus.signum.indispensable.ec.ECCurve
+import at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm
+import at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
+```
+
+### Example: nested type migration
+
+Before:
+
+```kotlin
+val key: at.asitplus.signum.indispensable.PublicKey.EC = ...
+val alg: at.asitplus.signum.indispensable.josef.JwsAlgorithm.Signature = ...
+```
+
+After:
+
+```kotlin
+val key: at.asitplus.signum.indispensable.key.PublicKey.EC = ...
+val alg: at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm.Signature = ...
+```
+
+### `Attestation` import migration
+
+Before:
+
+```kotlin
+import at.asitplus.signum.indispensable.Attestation
+import at.asitplus.signum.indispensable.AndroidKeystoreAttestation
+import at.asitplus.signum.indispensable.IosHomebrewAttestation
+import at.asitplus.signum.indispensable.SelfAttestation
+```
+
+After:
+
+```kotlin
+import at.asitplus.signum.indispensable.attestation.Attestation
+import at.asitplus.signum.indispensable.attestation.AndroidKeystoreAttestation
+import at.asitplus.signum.indispensable.attestation.IosHomebrewAttestation
+import at.asitplus.signum.indispensable.attestation.SelfAttestation
+```
+
+The old imports still compile through deprecated aliases. Migrate the imports when convenient.
+
+### `PublicKey`, `PrivateKey`, `Signature`, and EC import migration
+
+Before:
+
+```kotlin
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ECPoint
+```
+
+After:
+
+```kotlin
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.PrivateKey
+import at.asitplus.signum.indispensable.signature.Signature
+import at.asitplus.signum.indispensable.ec.ECCurve
+import at.asitplus.signum.indispensable.ec.ECPoint
+```
+
+### `JWS`, `JWE`, and `COSE` algorithm import migration
+
+Before:
+
+```kotlin
+import at.asitplus.signum.indispensable.josef.JsonWebAlgorithm
+import at.asitplus.signum.indispensable.josef.JwsAlgorithm
+import at.asitplus.signum.indispensable.josef.JweAlgorithm
+import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
+```
+
+After:
+
+```kotlin
+import at.asitplus.signum.indispensable.josef.algorithm.JsonWebAlgorithm
+import at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm
+import at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
+```
 
 ## The largest source migration: ASN.1 moved to `awesn1`
 

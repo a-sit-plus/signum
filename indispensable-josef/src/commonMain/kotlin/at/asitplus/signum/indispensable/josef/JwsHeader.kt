@@ -3,14 +3,15 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
+import at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm
 import at.asitplus.signum.indispensable.josef.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.toPublicKey
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlin.time.Instant

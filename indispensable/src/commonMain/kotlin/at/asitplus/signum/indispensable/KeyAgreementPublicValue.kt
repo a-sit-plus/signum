@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.Asn1PemEncodable
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
+import at.asitplus.signum.indispensable.key.PublicKey
 
 /**
  * Key agreement public value. Must be PEM encodable/decodable.

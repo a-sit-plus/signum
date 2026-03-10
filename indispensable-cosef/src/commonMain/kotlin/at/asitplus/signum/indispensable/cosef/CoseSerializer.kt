@@ -2,14 +2,15 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.awesn1.encoding.decodeFromDerOrNull
 import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
-import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.signatureMappingKeyOrNull
 import at.asitplus.signum.indispensable.toSignatureAlgorithmOrNull
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.signature.Signature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString

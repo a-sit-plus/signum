@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithmSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer

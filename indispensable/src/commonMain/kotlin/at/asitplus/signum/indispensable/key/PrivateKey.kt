@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.key
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
@@ -10,18 +10,24 @@ import at.asitplus.awesn1.crypto.RsaPrivateKey
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
-import at.asitplus.signum.indispensable.PublicKey.EC.Companion.asPublicKey
+import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.asn1.Int
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.asn1.decodeToBigInteger
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toBigInteger
+import at.asitplus.signum.indispensable.ec.ECCurve
+import at.asitplus.signum.indispensable.ec.ECPoint
+import at.asitplus.signum.indispensable.ec.fromIosEncodedPrivateKeyLength
+import at.asitplus.signum.indispensable.ec.iosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.internals.checkedAs
 import at.asitplus.signum.internals.checkedAsFn
 import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import at.asitplus.signum.indispensable.key.PublicKey.EC.Companion.asPublicKey
 
 private object EB_STRINGS {
     const val GENERIC_PRIVATE_KEY_PKCS8 = "PRIVATE KEY"
@@ -488,12 +494,14 @@ sealed interface PrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awes
                     ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
                 return EC.WithPublicKey(
                     BigInteger.fromByteArray(
-                        keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size),
+                        keyBytes.sliceArray(crv.iosEncodedPublicKeyLength until keyBytes.size),
                         Sign.POSITIVE
                     ),
                     encodeCurve = false,
                     encodePublicKey = true,
-                    publicKey = PublicKey.fromIosEncoded(keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)) as PublicKey.EC
+                    publicKey = PublicKey.fromIosEncoded(
+                        keyBytes.sliceArray(0 until crv.iosEncodedPublicKeyLength)
+                    ) as PublicKey.EC
                 )
             }
         }
