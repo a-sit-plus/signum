@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaSignatureBytes
@@ -62,6 +63,9 @@ internal actual fun verifyECDSAImpl
 private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
     alg.getJCASignatureInstance(config.provider).getOrThrow()
 
+private fun getRSAPreHashedInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
+    alg.getJCASignatureInstancePreHashed(config.provider).getOrThrow()
+
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: PublicKey.RSA,
@@ -78,7 +82,15 @@ internal actual fun verifyRSAImpl
              data: SignatureInput, signature: Signature.RSA,
              config: PlatformVerifierConfiguration)
 {
-    getRSAInstance(signatureAlgorithm, config).run {
+    val jcaSignature = if (data.format == null) {
+        getRSAInstance(signatureAlgorithm, config)
+    } else {
+        require(data.format == signatureAlgorithm.preHashedSignatureFormat) {
+            "Input format mismatch: ${data.format} != ${signatureAlgorithm.preHashedSignatureFormat}"
+        }
+        getRSAPreHashedInstance(signatureAlgorithm, config)
+    }
+    jcaSignature.run {
         initVerify(publicKey.toJcaPublicKey().getOrThrow())
         data.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)

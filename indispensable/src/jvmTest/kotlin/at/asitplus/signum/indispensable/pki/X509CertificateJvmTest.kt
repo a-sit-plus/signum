@@ -9,6 +9,8 @@ import at.asitplus.io.multibaseEncode
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ES256
+import at.asitplus.signum.indispensable.ES512
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
@@ -419,7 +421,7 @@ val X509CertificateJvmTest by testSuite {
         )
 
         tbsCertificate6 shouldBe tbsCertificate6
-        tbsCertificate1 shouldNotBe tbsCertificate6
+        (tbsCertificate1 != tbsCertificate6) shouldBe true
 
         tbsCertificate6.hashCode() shouldBe tbsCertificate6.hashCode()
         tbsCertificate1.hashCode() shouldNotBe tbsCertificate6.hashCode()

@@ -14,6 +14,7 @@ import at.asitplus.signum.indispensable.Awesn1Backed
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.toSignatureAlgorithmIdentifier
 
@@ -165,6 +166,48 @@ class CertificationRequest(
     ) : this(
         tbsCsr = tbsCsr,
         signatureAlgorithm = signatureAlgorithm.toSignatureAlgorithmIdentifier().getOrThrow(),
+        signature = signature
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("CertificationRequest(tbsCsr, signatureAlgorithm.raw, rawSignatureValue)")
+    )
+    constructor(
+        tbsCsr: CertificationRequestInfo,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        rawSignatureValue: Asn1BitString
+    ) : this(
+        tbsCsr = tbsCsr,
+        signatureAlgorithm = signatureAlgorithm.raw,
+        rawSignatureValue = rawSignatureValue
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("CertificationRequest(tbsCsr, signatureAlgorithm.raw, rawSignature)")
+    )
+    constructor(
+        tbsCsr: CertificationRequestInfo,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        rawSignature: Asn1Primitive
+    ) : this(
+        tbsCsr = tbsCsr,
+        signatureAlgorithm = signatureAlgorithm.raw,
+        rawSignature = rawSignature
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("CertificationRequest(tbsCsr, signatureAlgorithm.raw, signature)")
+    )
+    constructor(
+        tbsCsr: CertificationRequestInfo,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        signature: Signature
+    ) : this(
+        tbsCsr = tbsCsr,
+        signatureAlgorithm = signatureAlgorithm.raw,
         signature = signature
     )
 

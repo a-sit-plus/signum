@@ -15,6 +15,7 @@ import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
@@ -130,6 +131,66 @@ class CertificateInfo(
         validUntil = validUntil,
         subjectName = subjectName,
         subjectPublicKeyInfo = subjectPublicKeyInfo,
+        issuerUniqueID = issuerUniqueID,
+        subjectUniqueID = subjectUniqueID,
+        extensions = extensions,
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("CertificateInfo(version, serialNumber, signatureAlgorithm.raw, issuerName, validFrom, validUntil, subjectName, subjectPublicKeyInfo, issuerUniqueID, subjectUniqueID, extensions)")
+    )
+    constructor(
+        version: Int? = 2,
+        serialNumber: ByteArray,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        issuerName: List<RelativeDistinguishedName>,
+        validFrom: Asn1Time,
+        validUntil: Asn1Time,
+        subjectName: List<RelativeDistinguishedName>,
+        subjectPublicKeyInfo: RawSubjectPublicKeyInfo,
+        issuerUniqueID: Asn1BitString? = null,
+        subjectUniqueID: Asn1BitString? = null,
+        extensions: List<X509CertificateExtension>? = null,
+    ) : this(
+        version = version,
+        serialNumber = serialNumber,
+        signatureAlgorithm = signatureAlgorithm.raw,
+        issuerName = issuerName,
+        validFrom = validFrom,
+        validUntil = validUntil,
+        subjectName = subjectName,
+        subjectPublicKeyInfo = subjectPublicKeyInfo,
+        issuerUniqueID = issuerUniqueID,
+        subjectUniqueID = subjectUniqueID,
+        extensions = extensions,
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("CertificateInfo(version, serialNumber, signatureAlgorithm.raw, issuerName, validFrom, validUntil, subjectName, publicKey, issuerUniqueID, subjectUniqueID, extensions)")
+    )
+    constructor(
+        version: Int? = 2,
+        serialNumber: ByteArray,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        issuerName: List<RelativeDistinguishedName>,
+        validFrom: Asn1Time,
+        validUntil: Asn1Time,
+        subjectName: List<RelativeDistinguishedName>,
+        publicKey: PublicKey,
+        issuerUniqueID: Asn1BitString? = null,
+        subjectUniqueID: Asn1BitString? = null,
+        extensions: List<X509CertificateExtension>? = null,
+    ) : this(
+        version = version,
+        serialNumber = serialNumber,
+        signatureAlgorithm = signatureAlgorithm.raw,
+        issuerName = issuerName,
+        validFrom = validFrom,
+        validUntil = validUntil,
+        subjectName = subjectName,
+        publicKey = publicKey,
         issuerUniqueID = issuerUniqueID,
         subjectUniqueID = subjectUniqueID,
         extensions = extensions,
@@ -365,6 +426,48 @@ class Certificate(
     ) : this(
         tbsCertificate = tbsCertificate,
         signatureAlgorithm = signatureAlgorithm.toSignatureAlgorithmIdentifier().getOrThrow(),
+        signature = signature,
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("Certificate(tbsCertificate, signatureAlgorithm.raw, rawSignatureValue)")
+    )
+    constructor(
+        tbsCertificate: CertificateInfo,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        rawSignatureValue: Asn1BitString,
+    ) : this(
+        tbsCertificate = tbsCertificate,
+        signatureAlgorithm = signatureAlgorithm.raw,
+        rawSignatureValue = rawSignatureValue,
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("Certificate(tbsCertificate, signatureAlgorithm.raw, rawSignature)")
+    )
+    constructor(
+        tbsCertificate: CertificateInfo,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        rawSignature: Asn1Primitive,
+    ) : this(
+        tbsCertificate = tbsCertificate,
+        signatureAlgorithm = signatureAlgorithm.raw,
+        rawSignature = rawSignature,
+    )
+
+    @Deprecated(
+        "Pass SignatureAlgorithmIdentifier directly.",
+        ReplaceWith("Certificate(tbsCertificate, signatureAlgorithm.raw, signature)")
+    )
+    constructor(
+        tbsCertificate: CertificateInfo,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        signature: Signature,
+    ) : this(
+        tbsCertificate = tbsCertificate,
+        signatureAlgorithm = signatureAlgorithm.raw,
         signature = signature,
     )
 

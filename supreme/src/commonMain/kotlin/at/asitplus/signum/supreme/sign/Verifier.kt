@@ -111,8 +111,6 @@ class PlatformRSAVerifier
     override fun verify(data: SignatureInput, sig: Signature) = catching {
         require (sig is Signature.RSA)
             { "Attempted to validate non-RSA signature using RSA public key" }
-        if (data.format != null)
-            throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")
         return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { Verifier.Success }
     }
 }

@@ -260,7 +260,7 @@ val EphemeralSignerCommonTests  by testSuite {
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
-                    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
+                    signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("Foo")))),
                     validFrom = Asn1Time(
                         Clock.System.now()
@@ -312,7 +312,7 @@ val EphemeralSignerCommonTests  by testSuite {
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
-                    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
+                    signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("Foo")))),
                     validFrom = Asn1Time(
                         Clock.System.now()
