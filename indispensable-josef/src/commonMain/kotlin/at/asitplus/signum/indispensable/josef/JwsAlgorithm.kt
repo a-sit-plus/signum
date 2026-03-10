@@ -5,10 +5,26 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.AlgorithmRegistry
+import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.HmacAlgorithm
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.Pkcs1RsaSignaturePadding
+import at.asitplus.signum.indispensable.PssRsaSignaturePadding
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.RsaSignatureMappingFamily
+import at.asitplus.signum.indispensable.Signature as SignumSignature
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.SignatureMappingKey
+import at.asitplus.signum.indispensable.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.WithDigest
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -17,143 +33,126 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-
 /**
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
 @Serializable(with = JwsAlgorithmSerializer::class)
-sealed class JwsAlgorithm(override val identifier: String) :
-    JsonWebAlgorithm, SpecializedDataIntegrityAlgorithm, Enumerable {
+open class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
+    override fun toString(): String = identifier
+
+    companion object : Enumeration<JwsAlgorithm> {
+        private val registeredById = linkedMapOf<String, JwsAlgorithm>()
+
+        override val entries: Collection<JwsAlgorithm>
+            get() {
+                Signature.entries
+                MAC.entries
+                return registeredById.values
+            }
+
+        fun <T : JwsAlgorithm> register(algorithm: T): T {
+            registeredById.putIfAbsent(algorithm.identifier, algorithm)
+            return algorithm
+        }
+
+        fun fromIdentifier(identifier: String): JwsAlgorithm? {
+            Signature.entries
+            MAC.entries
+            return registeredById[identifier]
+        }
+    }
 
     @Serializable(with = JwsAlgorithmSerializer::class)
-    sealed class Signature(identifier: String, override val algorithm: SignatureAlgorithm) :
-        JwsAlgorithm(identifier),
-        SpecializedSignatureAlgorithm {
-
-        sealed class EC(identifier: String, algorithm: SignatureAlgorithm) : Signature(identifier, algorithm) {
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES256 : EC("ES256", SignatureAlgorithm.ECDSAwithSHA256)
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES384 : EC("ES384", SignatureAlgorithm.ECDSAwithSHA384)
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES512 : EC("ES512", SignatureAlgorithm.ECDSAwithSHA512)
-
-            /** The curve to create signatures on.
-             * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
-            val ecCurve: ECCurve
-                get() = when (this) {
-                    ES256 -> ECCurve.SECP_256_R_1
-                    ES384 -> ECCurve.SECP_384_R_1
-                    ES512 -> ECCurve.SECP_521_R_1
-                }
-
-            companion object : Enumeration<EC> {
-                override val entries: Collection<EC> by lazy {
-                    listOf(
-                        ES256,
-                        ES384,
-                        ES512,
-                    )
-                }
-            }
-        }
-
-        sealed class RSA(identifier: String, algorithm: SignatureAlgorithm) : Signature(identifier, algorithm) {
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object PS256 : RSA("PS256", SignatureAlgorithm.RSAwithSHA256andPSSPadding)
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object PS384 : RSA("PS384", SignatureAlgorithm.RSAwithSHA384andPSSPadding)
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object PS512 : RSA("PS512", SignatureAlgorithm.RSAwithSHA512andPSSPadding)
-
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object RS256 : RSA("RS256", SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object RS384 : RSA("RS384", SignatureAlgorithm.RSAwithSHA384andPKCS1Padding)
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object RS512 : RSA("RS512", SignatureAlgorithm.RSAwithSHA512andPKCS1Padding)
-
-            /** The one exception, which is not a valid JWS algorithm identifier */
-
-            @Serializable(with = JwsAlgorithmSerializer::class)
-            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
-            companion object : Enumeration<RSA> {
-                override val entries: Collection<RSA> by lazy {
-                    setOf(
-                        PS256,
-                        PS384,
-                        PS512,
-                        RS256,
-                        RS384,
-                        RS512,
-                        NON_JWS_SHA1_WITH_RSA,
-                    )
-                }
-            }
-
-        }
-
+    open class Signature(
+        identifier: String,
+        override val algorithm: SignatureAlgorithm,
+        private val rawSignatureDecoder: (ByteArray) -> SignumSignature.RawByteEncodable,
+    ) : JwsAlgorithm(identifier), SpecializedSignatureAlgorithm {
 
         open val digest: Digest?
             get() = (algorithm as? WithDigest)?.digest
 
-        companion object : Enumeration<Signature> {
-            override val entries: Collection<Signature> by lazy { EC.entries + RSA.entries }
-            //convenience
-            val ES256 = EC.ES256
-            val ES384 = EC.ES384
-            val ES512 = EC.ES512
-            val RS256 = RSA.RS256
-            val RS384 = RSA.RS384
-            val RS512 = RSA.RS512
-            val PS256 = RSA.PS256
-            val PS384 = RSA.PS384
-            val PS512 = RSA.PS512
-            val NON_JWS_SHA1_WITH_RSA = RSA.NON_JWS_SHA1_WITH_RSA
-        }
+        open fun decodeRawSignature(bytes: ByteArray): SignumSignature.RawByteEncodable =
+            rawSignatureDecoder(bytes)
 
+        companion object : Enumeration<Signature> {
+            private val builtIns = linkedMapOf<String, Signature>()
+
+            override val entries: Collection<Signature>
+                get() = builtIns.values
+
+            fun <T : Signature> register(algorithm: T): T {
+                builtIns.putIfAbsent(algorithm.identifier, algorithm)
+                JwsAlgorithm.register(algorithm)
+                return algorithm
+            }
+
+            val ES256 = register(
+                Signature(
+                    "ES256",
+                    EcdsaSignatureAlgorithm(Digest.SHA256, null),
+                ) { SignumSignature.EC.fromRawBytes(ECCurve.SECP_256_R_1, it) }
+            )
+            val ES384 = register(
+                Signature(
+                    "ES384",
+                    EcdsaSignatureAlgorithm(Digest.SHA384, null),
+                ) { SignumSignature.EC.fromRawBytes(ECCurve.SECP_384_R_1, it) }
+            )
+            val ES512 = register(
+                Signature(
+                    "ES512",
+                    EcdsaSignatureAlgorithm(Digest.SHA512, null),
+                ) { SignumSignature.EC.fromRawBytes(ECCurve.SECP_521_R_1, it) }
+            )
+            val PS256 = register(
+                Signature("PS256", RsaSignatureAlgorithm(Digest.SHA256, PssRsaSignaturePadding)) { SignumSignature.RSA(it) }
+            )
+            val PS384 = register(
+                Signature("PS384", RsaSignatureAlgorithm(Digest.SHA384, PssRsaSignaturePadding)) { SignumSignature.RSA(it) }
+            )
+            val PS512 = register(
+                Signature("PS512", RsaSignatureAlgorithm(Digest.SHA512, PssRsaSignaturePadding)) { SignumSignature.RSA(it) }
+            )
+            val RS256 = register(
+                Signature("RS256", RsaSignatureAlgorithm(Digest.SHA256, Pkcs1RsaSignaturePadding)) { SignumSignature.RSA(it) }
+            )
+            val RS384 = register(
+                Signature("RS384", RsaSignatureAlgorithm(Digest.SHA384, Pkcs1RsaSignaturePadding)) { SignumSignature.RSA(it) }
+            )
+            val RS512 = register(
+                Signature("RS512", RsaSignatureAlgorithm(Digest.SHA512, Pkcs1RsaSignaturePadding)) { SignumSignature.RSA(it) }
+            )
+            val NON_JWS_SHA1_WITH_RSA = register(
+                Signature("RS1", RsaSignatureAlgorithm(Digest.SHA1, Pkcs1RsaSignaturePadding)) {
+                    SignumSignature.RSA(it)
+                }
+            )
+        }
     }
 
     @Serializable(with = JwsAlgorithmSerializer::class)
-    sealed class MAC(identifier: String, override val algorithm: MessageAuthenticationCode) :
-        JwsAlgorithm(identifier) {
-
-        @Serializable(with = JwsAlgorithmSerializer::class)
-        data object HS256 : MAC("HS256", HMAC.SHA256)
-
-        @Serializable(with = JwsAlgorithmSerializer::class)
-        data object HS384 : MAC("HS384", HMAC.SHA384)
-
-        @Serializable(with = JwsAlgorithmSerializer::class)
-        data object HS512 : MAC("HS512", HMAC.SHA512)
-
-        @Serializable(with = JwsAlgorithmSerializer::class)
-        data object UNOFFICIAL_HS1 : MAC("H1", HMAC.SHA1)
-
+    open class MAC(
+        identifier: String,
+        override val algorithm: MessageAuthenticationCode,
+    ) : JwsAlgorithm(identifier), SpecializedMessageAuthenticationCode {
         companion object : Enumeration<MAC> {
-            override val entries: Collection<MAC> by lazy {
-                setOf(
-                    HS256,
-                    HS384,
-                    HS512,
-                    UNOFFICIAL_HS1,
-                )
-            }
-        }
-    }
+            private val builtIns = linkedMapOf<String, MAC>()
 
-    companion object : Enumeration<JwsAlgorithm> {
-        //Why can't these entries be accessed right away and directly assigning always result in a nullpointer?
-        //why does it need lazy?
-        override val entries: Collection<JwsAlgorithm> by lazy { Signature.entries + MAC.entries }
+            override val entries: Collection<MAC>
+                get() = builtIns.values
+
+            fun <T : MAC> register(algorithm: T): T {
+                builtIns.putIfAbsent(algorithm.identifier, algorithm)
+                JwsAlgorithm.register(algorithm)
+                return algorithm
+            }
+
+            val HS256 = register(MAC("HS256", HmacAlgorithm.byDigest(Digest.SHA256)))
+            val HS384 = register(MAC("HS384", HmacAlgorithm.byDigest(Digest.SHA384)))
+            val HS512 = register(MAC("HS512", HmacAlgorithm.byDigest(Digest.SHA512)))
+            val UNOFFICIAL_HS1 = register(MAC("H1", HmacAlgorithm.byDigest(Digest.SHA1)))
+        }
     }
 }
 
@@ -161,24 +160,24 @@ private const val JWS_SIGNATURE_NAMESPACE = "jws.signature"
 private const val JWS_MAC_NAMESPACE = "jws.mac"
 
 private val joseBuiltInMappings = run {
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA256, JwsAlgorithm.Signature.ES256)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA384, JwsAlgorithm.Signature.ES384)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA512, JwsAlgorithm.Signature.ES512)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PKCS1, JwsAlgorithm.Signature.RS256)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PKCS1, JwsAlgorithm.Signature.RS384)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PKCS1, JwsAlgorithm.Signature.RS512)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PSS, JwsAlgorithm.Signature.PS256)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PSS, JwsAlgorithm.Signature.PS384)
-    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PSS, JwsAlgorithm.Signature.PS512)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.ES256.algorithm, JwsAlgorithm.Signature.ES256)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.ES384.algorithm, JwsAlgorithm.Signature.ES384)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.ES512.algorithm, JwsAlgorithm.Signature.ES512)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.RS256.algorithm, JwsAlgorithm.Signature.RS256)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.RS384.algorithm, JwsAlgorithm.Signature.RS384)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.RS512.algorithm, JwsAlgorithm.Signature.RS512)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.PS256.algorithm, JwsAlgorithm.Signature.PS256)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.PS384.algorithm, JwsAlgorithm.Signature.PS384)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, JwsAlgorithm.Signature.PS512.algorithm, JwsAlgorithm.Signature.PS512)
     AlgorithmRegistry.registerSignatureMapping(
         JWS_SIGNATURE_NAMESPACE,
-        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, Pkcs1RsaSignaturePadding),
         JwsAlgorithm.Signature.NON_JWS_SHA1_WITH_RSA
     )
-    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA1, JwsAlgorithm.MAC.UNOFFICIAL_HS1)
-    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA256, JwsAlgorithm.MAC.HS256)
-    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA384, JwsAlgorithm.MAC.HS384)
-    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA512, JwsAlgorithm.MAC.HS512)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, JwsAlgorithm.MAC.UNOFFICIAL_HS1.algorithm, JwsAlgorithm.MAC.UNOFFICIAL_HS1)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, JwsAlgorithm.MAC.HS256.algorithm, JwsAlgorithm.MAC.HS256)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, JwsAlgorithm.MAC.HS384.algorithm, JwsAlgorithm.MAC.HS384)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, JwsAlgorithm.MAC.HS512.algorithm, JwsAlgorithm.MAC.HS512)
 }
 
 object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
@@ -191,7 +190,8 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 
     override fun deserialize(decoder: Decoder): JwsAlgorithm {
         val decoded = decoder.decodeString()
-        return JwsAlgorithm.entries.first { it.identifier == decoded }
+        return JwsAlgorithm.fromIdentifier(decoded)
+            ?: throw IllegalArgumentException("Unknown JWS algorithm: $decoded")
     }
 }
 

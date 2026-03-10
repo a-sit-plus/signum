@@ -199,7 +199,7 @@ fun PublicKey.toCoseKey(
 ): KmmResult<CoseKey> =
     when (this) {
         is PublicKey.EC ->
-            if ((algorithm != null) && (algorithm.algorithm !is EcdsaSignatureAlgorithm))
+            if ((algorithm != null) && (algorithm.algorithm.signatureMappingKeyOrNull()?.family != EcdsaSignatureMappingFamily))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.preferCompressedRepresentation) {
@@ -225,16 +225,8 @@ fun PublicKey.toCoseKey(
             }
 
         is PublicKey.RSA ->
-            if ((algorithm != null) && (algorithm !in listOf(
-                    CoseAlgorithm.Signature.PS256,
-                    CoseAlgorithm.Signature.PS384,
-                    CoseAlgorithm.Signature.PS512,
-                    CoseAlgorithm.Signature.RS256,
-                    CoseAlgorithm.Signature.RS384,
-                    CoseAlgorithm.Signature.RS512,
-                    CoseAlgorithm.Signature.RS1
-                ))
-            ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
+            if ((algorithm != null) && (algorithm.algorithm.signatureMappingKeyOrNull()?.family != RsaSignatureMappingFamily))
+                failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else catching {
                 CoseKey(
                     keyParams = CoseKeyParams.RsaParams(

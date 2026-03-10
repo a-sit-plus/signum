@@ -119,6 +119,11 @@ private val jcaBuiltInMappings = run {
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA1.jcaPSSParams) } }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
         JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } }
     )
@@ -133,6 +138,26 @@ private val jcaBuiltInMappings = run {
         JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } }
     )
 
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+    )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),

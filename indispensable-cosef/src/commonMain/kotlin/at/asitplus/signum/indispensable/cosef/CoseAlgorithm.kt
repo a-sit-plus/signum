@@ -9,195 +9,143 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.indispensable.symmetric.AesGcmAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.SerializationException
 
 /**
  * See [COSE Algorithm Registry](https://www.iana.org/assignments/cose/cose.xhtml)
  */
 @Serializable(with = CoseAlgorithmSerializer::class)
-sealed interface CoseAlgorithm : Enumerable {
+interface CoseAlgorithm : Enumerable {
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed interface Symmetric : CoseAlgorithm {
+    interface Symmetric : CoseAlgorithm {
         companion object : Enumeration<Symmetric> {
-            override val entries: Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
+            override val entries: Collection<Symmetric>
+                get() = MAC.entries + SymmetricEncryption.entries
         }
     }
 
-    /**
-     * See [COSE Algorithm Registry](https://www.iana.org/assignments/cose/cose.xhtml)
-     */
     val coseValue: Int
 
     @Deprecated("Use value instead", ReplaceWith("coseValue"))
     val value get() = coseValue
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
+    open class DataIntegrity(
+        override val coseValue: Int,
+        override val algorithm: DataIntegrityAlgorithm,
+        private val displayName: String = algorithm.toString(),
+    ) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
+        override fun toString(): String = displayName
+
         companion object : Enumeration<DataIntegrity> {
-            override val entries: Collection<DataIntegrity> by lazy { Signature.entries + MAC.entries }
+            override val entries: Collection<DataIntegrity>
+                get() = Signature.entries + MAC.entries
         }
     }
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class SymmetricEncryption(
+    open class SymmetricEncryption(
         override val coseValue: Int,
-        override val algorithm: SymmetricEncryptionAlgorithm<*, *, *>
-    ) :
-        CoseAlgorithm.Symmetric, SpecializedSymmetricEncryptionAlgorithm {
+        override val algorithm: SymmetricEncryptionAlgorithm<*, *, *>,
+        displayName: String = algorithm.toString(),
+    ) : CoseAlgorithm.Symmetric, SpecializedSymmetricEncryptionAlgorithm {
+        private val displayName = displayName
 
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object A128GCM : SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128_GCM)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object A192GCM : SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192_GCM)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object A256GCM : SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256_GCM)
-
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
+        override fun toString(): String = displayName
 
         companion object : Enumeration<SymmetricEncryption> {
-            override val entries: Collection<SymmetricEncryption> by lazy {
-                setOf(
-                    A128GCM,
-                    A192GCM,
-                    A256GCM,
-                    ChaCha20Poly1305
-                )
+            private val builtIns = linkedMapOf<Int, SymmetricEncryption>()
+
+            override val entries: Collection<SymmetricEncryption>
+                get() = builtIns.values
+
+            fun <T : SymmetricEncryption> register(algorithm: T): T {
+                builtIns.putIfAbsent(algorithm.coseValue, algorithm)
+                return algorithm
             }
+
+            val A128GCM = register(SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128_GCM, "A128GCM"))
+            val A192GCM = register(SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192_GCM, "A192GCM"))
+            val A256GCM = register(SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256_GCM, "A256GCM"))
+            val ChaCha20Poly1305 =
+                register(SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305, "ChaCha20Poly1305"))
         }
     }
 
-
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class Signature(value: Int, override val algorithm: SignatureAlgorithm) :
-        DataIntegrity(value),
-        SpecializedSignatureAlgorithm {
-
-        // ECDSA with SHA-size
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES256 : Signature(-7, SignatureAlgorithm.ECDSA_SHA256)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ESP256 :
-            Signature(-9, EcdsaSignatureAlgorithm(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1))
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES384 : Signature(-35, SignatureAlgorithm.ECDSA_SHA384)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ESP384 :
-            Signature(-51, EcdsaSignatureAlgorithm(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1))
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES512 : Signature(-36, SignatureAlgorithm.ECDSA_SHA512)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ESP512 :
-            Signature(-52, EcdsaSignatureAlgorithm(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1))
-
-        // RSASSA-PSS with SHA-size
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS256 : Signature(-37, SignatureAlgorithm.RSA_SHA256_PSS)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS384 : Signature(-38, SignatureAlgorithm.RSA_SHA384_PSS)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS512 : Signature(-39, SignatureAlgorithm.RSA_SHA512_PSS)
-
-        // RSASSA-PKCS1-v1_5 with SHA-size
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS256 : Signature(-257, SignatureAlgorithm.RSA_SHA256_PKCS1)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS384 : Signature(-258, SignatureAlgorithm.RSA_SHA384_PKCS1)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS512 : Signature(-259, SignatureAlgorithm.RSA_SHA512_PKCS1)
-
-        // RSASSA-PKCS1-v1_5 using SHA-1
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS1 : Signature(-65535, RsaSignatureAlgorithm(Digest.SHA1, Pkcs1RsaSignaturePadding))
-
-        companion object : Enumeration<Signature> {
-            override val entries: Collection<Signature> by lazy {
-                setOf(
-                    ESP256,
-                    ES256,
-                    ESP384,
-                    ES384,
-                    ESP512,
-                    ES512,
-                    PS256,
-                    PS384,
-                    PS512,
-                    RS256,
-                    RS384,
-                    RS512,
-                    RS1,
-                )
-            }
-        }
-
-    }
-
-
-    @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class MAC(
+    open class Signature(
         value: Int,
-        override val algorithm: MessageAuthenticationCode
-    ) :
-        DataIntegrity(value), Symmetric, SpecializedMessageAuthenticationCode {
+        override val algorithm: SignatureAlgorithm,
+        displayName: String = algorithm.toString(),
+    ) : DataIntegrity(value, algorithm, displayName), SpecializedSignatureAlgorithm {
+        companion object : Enumeration<Signature> {
+            private val builtIns = linkedMapOf<Int, Signature>()
 
+            override val entries: Collection<Signature>
+                get() = builtIns.values
+
+            fun <T : Signature> register(algorithm: T): T {
+                builtIns.putIfAbsent(algorithm.coseValue, algorithm)
+                return algorithm
+            }
+
+            val ES256 = register(Signature(-7, SignatureAlgorithm.ECDSA_SHA256, "ES256"))
+            val ESP256 = register(Signature(-9, EcdsaSignatureAlgorithm(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1), "ESP256"))
+            val ES384 = register(Signature(-35, SignatureAlgorithm.ECDSA_SHA384, "ES384"))
+            val ESP384 = register(Signature(-51, EcdsaSignatureAlgorithm(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1), "ESP384"))
+            val ES512 = register(Signature(-36, SignatureAlgorithm.ECDSA_SHA512, "ES512"))
+            val ESP512 = register(Signature(-52, EcdsaSignatureAlgorithm(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1), "ESP512"))
+            val PS256 = register(Signature(-37, SignatureAlgorithm.RSA_SHA256_PSS, "PS256"))
+            val PS384 = register(Signature(-38, SignatureAlgorithm.RSA_SHA384_PSS, "PS384"))
+            val PS512 = register(Signature(-39, SignatureAlgorithm.RSA_SHA512_PSS, "PS512"))
+            val RS256 = register(Signature(-257, SignatureAlgorithm.RSA_SHA256_PKCS1, "RS256"))
+            val RS384 = register(Signature(-258, SignatureAlgorithm.RSA_SHA384_PKCS1, "RS384"))
+            val RS512 = register(Signature(-259, SignatureAlgorithm.RSA_SHA512_PKCS1, "RS512"))
+            val RS1 = register(Signature(-65535, RsaSignatureAlgorithm(Digest.SHA1, Pkcs1RsaSignaturePadding), "RS1"))
+        }
+    }
+
+    @Serializable(with = CoseAlgorithmSerializer::class)
+    open class MAC(
+        value: Int,
+        override val algorithm: MessageAuthenticationCode,
+        displayName: String = algorithm.toString(),
+    ) : DataIntegrity(value, algorithm, displayName), Symmetric, SpecializedMessageAuthenticationCode {
         val tagLength get() = algorithm.outputLength
 
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS256_64 : MAC(4, MessageAuthenticationCode.HMAC_SHA256.truncatedTo(64.bit))
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS256 : MAC(5, MessageAuthenticationCode.HMAC_SHA256)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS384 : MAC(6, MessageAuthenticationCode.HMAC_SHA384)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS512 : MAC(7, MessageAuthenticationCode.HMAC_SHA512)
-
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, MessageAuthenticationCode.HMAC_SHA1)
-
         companion object : Enumeration<MAC> {
-            override val entries: Collection<MAC> by lazy {
-                setOf(
-                    HS256,
-                    HS256_64,
-                    HS384,
-                    HS512,
-                    UNOFFICIAL_HS1,
-                )
+            private val builtIns = linkedMapOf<Int, MAC>()
+
+            override val entries: Collection<MAC>
+                get() = builtIns.values
+
+            fun <T : MAC> register(algorithm: T): T {
+                builtIns.putIfAbsent(algorithm.coseValue, algorithm)
+                return algorithm
             }
+
+            val HS256_64 = register(MAC(4, MessageAuthenticationCode.HMAC_SHA256.truncatedTo(64.bit), "HS256_64"))
+            val HS256 = register(MAC(5, MessageAuthenticationCode.HMAC_SHA256, "HS256"))
+            val HS384 = register(MAC(6, MessageAuthenticationCode.HMAC_SHA384, "HS384"))
+            val HS512 = register(MAC(7, MessageAuthenticationCode.HMAC_SHA512, "HS512"))
+            val UNOFFICIAL_HS1 = register(MAC(-2341169, MessageAuthenticationCode.HMAC_SHA1, "H1"))
         }
     }
 
     companion object : Enumeration<CoseAlgorithm> {
-        override val entries: Collection<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
+        override val entries: Collection<CoseAlgorithm>
+            get() = DataIntegrity.entries + SymmetricEncryption.entries
     }
-
 }
 
 object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
@@ -214,7 +162,6 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
         return CoseAlgorithm.entries.firstOrNull { it.coseValue == decoded }
             ?: throw SerializationException("Unsupported COSE algorithm value $decoded")
     }
-
 }
 
 private const val COSE_SIGNATURE_NAMESPACE = "cose.signature"
@@ -258,14 +205,10 @@ private val coseBuiltInMappings = run {
     AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA512, CoseAlgorithm.MAC.HS512)
     AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MacMappingKey(Digest.SHA256, 64.bit), CoseAlgorithm.MAC.HS256_64)
 
-    AlgorithmRegistry.registerSymmetricMapping(
-        COSE_SYMMETRIC_NAMESPACE,
-        SymmetricMappingKey(ChaCha20Poly1305SymmetricMappingKind, SymmetricEncryptionAlgorithm.ChaCha20Poly1305.keySize),
-        CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
-    )
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricMappingKey(AesGcmSymmetricMappingKind, 128.bit), CoseAlgorithm.SymmetricEncryption.A128GCM)
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricMappingKey(AesGcmSymmetricMappingKind, 192.bit), CoseAlgorithm.SymmetricEncryption.A192GCM)
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricMappingKey(AesGcmSymmetricMappingKind, 256.bit), CoseAlgorithm.SymmetricEncryption.A256GCM)
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.ChaCha20Poly1305, CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305)
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.AES_128_GCM, CoseAlgorithm.SymmetricEncryption.A128GCM)
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.AES_192_GCM, CoseAlgorithm.SymmetricEncryption.A192GCM)
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.AES_256_GCM, CoseAlgorithm.SymmetricEncryption.A256GCM)
 }
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
@@ -296,14 +239,11 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
         ?: throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
 }
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> =
     this.algorithm.toCoseAlgorithm()
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedDataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
     this.algorithm.toCoseAlgorithm()
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedMessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> =
     this.algorithm.toCoseAlgorithm()

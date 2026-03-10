@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import at.asitplus.signum.indispensable.SpecializedDataIntegrityAlgorithm
 
 //somehow including kmmresult-test makes this fail
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
@@ -18,12 +19,12 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
 val ConversionTest by testSuite {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
-            withData(JwsAlgorithm.entries) {
+            withData(JwsAlgorithm.entries.filterIsInstance<SpecializedDataIntegrityAlgorithm>()) {
                 it.algorithm.toJwsAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized SignatureAlgorithm" - {
-            withData(JwsAlgorithm.entries) {
+            withData(JwsAlgorithm.entries.filterIsInstance<SpecializedDataIntegrityAlgorithm>()) {
                 it.toJwsAlgorithm() shouldSucceedWith it
             }
         }

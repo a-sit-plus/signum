@@ -73,12 +73,8 @@ data class JwsSigned<out P : Any>(
             }
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
-                when (val alg = header.algorithm) {
-                    is JwsAlgorithm.Signature.EC -> Signature.EC.fromRawBytes(alg.ecCurve, this)
-                    is JwsAlgorithm.Signature.RSA -> Signature.RSA(this)
-                    else -> throw IllegalArgumentException("unsupported algorithm: $alg")
-                }
-
+                (header.algorithm as? JwsAlgorithm.Signature)?.decodeRawSignature(this)
+                    ?: throw IllegalArgumentException("unsupported algorithm: ${header.algorithm}")
             }
             val plainSignatureInput = (stringList[0] + "." + stringList[1]).encodeToByteArray()
             JwsSigned(header, payload, signature, plainSignatureInput)
