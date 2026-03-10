@@ -79,6 +79,7 @@ markdown_extensions:
 nav:
   - Manual:
       - Overview: index.md
+      - Migration from 3.19: migration.md
       - CHANGELOG.md
       - Examples: examples.md
       - Modules:
