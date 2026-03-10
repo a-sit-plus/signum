@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer

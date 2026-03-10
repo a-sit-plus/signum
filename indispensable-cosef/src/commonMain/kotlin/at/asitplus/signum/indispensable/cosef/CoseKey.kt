@@ -48,7 +48,7 @@ data class CoseKey(
     val operations: Array<CoseKeyOperation>? = null,
     val baseIv: ByteArray? = null,
     val keyParams: CoseKeyParams?,
-) : SpecializedCryptoPublicKey, SpecializedSymmetricKey {
+) : SpecializedPublicKey, SpecializedSymmetricKey {
     override fun toString(): String {
         return "CoseKey(type=$type," +
                 " keyId=${keyId?.encodeToString(Base16Strict)}," +
@@ -99,7 +99,7 @@ data class CoseKey(
      * [CoseKeyParams.EcYBoolParams.toPublicKey] or [CoseKeyParams.EcYByteArrayParams.toPublicKey]
      */
     override fun toCryptoPublicKey(): KmmResult<PublicKey> =
-        keyParams?.toCryptoPublicKey()?.map { it.coseKid = this.keyId; it }
+        keyParams?.toPublicKey()?.map { it.coseKid = this.keyId; it }
             ?: failure(IllegalArgumentException("No public key parameters!"))
 
 

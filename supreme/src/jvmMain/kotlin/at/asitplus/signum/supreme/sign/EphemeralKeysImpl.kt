@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -43,34 +42,34 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         }
     }
 
-    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
+    protected abstract fun parseFromJca(bytes: ByteArray): Signature.RawByteEncodable
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-              override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+              override val publicKey: PublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
         : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+        override fun parseFromJca(bytes: ByteArray) = Signature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
-        final override fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
+        final override fun exportPrivateKey() = (privateKey as ECPrivateKey).toPrivateKey()
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
             KeyAgreement.getInstance("ECDH").let {
                 it.init(privateKey)
-                it.doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+                it.doPhase(publicValue.asPublicKey().toJcaPublicKey().getOrThrow(), true)
                 it.generateSecret()
             }
         }
     }
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                         override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+                                         override val publicKey: PublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : EphemeralSigner(privateKey, config.provider), Signer.RSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = Signature.RSA.parseFromJca(bytes)
 
         @SecretExposure
-        final override fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()
+        final override fun exportPrivateKey() = (privateKey as RSAPrivateKey).toPrivateKey()
     }
 }
 
@@ -83,20 +82,20 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
 internal sealed interface JVMEphemeralKey {
     class EC(pair: KeyPair, digests: Set<Digest?>)
         : EphemeralKeyBase.EC<ECPrivateKey, EphemeralSigner.EC>(EphemeralSigner::EC,
-        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
+        pair.private as ECPrivateKey, pair.public.toPublicKey().getOrThrow() as PublicKey.EC,
         digests = digests)
     {
         @SecretExposure
-        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+        override fun exportPrivateKey() = privateKey.toPrivateKey()
     }
 
     class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
         : EphemeralKeyBase.RSA<RSAPrivateKey, EphemeralSigner.RSA>(EphemeralSigner::RSA,
-        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
+        pair.private as RSAPrivateKey, pair.public.toPublicKey().getOrThrow() as PublicKey.RSA,
         digests = digests, paddings = paddings)
     {
         @SecretExposure
-        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+        override fun exportPrivateKey() = privateKey.toPrivateKey()
     }
 }
 

@@ -17,7 +17,7 @@ import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Security
-import java.security.Signature
+import java.security.Signature as JcaSignature
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import java.util.*
@@ -42,22 +42,22 @@ val SignatureCodecTest  by testSuite {
             }.generateKeyPair()
         }
         withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
-            val sig = Signature.getInstance("${digest}withECDSA").run {
+            val sig = JcaSignature.getInstance("${digest}withECDSA").run {
                 initSign(keys.private)
                 update(data)
                 sign()
             }
 
-            CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            CryptoSignature.parseFromJca(
+            Signature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            Signature.parseFromJca(
                 sig,
                 SignatureAlgorithm.ECDSA(Digest.valueOf(digest), ECCurve.byJcaName(curve))
             ).jcaSignatureBytes shouldBe sig
 
-            Signature.getInstance("${digest}withECDSAinP1363Format").run {
+            JcaSignature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(CryptoSignature.EC.parseFromJca(sig).encodeToDer())
+                verify(Signature.EC.parseFromJca(sig).encodeToDer())
             }
 
         }
@@ -71,14 +71,14 @@ val SignatureCodecTest  by testSuite {
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.generateKeyPair() }
         withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
             val data = Random.nextBytes(256)
-            val sig = Signature.getInstance("${digest}withRSA").run {
+            val sig = JcaSignature.getInstance("${digest}withRSA").run {
                 initSign(keys.private)
                 update(data)
                 sign()
             }
 
-            CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            CryptoSignature.parseFromJca(
+            Signature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            Signature.parseFromJca(
                 sig,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
             ).jcaSignatureBytes shouldBe sig
@@ -104,8 +104,8 @@ val SignatureCodecTest  by testSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
-            CryptoSignature.parseFromJca(
+            Signature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            Signature.parseFromJca(
                 certificateHolder.signature,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
             ).encodeToDer() shouldBe bcSig
@@ -113,4 +113,3 @@ val SignatureCodecTest  by testSuite {
         }
     }
 }
-

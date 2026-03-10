@@ -12,10 +12,6 @@ import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
 import platform.Security.*
 
-import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
-import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
-
-
 val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when (this) {
     is AsymmetricEncryptionAlgorithm.RSA -> when(padding){
         at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> kSecKeyAlgorithmRSAEncryptionOAEPSHA1
@@ -99,19 +95,19 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
     get() =
         this.algorithm.secKeyAlgorithmPreHashed
 
-val CryptoSignature.iosEncoded
+val Signature.iosEncoded
     get() = when (this) {
-        is CryptoSignature.EC -> this.encodeToDer()
-        is CryptoSignature.RSA -> this.rawByteArray
+        is Signature.EC -> this.encodeToDer()
+        is Signature.RSA -> this.rawByteArray
     }
 
-fun CryptoPublicKey.toSecKey() = catching {
+fun PublicKey.toSecKey() = catching {
     memScoped {
         val attr = cfDictionaryOf(
             kSecAttrKeyClass to kSecAttrKeyClassPublic,
             kSecAttrKeyType to when (this@toSecKey) {
-                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
-                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
+                is PublicKey.EC -> kSecAttrKeyTypeEC
+                is PublicKey.RSA -> kSecAttrKeyTypeRSA
             })
         corecall {
             SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().let(::giveToCF), attr, error)
@@ -120,21 +116,21 @@ fun CryptoPublicKey.toSecKey() = catching {
 }
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
-fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
+fun PrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
     memScoped {
         var data : ByteArray? = null
         val attr = createCFDictionary {
             kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
             kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             data = when (this@toSecKey) {
-                is CryptoPrivateKey.EC.WithPublicKey -> {
+                is PrivateKey.EC.WithPublicKey -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo curve.coordinateLength.bits.toInt()
                     val ecPubKey = this@toSecKey.publicKey
                     ecPubKey.iosEncoded+ privateKeyBytes
                 }
 
-                is CryptoPrivateKey.RSA -> {
+                is PrivateKey.RSA -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                     kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
                     asPKCS1.encodeToDer()
@@ -147,8 +143,14 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyR
     }
 }
 
-fun SecKeyRef?.toCryptoPrivateKey() = catching {
+fun SecKeyRef?.toPrivateKey() = catching {
     corecall {
-        SecKeyCopyExternalRepresentation(this@toCryptoPrivateKey, error)
+        SecKeyCopyExternalRepresentation(this@toPrivateKey, error)
     }.let { it.takeFromCF<NSData>() }.toByteArray()
-}.transform(CryptoPrivateKey::fromIosEncoded)
+}.transform(PrivateKey::fromIosEncoded)
+
+@Deprecated(
+    "Renamed to toPrivateKey().",
+    ReplaceWith("toPrivateKey()")
+)
+fun SecKeyRef?.toCryptoPrivateKey() = toPrivateKey()

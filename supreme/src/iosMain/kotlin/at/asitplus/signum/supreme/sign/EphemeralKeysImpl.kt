@@ -4,6 +4,9 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import kotlinx.cinterop.*

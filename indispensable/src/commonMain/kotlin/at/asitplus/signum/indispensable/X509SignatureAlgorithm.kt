@@ -1,104 +1,46 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.catching
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.awesn1.encoding.Asn1.Null
 import at.asitplus.awesn1.encoding.decodeToInt
+import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
 
-// future: SPI
-private interface X509SignatureAlgorithmProvider {
-    fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> X509SignatureAlgorithm?)?
+@Deprecated(
+    "Moved to awesn1 crypto raw model.",
+    ReplaceWith(
+        "SignatureAlgorithmIdentifier",
+        "at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier"
+    )
+)
+typealias X509SignatureAlgorithmDescription = SignatureAlgorithmIdentifier
+
+/** Checks whether this raw identifier maps to a supported Signum X.509 signature algorithm. */
+fun SignatureAlgorithmIdentifier.isSupported(): Boolean = toSupportedOrNull() != null
+
+/** Throws if the [SignatureAlgorithmIdentifier] is unsupported. */
+fun SignatureAlgorithmIdentifier.requireSupported(): X509SignatureAlgorithm {
+    return toSupportedOrNull()
+        ?: throw UnsupportedCryptoException("Unsupported X.509 signature algorithm (OID = $oid)")
 }
 
-sealed class X509SignatureAlgorithmDescription(
-    override val oid: ObjectIdentifier
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
+/** Maps a raw identifier to Signum's semantic [SignatureAlgorithm]. */
+fun SignatureAlgorithmIdentifier.toSignatureAlgorithmOrNull(): SignatureAlgorithm? =
+    toSupportedOrNull()?.algorithm
 
-    /** Additional algorithm parameters, if any. */
-    abstract val parameters: List<Asn1Element>
-
-    override fun encodeToTlv() = Asn1.Sequence {
-        +oid
-        parameters.forEach { +it }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is X509SignatureAlgorithmDescription) return false
-        return (oid == other.oid) && (parameters == other.parameters)
-    }
-
-    override fun hashCode() = (31 * oid.hashCode() + parameters.hashCode())
-
-    internal class Unknown(oid: ObjectIdentifier, override val parameters: List<Asn1Element>) :
-        X509SignatureAlgorithmDescription(oid) {
-        override fun toString() = "Unknown($oid)"
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
-        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
-            val oid = next().asPrimitive().readOid()
-            // future: SPI
-            sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
-                .firstNotNullOfOrNull { it.loaderForOid(oid) }
-                ?.invoke(this@decodeRethrowing)
-                ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
-        }
-    }
-}
-
-/** smart-casts the receiver to an [X509SignatureAlgorithm.Supported] if supported.*/
-@OptIn(ExperimentalContracts::class)
-fun X509SignatureAlgorithmDescription.isSupported(): Boolean {
-    contract {
-        returns(true) implies (this@isSupported is X509SignatureAlgorithm)
-    }
-    return (this is X509SignatureAlgorithm)
-}
-
-/** throws if the [X509SignatureAlgorithm] is unsupported */
-@OptIn(ExperimentalContracts::class)
-fun X509SignatureAlgorithmDescription.requireSupported() {
-    contract {
-        returns() implies (this@requireSupported is X509SignatureAlgorithm)
-    }
-    if (this !is X509SignatureAlgorithm) throw UnsupportedCryptoException("Unsupported X.509 signature algorithm (OID = ${this.oid})")
-}
+/** Throws if the [SignatureAlgorithmIdentifier] cannot be mapped to a supported Signum [SignatureAlgorithm]. */
+fun SignatureAlgorithmIdentifier.requireSignatureAlgorithm(): SignatureAlgorithm =
+    requireSupported().algorithm
 
 // future: open
 sealed class X509SignatureAlgorithm(
     oid: ObjectIdentifier
-) : X509SignatureAlgorithmDescription(oid), SpecializedSignatureAlgorithm, Enumerable {
-
-    /** The [X509SignatureAlgorithmProvider] for Signum's natively supported [X509SignatureAlgorithm]s */
-    internal object Provider : X509SignatureAlgorithmProvider {
-        override fun loaderForOid(oid: ObjectIdentifier) = when (oid) {
-            KnownOIDs.rsaPSS -> X509SignatureAlgorithm::parsePssParams
-            else -> when (val alg = entries.firstOrNull { it.oid == oid }) {
-                null -> null
-                is RSAPKCS1 -> ({
-                    if (!it.hasNext()) null /*this is cursed, illegal, forbidden, evil and non-complaint, but we have to deal with it*/
-                    else {
-                        if (it.next() != Asn1Null) {
-                            throw Asn1TagMismatchException(
-                                Asn1Element.Tag.NULL, it.currentElement.tag,
-                                "RSA Params not allowed." //unless you are an OEM with massive market share who is too big to fail, then the world just has to deal with it
-                            )
-                        }
-                        alg
-                    }
-                })
-                else -> ({ alg })
-            }
-        }
-    }
+) : SignatureAlgorithmIdentifier(oid), SpecializedSignatureAlgorithm, Enumerable {
 
     // ECDSA with SHA-size
     sealed class ECDSA(oid: ObjectIdentifier, val digest: Digest) :
@@ -192,21 +134,18 @@ sealed class X509SignatureAlgorithm(
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm>,
         Enumeration<X509SignatureAlgorithm> {
 
-        //make it lazy to break init cycle that causes the weirdest nullpointer ever
+        // make it lazy to break init cycle that causes the weirdest nullpointer ever
         override val entries: Set<X509SignatureAlgorithm> by lazy {
             ECDSA.entries + RSAPKCS1.entries + RSAPSS.entries
         }
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm =
-            X509SignatureAlgorithmDescription.doDecode(src).let {
-                (it as? X509SignatureAlgorithm)
-                    ?: throw Asn1OidException("Unsupported OID: ${it.oid}", it.oid)
-            }
+            SignatureAlgorithmIdentifier.decodeFromTlv(src).requireSupported()
 
-        @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing {
-            val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
+        internal fun parsePssParams(parameters: List<Asn1Element>): X509SignatureAlgorithm? = runCatching {
+            require(parameters.size == 1) { "RSA-PSS params must contain exactly one element" }
+            val (algSequence, mgfSequence, saltLen) = parameters.single().asSequence().decodeRethrowing {
                 Triple(
                     next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
                     next().asExplicitlyTagged().verifyTag(1u).single().asSequence(),
@@ -216,8 +155,9 @@ sealed class X509SignatureAlgorithm(
 
             val (sigAlg, tagged) = algSequence.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
 
-            if (tagged != Asn1Element.Tag.NULL)
+            if (tagged != Asn1Element.Tag.NULL) {
                 throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tagged, "PSS Params not supported yet")
+            }
 
             val (mgfOid, mgfParams) = mgfSequence.decodeRethrowing {
                 next().asPrimitive().readOid() to next().asSequence()
@@ -228,21 +168,33 @@ sealed class X509SignatureAlgorithm(
             val (innerHash, innerTagged) = mgfParams.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
 
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
-            if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException(
-                "PSS Params not supported yet"
-            )
+            if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException("PSS Params not supported yet")
 
-            sigAlg.let {
-                when (it) {
-                    KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.sha_512 -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-
-                    else -> throw IllegalArgumentException("Unsupported OID: $it")
+            when (sigAlg) {
+                KnownOIDs.sha_256 -> PS256.also {
+                    if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen")
                 }
+                KnownOIDs.sha_384 -> PS384.also {
+                    if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen")
+                }
+                KnownOIDs.sha_512 -> PS512.also {
+                    if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen")
+                }
+                else -> throw IllegalArgumentException("Unsupported OID: $sigAlg")
             }
-        }
+        }.getOrNull()
+    }
+}
 
+private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgorithm? = when (oid) {
+    KnownOIDs.rsaPSS -> X509SignatureAlgorithm.parsePssParams(parameters)
+    else -> X509SignatureAlgorithm.entries.firstOrNull { it.oid == oid }?.takeIf { candidate ->
+        when (candidate) {
+            is X509SignatureAlgorithm.ECDSA -> parameters.isEmpty()
+            is X509SignatureAlgorithm.RSAPKCS1 ->
+                parameters.isEmpty() || (parameters.size == 1 && parameters.single() == Asn1Null)
+            is X509SignatureAlgorithm.RSAPSS -> parameters == candidate.parameters
+        }
     }
 }
 
@@ -277,3 +229,11 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()
+
+/** Finds a raw signature algorithm identifier matching this semantic Signum signature algorithm. */
+fun SignatureAlgorithm.toSignatureAlgorithmIdentifier() =
+    toX509SignatureAlgorithm().map { it as SignatureAlgorithmIdentifier }
+
+/** Finds a raw signature algorithm identifier matching this semantic Signum signature algorithm. */
+fun SpecializedSignatureAlgorithm.toSignatureAlgorithmIdentifier() =
+    algorithm.toSignatureAlgorithmIdentifier()

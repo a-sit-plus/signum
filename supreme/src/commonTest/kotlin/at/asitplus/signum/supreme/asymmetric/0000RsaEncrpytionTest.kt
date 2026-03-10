@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm

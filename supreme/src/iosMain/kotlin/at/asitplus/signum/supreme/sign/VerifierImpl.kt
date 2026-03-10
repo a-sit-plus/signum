@@ -2,6 +2,8 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException

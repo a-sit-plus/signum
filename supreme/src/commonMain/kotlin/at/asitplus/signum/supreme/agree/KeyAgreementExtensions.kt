@@ -2,9 +2,6 @@ package at.asitplus.signum.supreme.agree
 
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.*
-
-import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
-import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.signerFor
 import kotlin.jvm.JvmName
@@ -24,7 +21,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
         return KmmResult.failure(IllegalArgumentException("Expected KeyAgreementPublicValue.ECDH, got ${publicValue::class.simpleName}"))
     return when (this) {
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
-        is CryptoPrivateKey.EC.WithPublicKey -> SignatureAlgorithm.ECDSAwithSHA256.signerFor(this)
+        is PrivateKey.EC.WithPublicKey -> SignatureAlgorithm.ECDSAwithSHA256.signerFor(this)
             .transform { it.keyAgreement(publicValue) }
 
         else -> KmmResult.failure(IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}"))
@@ -35,7 +32,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
  * Performs key agreement
  */
 @JvmName("keyAgreementEC")
-suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicValue: KeyAgreementPublicValue) =
+suspend fun PrivateKey.WithPublicKey<PublicKey.EC>.keyAgreement(publicValue: KeyAgreementPublicValue) =
     (this as KeyAgreementPrivateValue.ECDH).keyAgreement(publicValue)
 
 suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPrivateValue) =
@@ -47,7 +44,7 @@ suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPriva
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 @JvmName("keyAgreementECDH")
-suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>) =
+suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: PrivateKey.WithPublicKey<PublicKey.EC>) =
     privateValue.keyAgreement(this)
 
 /**

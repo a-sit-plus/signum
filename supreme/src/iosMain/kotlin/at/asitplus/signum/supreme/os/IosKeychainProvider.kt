@@ -6,6 +6,8 @@ import at.asitplus.catching
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.dsl.*

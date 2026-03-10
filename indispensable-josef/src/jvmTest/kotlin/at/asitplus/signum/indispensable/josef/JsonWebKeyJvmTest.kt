@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.internals.ensureSize

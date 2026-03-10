@@ -1,8 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
@@ -10,7 +10,7 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.RSA,
+    key: PrivateKey.RSA,
     algorithm: SignatureAlgorithm.RSA
 ): Signer.RSA = EphemeralSigner.RSA(
     config = EphemeralSignerConfiguration(),
@@ -20,7 +20,7 @@ actual fun makePrivateKeySigner(
 )
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC.WithPublicKey,
+    key: PrivateKey.EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA = EphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
@@ -37,12 +37,12 @@ actual fun makePrivateKeySigner(
  *
  */
 fun SignatureAlgorithm.signerFor(
-    privateKey: CryptoPrivateKey.WithPublicKey<*>,
+    privateKey: PrivateKey.WithPublicKey<*>,
     configure: DSLConfigureFn<JvmEphemeralSignerCompatibleConfiguration>
 ) = catching {
     require(
-        (this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)
+        (this is SignatureAlgorithm.ECDSA && privateKey is PrivateKey.EC) ||
+                (this is SignatureAlgorithm.RSA && privateKey is PrivateKey.RSA)
     ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
 
     when (this) {
@@ -52,7 +52,7 @@ fun SignatureAlgorithm.signerFor(
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
-            publicKey = privateKey.publicKey as CryptoPublicKey.EC,
+            publicKey = privateKey.publicKey as PublicKey.EC,
             signatureAlgorithm = this
         )
 
@@ -62,7 +62,7 @@ fun SignatureAlgorithm.signerFor(
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
-            publicKey = privateKey.publicKey as CryptoPublicKey.RSA,
+            publicKey = privateKey.publicKey as PublicKey.RSA,
             signatureAlgorithm = this
         )
     }

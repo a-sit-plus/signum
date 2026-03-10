@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.IosPublicKeySerializer
 import at.asitplus.signum.indispensable.io.X509CertificateBase64UrlSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -25,7 +25,7 @@ sealed interface Attestation {
 data class SelfAttestation (
     @Serializable(with=X509CertificateBase64UrlSerializer::class)
     @SerialName("x5c")
-    val certificate: X509Certificate) : Attestation
+    val certificate: Certificate) : Attestation
 
 @Serializable
 @SerialName("android-key")
@@ -51,11 +51,11 @@ data class IosHomebrewAttestation(
     data class ClientData private constructor(
         private val purpose: String,
         @Serializable(with=IosPublicKeySerializer::class)
-        val publicKey: CryptoPublicKey,
+        val publicKey: PublicKey,
         @Serializable(with=ByteArrayBase64UrlSerializer::class)
         val challenge: ByteArray
     ) {
-        constructor(publicKey: CryptoPublicKey, challenge: ByteArray) :
+        constructor(publicKey: PublicKey, challenge: ByteArray) :
             this(THE_PURPOSE, publicKey, challenge)
 
         internal fun assertValidity() { if (purpose != THE_PURPOSE) throw IllegalStateException("Invalid purpose") }

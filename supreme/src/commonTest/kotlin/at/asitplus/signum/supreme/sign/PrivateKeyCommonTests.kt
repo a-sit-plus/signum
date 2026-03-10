@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.encoding.decodeFromDer
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.isSuccess

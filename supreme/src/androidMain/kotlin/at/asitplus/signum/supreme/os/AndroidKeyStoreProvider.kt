@@ -229,7 +229,7 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
             ?: throw NoSuchElementException("No key for alias $alias exists")
-        val publicKey: CryptoPublicKey
+        val publicKey: PublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
             catching { chain.map { X509Certificate.decodeFromDer(it.encoded) } }.let { r ->
@@ -244,7 +244,7 @@ object AndroidKeyStoreProvider:
                         Napier.v { "Correcting Android 10 AKS signature bug" }
                         publicKey = CertificateFactory.getInstance("X.509")
                             .generateCertificate(chain.first().encoded.inputStream())
-                            .publicKey.toCryptoPublicKey().getOrThrow()
+                            .publicKey.toPublicKey().getOrThrow()
                         attestation = null
                     } else throw it
                 }
@@ -254,12 +254,12 @@ object AndroidKeyStoreProvider:
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
         val algorithm = when (publicKey) {
-            is CryptoPublicKey.EC -> {
+            is PublicKey.EC -> {
                 val ecConfig = config.ec.v
                 val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
                 SignatureAlgorithm.ECDSA(digest, publicKey.curve)
             }
-            is CryptoPublicKey.RSA -> {
+            is PublicKey.RSA -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
                 val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
@@ -273,11 +273,11 @@ object AndroidKeyStoreProvider:
         }
 
         return@catching when (publicKey) {
-            is CryptoPublicKey.EC ->
+            is PublicKey.EC ->
                 AndroidKeystoreSigner.ECDSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
                     attestation, algorithm as SignatureAlgorithm.ECDSA)
-            is CryptoPublicKey.RSA ->
+            is PublicKey.RSA ->
                 AndroidKeystoreSigner.RSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
                     attestation, algorithm as SignatureAlgorithm.RSA)
@@ -389,8 +389,8 @@ sealed class AndroidKeystoreSigner private constructor(
             .let { data.data.forEach(it::update); it.sign() }
 
         return@signCatching when (this@AndroidKeystoreSigner) {
-            is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
-            is RSA -> CryptoSignature.RSA.parseFromJca(jcaSig)
+            is ECDSA -> Signature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
+            is RSA -> Signature.RSA.parseFromJca(jcaSig)
         }
     }}
 
@@ -398,7 +398,7 @@ sealed class AndroidKeystoreSigner private constructor(
                                      alias: String,
                                      keyInfo: KeyInfo,
                                      config: AndroidSignerConfiguration,
-                                     override val publicKey: CryptoPublicKey.EC,
+                                     override val publicKey: PublicKey.EC,
                                      attestation: AndroidKeystoreAttestation?,
                                      override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation),
@@ -417,7 +417,7 @@ sealed class AndroidKeystoreSigner private constructor(
                     attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), null)
                     init(jcaPrivateKey)
                 }
-                doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+                doPhase(publicValue.asPublicKey().toJcaPublicKey().getOrThrow(), true)
                 generateSecret()
             }
         }
@@ -427,7 +427,7 @@ sealed class AndroidKeystoreSigner private constructor(
                                    alias: String,
                                    keyInfo: KeyInfo,
                                    config: AndroidSignerConfiguration,
-                                   override val publicKey: CryptoPublicKey.RSA,
+                                   override val publicKey: PublicKey.RSA,
                                    attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA

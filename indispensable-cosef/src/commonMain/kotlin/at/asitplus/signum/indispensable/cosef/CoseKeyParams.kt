@@ -4,14 +4,14 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
+import at.asitplus.signum.indispensable.SpecializedPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
  */
-sealed class CoseKeyParams : SpecializedCryptoPublicKey {
+sealed class CoseKeyParams : SpecializedPublicKey {
 
     /**
      * COSE EC public key parameters

@@ -13,6 +13,7 @@ import at.asitplus.awesn1.extKeyUsage
 import at.asitplus.awesn1.keyUsage
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize

@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.Asn1Time

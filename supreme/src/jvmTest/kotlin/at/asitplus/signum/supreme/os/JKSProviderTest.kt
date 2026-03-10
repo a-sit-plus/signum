@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
