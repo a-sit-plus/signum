@@ -107,7 +107,9 @@ class X509SignatureAlgorithm(
         val RS512 = rsaPkcs1(Digest.SHA512, KnownOIDs.sha512WithRSAEncryption)
 
         override val entries: Set<X509SignatureAlgorithm> by lazy {
-            setOf(ES256, ES384, ES512, PS256, PS384, PS512, RS1, RS256, RS384, RS512)
+            setOf(ES256, ES384, ES512, PS256, PS384, PS512, RS1, RS256, RS384, RS512).onEach {
+                AlgorithmRegistry.registerX509SignatureMapping(it.raw, it.algorithm)
+            }.toSet()
         }
 
         @Throws(Asn1Exception::class)
@@ -157,52 +159,22 @@ class X509SignatureAlgorithm(
     }
 }
 
-private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgorithm? = when (oid) {
-    KnownOIDs.rsaPSS -> X509SignatureAlgorithm.parsePssParams(parameters)
-    else -> X509SignatureAlgorithm.entries.firstOrNull { it.oid == oid }?.takeIf { candidate ->
-        when (candidate.algorithm) {
-            is EcdsaSignatureAlgorithm -> parameters.isEmpty()
-            is RsaSignatureAlgorithm -> when (candidate.algorithm.padding) {
-                RsaSignaturePadding.PKCS1 ->
-                    parameters.isEmpty() || (parameters.size == 1 && parameters.single() == Asn1Null)
-                RsaSignaturePadding.PSS -> parameters == candidate.parameters
-                else -> false
-            }
-            else -> false
-        }
-    }
+private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgorithm? {
+    X509SignatureAlgorithm.entries
+    val algorithm = when (oid) {
+        KnownOIDs.rsaPSS -> X509SignatureAlgorithm.parsePssParams(parameters)?.algorithm
+        else -> AlgorithmRegistry.findSignatureAlgorithm(this)
+    } ?: return null
+    return X509SignatureAlgorithm(raw = this, algorithm = algorithm)
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
-    when (this) {
-        is EcdsaSignatureAlgorithm -> when (this.digest) {
-            Digest.SHA256 -> X509SignatureAlgorithm.ES256
-            Digest.SHA384 -> X509SignatureAlgorithm.ES384
-            Digest.SHA512 -> X509SignatureAlgorithm.ES512
-            else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 EC")
-        }
-
-        is RsaSignatureAlgorithm -> when (this.padding) {
-            RsaSignaturePadding.PKCS1 -> when (this.digest) {
-                Digest.SHA1 -> X509SignatureAlgorithm.RS1
-                Digest.SHA256 -> X509SignatureAlgorithm.RS256
-                Digest.SHA384 -> X509SignatureAlgorithm.RS384
-                Digest.SHA512 -> X509SignatureAlgorithm.RS512
-            }
-
-            RsaSignaturePadding.PSS -> when (this.digest) {
-                Digest.SHA256 -> X509SignatureAlgorithm.PS256
-                Digest.SHA384 -> X509SignatureAlgorithm.PS384
-                Digest.SHA512 -> X509SignatureAlgorithm.PS512
-                else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
-            }
-
-            else -> throw IllegalArgumentException("Padding ${this.padding} is unsupported by X.509 RSA")
-        }
-
-        else -> throw IllegalArgumentException("$this is unsupported by X.509")
-    }
+    X509SignatureAlgorithm.entries
+    val raw = AlgorithmRegistry.findX509SignatureIdentifier(this)
+        ?: throw UnsupportedCryptoException("$this is unsupported by X.509")
+    val semantic = AlgorithmRegistry.findSignatureAlgorithm(raw) ?: this
+    X509SignatureAlgorithm(raw, semantic)
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */

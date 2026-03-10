@@ -217,51 +217,62 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
 }
 
+private const val COSE_SIGNATURE_NAMESPACE = "cose.signature"
+private const val COSE_MAC_NAMESPACE = "cose.mac"
+private const val COSE_SYMMETRIC_NAMESPACE = "cose.symmetric"
+
+private val coseBuiltInMappings = run {
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA256, CoseAlgorithm.Signature.ES256)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, ECCurve.SECP_256_R_1, null),
+        CoseAlgorithm.Signature.ESP256
+    )
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA384, CoseAlgorithm.Signature.ES384)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, ECCurve.SECP_384_R_1, null),
+        CoseAlgorithm.Signature.ESP384
+    )
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA512, CoseAlgorithm.Signature.ES512)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, ECCurve.SECP_521_R_1, null),
+        CoseAlgorithm.Signature.ESP512
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
+        CoseAlgorithm.Signature.RS1
+    )
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PKCS1, CoseAlgorithm.Signature.RS256)
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PKCS1, CoseAlgorithm.Signature.RS384)
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PKCS1, CoseAlgorithm.Signature.RS512)
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PSS, CoseAlgorithm.Signature.PS256)
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PSS, CoseAlgorithm.Signature.PS384)
+    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PSS, CoseAlgorithm.Signature.PS512)
+
+    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA1, CoseAlgorithm.MAC.UNOFFICIAL_HS1)
+    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA256, CoseAlgorithm.MAC.HS256)
+    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA384, CoseAlgorithm.MAC.HS384)
+    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA512, CoseAlgorithm.MAC.HS512)
+    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MacMappingKey(Digest.SHA256, 64.bit), CoseAlgorithm.MAC.HS256_64)
+
+    AlgorithmRegistry.registerSymmetricMapping(
+        COSE_SYMMETRIC_NAMESPACE,
+        SymmetricMappingKey(ChaCha20Poly1305SymmetricMappingKind, SymmetricEncryptionAlgorithm.ChaCha20Poly1305.keySize),
+        CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
+    )
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricMappingKey(AesGcmSymmetricMappingKind, 128.bit), CoseAlgorithm.SymmetricEncryption.A128GCM)
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricMappingKey(AesGcmSymmetricMappingKind, 192.bit), CoseAlgorithm.SymmetricEncryption.A192GCM)
+    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricMappingKey(AesGcmSymmetricMappingKind, 256.bit), CoseAlgorithm.SymmetricEncryption.A256GCM)
+}
+
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = catching {
-    when (this) {
-        is EcdsaSignatureAlgorithm -> when (this.digest) {
-            Digest.SHA256 -> when (this.requiredCurve) {
-                ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
-                null -> CoseAlgorithm.Signature.ES256
-                else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
-            }
-
-            Digest.SHA384 -> when (this.requiredCurve) {
-                ECCurve.SECP_384_R_1 -> CoseAlgorithm.Signature.ESP384
-                null -> CoseAlgorithm.Signature.ES384
-                else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
-            }
-
-            Digest.SHA512 -> when (this.requiredCurve) {
-                ECCurve.SECP_521_R_1 -> CoseAlgorithm.Signature.ESP512
-                null -> CoseAlgorithm.Signature.ES512
-                else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
-            }
-
-            else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
-        }
-
-        is RsaSignatureAlgorithm -> when (this.padding) {
-            Pkcs1RsaSignaturePadding -> when (this.digest) {
-                Digest.SHA1 -> CoseAlgorithm.Signature.RS1
-                Digest.SHA256 -> CoseAlgorithm.Signature.RS256
-                Digest.SHA384 -> CoseAlgorithm.Signature.RS384
-                Digest.SHA512 -> CoseAlgorithm.Signature.RS512
-            }
-
-            PssRsaSignaturePadding -> when (this.digest) {
-                Digest.SHA256 -> CoseAlgorithm.Signature.PS256
-                Digest.SHA384 -> CoseAlgorithm.Signature.PS384
-                Digest.SHA512 -> CoseAlgorithm.Signature.PS512
-                else -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
-            }
-
-            else -> throw UnsupportedCryptoException("RSA padding ${this.padding} is unsupported by COSE")
-        }
-
-        else -> throw UnsupportedCryptoException("$this has no COSE signature mapping")
-    }
+    coseBuiltInMappings
+    AlgorithmRegistry.findSignatureMapping<CoseAlgorithm.Signature>(COSE_SIGNATURE_NAMESPACE, this)
+        ?: throw UnsupportedCryptoException("$this has no COSE signature mapping")
 }
 
 fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
@@ -273,31 +284,16 @@ fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegr
 
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
 fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {
-    when (this) {
-        MessageAuthenticationCode.HMAC_SHA1 -> CoseAlgorithm.MAC.UNOFFICIAL_HS1
-        MessageAuthenticationCode.HMAC_SHA256 -> CoseAlgorithm.MAC.HS256
-        MessageAuthenticationCode.HMAC_SHA384 -> CoseAlgorithm.MAC.HS384
-        MessageAuthenticationCode.HMAC_SHA512 -> CoseAlgorithm.MAC.HS512
-        is TruncatedMessageAuthenticationCode -> when {
-            (inner == MessageAuthenticationCode.HMAC_SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
-            else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
-        }
-        else -> throw UnsupportedCryptoException("$this has no COSE MAC mapping")
-    }
+    coseBuiltInMappings
+    AlgorithmRegistry.findMacMapping<CoseAlgorithm.MAC>(COSE_MAC_NAMESPACE, this)
+        ?: throw UnsupportedCryptoException("$this has no COSE MAC mapping")
 }
 
 /** Tries to find a matching COSE algorithm. Note that only AES-GCM and ChaCha/Poly are supported. */
 fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
-    when (this) {
-        SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
-        is AesGcmAlgorithm -> when (keySize.bits) {
-            128u -> CoseAlgorithm.SymmetricEncryption.A128GCM
-            192u -> CoseAlgorithm.SymmetricEncryption.A192GCM
-            256u -> CoseAlgorithm.SymmetricEncryption.A256GCM
-            else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
-        }
-        else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
-    }
+    coseBuiltInMappings
+    AlgorithmRegistry.findSymmetricMapping<CoseAlgorithm.SymmetricEncryption>(COSE_SYMMETRIC_NAMESPACE, this)
+        ?: throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
 }
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */

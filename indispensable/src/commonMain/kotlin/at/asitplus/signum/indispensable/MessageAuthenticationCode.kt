@@ -42,7 +42,10 @@ interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
 open class TruncatedMessageAuthenticationCode internal constructor(
     override val inner: MessageAuthenticationCode,
     override val outputLength: BitLength
-) : MessageAuthenticationCode, MessageAuthenticationCode.Truncated {
+) : MessageAuthenticationCode, MessageAuthenticationCode.Truncated, WithDigest, WithOutputLength {
+    override val digest: Digest?
+        get() = (inner as? WithDigest)?.digest
+
     override fun equals(other: Any?): Boolean =
         other is TruncatedMessageAuthenticationCode && inner == other.inner && outputLength == other.outputLength
 
@@ -52,9 +55,9 @@ open class TruncatedMessageAuthenticationCode internal constructor(
 }
 
 open class HmacAlgorithm(
-    val digest: Digest,
+    override val digest: Digest,
     override val oid: ObjectIdentifier
-) : MessageAuthenticationCode, Identifiable, Asn1Encodable<Asn1Sequence> {
+) : MessageAuthenticationCode, Identifiable, Asn1Encodable<Asn1Sequence>, WithDigest, WithOutputLength {
     override fun toString() = "HMAC-$digest"
 
     override val outputLength: BitLength get() = digest.outputLength

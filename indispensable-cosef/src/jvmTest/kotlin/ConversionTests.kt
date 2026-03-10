@@ -1,5 +1,6 @@
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.WithCurveConstraint
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
@@ -36,7 +37,7 @@ val ConversionTests by testSuite {
     "COSE -> X509 -> COSE" - {
         withData(CoseAlgorithm.Signature.entries) - {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
-                if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
+                if ((it.algorithm as? WithCurveConstraint)?.requiredCurve != null) {
                     "Curve information is lost" {
                         val algorithm = x509.toCoseAlgorithm().getOrThrow()
                         algorithm shouldNotBe it

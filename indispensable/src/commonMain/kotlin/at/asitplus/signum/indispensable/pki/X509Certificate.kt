@@ -11,7 +11,7 @@ import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Awesn1Backed
-import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -20,6 +20,7 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.requireSignatureAlgorithm
 import at.asitplus.signum.indispensable.requireSupported
+import at.asitplus.signum.indispensable.signatureMappingKeyOrNull
 import at.asitplus.signum.indispensable.toSignatureAlgorithmIdentifier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -272,7 +273,7 @@ val Signature.x509Encoded: Asn1Primitive
  * - EC is DER-encoded then wrapped in a bit string
  */
 fun Signature.Companion.fromX509Encoded(alg: SignatureAlgorithmIdentifier, it: Asn1BitString) =
-    when (alg.requireSignatureAlgorithm() is EcdsaSignatureAlgorithm) {
+    when (alg.requireSignatureAlgorithm().signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily) {
         true -> Signature.EC.decodeFromDer(it.rawBytes)
         false -> Signature.RSA(it.rawBytes)
     }

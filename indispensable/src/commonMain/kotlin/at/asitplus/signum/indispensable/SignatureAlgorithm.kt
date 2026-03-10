@@ -138,7 +138,7 @@ open class EcdsaSignatureAlgorithm(
     override val digest: Digest?,
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
     override val requiredCurve: ECCurve?
-) : SignatureAlgorithm.ECDSA {
+) : SignatureAlgorithm.ECDSA, WithDigest, WithCurveConstraint {
     override fun toString(): String = buildString {
         append("ECDSA")
         digest?.let { append("with").append(it) }
@@ -151,7 +151,7 @@ open class RsaSignatureAlgorithm(
     override val digest: Digest,
     /** The padding to apply to the data. */
     override val padding: RsaSignaturePadding
-) : SignatureAlgorithm.RSA {
+) : SignatureAlgorithm.RSA, WithDigest, WithRsaSignaturePadding {
     override fun toString(): String = "RSAwith${digest}and$padding"
 }
 

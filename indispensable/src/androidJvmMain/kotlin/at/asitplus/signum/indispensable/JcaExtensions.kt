@@ -62,15 +62,148 @@ internal fun sigGetInstance(alg: String, provider: String?): JcaSignature =
         else -> JcaSignature.getInstance(alg, provider)
     }
 
+private fun interface JcaSignatureFactory {
+    fun create(provider: String?): JcaSignature
+}
+
+private data class JcaCipherConfiguration(
+    val transformation: String,
+    val parameterSpec: AlgorithmParameterSpec?,
+)
+
+private const val JCA_SIGNATURE_NAMESPACE = "jca.signature"
+private const val JCA_SIGNATURE_PREHASHED_NAMESPACE = "jca.signature.prehashed"
+private const val JCA_ASYMMETRIC_CIPHER_NAMESPACE = "jca.cipher.asymmetric"
+
+@OptIn(HazardousMaterials::class)
+private val jcaBuiltInMappings = run {
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA1withECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA256withECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA384withECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA512withECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA1withRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA256withRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA384withRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
+        JcaSignatureFactory { provider -> sigGetInstance("SHA512withRSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA384.jcaPSSParams) } }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } }
+    )
+
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, null, null),
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+    )
+
+    AlgorithmRegistry.registerAsymmetricMapping(
+        JCA_ASYMMETRIC_CIPHER_NAMESPACE,
+        AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA1),
+        JcaCipherConfiguration(
+            "RSA/ECB/OAEPWithSHA-1AndMGF1Padding",
+            OAEPParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT)
+        )
+    )
+    AlgorithmRegistry.registerAsymmetricMapping(
+        JCA_ASYMMETRIC_CIPHER_NAMESPACE,
+        AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA256),
+        JcaCipherConfiguration(
+            "RSA/ECB/OAEPWithSHA-256AndMGF1Padding",
+            OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT)
+        )
+    )
+    AlgorithmRegistry.registerAsymmetricMapping(
+        JCA_ASYMMETRIC_CIPHER_NAMESPACE,
+        AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA384),
+        JcaCipherConfiguration(
+            "RSA/ECB/OAEPWithSHA-384AndMGF1Padding",
+            OAEPParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, PSource.PSpecified.DEFAULT)
+        )
+    )
+    AlgorithmRegistry.registerAsymmetricMapping(
+        JCA_ASYMMETRIC_CIPHER_NAMESPACE,
+        AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA512),
+        JcaCipherConfiguration(
+            "RSA/ECB/OAEPWithSHA-512AndMGF1Padding",
+            OAEPParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, PSource.PSpecified.DEFAULT)
+        )
+    )
+    AlgorithmRegistry.registerAsymmetricMapping(
+        JCA_ASYMMETRIC_CIPHER_NAMESPACE,
+        AsymmetricEncryptionMappingKey(RsaEncryptionPadding.PKCS1),
+        JcaCipherConfiguration("RSA/ECB/PKCS1Padding", null)
+    )
+    AlgorithmRegistry.registerAsymmetricMapping(
+        JCA_ASYMMETRIC_CIPHER_NAMESPACE,
+        AsymmetricEncryptionMappingKey(RsaEncryptionPadding.NONE),
+        JcaCipherConfiguration("RSA/ECB/NoPadding", null)
+    )
+}
+
 /** Get a pre-configured JCA instance for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): KmmResult<JcaSignature> = catching {
-    when (this) {
-        is EcdsaSignatureAlgorithm ->
-            sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
-
-        is RsaSignatureAlgorithm -> getRSAPlatformSignatureInstance(provider)
-        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
-    }
+    jcaBuiltInMappings
+    AlgorithmRegistry.findSignatureMapping<JcaSignatureFactory>(JCA_SIGNATURE_NAMESPACE, this)
+        ?.create(provider)
+        ?: throw UnsupportedCryptoException("Unsupported signature algorithm $this")
 }
 
 internal expect fun RsaSignatureAlgorithm.getRSAPlatformSignatureInstance(provider: String?): JcaSignature
@@ -81,11 +214,10 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = nu
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): KmmResult<JcaSignature> = catching {
-    when (this) {
-        is EcdsaSignatureAlgorithm -> sigGetInstance("NONEwithECDSA", provider)
-        is RsaSignatureAlgorithm -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
-        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
-    }
+    jcaBuiltInMappings
+    AlgorithmRegistry.findSignatureMapping<JcaSignatureFactory>(JCA_SIGNATURE_PREHASHED_NAMESPACE, this)
+        ?.create(provider)
+        ?: throw UnsupportedCryptoException("Unsupported pre-hashed signature algorithm $this")
 }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
@@ -318,20 +450,11 @@ val HmacAlgorithm.jcaName: String
  * [AsymmetricEncryptionAlgorithm] you will be actually using.
  */
 val AsymmetricEncryptionAlgorithm.jcaName: String
-    get() = when (this) {
-        is RsaEncryptionAlgorithm -> when (padding) {
-            RsaEncryptionPadding.OAEP_SHA1 -> "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
-            RsaEncryptionPadding.OAEP_SHA256 -> "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
-            RsaEncryptionPadding.OAEP_SHA384 -> "RSA/ECB/OAEPWithSHA-384AndMGF1Padding"
-            RsaEncryptionPadding.OAEP_SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
-            @OptIn(HazardousMaterials::class)
-            RsaEncryptionPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
-
-            @OptIn(HazardousMaterials::class)
-            RsaEncryptionPadding.NONE -> "RSA/ECB/NoPadding"
-            else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding")
-        }
-        else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
+    get() {
+        jcaBuiltInMappings
+        return AlgorithmRegistry.findAsymmetricMapping<JcaCipherConfiguration>(JCA_ASYMMETRIC_CIPHER_NAMESPACE, this)
+            ?.transformation
+            ?: throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
     }
 
 /**
@@ -341,46 +464,12 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
  * [AsymmetricEncryptionAlgorithm] you will be actually using.
  */
 val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
-    get() =
-        when (this) {
-            is RsaEncryptionAlgorithm -> when (padding) {
-                @OptIn(HazardousMaterials::class)
-                RsaEncryptionPadding.NONE -> null
-
-                RsaEncryptionPadding.OAEP_SHA1 -> OAEPParameterSpec(
-                    "SHA-1",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA1,
-                    PSource.PSpecified.DEFAULT
-                )
-
-                RsaEncryptionPadding.OAEP_SHA256 -> OAEPParameterSpec(
-                    "SHA-256",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA256,
-                    PSource.PSpecified.DEFAULT
-                )
-
-                RsaEncryptionPadding.OAEP_SHA384 -> OAEPParameterSpec(
-                    "SHA-384",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA384,
-                    PSource.PSpecified.DEFAULT
-                )
-
-                RsaEncryptionPadding.OAEP_SHA512 -> OAEPParameterSpec(
-                    "SHA-512",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA512,
-                    PSource.PSpecified.DEFAULT
-                )
-
-                @OptIn(HazardousMaterials::class)
-                RsaEncryptionPadding.PKCS1 -> null
-                else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding")
-            }
-            else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
-        }
+    get() {
+        jcaBuiltInMappings
+        return AlgorithmRegistry.findAsymmetricMapping<JcaCipherConfiguration>(JCA_ASYMMETRIC_CIPHER_NAMESPACE, this)
+            ?.parameterSpec
+            ?: throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
+    }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
 fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: PublicKey.RSA, provider: String? = null) =

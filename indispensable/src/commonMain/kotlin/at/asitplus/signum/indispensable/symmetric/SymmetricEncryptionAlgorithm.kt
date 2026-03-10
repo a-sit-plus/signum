@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.AlgorithmRegistry
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.HmacAlgorithm
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.WithKeySize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.Enumerable
@@ -25,7 +26,7 @@ import kotlin.jvm.JvmName
  * * its [name]
  */
 interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType> :
-    Identifiable, Enumerable {
+    Identifiable, Enumerable, WithKeySize {
     val authCapability: A
 
     /** Indicates if this algorithm requires a nonce.*/
@@ -164,7 +165,7 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
     /**
      * Key length
      */
-    val keySize: BitLength
+    override val keySize: BitLength
 
     interface Unauthenticated<out I : NonceTrait> :
         SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated> {

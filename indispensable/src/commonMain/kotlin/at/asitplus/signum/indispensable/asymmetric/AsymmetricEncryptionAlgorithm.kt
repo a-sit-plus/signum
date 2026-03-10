@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.asymmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.AlgorithmRegistry
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.WithRsaEncryptionPadding
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
@@ -104,7 +105,7 @@ interface AsymmetricEncryptionAlgorithm : Enumerable {
 
 open class RsaEncryptionAlgorithm(
     override val padding: RsaEncryptionPadding
-) : AsymmetricEncryptionAlgorithm.RSA {
+) : AsymmetricEncryptionAlgorithm.RSA, WithRsaEncryptionPadding {
     override fun equals(other: Any?): Boolean = other is RsaEncryptionAlgorithm && padding == other.padding
     override fun hashCode(): Int = padding.hashCode()
     override fun toString(): String = "RSA($padding)"

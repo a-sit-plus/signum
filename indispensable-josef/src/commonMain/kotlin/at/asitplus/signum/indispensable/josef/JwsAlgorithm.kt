@@ -103,11 +103,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
 
         open val digest: Digest?
-            get() = when (val currentAlgorithm = algorithm) {
-                is EcdsaSignatureAlgorithm -> currentAlgorithm.digest
-                is RsaSignatureAlgorithm -> currentAlgorithm.digest
-                else -> null
-            }
+            get() = (algorithm as? WithDigest)?.digest
 
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy { EC.entries + RSA.entries }
@@ -161,6 +157,30 @@ sealed class JwsAlgorithm(override val identifier: String) :
     }
 }
 
+private const val JWS_SIGNATURE_NAMESPACE = "jws.signature"
+private const val JWS_MAC_NAMESPACE = "jws.mac"
+
+private val joseBuiltInMappings = run {
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA256, JwsAlgorithm.Signature.ES256)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA384, JwsAlgorithm.Signature.ES384)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA512, JwsAlgorithm.Signature.ES512)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PKCS1, JwsAlgorithm.Signature.RS256)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PKCS1, JwsAlgorithm.Signature.RS384)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PKCS1, JwsAlgorithm.Signature.RS512)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PSS, JwsAlgorithm.Signature.PS256)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PSS, JwsAlgorithm.Signature.PS384)
+    AlgorithmRegistry.registerSignatureMapping(JWS_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PSS, JwsAlgorithm.Signature.PS512)
+    AlgorithmRegistry.registerSignatureMapping(
+        JWS_SIGNATURE_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
+        JwsAlgorithm.Signature.NON_JWS_SHA1_WITH_RSA
+    )
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA1, JwsAlgorithm.MAC.UNOFFICIAL_HS1)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA256, JwsAlgorithm.MAC.HS256)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA384, JwsAlgorithm.MAC.HS384)
+    AlgorithmRegistry.registerMacMapping(JWS_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA512, JwsAlgorithm.MAC.HS512)
+}
+
 object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 
     override val descriptor: SerialDescriptor =
@@ -177,35 +197,9 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
-    when (this) {
-        is EcdsaSignatureAlgorithm -> when (this.digest) {
-            Digest.SHA256 -> JwsAlgorithm.Signature.ES256
-            Digest.SHA384 -> JwsAlgorithm.Signature.ES384
-            Digest.SHA512 -> JwsAlgorithm.Signature.ES512
-            else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
-        }
-
-        is RsaSignatureAlgorithm -> when (this.padding) {
-            RsaSignaturePadding.PKCS1 -> when (this.digest) {
-                Digest.SHA1 -> JwsAlgorithm.Signature.NON_JWS_SHA1_WITH_RSA
-                Digest.SHA256 -> JwsAlgorithm.Signature.RS256
-                Digest.SHA384 -> JwsAlgorithm.Signature.RS384
-                Digest.SHA512 -> JwsAlgorithm.Signature.RS512
-                else -> throw IllegalArgumentException("RSA PKCS#1 with ${this.digest} is unsupported by JWS")
-            }
-
-            RsaSignaturePadding.PSS -> when (this.digest) {
-                Digest.SHA256 -> JwsAlgorithm.Signature.PS256
-                Digest.SHA384 -> JwsAlgorithm.Signature.PS384
-                Digest.SHA512 -> JwsAlgorithm.Signature.PS512
-                else -> throw IllegalArgumentException("RSA-PSS with ${this.digest} is unsupported by JWS")
-            }
-
-            else -> throw UnsupportedCryptoException("Unsupported RSA signature padding ${this.padding} for JWS")
-        }
-
-        else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
-    }
+    joseBuiltInMappings
+    AlgorithmRegistry.findSignatureMapping<JwsAlgorithm.Signature>(JWS_SIGNATURE_NAMESPACE, this)
+        ?: throw UnsupportedCryptoException("$this has no JWS equivalent")
 }
 
 fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
@@ -217,13 +211,9 @@ fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching 
 }
 
 fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
-    when (this) {
-        HMAC.SHA1 -> UNOFFICIAL_HS1
-        HMAC.SHA256 -> JwsAlgorithm.MAC.HS256
-        HMAC.SHA384 -> JwsAlgorithm.MAC.HS384
-        HMAC.SHA512 -> JwsAlgorithm.MAC.HS512
-        else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
-    }
+    joseBuiltInMappings
+    AlgorithmRegistry.findMacMapping<JwsAlgorithm.MAC>(JWS_MAC_NAMESPACE, this)
+        ?: throw UnsupportedCryptoException("$this has no JWS equivalent")
 }
 
 /** Tries to find a matching JWS algorithm*/

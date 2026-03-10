@@ -1,8 +1,9 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.awesn1.encoding.decodeFromDerOrNull
-import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
 import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.signatureMappingKeyOrNull
 import at.asitplus.signum.indispensable.toSignatureAlgorithmOrNull
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -129,7 +130,7 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
         ?.let { Certificate.decodeFromDerOrNull(it) }
-        ?.let { it.signatureAlgorithm.toSignatureAlgorithmOrNull() is EcdsaSignatureAlgorithm }
-    is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaSignatureAlgorithm)
+        ?.let { it.signatureAlgorithm.toSignatureAlgorithmOrNull()?.signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily }
+    is CoseAlgorithm.Signature -> algorithm.algorithm.signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily
     else -> false
 }
