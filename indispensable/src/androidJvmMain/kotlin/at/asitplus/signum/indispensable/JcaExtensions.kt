@@ -25,12 +25,23 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
+import org.bouncycastle.asn1.DERNull
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import org.bouncycastle.asn1.x509.DigestInfo
+import org.bouncycastle.crypto.encodings.PKCS1Encoding
+import org.bouncycastle.crypto.engines.RSABlindedEngine
+import org.bouncycastle.crypto.util.PrivateKeyFactory
+import org.bouncycastle.crypto.util.PublicKeyFactory
 import org.bouncycastle.asn1.sec.SECNamedCurves
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.security.KeyFactory
+import java.security.Security
 import java.security.PrivateKey as JcaPrivateKey
 import java.security.PublicKey as JcaPublicKey
 import java.security.Signature as JcaSignature
@@ -64,6 +75,87 @@ internal fun sigGetInstance(alg: String, provider: String?): JcaSignature =
 
 private fun interface JcaSignatureFactory {
     fun create(provider: String?): JcaSignature
+}
+
+private val bouncyCastleProviderName: String by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
+        ?: Security.addProvider(BouncyCastleProvider())
+    BouncyCastleProvider.PROVIDER_NAME
+}
+
+private fun sigGetRawPssInstance(provider: String?): JcaSignature {
+    val effectiveProvider = provider ?: bouncyCastleProviderName
+    return sigGetInstance("RAWRSASSA-PSS", effectiveProvider)
+}
+
+private fun Digest.digestAlgorithmIdentifier(): AlgorithmIdentifier =
+    AlgorithmIdentifier(
+        when (this) {
+            Digest.SHA1 -> OIWObjectIdentifiers.idSHA1
+            Digest.SHA256 -> NISTObjectIdentifiers.id_sha256
+            Digest.SHA384 -> NISTObjectIdentifiers.id_sha384
+            Digest.SHA512 -> NISTObjectIdentifiers.id_sha512
+        },
+        DERNull.INSTANCE
+    )
+
+private class PreHashedRsaPkcs1Signature(
+    private val digest: Digest,
+    private val provider: String?,
+) : JcaSignature("NONEwithRSA") {
+    private var privateKey: java.security.PrivateKey? = null
+    private var publicKey: java.security.PublicKey? = null
+    private val buffer = ArrayList<Byte>()
+
+    private fun reset() = buffer.clear()
+
+    private fun inputBytes(): ByteArray = buffer.toByteArray().also {
+        require(it.size == digest.outputLength.bytes.toInt()) {
+            "Expected ${digest.outputLength.bytes} bytes for $digest pre-hash, got ${it.size}"
+        }
+    }
+
+    private fun digestInfo(bytes: ByteArray): ByteArray =
+        DigestInfo(digest.digestAlgorithmIdentifier(), bytes).encoded
+
+    override fun engineInitVerify(publicKey: java.security.PublicKey) {
+        this.privateKey = null
+        this.publicKey = publicKey
+        reset()
+    }
+
+    override fun engineInitSign(privateKey: java.security.PrivateKey) {
+        this.publicKey = null
+        this.privateKey = privateKey
+        reset()
+    }
+
+    override fun engineUpdate(b: Byte) {
+        buffer += b
+    }
+
+    override fun engineUpdate(b: ByteArray, off: Int, len: Int) {
+        repeat(len) { idx -> buffer += b[off + idx] }
+    }
+
+    override fun engineSign(): ByteArray {
+        val key = requireNotNull(privateKey) { "Signature not initialised for signing" }
+        val signer = PKCS1Encoding(RSABlindedEngine())
+        signer.init(true, PrivateKeyFactory.createKey(key.encoded))
+        return signer.processBlock(digestInfo(inputBytes()), 0, digestInfo(inputBytes()).size).also { reset() }
+    }
+
+    override fun engineVerify(sigBytes: ByteArray): Boolean {
+        val key = requireNotNull(publicKey) { "Signature not initialised for verification" }
+        val verifier = PKCS1Encoding(RSABlindedEngine())
+        verifier.init(false, PublicKeyFactory.createKey(key.encoded))
+        return verifier.processBlock(sigBytes, 0, sigBytes.size).contentEquals(digestInfo(inputBytes())).also { reset() }
+    }
+
+    override fun engineSetParameter(param: String?, value: Any?) = Unit
+    override fun engineGetParameter(param: String?): Any? = null
+    override fun engineSetParameter(params: AlgorithmParameterSpec?) = Unit
+    override fun engineGetParameters() = null
 }
 
 private data class JcaCipherConfiguration(
@@ -141,22 +233,42 @@ private val jcaBuiltInMappings = run {
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA1, provider) }
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA256, provider) }
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA384, provider) }
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithRSA", provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA512, provider) }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA1.jcaPSSParams) } }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA384.jcaPSSParams) } }
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        JCA_SIGNATURE_PREHASHED_NAMESPACE,
+        SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PSS),
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } }
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
@@ -491,9 +603,9 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
 val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
     get() {
         jcaBuiltInMappings
-        return AlgorithmRegistry.findAsymmetricMapping<JcaCipherConfiguration>(JCA_ASYMMETRIC_CIPHER_NAMESPACE, this)
-            ?.parameterSpec
+        val configuration = AlgorithmRegistry.findAsymmetricMapping<JcaCipherConfiguration>(JCA_ASYMMETRIC_CIPHER_NAMESPACE, this)
             ?: throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
+        return configuration.parameterSpec
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
