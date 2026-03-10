@@ -3,9 +3,11 @@ package at.asitplus.signum.supreme.sign
 import android.security.keystore.KeyProperties
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.RsaSignaturePadding
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
@@ -47,7 +49,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     protected abstract fun parseFromJca(bytes: ByteArray): Signature.RawByteEncodable
 
     class EC (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-              override val publicKey: PublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+              override val publicKey: PublicKey.EC, override val signatureAlgorithm: EcdsaSignatureAlgorithm)
         : AndroidEphemeralSigner(privateKey), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = Signature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
@@ -65,7 +67,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 
     class RSA (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-               override val publicKey: PublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+               override val publicKey: PublicKey.RSA, override val signatureAlgorithm: RsaSignatureAlgorithm)
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = Signature.RSA.parseFromJca(bytes)
@@ -86,7 +88,7 @@ internal sealed interface AndroidEphemeralKey {
         override fun exportPrivateKey() = privateKey.toPrivateKey()
     }
 
-    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
+    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RsaSignaturePadding>)
         : EphemeralKeyBase.RSA<RSAPrivateKey, AndroidEphemeralSigner.RSA>(AndroidEphemeralSigner::RSA,
         pair.private as RSAPrivateKey, pair.public.toPublicKey().getOrThrow() as PublicKey.RSA,
         digests = digests, paddings = paddings)

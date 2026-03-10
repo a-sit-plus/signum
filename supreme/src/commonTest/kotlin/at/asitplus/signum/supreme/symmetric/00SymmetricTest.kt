@@ -673,7 +673,7 @@ val SymmetricTest by testSuite {
                 val secretKey = alg.randomKey(InsecureRandom)
 
                 //CBC
-                if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
+                if (alg !is AesWrapAlgorithm) {
 
                     val own = secretKey.encrypt(data).getOrThrow()
 
@@ -985,4 +985,3 @@ val SymmetricTest by testSuite {
         }
     }
 }
-

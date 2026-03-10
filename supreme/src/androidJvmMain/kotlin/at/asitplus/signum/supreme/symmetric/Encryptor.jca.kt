@@ -29,7 +29,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
 
                 @Suppress("UNCHECKED_CAST")
                 when (algorithm) {
-                    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce, aad)
+                    is ChaCha20Poly1305Algorithm -> ChaChaJVM.initCipher(mode, key, nonce, aad)
                     is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
                     else -> throw UnsupportedCryptoException("Unsupported symmetric algorithm ${algorithm.name}")
                 }
@@ -37,7 +37,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
 
             else -> {
                 @OptIn(HazardousMaterials::class)
-                if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394))
+                if ((algorithm !is AesEcbAlgorithm) && (algorithm !is AesWrapAlgorithm))
                     TODO("$algorithm is UNSUPPORTED")
                 AESJCA.initCipher(mode, algorithm, key, nonce, aad)
             }
@@ -49,7 +49,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
         //JCA simply concatenates ciphertext and authtag, so we need to split
 
         //align android and JVM
-        if(algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394){
+        if(algorithm is AesWrapAlgorithm){
             require((data.size >= 16) && (data.size % 8 == 0)) {"data length not compliant to RFC 3394. should be: (data.size >= 16) && (data.size % 8 == 0), is: ${data.size}"}
         }
 

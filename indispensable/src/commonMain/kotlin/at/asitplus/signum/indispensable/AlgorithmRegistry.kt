@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.asymmetric.RSAPadding as AsymmetricRsaPadding
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionPadding
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 
 /**
@@ -14,16 +14,16 @@ object AlgorithmRegistry {
     private val dataIntegrityAlgorithmsBacking = linkedSetOf<DataIntegrityAlgorithm>()
     private val messageAuthenticationCodesBacking = linkedSetOf<MessageAuthenticationCode>()
     private val symmetricEncryptionAlgorithmsBacking = linkedSetOf<SymmetricEncryptionAlgorithm<*, *, *>>()
-    private val signatureRsaPaddingsBacking = linkedSetOf<RSAPadding>()
-    private val asymmetricRsaPaddingsBacking = linkedSetOf<AsymmetricRsaPadding>()
+    private val signatureRsaPaddingsBacking = linkedSetOf<RsaSignaturePadding>()
+    private val asymmetricRsaPaddingsBacking = linkedSetOf<RsaEncryptionPadding>()
     private val asymmetricEncryptionAlgorithmsBacking = linkedSetOf<AsymmetricEncryptionAlgorithm>()
 
     val signatureAlgorithms: List<SignatureAlgorithm> get() = signatureAlgorithmsBacking.toList()
     val dataIntegrityAlgorithms: List<DataIntegrityAlgorithm> get() = dataIntegrityAlgorithmsBacking.toList()
     val messageAuthenticationCodes: List<MessageAuthenticationCode> get() = messageAuthenticationCodesBacking.toList()
     val symmetricEncryptionAlgorithms: List<SymmetricEncryptionAlgorithm<*, *, *>> get() = symmetricEncryptionAlgorithmsBacking.toList()
-    val signatureRsaPaddings: List<RSAPadding> get() = signatureRsaPaddingsBacking.toList()
-    val asymmetricRsaPaddings: List<AsymmetricRsaPadding> get() = asymmetricRsaPaddingsBacking.toList()
+    val signatureRsaPaddings: List<RsaSignaturePadding> get() = signatureRsaPaddingsBacking.toList()
+    val asymmetricRsaPaddings: List<RsaEncryptionPadding> get() = asymmetricRsaPaddingsBacking.toList()
     val asymmetricEncryptionAlgorithms: List<AsymmetricEncryptionAlgorithm> get() = asymmetricEncryptionAlgorithmsBacking.toList()
 
     fun <T : SignatureAlgorithm> registerSignatureAlgorithm(algorithm: T): T = algorithm.also {
@@ -39,11 +39,11 @@ object AlgorithmRegistry {
     fun <T : SymmetricEncryptionAlgorithm<*, *, *>> registerSymmetricEncryptionAlgorithm(algorithm: T): T =
         algorithm.also { symmetricEncryptionAlgorithmsBacking += it }
 
-    fun <T : RSAPadding> registerSignatureRsaPadding(padding: T): T = padding.also {
+    fun <T : RsaSignaturePadding> registerSignatureRsaPadding(padding: T): T = padding.also {
         signatureRsaPaddingsBacking += it
     }
 
-    fun <T : AsymmetricRsaPadding> registerAsymmetricRsaPadding(padding: T): T = padding.also {
+    fun <T : RsaEncryptionPadding> registerAsymmetricRsaPadding(padding: T): T = padding.also {
         asymmetricRsaPaddingsBacking += it
     }
 

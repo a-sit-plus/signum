@@ -4,7 +4,8 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.AlgorithmRegistry
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.HmacAlgorithm
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
@@ -35,7 +36,7 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
     companion object : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
 
         private val builtIns: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
-            (listOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries)
+            (listOf(ChaCha20Poly1305Algorithm) + AES_128.entries + AES_192.entries + AES_256.entries)
                 .onEach { AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(it) }
         }
 
@@ -45,26 +46,48 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
                 return AlgorithmRegistry.symmetricEncryptionAlgorithms
             }
 
-        //ChaCha20Poly1305 is already an object, so we don't need to redeclare here
+        val ChaCha20Poly1305 get() = ChaCha20Poly1305Algorithm
 
         val AES_128 = AESDefinition(128.bit)
         val AES_192 = AESDefinition(192.bit)
         val AES_256 = AESDefinition(256.bit)
 
+        val AES_128_GCM get() = AES_128.GCM
+        val AES_192_GCM get() = AES_192.GCM
+        val AES_256_GCM get() = AES_256.GCM
+        @OptIn(HazardousMaterials::class) val AES_128_ECB get() = AES_128.ECB
+        @OptIn(HazardousMaterials::class) val AES_192_ECB get() = AES_192.ECB
+        @OptIn(HazardousMaterials::class) val AES_256_ECB get() = AES_256.ECB
+        @OptIn(HazardousMaterials::class) val AES_128_CBC_PLAIN get() = AES_128.CBC.PLAIN
+        @OptIn(HazardousMaterials::class) val AES_192_CBC_PLAIN get() = AES_192.CBC.PLAIN
+        @OptIn(HazardousMaterials::class) val AES_256_CBC_PLAIN get() = AES_256.CBC.PLAIN
+        @OptIn(HazardousMaterials::class) val AES_128_CBC_HMAC_SHA256 get() = AES_128.CBC.HMAC.SHA_256
+        @OptIn(HazardousMaterials::class) val AES_192_CBC_HMAC_SHA256 get() = AES_192.CBC.HMAC.SHA_256
+        @OptIn(HazardousMaterials::class) val AES_256_CBC_HMAC_SHA256 get() = AES_256.CBC.HMAC.SHA_256
+        @OptIn(HazardousMaterials::class) val AES_128_CBC_HMAC_SHA384 get() = AES_128.CBC.HMAC.SHA_384
+        @OptIn(HazardousMaterials::class) val AES_192_CBC_HMAC_SHA384 get() = AES_192.CBC.HMAC.SHA_384
+        @OptIn(HazardousMaterials::class) val AES_256_CBC_HMAC_SHA384 get() = AES_256.CBC.HMAC.SHA_384
+        @OptIn(HazardousMaterials::class) val AES_128_CBC_HMAC_SHA512 get() = AES_128.CBC.HMAC.SHA_512
+        @OptIn(HazardousMaterials::class) val AES_192_CBC_HMAC_SHA512 get() = AES_192.CBC.HMAC.SHA_512
+        @OptIn(HazardousMaterials::class) val AES_256_CBC_HMAC_SHA512 get() = AES_256.CBC.HMAC.SHA_512
+        val AES_128_WRAP_RFC3394 get() = AES_128.WRAP.RFC3394
+        val AES_192_WRAP_RFC3394 get() = AES_192.WRAP.RFC3394
+        val AES_256_WRAP_RFC3394 get() = AES_256.WRAP.RFC3394
+
         /**
          * AES configuration hierarchy
          */
-        class AESDefinition(val keySize: BitLength) : Enumeration<AES<*, *, *>> {
+        class AESDefinition(val keySize: BitLength) : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
 
             @OptIn(HazardousMaterials::class)
-            override val entries: List<AES<*, *, *>> by lazy {
+            override val entries: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
                 listOf(GCM, ECB) + CBC.entries + WRAP.entries
             }
 
             /**
              * AES in Galois Counter Mode
              */
-            val GCM = AES.GCM(keySize)
+            val GCM = AesGcmAlgorithm(keySize)
 
             /**
              * AES in Cipher Block Chaining Mode
@@ -75,27 +98,30 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
              * AES in Electronic Codebook Mode. You almost certainly don't want to use this
              */
             @HazardousMaterials("ECB is almost always insecure!")
-            val ECB = AES.ECB(keySize)
+            val ECB = AesEcbAlgorithm(keySize)
 
             /**
              * AES Key Wrapping as per [RFC 3394](https://www.rfc-editor.org/rfc/rfc3394)
              */
             val WRAP = WrapDefinition(keySize)
 
-            class WrapDefinition(keySize: BitLength) : Enumeration<AES.WRAP> {
-                override val entries: List<AES.WRAP> by lazy { listOf(RFC3394) }
-                val RFC3394 = AES.WRAP.RFC3394(keySize)
+            class WrapDefinition(keySize: BitLength) : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
+                override val entries: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy { listOf(RFC3394) }
+                val RFC3394 = AesWrapAlgorithm(keySize)
             }
 
-            class CbcDefinition(keySize: BitLength) : Enumeration<AES.CBC<*, *>> {
+            class CbcDefinition(keySize: BitLength) : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
                 @OptIn(HazardousMaterials::class)
-                override val entries: List<AES.CBC<*, *>> by lazy { listOf(PLAIN) + HMAC.entries }
+                override val entries: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
+                    listOf(PLAIN) + MessageAuthenticationCode.entries.filterIsInstance<HmacAlgorithm>()
+                        .map { AesCbcHmacAlgorithm(PLAIN, it) }
+                }
                 /**
                  * Plain, Unauthenticated AES in Cipher Block Chaining mode.
                  * You almost certainly don't want to use this as is, but rather some [HMAC]-authenticated variant
                  */
                 @HazardousMaterials("Unauthenticated!")
-                val PLAIN = AES.CBC.Unauthenticated(keySize)
+                val PLAIN = AesCbcAlgorithm(keySize)
 
                 /**
                  * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
@@ -106,27 +132,27 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
                 /**
                  * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                  */
-                class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) :
-                    Enumeration<AES.CBC.HMAC> {
+                class HmacDefinition(innerCipher: AesCbcAlgorithm) :
+                    Enumeration<AesCbcHmacAlgorithm> {
                     @OptIn(HazardousMaterials::class)
-                    override val entries: List<AES.CBC.HMAC> by lazy { listOf(SHA_256, SHA_384, SHA_512, SHA_1) }
+                    override val entries: List<AesCbcHmacAlgorithm> by lazy { listOf(SHA_256, SHA_384, SHA_512, SHA_1) }
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */
-                    val SHA_256 = AES.CBC.HMAC(innerCipher, HMAC.SHA256)
+                    val SHA_256 = AesCbcHmacAlgorithm(innerCipher, HmacAlgorithm(Digest.SHA256))
 
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */
-                    val SHA_384 = AES.CBC.HMAC(innerCipher, HMAC.SHA384)
+                    val SHA_384 = AesCbcHmacAlgorithm(innerCipher, HmacAlgorithm(Digest.SHA384))
 
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */
-                    val SHA_512 = AES.CBC.HMAC(innerCipher, HMAC.SHA512)
+                    val SHA_512 = AesCbcHmacAlgorithm(innerCipher, HmacAlgorithm(Digest.SHA512))
 
                     @HazardousMaterials("Insecure hash function!")
-                    val SHA_1 = AES.CBC.HMAC(innerCipher, HMAC.SHA1)
+                    val SHA_1 = AesCbcHmacAlgorithm(innerCipher, HmacAlgorithm(Digest.SHA1))
                 }
             }
         }
@@ -288,16 +314,16 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
             class HMAC
             private constructor(
                 override val innerCipher: Unauthenticated,
-                override val mac: at.asitplus.signum.indispensable.HMAC,
+                override val mac: HmacAlgorithm,
                 override val macInputCalculation: MacInputCalculation,
                 override val macAuthTagTransform: MacAuthTagTransformation,
                 override val authTagSize: BitLength
-            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.HMAC, NonceTrait.Required>,
+            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<HmacAlgorithm, NonceTrait.Required>,
                 SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey>,
                 CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
-                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.HMAC) : this(
+                constructor(innerCipher: Unauthenticated, mac: HmacAlgorithm) : this(
                     innerCipher,
                     mac,
                     DefaultMacInputCalculation,
@@ -342,20 +368,133 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
     /**
      * ChaCha20 with Poly-1305 AEAD stream cipher
      */
-    object ChaCha20Poly1305 :
-        StreamCipher<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>(),
-        SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
-        SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated> {
-        override val authTagSize = 128u.bit
-        override val nonceSize = 96u.bit
-        override val name: String = "ChaCha20-Poly1305"
-        override fun toString() = name
-        override val keySize = 256u.bit
-        override val oid = KnownOIDs.chaCha20Poly1305
+}
 
-        init {
-            AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(this)
-        }
+class AesGcmAlgorithm internal constructor(keySize: BitLength) :
+    SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
+    SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>,
+    SymmetricEncryptionAlgorithm.AES<NonceTrait.Required, KeyType.Integrated, AuthCapability.Authenticated.Integrated>(
+        BlockCipher.ModeOfOperation.GCM,
+        keySize
+    ) {
+    override val nonceSize = 96.bit
+    override val authTagSize = blockSize
+    override val oid: ObjectIdentifier = when (keySize.bits) {
+        128u -> KnownOIDs.aes128_GCM
+        192u -> KnownOIDs.aes192_GCM
+        256u -> KnownOIDs.aes256_GCM
+        else -> throw ImplementationError("AES GCM OID")
+    }
+}
+
+abstract class AesWrapBase(keySize: BitLength) :
+    SymmetricEncryptionAlgorithm.AES<NonceTrait.Without, KeyType.Integrated, AuthCapability.Unauthenticated>(
+        BlockCipher.ModeOfOperation.ECB,
+        keySize
+    ),
+    SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
+    SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Without>
+
+class AesWrapAlgorithm internal constructor(keySize: BitLength) : AesWrapBase(keySize) {
+    override val oid: ObjectIdentifier = when (keySize.bits) {
+        128u -> KnownOIDs.aes128_wrap
+        192u -> KnownOIDs.aes192_wrap
+        256u -> KnownOIDs.aes256_wrap
+        else -> throw ImplementationError("AES WRAP RFC3394 OID")
+    }
+}
+
+@HazardousMaterials("ECB is almost always insecure!")
+class AesEcbAlgorithm internal constructor(keySize: BitLength) :
+    SymmetricEncryptionAlgorithm.AES<NonceTrait.Without, KeyType.Integrated, AuthCapability.Unauthenticated>(
+        BlockCipher.ModeOfOperation.ECB,
+        keySize
+    ),
+    SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
+    SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Without> {
+    override val authCapability = AuthCapability.Unauthenticated
+    override val oid: ObjectIdentifier = when (keySize.bits) {
+        128u -> KnownOIDs.aes128_ECB
+        192u -> KnownOIDs.aes192_ECB
+        256u -> KnownOIDs.aes256_ECB
+        else -> throw ImplementationError("AES ECB OID")
+    }
+}
+
+abstract class AesCbcBase<K : KeyType, A : AuthCapability<K>>(keySize: BitLength) :
+    SymmetricEncryptionAlgorithm.AES<NonceTrait.Required, K, A>(
+        BlockCipher.ModeOfOperation.CBC,
+        keySize
+    ) {
+    val nonceSize = 128u.bit
+    override val oid: ObjectIdentifier = when (keySize.bits) {
+        128u -> KnownOIDs.aes128_CBC
+        192u -> KnownOIDs.aes192_CBC
+        256u -> KnownOIDs.aes256_CBC
+        else -> throw ImplementationError("AES CBC OID")
+    }
+}
+
+class AesCbcAlgorithm internal constructor(keySize: BitLength) :
+    AesCbcBase<KeyType.Integrated, AuthCapability.Unauthenticated>(keySize),
+    SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
+    SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Required> {
+    override val authCapability = AuthCapability.Unauthenticated
+    override val name = super.name + " Plain"
+}
+
+class AesCbcHmacAlgorithm internal constructor(
+    override val innerCipher: AesCbcAlgorithm,
+    override val mac: HmacAlgorithm,
+    override val macInputCalculation: MacInputCalculation,
+    override val macAuthTagTransform: MacAuthTagTransformation,
+    override val authTagSize: BitLength
+) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<HmacAlgorithm, NonceTrait.Required>,
+    SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey>,
+    AesCbcBase<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac>(innerCipher.keySize) {
+
+    constructor(innerCipher: AesCbcAlgorithm, mac: HmacAlgorithm) : this(
+        innerCipher,
+        mac,
+        DefaultMacInputCalculation,
+        DefaultMacAuthTagTransformation,
+        BitLength(mac.outputLength.bits / 2u)
+    )
+
+    override val name = super.name + " $mac"
+    override val preferredMacKeyLength: BitLength get() = innerCipher.keySize
+
+    fun Custom(
+        tagLength: BitLength,
+        dedicatedMacInputCalculation: MacInputCalculation
+    ) = Custom(tagLength, DefaultMacAuthTagTransformation, dedicatedMacInputCalculation)
+
+    fun Custom(
+        tagLength: BitLength,
+        dedicatedMacAuthTagTransformation: MacAuthTagTransformation,
+        dedicatedMacInputCalculation: MacInputCalculation
+    ) = AesCbcHmacAlgorithm(
+        innerCipher,
+        mac,
+        dedicatedMacInputCalculation,
+        dedicatedMacAuthTagTransformation,
+        tagLength
+    )
+}
+
+object ChaCha20Poly1305Algorithm :
+    StreamCipher<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>(),
+    SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
+    SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated> {
+    override val authTagSize = 128u.bit
+    override val nonceSize = 96u.bit
+    override val name: String = "ChaCha20-Poly1305"
+    override fun toString() = name
+    override val keySize = 256u.bit
+    override val oid = KnownOIDs.chaCha20Poly1305
+
+    init {
+        AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(this)
     }
 }
 

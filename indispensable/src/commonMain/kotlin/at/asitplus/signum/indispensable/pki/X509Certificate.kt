@@ -11,6 +11,7 @@ import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -271,7 +272,7 @@ val Signature.x509Encoded: Asn1Primitive
  * - EC is DER-encoded then wrapped in a bit string
  */
 fun Signature.Companion.fromX509Encoded(alg: SignatureAlgorithmIdentifier, it: Asn1BitString) =
-    when (alg.requireSignatureAlgorithm() is SignatureAlgorithm.ECDSA) {
+    when (alg.requireSignatureAlgorithm() is EcdsaSignatureAlgorithm) {
         true -> Signature.EC.decodeFromDer(it.rawBytes)
         false -> Signature.RSA(it.rawBytes)
     }

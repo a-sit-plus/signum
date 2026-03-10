@@ -9,8 +9,9 @@ import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.catching
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.PssRsaSignaturePadding
 import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.RsaSignaturePadding
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstance
@@ -177,7 +178,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         is PublicKey.RSA -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
             SignatureAlgorithm.RSA(
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
-                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),
+                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else PssRsaSignaturePadding),
             alias)
     }
 

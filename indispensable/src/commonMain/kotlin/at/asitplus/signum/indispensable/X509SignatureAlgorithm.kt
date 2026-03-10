@@ -53,13 +53,13 @@ class X509SignatureAlgorithm(
         private fun ecdsa(digest: Digest, oid: ObjectIdentifier) =
             X509SignatureAlgorithm(
                 raw = SignatureAlgorithmIdentifier(oid, emptyList()),
-                algorithm = SignatureAlgorithm.ECDSA(digest, null)
+                algorithm = EcdsaSignatureAlgorithm(digest, null)
             )
 
         private fun rsaPkcs1(digest: Digest, oid: ObjectIdentifier) =
             X509SignatureAlgorithm(
                 raw = SignatureAlgorithmIdentifier(oid, listOf(Asn1Null)),
-                algorithm = SignatureAlgorithm.RSA(digest, RSAPadding.PKCS1)
+                algorithm = RsaSignatureAlgorithm(digest, RsaSignaturePadding.PKCS1)
             )
 
         private fun rsaPss(digest: Digest): X509SignatureAlgorithm {
@@ -89,7 +89,7 @@ class X509SignatureAlgorithm(
                         }
                     })
                 ),
-                algorithm = SignatureAlgorithm.RSA(digest, RSAPadding.PSS)
+                algorithm = RsaSignatureAlgorithm(digest, RsaSignaturePadding.PSS)
             )
         }
 
@@ -161,11 +161,11 @@ private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgor
     KnownOIDs.rsaPSS -> X509SignatureAlgorithm.parsePssParams(parameters)
     else -> X509SignatureAlgorithm.entries.firstOrNull { it.oid == oid }?.takeIf { candidate ->
         when (candidate.algorithm) {
-            is SignatureAlgorithm.ECDSA -> parameters.isEmpty()
-            is SignatureAlgorithm.RSA -> when (candidate.algorithm.padding) {
-                RSAPadding.PKCS1 ->
+            is EcdsaSignatureAlgorithm -> parameters.isEmpty()
+            is RsaSignatureAlgorithm -> when (candidate.algorithm.padding) {
+                RsaSignaturePadding.PKCS1 ->
                     parameters.isEmpty() || (parameters.size == 1 && parameters.single() == Asn1Null)
-                RSAPadding.PSS -> parameters == candidate.parameters
+                RsaSignaturePadding.PSS -> parameters == candidate.parameters
                 else -> false
             }
             else -> false
@@ -176,22 +176,22 @@ private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgor
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+        is EcdsaSignatureAlgorithm -> when (this.digest) {
             Digest.SHA256 -> X509SignatureAlgorithm.ES256
             Digest.SHA384 -> X509SignatureAlgorithm.ES384
             Digest.SHA512 -> X509SignatureAlgorithm.ES512
             else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 EC")
         }
 
-        is SignatureAlgorithm.RSA -> when (this.padding) {
-            RSAPadding.PKCS1 -> when (this.digest) {
+        is RsaSignatureAlgorithm -> when (this.padding) {
+            RsaSignaturePadding.PKCS1 -> when (this.digest) {
                 Digest.SHA1 -> X509SignatureAlgorithm.RS1
                 Digest.SHA256 -> X509SignatureAlgorithm.RS256
                 Digest.SHA384 -> X509SignatureAlgorithm.RS384
                 Digest.SHA512 -> X509SignatureAlgorithm.RS512
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            RsaSignaturePadding.PSS -> when (this.digest) {
                 Digest.SHA256 -> X509SignatureAlgorithm.PS256
                 Digest.SHA384 -> X509SignatureAlgorithm.PS384
                 Digest.SHA512 -> X509SignatureAlgorithm.PS512

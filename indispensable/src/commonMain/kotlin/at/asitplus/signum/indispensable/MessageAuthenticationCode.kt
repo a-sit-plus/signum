@@ -10,89 +10,123 @@ import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
 interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
-    /** output size of MAC */
     val outputLength: BitLength
+
+    @Deprecated("Use TruncatedMessageAuthenticationCode.", ReplaceWith("TruncatedMessageAuthenticationCode"))
+    interface Truncated : MessageAuthenticationCode {
+        val inner: MessageAuthenticationCode
+    }
 
     companion object : Enumeration<MessageAuthenticationCode> {
         override val entries: Iterable<MessageAuthenticationCode>
             get() {
-                HMAC.entries
+                HMAC_SHA1
                 return AlgorithmRegistry.messageAuthenticationCodes
             }
-    }
 
-    open class Truncated
-        internal constructor(val inner: MessageAuthenticationCode, override val outputLength: BitLength)
-        : MessageAuthenticationCode
-    {
-        override fun equals(other: Any?): Boolean =
-            other is Truncated && inner == other.inner && outputLength == other.outputLength
-
-        override fun hashCode(): Int = 31 * inner.hashCode() + outputLength.hashCode()
-
-        override fun toString() = "$inner (truncated to $outputLength)"
+        fun register(algorithm: MessageAuthenticationCode): MessageAuthenticationCode =
+            AlgorithmRegistry.registerMessageAuthenticationCode(algorithm)
     }
 
     fun truncatedTo(length: BitLength): MessageAuthenticationCode = when {
-        this is Truncated -> this.inner.truncatedTo(length)
+        this is TruncatedMessageAuthenticationCode -> this.inner.truncatedTo(length)
         else -> when {
             length <= 0.bit -> throw IllegalArgumentException("Cannot truncate to $outputLength <= 0")
-            length < this.outputLength -> Truncated(this, length)
+            length < this.outputLength -> TruncatedMessageAuthenticationCode(this, length)
             length == this.outputLength -> this
             else -> throw IllegalArgumentException("Cannot truncate $this to $outputLength bits (its own output length is only ${this.outputLength} bits")
         }
     }
 }
 
-interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorithm {
-    override val algorithm: MessageAuthenticationCode
+open class TruncatedMessageAuthenticationCode internal constructor(
+    override val inner: MessageAuthenticationCode,
+    override val outputLength: BitLength
+) : MessageAuthenticationCode, MessageAuthenticationCode.Truncated {
+    override fun equals(other: Any?): Boolean =
+        other is TruncatedMessageAuthenticationCode && inner == other.inner && outputLength == other.outputLength
+
+    override fun hashCode(): Int = 31 * inner.hashCode() + outputLength.hashCode()
+
+    override fun toString() = "$inner (truncated to $outputLength)"
 }
 
-/**
- * RFC 2104 HMAC
- */
-enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable,
-    Asn1Encodable<Asn1Sequence> {
-    SHA1(Digest.SHA1, KnownOIDs.hmacWithSHA1),
-    SHA256(Digest.SHA256, KnownOIDs.hmacWithSHA256),
-    SHA384(Digest.SHA384, KnownOIDs.hmacWithSHA384),
-    SHA512(Digest.SHA512, KnownOIDs.hmacWithSHA512),
-    ;
-
+open class HmacAlgorithm(
+    val digest: Digest,
+    override val oid: ObjectIdentifier
+) : MessageAuthenticationCode, Identifiable, Asn1Encodable<Asn1Sequence> {
     override fun toString() = "HMAC-$digest"
+
+    override val outputLength: BitLength get() = digest.outputLength
 
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence {
         +oid
         +Null()
     }
 
+    companion object : Asn1Decodable<Asn1Sequence, HmacAlgorithm>, Enumeration<HmacAlgorithm> {
+        override val entries: Iterable<HmacAlgorithm>
+            get() {
+                MessageAuthenticationCode.HMAC_SHA1
+                return MessageAuthenticationCode.entries.filterIsInstance<HmacAlgorithm>()
+            }
 
-    companion object : Asn1Decodable<Asn1Sequence, HMAC>, Enumeration<HMAC> {
+        fun register(algorithm: HmacAlgorithm): HmacAlgorithm =
+            AlgorithmRegistry.registerMessageAuthenticationCode(algorithm) as HmacAlgorithm
 
-        fun byOID(oid: ObjectIdentifier): HMAC? = entries.find { it.oid == oid }
+        fun byOID(oid: ObjectIdentifier): HmacAlgorithm? = MessageAuthenticationCode.entries
+            .filterIsInstance<HmacAlgorithm>()
+            .find { it.oid == oid }
 
-        fun byDigest(digest: Digest): HMAC = entries.find { it.digest == digest }!!
-
-        operator fun invoke(digest: Digest) = when (digest) {
-            Digest.SHA1 -> SHA1
-            Digest.SHA256 -> SHA256
-            Digest.SHA384 -> SHA384
-            Digest.SHA512 -> SHA512
+        fun byDigest(digest: Digest): HmacAlgorithm = when (digest) {
+            Digest.SHA1 -> MessageAuthenticationCode.HMAC_SHA1
+            Digest.SHA256 -> MessageAuthenticationCode.HMAC_SHA256
+            Digest.SHA384 -> MessageAuthenticationCode.HMAC_SHA384
+            Digest.SHA512 -> MessageAuthenticationCode.HMAC_SHA512
         }
 
-        override fun doDecode(src: Asn1Sequence): HMAC = src.decodeRethrowing {
+        operator fun invoke(digest: Digest) = byDigest(digest)
+
+        override fun doDecode(src: Asn1Sequence): HmacAlgorithm = src.decodeRethrowing {
             val oid = next().asPrimitive().readOid()
             next().asPrimitive().readNull()
             byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
-
-        private val registeredEntries: List<HMAC> by lazy {
-            HMAC.entries.onEach { AlgorithmRegistry.registerMessageAuthenticationCode(it) }
-        }
-
-        override val entries: Iterable<HMAC>
-            get() = registeredEntries
     }
+}
 
-    override val outputLength: BitLength get() = digest.outputLength
+private data object HmacSha1 : HmacAlgorithm(Digest.SHA1, KnownOIDs.hmacWithSHA1)
+private data object HmacSha256 : HmacAlgorithm(Digest.SHA256, KnownOIDs.hmacWithSHA256)
+private data object HmacSha384 : HmacAlgorithm(Digest.SHA384, KnownOIDs.hmacWithSHA384)
+private data object HmacSha512 : HmacAlgorithm(Digest.SHA512, KnownOIDs.hmacWithSHA512)
+
+val MessageAuthenticationCode.Companion.HMAC_SHA1: HmacAlgorithm
+    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha1)
+val MessageAuthenticationCode.Companion.HMAC_SHA256: HmacAlgorithm
+    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha256)
+val MessageAuthenticationCode.Companion.HMAC_SHA384: HmacAlgorithm
+    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha384)
+val MessageAuthenticationCode.Companion.HMAC_SHA512: HmacAlgorithm
+    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha512)
+
+@Deprecated(
+    "Use MessageAuthenticationCode.HMAC_SHA1 and HmacAlgorithm.",
+    ReplaceWith("MessageAuthenticationCode.HMAC_SHA1", "at.asitplus.signum.indispensable.MessageAuthenticationCode")
+)
+object HMAC {
+    val SHA1: HmacAlgorithm get() = MessageAuthenticationCode.HMAC_SHA1
+    val SHA256: HmacAlgorithm get() = MessageAuthenticationCode.HMAC_SHA256
+    val SHA384: HmacAlgorithm get() = MessageAuthenticationCode.HMAC_SHA384
+    val SHA512: HmacAlgorithm get() = MessageAuthenticationCode.HMAC_SHA512
+
+    val entries: Iterable<HmacAlgorithm>
+        get() = listOf(SHA1, SHA256, SHA384, SHA512)
+
+    fun byOID(oid: ObjectIdentifier): HmacAlgorithm? = HmacAlgorithm.byOID(oid)
+    fun byDigest(digest: Digest): HmacAlgorithm = HmacAlgorithm.byDigest(digest)
+    operator fun invoke(digest: Digest): HmacAlgorithm = HmacAlgorithm(digest)
+}
+
+interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorithm {
+    override val algorithm: MessageAuthenticationCode
 }

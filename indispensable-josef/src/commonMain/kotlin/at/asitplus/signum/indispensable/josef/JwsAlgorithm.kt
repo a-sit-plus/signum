@@ -103,9 +103,10 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
 
         open val digest: Digest?
-            get() = when (algorithm) {
-                is SignatureAlgorithm.ECDSA -> (algorithm as SignatureAlgorithm.ECDSA).digest
-                is SignatureAlgorithm.RSA -> (algorithm as SignatureAlgorithm.RSA).digest
+            get() = when (val currentAlgorithm = algorithm) {
+                is EcdsaSignatureAlgorithm -> currentAlgorithm.digest
+                is RsaSignatureAlgorithm -> currentAlgorithm.digest
+                else -> null
             }
 
         companion object : Enumeration<Signature> {
@@ -177,28 +178,33 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+        is EcdsaSignatureAlgorithm -> when (this.digest) {
             Digest.SHA256 -> JwsAlgorithm.Signature.ES256
             Digest.SHA384 -> JwsAlgorithm.Signature.ES384
             Digest.SHA512 -> JwsAlgorithm.Signature.ES512
             else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
         }
 
-        is SignatureAlgorithm.RSA -> when (this.padding) {
-            RSAPadding.PKCS1 -> when (this.digest) {
+        is RsaSignatureAlgorithm -> when (this.padding) {
+            RsaSignaturePadding.PKCS1 -> when (this.digest) {
                 Digest.SHA1 -> JwsAlgorithm.Signature.NON_JWS_SHA1_WITH_RSA
                 Digest.SHA256 -> JwsAlgorithm.Signature.RS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.RS384
                 Digest.SHA512 -> JwsAlgorithm.Signature.RS512
+                else -> throw IllegalArgumentException("RSA PKCS#1 with ${this.digest} is unsupported by JWS")
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            RsaSignaturePadding.PSS -> when (this.digest) {
                 Digest.SHA256 -> JwsAlgorithm.Signature.PS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.PS384
                 Digest.SHA512 -> JwsAlgorithm.Signature.PS512
                 else -> throw IllegalArgumentException("RSA-PSS with ${this.digest} is unsupported by JWS")
             }
+
+            else -> throw UnsupportedCryptoException("Unsupported RSA signature padding ${this.padding} for JWS")
         }
+
+        else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
     }
 }
 
@@ -206,6 +212,7 @@ fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching 
     when (this) {
         is SignatureAlgorithm -> toJwsAlgorithm().getOrThrow()
         is MessageAuthenticationCode -> toJwsAlgorithm().getOrThrow()
+        else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
     }
 }
 

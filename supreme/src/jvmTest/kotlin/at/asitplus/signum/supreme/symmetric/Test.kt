@@ -70,7 +70,7 @@ val JvmSymmetricTest  by testSuite {
                             val jcaCipher =
                                 Cipher.getInstance(if (alg.authCapability is AuthCapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
-                            if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
+                            if (alg is AesGcmAlgorithm) {
                                 val secretKey = alg.randomKey(random = InsecureRandom)
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
@@ -120,7 +120,7 @@ val JvmSymmetricTest  by testSuite {
 
 
                             } else {
-                                alg as SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated
+                                alg as AesCbcAlgorithm
                                 val secretKey = alg.randomKey(random = InsecureRandom)
                                 //CBC
                                 val own = secretKey.encrypt(data).getOrThrow()
@@ -188,7 +188,7 @@ val JvmSymmetricTest  by testSuite {
                         val secretKey = alg.randomKey(random = InsecureRandom)
 
                         //CBC
-                        if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
+                        if (alg !is AesWrapAlgorithm) {
                             val jcaCipher =
                                 Cipher.getInstance("AES/ECB/PKCS5PADDING")
 

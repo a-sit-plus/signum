@@ -1,7 +1,8 @@
 package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.HmacAlgorithm
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.kdf.PBKDF2.WithIterations
 import at.asitplus.signum.internals.*
 
@@ -9,7 +10,7 @@ import at.asitplus.signum.internals.*
 sealed interface KDF
 
 /**
- * [RFC 5869](https://tools.ietf.org/html/rfc5869) HKDF using an [HMAC] based on the passed [digest].
+ * [RFC 5869](https://tools.ietf.org/html/rfc5869) HKDF using an HMAC based on the passed [digest].
  *
  * To obtain an actual [KDF] for key derivation, invoke as `(info = ...)`
  * */
@@ -33,7 +34,7 @@ enum class HKDF(val digest: Digest) {
         }
     }
 
-    val hmac = HMAC.entries.first { it.digest == digest }
+    val hmac = MessageAuthenticationCode.entries.filterIsInstance<HmacAlgorithm>().first { it.digest == digest }
 
     val outputLength: Int get() = digest.outputLength.bytes.toInt()
 
@@ -63,27 +64,28 @@ enum class HKDF(val digest: Digest) {
 }
 
 /**
- *  [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)-compliant PBKDF2 template using an [HMAC] as its [prf] (pseudo-random function).
+ *  [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)-compliant PBKDF2 template using an HMAC as its [prf] (pseudo-random function).
  *
  *  To obtain an actual [KDF] for key derivation, invoke as `(iterations = ...)`
  */
-enum class PBKDF2(val prf: HMAC) {
-    HMAC_SHA1(HMAC.SHA1),
-    HMAC_SHA256(HMAC.SHA256),
-    HMAC_SHA384(HMAC.SHA384),
-    HMAC_SHA512(HMAC.SHA512);
+enum class PBKDF2(val prf: HmacAlgorithm) {
+    HMAC_SHA1(HmacAlgorithm(Digest.SHA1)),
+    HMAC_SHA256(HmacAlgorithm(Digest.SHA256)),
+    HMAC_SHA384(HmacAlgorithm(Digest.SHA384)),
+    HMAC_SHA512(HmacAlgorithm(Digest.SHA512));
 
     operator fun invoke(iterations: Int) = WithIterations(iterations)
 
     companion object {
-        operator fun invoke(prf: HMAC) = when (prf) {
-            HMAC.SHA1 -> HMAC_SHA1
-            HMAC.SHA256 -> HMAC_SHA256
-            HMAC.SHA384 -> HMAC_SHA384
-            HMAC.SHA512 -> HMAC_SHA512
+        operator fun invoke(prf: HmacAlgorithm) = when (prf) {
+            HmacAlgorithm(Digest.SHA1) -> HMAC_SHA1
+            HmacAlgorithm(Digest.SHA256) -> HMAC_SHA256
+            HmacAlgorithm(Digest.SHA384) -> HMAC_SHA384
+            HmacAlgorithm(Digest.SHA512) -> HMAC_SHA512
+            else -> throw IllegalArgumentException("Unsupported HMAC PRF $prf")
         }
 
-        operator fun invoke(digest: Digest) = invoke(HMAC(digest))
+        operator fun invoke(digest: Digest) = invoke(HmacAlgorithm(digest))
 
     }
 

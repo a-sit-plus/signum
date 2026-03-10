@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.PssRsaSignaturePadding
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
@@ -88,9 +89,9 @@ object TestSuites {
         RSAPadding.entries.forEach { padding ->
             Digest.entries.forEach { digest ->
                 when {
-                    digest == Digest.SHA512 && padding == RSAPadding.PSS
+                    digest == Digest.SHA512 && padding == PssRsaSignaturePadding
                         -> listOf(2048, 3072, 4096)
-                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
+                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == PssRsaSignaturePadding
                         -> listOf(1024,2048,3072,4096)
                     else
                         -> listOf(512, 1024, 2048, 3072, 4096)
@@ -249,7 +250,7 @@ val EphemeralSignerCommonTests  by testSuite {
                         )
                     )
                 )
-                if(digest == Digest.SHA1 && padding== RSAPadding.PSS) return@withData
+                if(digest == Digest.SHA1 && padding== PssRsaSignaturePadding) return@withData
                 val signedCSR = signer.sign(csr).getOrThrow()
 
 

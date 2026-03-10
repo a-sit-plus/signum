@@ -169,8 +169,8 @@ object AndroidKeyStoreProvider:
                     setDigests(*algSpec.digests.map(Digest::jcaName).toTypedArray())
                     setSignaturePaddings(*algSpec.paddings.map {
                         when (it) {
-                            RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
-                            RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+                            RsaSignaturePadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
+                            RsaSignaturePadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
                         }
                     }.toTypedArray())
                 }
@@ -262,10 +262,10 @@ object AndroidKeyStoreProvider:
             is PublicKey.RSA -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
-                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
+                val padding = resolveOption<RsaSignaturePadding>("padding", keyInfo.signaturePaddings, RsaSignaturePadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
                     when (it) {
-                        RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
-                        RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+                        RsaSignaturePadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
+                        RsaSignaturePadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
                     }
                 }
                 SignatureAlgorithm.RSA(digest, padding)

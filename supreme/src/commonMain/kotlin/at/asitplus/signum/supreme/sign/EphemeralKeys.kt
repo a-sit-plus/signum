@@ -3,10 +3,14 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.Pkcs1RsaSignaturePadding
+import at.asitplus.signum.indispensable.PssRsaSignaturePadding
 import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.RsaSignaturePadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.dsl.DSL
@@ -15,8 +19,8 @@ import at.asitplus.signum.supreme.os.SignerConfiguration
 
 
 internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
-internal expect fun makePrivateKeySigner(key: PrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
-internal expect fun makePrivateKeySigner(key: PrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
+internal expect fun makePrivateKeySigner(key: PrivateKey.EC.WithPublicKey, algorithm: EcdsaSignatureAlgorithm) : Signer.ECDSA
+internal expect fun makePrivateKeySigner(key: PrivateKey.RSA, algorithm: RsaSignatureAlgorithm) : Signer.RSA
 
 open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {
     class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
@@ -24,7 +28,7 @@ open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningK
     }
     override val ec = _algSpecific.option(::ECConfiguration)
     class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
-        init { digests = Digest.entries.toSet(); paddings = RSAPadding.entries.toSet() }
+        init { digests = Digest.entries.toSet(); paddings = RsaSignaturePadding.entries.toSet() }
     }
     override val rsa = _algSpecific.option(::RSAConfiguration)
 }
@@ -83,7 +87,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     (internal val privateKey: PrivateKeyT): EphemeralKey {
 
     abstract class EC<PrivateKeyT, SignerT: Signer.ECDSA>(
-        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, PublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
+        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, PublicKey.EC, EcdsaSignatureAlgorithm)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: PublicKey.EC,
         val digests: Set<Digest?>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.EC {
 
@@ -105,9 +109,9 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     }
 
     abstract class RSA<PrivateKeyT, SignerT: Signer.RSA>(
-        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, PublicKey.RSA, SignatureAlgorithm.RSA)->SignerT,
+        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, PublicKey.RSA, RsaSignatureAlgorithm)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: PublicKey.RSA,
-        val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
+        val digests: Set<Digest>, val paddings: Set<RsaSignaturePadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
@@ -132,8 +136,8 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     alg.padding
                 }
                 false -> when {
-                    paddings.contains(RSAPadding.PSS) -> RSAPadding.PSS
-                    paddings.contains(RSAPadding.PKCS1) -> RSAPadding.PKCS1
+                    paddings.contains(PssRsaSignaturePadding) -> PssRsaSignaturePadding
+                    paddings.contains(Pkcs1RsaSignaturePadding) -> Pkcs1RsaSignaturePadding
                     else -> paddings.first()
                 }
             }

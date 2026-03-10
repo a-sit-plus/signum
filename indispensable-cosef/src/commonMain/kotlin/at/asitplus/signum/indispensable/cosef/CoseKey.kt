@@ -199,7 +199,7 @@ fun PublicKey.toCoseKey(
 ): KmmResult<CoseKey> =
     when (this) {
         is PublicKey.EC ->
-            if ((algorithm != null) && (algorithm.algorithm !is SignatureAlgorithm.ECDSA))
+            if ((algorithm != null) && (algorithm.algorithm !is EcdsaSignatureAlgorithm))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.preferCompressedRepresentation) {

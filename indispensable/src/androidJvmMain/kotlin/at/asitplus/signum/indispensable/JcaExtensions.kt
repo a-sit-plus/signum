@@ -8,7 +8,12 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
-import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.*
+import at.asitplus.signum.indispensable.symmetric.AesCbcBase
+import at.asitplus.signum.indispensable.symmetric.AesEcbAlgorithm
+import at.asitplus.signum.indispensable.symmetric.AesGcmAlgorithm
+import at.asitplus.signum.indispensable.symmetric.AesWrapAlgorithm
+import at.asitplus.signum.indispensable.symmetric.ChaCha20Poly1305Algorithm
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.internals.ensureSize
@@ -60,15 +65,15 @@ internal fun sigGetInstance(alg: String, provider: String?): JcaSignature =
 /** Get a pre-configured JCA instance for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): KmmResult<JcaSignature> = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA ->
+        is EcdsaSignatureAlgorithm ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
 
-        is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
+        is RsaSignatureAlgorithm -> getRSAPlatformSignatureInstance(provider)
         else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
     }
 }
 
-internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): JcaSignature
+internal expect fun RsaSignatureAlgorithm.getRSAPlatformSignatureInstance(provider: String?): JcaSignature
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
@@ -77,8 +82,8 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = nu
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): KmmResult<JcaSignature> = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
-        is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
+        is EcdsaSignatureAlgorithm -> sigGetInstance("NONEwithECDSA", provider)
+        is RsaSignatureAlgorithm -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
         else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
     }
 }
@@ -207,7 +212,7 @@ fun Signature.Companion.parseFromJca(
     input: ByteArray,
     algorithm: SignatureAlgorithm
 ): Signature =
-    if (algorithm is SignatureAlgorithm.ECDSA)
+    if (algorithm is EcdsaSignatureAlgorithm)
         Signature.EC.parseFromJca(input)
     else
         Signature.RSA.parseFromJca(input)
@@ -282,27 +287,28 @@ fun RSAPrivateKey.toPrivateKey(): KmmResult<PrivateKey.RSA> =
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
     @OptIn(HazardousMaterials::class)
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
-        is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
-        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
-        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        else -> TODO("$this is unsupported")
+        is AesGcmAlgorithm -> "AES/GCM/NoPadding"
+        is AesCbcBase<*, *> -> "AES/CBC/PKCS5Padding"
+        is AesEcbAlgorithm -> "AES/ECB/PKCS5Padding"
+        is AesWrapAlgorithm -> "AESWrap"
+        ChaCha20Poly1305Algorithm -> "ChaCha20-Poly1305"
+        else -> throw UnsupportedCryptoException("$this is unsupported")
     }
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
-        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
-        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
+        ChaCha20Poly1305Algorithm -> "ChaCha20"
+        else -> throw UnsupportedCryptoException("$this keyspec is unsupported")
     }
 
-val HMAC.jcaName: String
+val HmacAlgorithm.jcaName: String
     get() = when (this) {
-        HMAC.SHA1 -> "HmacSHA1"
-        HMAC.SHA256 -> "HmacSHA256"
-        HMAC.SHA384 -> "HmacSHA384"
-        HMAC.SHA512 -> "HmacSHA512"
+        MessageAuthenticationCode.HMAC_SHA1 -> "HmacSHA1"
+        MessageAuthenticationCode.HMAC_SHA256 -> "HmacSHA256"
+        MessageAuthenticationCode.HMAC_SHA384 -> "HmacSHA384"
+        MessageAuthenticationCode.HMAC_SHA512 -> "HmacSHA512"
+        else -> throw UnsupportedCryptoException("Unsupported HMAC algorithm $this")
     }
 
 /**
@@ -313,16 +319,16 @@ val HMAC.jcaName: String
  */
 val AsymmetricEncryptionAlgorithm.jcaName: String
     get() = when (this) {
-        is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
-            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
-            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
-            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> "RSA/ECB/OAEPWithSHA-384AndMGF1Padding"
-            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
+        is RsaEncryptionAlgorithm -> when (padding) {
+            RsaEncryptionPadding.OAEP_SHA1 -> "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
+            RsaEncryptionPadding.OAEP_SHA256 -> "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
+            RsaEncryptionPadding.OAEP_SHA384 -> "RSA/ECB/OAEPWithSHA-384AndMGF1Padding"
+            RsaEncryptionPadding.OAEP_SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
             @OptIn(HazardousMaterials::class)
-            at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
+            RsaEncryptionPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
 
             @OptIn(HazardousMaterials::class)
-            at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
+            RsaEncryptionPadding.NONE -> "RSA/ECB/NoPadding"
             else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding")
         }
         else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
@@ -337,32 +343,32 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
 val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
     get() =
         when (this) {
-            is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
+            is RsaEncryptionAlgorithm -> when (padding) {
                 @OptIn(HazardousMaterials::class)
-                at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> null
+                RsaEncryptionPadding.NONE -> null
 
-                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> OAEPParameterSpec(
+                RsaEncryptionPadding.OAEP_SHA1 -> OAEPParameterSpec(
                     "SHA-1",
                     "MGF1",
                     MGF1ParameterSpec.SHA1,
                     PSource.PSpecified.DEFAULT
                 )
 
-                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> OAEPParameterSpec(
+                RsaEncryptionPadding.OAEP_SHA256 -> OAEPParameterSpec(
                     "SHA-256",
                     "MGF1",
                     MGF1ParameterSpec.SHA256,
                     PSource.PSpecified.DEFAULT
                 )
 
-                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> OAEPParameterSpec(
+                RsaEncryptionPadding.OAEP_SHA384 -> OAEPParameterSpec(
                     "SHA-384",
                     "MGF1",
                     MGF1ParameterSpec.SHA384,
                     PSource.PSpecified.DEFAULT
                 )
 
-                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> OAEPParameterSpec(
+                RsaEncryptionPadding.OAEP_SHA512 -> OAEPParameterSpec(
                     "SHA-512",
                     "MGF1",
                     MGF1ParameterSpec.SHA512,
@@ -370,7 +376,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
                 )
 
                 @OptIn(HazardousMaterials::class)
-                at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
+                RsaEncryptionPadding.PKCS1 -> null
                 else -> throw UnsupportedCryptoException("Unsupported RSA encryption padding $padding")
             }
             else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")

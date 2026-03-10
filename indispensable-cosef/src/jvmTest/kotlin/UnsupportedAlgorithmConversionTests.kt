@@ -40,6 +40,7 @@ val UnsupportedAlgorithmConversionTests by testSuite {
                 override val oid = ObjectIdentifier("1.3.6.1.4.1.55555.2")
                 override val name = "UnsupportedSymmetricAlgorithm"
                 override val keySize = 128.bit
+                override fun toString() = name
             }
         AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(custom)
 

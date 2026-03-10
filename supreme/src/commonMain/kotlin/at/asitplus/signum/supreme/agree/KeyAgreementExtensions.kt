@@ -22,6 +22,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
     return when (this) {
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
         is PrivateKey.EC.WithPublicKey -> SignatureAlgorithm.ECDSAwithSHA256.signerFor(this)
+            .map { it as Signer.ECDSA }
             .transform { it.keyAgreement(publicValue) }
 
         else -> KmmResult.failure(IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}"))

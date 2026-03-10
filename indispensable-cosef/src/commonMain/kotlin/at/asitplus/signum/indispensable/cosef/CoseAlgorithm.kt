@@ -9,6 +9,7 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.indispensable.symmetric.AesGcmAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
@@ -18,6 +19,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.SerializationException
 
 /**
  * See [COSE Algorithm Registry](https://www.iana.org/assignments/cose/cose.xhtml)
@@ -56,13 +58,13 @@ sealed interface CoseAlgorithm : Enumerable {
 
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object A128GCM : SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128.GCM)
+        data object A128GCM : SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128_GCM)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object A192GCM : SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192.GCM)
+        data object A192GCM : SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192_GCM)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object A256GCM : SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256.GCM)
+        data object A256GCM : SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256_GCM)
 
 
         @Serializable(with = CoseAlgorithmSerializer::class)
@@ -88,49 +90,49 @@ sealed interface CoseAlgorithm : Enumerable {
 
         // ECDSA with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES256 : Signature(-7, SignatureAlgorithm.ECDSAwithSHA256)
+        data object ES256 : Signature(-7, SignatureAlgorithm.ECDSA_SHA256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP256 :
-            Signature(-9, SignatureAlgorithm.ECDSA(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1))
+            Signature(-9, EcdsaSignatureAlgorithm(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1))
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES384 : Signature(-35, SignatureAlgorithm.ECDSAwithSHA384)
+        data object ES384 : Signature(-35, SignatureAlgorithm.ECDSA_SHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP384 :
-            Signature(-51, SignatureAlgorithm.ECDSA(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1))
+            Signature(-51, EcdsaSignatureAlgorithm(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1))
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES512 : Signature(-36, SignatureAlgorithm.ECDSAwithSHA512)
+        data object ES512 : Signature(-36, SignatureAlgorithm.ECDSA_SHA512)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP512 :
-            Signature(-52, SignatureAlgorithm.ECDSA(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1))
+            Signature(-52, EcdsaSignatureAlgorithm(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1))
 
         // RSASSA-PSS with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS256 : Signature(-37, SignatureAlgorithm.RSAwithSHA256andPSSPadding)
+        data object PS256 : Signature(-37, SignatureAlgorithm.RSA_SHA256_PSS)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS384 : Signature(-38, SignatureAlgorithm.RSAwithSHA384andPSSPadding)
+        data object PS384 : Signature(-38, SignatureAlgorithm.RSA_SHA384_PSS)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS512 : Signature(-39, SignatureAlgorithm.RSAwithSHA512andPSSPadding)
+        data object PS512 : Signature(-39, SignatureAlgorithm.RSA_SHA512_PSS)
 
         // RSASSA-PKCS1-v1_5 with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS256 : Signature(-257, SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
+        data object RS256 : Signature(-257, SignatureAlgorithm.RSA_SHA256_PKCS1)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS384 : Signature(-258, SignatureAlgorithm.RSAwithSHA384andPKCS1Padding)
+        data object RS384 : Signature(-258, SignatureAlgorithm.RSA_SHA384_PKCS1)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS512 : Signature(-259, SignatureAlgorithm.RSAwithSHA512andPKCS1Padding)
+        data object RS512 : Signature(-259, SignatureAlgorithm.RSA_SHA512_PKCS1)
 
         // RSASSA-PKCS1-v1_5 using SHA-1
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
+        data object RS1 : Signature(-65535, RsaSignatureAlgorithm(Digest.SHA1, Pkcs1RsaSignaturePadding))
 
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy {
@@ -165,19 +167,19 @@ sealed interface CoseAlgorithm : Enumerable {
         val tagLength get() = algorithm.outputLength
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS256_64 : MAC(4, HMAC.SHA256.truncatedTo(64.bit))
+        data object HS256_64 : MAC(4, MessageAuthenticationCode.HMAC_SHA256.truncatedTo(64.bit))
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS256 : MAC(5, HMAC.SHA256)
+        data object HS256 : MAC(5, MessageAuthenticationCode.HMAC_SHA256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS384 : MAC(6, HMAC.SHA384)
+        data object HS384 : MAC(6, MessageAuthenticationCode.HMAC_SHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS512 : MAC(7, HMAC.SHA512)
+        data object HS512 : MAC(7, MessageAuthenticationCode.HMAC_SHA512)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1)
+        data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, MessageAuthenticationCode.HMAC_SHA1)
 
         companion object : Enumeration<MAC> {
             override val entries: Collection<MAC> by lazy {
@@ -209,7 +211,8 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
     override fun deserialize(decoder: Decoder): CoseAlgorithm {
         val decoded = decoder.decodeInt()
-        return CoseAlgorithm.entries.first { it.coseValue == decoded }
+        return CoseAlgorithm.entries.firstOrNull { it.coseValue == decoded }
+            ?: throw SerializationException("Unsupported COSE algorithm value $decoded")
     }
 
 }
@@ -217,7 +220,7 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+        is EcdsaSignatureAlgorithm -> when (this.digest) {
             Digest.SHA256 -> when (this.requiredCurve) {
                 ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
                 null -> CoseAlgorithm.Signature.ES256
@@ -239,15 +242,15 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
             else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
         }
 
-        is SignatureAlgorithm.RSA -> when (this.padding) {
-            RSAPadding.PKCS1 -> when (this.digest) {
+        is RsaSignatureAlgorithm -> when (this.padding) {
+            Pkcs1RsaSignaturePadding -> when (this.digest) {
                 Digest.SHA1 -> CoseAlgorithm.Signature.RS1
                 Digest.SHA256 -> CoseAlgorithm.Signature.RS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.RS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.RS512
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            PssRsaSignaturePadding -> when (this.digest) {
                 Digest.SHA256 -> CoseAlgorithm.Signature.PS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
@@ -271,12 +274,12 @@ fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegr
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
 fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {
     when (this) {
-        HMAC.SHA1 -> CoseAlgorithm.MAC.UNOFFICIAL_HS1
-        HMAC.SHA256 -> CoseAlgorithm.MAC.HS256
-        HMAC.SHA384 -> CoseAlgorithm.MAC.HS384
-        HMAC.SHA512 -> CoseAlgorithm.MAC.HS512
-        is MessageAuthenticationCode.Truncated -> when {
-            (inner == HMAC.SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
+        MessageAuthenticationCode.HMAC_SHA1 -> CoseAlgorithm.MAC.UNOFFICIAL_HS1
+        MessageAuthenticationCode.HMAC_SHA256 -> CoseAlgorithm.MAC.HS256
+        MessageAuthenticationCode.HMAC_SHA384 -> CoseAlgorithm.MAC.HS384
+        MessageAuthenticationCode.HMAC_SHA512 -> CoseAlgorithm.MAC.HS512
+        is TruncatedMessageAuthenticationCode -> when {
+            (inner == MessageAuthenticationCode.HMAC_SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
             else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
         }
         else -> throw UnsupportedCryptoException("$this has no COSE MAC mapping")
@@ -287,9 +290,12 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
 fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
     when (this) {
         SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
-        SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM
-        SymmetricEncryptionAlgorithm.AES_192.GCM -> CoseAlgorithm.SymmetricEncryption.A192GCM
-        SymmetricEncryptionAlgorithm.AES_256.GCM -> CoseAlgorithm.SymmetricEncryption.A256GCM
+        is AesGcmAlgorithm -> when (keySize.bits) {
+            128u -> CoseAlgorithm.SymmetricEncryption.A128GCM
+            192u -> CoseAlgorithm.SymmetricEncryption.A192GCM
+            256u -> CoseAlgorithm.SymmetricEncryption.A256GCM
+            else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
+        }
         else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
     }
 }

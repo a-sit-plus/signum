@@ -6,6 +6,10 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.indispensable.asymmetric.NoRsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.Pkcs1RsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionPadding
 import at.asitplus.signum.indispensable.encodeToPEM
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -64,12 +68,23 @@ class RsaTestData(
                 CryptoPrivateKey.decodeFromPem(decoder.decodeString()).getOrThrow()
         }
 
+        @OptIn(HazardousMaterials::class)
         object PaddingSerializer : KSerializer<RSAPadding> {
             override val descriptor: SerialDescriptor =
                 PrimitiveSerialDescriptor("Padding", PrimitiveKind.STRING)
 
             override fun deserialize(decoder: Decoder) =
-                decoder.decodeString().let { decoded -> RSAPadding.entries.first { it.toString() == decoded } }
+                decoder.decodeString().let { decoded ->
+                    when (decoded) {
+                        "PKCS1" -> Pkcs1RsaEncryptionPadding
+                        "NONE" -> NoRsaEncryptionPadding
+                        "OAEP_SHA1" -> OaepRsaEncryptionPadding.Sha1
+                        "OAEP_SHA256" -> OaepRsaEncryptionPadding.Sha256
+                        "OAEP_SHA384" -> OaepRsaEncryptionPadding.Sha384
+                        "OAEP_SHA512" -> OaepRsaEncryptionPadding.Sha512
+                        else -> throw IllegalArgumentException("Unsupported RSA encryption padding $decoded")
+                    }
+                }
 
             override fun serialize(
                 encoder: Encoder,
