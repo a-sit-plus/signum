@@ -20,12 +20,12 @@ class BasicConstraintsValidator: CertificateChainValidator {
 
     @ExperimentalPkiApi
     override suspend fun validate(
-        chain: CertificateChain,
+        anchoredChain: AnchoredCertificateChain,
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var remainingPathLength: UInt? = null
         var currentCertIndex = 0
-        val processingChain = context.selectedTrustAnchor?.cert?.let { chain + it } ?: chain
+        val processingChain = anchoredChain.trustAnchor.cert?.let { anchoredChain.chain + it } ?: anchoredChain.chain
         val certPathLen = processingChain.size
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
         for (currCert in processingChain.validationPath) {

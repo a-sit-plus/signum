@@ -18,15 +18,16 @@ class TrustAnchorChainConstructor : ChainConstructor {
         context: CertificateValidationContext
     ): Sequence<AnchoredCertificateChain> {
         val results = mutableListOf<AnchoredCertificateChain>()
+        val processingChain = if (context.allowIncludedTrustAnchor && context.trustAnchors.any {
+                it.matchesCertificate(chain.root)
+            }) chain.dropLast(1) else chain
 
         for (anchor in context.trustAnchors) {
 
             if (!anchor.isIssuerOf(chain.root)) continue
 
-            val candidateChain = anchor.cert?.let { chain + it } ?: chain
-
             results += AnchoredCertificateChain(
-                chain = candidateChain,
+                chain = processingChain,
                 trustAnchor = anchor
             )
         }

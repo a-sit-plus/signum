@@ -23,12 +23,12 @@ class ChainValidator: CertificateChainValidator {
 
     @ExperimentalPkiApi
     override suspend fun validate(
-        chain: CertificateChain,
+        anchoredChain: AnchoredCertificateChain,
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var currentCertIndex = 0
-        val trustAnchor = context.selectedTrustAnchor
-        val processingChain = trustAnchor?.cert?.let { chain + it } ?: chain
+        val trustAnchor = anchoredChain.trustAnchor
+        val processingChain = trustAnchor.cert?.let { anchoredChain.chain + it } ?: anchoredChain.chain
         for (currCert in processingChain.validationPath) {
             if (currentCertIndex < processingChain.validationPath.lastIndex) {
                 val childCert = processingChain.validationPath[currentCertIndex + 1]
@@ -39,8 +39,8 @@ class ChainValidator: CertificateChainValidator {
         }
 
         // only if trust anchor is key based
-        if (trustAnchor != null && trustAnchor.cert == null) {
-            if (!trustAnchor.isIssuerOf(chain.root)) {
+        if (trustAnchor.cert == null) {
+            if (!trustAnchor.isIssuerOf(processingChain.root)) {
                 throw CertificateChainValidatorException(
                     "Root certificate not issued by trust anchor."
                 )

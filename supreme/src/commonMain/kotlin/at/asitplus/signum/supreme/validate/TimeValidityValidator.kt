@@ -16,12 +16,12 @@ class TimeValidityValidator: CertificateChainValidator {
 
     @ExperimentalPkiApi
     override suspend fun validate(
-        chain: CertificateChain,
+        anchoredChain: AnchoredCertificateChain,
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val date = context.date
         var currentCertIndex = 0
-        val processingChain = context.selectedTrustAnchor?.cert?.let { chain + it } ?: chain
+        val processingChain = anchoredChain.trustAnchor.cert?.let { anchoredChain.chain + it } ?: anchoredChain.chain
 
         for (currCert in processingChain.validationPath) {
             currCert.checkValidityAt(date)

@@ -31,11 +31,11 @@ interface CertificateValidator : CertificateChainValidator {
 
     @OptIn(ExperimentalPkiApi::class)
     override suspend fun validate(
-        chain: CertificateChain,
-        context: CertificateValidationContext,
+        anchoredChain: AnchoredCertificateChain,
+        context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
-        chain.forEachIndexed { index, cert ->
+        anchoredChain.chain.forEachIndexed { index, cert ->
             try {
                 val checked = check(cert)
                 checkedCriticalExtensions

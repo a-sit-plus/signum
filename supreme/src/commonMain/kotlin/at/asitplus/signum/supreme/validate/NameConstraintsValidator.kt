@@ -23,15 +23,15 @@ class NameConstraintsValidator: CertificateChainValidator {
 
     @ExperimentalPkiApi
     override suspend fun validate(
-        chain: CertificateChain,
+        anchoredChain: AnchoredCertificateChain,
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
-        val certPathLen = chain.size
+        val certPathLen = anchoredChain.chain.size
         var currentCertIndex = 0
-        var previousNameConstraints = context.selectedTrustAnchor?.nameConstraints
+        var previousNameConstraints = anchoredChain.trustAnchor.nameConstraints
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
 
-        for (currCert in chain.validationPath) {
+        for (currCert in anchoredChain.chain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
                 .add(KnownOIDs.nameConstraints_2_5_29_30)

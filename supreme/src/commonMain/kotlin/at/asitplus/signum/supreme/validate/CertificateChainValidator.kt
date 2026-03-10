@@ -4,7 +4,6 @@ import at.asitplus.signum.CertificateException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
@@ -16,8 +15,10 @@ import kotlin.time.Instant
 /**
  * Performs validation on a complete certificate chain.
  *
- * Implementations receive the entire [CertificateChain] and are responsible
+ * Implementations receive the entire [AnchoredCertificateChain] and are responsible
  * for performing all necessary validation steps in a single invocation.
+ *
+ * If trust anchor validation is not required, [AnchoredCertificateChain.trustAnchor] can be ignored
  *
  * Validators are expected to be immutable and stateless. Any state required
  * for validation must be derived from the provided inputs.
@@ -32,13 +33,13 @@ interface CertificateChainValidator {
     @ExperimentalPkiApi
     @Throws(Throwable::class)
     suspend fun validate(
-        chain: CertificateChain,
+        anchoredChain: AnchoredCertificateChain,
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>>
 }
 
 @OptIn(ExperimentalPkiApi::class)
-class CertificateValidationContext(
+data class CertificateValidationContext(
     val date: Instant = Clock.System.now(),
     val explicitPolicyRequired: Boolean = false,
     val policyMappingInhibited: Boolean = false,
@@ -47,8 +48,6 @@ class CertificateValidationContext(
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
     val allowIncludedTrustAnchor: Boolean = true,
     val trustAnchors: Set<TrustAnchor> = SystemTrustStore,
-    /** use this property to specify which trust anchor to use */
-    var selectedTrustAnchor: TrustAnchor? = null,
     val expectedEku: Set<ObjectIdentifier> = emptySet(),
     /** use this lambda to specify how to handle leaf key usage check */
     val leafKeyUsageCheck: suspend (X509Certificate) -> Unit = { currCert ->

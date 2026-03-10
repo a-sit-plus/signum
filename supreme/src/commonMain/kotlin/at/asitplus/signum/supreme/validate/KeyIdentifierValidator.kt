@@ -22,11 +22,11 @@ class KeyIdentifierValidator: CertificateValidator {
     }
 
     override suspend fun validate(
-        chain: CertificateChain,
+        anchoredChain: AnchoredCertificateChain,
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
-        context.selectedTrustAnchor?.cert?.let { checkTrustAnchorAndChild(it, chain.root) }
-        return super.validate(chain, context)
+        anchoredChain.trustAnchor.cert?.let { checkTrustAnchorAndChild(it, anchoredChain.chain.root) }
+        return super.validate(anchoredChain, context)
     }
 
     @Throws(KeyIdentifierException::class)
