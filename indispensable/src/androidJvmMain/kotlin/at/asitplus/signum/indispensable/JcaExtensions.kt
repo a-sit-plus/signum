@@ -57,7 +57,6 @@ import javax.crypto.spec.PSource
 
 
 private val certificateFactoryMutex = Mutex()
-private val certFactory = CertificateFactory.getInstance("X.509")
 
 val Digest.jcaPSSParams
     get() = when (this) {
@@ -67,9 +66,32 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
+private data class JvmCryptoBootstrap(
+    val providerName: String,
+    val certificateFactory: CertificateFactory,
+    val rsaFactory: KeyFactory,
+)
+
+private val jvmCryptoBootstrap: JvmCryptoBootstrap by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
+        ?: Security.addProvider(BouncyCastleProvider())
+    val providerName = BouncyCastleProvider.PROVIDER_NAME
+    JvmCryptoBootstrap(
+        providerName = providerName,
+        certificateFactory = CertificateFactory.getInstance("X.509", providerName),
+        rsaFactory = KeyFactory.getInstance("RSA", providerName),
+    )
+}
+
+private val bouncyCastleProviderName: String
+    get() = jvmCryptoBootstrap.providerName
+
 internal fun sigGetInstance(alg: String, provider: String?): JcaSignature =
     when (provider) {
-        null -> JcaSignature.getInstance(alg)
+        null -> {
+            jvmCryptoBootstrap
+            JcaSignature.getInstance(alg)
+        }
         else -> JcaSignature.getInstance(alg, provider)
     }
 
@@ -77,10 +99,14 @@ private fun interface JcaSignatureFactory {
     fun create(provider: String?): JcaSignature
 }
 
-private val bouncyCastleProviderName: String by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-    Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
-        ?: Security.addProvider(BouncyCastleProvider())
-    BouncyCastleProvider.PROVIDER_NAME
+private fun keyFactory(algorithm: String): KeyFactory {
+    jvmCryptoBootstrap
+    return KeyFactory.getInstance(algorithm)
+}
+
+private fun cipherInstance(transformation: String, provider: String?): Cipher {
+    jvmCryptoBootstrap
+    return if (provider != null) Cipher.getInstance(transformation, provider) else Cipher.getInstance(transformation)
 }
 
 private fun sigGetRawPssInstance(provider: String?): JcaSignature {
@@ -408,7 +434,8 @@ fun PublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     JCEECPublicKey("EC", ecPublicKeySpec)
 }
 
-private val rsaFactory = KeyFactory.getInstance("RSA")
+private val rsaFactory: KeyFactory
+    get() = jvmCryptoBootstrap.rsaFactory
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
 fun PublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
@@ -512,7 +539,7 @@ fun Signature.RSA.Companion.parseFromJca(input: ByteArray) =
  */
 suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
-        certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
+        jvmCryptoBootstrap.certificateFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
 }
 
@@ -531,8 +558,8 @@ fun java.security.cert.X509Certificate.toKmpCertificate() =
 fun PrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<JcaPrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
     val kf = when (this) {
-        is PrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
-        is PrivateKey.RSA -> KeyFactory.getInstance("RSA")
+        is PrivateKey.EC.WithPublicKey -> keyFactory("EC")
+        is PrivateKey.RSA -> keyFactory("RSA")
     }
     kf.generatePrivate(spec)!!
 }
@@ -611,7 +638,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
 fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: PublicKey.RSA, provider: String? = null) =
     catching {
-        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+        cipherInstance(jcaName, provider).apply {
             init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), jcaParameterSpec)
         }
     }
@@ -619,7 +646,7 @@ fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: PublicKey.R
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
 fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: PrivateKey.RSA, provider: String? = null) =
     catching {
-        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+        cipherInstance(jcaName, provider).apply {
             init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), jcaParameterSpec)
         }
     }
