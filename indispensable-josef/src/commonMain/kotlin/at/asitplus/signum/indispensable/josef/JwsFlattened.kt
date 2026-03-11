@@ -22,6 +22,10 @@ data class JwsFlattened(
     val plainSignature: ByteArray
 ) : JWS() {
 
+    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader) }
+    val signature by lazy { getSignature(jwsHeader.algorithm, plainSignature) }
+    val signatureInput by lazy { getSignatureInput(plainProtectedHeader, payload) }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -43,8 +47,6 @@ data class JwsFlattened(
         result = 31 * result + plainSignature.contentHashCode()
         return result
     }
-
-    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader) }
 
     companion object {
         fun invoke(

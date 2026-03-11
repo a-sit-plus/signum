@@ -15,10 +15,11 @@ data class JwsGeneral(
     val signatures: List<SignatureElement>
 ) : JWS() {
 
-    fun getHeader(index: Int): JwsHeader = with(signatures[index]) {
+    fun getHeaderAt(index: Int): JwsHeader = with(signatures[index]) {
         JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
     }
-
+    fun getSignatureAt(index: Int) = getSignature(getHeaderAt(index).algorithm, signatures[index].plainSignature)
+    fun getSignatureInputAt(index: Int) = getSignatureInput(signatures[index].plainProtectedHeader, payload)
     /**
      * @return New [JwsGeneral] object with appended Signature
      */
@@ -55,7 +56,7 @@ data class JwsGeneral(
     }
 
     companion object {
-        //TODO Invoke function
+        operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
     }
 }
 
