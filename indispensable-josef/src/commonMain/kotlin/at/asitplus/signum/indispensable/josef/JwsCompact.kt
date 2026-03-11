@@ -24,6 +24,8 @@ data class JwsCompact(
     val plainSignature: ByteArray,
 ) : JWS() {
 
+    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, null) }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -69,13 +71,29 @@ data class JwsCompact(
 
             return try {
                 JwsCompact(
-                    plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
+                    plainProtectedHeader = parts[0].encodeToByteArray(),
                     payload = parts[1].decodeToByteArray(Base64UrlStrict),
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
                 )
             } catch (e: IllegalArgumentException) {
                 throw SerializationException("Invalid base64url content in JWS compact serialization", e)
             }
+        }
+    }
+
+    companion object {
+        fun invoke(
+            protectedHeader: JwsHeader.Part,
+            payload: ByteArray,
+            signer: (JwsAlgorithm, ByteArray) -> ByteArray
+        ): JwsCompact {
+            val jwsHeader = JwsHeader.fromParts(protectedHeader, null)
+            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
+            return JwsCompact(
+                plainProtectedHeader = plainProtectedHeader,
+                payload = payload,
+                plainSignature = signer(jwsHeader.algorithm, getSignatureInput(plainProtectedHeader, payload)),
+            )
         }
     }
 }

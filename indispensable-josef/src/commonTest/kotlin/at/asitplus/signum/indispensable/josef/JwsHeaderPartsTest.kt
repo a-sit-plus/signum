@@ -64,6 +64,26 @@ val JwsHeaderPartsTest by testSuite {
         flattened.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader)
     }
 
+    "compact JWS accepts typed protected header" {
+        val protectedHeader = JwsHeader.Part(
+            algorithm = JwsAlgorithm.Signature.ES256,
+            type = "application/example+jwt",
+        )
+        val payload = "payload".encodeToByteArray()
+        var capturedAlgorithm: JwsAlgorithm? = null
+
+        val compact = JwsCompact.invoke(
+            protectedHeader = protectedHeader,
+            payload = payload,
+        ) { algorithm, _ ->
+            capturedAlgorithm = algorithm
+            byteArrayOf(1, 2, 3)
+        }
+
+        capturedAlgorithm shouldBe JwsAlgorithm.Signature.ES256
+        compact.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, null)
+    }
+
     "protected header bytes are base64url encoded header json" {
         val protectedHeader = JwsHeader.Part(
             algorithm = JwsAlgorithm.Signature.ES256,

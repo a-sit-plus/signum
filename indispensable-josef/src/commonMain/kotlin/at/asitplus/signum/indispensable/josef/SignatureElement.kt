@@ -1,10 +1,9 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.ByteArrayUtf8Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
-
 
 /**
  * Signature element as defined in [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1)
@@ -26,13 +25,13 @@ data class SignatureElement(
      * Header Parameter values are integrity protected.
      *
      * Serialization: BASE64URL(UTF8(JWS Protected Header))
-     */
+    */
     @SerialName(JWS.SerialNames.PROTECTED)
-    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    @Serializable(with = ByteArrayUtf8Serializer::class)
     val plainProtectedHeader: ByteArray? = null,
 
     @SerialName(JWS.SerialNames.HEADER)
-    val unprotectedHeader: JsonObject? = null
+    val unprotectedHeader: JwsHeader.Part? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

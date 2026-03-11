@@ -14,6 +14,11 @@ data class JwsGeneral(
     @SerialName(SerialNames.SIGNATURES)
     val signatures: List<SignatureElement>
 ) : JWS() {
+
+    fun getHeader(index: Int): JwsHeader = with(signatures[index]) {
+        JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    }
+
     /**
      * @return New [JwsGeneral] object with appended Signature
      */
@@ -48,7 +53,12 @@ data class JwsGeneral(
         result = 31 * result + signatures.hashCode()
         return result
     }
+
+    companion object {
+        //TODO Invoke function
+    }
 }
+
 
 fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
     signatures.map {

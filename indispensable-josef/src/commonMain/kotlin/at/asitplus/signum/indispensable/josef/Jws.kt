@@ -13,7 +13,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.decodeFromJsonElement
 
 
 /**
@@ -45,22 +44,15 @@ sealed class JWS {
     }
 
     companion object {
-        fun getSignature(combinedHeader: JwsHeader, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
-            when (val alg = combinedHeader.algorithm) {
+        fun getSignature(jwsHeader: JwsHeader, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
+            when (val alg = jwsHeader.algorithm) {
                 is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
                 is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
                 else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
             }
 
-        fun getCombinedHeader(unprotectedHeader: JsonObject, protectedHeader: ByteArray): JwsHeader =
-            joseCompliantSerializer.decodeFromJsonElement(
-                unprotectedHeader.strictUnion(
-                    joseCompliantSerializer.decodeFromString(protectedHeader.decodeToString())
-                )
-            )
-
         fun getSignatureInput(protectedHeader: ByteArray, payload: ByteArray) =
-            "${protectedHeader.encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
+            "${protectedHeader.decodeToString()}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
 
     object JwsSerializer: KSerializer<JWS> {
