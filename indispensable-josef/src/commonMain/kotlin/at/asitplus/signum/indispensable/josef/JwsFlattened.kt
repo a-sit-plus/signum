@@ -49,13 +49,13 @@ data class JwsFlattened(
 
     companion object {
         operator fun invoke(
-            protectedHeader: JwsHeader.Part,
-            unprotectedHeader: JwsHeader.Part = JwsHeader.Part(),
+            protectedHeader: JwsHeader.Part?,
+            unprotectedHeader: JwsHeader.Part?,
             payload: ByteArray,
             signer: (JwsAlgorithm, ByteArray) -> ByteArray
         ): JwsFlattened {
             val jwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
+            val plainProtectedHeader = protectedHeader?.let { JwsProtectedHeaderSerializer.encodeToByteArray(it) }
             return JwsFlattened(
                 plainProtectedHeader,
                 unprotectedHeader,
@@ -66,14 +66,20 @@ data class JwsFlattened(
     }
 }
 
-fun JwsFlattened.toJwsCompact(): JwsCompact =
-    JwsCompact(
-        plainProtectedHeader = plainProtectedHeader!!,
+fun JwsFlattened.toJwsCompact(): JwsCompact {
+    require(unprotectedHeader == null) {"Compact Serialization does not support unprotected header"}
+    runCatching { JwsHeader.fromParts(plainProtectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
+    return JwsCompact(
+        plainProtectedHeader = requireNotNull(plainProtectedHeader) {
+            "Compact JWS requires a protected header"
+        },
         payload = payload,
         plainSignature = plainSignature,
     )
+}
 
 fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
+    require(isNotEmpty()) { "General JWS requires at least one signature" }
     val payload = this[0].payload
     val signatures = this.map {
         require(payload.contentEqualsIfArray(it.payload)) {

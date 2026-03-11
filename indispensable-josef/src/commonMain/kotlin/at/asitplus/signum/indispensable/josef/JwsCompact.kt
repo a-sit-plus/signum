@@ -98,7 +98,7 @@ data class JwsCompact(
                     payload = parts[1].decodeToByteArray(Base64UrlStrict),
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
                 )
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 throw SerializationException("Invalid base64url content in JWS compact serialization", e)
             }
         }

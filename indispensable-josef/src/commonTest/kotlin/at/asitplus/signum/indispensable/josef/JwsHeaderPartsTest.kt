@@ -38,6 +38,42 @@ val JwsHeaderPartsTest by testSuite {
         exception.exceptionOrNull() shouldBe IllegalArgumentException("Duplicate keys: kid")
     }
 
+    "encoded protected header bytes can be merged with unprotected fields" {
+        val protectedHeader = JwsHeader.Part(
+            algorithm = JwsAlgorithm.Signature.RS256,
+            type = "application/example+jws",
+        )
+        val unprotectedHeader = JwsHeader.Part(
+            keyId = "did:example:signer",
+            contentType = "application/example+json",
+        )
+
+        val combined = JwsHeader.fromParts(
+            protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
+            unprotectedHeader = unprotectedHeader,
+        )
+
+        combined shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader)
+    }
+
+    "duplicate names across encoded protected and unprotected headers are rejected" {
+        val protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(
+            JwsHeader.Part(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                keyId = "protected",
+            )
+        )
+
+        val exception = runCatching {
+            JwsHeader.fromParts(
+                protectedHeader = protectedHeader,
+                unprotectedHeader = JwsHeader.Part(keyId = "unprotected"),
+            )
+        }
+
+        exception.exceptionOrNull() shouldBe IllegalArgumentException("Duplicate keys: kid")
+    }
+
     "flattened JWS accepts typed header parts" {
         val protectedHeader = JwsHeader.Part(
             algorithm = JwsAlgorithm.Signature.ES256,

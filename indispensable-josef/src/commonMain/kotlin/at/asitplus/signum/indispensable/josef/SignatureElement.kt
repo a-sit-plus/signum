@@ -40,12 +40,14 @@ data class SignatureElement(
 
         if (!plainSignature.contentEquals(other.plainSignature)) return false
         if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
+        if (unprotectedHeader != other.unprotectedHeader) return false
         return true
     }
 
     override fun hashCode(): Int {
         var result = plainSignature.contentHashCode()
         result = 31 * result + plainProtectedHeader.contentHashCode()
+        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         return result
     }
 }
