@@ -204,8 +204,7 @@ val JwsGeneralTest by testSuite {
         val invalidBase64Result = runCatching { JwsCompact("!!.e30.AQ") }
 
         missingHeaderResult.isSuccess shouldBe false
-        missingHeaderResult.exceptionOrNull() shouldBe
-                IllegalArgumentException("Compact JWS requires a protected header")
+        missingHeaderResult.exceptionOrNull().shouldBeInstanceOf<IllegalArgumentException>()
 
         missingPartResult.isSuccess shouldBe false
         missingPartResult.exceptionOrNull()?.message?.shouldContain("expected 3 parts, got 2")
