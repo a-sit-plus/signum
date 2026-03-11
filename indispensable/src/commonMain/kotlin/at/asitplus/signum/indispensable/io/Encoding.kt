@@ -78,13 +78,6 @@ object ByteArrayBase64UrlSerializer: TransformingSerializerTemplate<ByteArray, S
     decodeAs = { it.decodeToByteArray(Base64UrlStrict) }
 )
 
-/** De-/serializes UTF-8 strings to/from [ByteArray] without additional encoding. */
-object ByteArrayUtf8Serializer: TransformingSerializerTemplate<ByteArray, String>(
-    parent = String.serializer(),
-    encodeAs = ByteArray::decodeToString,
-    decodeAs = String::encodeToByteArray,
-)
-
 /** De-/serializes X509Certificate as Base64Url-encoded String */
 object X509CertificateBase64UrlSerializer: TransformingSerializerTemplate<X509Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,

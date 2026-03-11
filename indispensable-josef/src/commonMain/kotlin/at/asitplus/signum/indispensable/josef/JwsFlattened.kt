@@ -2,14 +2,13 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
-import at.asitplus.signum.indispensable.io.ByteArrayUtf8Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
 @Serializable
 data class JwsFlattened(
-    @Serializable(ByteArrayUtf8Serializer::class)
+    @Serializable(ByteArrayBase64UrlSerializer::class)
     @SerialName(SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
     @SerialName(SerialNames.HEADER)
@@ -49,7 +48,7 @@ data class JwsFlattened(
     }
 
     companion object {
-        fun invoke(
+        operator fun invoke(
             protectedHeader: JwsHeader.Part,
             unprotectedHeader: JwsHeader.Part = JwsHeader.Part(),
             payload: ByteArray,
