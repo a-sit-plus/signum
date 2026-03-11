@@ -47,6 +47,9 @@ interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : No
                 return AlgorithmRegistry.symmetricEncryptionAlgorithms
             }
 
+        fun register(algorithm: SymmetricEncryptionAlgorithm<*, *, *>): SymmetricEncryptionAlgorithm<*, *, *> =
+            AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(algorithm)
+
         val ChaCha20Poly1305 get() = ChaCha20Poly1305Algorithm
 
         val AES_128 = AESDefinition(128.bit)

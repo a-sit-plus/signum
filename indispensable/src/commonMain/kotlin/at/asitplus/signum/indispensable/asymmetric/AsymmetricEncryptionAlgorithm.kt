@@ -27,6 +27,9 @@ interface RsaEncryptionPadding : Enumerable {
                 return AlgorithmRegistry.asymmetricRsaPaddings
             }
 
+        fun register(padding: RsaEncryptionPadding): RsaEncryptionPadding =
+            AlgorithmRegistry.registerAsymmetricRsaPadding(padding)
+
         fun fromString(string: String) = entries.firstOrNull { it.toString() == string }
     }
 }

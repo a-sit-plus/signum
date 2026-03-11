@@ -11,12 +11,14 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo as RawPkcs10
 import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.Awesn1BackedSerializer
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.indispensable.signature.Signature
 import at.asitplus.signum.indispensable.toSignatureAlgorithmIdentifier
+import kotlinx.serialization.Serializable
 
 @Deprecated(
     "Renamed to CertificationRequestInfo.",
@@ -31,9 +33,11 @@ typealias TbsCertificationRequest = CertificationRequestInfo
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */
+@Serializable(with = CertificationRequestInfoAsn1Serializer::class)
 class CertificationRequestInfo(
     override val raw: RawPkcs10CertificationRequestInfo,
-) : Asn1Encodable<Asn1Sequence>, Awesn1Backed<RawPkcs10CertificationRequestInfo> {
+) : Asn1Encodable<Asn1Sequence>,
+    Awesn1Backed<RawPkcs10CertificationRequestInfo, Asn1Sequence, RawPkcs10CertificationRequestInfo.Companion> {
 
     @Throws(Asn1Exception::class)
     constructor(
@@ -73,8 +77,6 @@ class CertificationRequestInfo(
         }
     })
 
-    override fun encodeToTlv() = raw.encodeToTlv()
-
     override fun equals(other: Any?) = other is CertificationRequestInfo && raw == other.raw
 
     override fun hashCode(): Int = raw.hashCode()
@@ -88,6 +90,13 @@ class CertificationRequestInfo(
     }
 }
 
+object CertificationRequestInfoAsn1Serializer :
+    Awesn1BackedSerializer<CertificationRequestInfo, RawPkcs10CertificationRequestInfo>(
+        rawSerializer = RawPkcs10CertificationRequestInfo,
+        encodeAs = { it.raw },
+        decodeAs = ::CertificationRequestInfo,
+    )
+
 
 /**
  * Very simple implementation of a PKCS#10 Certification Request
@@ -98,9 +107,11 @@ class CertificationRequestInfo(
 )
 typealias Pkcs10CertificationRequest = CertificationRequest
 
+@Serializable(with = CertificationRequestAsn1Serializer::class)
 class CertificationRequest(
     override val raw: RawPkcs10CertificationRequest,
-) : Asn1PemEncodable<Asn1Sequence>, Awesn1Backed<RawPkcs10CertificationRequest> {
+) : Asn1PemEncodable<Asn1Sequence>,
+    Awesn1Backed<RawPkcs10CertificationRequest, Asn1Sequence, RawPkcs10CertificationRequest.Companion> {
     val tbsCsr: CertificationRequestInfo by lazy { CertificationRequestInfo(raw.certificationRequestInfo) }
     val signatureAlgorithm: SignatureAlgorithmIdentifier get() = raw.signatureAlgorithm
     val rawSignatureValue: Asn1BitString get() = raw.signatureValue
@@ -221,9 +232,6 @@ class CertificationRequest(
 
     override val pemLabel: String = EB_STRINGS.DEFAULT
 
-    @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = raw.encodeToTlv()
-
     override fun equals(other: Any?) = other is CertificationRequest && raw == other.raw
 
     override fun hashCode(): Int = raw.hashCode()
@@ -242,3 +250,10 @@ class CertificationRequest(
         }
     }
 }
+
+object CertificationRequestAsn1Serializer :
+    Awesn1BackedSerializer<CertificationRequest, RawPkcs10CertificationRequest>(
+        rawSerializer = RawPkcs10CertificationRequest,
+        encodeAs = { it.raw },
+        decodeAs = ::CertificationRequest,
+    )

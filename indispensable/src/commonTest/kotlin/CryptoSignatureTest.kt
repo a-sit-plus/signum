@@ -1,6 +1,9 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
+import at.asitplus.signum.indispensable.signature.Signature as CryptoSignature
+import at.asitplus.signum.indispensable.signature.Signature.EC as CryptoSignatureEC
+import at.asitplus.signum.indispensable.signature.Signature.RSA as CryptoSignatureRSA
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -22,12 +25,12 @@ val CryptoSignatureTest  by testSuite {
             val first: Int = values.random().also { values.remove(it) }
             val second: Int = values.random().also { values.remove(it) }
 
-            val ec1 = Signature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
-            val ec2 = Signature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
-            val ec3 = Signature.EC.fromRS(second.toBigInteger(), first.toBigInteger())
-            val rsa1 = Signature.RSA(first.toTwosComplementByteArray())
-            val rsa2 = Signature.RSA(first.toTwosComplementByteArray())
-            val rsa3 = Signature.RSA(second.toTwosComplementByteArray())
+            val ec1 = CryptoSignatureEC.fromRS(first.toBigInteger(), second.toBigInteger())
+            val ec2 = CryptoSignatureEC.fromRS(first.toBigInteger(), second.toBigInteger())
+            val ec3 = CryptoSignatureEC.fromRS(second.toBigInteger(), first.toBigInteger())
+            val rsa1 = CryptoSignatureRSA(first.toTwosComplementByteArray())
+            val rsa2 = CryptoSignatureRSA(first.toTwosComplementByteArray())
+            val rsa3 = CryptoSignatureRSA(second.toTwosComplementByteArray())
 
             ec1 shouldBe ec1
             ec1 shouldBe ec2
@@ -61,7 +64,7 @@ val CryptoSignatureTest  by testSuite {
             ByteArray(66) { if (it == 0) 0x01 else 0x00 } +
                     ByteArray(66) { if (it == 65) 0x01 else 0x00 }
 
-        val sig = Signature.EC.fromRS(r, s)
+        val sig = CryptoSignatureEC.fromRS(r, s)
 
         val sig1 = sig.guessCurve()
         sig1 shouldBe sig
@@ -78,7 +81,7 @@ val CryptoSignatureTest  by testSuite {
         sig2.scalarByteLength shouldBe sig1.scalarByteLength
         sig2.rawByteArray shouldBe encoded
 
-        val sig3 = Signature.EC.fromRawBytes(encoded)
+        val sig3 = CryptoSignatureEC.fromRawBytes(encoded)
         sig3 shouldBe sig2
         sig3 shouldBe sig
         sig3.r shouldBe sig.r
@@ -87,6 +90,6 @@ val CryptoSignatureTest  by testSuite {
         sig3.rawByteArray shouldBe encoded
 
         val r2 = BigInteger.ONE.shl(ECCurve.entries.maxOf { it.scalarLength.bits }.toInt() + 1)
-        shouldThrow<IllegalArgumentException> { Signature.EC.fromRS(r2, s).guessCurve() }
+        shouldThrow<IllegalArgumentException> { CryptoSignatureEC.fromRS(r2, s).guessCurve() }
     }
 }

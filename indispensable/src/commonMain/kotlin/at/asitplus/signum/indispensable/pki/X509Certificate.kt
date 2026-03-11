@@ -11,6 +11,7 @@ import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.Awesn1BackedSerializer
 import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -27,6 +28,7 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Transient
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo as RawSubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.pki.TbsCertificate as RawTbsCertificate
@@ -42,9 +44,11 @@ import at.asitplus.awesn1.crypto.pki.X509Certificate as RawX509Certificate
 )
 typealias TbsCertificate = CertificateInfo
 
+@Serializable(with = CertificateInfoAsn1Serializer::class)
 class CertificateInfo(
     override val raw: RawTbsCertificate,
-) : Asn1Encodable<Asn1Sequence>, Awesn1Backed<RawTbsCertificate> {
+) : Asn1Encodable<Asn1Sequence>,
+    Awesn1Backed<RawTbsCertificate, Asn1Sequence, RawTbsCertificate.Companion> {
 
     @Throws(Asn1Exception::class)
     constructor(
@@ -287,9 +291,6 @@ class CertificateInfo(
     @Transient
     val issuerAlternativeNames: GeneralNames? = extensions?.findIssuerAltNames()
 
-    @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = raw.encodeToTlv()
-
     override fun equals(other: Any?) = other is CertificateInfo && raw == other.raw
 
     override fun hashCode(): Int = raw.hashCode()
@@ -309,6 +310,13 @@ class CertificateInfo(
         }
     }
 }
+
+object CertificateInfoAsn1Serializer :
+    Awesn1BackedSerializer<CertificateInfo, RawTbsCertificate>(
+        rawSerializer = RawTbsCertificate,
+        encodeAs = { it.raw },
+        decodeAs = ::CertificateInfo,
+    )
 
 /**
  * Signature encoded as per X.509:
@@ -333,7 +341,7 @@ val Signature.x509Encoded: Asn1Primitive
  * - RSA is encoded as a bit string
  * - EC is DER-encoded then wrapped in a bit string
  */
-fun Signature.Companion.fromX509Encoded(alg: SignatureAlgorithmIdentifier, it: Asn1BitString) =
+fun Signature.Companion.fromX509Encoded(alg: SignatureAlgorithmIdentifier, it: Asn1BitString): Signature =
     when (alg.requireSignatureAlgorithm().signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily) {
         true -> Signature.EC.decodeFromDer(it.rawBytes)
         false -> Signature.RSA(it.rawBytes)
@@ -355,9 +363,11 @@ fun Signature.Companion.fromX509Encoded(alg: SignatureAlgorithmIdentifier, it: A
 )
 typealias X509Certificate = Certificate
 
+@Serializable(with = CertificateAsn1Serializer::class)
 class Certificate(
     override val raw: RawX509Certificate,
-) : Asn1PemEncodable<Asn1Sequence>, Awesn1Backed<RawX509Certificate> {
+) : Asn1PemEncodable<Asn1Sequence>,
+    Awesn1Backed<RawX509Certificate, Asn1Sequence, RawX509Certificate.Companion> {
     val tbsCertificate: CertificateInfo by lazy { CertificateInfo(raw.tbsCertificate) }
     val signatureAlgorithm: SignatureAlgorithmIdentifier get() = raw.signatureAlgorithm
     val rawSignatureValue: Asn1BitString get() = raw.signatureValue
@@ -473,9 +483,6 @@ class Certificate(
 
     override val pemLabel: String = EB_STRINGS.DEFAULT
 
-    @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = raw.encodeToTlv()
-
     override fun equals(other: Any?) = other is Certificate && raw == other.raw
 
     override fun hashCode(): Int = raw.hashCode()
@@ -535,6 +542,13 @@ class Certificate(
         }.getOrNull()
     }
 }
+
+object CertificateAsn1Serializer :
+    Awesn1BackedSerializer<Certificate, RawX509Certificate>(
+        rawSerializer = RawX509Certificate,
+        encodeAs = { it.raw },
+        decodeAs = ::Certificate,
+    )
 
 typealias CertificateChain = List<Certificate>
 

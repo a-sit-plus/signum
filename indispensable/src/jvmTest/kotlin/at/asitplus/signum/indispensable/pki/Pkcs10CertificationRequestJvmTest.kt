@@ -13,9 +13,11 @@ import at.asitplus.awesn1.extKeyUsage
 import at.asitplus.awesn1.keyUsage
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.PublicKey.EC as PublicKeyEC
+import at.asitplus.signum.indispensable.signature.Signature as CryptoSignature
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -302,7 +304,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         csr.tbsCsr.version shouldBe 0
         (csr.tbsCsr.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
-        parsedPublicKey.shouldBeInstanceOf<PublicKey.EC>()
+        parsedPublicKey.shouldBeInstanceOf<PublicKeyEC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
     }

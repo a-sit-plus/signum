@@ -10,6 +10,7 @@ import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
+import kotlinx.serialization.Serializable
 
 @Deprecated(
     "Moved to awesn1 crypto raw model.",
@@ -38,13 +39,16 @@ fun SignatureAlgorithmIdentifier.toSignatureAlgorithmOrNull(): SignatureAlgorith
 fun SignatureAlgorithmIdentifier.requireSignatureAlgorithm(): SignatureAlgorithm =
     requireSupported().algorithm
 
+@Serializable(with = X509SignatureAlgorithmAsn1Serializer::class)
 class X509SignatureAlgorithm(
     override val raw: SignatureAlgorithmIdentifier,
     override val algorithm: SignatureAlgorithm,
 ) : SignatureAlgorithmIdentifier(raw.oid, raw.parameters),
     SpecializedSignatureAlgorithm,
-    Awesn1Backed<SignatureAlgorithmIdentifier>,
+    Awesn1Backed<SignatureAlgorithmIdentifier, Asn1Sequence, SignatureAlgorithmIdentifier.Companion>,
     Enumerable {
+
+    override fun encodeToTlv() = raw.encodeToTlv()
 
     override fun toString() = algorithm.toString()
 
@@ -67,8 +71,21 @@ class X509SignatureAlgorithm(
                 x509BuiltInMappings
                 return setOf(ES256, ES384, ES512, PS256, PS384, PS512, RS1, RS256, RS384, RS512)
             }
+
+        fun register(raw: SignatureAlgorithmIdentifier, algorithm: SignatureAlgorithm): X509SignatureAlgorithm =
+            X509SignatureAlgorithm(raw, algorithm).also {
+                AlgorithmRegistry.registerSignatureAlgorithm(algorithm)
+                AlgorithmRegistry.registerX509SignatureMapping(raw, algorithm)
+            }
     }
 }
+
+object X509SignatureAlgorithmAsn1Serializer :
+    Awesn1BackedSerializer<X509SignatureAlgorithm, SignatureAlgorithmIdentifier>(
+        rawSerializer = SignatureAlgorithmIdentifier,
+        encodeAs = { it.raw },
+        decodeAs = SignatureAlgorithmIdentifier::requireSupported,
+    )
 
 @Deprecated(
     "Use X509SignatureAlgorithm.ES256.",

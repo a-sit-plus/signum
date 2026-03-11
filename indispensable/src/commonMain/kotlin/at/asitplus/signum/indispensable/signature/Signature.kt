@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.Awesn1Backed
 import at.asitplus.signum.indispensable.ec.ECCurve
-import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
@@ -20,13 +20,10 @@ import at.asitplus.signum.internals.orLazy
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.serializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
@@ -34,8 +31,11 @@ import kotlinx.serialization.encoding.Encoder
  * Interface which holds Asn1 Encoding of a signature of a specified algorithm
  * Allows simple ASN1 - Raw transformation of signature values
  */
-@Serializable(with = Signature.SignatureSerializer::class)
-sealed interface Signature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureValue> {
+@Serializable(with = Signature.SignatureAsn1Serializer::class)
+sealed interface Signature : Asn1Encodable<Asn1Element>,
+    Awesn1Backed<Asn1Encodable<Asn1Element>, Asn1Element, Nothing> {
+
+    override val raw: Asn1Encodable<Asn1Element>
 
 
         /**
@@ -69,18 +69,15 @@ sealed interface Signature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureV
     val humanReadableString: String get() = "${this::class.simpleName ?: "Signature"}(signature=${encodeToTlv().prettyPrint()})"
 
 
-    object SignatureSerializer : KSerializer<Signature> {
-        override val descriptor: SerialDescriptor
-            get() = PrimitiveSerialDescriptor("Signature", PrimitiveKind.STRING)
-
-        override fun deserialize(decoder: Decoder): Signature {
-            return Signature.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64Strict))
-        }
-
-        override fun serialize(encoder: Encoder, value: Signature) {
-            encoder.encodeString(value.encodeToDer().encodeToString(Base64Strict))
-        }
-    }
+    object SignatureAsn1Serializer : TransformingSerializerTemplate<Signature, SignatureValue>(
+        parent = serializer<SignatureValue>(),
+        encodeAs = {
+            it.raw as? SignatureValue
+                ?: throw IllegalArgumentException("Unsupported raw signature type ${it.raw::class.qualifiedName}")
+        },
+        decodeAs = Signature::fromRaw,
+        serialName = "Signature",
+    )
 
 
     sealed class EC
@@ -97,8 +94,6 @@ sealed interface Signature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureV
             require(r.isPositive) { "r must be positive" }
             require(s.isPositive) { "s must be positive" }
         }
-
-        override fun encodeToTlv() = (raw as EcdsaSignatureValue).encodeToTlv()
 
         /**
          * Two signatures are considered equal if `r` and `s` are equal.
@@ -269,8 +264,6 @@ sealed interface Signature : Asn1Encodable<Asn1Element>, Awesn1Backed<SignatureV
         val signature: Asn1Primitive
             get() = raw.encodeToTlv()
 
-        override fun encodeToTlv() = signature
-
         /** the raw bytes of the signature value */
         override val rawByteArray get() = raw.bitString.rawBytes
 
@@ -324,14 +317,14 @@ typealias CryptoSignature = Signature
 
 @Deprecated(
     "Renamed to Signature.SignatureSerializer.",
-    ReplaceWith("Signature.SignatureSerializer", "at.asitplus.signum.indispensable.Signature")
+    ReplaceWith("Signature.SignatureAsn1Serializer", "at.asitplus.signum.indispensable.Signature")
 )
 object CryptoSignatureSerializer : KSerializer<Signature> {
-    override val descriptor: SerialDescriptor get() = Signature.SignatureSerializer.descriptor
+    override val descriptor: SerialDescriptor get() = Signature.SignatureAsn1Serializer.descriptor
 
     override fun deserialize(decoder: Decoder): Signature =
-        Signature.SignatureSerializer.deserialize(decoder)
+        Signature.SignatureAsn1Serializer.deserialize(decoder)
 
     override fun serialize(encoder: Encoder, value: Signature) =
-        Signature.SignatureSerializer.serialize(encoder, value)
+        Signature.SignatureAsn1Serializer.serialize(encoder, value)
 }

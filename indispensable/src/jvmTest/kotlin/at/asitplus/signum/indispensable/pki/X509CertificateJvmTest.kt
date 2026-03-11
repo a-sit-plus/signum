@@ -6,8 +6,6 @@ import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
 import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
-import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ES256
 import at.asitplus.signum.indispensable.ES512
@@ -15,6 +13,10 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.PublicKey.EC as PublicKeyEC
+import at.asitplus.signum.indispensable.signature.Signature
+import at.asitplus.signum.indispensable.signature.Signature.EC.IndefiniteLength as SignatureECIndefiniteLength
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.indispensable.toKmpCertificate
@@ -230,7 +232,7 @@ val X509CertificateJvmTest by testSuite {
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
         val parsedPublicKey = x509Certificate.tbsCertificate.decodedPublicKey.getOrThrow()
-        parsedPublicKey.shouldBeInstanceOf<PublicKey.EC>()
+        parsedPublicKey.shouldBeInstanceOf<PublicKeyEC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
     }
@@ -340,11 +342,11 @@ val X509CertificateJvmTest by testSuite {
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()
         val signature1 =
-            (Signature.decodeFromDer(signed1) as Signature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (Signature.decodeFromDer(signed1) as SignatureECIndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature2 =
-            (Signature.decodeFromDer(signed2) as Signature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (Signature.decodeFromDer(signed2) as SignatureECIndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature3 =
-            (Signature.decodeFromDer(signed3) as Signature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
+            (Signature.decodeFromDer(signed3) as SignatureECIndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
         val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
         val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
         val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)

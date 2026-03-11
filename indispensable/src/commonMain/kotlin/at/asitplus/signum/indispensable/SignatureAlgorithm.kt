@@ -15,6 +15,9 @@ interface RsaSignaturePadding : Enumerable {
                 builtIns
                 return AlgorithmRegistry.signatureRsaPaddings
             }
+
+        fun register(padding: RsaSignaturePadding): RsaSignaturePadding =
+            AlgorithmRegistry.registerSignatureRsaPadding(padding)
     }
 }
 

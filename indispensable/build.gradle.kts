@@ -37,6 +37,7 @@ kotlin {
 
         jvmTest.dependencies {
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
+            implementation(project(":awesn1:kxs"))
         }
 
         androidJvmMain {

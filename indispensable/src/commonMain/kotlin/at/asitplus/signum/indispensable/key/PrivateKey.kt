@@ -11,6 +11,7 @@ import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.Awesn1BackedSerializer
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.asn1.Int
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
@@ -28,6 +29,7 @@ import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import at.asitplus.signum.indispensable.key.PublicKey.EC.Companion.asPublicKey
+import kotlinx.serialization.Serializable
 
 private object EB_STRINGS {
     const val GENERIC_PRIVATE_KEY_PKCS8 = "PRIVATE KEY"
@@ -40,7 +42,9 @@ private object EB_STRINGS {
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  * Equality checks are performed wrt. cryptographic properties.
  */
-sealed interface PrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn1Backed<PrivateKeyInfo> {
+@Serializable(with = PrivateKeyAsn1Serializer::class)
+sealed interface PrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable,
+    Awesn1Backed<PrivateKeyInfo, Asn1Sequence, PrivateKeyInfo.Companion> {
 
     sealed interface WithPublicKey<T : PublicKey> : PrivateKey {
         /** [PublicKey] matching this private key. */
@@ -83,8 +87,6 @@ sealed interface PrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awes
          * @throws Asn1StructuralException if `this` is [EC.WithoutPublicKey], such as decoded from minimal SEC1
          */
 
-        @Throws(Asn1Exception::class)
-        override fun encodeToTlv() = raw.encodeToTlv()
     }
 
     /**
@@ -599,6 +601,12 @@ sealed interface PrivateKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awes
         }
     }
 }
+
+object PrivateKeyAsn1Serializer : Awesn1BackedSerializer<PrivateKey, PrivateKeyInfo>(
+    rawSerializer = PrivateKeyInfo,
+    encodeAs = { it.raw },
+    decodeAs = PrivateKey::fromRaw,
+)
 
 @Deprecated(
     "Renamed to PrivateKey.",

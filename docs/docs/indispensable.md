@@ -43,6 +43,66 @@ Simply declare the desired dependency to get going:
 implementation("at.asitplus.signum:indispensable:$version")
 ```
 
+## Registry Initialization and Extension Registration
+
+Signum now uses explicit registries for algorithm extensibility.
+Built-in algorithms are populated lazily on first registry access through
+[`AlgorithmRegistry.registerBuiltIns()`](/Users/bpruenster/Documents/0000_OSS/signum/indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/AlgorithmRegistry.kt).
+
+This means:
+
+* you do **not** need to manually register Signum's built-in algorithms in normal use
+* the first access to `AlgorithmRegistry`, `SignatureAlgorithm.entries`, `MessageAuthenticationCode.entries`,
+  `SymmetricEncryptionAlgorithm.entries`, `AsymmetricEncryptionAlgorithm.entries`, or `X509SignatureAlgorithm.entries`
+  is enough to populate the built-ins
+* third-party extensions must still be registered explicitly
+
+Typical explicit extension registration looks like this:
+
+```kotlin
+SignatureAlgorithm.register(customSignature)
+MessageAuthenticationCode.register(customMac)
+SymmetricEncryptionAlgorithm.register(customCipher)
+AsymmetricEncryptionAlgorithm.register(customAsymmetric)
+RsaEncryptionPadding.register(customPadding)
+X509SignatureAlgorithm.register(customRawIdentifier, customSignature)
+```
+
+If you want deterministic startup behavior, call:
+
+```kotlin
+AlgorithmRegistry.registerBuiltIns()
+```
+
+early in your application or library initialization, and then register your own extensions immediately afterward.
+
+### Relation to ASN.1 / default `DER`
+
+This registry initialization is separate from awesn1's default-`DER` serializer registration.
+
+* algorithm registries control Signum algorithm lookup and mapping behavior
+* awesn1's default `DER` registry controls contextual and open-polymorphic serializers
+
+Signum exposes a dedicated hook for the latter:
+
+```kotlin
+registerSignumDefaultDerSerializers()
+```
+
+Call it before the first access to awesn1's default `DER` instance if you want generic `Signature` serialization to work
+without naming a concrete subtype. This hook currently installs awesn1 crypto's `SignatureValue` registration, and it is
+the mandatory Signum-side entry point for default-DER integration.
+
+So if your integration needs both:
+
+1. call `AlgorithmRegistry.registerBuiltIns()`
+2. register your Signum algorithm extensions
+3. call `registerSignumDefaultDerSerializers()`
+4. register any further required default-`DER` serializers before the first access to awesn1's `DER`
+
+For open-polymorphic ASN.1 extensions such as additional `SignatureValue` formats, see the
+[awesn1 `kxs` documentation](https://a-sit-plus.github.io/awesn1/kxs/#default-der-registry).
+
 ## Structure and Class Overview
 As the name _Indispensable_ implies, this is the base module for all KMP crypto operations.
 It includes types, abstractions, and functionality considered absolutely essential to even entertain the thought

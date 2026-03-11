@@ -1,7 +1,8 @@
 package at.asitplus.signum.indispensable.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ec.ECPoint
+import at.asitplus.signum.indispensable.ec.ECPoint.Normalized as ECPointNormalized
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
@@ -23,7 +24,7 @@ val ECPointTest  by testSuite {
         p1 shouldBe p1
         p1.hashCode() shouldBe p1.hashCode()
 
-        val p11 = Json.decodeFromString<ECPoint.Normalized>(Json.encodeToString(p1))
+        val p11 = Json.decodeFromString<ECPointNormalized>(Json.encodeToString(p1))
         p1 shouldBe p11
         p1.hashCode() shouldBe p11.hashCode()
 

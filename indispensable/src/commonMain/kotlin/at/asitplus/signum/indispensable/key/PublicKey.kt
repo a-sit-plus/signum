@@ -13,6 +13,7 @@ import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.Awesn1Backed
+import at.asitplus.signum.indispensable.Awesn1BackedSerializer
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.ec.ECCurve
 import at.asitplus.signum.indispensable.ec.ECPoint
@@ -22,6 +23,7 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
 import at.asitplus.signum.internals.checkedAsFn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
 private const val PEM_BOUNDARY = "PUBLIC KEY"
@@ -29,7 +31,9 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
 /**
  * Representation of a public key structure
  */
-sealed interface PublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn1Backed<SubjectPublicKeyInfo> {
+@Serializable(with = PublicKeyAsn1Serializer::class)
+sealed interface PublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable,
+    Awesn1Backed<SubjectPublicKeyInfo, Asn1Sequence, SubjectPublicKeyInfo.Companion> {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -48,9 +52,6 @@ sealed interface PublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn
      * Representation of the key in the format used by iOS, EC compression is used if key was compressed on reception
      */
     abstract val iosEncoded: ByteArray
-
-    override fun encodeToTlv() = raw.encodeToTlv()
-
 
     companion object : LabelPemDecodable<Asn1Sequence, PublicKey>(
         PEM_BOUNDARY to DEFAULT_PEM_DECODER,
@@ -404,6 +405,12 @@ sealed interface PublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable, Awesn
         }
     }
 }
+
+object PublicKeyAsn1Serializer : Awesn1BackedSerializer<PublicKey, SubjectPublicKeyInfo>(
+    rawSerializer = SubjectPublicKeyInfo,
+    encodeAs = { it.raw },
+    decodeAs = PublicKey::fromRaw,
+)
 
 @Deprecated(
     "Renamed to PublicKey.",

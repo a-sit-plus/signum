@@ -1,6 +1,10 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.getContentSigner
+import at.asitplus.signum.indispensable.signature.Signature as CryptoSignature
+import at.asitplus.signum.indispensable.signature.Signature.EC as CryptoSignatureEC
+import at.asitplus.signum.indispensable.signature.Signature.RSA as CryptoSignatureRSA
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -21,15 +25,19 @@ import java.security.Signature as JcaSignature
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import java.util.*
+import com.ionspin.kotlin.bignum.integer.BigInteger as KBigInteger
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 
 @OptIn(ExperimentalStdlibApi::class)
 val SignatureCodecTest  by testSuite {
+    registerSignumDefaultDerSerializers()
 
     "EC" - {
         val curve = "secp256r1"
@@ -48,8 +56,8 @@ val SignatureCodecTest  by testSuite {
                 sign()
             }
 
-            Signature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            Signature.parseFromJca(
+            CryptoSignatureEC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            CryptoSignature.parseFromJca(
                 sig,
                 SignatureAlgorithm.ECDSA(Digest.valueOf(digest), ECCurve.byJcaName(curve))
             ).jcaSignatureBytes shouldBe sig
@@ -57,7 +65,7 @@ val SignatureCodecTest  by testSuite {
             JcaSignature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(Signature.EC.parseFromJca(sig).encodeToDer())
+                verify(CryptoSignatureEC.parseFromJca(sig).encodeToDer())
             }
 
         }
@@ -77,8 +85,8 @@ val SignatureCodecTest  by testSuite {
                 sign()
             }
 
-            Signature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            Signature.parseFromJca(
+            CryptoSignatureRSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            CryptoSignature.parseFromJca(
                 sig,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
             ).jcaSignatureBytes shouldBe sig
@@ -104,12 +112,39 @@ val SignatureCodecTest  by testSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            Signature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
-            Signature.parseFromJca(
+            CryptoSignatureRSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            CryptoSignature.parseFromJca(
                 certificateHolder.signature,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
             ).encodeToDer() shouldBe bcSig
 
         }
+    }
+
+    "Subtype-specific raw delegation" {
+        val ecSignature = CryptoSignatureEC.IndefiniteLength(
+            r = KBigInteger.ONE,
+            s = KBigInteger.TWO,
+        )
+        val rsaSignature = CryptoSignatureRSA(byteArrayOf(0x01, 0x02, 0x03))
+
+        ecSignature.encodeToTlv() shouldBe ecSignature.raw.encodeToTlv()
+        rsaSignature.encodeToTlv() shouldBe rsaSignature.raw.encodeToTlv()
+    }
+
+    "DER round-trips Signature through raw SignatureValue polymorphism" {
+        val ecSignature: CryptoSignature = CryptoSignatureEC.IndefiniteLength(
+            r = KBigInteger.ONE,
+            s = KBigInteger.TWO,
+        )
+        val rsaSignature: CryptoSignature = CryptoSignatureRSA(byteArrayOf(0x01, 0x02, 0x03))
+
+        DER.decodeFromByteArray<CryptoSignature>(
+            DER.encodeToByteArray<CryptoSignature>(ecSignature)
+        ) shouldBe ecSignature
+
+        DER.decodeFromByteArray<CryptoSignature>(
+            DER.encodeToByteArray<CryptoSignature>(rsaSignature)
+        ) shouldBe rsaSignature
     }
 }
