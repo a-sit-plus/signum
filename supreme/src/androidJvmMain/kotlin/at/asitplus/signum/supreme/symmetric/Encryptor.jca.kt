@@ -30,7 +30,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
                 @Suppress("UNCHECKED_CAST")
                 when (algorithm) {
                     is ChaCha20Poly1305Algorithm -> ChaChaJVM.initCipher(mode, key, nonce, aad)
-                    is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
+                    is AES<*, *, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
                     else -> throw UnsupportedCryptoException("Unsupported symmetric algorithm ${algorithm.name}")
                 }
             }

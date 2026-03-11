@@ -53,7 +53,7 @@ open class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
             }
 
         fun <T : JwsAlgorithm> register(algorithm: T): T {
-            registeredById.putIfAbsent(algorithm.identifier, algorithm)
+            registeredById.apply {  if(!contains(algorithm.identifier) ) put(algorithm.identifier, algorithm) }
             return algorithm
         }
 
@@ -84,7 +84,7 @@ open class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
                 get() = builtIns.values
 
             fun <T : Signature> register(algorithm: T): T {
-                builtIns.putIfAbsent(algorithm.identifier, algorithm)
+                builtIns.apply {  if(!contains(algorithm.identifier) ) put(algorithm.identifier, algorithm) }
                 JwsAlgorithm.register(algorithm)
                 return algorithm
             }
@@ -145,7 +145,7 @@ open class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
                 get() = builtIns.values
 
             fun <T : MAC> register(algorithm: T): T {
-                builtIns.putIfAbsent(algorithm.identifier, algorithm)
+                builtIns.apply {  if(!contains(algorithm.identifier) ) put(algorithm.identifier, algorithm) }
                 JwsAlgorithm.register(algorithm)
                 return algorithm
             }

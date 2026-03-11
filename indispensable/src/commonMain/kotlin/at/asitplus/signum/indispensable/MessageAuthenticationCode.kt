@@ -70,7 +70,6 @@ open class HmacAlgorithm(
     companion object : Asn1Decodable<Asn1Sequence, HmacAlgorithm>, Enumeration<HmacAlgorithm> {
         override val entries: Iterable<HmacAlgorithm>
             get() {
-                MessageAuthenticationCode.HMAC_SHA1
                 return MessageAuthenticationCode.entries.filterIsInstance<HmacAlgorithm>()
             }
 
@@ -104,13 +103,13 @@ private data object HmacSha384 : HmacAlgorithm(Digest.SHA384, KnownOIDs.hmacWith
 private data object HmacSha512 : HmacAlgorithm(Digest.SHA512, KnownOIDs.hmacWithSHA512)
 
 val MessageAuthenticationCode.Companion.HMAC_SHA1: HmacAlgorithm
-    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha1,ensure = false)
+    get() = HmacSha1
 val MessageAuthenticationCode.Companion.HMAC_SHA256: HmacAlgorithm
-    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha256,ensure = false)
+    get() = HmacSha256
 val MessageAuthenticationCode.Companion.HMAC_SHA384: HmacAlgorithm
-    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha384,ensure = false)
+    get() =HmacSha384
 val MessageAuthenticationCode.Companion.HMAC_SHA512: HmacAlgorithm
-    get() = AlgorithmRegistry.registerMessageAuthenticationCode(HmacSha512,ensure = false)
+    get() = HmacSha512
 
 @Deprecated(
     "Use MessageAuthenticationCode.HMAC_SHA1 and HmacAlgorithm.",

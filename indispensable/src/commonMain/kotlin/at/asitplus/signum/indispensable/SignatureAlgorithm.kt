@@ -2,26 +2,13 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureEcdsaSha256
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureEcdsaSha384
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureEcdsaSha512
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha256Pkcs1
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha256Pss
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha384Pkcs1
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha384Pss
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha512Pkcs1
-import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha512Pss
 
 interface RsaSignaturePadding : Enumerable {
     companion object : Enumeration<RsaSignaturePadding> {
-        private val builtIns = listOf(
-            AlgorithmRegistry.registerSignatureRsaPadding(Pkcs1RsaSignaturePadding, ensure = false),
-            AlgorithmRegistry.registerSignatureRsaPadding(PssRsaSignaturePadding, ensure = false),
-        )
+
 
         override val entries: Iterable<RsaSignaturePadding>
             get() {
-                builtIns
                 return AlgorithmRegistry.signatureRsaPaddings
             }
 
@@ -170,15 +157,42 @@ open class RsaSignatureAlgorithm(
 }
 
 
-val SignatureAlgorithm.Companion.ECDSA_SHA256: EcdsaSignatureAlgorithm get() = signatureEcdsaSha256 as EcdsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.ECDSA_SHA384: EcdsaSignatureAlgorithm get() = signatureEcdsaSha384 as EcdsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.ECDSA_SHA512: EcdsaSignatureAlgorithm get() = signatureEcdsaSha512 as EcdsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.RSA_SHA256_PKCS1: RsaSignatureAlgorithm get() = signatureRsaSha256Pkcs1 as RsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.RSA_SHA384_PKCS1: RsaSignatureAlgorithm get() = signatureRsaSha384Pkcs1 as RsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.RSA_SHA512_PKCS1: RsaSignatureAlgorithm get() = signatureRsaSha512Pkcs1 as RsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.RSA_SHA256_PSS: RsaSignatureAlgorithm get() = signatureRsaSha256Pss as RsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.RSA_SHA384_PSS: RsaSignatureAlgorithm get() = signatureRsaSha384Pss as RsaSignatureAlgorithm
-val SignatureAlgorithm.Companion.RSA_SHA512_PSS: RsaSignatureAlgorithm get() = signatureRsaSha512Pss as RsaSignatureAlgorithm
+val SignatureAlgorithm.Companion.ECDSA_SHA256: EcdsaSignatureAlgorithm get() = EcdsaSignatureAlgorithm(
+    Digest.SHA256,
+    null
+)
+val SignatureAlgorithm.Companion.ECDSA_SHA384: EcdsaSignatureAlgorithm get() = EcdsaSignatureAlgorithm(
+    Digest.SHA384,
+    null
+)
+val SignatureAlgorithm.Companion.ECDSA_SHA512: EcdsaSignatureAlgorithm get() = EcdsaSignatureAlgorithm(
+    Digest.SHA512,
+    null
+)
+val SignatureAlgorithm.Companion.RSA_SHA256_PKCS1: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA256,
+    RsaSignaturePadding.PKCS1
+)
+val SignatureAlgorithm.Companion.RSA_SHA384_PKCS1: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA384,
+    RsaSignaturePadding.PKCS1
+)
+val SignatureAlgorithm.Companion.RSA_SHA512_PKCS1: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA512,
+    RsaSignaturePadding.PKCS1
+)
+val SignatureAlgorithm.Companion.RSA_SHA256_PSS: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA256,
+    RsaSignaturePadding.PSS
+)
+val SignatureAlgorithm.Companion.RSA_SHA384_PSS: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA384,
+    RsaSignaturePadding.PSS
+)
+val SignatureAlgorithm.Companion.RSA_SHA512_PSS: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA512,
+    RsaSignaturePadding.PSS
+)
 
 val RsaSignaturePadding.Companion.PKCS1: RsaSignaturePadding get() = Pkcs1RsaSignaturePadding
 val RsaSignaturePadding.Companion.PSS: RsaSignaturePadding get() = PssRsaSignaturePadding

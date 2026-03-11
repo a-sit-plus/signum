@@ -9,21 +9,9 @@ import at.asitplus.signum.Enumeration
 
 interface RsaEncryptionPadding : Enumerable {
     companion object : Enumeration<RsaEncryptionPadding> {
-        @OptIn(HazardousMaterials::class)
-        private val builtIns: List<RsaEncryptionPadding> by lazy {
-            listOf(
-                AlgorithmRegistry.registerAsymmetricRsaPadding(Pkcs1RsaEncryptionPadding),
-                AlgorithmRegistry.registerAsymmetricRsaPadding(NoRsaEncryptionPadding),
-                AlgorithmRegistry.registerAsymmetricRsaPadding(OaepRsaEncryptionPadding.Sha1),
-                AlgorithmRegistry.registerAsymmetricRsaPadding(OaepRsaEncryptionPadding.Sha256),
-                AlgorithmRegistry.registerAsymmetricRsaPadding(OaepRsaEncryptionPadding.Sha384),
-                AlgorithmRegistry.registerAsymmetricRsaPadding(OaepRsaEncryptionPadding.Sha512)
-            )
-        }
 
         override val entries: List<RsaEncryptionPadding>
             get() {
-                builtIns
                 return AlgorithmRegistry.asymmetricRsaPaddings
             }
 
@@ -69,21 +57,10 @@ interface AsymmetricEncryptionAlgorithm : Enumerable {
     }
 
     companion object : Enumeration<AsymmetricEncryptionAlgorithm> {
-        @OptIn(HazardousMaterials::class)
-        private val builtIns: List<AsymmetricEncryptionAlgorithm> by lazy {
-            listOf(
-                AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.NONE)),
-                AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.PKCS1)),
-                AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA1)),
-                AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA256)),
-                AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA384)),
-                AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA512)),
-            )
-        }
+
 
         override val entries: Iterable<AsymmetricEncryptionAlgorithm>
             get() {
-                builtIns
                 return AlgorithmRegistry.asymmetricEncryptionAlgorithms
             }
 
@@ -115,20 +92,19 @@ open class RsaEncryptionAlgorithm(
 }
 
 @OptIn(HazardousMaterials::class)
-private val rsaNoPadding = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.NONE))
+val AsymmetricEncryptionAlgorithm.Companion.RSA_NONE: RsaEncryptionAlgorithm get() =
+    RsaEncryptionAlgorithm(RsaEncryptionPadding.NONE)
 @OptIn(HazardousMaterials::class)
-private val rsaPkcs1 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.PKCS1))
-private val rsaOaepSha1 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA1))
-private val rsaOaepSha256 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA256))
-private val rsaOaepSha384 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA384))
-private val rsaOaepSha512 = AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA512))
-
-val AsymmetricEncryptionAlgorithm.Companion.RSA_NONE: RsaEncryptionAlgorithm get() = rsaNoPadding as RsaEncryptionAlgorithm
-val AsymmetricEncryptionAlgorithm.Companion.RSA_PKCS1: RsaEncryptionAlgorithm get() = rsaPkcs1 as RsaEncryptionAlgorithm
-val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA1: RsaEncryptionAlgorithm get() = rsaOaepSha1 as RsaEncryptionAlgorithm
-val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA256: RsaEncryptionAlgorithm get() = rsaOaepSha256 as RsaEncryptionAlgorithm
-val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA384: RsaEncryptionAlgorithm get() = rsaOaepSha384 as RsaEncryptionAlgorithm
-val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA512: RsaEncryptionAlgorithm get() = rsaOaepSha512 as RsaEncryptionAlgorithm
+val AsymmetricEncryptionAlgorithm.Companion.RSA_PKCS1: RsaEncryptionAlgorithm get() =
+    RsaEncryptionAlgorithm(RsaEncryptionPadding.PKCS1)
+val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA1: RsaEncryptionAlgorithm get() =
+    RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA1)
+val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA256: RsaEncryptionAlgorithm get() =
+    RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA256)
+val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA384: RsaEncryptionAlgorithm get() =
+    RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA384)
+val AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA512: RsaEncryptionAlgorithm get() =
+    RsaEncryptionAlgorithm(RsaEncryptionPadding.OAEP_SHA512)
 
 @Deprecated("Use RsaEncryptionAlgorithm and AsymmetricEncryptionAlgorithm companion properties.")
 object DeprecatedRsaEncryptionNamespace {

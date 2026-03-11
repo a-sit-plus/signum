@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.PublicKey
-import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.toJcaPublicKey
@@ -11,11 +10,11 @@ import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.signature.EcSignature
 import at.asitplus.signum.indispensable.signature.RsaSignature
-import java.security.Signature
 
 /**
  * Configures JVM-specific properties.
@@ -64,12 +63,12 @@ internal actual fun verifyECDSAImpl
     }
 }
 
-private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
+private fun getRSAInstance(alg: RsaSignatureAlgorithm, config: PlatformVerifierConfiguration) =
     alg.getJCASignatureInstance(config.provider).getOrThrow()
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: RsaPublicKey,
+            (signatureAlgorithm: RsaSignatureAlgorithm, publicKey: RsaPublicKey,
              config: PlatformVerifierConfiguration)
 {
     catchingUnwrappedAs(a=::UnsupportedCryptoException) {
@@ -80,7 +79,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 
 @JvmSynthetic
 internal actual fun verifyRSAImpl
-    (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: RsaPublicKey,
+    (signatureAlgorithm: RsaSignatureAlgorithm, publicKey: RsaPublicKey,
      data: SignatureInput, signature: RsaSignature,
      config: PlatformVerifierConfiguration)
 {

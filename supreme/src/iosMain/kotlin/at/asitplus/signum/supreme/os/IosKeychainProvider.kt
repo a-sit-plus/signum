@@ -6,6 +6,11 @@ import at.asitplus.catching
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
+import at.asitplus.signum.indispensable.signature.Signature
 import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.internals.*
@@ -210,7 +215,7 @@ sealed class IosSigner(final override val alias: String,
         }
     } }
 
-    protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
+    protected abstract fun bytesToSignature(sigBytes: ByteArray): Signature.RawByteEncodable
     final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
     withContext(dispatcher) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
@@ -237,7 +242,7 @@ sealed class IosSigner(final override val alias: String,
     }}
 
     class ECDSA internal constructor
-        (alias: String, override val publicKey: CryptoPublicKey.EC, metadata: IosKeyMetadata, config: IosSignerConfiguration)
+        (alias: String, override val publicKey: EcPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config),
             PlatformSigningProviderSigner.ECDSA<IosSignerSigningConfiguration, IosHomebrewAttestation>
     {
@@ -254,7 +259,7 @@ sealed class IosSigner(final override val alias: String,
             }
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            CryptoSignature.EC.decodeFromDer(sigBytes).withCurve(publicKey.curve)
+            EcSignature.decodeFromDer(sigBytes).withCurve(publicKey.curve)
 
         final override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
@@ -267,7 +272,7 @@ sealed class IosSigner(final override val alias: String,
     }
 
     class RSA internal constructor
-        (alias: String, override val publicKey: CryptoPublicKey.RSA, metadata: IosKeyMetadata, config: IosSignerConfiguration)
+        (alias: String, override val publicKey: RsaPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config), Signer.RSA
     {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
@@ -281,7 +286,7 @@ sealed class IosSigner(final override val alias: String,
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            CryptoSignature.RSA(sigBytes)
+            RsaSignature(sigBytes)
     }
 
 }
@@ -469,9 +474,9 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
         val publicKey = when (val alg = config._algSpecific.v) {
             is SigningKeyConfiguration.ECConfiguration ->
-                CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, publicKeyBytes)
+                EcPublicKey.fromAnsiX963Bytes(alg.curve, publicKeyBytes)
             is SigningKeyConfiguration.RSAConfiguration ->
-                CryptoPublicKey.RSA.fromPKCS1encoded(publicKeyBytes)
+                RsaPublicKey.fromPKCS1encoded(publicKeyBytes)
         }
 
         val attestation = if (useSecureEnclave) {
@@ -490,7 +495,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 }
                 Napier.v { "created attestation key (keyId = $keyId)" }
 
-                val clientData = IosHomebrewAttestation.ClientData(
+                val clientData = at.asitplus.signum.indispensable.attestation.IosHomebrewAttestation.ClientData(
                     publicKey = publicKey, challenge = attestationConfig.challenge)
                 val clientDataJSON = clientData.prepareDigestInput()
 
@@ -519,10 +524,11 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
         val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v)
         return@catching when (publicKey) {
-            is CryptoPublicKey.EC ->
+            is EcPublicKey ->
                 IosSigner.ECDSA(alias, publicKey, metadata, signerConfiguration)
-            is CryptoPublicKey.RSA ->
+            is RsaPublicKey ->
                 IosSigner.RSA(alias, publicKey, metadata, signerConfiguration)
+            else -> throw UnsupportedCryptoException("Unsupported public key $publicKey")
         }
     }.also {
         val e = it.exceptionOrNull()
@@ -548,8 +554,9 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             CryptoPublicKey.fromIosEncoded(publicKeyBytes)
         val metadata = getKeyMetadata(alias)
         return@catching when (publicKey) {
-            is CryptoPublicKey.EC -> IosSigner.ECDSA(alias, publicKey, metadata, config)
-            is CryptoPublicKey.RSA -> IosSigner.RSA(alias, publicKey, metadata, config)
+            is EcPublicKey -> IosSigner.ECDSA(alias, publicKey, metadata, config)
+            is RsaPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
+            else -> throw UnsupportedCryptoException("Unsupported public key $publicKey")
         }
     }}
 

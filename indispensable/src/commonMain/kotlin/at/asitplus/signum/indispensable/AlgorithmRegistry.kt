@@ -2,16 +2,22 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
-import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.*
+import at.asitplus.signum.indispensable.symmetric.ChaCha20Poly1305Algorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.Companion.AES_128
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.Companion.AES_192
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.Companion.AES_256
 
 /**
  * Global registry of built-in and third-party algorithms.
  *
  * Third-party code can register custom algorithms to participate in lookups and enumeration.
  */
+
+//TODO: Unscrew this. called from all sorts of places, init is a mess, etc.
+//for builtins it should be possible to get an init call done
+@OptIn(HazardousMaterials::class)
 object AlgorithmRegistry {
     private val signatureMappingsBacking = linkedMapOf<String, LinkedHashMap<SignatureMappingKey, Any>>()
     private val exactSignatureMappingsBacking = linkedMapOf<String, LinkedHashMap<SignatureAlgorithm, Any>>()
@@ -27,6 +33,7 @@ object AlgorithmRegistry {
     private val signatureToX509Backing = linkedMapOf<SignatureAlgorithm, SignatureAlgorithmIdentifier>()
     private val signatureKeyToX509Backing = linkedMapOf<SignatureMappingKey, SignatureAlgorithmIdentifier>()
 
+    private val x509SignatureAlgorithmsBacking = linkedSetOf<X509SignatureAlgorithm>()
     private val signatureAlgorithmsBacking = linkedSetOf<SignatureAlgorithm>()
     private val dataIntegrityAlgorithmsBacking = linkedSetOf<DataIntegrityAlgorithm>()
     private val messageAuthenticationCodesBacking = linkedSetOf<MessageAuthenticationCode>()
@@ -35,130 +42,166 @@ object AlgorithmRegistry {
     private val asymmetricRsaPaddingsBacking = linkedSetOf<RsaEncryptionPadding>()
     private val asymmetricEncryptionAlgorithmsBacking = linkedSetOf<AsymmetricEncryptionAlgorithm>()
 
-    private var installingBuiltIns = false
-    private val builtInsInitialized by lazy {
-        installingBuiltIns = true
-        try {
-            registerInternalBuiltIns()
-        } finally {
-            installingBuiltIns = false
-        }
-    }
-
-    private fun ensureBuiltIns() {
-        if (!installingBuiltIns) {
-            builtInsInitialized
-        }
-    }
+    val x509SignatureAlgorithms: List<X509SignatureAlgorithm> get() = x509SignatureAlgorithmsBacking.toList()
 
     val signatureAlgorithms: List<SignatureAlgorithm>
         get() {
-            ensureBuiltIns()
             return signatureAlgorithmsBacking.toList()
         }
     val dataIntegrityAlgorithms: List<DataIntegrityAlgorithm>
         get() {
-            ensureBuiltIns()
             return dataIntegrityAlgorithmsBacking.toList()
         }
     val messageAuthenticationCodes: List<MessageAuthenticationCode>
         get() {
-            ensureBuiltIns()
             return messageAuthenticationCodesBacking.toList()
         }
     val symmetricEncryptionAlgorithms: List<SymmetricEncryptionAlgorithm<*, *, *>>
         get() {
-            ensureBuiltIns()
             return symmetricEncryptionAlgorithmsBacking.toList()
         }
     val signatureRsaPaddings: List<RsaSignaturePadding>
         get() {
-            ensureBuiltIns()
             return signatureRsaPaddingsBacking.toList()
         }
     val asymmetricRsaPaddings: List<RsaEncryptionPadding>
         get() {
-            ensureBuiltIns()
             return asymmetricRsaPaddingsBacking.toList()
         }
     val asymmetricEncryptionAlgorithms: List<AsymmetricEncryptionAlgorithm>
         get() {
-            ensureBuiltIns()
             return asymmetricEncryptionAlgorithmsBacking.toList()
         }
 
-    fun <T : SignatureAlgorithm> registerSignatureAlgorithm(algorithm: T) = registerSignatureAlgorithm(algorithm, true)
-    internal fun <T : SignatureAlgorithm> registerSignatureAlgorithm(algorithm: T, ensure: Boolean): T =
+    init {
+        registerSignatureRsaPadding(Pkcs1RsaSignaturePadding)
+        registerSignatureRsaPadding(PssRsaSignaturePadding)
+
+        listOf(
+            (RsaEncryptionPadding.NONE),
+            (RsaEncryptionPadding.PKCS1),
+            (RsaEncryptionPadding.OAEP_SHA1),
+            (RsaEncryptionPadding.OAEP_SHA256),
+            (RsaEncryptionPadding.OAEP_SHA384),
+            (RsaEncryptionPadding.OAEP_SHA512),
+        ).forEach { registerAsymmetricRsaPadding(it) }
+
+        listOf(
+
+            AsymmetricEncryptionAlgorithm.Companion.RSA_PKCS1,
+            AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA256,
+            AsymmetricEncryptionAlgorithm.Companion.RSA_NONE,
+            AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA1,
+            AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA384,
+            AsymmetricEncryptionAlgorithm.Companion.RSA_OAEP_SHA512,
+        ).forEach { registerAsymmetricEncryptionAlgorithm(it) }
+
+
+
+        listOf(
+            MessageAuthenticationCode.Companion.HMAC_SHA1,
+            MessageAuthenticationCode.Companion.HMAC_SHA256,
+            MessageAuthenticationCode.Companion.HMAC_SHA384,
+            MessageAuthenticationCode.Companion.HMAC_SHA512
+        ).forEach {
+            registerMessageAuthenticationCode(it)
+        }
+
+        listOf(
+            SignatureAlgorithm.Companion.ECDSA_SHA256,
+            SignatureAlgorithm.Companion.ECDSA_SHA384,
+            SignatureAlgorithm.Companion.ECDSA_SHA512,
+            SignatureAlgorithm.Companion.RSA_SHA256_PKCS1,
+            SignatureAlgorithm.Companion.RSA_SHA384_PKCS1,
+            SignatureAlgorithm.Companion.RSA_SHA512_PKCS1,
+            SignatureAlgorithm.Companion.RSA_SHA256_PSS,
+            SignatureAlgorithm.Companion.RSA_SHA384_PSS,
+            SignatureAlgorithm.Companion.RSA_SHA512_PSS,
+        ).forEach { registerSignatureAlgorithm(it) }
+
+        (listOf(ChaCha20Poly1305Algorithm) + AES_128.entries + AES_192.entries + AES_256.entries)
+            .onEach { AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(it) }
+
+
+        registerSymmetricEncryptionAlgorithm(
+            SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+        )
+        SymmetricEncryptionAlgorithm.AES_128.entries.forEach {
+            registerSymmetricEncryptionAlgorithm(
+                it,
+            )
+        }
+        SymmetricEncryptionAlgorithm.AES_192.entries.forEach {
+            registerSymmetricEncryptionAlgorithm(
+                it,
+            )
+        }
+        SymmetricEncryptionAlgorithm.AES_256.entries.forEach {
+            registerSymmetricEncryptionAlgorithm(
+                it,
+            )
+        }
+
+        listOf(
+            X509SignatureAlgorithm.Companion.ES256,
+            X509SignatureAlgorithm.Companion.ES384,
+            X509SignatureAlgorithm.Companion.ES512,
+            X509SignatureAlgorithm.Companion.PS256,
+            X509SignatureAlgorithm.Companion.PS384,
+            X509SignatureAlgorithm.Companion.PS512,
+            X509SignatureAlgorithm.Companion.RS1,
+            X509SignatureAlgorithm.Companion.RS256,
+            X509SignatureAlgorithm.Companion.RS384,
+            X509SignatureAlgorithm.Companion.RS512
+        ).forEach {
+            registerX509SignatureMapping(it)
+        }
+    }
+
+    fun <T : SignatureAlgorithm> registerSignatureAlgorithm(algorithm: T): T =
         algorithm.also {
-            if (ensure) ensureBuiltIns()
             signatureAlgorithmsBacking += it
             dataIntegrityAlgorithmsBacking += it
         }
 
-    fun <T : MessageAuthenticationCode> registerMessageAuthenticationCode(algorithm: T) =
-        registerMessageAuthenticationCode(algorithm, true)
-
-    internal fun <T : MessageAuthenticationCode> registerMessageAuthenticationCode(algorithm: T, ensure: Boolean): T =
+    fun <T : MessageAuthenticationCode> registerMessageAuthenticationCode(algorithm: T): T =
         algorithm.also {
-            if (ensure) ensureBuiltIns()
             messageAuthenticationCodesBacking += it
             dataIntegrityAlgorithmsBacking += it
         }
 
-    fun <T : SymmetricEncryptionAlgorithm<*, *, *>> registerSymmetricEncryptionAlgorithm(algorithm: T): T =
-        registerSymmetricEncryptionAlgorithm(algorithm, ensure = true)
-
-    internal fun <T : SymmetricEncryptionAlgorithm<*, *, *>> registerSymmetricEncryptionAlgorithm(
+    fun <T : SymmetricEncryptionAlgorithm<*, *, *>> registerSymmetricEncryptionAlgorithm(
         algorithm: T,
-        ensure: Boolean
     ): T =
         algorithm.also {
-            if (ensure) ensureBuiltIns()
             symmetricEncryptionAlgorithmsBacking += it
         }
 
-    fun <T : RsaSignaturePadding> registerSignatureRsaPadding(padding: T) = registerSignatureRsaPadding(padding, true)
-    internal fun <T : RsaSignaturePadding> registerSignatureRsaPadding(padding: T, ensure: Boolean): T = padding.also {
-        if (ensure) ensureBuiltIns()
+    fun <T : RsaSignaturePadding> registerSignatureRsaPadding(padding: T): T = padding.also {
         signatureRsaPaddingsBacking += it
     }
 
-    fun <T : RsaEncryptionPadding> registerAsymmetricRsaPadding(padding: T) =
-        registerAsymmetricRsaPadding(padding, true)
-
-    internal fun <T : RsaEncryptionPadding> registerAsymmetricRsaPadding(padding: T, ensure: Boolean): T =
+    fun <T : RsaEncryptionPadding> registerAsymmetricRsaPadding(padding: T): T =
         padding.also {
-            if (ensure) ensureBuiltIns()
             asymmetricRsaPaddingsBacking += it
         }
 
-    fun <T : AsymmetricEncryptionAlgorithm> registerAsymmetricEncryptionAlgorithm(algorithm: T): T =
-        registerAsymmetricEncryptionAlgorithm(algorithm, ensure = true)
-
-    internal fun <T : AsymmetricEncryptionAlgorithm> registerAsymmetricEncryptionAlgorithm(
+    fun <T : AsymmetricEncryptionAlgorithm> registerAsymmetricEncryptionAlgorithm(
         algorithm: T,
-        ensure: Boolean
     ): T = algorithm.also {
-        if (ensure) ensureBuiltIns()
         asymmetricEncryptionAlgorithmsBacking += it
     }
 
-    fun <T : Any> registerSignatureMapping(namespace: String, key: SignatureMappingKey, target: T) =
-        registerSignatureMapping(namespace, key, target, true)
-
-    internal fun <T : Any> registerSignatureMapping(
+    fun <T : Any> registerSignatureMapping(
         namespace: String,
         key: SignatureMappingKey,
         target: T,
-        ensure: Boolean
     ): T = target.also {
-        if (ensure) ensureBuiltIns()
         signatureMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[key] = it
     }
 
     fun <T : Any> registerSignatureMapping(namespace: String, algorithm: SignatureAlgorithm, target: T): T =
         target.also {
-            ensureBuiltIns()
             exactSignatureMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[algorithm] = it
             algorithm.signatureMappingKeyOrNull()?.let { key ->
                 signatureMappingsBacking.getOrPut(namespace, ::LinkedHashMap).apply {
@@ -169,22 +212,19 @@ object AlgorithmRegistry {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> findSignatureMapping(namespace: String, algorithm: SignatureAlgorithm): T? =
-        ensureBuiltIns().let {
-            (exactSignatureMappingsBacking[namespace]?.get(algorithm) as? T)
-                ?: algorithm.signatureMappingKeyOrNull()?.let { key ->
-                    (signatureMappingsBacking[namespace]?.get(key) as? T)
-                        ?: key.genericCurveFallback()?.let { signatureMappingsBacking[namespace]?.get(it) as? T }
-                }
-        }
+        (exactSignatureMappingsBacking[namespace]?.get(algorithm) as? T)
+            ?: algorithm.signatureMappingKeyOrNull()?.let { key ->
+                (signatureMappingsBacking[namespace]?.get(key) as? T)
+                    ?: key.genericCurveFallback()?.let { signatureMappingsBacking[namespace]?.get(it) as? T }
+            }
+
 
     fun <T : Any> registerMacMapping(namespace: String, key: MacMappingKey, target: T): T = target.also {
-        ensureBuiltIns()
         macMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[key] = it
     }
 
     fun <T : Any> registerMacMapping(namespace: String, algorithm: MessageAuthenticationCode, target: T): T =
         target.also {
-            ensureBuiltIns()
             exactMacMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[algorithm] = it
             algorithm.macMappingKeyOrNull()?.let { key ->
                 macMappingsBacking.getOrPut(namespace, ::LinkedHashMap).apply {
@@ -195,13 +235,10 @@ object AlgorithmRegistry {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> findMacMapping(namespace: String, algorithm: MessageAuthenticationCode): T? =
-        ensureBuiltIns().let {
-            (exactMacMappingsBacking[namespace]?.get(algorithm) as? T)
-                ?: algorithm.macMappingKeyOrNull()?.let { macMappingsBacking[namespace]?.get(it) as? T }
-        }
+        (exactMacMappingsBacking[namespace]?.get(algorithm) as? T)
+            ?: algorithm.macMappingKeyOrNull()?.let { macMappingsBacking[namespace]?.get(it) as? T }
 
     fun <T : Any> registerSymmetricMapping(namespace: String, key: SymmetricMappingKey, target: T): T = target.also {
-        ensureBuiltIns()
         symmetricMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[key] = it
     }
 
@@ -210,7 +247,6 @@ object AlgorithmRegistry {
         algorithm: SymmetricEncryptionAlgorithm<*, *, *>,
         target: T
     ): T = target.also {
-        ensureBuiltIns()
         exactSymmetricMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[algorithm] = it
         algorithm.symmetricMappingKeyOrNull()?.let { key ->
             symmetricMappingsBacking.getOrPut(namespace, ::LinkedHashMap).apply {
@@ -221,28 +257,21 @@ object AlgorithmRegistry {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> findSymmetricMapping(namespace: String, algorithm: SymmetricEncryptionAlgorithm<*, *, *>): T? =
-        ensureBuiltIns().let {
-            (exactSymmetricMappingsBacking[namespace]?.get(algorithm) as? T)
-                ?: algorithm.symmetricMappingKeyOrNull()?.let { symmetricMappingsBacking[namespace]?.get(it) as? T }
-        }
+        (exactSymmetricMappingsBacking[namespace]?.get(algorithm) as? T)
+            ?: algorithm.symmetricMappingKeyOrNull()?.let { symmetricMappingsBacking[namespace]?.get(it) as? T }
 
-    fun <T : Any> registerAsymmetricMapping(namespace: String, key: AsymmetricEncryptionMappingKey, target: T) =
-        registerAsymmetricMapping(namespace, key, target, true)
 
-    internal fun <T : Any> registerAsymmetricMapping(
+    fun <T : Any> registerAsymmetricMapping(
         namespace: String,
         key: AsymmetricEncryptionMappingKey,
         target: T,
-        ensure: Boolean
     ): T =
         target.also {
-            if (ensure) ensureBuiltIns()
             asymmetricMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[key] = it
         }
 
     fun <T : Any> registerAsymmetricMapping(namespace: String, algorithm: AsymmetricEncryptionAlgorithm, target: T): T =
         target.also {
-            ensureBuiltIns()
             exactAsymmetricMappingsBacking.getOrPut(namespace, ::LinkedHashMap)[algorithm] = it
             algorithm.asymmetricEncryptionMappingKeyOrNull()?.let { key ->
                 asymmetricMappingsBacking.getOrPut(namespace, ::LinkedHashMap).apply {
@@ -253,181 +282,37 @@ object AlgorithmRegistry {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> findAsymmetricMapping(namespace: String, algorithm: AsymmetricEncryptionAlgorithm): T? =
-        ensureBuiltIns().let {
-            (exactAsymmetricMappingsBacking[namespace]?.get(algorithm) as? T)
-                ?: algorithm.asymmetricEncryptionMappingKeyOrNull()
-                    ?.let { asymmetricMappingsBacking[namespace]?.get(it) as? T }
-        }
+        (exactAsymmetricMappingsBacking[namespace]?.get(algorithm) as? T)
+            ?: algorithm.asymmetricEncryptionMappingKeyOrNull()
+                ?.let { asymmetricMappingsBacking[namespace]?.get(it) as? T }
+
 
     fun registerX509SignatureMapping(
-        raw: SignatureAlgorithmIdentifier,
-        algorithm: SignatureAlgorithm
-    ): SignatureAlgorithm = registerX509SignatureMapping(raw, algorithm, true)
+        alg: X509SignatureAlgorithm,
+    ): X509SignatureAlgorithm = alg.also {
 
-    internal fun registerX509SignatureMapping(
-        raw: SignatureAlgorithmIdentifier,
-        algorithm: SignatureAlgorithm,
-        ensure: Boolean,
-    ): SignatureAlgorithm = algorithm.also {
-        if (ensure) ensureBuiltIns()
+        val raw: SignatureAlgorithmIdentifier = it.raw
+        val algorithm: SignatureAlgorithm = it.algorithm
         val rawKey = X509SignatureKey(raw.oid, raw.parameters)
-        x509ToSignatureBacking[rawKey] = it
-        signatureToX509Backing[it] = raw
-        it.signatureMappingKeyOrNull()?.let { signatureKeyToX509Backing[it] = raw }
+        x509ToSignatureBacking[rawKey] = algorithm
+        signatureToX509Backing[algorithm] = raw
+        algorithm.signatureMappingKeyOrNull()?.let { signatureKeyToX509Backing[it] = raw }
+        x509SignatureAlgorithmsBacking += it
+
     }
 
     fun findSignatureAlgorithm(raw: SignatureAlgorithmIdentifier): SignatureAlgorithm? =
-        ensureBuiltIns().let {
-            x509ToSignatureBacking[X509SignatureKey(raw.oid, raw.parameters)]
-        }
+        x509ToSignatureBacking[X509SignatureKey(raw.oid, raw.parameters)]
 
     fun findX509SignatureIdentifier(algorithm: SignatureAlgorithm): SignatureAlgorithmIdentifier? =
-        ensureBuiltIns().let {
-            signatureToX509Backing[algorithm]
-                ?: algorithm.signatureMappingKeyOrNull()?.let { key ->
-                    signatureKeyToX509Backing[key] ?: key.genericCurveFallback()?.let(signatureKeyToX509Backing::get)
-                }
-        }
-
-    fun registerBuiltIns() {
-        ensureBuiltIns()
-    }
-
-    internal val signatureEcdsaSha256 =
-        AlgorithmRegistry.registerSignatureAlgorithm(EcdsaSignatureAlgorithm(Digest.SHA256, null), ensure = false)
-    internal val signatureEcdsaSha384 =
-        AlgorithmRegistry.registerSignatureAlgorithm(EcdsaSignatureAlgorithm(Digest.SHA384, null), ensure = false)
-    internal val signatureEcdsaSha512 =
-        AlgorithmRegistry.registerSignatureAlgorithm(EcdsaSignatureAlgorithm(Digest.SHA512, null), ensure = false)
-    internal val signatureRsaSha256Pkcs1 =
-        AlgorithmRegistry.registerSignatureAlgorithm(
-            RsaSignatureAlgorithm(Digest.SHA256, RsaSignaturePadding.PKCS1),
-            ensure = false
-        )
-    internal val signatureRsaSha384Pkcs1 =
-        AlgorithmRegistry.registerSignatureAlgorithm(
-            RsaSignatureAlgorithm(Digest.SHA384, RsaSignaturePadding.PKCS1),
-            ensure = false
-        )
-    internal val signatureRsaSha512Pkcs1 =
-        AlgorithmRegistry.registerSignatureAlgorithm(
-            RsaSignatureAlgorithm(Digest.SHA512, RsaSignaturePadding.PKCS1),
-            ensure = false
-        )
-    internal val signatureRsaSha256Pss =
-        AlgorithmRegistry.registerSignatureAlgorithm(
-            RsaSignatureAlgorithm(Digest.SHA256, RsaSignaturePadding.PSS),
-            ensure = false
-        )
-    internal val signatureRsaSha384Pss =
-        AlgorithmRegistry.registerSignatureAlgorithm(
-            RsaSignatureAlgorithm(Digest.SHA384, RsaSignaturePadding.PSS),
-            ensure = false
-        )
-    internal val signatureRsaSha512Pss =
-        AlgorithmRegistry.registerSignatureAlgorithm(
-            RsaSignatureAlgorithm(Digest.SHA512, RsaSignaturePadding.PSS),
-            ensure = false
-        )
+        signatureToX509Backing[algorithm]
+            ?: algorithm.signatureMappingKeyOrNull()?.let { key ->
+                signatureKeyToX509Backing[key] ?: key.genericCurveFallback()?.let(signatureKeyToX509Backing::get)
+            }
 
 }
 
 private fun SignatureMappingKey.genericCurveFallback(): SignatureMappingKey? =
     if ((family == EcdsaSignatureMappingFamily) && (curve != null)) copy(curve = null) else null
 
-@OptIn(HazardousMaterials::class)
-private fun registerInternalBuiltIns() {
-    AlgorithmRegistry.registerSignatureRsaPadding(Pkcs1RsaSignaturePadding, false)
-    AlgorithmRegistry.registerSignatureRsaPadding(PssRsaSignaturePadding, false)
-
-    AlgorithmRegistry.signatureEcdsaSha256
-    AlgorithmRegistry.signatureEcdsaSha384
-    AlgorithmRegistry.signatureEcdsaSha512
-    AlgorithmRegistry.signatureRsaSha256Pkcs1
-    AlgorithmRegistry.signatureRsaSha384Pkcs1
-    AlgorithmRegistry.signatureRsaSha512Pkcs1
-    AlgorithmRegistry.signatureRsaSha256Pss
-    AlgorithmRegistry.signatureRsaSha384Pss
-    AlgorithmRegistry.signatureRsaSha512Pss
-
-    MessageAuthenticationCode.HMAC_SHA1
-    MessageAuthenticationCode.HMAC_SHA256
-    MessageAuthenticationCode.HMAC_SHA384
-    MessageAuthenticationCode.HMAC_SHA512
-
-    AlgorithmRegistry.registerAsymmetricRsaPadding(
-        at.asitplus.signum.indispensable.asymmetric.Pkcs1RsaEncryptionPadding,
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricRsaPadding(
-        at.asitplus.signum.indispensable.asymmetric.NoRsaEncryptionPadding,
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricRsaPadding(
-        at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha1,
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricRsaPadding(
-        at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha256,
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricRsaPadding(
-        at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha384,
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricRsaPadding(
-        at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha512,
-        false
-    )
-
-    AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(
-        RsaEncryptionAlgorithm(at.asitplus.signum.indispensable.asymmetric.NoRsaEncryptionPadding),
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(
-        RsaEncryptionAlgorithm(at.asitplus.signum.indispensable.asymmetric.Pkcs1RsaEncryptionPadding),
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(
-        RsaEncryptionAlgorithm(at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha1),
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(
-        RsaEncryptionAlgorithm(at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha256),
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(
-        RsaEncryptionAlgorithm(at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha384),
-        false
-    )
-    AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(
-        RsaEncryptionAlgorithm(at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding.Sha512),
-        false
-    )
-
-    AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(
-        SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
-        ensure = false
-    )
-    SymmetricEncryptionAlgorithm.AES_128.entries.forEach {
-        AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(
-            it,
-            false
-        )
-    }
-    SymmetricEncryptionAlgorithm.AES_192.entries.forEach {
-        AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(
-            it,
-            false
-        )
-    }
-    SymmetricEncryptionAlgorithm.AES_256.entries.forEach {
-        AlgorithmRegistry.registerSymmetricEncryptionAlgorithm(
-            it,
-            false
-        )
-    }
-
-    X509SignatureAlgorithm.entries
-}
 

@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.jcaKeySpec
 import at.asitplus.signum.indispensable.jcaName
+import at.asitplus.signum.indispensable.symmetric.AES
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.AesCbcBase
 import at.asitplus.signum.indispensable.symmetric.AesEcbAlgorithm
@@ -20,7 +21,7 @@ import javax.crypto.spec.SecretKeySpec
 internal object AESJCA {
     fun initCipher(
         mode: PlatformCipher.Mode,
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
+        algorithm: AES<*, *, *>,
         key: ByteArray,
         nonce: ByteArray?,
         aad: ByteArray?

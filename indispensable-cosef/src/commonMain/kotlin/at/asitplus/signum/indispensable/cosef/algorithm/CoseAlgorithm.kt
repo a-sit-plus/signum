@@ -71,7 +71,7 @@ interface CoseAlgorithm : Enumerable {
                     by lazy { builtIns.values }
 
             fun <T : SymmetricEncryption> register(algorithm: T): T {
-                builtIns.putIfAbsent(algorithm.coseValue, algorithm)
+                builtIns.apply {  if(!contains(algorithm.coseValue) ) put(algorithm.coseValue, algorithm) }
                 return algorithm
             }
 
@@ -96,7 +96,7 @@ interface CoseAlgorithm : Enumerable {
                 get() = builtIns.values
 
             fun <T : Signature> register(algorithm: T): T {
-                builtIns.putIfAbsent(algorithm.coseValue, algorithm)
+                builtIns.apply {  if(!contains(algorithm.coseValue) ) put(algorithm.coseValue, algorithm) }
                 return algorithm
             }
 
@@ -149,7 +149,7 @@ interface CoseAlgorithm : Enumerable {
                 get() = builtIns.values
 
             fun <T : MAC> register(algorithm: T): T {
-                builtIns.putIfAbsent(algorithm.coseValue, algorithm)
+                builtIns.apply {  if(!contains(algorithm.coseValue) ) put(algorithm.coseValue, algorithm) }
                 return algorithm
             }
 

@@ -1,8 +1,8 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.*
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.internals.ImplementationError
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -39,7 +39,7 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
                 if (algorithm.nonceTrait !is NonceTrait.Required) TODO("ALGORITHM $algorithm UNSUPPORTED")
                 when (algorithm) {
                     is AES<*, *, *> -> AESIOS.gcmDecrypt(data, key, nonce!!, authTag!!, aad)
-                    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
+                    is ChaCha20Poly1305Algorithm -> ChaChaIOS.decrypt(
                         data,
                         key,
                         nonce!!,
@@ -60,8 +60,9 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
                     nonce,
                     data,
                     pad = when (algorithm) {
-                        is AES.CBC.Unauthenticated, is AES.ECB -> true
-                        is AES.WRAP.RFC3394 -> false
+                        is AesCbcAlgorithm, is AesEcbAlgorithm -> true
+                        is AesWrapAlgorithm -> false
+                        else -> throw UnsupportedCryptoException("Unsupported  algorithm $algorithm")
                     }
                 )
             }
@@ -74,7 +75,7 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
         @Suppress("UNCHECKED_CAST")
         return when (algorithm) {
             is AES<*, *, *> -> AESIOS.encrypt(algorithm, data, key, nonce, aad)
-            is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, key, nonce!!, aad)
+            is ChaCha20Poly1305Algorithm -> ChaChaIOS.encrypt(data, key, nonce!!, aad)
             else -> TODO("ALGORITHM $algorithm UNSUPPORTED")
         } as SealedBox<A, I, K>
     }

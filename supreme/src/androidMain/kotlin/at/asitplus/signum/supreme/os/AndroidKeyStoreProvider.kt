@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentActivity
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.signature.*
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
@@ -23,6 +24,8 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -171,6 +174,7 @@ object AndroidKeyStoreProvider:
                         when (it) {
                             RsaSignaturePadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                             RsaSignaturePadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+                            else -> throw UnsupportedCryptoException("Key does not support $it")
                         }
                     }.toTypedArray())
                 }
@@ -254,33 +258,37 @@ object AndroidKeyStoreProvider:
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
         val algorithm = when (publicKey) {
-            is PublicKey.EC -> {
+            is EcPublicKey -> {
                 val ecConfig = config.ec.v
                 val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
                 SignatureAlgorithm.ECDSA(digest, publicKey.curve)
             }
-            is PublicKey.RSA -> {
+            is RsaPublicKey -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
                 val padding = resolveOption<RsaSignaturePadding>("padding", keyInfo.signaturePaddings, RsaSignaturePadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
                     when (it) {
                         RsaSignaturePadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                         RsaSignaturePadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+                        else -> throw UnsupportedOperationException("Usupported padding: $it")
                     }
                 }
                 SignatureAlgorithm.RSA(digest, padding)
             }
+            else -> throw IllegalArgumentException("Unknown public key: $publicKey")
         }
 
         return@catching when (publicKey) {
-            is PublicKey.EC ->
+            is EcPublicKey ->
                 AndroidKeystoreSigner.ECDSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
                     attestation, algorithm as SignatureAlgorithm.ECDSA)
-            is PublicKey.RSA ->
+            is RsaPublicKey ->
                 AndroidKeystoreSigner.RSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
                     attestation, algorithm as SignatureAlgorithm.RSA)
+
+            else -> throw IllegalArgumentException("Unknown public key: $publicKey")
         }
     }}
 
@@ -389,8 +397,8 @@ sealed class AndroidKeystoreSigner private constructor(
             .let { data.data.forEach(it::update); it.sign() }
 
         return@signCatching when (this@AndroidKeystoreSigner) {
-            is ECDSA -> Signature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
-            is RSA -> Signature.RSA.parseFromJca(jcaSig)
+            is ECDSA -> EcSignature.parseFromJca(jcaSig).withCurve(publicKey.curve)
+            is RSA -> RsaSignature.parseFromJca(jcaSig)
         }
     }}
 
@@ -398,7 +406,7 @@ sealed class AndroidKeystoreSigner private constructor(
                                      alias: String,
                                      keyInfo: KeyInfo,
                                      config: AndroidSignerConfiguration,
-                                     override val publicKey: PublicKey.EC,
+                                     override val publicKey: EcPublicKey,
                                      attestation: AndroidKeystoreAttestation?,
                                      override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation),
@@ -427,7 +435,7 @@ sealed class AndroidKeystoreSigner private constructor(
                                    alias: String,
                                    keyInfo: KeyInfo,
                                    config: AndroidSignerConfiguration,
-                                   override val publicKey: PublicKey.RSA,
+                                   override val publicKey: RsaPublicKey,
                                    attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA

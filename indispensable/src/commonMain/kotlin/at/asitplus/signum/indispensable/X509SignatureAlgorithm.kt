@@ -26,7 +26,6 @@ fun SignatureAlgorithmIdentifier.isSupported(): Boolean = toSupportedOrNull() !=
 
 /** Throws if the [SignatureAlgorithmIdentifier] is unsupported. */
 fun SignatureAlgorithmIdentifier.requireSupported(): X509SignatureAlgorithm {
-    x509BuiltInMappings
     return toSupportedOrNull()
         ?: throw UnsupportedCryptoException("Unsupported X.509 signature algorithm (OID = $oid)")
 }
@@ -66,19 +65,20 @@ class X509SignatureAlgorithm(
         val RS384: X509SignatureAlgorithm get() = x509RsaSha384Pkcs1
         val RS512: X509SignatureAlgorithm get() = x509RsaSha512Pkcs1
 
-        override val entries: Set<X509SignatureAlgorithm>
-            get() {
-                x509BuiltInMappings
-                return setOf(ES256, ES384, ES512, PS256, PS384, PS512, RS1, RS256, RS384, RS512)
-            }
+        override val entries: List<X509SignatureAlgorithm>
+            get() = AlgorithmRegistry.x509SignatureAlgorithms
 
         fun register(raw: SignatureAlgorithmIdentifier, algorithm: SignatureAlgorithm): X509SignatureAlgorithm =
-            X509SignatureAlgorithm(raw, algorithm).also {
-                AlgorithmRegistry.registerSignatureAlgorithm(algorithm)
-                AlgorithmRegistry.registerX509SignatureMapping(raw, algorithm)
-            }
+            register(X509SignatureAlgorithm(raw, algorithm))
+
+        fun register(algorithm: X509SignatureAlgorithm): X509SignatureAlgorithm = algorithm.also {
+
+            AlgorithmRegistry.registerSignatureAlgorithm(it.algorithm)
+            AlgorithmRegistry.registerX509SignatureMapping(it)
+        }
     }
 }
+
 
 object X509SignatureAlgorithmAsn1Serializer :
     Awesn1BackedSerializer<X509SignatureAlgorithm, SignatureAlgorithmIdentifier>(
@@ -92,11 +92,13 @@ object X509SignatureAlgorithmAsn1Serializer :
     ReplaceWith("X509SignatureAlgorithm.ES256", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val ES256: X509SignatureAlgorithm get() = X509SignatureAlgorithm.ES256
+
 @Deprecated(
     "Use X509SignatureAlgorithm.ES384.",
     ReplaceWith("X509SignatureAlgorithm.ES384", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val ES384: X509SignatureAlgorithm get() = X509SignatureAlgorithm.ES384
+
 @Deprecated(
     "Use X509SignatureAlgorithm.ES512.",
     ReplaceWith("X509SignatureAlgorithm.ES512", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
@@ -108,11 +110,13 @@ val ES512: X509SignatureAlgorithm get() = X509SignatureAlgorithm.ES512
     ReplaceWith("X509SignatureAlgorithm.PS256", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val PS256: X509SignatureAlgorithm get() = X509SignatureAlgorithm.PS256
+
 @Deprecated(
     "Use X509SignatureAlgorithm.PS384.",
     ReplaceWith("X509SignatureAlgorithm.PS384", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val PS384: X509SignatureAlgorithm get() = X509SignatureAlgorithm.PS384
+
 @Deprecated(
     "Use X509SignatureAlgorithm.PS512.",
     ReplaceWith("X509SignatureAlgorithm.PS512", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
@@ -124,16 +128,19 @@ val PS512: X509SignatureAlgorithm get() = X509SignatureAlgorithm.PS512
     ReplaceWith("X509SignatureAlgorithm.RS1", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val RS1: X509SignatureAlgorithm get() = X509SignatureAlgorithm.RS1
+
 @Deprecated(
     "Use X509SignatureAlgorithm.RS256.",
     ReplaceWith("X509SignatureAlgorithm.RS256", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val RS256: X509SignatureAlgorithm get() = X509SignatureAlgorithm.RS256
+
 @Deprecated(
     "Use X509SignatureAlgorithm.RS384.",
     ReplaceWith("X509SignatureAlgorithm.RS384", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
 )
 val RS384: X509SignatureAlgorithm get() = X509SignatureAlgorithm.RS384
+
 @Deprecated(
     "Use X509SignatureAlgorithm.RS512.",
     ReplaceWith("X509SignatureAlgorithm.RS512", "at.asitplus.signum.indispensable.X509SignatureAlgorithm")
@@ -196,22 +203,6 @@ private val x509RsaSha256Pkcs1 = x509RsaPkcs1(Digest.SHA256, KnownOIDs.sha256Wit
 private val x509RsaSha384Pkcs1 = x509RsaPkcs1(Digest.SHA384, KnownOIDs.sha384WithRSAEncryption)
 private val x509RsaSha512Pkcs1 = x509RsaPkcs1(Digest.SHA512, KnownOIDs.sha512WithRSAEncryption)
 
-private val x509BuiltInMappings = run {
-    listOf(
-        x509EcdsaSha256,
-        x509EcdsaSha384,
-        x509EcdsaSha512,
-        x509RsaSha256Pss,
-        x509RsaSha384Pss,
-        x509RsaSha512Pss,
-        x509RsaSha1Pkcs1,
-        x509RsaSha256Pkcs1,
-        x509RsaSha384Pkcs1,
-        x509RsaSha512Pkcs1,
-    ).forEach {
-        AlgorithmRegistry.registerX509SignatureMapping(it.raw, it.algorithm, false)
-    }
-}
 
 private fun parsePssSignatureAlgorithm(parameters: List<Asn1Element>): SignatureAlgorithm? = runCatching {
     require(parameters.size == 1) { "RSA-PSS params must contain exactly one element" }
@@ -244,18 +235,20 @@ private fun parsePssSignatureAlgorithm(parameters: List<Asn1Element>): Signature
         KnownOIDs.sha_256 -> SignatureAlgorithm.RSA_SHA256_PSS.also {
             if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen")
         }
+
         KnownOIDs.sha_384 -> SignatureAlgorithm.RSA_SHA384_PSS.also {
             if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen")
         }
+
         KnownOIDs.sha_512 -> SignatureAlgorithm.RSA_SHA512_PSS.also {
             if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen")
         }
+
         else -> throw IllegalArgumentException("Unsupported OID: $sigAlg")
     }
 }.getOrNull()
 
 private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgorithm? {
-    x509BuiltInMappings
     val algorithm = when (oid) {
         KnownOIDs.rsaPSS -> parsePssSignatureAlgorithm(parameters)
         else -> AlgorithmRegistry.findSignatureAlgorithm(this)
@@ -265,7 +258,6 @@ private fun SignatureAlgorithmIdentifier.toSupportedOrNull(): X509SignatureAlgor
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
-    x509BuiltInMappings
     val raw = AlgorithmRegistry.findX509SignatureIdentifier(this)
         ?: throw UnsupportedCryptoException("$this is unsupported by X.509")
     val semantic = AlgorithmRegistry.findSignatureAlgorithm(raw) ?: this

@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
 import at.asitplus.signum.indispensable.key.RsaPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.secKeyAlgorithm
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.internals.*
@@ -23,7 +24,7 @@ actual class PlatformEncryptorConfiguration internal actual constructor() : DSL.
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun encryptRSAImpl(
     algorithm: RsaEncryptionAlgorithm,
-    publicKey: RsaPrivateKey,
+    publicKey: RsaPublicKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
 ): ByteArray =

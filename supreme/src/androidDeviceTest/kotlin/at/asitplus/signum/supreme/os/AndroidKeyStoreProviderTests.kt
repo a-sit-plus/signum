@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
@@ -29,7 +30,7 @@ val AndroidKeyStoreProviderTests by testSuite {
             }
         }.getOrThrow()
         val publicKey = hardwareSigner.publicKey
-        publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        publicKey.shouldBeInstanceOf<EcPublicKey>()
 
         val plaintext = Random.nextBytes(64)
         val signature = hardwareSigner.sign(plaintext).signature
