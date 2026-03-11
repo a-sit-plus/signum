@@ -2,7 +2,7 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.AlgorithmRegistry
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
+import at.asitplus.signum.indispensable.cosef.algorithm.toCoseAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.KeyType

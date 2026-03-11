@@ -15,8 +15,7 @@ import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.key.PublicKey
-import at.asitplus.signum.indispensable.key.PublicKey.EC as PublicKeyEC
+import at.asitplus.signum.indispensable.key.EcPublicKey as PublicKeyEC
 import at.asitplus.signum.indispensable.signature.Signature as CryptoSignature
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
@@ -40,7 +39,6 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
-import kotlin.time.Duration.Companion.minutes
 
 internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     getJCASignatureInstance().getOrThrow().algorithm.let {

@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithmSerializer
@@ -12,7 +13,9 @@ import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -138,7 +141,7 @@ data class CoseKey(
             y: ByteArray,
         ): KmmResult<CoseKey> =
             catching {
-                PublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
+                EcPublicKey.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
                     .getOrThrow()
             }
 
@@ -202,7 +205,7 @@ fun PublicKey.toCoseKey(
     keyId: ByteArray? = this.coseKid
 ): KmmResult<CoseKey> =
     when (this) {
-        is PublicKey.EC ->
+        is EcPublicKey ->
             if ((algorithm != null) && (algorithm.algorithm.signatureMappingKeyOrNull()?.family != EcdsaSignatureMappingFamily))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
@@ -228,7 +231,7 @@ fun PublicKey.toCoseKey(
                 }
             }
 
-        is PublicKey.RSA ->
+        is RsaPublicKey ->
             if ((algorithm != null) && (algorithm.algorithm.signatureMappingKeyOrNull()?.family != RsaSignatureMappingFamily))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else catching {
@@ -242,6 +245,8 @@ fun PublicKey.toCoseKey(
                     algorithm = algorithm
                 )
             }
+
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
     }
 
 

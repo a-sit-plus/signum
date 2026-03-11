@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding as AsymmetricRsaPadding
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
@@ -18,7 +19,7 @@ import io.kotest.matchers.shouldNotBe
 val AlgorithmRegistryTest by testSuite {
     "built-in algorithms populate the registry on first access" {
         AlgorithmRegistry.signatureAlgorithms.map { it.toString() }.shouldContain("ECDSAwithSHA256")
-        AlgorithmRegistry.messageAuthenticationCodes.map { it.toString() }.shouldContain("HMAC-SHA256")
+        AlgorithmRegistry.messageAuthenticationCodes.map { it.toString() }.shouldContain("HmacSha256")
         AlgorithmRegistry.asymmetricEncryptionAlgorithms.map { it.toString() }.shouldContain("RSA(PKCS1)")
         AlgorithmRegistry.symmetricEncryptionAlgorithms.map { it.name }.shouldContain("ChaCha20-Poly1305")
     }
@@ -65,7 +66,7 @@ val AlgorithmRegistryTest by testSuite {
         val customPadding = object : AsymmetricRsaPadding {
             override fun toString() = "CUSTOM"
         }
-        val customAlgorithm = AsymmetricEncryptionAlgorithm.RSA(customPadding)
+        val customAlgorithm = RsaEncryptionAlgorithm(customPadding)
 
         AlgorithmRegistry.registerAsymmetricRsaPadding(customPadding)
         AlgorithmRegistry.registerAsymmetricEncryptionAlgorithm(customAlgorithm)

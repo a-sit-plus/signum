@@ -10,8 +10,12 @@ import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.*
 import at.asitplus.signum.indispensable.ec.ECCurve
+import at.asitplus.signum.indispensable.key.EcPrivateKey
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.PrivateKey
 import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.signature.Signature
 import at.asitplus.signum.indispensable.symmetric.AesCbcBase
 import at.asitplus.signum.indispensable.symmetric.AesEcbAlgorithm
@@ -19,9 +23,10 @@ import at.asitplus.signum.indispensable.symmetric.AesGcmAlgorithm
 import at.asitplus.signum.indispensable.symmetric.AesWrapAlgorithm
 import at.asitplus.signum.indispensable.symmetric.ChaCha20Poly1305Algorithm
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.internals.ensureSize
-import at.asitplus.signum.internals.isAndroid
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -202,123 +207,147 @@ private val jcaBuiltInMappings = run {
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA1withECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA1withECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA256withECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA256withECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA384withECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA384withECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA512withECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA512withECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA1withRSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA1withRSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA256withRSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA256withRSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA384withRSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA384withRSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> sigGetInstance("SHA512withRSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("SHA512withRSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA1.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA1.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA384.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA384.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetInstance("RSASSA-PSS", provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } },
+        ensure = false
     )
 
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA1, provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA1, provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA256, provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA256, provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA384, provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA384, provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
-        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA512, provider) }
+        JcaSignatureFactory { provider -> PreHashedRsaPkcs1Signature(Digest.SHA512, provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA1.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA1.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA256.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA384.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA384.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PSS),
-        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } }
+        JcaSignatureFactory { provider -> sigGetRawPssInstance(provider).also { it.setParameter(Digest.SHA512.jcaPSSParams) } },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) },
+        ensure = false
     )
     AlgorithmRegistry.registerSignatureMapping(
         JCA_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, null, null),
-        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) }
+        JcaSignatureFactory { provider -> sigGetInstance("NONEwithECDSA", provider) },
+        ensure = false
     )
 
     AlgorithmRegistry.registerAsymmetricMapping(
@@ -327,7 +356,8 @@ private val jcaBuiltInMappings = run {
         JcaCipherConfiguration(
             "RSA/ECB/OAEPWithSHA-1AndMGF1Padding",
             OAEPParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT)
-        )
+        ),
+        ensure = false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         JCA_ASYMMETRIC_CIPHER_NAMESPACE,
@@ -335,7 +365,8 @@ private val jcaBuiltInMappings = run {
         JcaCipherConfiguration(
             "RSA/ECB/OAEPWithSHA-256AndMGF1Padding",
             OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT)
-        )
+        ),
+        ensure = false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         JCA_ASYMMETRIC_CIPHER_NAMESPACE,
@@ -343,7 +374,8 @@ private val jcaBuiltInMappings = run {
         JcaCipherConfiguration(
             "RSA/ECB/OAEPWithSHA-384AndMGF1Padding",
             OAEPParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, PSource.PSpecified.DEFAULT)
-        )
+        ),
+        ensure = false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         JCA_ASYMMETRIC_CIPHER_NAMESPACE,
@@ -351,17 +383,20 @@ private val jcaBuiltInMappings = run {
         JcaCipherConfiguration(
             "RSA/ECB/OAEPWithSHA-512AndMGF1Padding",
             OAEPParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, PSource.PSpecified.DEFAULT)
-        )
+        ),
+        ensure = false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         JCA_ASYMMETRIC_CIPHER_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.PKCS1),
-        JcaCipherConfiguration("RSA/ECB/PKCS1Padding", null)
+        JcaCipherConfiguration("RSA/ECB/PKCS1Padding", null),
+        ensure = false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         JCA_ASYMMETRIC_CIPHER_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.NONE),
-        JcaCipherConfiguration("RSA/ECB/NoPadding", null)
+        JcaCipherConfiguration("RSA/ECB/NoPadding", null),
+        ensure = false
     )
 }
 
@@ -423,13 +458,14 @@ fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find {
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
 fun CryptoPublicKey.getJcaPublicKey() = toJcaPublicKey()
 fun PublicKey.toJcaPublicKey() = when (this) {
-    is PublicKey.EC -> toJcaPublicKey()
-    is PublicKey.RSA -> toJcaPublicKey()
+    is EcPublicKey -> toJcaPublicKey()
+    is RsaPublicKey -> toJcaPublicKey()
+    else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
 }
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun PublicKey.EC.getJcaPublicKey() = toJcaPublicKey()
-fun PublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
+fun EcPublicKey.getJcaPublicKey() = toJcaPublicKey()
+fun EcPublicKey.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
     val y = y.residue.toJavaBigInteger()
@@ -442,18 +478,18 @@ private val rsaFactory: KeyFactory
     get() = jvmCryptoBootstrap.rsaFactory
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun PublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
-fun PublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
+fun RsaPublicKey.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
+fun RsaPublicKey.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as RSAPublicKey
 }
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toPublicKey()"), DeprecationLevel.ERROR)
-fun PublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<PublicKey.EC> =
+fun EcPublicKey.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<EcPublicKey> =
     publicKey.toPublicKey()
 
-fun ECPublicKey.toPublicKey(): KmmResult<PublicKey.EC> = catching {
+fun ECPublicKey.toPublicKey(): KmmResult<EcPublicKey> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
@@ -461,7 +497,7 @@ fun ECPublicKey.toPublicKey(): KmmResult<PublicKey.EC> = catching {
             ).algorithm.parameters as ASN1ObjectIdentifier
         )
     ) ?: throw SerializationException("Unknown Jca name")
-    PublicKey.EC.fromUncompressed(
+    EcPublicKey.fromUncompressed(
         curve,
         w.affineX.toByteArray().ensureSize(curve.coordinateLength.bytes),
         w.affineY.toByteArray().ensureSize(curve.coordinateLength.bytes)
@@ -469,17 +505,17 @@ fun ECPublicKey.toPublicKey(): KmmResult<PublicKey.EC> = catching {
 }
 
 @Deprecated("Renamed to toPublicKey().", ReplaceWith("toPublicKey()"))
-fun ECPublicKey.toCryptoPublicKey(): KmmResult<PublicKey.EC> = toPublicKey()
+fun ECPublicKey.toCryptoPublicKey(): KmmResult<EcPublicKey> = toPublicKey()
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toPublicKey()"), DeprecationLevel.ERROR)
-fun PublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<PublicKey.RSA> =
+fun RsaPublicKey.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<RsaPublicKey> =
     publicKey.toPublicKey()
 
-fun RSAPublicKey.toPublicKey(): KmmResult<PublicKey.RSA> =
-    catching { PublicKey.RSA(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
+fun RSAPublicKey.toPublicKey(): KmmResult<RsaPublicKey> =
+    catching { RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
 
 @Deprecated("Renamed to toPublicKey().", ReplaceWith("toPublicKey()"))
-fun RSAPublicKey.toCryptoPublicKey(): KmmResult<PublicKey.RSA> = toPublicKey()
+fun RSAPublicKey.toCryptoPublicKey(): KmmResult<RsaPublicKey> = toPublicKey()
 
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toPublicKey()"), DeprecationLevel.ERROR)
@@ -501,8 +537,9 @@ fun JcaPublicKey.toCryptoPublicKey(): KmmResult<PublicKey> = toPublicKey()
  */
 val Signature.jcaSignatureBytes: ByteArray
     get() = when (this) {
-        is Signature.EC -> encodeToDer()
-        is Signature.RSA -> rawByteArray
+        is EcSignature -> encodeToDer()
+        is RsaSignature -> rawByteArray
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
     }
 
 /**
@@ -513,9 +550,9 @@ fun Signature.Companion.parseFromJca(
     algorithm: SignatureAlgorithm
 ): Signature =
     if (algorithm is EcdsaSignatureAlgorithm)
-        Signature.EC.parseFromJca(input)
+        EcSignature.parseFromJca(input)
     else
-        Signature.RSA.parseFromJca(input)
+        RsaSignature.parseFromJca(input)
 
 fun Signature.Companion.parseFromJca(
     input: ByteArray,
@@ -525,17 +562,17 @@ fun Signature.Companion.parseFromJca(
 /**
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
  */
-fun Signature.EC.Companion.parseFromJca(input: ByteArray) =
-    Signature.EC.decodeFromDer(input)
+fun EcSignature.Companion.parseFromJca(input: ByteArray) =
+    EcSignature.decodeFromDer(input)
 
 /**
  * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
  */
-fun Signature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
-    Signature.EC.fromRawBytes(input)
+fun EcSignature.Companion.parseFromJcaP1363(input: ByteArray) =
+    EcSignature.fromRawBytes(input)
 
-fun Signature.RSA.Companion.parseFromJca(input: ByteArray) =
-    Signature.RSA(input)
+fun RsaSignature.Companion.parseFromJca(input: ByteArray) =
+    RsaSignature(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
@@ -562,26 +599,26 @@ fun java.security.cert.X509Certificate.toKmpCertificate() =
 fun PrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<JcaPrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
     val kf = when (this) {
-        is PrivateKey.EC.WithPublicKey -> keyFactory("EC")
-        is PrivateKey.RSA -> keyFactory("RSA")
+        is EcPrivateKey.WithPublicKey -> keyFactory("EC")
+        is RsaPrivateKey -> keyFactory("RSA")
     }
     kf.generatePrivate(spec)!!
 }
 
-fun PrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
+fun EcPrivateKey.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
     (this as PrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as ECPrivateKey }
 
-fun PrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
+fun RsaPrivateKey.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
     (this as PrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
 fun JcaPrivateKey.toPrivateKey(): KmmResult<PrivateKey.WithPublicKey<*>> =
     catching { PrivateKey.decodeFromDer(encoded) as PrivateKey.WithPublicKey<*> }
 
-fun ECPrivateKey.toPrivateKey(): KmmResult<PrivateKey.EC.WithPublicKey> =
-    catching { PrivateKey.EC.decodeFromDer(encoded) as PrivateKey.EC.WithPublicKey }
+fun ECPrivateKey.toPrivateKey(): KmmResult<EcPrivateKey.WithPublicKey> =
+    catching { EcPrivateKey.decodeFromDer(encoded) as EcPrivateKey.WithPublicKey }
 
-fun RSAPrivateKey.toPrivateKey(): KmmResult<PrivateKey.RSA> =
-    catching { PrivateKey.RSA.decodeFromDer(encoded) }
+fun RSAPrivateKey.toPrivateKey(): KmmResult<RsaPrivateKey> =
+    catching { RsaPrivateKey.decodeFromDer(encoded) }
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
@@ -640,7 +677,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
-fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: PublicKey.RSA, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RsaPublicKey, provider: String? = null) =
     catching {
         cipherInstance(jcaName, provider).apply {
             init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), jcaParameterSpec)
@@ -648,7 +685,7 @@ fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: PublicKey.R
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
-fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: PrivateKey.RSA, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RsaPrivateKey, provider: String? = null) =
     catching {
         cipherInstance(jcaName, provider).apply {
             init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), jcaParameterSpec)

@@ -3,12 +3,16 @@ package at.asitplus.signum.supreme
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.AlgorithmRegistry
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.PrivateKey
-import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.key.PrivateKey
+import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionPadding
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding as AsymmetricRsaPadding
 import at.asitplus.signum.supreme.asymmetric.encryptorFor
 import at.asitplus.signum.supreme.mac.mac
@@ -42,14 +46,14 @@ val UnsupportedAlgorithmTests by testSuite {
             rsa {
                 bits = 2048
             }
-        }.getOrThrow().publicKey as PublicKey.RSA
+        }.getOrThrow().publicKey as RsaPublicKey
 
-        val customPadding = object : AsymmetricRsaPadding {
+        val customPadding = object : RsaEncryptionPadding {
             override fun toString() = "CUSTOM"
         }
         AlgorithmRegistry.registerAsymmetricRsaPadding(customPadding)
 
-        AsymmetricEncryptionAlgorithm.RSA(customPadding)
+        RsaEncryptionAlgorithm(customPadding)
             .encryptorFor(publicKey)
             .encrypt(byteArrayOf(1, 3, 3, 7))
             .exceptionOrNull()

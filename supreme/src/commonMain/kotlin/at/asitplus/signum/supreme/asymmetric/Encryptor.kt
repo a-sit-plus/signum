@@ -5,34 +5,36 @@ import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.supreme.dsl.DSL
 
 
 sealed interface Encryptor {
     val algorithm: AsymmetricEncryptionAlgorithm
-    val publicKey: PublicKey
+    val publicKey: at.asitplus.signum.indispensable.key.PublicKey
 
     fun encrypt(data: ByteArray): KmmResult<ByteArray>
 
 
     sealed class RSA(
-        final override val algorithm: AsymmetricEncryptionAlgorithm.RSA,
-        final override val publicKey: PublicKey.RSA
+        final override val algorithm: RsaEncryptionAlgorithm,
+        final override val publicKey: RsaPublicKey
     ) : Encryptor
 }
 
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect fun encryptRSAImpl(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    publicKey: PublicKey.RSA,
+    algorithm: RsaEncryptionAlgorithm,
+    publicKey: RsaPublicKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
 ): ByteArray
 
 class PlatformRSAEncryptor
 internal constructor(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA, publicKey: PublicKey.RSA,
+    algorithm: RsaEncryptionAlgorithm, publicKey: RsaPublicKey,
     configure: ConfigurePlatformEncryptor
 ) : Encryptor.RSA(algorithm, publicKey) {
 
@@ -57,9 +59,9 @@ private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
     config: ConfigurePlatformEncryptor
 ): Encryptor =
     when (this) {
-        is AsymmetricEncryptionAlgorithm.RSA -> PlatformRSAEncryptor(
+        is RsaEncryptionAlgorithm -> PlatformRSAEncryptor(
             this,
-            publicKey.let { require(it is PublicKey.RSA);it },
+            publicKey.let { require(it is RsaPublicKey);it },
             config
         )
         else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
@@ -68,7 +70,7 @@ private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
 /**
  * Obtains an Encryptor.
  */
-fun AsymmetricEncryptionAlgorithm.RSA.encryptorFor(
-    publicKey: PublicKey.RSA,
+fun RsaEncryptionAlgorithm.encryptorFor(
+    publicKey: RsaPublicKey,
     config: ConfigurePlatformEncryptor = null
 ) = encryptorForImpl(publicKey, config)

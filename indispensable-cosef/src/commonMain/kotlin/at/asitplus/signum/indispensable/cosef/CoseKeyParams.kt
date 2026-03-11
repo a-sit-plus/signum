@@ -5,8 +5,9 @@ import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.SpecializedPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
@@ -87,7 +88,7 @@ sealed class CoseKeyParams : SpecializedPublicKey {
         override fun yHashCode(): Int = y?.contentHashCode() ?: 0
 
         override fun toCryptoPublicKey(): KmmResult<PublicKey> = catching {
-            PublicKey.EC.fromUncompressed(
+            EcPublicKey.fromUncompressed(
                 curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                 x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                 y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -121,7 +122,7 @@ sealed class CoseKeyParams : SpecializedPublicKey {
             val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
             val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
             val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
-            PublicKey.EC.fromCompressed(curve.toEcCurve(), x, yFlag)
+            EcPublicKey.fromCompressed(curve.toEcCurve(), x, yFlag)
         }
     }
 
@@ -163,11 +164,14 @@ sealed class CoseKeyParams : SpecializedPublicKey {
         }
 
         override fun toCryptoPublicKey(): KmmResult<PublicKey> = catching {
-            PublicKey.RSA(
+            RsaPublicKey(
                 n = Asn1Integer.fromUnsignedByteArray(
-                    n ?: throw IllegalArgumentException("Missing modulus n")),
+                    n ?: throw IllegalArgumentException("Missing modulus n")
+                ),
                 e = Asn1Integer.fromUnsignedByteArray(
-                    e ?: throw IllegalArgumentException("Missing or invalid exponent e")))
+                    e ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                )
+            )
         }
     }
 

@@ -9,8 +9,10 @@ import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.asymmetric.NoRsaEncryptionPadding
 import at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding
 import at.asitplus.signum.indispensable.asymmetric.Pkcs1RsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionPadding
 import at.asitplus.signum.indispensable.encodeToPEM
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
@@ -28,14 +30,14 @@ import kotlinx.serialization.json.Json
 val RsaEncryptionTest  by testSuite {
     "From OpenSSL" - {
         withData(nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }, testData) {
-            it.key as CryptoPrivateKey.RSA
-            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
+            it.key as RsaPrivateKey
+            RsaEncryptionAlgorithm(it.padding).decryptorFor(it.key).decrypt(it.enc)
                 .getOrThrow() shouldBe it.plain
             val newEncrypted =
-                AsymmetricEncryptionAlgorithm.RSA(it.padding).encryptorFor(it.key.publicKey).encrypt(it.plain)
+                RsaEncryptionAlgorithm(it.padding).encryptorFor(it.key.publicKey).encrypt(it.plain)
                     .getOrThrow()
 
-            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(newEncrypted)
+            RsaEncryptionAlgorithm(it.padding).decryptorFor(it.key).decrypt(newEncrypted)
                 .getOrThrow() shouldBe it.plain
         }
     }

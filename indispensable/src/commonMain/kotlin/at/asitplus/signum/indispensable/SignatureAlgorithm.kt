@@ -2,12 +2,21 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureEcdsaSha256
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureEcdsaSha384
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureEcdsaSha512
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha256Pkcs1
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha256Pss
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha384Pkcs1
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha384Pss
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha512Pkcs1
+import at.asitplus.signum.indispensable.AlgorithmRegistry.signatureRsaSha512Pss
 
 interface RsaSignaturePadding : Enumerable {
     companion object : Enumeration<RsaSignaturePadding> {
         private val builtIns = listOf(
-            AlgorithmRegistry.registerSignatureRsaPadding(Pkcs1RsaSignaturePadding),
-            AlgorithmRegistry.registerSignatureRsaPadding(PssRsaSignaturePadding),
+            AlgorithmRegistry.registerSignatureRsaPadding(Pkcs1RsaSignaturePadding, ensure = false),
+            AlgorithmRegistry.registerSignatureRsaPadding(PssRsaSignaturePadding, ensure = false),
         )
 
         override val entries: Iterable<RsaSignaturePadding>
@@ -43,17 +52,19 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm {
     }
 
     companion object : Enumeration<SignatureAlgorithm> {
-        private val builtIns = listOf(
-            ECDSA_SHA256,
-            ECDSA_SHA384,
-            ECDSA_SHA512,
-            RSA_SHA256_PKCS1,
-            RSA_SHA384_PKCS1,
-            RSA_SHA512_PKCS1,
-            RSA_SHA256_PSS,
-            RSA_SHA384_PSS,
-            RSA_SHA512_PSS,
-        )
+        private val builtIns   by lazy {
+            listOf(
+                ECDSA_SHA256,
+                ECDSA_SHA384,
+                ECDSA_SHA512,
+                RSA_SHA256_PKCS1,
+                RSA_SHA384_PKCS1,
+                RSA_SHA512_PKCS1,
+                RSA_SHA256_PSS,
+                RSA_SHA384_PSS,
+                RSA_SHA512_PSS,
+            )
+        }
 
         override val entries: Iterable<SignatureAlgorithm>
             get() {
@@ -158,24 +169,6 @@ open class RsaSignatureAlgorithm(
     override fun toString(): String = "RSAwith${digest}and$padding"
 }
 
-private val signatureEcdsaSha256 =
-    AlgorithmRegistry.registerSignatureAlgorithm(EcdsaSignatureAlgorithm(Digest.SHA256, null))
-private val signatureEcdsaSha384 =
-    AlgorithmRegistry.registerSignatureAlgorithm(EcdsaSignatureAlgorithm(Digest.SHA384, null))
-private val signatureEcdsaSha512 =
-    AlgorithmRegistry.registerSignatureAlgorithm(EcdsaSignatureAlgorithm(Digest.SHA512, null))
-private val signatureRsaSha256Pkcs1 =
-    AlgorithmRegistry.registerSignatureAlgorithm(RsaSignatureAlgorithm(Digest.SHA256, RsaSignaturePadding.PKCS1))
-private val signatureRsaSha384Pkcs1 =
-    AlgorithmRegistry.registerSignatureAlgorithm(RsaSignatureAlgorithm(Digest.SHA384, RsaSignaturePadding.PKCS1))
-private val signatureRsaSha512Pkcs1 =
-    AlgorithmRegistry.registerSignatureAlgorithm(RsaSignatureAlgorithm(Digest.SHA512, RsaSignaturePadding.PKCS1))
-private val signatureRsaSha256Pss =
-    AlgorithmRegistry.registerSignatureAlgorithm(RsaSignatureAlgorithm(Digest.SHA256, RsaSignaturePadding.PSS))
-private val signatureRsaSha384Pss =
-    AlgorithmRegistry.registerSignatureAlgorithm(RsaSignatureAlgorithm(Digest.SHA384, RsaSignaturePadding.PSS))
-private val signatureRsaSha512Pss =
-    AlgorithmRegistry.registerSignatureAlgorithm(RsaSignatureAlgorithm(Digest.SHA512, RsaSignaturePadding.PSS))
 
 val SignatureAlgorithm.Companion.ECDSA_SHA256: EcdsaSignatureAlgorithm get() = signatureEcdsaSha256 as EcdsaSignatureAlgorithm
 val SignatureAlgorithm.Companion.ECDSA_SHA384: EcdsaSignatureAlgorithm get() = signatureEcdsaSha384 as EcdsaSignatureAlgorithm

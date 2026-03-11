@@ -3,17 +3,21 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
-import at.asitplus.signum.indispensable.PrivateKey
-import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.key.PrivateKey
+import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.key.EcPrivateKey
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 
 actual fun makePrivateKeySigner(
-    key: PrivateKey.RSA,
+    key: RsaPrivateKey,
     algorithm: RsaSignatureAlgorithm
 ): Signer.RSA = EphemeralSigner.RSA(
     config = EphemeralSignerConfiguration(),
@@ -23,7 +27,7 @@ actual fun makePrivateKeySigner(
 )
 
 actual fun makePrivateKeySigner(
-    key: PrivateKey.EC.WithPublicKey,
+    key: EcPrivateKey.WithPublicKey,
     algorithm: EcdsaSignatureAlgorithm
 ): Signer.ECDSA = EphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
@@ -45,7 +49,7 @@ fun SignatureAlgorithm.signerFor(
 ) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> {
-            require(privateKey is PrivateKey.EC) {
+            require(privateKey is EcPrivateKey) {
                 "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
             }
             EphemeralSigner.EC(
@@ -54,13 +58,13 @@ fun SignatureAlgorithm.signerFor(
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
-            publicKey = privateKey.publicKey as PublicKey.EC,
+            publicKey = privateKey.publicKey as EcPublicKey,
             signatureAlgorithm = this
         )
         }
 
         is SignatureAlgorithm.RSA -> {
-            require(privateKey is PrivateKey.RSA) {
+            require(privateKey is RsaPrivateKey) {
                 "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
             }
             EphemeralSigner.RSA(
@@ -69,7 +73,7 @@ fun SignatureAlgorithm.signerFor(
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
-            publicKey = privateKey.publicKey as PublicKey.RSA,
+            publicKey = privateKey.publicKey as RsaPublicKey,
             signatureAlgorithm = this
         )
         }

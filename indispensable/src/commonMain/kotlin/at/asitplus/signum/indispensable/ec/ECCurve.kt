@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.ec
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.Identifiable
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.indispensable.misc.BitLength
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -26,6 +27,7 @@ inline fun Int.ceilDiv(other: Int) =
 /**
  * EC Curve Class [jwkName] really does use established JWK curve names
  */
+//TODO: make open
 @Serializable(with = ECCurveSerializer::class)
 enum class ECCurve(
     val jwkName: String,
@@ -49,30 +51,6 @@ enum class ECCurve(
 
     /** the number of bits/bytes needed to store point coordinates (such as public key coordinates) in unsigned form */
     inline val coordinateLength get() = BitLength.of(modulus)
-
-    @Deprecated(
-        "Use scalarLength to express private key lengths",
-        ReplaceWith("scalarLength.bits"),
-        DeprecationLevel.ERROR
-    )
-    /** the number of bits needed to store a private key in unsigned form */
-    inline val keyLengthBits: UInt get() = scalarLength.bits
-
-    @Deprecated(
-        "Use coordinateLength.bytes",
-        ReplaceWith("coordinateLength.bytes"),
-        DeprecationLevel.ERROR
-    )
-    /** the number of bytes needed to store a public key coordinate in unsigned form */
-    inline val coordinateLengthBytes: UInt get() = coordinateLength.bytes
-
-    @Deprecated(
-        "use scalarLength to express raw signature size",
-        ReplaceWith("scalarLength.bytes * 2u"),
-        DeprecationLevel.ERROR
-    )
-    /** the number of bytes needed to store a raw signature (r and s concatenated) over this curve */
-    inline val signatureLengthBytes: UInt get() = scalarLength.bytes * 2u
 
     internal val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
     internal val scalarCreator by lazy { ModularBigInteger.creatorForModulo(this.order) }
@@ -166,7 +144,7 @@ enum class ECCurve(
                         "2C7D1BD9 98F54449 579B4468 17AFBD17 273E662C 97EE7299 5EF42640" +
                         "C550B901 3FAD0761 353C7086 A272C240 88BE9476 9FD16650"
         }.replace(" ", "").chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            .let { PublicKey.EC.fromAnsiX963Bytes(this, it).publicPoint }
+            .let { EcPublicKey.fromAnsiX963Bytes(this, it).publicPoint }
     }
 
     /**

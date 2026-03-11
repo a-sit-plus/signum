@@ -209,7 +209,7 @@ private val x509BuiltInMappings = run {
         x509RsaSha384Pkcs1,
         x509RsaSha512Pkcs1,
     ).forEach {
-        AlgorithmRegistry.registerX509SignatureMapping(it.raw, it.algorithm)
+        AlgorithmRegistry.registerX509SignatureMapping(it.raw, it.algorithm, false)
     }
 }
 

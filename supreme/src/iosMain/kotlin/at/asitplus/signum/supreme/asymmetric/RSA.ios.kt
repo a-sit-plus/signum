@@ -4,6 +4,8 @@ package at.asitplus.signum.supreme.asymmetric
 import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
 import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
 import at.asitplus.signum.indispensable.secKeyAlgorithm
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.internals.*
@@ -20,8 +22,8 @@ actual class PlatformEncryptorConfiguration internal actual constructor() : DSL.
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun encryptRSAImpl(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    publicKey: CryptoPublicKey.RSA,
+    algorithm: RsaEncryptionAlgorithm,
+    publicKey: RsaPrivateKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
 ): ByteArray =
@@ -33,8 +35,8 @@ internal actual fun encryptRSAImpl(
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual suspend fun decryptRSAImpl(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: CryptoPrivateKey.RSA,
+    algorithm: RsaEncryptionAlgorithm,
+    privateKey: RsaPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray=  corecall {

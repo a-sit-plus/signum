@@ -10,8 +10,8 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.key.PrivateKey as CryptoPrivateKey
 import at.asitplus.signum.indispensable.key.PrivateKey.WithPublicKey as CryptoPrivateKeyWithPublicKey
 import at.asitplus.signum.indispensable.key.PublicKey as CryptoPublicKey
-import at.asitplus.signum.indispensable.key.PublicKey.EC as CryptoPublicKeyEC
-import at.asitplus.signum.indispensable.key.PublicKey.RSA as CryptoPublicKeyRSA
+import at.asitplus.signum.indispensable.key.EcPublicKey as CryptoPublicKeyEC
+import at.asitplus.signum.indispensable.key.RsaPublicKey as CryptoPublicKeyRSA
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
@@ -32,9 +32,6 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val KeyTest  by testSuite {

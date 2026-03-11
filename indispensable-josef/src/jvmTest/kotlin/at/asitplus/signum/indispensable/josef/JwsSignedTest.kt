@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.josef.algorithm.toJwsAlgorithm
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.signature
@@ -32,7 +34,7 @@ val JwsSignedTest  by testSuite {
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey().getOrThrow())
+                if (publicKey is EcPublicKey) ECDSAVerifier(publicKey.toJcaPublicKey().getOrThrow())
                 else RSASSAVerifier(publicKey.toJcaPublicKey().getOrThrow() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)

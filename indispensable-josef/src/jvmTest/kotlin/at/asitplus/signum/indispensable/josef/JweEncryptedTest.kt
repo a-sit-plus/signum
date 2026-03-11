@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm
 import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.supreme.symmetric.decrypt
@@ -50,7 +51,7 @@ val JweEncryptedTest by testSuite {
 
         val parsed = JweEncrypted.deserialize(jweNimbus.serialize()).getOrThrow()
 
-        parsed.header.algorithm shouldBe JweAlgorithm.A128KW
+        parsed.header.algorithm shouldBe at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm.A128KW
         parsed.header.encryption shouldBe JweEncryption.A128GCM
         parsed.ciphertext shouldBe jweNimbus.cipherText.decode()
     }
@@ -85,7 +86,7 @@ val JweEncryptedTest by testSuite {
 
         val parsed = JweEncrypted.deserialize(jweNimbus.serialize()).getOrThrow()
 
-        parsed.header.algorithm shouldBe JweAlgorithm.ECDH_ES
+        parsed.header.algorithm shouldBe at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm.ECDH_ES
         parsed.header.encryption shouldBe JweEncryption.A256CBC_HS512
         parsed.header.agreementPartyUInfo shouldBe apu
         parsed.header.agreementPartyVInfo shouldBe apv

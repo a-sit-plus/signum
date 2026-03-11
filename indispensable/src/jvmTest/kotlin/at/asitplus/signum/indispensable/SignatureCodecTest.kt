@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.signum.indispensable.signature.Signature as CryptoSignature
-import at.asitplus.signum.indispensable.signature.Signature.EC as CryptoSignatureEC
-import at.asitplus.signum.indispensable.signature.Signature.RSA as CryptoSignatureRSA
+import at.asitplus.signum.indispensable.signature.EcSignature as  CryptoSignatureEC
+import at.asitplus.signum.indispensable.signature.RsaSignature as CryptoSignatureRSA
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData

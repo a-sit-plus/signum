@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.ec.ECCurve
@@ -16,8 +17,10 @@ import at.asitplus.signum.indispensable.josef.algorithm.toJweKwAlgorithm
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.io.sha256
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.PublicKey
-import at.asitplus.signum.indispensable.key.PublicKey.EC.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.key.EcPublicKey.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.key.SpecializedPublicKey
 import at.asitplus.signum.indispensable.key.toPublicKey
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -308,7 +311,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                PublicKey.RSA(
+                RsaPublicKey(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")
                     ),
@@ -407,7 +410,7 @@ val SymmetricKey<*, *, *>.jsonWebKeyBytes
  */
 fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
-        is PublicKey.EC ->
+        is EcPublicKey ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = keyId,
@@ -417,13 +420,15 @@ fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
 
 
-        is PublicKey.RSA ->
+        is RsaPublicKey ->
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,
                 n = n.magnitude,
                 e = e.magnitude
             )
+
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
     }
 
 /**

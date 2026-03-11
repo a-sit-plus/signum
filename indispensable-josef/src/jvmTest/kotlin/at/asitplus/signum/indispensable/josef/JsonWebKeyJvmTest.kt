@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
-import at.asitplus.signum.indispensable.PublicKey.EC.Companion.fromUncompressed
-import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.key.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.signum.indispensable.ec.ECCurve
+import at.asitplus.signum.indispensable.key.EcPublicKey.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
@@ -62,7 +63,7 @@ val JsonWebKeyJvmTest by testSuite {
         val keyPairRSA: KeyPair = keyGenRSA.genKeyPair()
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent
-        val pubKey = CryptoPublicKey.RSA(
+        val pubKey = RsaPublicKey(
             nFromBc.toAsn1Integer() as Asn1Integer.Positive,
             eFromBc.toAsn1Integer() as Asn1Integer.Positive
         )

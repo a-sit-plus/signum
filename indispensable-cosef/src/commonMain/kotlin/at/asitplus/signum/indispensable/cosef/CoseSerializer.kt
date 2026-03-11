@@ -10,6 +10,8 @@ import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import at.asitplus.signum.indispensable.signature.Signature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -107,8 +109,8 @@ private fun ByteArray.toSignature(
     unprotectedHeader: CoseHeader?,
 ): Signature.RawByteEncodable =
     if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        Signature.EC.fromRawBytes(this)
-    else Signature.RSA(this)
+        EcSignature.fromRawBytes(this)
+    else RsaSignature(this)
 
 private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
     if (serializer == ByteArraySerializer()) {
@@ -128,6 +130,7 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
         this
     ).value
 
+//TODO make open
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
         ?.let { Certificate.decodeFromDerOrNull(it) }

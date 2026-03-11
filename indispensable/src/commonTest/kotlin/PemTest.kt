@@ -3,12 +3,10 @@ package at.asitplus.signum
 import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.encodeToPEM
-import at.asitplus.signum.indispensable.key.PrivateKey as PemPrivateKey
-import at.asitplus.signum.indispensable.key.PrivateKey.EC as PemPrivateKeyEC
-import at.asitplus.signum.indispensable.key.PrivateKey.RSA as PemPrivateKeyRSA
-import at.asitplus.signum.indispensable.key.PublicKey as PemPublicKey
-import at.asitplus.signum.indispensable.key.PublicKey.EC as PemPublicKeyEC
-import at.asitplus.signum.indispensable.key.PublicKey.RSA as PemPublicKeyRSA
+import at.asitplus.signum.indispensable.key.EcPrivateKey as PemPrivateKeyEC
+import at.asitplus.signum.indispensable.key.RsaPrivateKey as PemPrivateKeyRSA
+import at.asitplus.signum.indispensable.key.EcPublicKey as PemPublicKeyEC
+import at.asitplus.signum.indispensable.key.RsaPublicKey as PemPublicKeyRSA
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 
@@ -17,9 +15,6 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val PemTest  by testSuite {

@@ -10,6 +10,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Awesn1Backed
 import at.asitplus.signum.indispensable.Awesn1BackedSerializer
 import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
@@ -21,6 +22,8 @@ import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.indispensable.requireSignatureAlgorithm
 import at.asitplus.signum.indispensable.requireSupported
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import at.asitplus.signum.indispensable.signatureMappingKeyOrNull
 import at.asitplus.signum.indispensable.signature.Signature
 import at.asitplus.signum.indispensable.toSignatureAlgorithmIdentifier
@@ -325,8 +328,10 @@ object CertificateInfoAsn1Serializer :
  */
 val Signature.x509SignatureValue: Asn1BitString
     get() = when (this) {
-        is Signature.EC -> Asn1BitString(encodeToDer())
-        is Signature.RSA -> raw.bitString
+        is EcSignature -> Asn1BitString(encodeToDer())
+        is RsaSignature -> raw.bitString
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
+        
     }
 
 @Deprecated(
@@ -343,8 +348,8 @@ val Signature.x509Encoded: Asn1Primitive
  */
 fun Signature.Companion.fromX509Encoded(alg: SignatureAlgorithmIdentifier, it: Asn1BitString): Signature =
     when (alg.requireSignatureAlgorithm().signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily) {
-        true -> Signature.EC.decodeFromDer(it.rawBytes)
-        false -> Signature.RSA(it.rawBytes)
+        true -> EcSignature.decodeFromDer(it.rawBytes)
+        false -> RsaSignature(it.rawBytes)
     }
 
 @Deprecated(

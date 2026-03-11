@@ -1,9 +1,8 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
-import at.asitplus.signum.indispensable.signature.Signature as CryptoSignature
-import at.asitplus.signum.indispensable.signature.Signature.EC as CryptoSignatureEC
-import at.asitplus.signum.indispensable.signature.Signature.RSA as CryptoSignatureRSA
+import at.asitplus.signum.indispensable.signature.EcSignature as CryptoSignatureEC
+import at.asitplus.signum.indispensable.signature.RsaSignature as CryptoSignatureRSA
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger

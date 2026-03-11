@@ -25,6 +25,8 @@ import at.asitplus.signum.indispensable.SpecializedDataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.WithDigest
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -91,41 +93,41 @@ open class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
                 Signature(
                     "ES256",
                     EcdsaSignatureAlgorithm(Digest.SHA256, null),
-                ) { SignumSignature.EC.fromRawBytes(ECCurve.SECP_256_R_1, it) }
+                ) { EcSignature.fromRawBytes(ECCurve.SECP_256_R_1, it) }
             )
             val ES384 = register(
                 Signature(
                     "ES384",
                     EcdsaSignatureAlgorithm(Digest.SHA384, null),
-                ) { SignumSignature.EC.fromRawBytes(ECCurve.SECP_384_R_1, it) }
+                ) { EcSignature.fromRawBytes(ECCurve.SECP_384_R_1, it) }
             )
             val ES512 = register(
                 Signature(
                     "ES512",
                     EcdsaSignatureAlgorithm(Digest.SHA512, null),
-                ) { SignumSignature.EC.fromRawBytes(ECCurve.SECP_521_R_1, it) }
+                ) { EcSignature.fromRawBytes(ECCurve.SECP_521_R_1, it) }
             )
             val PS256 = register(
-                Signature("PS256", RsaSignatureAlgorithm(Digest.SHA256, PssRsaSignaturePadding)) { SignumSignature.RSA(it) }
+                Signature("PS256", RsaSignatureAlgorithm(Digest.SHA256, PssRsaSignaturePadding)) { RsaSignature(it) }
             )
             val PS384 = register(
-                Signature("PS384", RsaSignatureAlgorithm(Digest.SHA384, PssRsaSignaturePadding)) { SignumSignature.RSA(it) }
+                Signature("PS384", RsaSignatureAlgorithm(Digest.SHA384, PssRsaSignaturePadding)) { RsaSignature(it) }
             )
             val PS512 = register(
-                Signature("PS512", RsaSignatureAlgorithm(Digest.SHA512, PssRsaSignaturePadding)) { SignumSignature.RSA(it) }
+                Signature("PS512", RsaSignatureAlgorithm(Digest.SHA512, PssRsaSignaturePadding)) { RsaSignature(it) }
             )
             val RS256 = register(
-                Signature("RS256", RsaSignatureAlgorithm(Digest.SHA256, Pkcs1RsaSignaturePadding)) { SignumSignature.RSA(it) }
+                Signature("RS256", RsaSignatureAlgorithm(Digest.SHA256, Pkcs1RsaSignaturePadding)) { RsaSignature(it) }
             )
             val RS384 = register(
-                Signature("RS384", RsaSignatureAlgorithm(Digest.SHA384, Pkcs1RsaSignaturePadding)) { SignumSignature.RSA(it) }
+                Signature("RS384", RsaSignatureAlgorithm(Digest.SHA384, Pkcs1RsaSignaturePadding)) { RsaSignature(it) }
             )
             val RS512 = register(
-                Signature("RS512", RsaSignatureAlgorithm(Digest.SHA512, Pkcs1RsaSignaturePadding)) { SignumSignature.RSA(it) }
+                Signature("RS512", RsaSignatureAlgorithm(Digest.SHA512, Pkcs1RsaSignaturePadding)) { RsaSignature(it) }
             )
             val NON_JWS_SHA1_WITH_RSA = register(
                 Signature("RS1", RsaSignatureAlgorithm(Digest.SHA1, Pkcs1RsaSignaturePadding)) {
-                    SignumSignature.RSA(it)
+                    RsaSignature(it)
                 }
             )
         }

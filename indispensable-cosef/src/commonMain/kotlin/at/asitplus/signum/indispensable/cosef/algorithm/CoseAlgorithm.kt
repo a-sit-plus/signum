@@ -50,7 +50,7 @@ interface CoseAlgorithm : Enumerable {
 
         companion object : Enumeration<DataIntegrity> {
             override val entries: Collection<DataIntegrity>
-                get() = Signature.entries + MAC.entries
+                    by lazy { Signature.entries + MAC.entries }
         }
     }
 
@@ -68,7 +68,7 @@ interface CoseAlgorithm : Enumerable {
             private val builtIns = linkedMapOf<Int, SymmetricEncryption>()
 
             override val entries: Collection<SymmetricEncryption>
-                get() = builtIns.values
+                    by lazy { builtIns.values }
 
             fun <T : SymmetricEncryption> register(algorithm: T): T {
                 builtIns.putIfAbsent(algorithm.coseValue, algorithm)
@@ -101,11 +101,29 @@ interface CoseAlgorithm : Enumerable {
             }
 
             val ES256 = register(Signature(-7, SignatureAlgorithm.ECDSA_SHA256, "ES256"))
-            val ESP256 = register(Signature(-9, EcdsaSignatureAlgorithm(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1), "ESP256"))
+            val ESP256 = register(
+                Signature(
+                    -9,
+                    EcdsaSignatureAlgorithm(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1),
+                    "ESP256"
+                )
+            )
             val ES384 = register(Signature(-35, SignatureAlgorithm.ECDSA_SHA384, "ES384"))
-            val ESP384 = register(Signature(-51, EcdsaSignatureAlgorithm(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1), "ESP384"))
+            val ESP384 = register(
+                Signature(
+                    -51,
+                    EcdsaSignatureAlgorithm(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1),
+                    "ESP384"
+                )
+            )
             val ES512 = register(Signature(-36, SignatureAlgorithm.ECDSA_SHA512, "ES512"))
-            val ESP512 = register(Signature(-52, EcdsaSignatureAlgorithm(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1), "ESP512"))
+            val ESP512 = register(
+                Signature(
+                    -52,
+                    EcdsaSignatureAlgorithm(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1),
+                    "ESP512"
+                )
+            )
             val PS256 = register(Signature(-37, SignatureAlgorithm.RSA_SHA256_PSS, "PS256"))
             val PS384 = register(Signature(-38, SignatureAlgorithm.RSA_SHA384_PSS, "PS384"))
             val PS512 = register(Signature(-39, SignatureAlgorithm.RSA_SHA512_PSS, "PS512"))
@@ -170,19 +188,31 @@ private const val COSE_MAC_NAMESPACE = "cose.mac"
 private const val COSE_SYMMETRIC_NAMESPACE = "cose.symmetric"
 
 private val coseBuiltInMappings = run {
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA256, CoseAlgorithm.Signature.ES256)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.ECDSA_SHA256,
+        CoseAlgorithm.Signature.ES256
+    )
     AlgorithmRegistry.registerSignatureMapping(
         COSE_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, ECCurve.SECP_256_R_1, null),
         CoseAlgorithm.Signature.ESP256
     )
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA384, CoseAlgorithm.Signature.ES384)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.ECDSA_SHA384,
+        CoseAlgorithm.Signature.ES384
+    )
     AlgorithmRegistry.registerSignatureMapping(
         COSE_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, ECCurve.SECP_384_R_1, null),
         CoseAlgorithm.Signature.ESP384
     )
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.ECDSA_SHA512, CoseAlgorithm.Signature.ES512)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.ECDSA_SHA512,
+        CoseAlgorithm.Signature.ES512
+    )
     AlgorithmRegistry.registerSignatureMapping(
         COSE_SIGNATURE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, ECCurve.SECP_521_R_1, null),
@@ -193,23 +223,83 @@ private val coseBuiltInMappings = run {
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
         CoseAlgorithm.Signature.RS1
     )
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PKCS1, CoseAlgorithm.Signature.RS256)
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PKCS1, CoseAlgorithm.Signature.RS384)
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PKCS1, CoseAlgorithm.Signature.RS512)
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA256_PSS, CoseAlgorithm.Signature.PS256)
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA384_PSS, CoseAlgorithm.Signature.PS384)
-    AlgorithmRegistry.registerSignatureMapping(COSE_SIGNATURE_NAMESPACE, SignatureAlgorithm.RSA_SHA512_PSS, CoseAlgorithm.Signature.PS512)
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.RSA_SHA256_PKCS1,
+        CoseAlgorithm.Signature.RS256
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.RSA_SHA384_PKCS1,
+        CoseAlgorithm.Signature.RS384
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.RSA_SHA512_PKCS1,
+        CoseAlgorithm.Signature.RS512
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.RSA_SHA256_PSS,
+        CoseAlgorithm.Signature.PS256
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.RSA_SHA384_PSS,
+        CoseAlgorithm.Signature.PS384
+    )
+    AlgorithmRegistry.registerSignatureMapping(
+        COSE_SIGNATURE_NAMESPACE,
+        SignatureAlgorithm.RSA_SHA512_PSS,
+        CoseAlgorithm.Signature.PS512
+    )
 
-    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA1, CoseAlgorithm.MAC.UNOFFICIAL_HS1)
-    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA256, CoseAlgorithm.MAC.HS256)
-    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA384, CoseAlgorithm.MAC.HS384)
-    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MessageAuthenticationCode.HMAC_SHA512, CoseAlgorithm.MAC.HS512)
-    AlgorithmRegistry.registerMacMapping(COSE_MAC_NAMESPACE, MacMappingKey(Digest.SHA256, 64.bit), CoseAlgorithm.MAC.HS256_64)
+    AlgorithmRegistry.registerMacMapping(
+        COSE_MAC_NAMESPACE,
+        MessageAuthenticationCode.HMAC_SHA1,
+        CoseAlgorithm.MAC.UNOFFICIAL_HS1
+    )
+    AlgorithmRegistry.registerMacMapping(
+        COSE_MAC_NAMESPACE,
+        MessageAuthenticationCode.HMAC_SHA256,
+        CoseAlgorithm.MAC.HS256
+    )
+    AlgorithmRegistry.registerMacMapping(
+        COSE_MAC_NAMESPACE,
+        MessageAuthenticationCode.HMAC_SHA384,
+        CoseAlgorithm.MAC.HS384
+    )
+    AlgorithmRegistry.registerMacMapping(
+        COSE_MAC_NAMESPACE,
+        MessageAuthenticationCode.HMAC_SHA512,
+        CoseAlgorithm.MAC.HS512
+    )
+    AlgorithmRegistry.registerMacMapping(
+        COSE_MAC_NAMESPACE,
+        MacMappingKey(Digest.SHA256, 64.bit),
+        CoseAlgorithm.MAC.HS256_64
+    )
 
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.ChaCha20Poly1305, CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305)
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.AES_128_GCM, CoseAlgorithm.SymmetricEncryption.A128GCM)
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.AES_192_GCM, CoseAlgorithm.SymmetricEncryption.A192GCM)
-    AlgorithmRegistry.registerSymmetricMapping(COSE_SYMMETRIC_NAMESPACE, SymmetricEncryptionAlgorithm.AES_256_GCM, CoseAlgorithm.SymmetricEncryption.A256GCM)
+    AlgorithmRegistry.registerSymmetricMapping(
+        COSE_SYMMETRIC_NAMESPACE,
+        SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+        CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
+    )
+    AlgorithmRegistry.registerSymmetricMapping(
+        COSE_SYMMETRIC_NAMESPACE,
+        SymmetricEncryptionAlgorithm.AES_128_GCM,
+        CoseAlgorithm.SymmetricEncryption.A128GCM
+    )
+    AlgorithmRegistry.registerSymmetricMapping(
+        COSE_SYMMETRIC_NAMESPACE,
+        SymmetricEncryptionAlgorithm.AES_192_GCM,
+        CoseAlgorithm.SymmetricEncryption.A192GCM
+    )
+    AlgorithmRegistry.registerSymmetricMapping(
+        COSE_SYMMETRIC_NAMESPACE,
+        SymmetricEncryptionAlgorithm.AES_256_GCM,
+        CoseAlgorithm.SymmetricEncryption.A256GCM
+    )
 }
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */

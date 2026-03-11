@@ -3,12 +3,13 @@ package at.asitplus.signum.supreme
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.encoding.encodeToDer
-import at.asitplus.signum.indispensable.equalsCryptographically
+import at.asitplus.signum.indispensable.key.equalsCryptographically
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificateInfo
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.CertificationRequestInfo
 import at.asitplus.signum.indispensable.toSignatureAlgorithmIdentifier
+import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.sign.Signer
 
 /**

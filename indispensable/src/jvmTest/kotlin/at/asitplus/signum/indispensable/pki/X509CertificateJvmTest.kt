@@ -7,16 +7,13 @@ import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ES256
-import at.asitplus.signum.indispensable.ES512
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.key.PublicKey
-import at.asitplus.signum.indispensable.key.PublicKey.EC as PublicKeyEC
+import at.asitplus.signum.indispensable.key.EcPublicKey as PublicKeyEC
 import at.asitplus.signum.indispensable.signature.Signature
-import at.asitplus.signum.indispensable.signature.Signature.EC.IndefiniteLength as SignatureECIndefiniteLength
+import at.asitplus.signum.indispensable.signature.EcSignature.IndefiniteLength as SignatureECIndefiniteLength
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.indispensable.toKmpCertificate

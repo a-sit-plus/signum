@@ -12,13 +12,13 @@ import at.asitplus.catching
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.encodeToPem().",
-    ReplaceWith("encodeToPem(this)", "at.asitplus.awesn1.encodeToPem")
+    ReplaceWith("encodeToPem()", "at.asitplus.awesn1.encodeToPem")
 )
 fun PemEncodable.encodeToPEM(): KmmResult<String> = catching { awesn1EncodeToPem() }
 
 @Deprecated(
     "Moved to at.asitplus.awesn1.encoding.encodeToDer().",
-    ReplaceWith("encodeToDer(this)", "at.asitplus.awesn1.encoding.encodeToDer")
+    ReplaceWith("encodeToDer()", "at.asitplus.awesn1.encoding.encodeToDer")
 )
 fun Asn1Encodable<*>.encodeToDer(): ByteArray = awesn1EncodeToDer()
 

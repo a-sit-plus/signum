@@ -1,8 +1,7 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.indispensable.PrivateKey
-import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
 import at.asitplus.signum.indispensable.getJCADecryptorInstance
 import at.asitplus.signum.indispensable.getJCAEncryptorInstance
 import at.asitplus.signum.supreme.dsl.DSL
@@ -22,8 +21,8 @@ actual class PlatformEncryptorConfiguration internal actual constructor() :
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal actual fun encryptRSAImpl(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    publicKey: PublicKey.RSA,
+    algorithm: RsaEncryptionAlgorithm,
+    publicKey: at.asitplus.signum.indispensable.key.RsaPublicKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
 ): ByteArray = algorithm.getJCAEncryptorInstance(publicKey, config.provider).getOrThrow().run {
@@ -31,8 +30,8 @@ internal actual fun encryptRSAImpl(
 }
 
 internal actual suspend fun decryptRSAImpl(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: PrivateKey.RSA,
+    algorithm: RsaEncryptionAlgorithm,
+    privateKey: at.asitplus.signum.indispensable.key.RsaPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray =

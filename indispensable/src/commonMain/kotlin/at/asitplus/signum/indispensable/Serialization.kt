@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.crypto.registerSignatureValueForDefaultDer
+import at.asitplus.awesn1.crypto.DerDefaults
 import kotlinx.serialization.ExperimentalSerializationApi
 
 private var signumDefaultDerRegistered = false
@@ -14,6 +14,6 @@ private var signumDefaultDerRegistered = false
 @OptIn(ExperimentalSerializationApi::class)
 fun registerSignumDefaultDerSerializers() {
     if (signumDefaultDerRegistered) return
-    registerSignatureValueForDefaultDer()
+    DerDefaults.registerDerSerializers()
     signumDefaultDerRegistered = true
 }

@@ -4,10 +4,18 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asymmetric.*
+import at.asitplus.signum.indispensable.key.PrivateKey
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.key.EcPrivateKey
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
@@ -17,158 +25,189 @@ private const val IOS_SIGNATURE_MESSAGE_NAMESPACE = "ios.secKey.signature.messag
 private const val IOS_SIGNATURE_PREHASHED_NAMESPACE = "ios.secKey.signature.prehashed"
 private const val IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE = "ios.secKey.asymmetric.encryption"
 
+@OptIn(HazardousMaterials::class)
 private val iosBuiltInMappings = run {
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),
-        kSecKeyAlgorithmECDSASignatureMessageX962SHA1!!
+        kSecKeyAlgorithmECDSASignatureMessageX962SHA1!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, null, null),
-        kSecKeyAlgorithmECDSASignatureMessageX962SHA256!!
+        kSecKeyAlgorithmECDSASignatureMessageX962SHA256!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, null, null),
-        kSecKeyAlgorithmECDSASignatureMessageX962SHA384!!
+        kSecKeyAlgorithmECDSASignatureMessageX962SHA384!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, null, null),
-        kSecKeyAlgorithmECDSASignatureMessageX962SHA512!!
+        kSecKeyAlgorithmECDSASignatureMessageX962SHA512!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureMessagePSSSHA1!!
+        kSecKeyAlgorithmRSASignatureMessagePSSSHA1!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureMessagePSSSHA256!!
+        kSecKeyAlgorithmRSASignatureMessagePSSSHA256!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureMessagePSSSHA384!!
+        kSecKeyAlgorithmRSASignatureMessagePSSSHA384!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureMessagePSSSHA512!!
+        kSecKeyAlgorithmRSASignatureMessagePSSSHA512!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA1!!
+        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA1!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256!!
+        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA384!!
+        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA384!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_MESSAGE_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA512!!
+        kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA512!!,
+        false
     )
 
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA1, null, null),
-        kSecKeyAlgorithmECDSASignatureDigestX962SHA1!!
+        kSecKeyAlgorithmECDSASignatureDigestX962SHA1!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA256, null, null),
-        kSecKeyAlgorithmECDSASignatureDigestX962SHA256!!
+        kSecKeyAlgorithmECDSASignatureDigestX962SHA256!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA384, null, null),
-        kSecKeyAlgorithmECDSASignatureDigestX962SHA384!!
+        kSecKeyAlgorithmECDSASignatureDigestX962SHA384!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(EcdsaSignatureMappingFamily, Digest.SHA512, null, null),
-        kSecKeyAlgorithmECDSASignatureDigestX962SHA512!!
+        kSecKeyAlgorithmECDSASignatureDigestX962SHA512!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureDigestPSSSHA1!!
+        kSecKeyAlgorithmRSASignatureDigestPSSSHA1!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureDigestPSSSHA256!!
+        kSecKeyAlgorithmRSASignatureDigestPSSSHA256!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureDigestPSSSHA384!!
+        kSecKeyAlgorithmRSASignatureDigestPSSSHA384!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PSS),
-        kSecKeyAlgorithmRSASignatureDigestPSSSHA512!!
+        kSecKeyAlgorithmRSASignatureDigestPSSSHA512!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA1, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1!!
+        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA256, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256!!
+        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA384, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384!!
+        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384!!,
+        false
     )
     AlgorithmRegistry.registerSignatureMapping(
         IOS_SIGNATURE_PREHASHED_NAMESPACE,
         SignatureMappingKey(RsaSignatureMappingFamily, Digest.SHA512, null, RsaSignaturePadding.PKCS1),
-        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512!!
+        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512!!,
+        false
     )
 
     AlgorithmRegistry.registerAsymmetricMapping(
         IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA1),
-        kSecKeyAlgorithmRSAEncryptionOAEPSHA1!!
+        kSecKeyAlgorithmRSAEncryptionOAEPSHA1!!,
+        false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA256),
-        kSecKeyAlgorithmRSAEncryptionOAEPSHA256!!
+        kSecKeyAlgorithmRSAEncryptionOAEPSHA256!!,
+        false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA384),
-        kSecKeyAlgorithmRSAEncryptionOAEPSHA384!!
+        kSecKeyAlgorithmRSAEncryptionOAEPSHA384!!,
+        false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.OAEP_SHA512),
-        kSecKeyAlgorithmRSAEncryptionOAEPSHA512!!
+        kSecKeyAlgorithmRSAEncryptionOAEPSHA512!!,
+        false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.PKCS1),
-        kSecKeyAlgorithmRSAEncryptionPKCS1!!
+        kSecKeyAlgorithmRSAEncryptionPKCS1!!,
+        false
     )
     AlgorithmRegistry.registerAsymmetricMapping(
         IOS_ASYMMETRIC_ENCRYPTION_NAMESPACE,
         AsymmetricEncryptionMappingKey(RsaEncryptionPadding.NONE),
-        kSecKeyAlgorithmRSAEncryptionRaw!!
+        kSecKeyAlgorithmRSAEncryptionRaw!!,
+        false
     )
 }
 
@@ -200,10 +239,11 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
     get() =
         this.algorithm.secKeyAlgorithmPreHashed
 
-val Signature.iosEncoded
+val at.asitplus.signum.indispensable.signature.Signature.iosEncoded
     get() = when (this) {
-        is Signature.EC -> this.encodeToDer()
-        is Signature.RSA -> this.rawByteArray
+        is EcSignature -> this.encodeToDer()
+        is RsaSignature -> this.rawByteArray
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
     }
 
 fun PublicKey.toSecKey() = catching {
@@ -211,8 +251,9 @@ fun PublicKey.toSecKey() = catching {
         val attr = cfDictionaryOf(
             kSecAttrKeyClass to kSecAttrKeyClassPublic,
             kSecAttrKeyType to when (this@toSecKey) {
-                is PublicKey.EC -> kSecAttrKeyTypeEC
-                is PublicKey.RSA -> kSecAttrKeyTypeRSA
+                is EcPublicKey -> kSecAttrKeyTypeEC
+                is RsaPublicKey -> kSecAttrKeyTypeRSA
+                else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
             })
         corecall {
             SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().let(::giveToCF), attr, error)
@@ -228,14 +269,14 @@ fun PrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> =
             kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
             kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             data = when (this@toSecKey) {
-                is PrivateKey.EC.WithPublicKey -> {
+                is EcPrivateKey.WithPublicKey -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo curve.coordinateLength.bits.toInt()
                     val ecPubKey = this@toSecKey.publicKey
                     ecPubKey.iosEncoded+ privateKeyBytes
                 }
 
-                is PrivateKey.RSA -> {
+                is RsaPrivateKey  -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                     kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
                     asPKCS1.encodeToDer()

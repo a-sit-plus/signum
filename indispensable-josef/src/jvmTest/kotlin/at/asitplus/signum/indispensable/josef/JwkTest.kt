@@ -9,9 +9,11 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.signature.EcSignature
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -173,7 +175,7 @@ private fun randomCertificate() = X509Certificate(
         validUntil = Asn1Time(Clock.System.now()),
     ),
     X509SignatureAlgorithm.ES256,
-    CryptoSignature.EC.fromRS(
+    EcSignature.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)
     )

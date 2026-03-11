@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.signature.Signature
 import kotlin.jvm.JvmInline
 
 /** These map to SignatureResult.Failure instead of SignatureResult.Error */

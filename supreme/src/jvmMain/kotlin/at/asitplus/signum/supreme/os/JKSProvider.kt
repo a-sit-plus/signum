@@ -23,6 +23,8 @@ import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
@@ -67,12 +69,12 @@ class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSig
 
 interface JKSSigner: Signer, Signer.WithAlias {
     class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                   publicKey: PublicKey.EC, signatureAlgorithm: SignatureAlgorithm.ECDSA,
+                                   publicKey: EcPublicKey, signatureAlgorithm: SignatureAlgorithm.ECDSA,
                                    override val alias: String)
         : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                    publicKey: PublicKey.RSA, signatureAlgorithm: SignatureAlgorithm.RSA,
+                                    publicKey: RsaPublicKey, signatureAlgorithm: SignatureAlgorithm.RSA,
                                     override val alias: String)
         : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }
@@ -170,16 +172,18 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         privateKey: PrivateKey,
         certificate: Certificate
     ): JKSSigner = when (val publicKey = certificate.decodedPublicKey.getOrThrow()) {
-        is PublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
+        is EcPublicKey -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
             SignatureAlgorithm.ECDSA(
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                 requiredCurve = publicKey.curve),
             alias)
-        is PublicKey.RSA -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
+        is RsaPublicKey -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
             SignatureAlgorithm.RSA(
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
                 padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else PssRsaSignaturePadding),
             alias)
+
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
     }
 
     override suspend fun getSignerForKey(

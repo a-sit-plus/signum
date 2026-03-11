@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.Asn1PemEncodable
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
+import at.asitplus.signum.indispensable.key.EcPublicKey
 import at.asitplus.signum.indispensable.key.PublicKey
 
 /**
@@ -14,20 +15,20 @@ sealed interface KeyAgreementPublicValue : Asn1PemEncodable<Asn1Sequence> {
      */
     interface ECDH: KeyAgreementPublicValue {
         /**
-         * Returns this value as a [PublicKey.EC]
+         * Returns this value as a [PublicKey.EcPublicKey]
          */
-        fun asPublicKey(): PublicKey.EC
+        fun asPublicKey(): EcPublicKey
 
         /**
-         * Returns this value as a [PublicKey.EC]
+         * Returns this value as a [PublicKey.EcPublicKey]
          */
         @Deprecated(
             "Renamed to asPublicKey().",
             ReplaceWith("asPublicKey()")
         )
-        fun asCryptoPublicKey(): PublicKey.EC = asPublicKey()
+        fun asCryptoPublicKey(): EcPublicKey = asPublicKey()
     }
     companion object : LabelPemDecodable<Asn1Sequence, ECDH>("PUBLIC KEY") {
-        override fun doDecode(src: Asn1Sequence) = PublicKey.doDecode(src) as PublicKey.EC
+        override fun doDecode(src: Asn1Sequence) = PublicKey.doDecode(src) as EcPublicKey
     }
 }
