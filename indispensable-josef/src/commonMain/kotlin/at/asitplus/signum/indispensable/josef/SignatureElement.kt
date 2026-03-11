@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
-import at.asitplus.signum.indispensable.io.ByteArrayUtf8Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -25,9 +24,9 @@ data class SignatureElement(
      * Header Parameter values are integrity protected.
      *
      * Serialization: BASE64URL(UTF8(JWS Protected Header))
-    */
+     */
     @SerialName(JWS.SerialNames.PROTECTED)
-    @Serializable(with = ByteArrayUtf8Serializer::class)
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val plainProtectedHeader: ByteArray? = null,
 
     @SerialName(JWS.SerialNames.HEADER)

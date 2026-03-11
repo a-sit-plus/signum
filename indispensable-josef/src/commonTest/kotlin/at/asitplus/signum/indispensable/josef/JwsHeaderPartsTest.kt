@@ -1,10 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import io.kotest.matchers.shouldBe
 
 val JwsHeaderPartsTest by testSuite {
@@ -84,7 +82,7 @@ val JwsHeaderPartsTest by testSuite {
         compact.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, null)
     }
 
-    "protected header bytes are base64url encoded header json" {
+    "protected header bytes are raw header json bytes" {
         val protectedHeader = JwsHeader.Part(
             algorithm = JwsAlgorithm.Signature.ES256,
             type = "application/example+jwt",
@@ -92,8 +90,6 @@ val JwsHeaderPartsTest by testSuite {
 
         val encoded = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
         val expected = joseCompliantSerializer.encodeToString(JwsHeader.Part.serializer(), protectedHeader)
-            .encodeToByteArray()
-            .encodeToString(Base64UrlStrict)
             .encodeToByteArray()
 
         encoded shouldBe expected

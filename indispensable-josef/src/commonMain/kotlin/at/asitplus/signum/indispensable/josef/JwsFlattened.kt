@@ -2,14 +2,13 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
-import at.asitplus.signum.indispensable.io.ByteArrayUtf8Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
 @Serializable
 data class JwsFlattened(
-    @Serializable(ByteArrayUtf8Serializer::class)
+    @Serializable(ByteArrayBase64UrlSerializer::class)
     @SerialName(SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
     @SerialName(SerialNames.HEADER)
@@ -21,6 +20,10 @@ data class JwsFlattened(
     @SerialName(SerialNames.SIGNATURE)
     val plainSignature: ByteArray
 ) : JWS() {
+
+    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader) }
+    val signature by lazy { getSignature(jwsHeader.algorithm, plainSignature) }
+    val signatureInput by lazy { getSignatureInput(plainProtectedHeader, payload) }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -44,10 +47,8 @@ data class JwsFlattened(
         return result
     }
 
-    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader) }
-
     companion object {
-        fun invoke(
+        operator fun invoke(
             protectedHeader: JwsHeader.Part,
             unprotectedHeader: JwsHeader.Part = JwsHeader.Part(),
             payload: ByteArray,

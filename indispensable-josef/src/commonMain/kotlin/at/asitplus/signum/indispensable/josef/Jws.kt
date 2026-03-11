@@ -44,15 +44,18 @@ sealed class JWS {
     }
 
     companion object {
-        fun getSignature(jwsHeader: JwsHeader, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
-            when (val alg = jwsHeader.algorithm) {
-                is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, plainSignature)
+        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
+            when (algorithm) {
+                is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(algorithm.ecCurve, plainSignature)
                 is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
-                else -> throw SerializationException("Unsupported algorithm for JWS signature element: $alg")
+                else -> throw SerializationException("Unsupported algorithm for JWS signature element: $algorithm")
             }
 
-        fun getSignatureInput(protectedHeader: ByteArray, payload: ByteArray) =
-            "${protectedHeader.decodeToString()}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
+        fun getEncodedProtectedHeader(protectedHeader: ByteArray?): String =
+            protectedHeader?.encodeToString(Base64UrlStrict).orEmpty()
+
+        fun getSignatureInput(protectedHeader: ByteArray?, payload: ByteArray) =
+            "${getEncodedProtectedHeader(protectedHeader)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
 
     object JwsSerializer: KSerializer<JWS> {
