@@ -14,6 +14,9 @@ data class JwsGeneral(
     @SerialName(SerialNames.SIGNATURES)
     val signatures: List<SignatureElement>
 ) : JWS() {
+    init {
+        require(signatures.isNotEmpty()) { "At least one signature is required" }
+    }
 
     fun getHeaderAt(index: Int): JwsHeader = with(signatures[index]) {
         JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
