@@ -18,6 +18,9 @@
 
 # Signum – Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
 
+!!! warning "ASN.1 and OIDs moved to awesn1"
+    The low-level ASN.1 and OID functionality that used to live in Signum's `indispensable-asn1` and `indispensable-oids` modules has been externalized to [awesn1](https://a-sit-plus.github.io/awesn1/). Both Signum modules are now deprecated compatibility layers and should not be used as the target API for new code. Use `awesn1` directly for ASN.1 primitives, encoding/decoding helpers, PEM support, and OID datasets, and see the [migration guide](migration.md) for the exact import and API migration steps.
+
 
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and platform-native functionality related to crypto and PKI applications:
@@ -47,6 +50,7 @@ types and platform-native functionality related to crypto and PKI applications:
 * 100% pure Kotlin BitSet
 * Exposes Multibase Encoder/Decoder as an API dependency
   including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
+* Kotlinx serialization (**ASN.1 / DER!**) support of cryptographic data classes.
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
     * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
     * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets except `watchosDeviceArm64`!
@@ -62,11 +66,10 @@ crypto hardware.
 This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it targets
 the JVM, Android and iOS.
 
-This library consists of four modules, each of which is published on maven central:
+Signum itself consists of four modules published on Maven Central. The ASN.1 foundation now lives in the separate [awesn1 documentation](https://a-sit-plus.github.io/awesn1/):
 
 |                                                       Name                                                        | Info                                                                                                                                                                                                                                                               |
 |:-----------------------------------------------------------------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|   ![indispensable-asn1](assets/asn1-dark.png#only-light) ![indispensable-asn1](assets/asn1-light.png#only-dark)   | **Indispensable ASN.1** module containing the most sophisticated KMP ASN.1 engine in the known universe. kotlinx-* dependencies aside, it only depends only on [KmmResult](https://github.com/a-sit-plus/kmmresult) for extra-smooth iOS interop.                  | 
 |        ![indispensable](assets/core-dark.png#only-light) ![indispensable](assets/core-light.png#only-dark)        | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, X.509 certificate, …. Depends on the ASN.1 engine.                                                                                                              | 
 | ![indispensable-josef](assets/josef-dark.png#only-light) ![indispensable-josef](assets/josef-light.png#only-dark) | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.      | 
 | ![indispensable-cosef](assets/cosef-dark.png#only-light) ![indispensable-cosef](assets/cosef-light.png#only-dark) | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |

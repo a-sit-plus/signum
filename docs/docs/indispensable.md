@@ -210,9 +210,5 @@ This module provides the following low-level addons for [Kotlin MP BigNum](https
 
 
 ### Notes on Object Identifiers
-Signum also ships with a `indispensable-oids` module, included by default, which adds extension properties to `KnownOIDs` for all ASN.1 object identifiers from Peter Guttmann's
-[dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
-Hence, handy constants such as `KnownOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
-`KnownOIDs.asAdjacencyAttest`. To also describe these properties, call the `KnownOIDs.describeAll()` extension once.
-
-While it is convenient to have virtually the whole world's OIDs available as constants, including descriptions,, this will add a couple of megabytes to klibs and any XCode frameworks. Thus, it may make sense to exclude `indispensable-oids` from your framework export.
+OID datasets and OID descriptions are now part of [awesn1](https://a-sit-plus.github.io/awesn1/), not Signum.
+If you need the broad OID constant set and description loading that older Signum versions exposed through `indispensable-oids`, use the `awesn1` OID facilities directly and refer to the [awesn1 docs](https://a-sit-plus.github.io/awesn1/) plus the [migration guide](migration.md) for the import changes.
