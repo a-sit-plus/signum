@@ -16,6 +16,10 @@ import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 
 /**
  * Header of a [JwsSigned].
@@ -238,6 +242,108 @@ data class JwsHeader(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
+    /**
+     * Typed representation of a protected or unprotected JWS header fragment.
+     *
+     * Individual fragments may be incomplete. Only [fromParts] guarantees a valid [JwsHeader].
+     */
+    @Serializable
+    data class Part(
+        @SerialName("kid")
+        val keyId: String? = null,
+        @SerialName("typ")
+        val type: String? = null,
+        @SerialName("alg")
+        val algorithm: JwsAlgorithm? = null,
+        @SerialName("cty")
+        val contentType: String? = null,
+        @SerialName("x5c")
+        @Serializable(with = CertificateChainBase64Serializer::class)
+        val certificateChain: CertificateChain? = null,
+        @SerialName("nbf")
+        @Serializable(with = InstantLongSerializer::class)
+        val notBefore: Instant? = null,
+        @SerialName("iat")
+        @Serializable(with = InstantLongSerializer::class)
+        val issuedAt: Instant? = null,
+        @SerialName("exp")
+        @Serializable(with = InstantLongSerializer::class)
+        val expiration: Instant? = null,
+        @SerialName("jwk")
+        val jsonWebKey: JsonWebKey? = null,
+        @SerialName("jku")
+        val jsonWebKeySetUrl: String? = null,
+        @SerialName("x5u")
+        val certificateUrl: String? = null,
+        @SerialName("x5t")
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val certificateSha1Thumbprint: ByteArray? = null,
+        @SerialName("x5t#S256")
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val certificateSha256Thumbprint: ByteArray? = null,
+        @SerialName("jwt")
+        val attestationJwt: String? = null,
+        @SerialName("key_attestation")
+        val keyAttestation: String? = null,
+        @SerialName("vctm")
+        val vcTypeMetadata: Set<String>? = null,
+    ) {
+        fun toJsonObject(): JsonObject =
+            joseCompliantSerializer.encodeToJsonElement(serializer(), this).jsonObject
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as Part
+
+            if (keyId != other.keyId) return false
+            if (type != other.type) return false
+            if (algorithm != other.algorithm) return false
+            if (contentType != other.contentType) return false
+            if (certificateChain != other.certificateChain) return false
+            if (notBefore != other.notBefore) return false
+            if (issuedAt != other.issuedAt) return false
+            if (expiration != other.expiration) return false
+            if (jsonWebKey != other.jsonWebKey) return false
+            if (jsonWebKeySetUrl != other.jsonWebKeySetUrl) return false
+            if (certificateUrl != other.certificateUrl) return false
+            if (certificateSha1Thumbprint != null) {
+                if (other.certificateSha1Thumbprint == null) return false
+                if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
+            } else if (other.certificateSha1Thumbprint != null) return false
+            if (certificateSha256Thumbprint != null) {
+                if (other.certificateSha256Thumbprint == null) return false
+                if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
+            } else if (other.certificateSha256Thumbprint != null) return false
+            if (attestationJwt != other.attestationJwt) return false
+            if (keyAttestation != other.keyAttestation) return false
+            if (vcTypeMetadata != other.vcTypeMetadata) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = keyId?.hashCode() ?: 0
+            result = 31 * result + (type?.hashCode() ?: 0)
+            result = 31 * result + (algorithm?.hashCode() ?: 0)
+            result = 31 * result + (contentType?.hashCode() ?: 0)
+            result = 31 * result + (certificateChain?.hashCode() ?: 0)
+            result = 31 * result + (notBefore?.hashCode() ?: 0)
+            result = 31 * result + (issuedAt?.hashCode() ?: 0)
+            result = 31 * result + (expiration?.hashCode() ?: 0)
+            result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
+            result = 31 * result + (jsonWebKeySetUrl?.hashCode() ?: 0)
+            result = 31 * result + (certificateUrl?.hashCode() ?: 0)
+            result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
+            result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
+            result = 31 * result + (attestationJwt?.hashCode() ?: 0)
+            result = 31 * result + (keyAttestation?.hashCode() ?: 0)
+            result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
+            return result
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -308,6 +414,29 @@ data class JwsHeader(
     }
 
     companion object {
+        fun fromParts(
+            protectedHeader: Part? = null,
+            unprotectedHeader: Part? = null,
+        ): JwsHeader = fromJsonObjects(
+            protectedHeader = protectedHeader?.toJsonObject(),
+            unprotectedHeader = unprotectedHeader?.toJsonObject(),
+        )
+
+        fun fromParts(
+            protectedHeader: ByteArray? = null,
+            unprotectedHeader: Part? = null,
+        ): JwsHeader = fromJsonObjects(
+            protectedHeader = protectedHeader?.let(JwsProtectedHeaderSerializer::decodeToJsonObject),
+            unprotectedHeader = unprotectedHeader?.toJsonObject(),
+        )
+
+        internal fun fromJsonObjects(
+            protectedHeader: JsonObject? = null,
+            unprotectedHeader: JsonObject? = null,
+        ): JwsHeader = joseCompliantSerializer.decodeFromJsonElement<JwsHeader>(
+            protectedHeader.strictUnion(unprotectedHeader)
+        )
+
         // TODO usages!
         @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {

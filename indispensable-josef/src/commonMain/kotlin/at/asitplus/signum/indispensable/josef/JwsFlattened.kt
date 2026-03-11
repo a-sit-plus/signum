@@ -2,20 +2,18 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.io.ByteArrayUtf8Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 
 
 @Serializable
 data class JwsFlattened(
-    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @Serializable(ByteArrayUtf8Serializer::class)
     @SerialName(SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
     @SerialName(SerialNames.HEADER)
-    val unprotectedHeader: JsonObject? = null,
+    val unprotectedHeader: JwsHeader.Part? = null,
     @Serializable(ByteArrayBase64UrlSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val payload: ByteArray,
@@ -46,20 +44,22 @@ data class JwsFlattened(
         return result
     }
 
+    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader) }
+
     companion object {
         fun invoke(
-            protectedHeader: JsonObject,
-            unprotectedHeader: JsonObject,
+            protectedHeader: JwsHeader.Part,
+            unprotectedHeader: JwsHeader.Part = JwsHeader.Part(),
             payload: ByteArray,
             signer: (JwsAlgorithm, ByteArray) -> ByteArray
         ): JwsFlattened {
-            val jwsHeader = joseCompliantSerializer.decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader))
-            val plainProtectedHeader = joseCompliantSerializer.encodeToString(protectedHeader).encodeToByteArray()
+            val jwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
+            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
             return JwsFlattened(
-                plainProtectedHeader = plainProtectedHeader,
-                unprotectedHeader = unprotectedHeader,
-                payload = payload,
-                plainSignature = signer(jwsHeader.algorithm, getSignatureInput(plainProtectedHeader, payload))
+                plainProtectedHeader,
+                unprotectedHeader,
+                payload,
+                signer(jwsHeader.algorithm, getSignatureInput(plainProtectedHeader, payload))
             )
         }
     }
