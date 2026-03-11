@@ -8,18 +8,18 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
+import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
+import kotlin.time.Instant
 
 /**
  * Header of a [JwsSigned].
@@ -214,17 +214,17 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsSigned], with [JsonWebToken] as the payload.
+     * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
      */
     @SerialName("jwt")
-    val attestationJwt: String? = null,
+    val attestationJwt: JwsCompact? = null,
 
     /**
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * See [keyAttestationParsed].
+     * Should be a [JwsCompact], with [JsonWebToken] as the payload
      */
     @SerialName("key_attestation")
-    val keyAttestation: String? = null,
+    val keyAttestation: JwsCompact? = null,
 
     /**
      * SD-JWT VC: Credentials MAY encode Type Metadata directly, providing it as "glue information"
@@ -282,9 +282,9 @@ data class JwsHeader(
         @Serializable(with = ByteArrayBase64UrlSerializer::class)
         val certificateSha256Thumbprint: ByteArray? = null,
         @SerialName("jwt")
-        val attestationJwt: String? = null,
+        val attestationJwt: JwsCompact? = null,
         @SerialName("key_attestation")
-        val keyAttestation: String? = null,
+        val keyAttestation: JwsCompact? = null,
         @SerialName("vctm")
         val vcTypeMetadata: Set<String>? = null,
     ) {
@@ -406,9 +406,14 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.decodedPublicKey?.getOrNull()
     }
 
+    @Deprecated("Use [keyAttestation] directly", replaceWith = ReplaceWith("keyAttestation"))
     val keyAttestationParsed: JwsSigned<KeyAttestationJwt>? by lazy {
         keyAttestation?.let {
-            JwsSigned.deserialize<KeyAttestationJwt>(KeyAttestationJwt.serializer(), it, joseCompliantSerializer)
+            JwsSigned.deserialize<KeyAttestationJwt>(
+                KeyAttestationJwt.serializer(),
+                it.toString(),
+                joseCompliantSerializer
+            )
                 .getOrNull()
         }
     }
