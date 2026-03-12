@@ -13,19 +13,18 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 val JwsSignedRegressionTest by testSuite {
-    "JwsCompact.invoke passes the same signing input as JwsSigned.prepareJwsSignatureInput" {
-        val protectedHeader = JwsHeader.Part(
+    "JwsCompact.invoke signs the protected-header bytes derived from JwsHeader.toPart" {
+        val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "kid-1",
         )
-        val header = JwsHeader.fromParts(protectedHeader, null)
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
         var capturedAlgorithm: JwsAlgorithm? = null
         var capturedInput: ByteArray? = null
 
-        JwsCompact.invoke(
-            protectedHeader = protectedHeader,
+        val compact = JwsCompact.invoke(
+            protectedHeader = header,
             payload = payload,
         ) { algorithm, signingInput ->
             capturedAlgorithm = algorithm
@@ -33,8 +32,12 @@ val JwsSignedRegressionTest by testSuite {
             byteArrayOf(1, 2, 3, 4)
         }
 
+        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+
         capturedAlgorithm shouldBe header.algorithm
-        capturedInput shouldBe JwsSigned.prepareJwsSignatureInput(header, payload)
+        compact.plainProtectedHeader shouldBe expectedProtectedHeader
+        capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
+        compact.signatureInput shouldBe capturedInput
     }
 
     "legacy compact serialization matches JwsCompact for RS256" {

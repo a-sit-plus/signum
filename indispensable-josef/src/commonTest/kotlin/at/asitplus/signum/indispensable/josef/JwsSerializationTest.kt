@@ -10,6 +10,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -35,7 +36,7 @@ private val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonO
 private val generalVectorPayload = generalVectorSource["payload"]!!.jsonPrimitive.content
 private val generalVectorSignatures = generalVectorSource["signatures"]!!.jsonArray
 
-val JwsGeneralTest by testSuite {
+val JwsSerializerTest by testSuite {
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
 
@@ -193,7 +194,7 @@ val JwsGeneralTest by testSuite {
     "compact conversion rejects missing protected header and malformed compact strings" {
         val missingProtectedHeader = JwsFlattened(
             plainProtectedHeader = null,
-            unprotectedHeader = JwsHeader.Part(keyId = "kid-1"),
+            unprotectedHeader = JwsHeader.Part(keyId = "kid-1", algorithm = JwsAlgorithm.Signature.RSA.RS256),
             payload = "payload".encodeToByteArray(),
             plainSignature = byteArrayOf(1),
         )

@@ -450,3 +450,22 @@ data class JwsHeader(
 
     }
 }
+
+fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
+    keyId = keyId,
+    type = type,
+    algorithm = algorithm,
+    contentType = contentType,
+    certificateChain = certificateChain,
+    notBefore = notBefore,
+    issuedAt = issuedAt,
+    expiration = expiration,
+    jsonWebKey = jsonWebKey,
+    jsonWebKeySetUrl = jsonWebKeySetUrl,
+    certificateUrl = certificateUrl,
+    certificateSha1Thumbprint = certificateSha1Thumbprint,
+    certificateSha256Thumbprint = certificateSha256Thumbprint,
+    attestationJwt = attestationJwt,
+    keyAttestation = keyAttestation,
+    vcTypeMetadata = vcTypeMetadata,
+)

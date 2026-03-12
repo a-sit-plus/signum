@@ -6,6 +6,31 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 
 val JwsHeaderPartsTest by testSuite {
+    "full JWS header can be converted to a typed header part" {
+        val header = JwsHeader(
+            keyId = "did:example:signer",
+            type = "vc+sd-jwt",
+            algorithm = JwsAlgorithm.Signature.ES256,
+            contentType = "application/example+json",
+            certificateSha1Thumbprint = byteArrayOf(1, 2, 3),
+            certificateSha256Thumbprint = byteArrayOf(4, 5, 6),
+            vcTypeMetadata = setOf("bWV0YWRhdGE"),
+        )
+
+        val part = header.toPart()
+
+        part shouldBe JwsHeader.Part(
+            keyId = "did:example:signer",
+            type = "vc+sd-jwt",
+            algorithm = JwsAlgorithm.Signature.ES256,
+            contentType = "application/example+json",
+            certificateSha1Thumbprint = byteArrayOf(1, 2, 3),
+            certificateSha256Thumbprint = byteArrayOf(4, 5, 6),
+            vcTypeMetadata = setOf("bWV0YWRhdGE"),
+        )
+        JwsHeader.fromParts(protectedHeader = part) shouldBe header
+    }
+
     "split headers combine into a valid JWS header" {
         val protectedHeader = JwsHeader.Part(
             algorithm = JwsAlgorithm.Signature.ES256,
@@ -98,16 +123,18 @@ val JwsHeaderPartsTest by testSuite {
         flattened.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader)
     }
 
-    "compact JWS accepts typed protected header" {
-        val protectedHeader = JwsHeader.Part(
+    "compact JWS accepts full headers and serializes their protected part" {
+        val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.ES256,
             type = "application/example+jwt",
+            keyId = "did:example:signer",
+            vcTypeMetadata = setOf("bWV0YWRhdGE"),
         )
         val payload = "payload".encodeToByteArray()
         var capturedAlgorithm: JwsAlgorithm? = null
 
         val compact = JwsCompact.invoke(
-            protectedHeader = protectedHeader,
+            protectedHeader = header,
             payload = payload,
         ) { algorithm, _ ->
             capturedAlgorithm = algorithm
@@ -115,7 +142,9 @@ val JwsHeaderPartsTest by testSuite {
         }
 
         capturedAlgorithm shouldBe JwsAlgorithm.Signature.ES256
-        compact.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, null)
+        compact.jwsHeader shouldBe header
+        compact.plainProtectedHeader shouldBe
+                JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
     }
 
     "protected header bytes are raw header json bytes" {
