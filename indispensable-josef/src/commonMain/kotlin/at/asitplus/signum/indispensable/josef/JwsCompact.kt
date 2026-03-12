@@ -107,16 +107,15 @@ data class JwsCompact(
         }
 
         operator fun invoke(
-            protectedHeader: JwsHeader.Part,
+            protectedHeader: JwsHeader,
             payload: ByteArray,
             signer: (JwsAlgorithm, ByteArray) -> ByteArray
         ): JwsCompact {
-            val jwsHeader = JwsHeader.fromParts(protectedHeader, null)
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
+            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 payload = payload,
-                plainSignature = signer(jwsHeader.algorithm, getSignatureInput(plainProtectedHeader, payload)),
+                plainSignature = signer(protectedHeader.algorithm, getSignatureInput(plainProtectedHeader, payload)),
             )
         }
     }

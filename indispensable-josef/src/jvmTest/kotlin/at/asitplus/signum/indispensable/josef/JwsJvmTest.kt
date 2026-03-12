@@ -14,8 +14,6 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonPrimitive
 import java.security.interfaces.ECPublicKey
 
 val JwsJvmTest by testSuite {
@@ -43,7 +41,7 @@ val JwsJvmTest by testSuite {
 
         "compact JWS can be encoded and verified by Nimbus" { it ->
             val compact = JwsCompact.invoke(
-                protectedHeader = JwsHeader.Part(
+                protectedHeader = JwsHeader(
                     algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                     keyId = "kid-1",
                     type = "application/example+jws",
