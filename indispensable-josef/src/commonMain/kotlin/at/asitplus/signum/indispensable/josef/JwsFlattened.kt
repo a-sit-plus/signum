@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 
 @Serializable
@@ -21,7 +22,9 @@ data class JwsFlattened(
     val plainSignature: ByteArray
 ) : JWS() {
 
-    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader) }
+    @Transient
+    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+
     val signature by lazy { getSignature(jwsHeader.algorithm, plainSignature) }
     val signatureInput by lazy { getSignatureInput(plainProtectedHeader, payload) }
 

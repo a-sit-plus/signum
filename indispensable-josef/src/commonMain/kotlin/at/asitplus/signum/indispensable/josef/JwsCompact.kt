@@ -8,6 +8,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.StringFormat
+import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -37,7 +38,9 @@ data class JwsCompact(
     val plainSignature: ByteArray,
 ) : JWS() {
 
-    val jwsHeader by lazy { JwsHeader.fromParts(plainProtectedHeader, null) }
+    @Transient
+    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, null)
+
     val signature by lazy { getSignature(jwsHeader.algorithm, plainSignature) }
     val signatureInput by lazy { getSignatureInput(plainProtectedHeader, payload) }
 
