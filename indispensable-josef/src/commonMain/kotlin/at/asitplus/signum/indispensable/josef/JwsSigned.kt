@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
  *
  * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  */
-@Deprecated("", level = DeprecationLevel.WARNING)
+@Deprecated("Replaced by JwsCompact", level = DeprecationLevel.WARNING, replaceWith = ReplaceWith("JwsCompact"))
 data class JwsSigned<out P : Any>(
     val header: JwsHeader,
     val payload: P,
