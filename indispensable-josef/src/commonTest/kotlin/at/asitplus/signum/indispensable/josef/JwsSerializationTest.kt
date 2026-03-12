@@ -10,7 +10,6 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -40,13 +39,13 @@ val JwsSerializerTest by testSuite {
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
 
-        general.signatures.size shouldBe 2
-        general.getHeaderAt(0).algorithm shouldBe JwsAlgorithm.Signature.RS256
-        general.getHeaderAt(1).algorithm shouldBe JwsAlgorithm.Signature.ES256
+        general.signatureElements.size shouldBe 2
+        general.jwsHeaders[0].algorithm shouldBe JwsAlgorithm.Signature.RS256
+        general.jwsHeaders[1].algorithm shouldBe JwsAlgorithm.Signature.ES256
         general.getSignatureAt(0).shouldBeInstanceOf<CryptoSignature.RSA>()
         general.getSignatureAt(1).shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
 
-        general.signatures.forEachIndexed { index, signatureElement ->
+        general.signatureElements.forEachIndexed { index, signatureElement ->
             val sourceSignature = generalVectorSignatures[index].jsonObject
             val protectedHeaderBase64 = sourceSignature["protected"]!!.jsonPrimitive.content
             val signatureBase64 = sourceSignature["signature"]!!.jsonPrimitive.content
@@ -100,7 +99,7 @@ val JwsSerializerTest by testSuite {
         val general = listOf(flattened).toJwsGeneral()
 
         general.payload shouldBe payload
-        general.getHeaderAt(0) shouldBe flattened.jwsHeader
+        general.jwsHeaders[0] shouldBe flattened.jwsHeader
         general.getSignatureAt(0) shouldBe flattened.signature
         general.getSignatureInputAt(0) shouldBe flattened.signatureInput
         general.toJwsFlattened() shouldBe listOf(flattened)
@@ -129,9 +128,9 @@ val JwsSerializerTest by testSuite {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
         val flattened = general.toJwsFlattened()
 
-        flattened.size shouldBe general.signatures.size
+        flattened.size shouldBe general.signatureElements.size
         flattened.forEachIndexed { index, entry ->
-            entry.jwsHeader shouldBe general.getHeaderAt(index)
+            entry.jwsHeader shouldBe general.jwsHeaders[index]
             entry.signature shouldBe general.getSignatureAt(index)
             entry.signatureInput shouldBe general.getSignatureInputAt(index)
             entry.toJwsCompact().toString() shouldBe compactSerializationAt(index)
@@ -245,11 +244,11 @@ val JwsSerializerTest by testSuite {
 
         val generalA = JwsGeneral(
             payload = "payload".encodeToByteArray(),
-            signatures = listOf(signatureA),
+            signatureElements = listOf(signatureA),
         )
         val generalB = JwsGeneral(
             payload = "payload".encodeToByteArray(),
-            signatures = listOf(signatureB),
+            signatureElements = listOf(signatureB),
         )
 
         generalA shouldNotBe generalB

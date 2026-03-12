@@ -111,8 +111,8 @@ val JwsJvmTest by testSuite {
             parsed.signatures[1].header.keyID shouldBe null
             parsed.signatures[0].unprotectedHeader.keyID shouldBe "kid-1"
             parsed.signatures[1].unprotectedHeader.keyID shouldBe "kid-2"
-            general.getHeaderAt(0) shouldBe flattened1.jwsHeader
-            general.getHeaderAt(1) shouldBe flattened2.jwsHeader
+            general.jwsHeaders[0] shouldBe flattened1.jwsHeader
+            general.jwsHeaders[1] shouldBe flattened2.jwsHeader
         }
     }
 }

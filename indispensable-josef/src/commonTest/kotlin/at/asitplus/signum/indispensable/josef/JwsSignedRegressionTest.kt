@@ -109,7 +109,7 @@ val JwsSignedRegressionTest by testSuite {
         flattened.signature shouldBe regressionCase.legacy.signature
         flattened.signatureInput shouldBe regressionCase.legacy.plainSignatureInput
 
-        general.getHeaderAt(0) shouldBe regressionCase.legacy.header
+        general.jwsHeaders[0] shouldBe regressionCase.legacy.header
         general.getSignatureAt(0) shouldBe regressionCase.legacy.signature
         general.getSignatureInputAt(0) shouldBe regressionCase.legacy.plainSignatureInput
     }

@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 data class JwsGeneral(
@@ -12,17 +13,19 @@ data class JwsGeneral(
     override val payload: ByteArray,
     @Serializable
     @SerialName(SerialNames.SIGNATURES)
-    val signatures: List<SignatureElement>
+    val signatureElements: List<SignatureElement>
 ) : JWS() {
+
     init {
-        require(signatures.isNotEmpty()) { "At least one signature is required" }
+        require(signatureElements.isNotEmpty()) { "At least one signature is required" }
     }
 
-    fun getHeaderAt(index: Int): JwsHeader = with(signatures[index]) {
-        JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
-    }
-    fun getSignatureAt(index: Int) = getSignature(getHeaderAt(index).algorithm, signatures[index].plainSignature)
-    fun getSignatureInputAt(index: Int) = getSignatureInput(signatures[index].plainProtectedHeader, payload)
+    @Transient
+    val jwsHeaders: List<JwsHeader> = signatureElements.map { it.jwsHeader }
+
+    fun getSignatureAt(index: Int) = getSignature(jwsHeaders[index].algorithm, signatureElements[index].plainSignature)
+    fun getSignatureInputAt(index: Int) = getSignatureInput(signatureElements[index].plainProtectedHeader, payload)
+
     /**
      * @return New [JwsGeneral] object with appended Signature
      */
@@ -32,7 +35,7 @@ data class JwsGeneral(
         }
 
         return copy(
-            signatures = signatures + SignatureElement(
+            signatureElements = signatureElements + SignatureElement(
                 plainSignature = jwsFlattened.plainSignature,
                 unprotectedHeader = jwsFlattened.unprotectedHeader,
                 plainProtectedHeader = jwsFlattened.plainProtectedHeader,
@@ -47,14 +50,14 @@ data class JwsGeneral(
         other as JwsGeneral
 
         if (!payload.contentEquals(other.payload)) return false
-        if (signatures != other.signatures) return false
+        if (signatureElements != other.signatureElements) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = payload.contentHashCode()
-        result = 31 * result + signatures.hashCode()
+        result = 31 * result + signatureElements.hashCode()
         return result
     }
 
@@ -65,7 +68,7 @@ data class JwsGeneral(
 
 
 fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
-    signatures.map {
+    signatureElements.map {
         JwsFlattened(
             plainProtectedHeader = it.plainProtectedHeader,
             unprotectedHeader = it.unprotectedHeader,

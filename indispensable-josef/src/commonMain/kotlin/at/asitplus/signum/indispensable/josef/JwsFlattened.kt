@@ -96,6 +96,6 @@ fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
     }
     return JwsGeneral(
         payload = payload,
-        signatures = signatures
+        signatureElements = signatures
     )
 }
