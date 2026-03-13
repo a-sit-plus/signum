@@ -22,7 +22,7 @@ on:
 
 jobs:
   test-everything:
-    uses: a-sit-plus/internal-workflows/.github/workflows/test-everything.yml@feature/modularTests
+    uses: a-sit-plus/internal-workflows/.github/workflows/test-everything.yml@v2
     with:
       override-cache: ${{ github.ref_name == 'development' || github.ref_name == 'main' }}
       matrix-file-name: ".github/config/test-strategy-matrix.json"
