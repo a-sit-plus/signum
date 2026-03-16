@@ -2,24 +2,26 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 
 sealed interface Decryptor {
     val algorithm: AsymmetricEncryptionAlgorithm
-    val privateKey: CryptoPrivateKey
+    val privateKey: PrivateKey
 
 
     suspend fun decrypt(data: ByteArray): KmmResult<ByteArray>
 
 
     sealed class RSA(
-        final override val algorithm: AsymmetricEncryptionAlgorithm.RSA,
-        final override val privateKey: CryptoPrivateKey.RSA
+        final override val algorithm: RsaEncryptionAlgorithm,
+        final override val privateKey: RsaPrivateKey
     ) : Decryptor
 }
 
@@ -31,15 +33,15 @@ typealias ConfigurePlatformEncryptor = DSLConfigureFn<PlatformEncryptorConfigura
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect suspend fun decryptRSAImpl(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: CryptoPrivateKey.RSA,
+    algorithm: RsaEncryptionAlgorithm,
+    privateKey: RsaPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray
 
 class PlatformRSADecryptor
 internal constructor(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA, privateKey: CryptoPrivateKey.RSA,
+    algorithm:RsaEncryptionAlgorithm, privateKey: RsaPrivateKey,
     configure: ConfigurePlatformDecryptor
 ) : Decryptor.RSA(algorithm, privateKey) {
 
@@ -58,26 +60,27 @@ internal constructor(
  * @see PlatformDecryptorConfiguration
  */
 fun AsymmetricEncryptionAlgorithm.decryptorFor(
-    privateKey: CryptoPrivateKey,
+    privateKey: PrivateKey,
     configure: ConfigurePlatformDecryptor = null
 ) = decryptorForImpl(privateKey, configure)
 
 private fun AsymmetricEncryptionAlgorithm.decryptorForImpl(
-    privateKey: CryptoPrivateKey, configure: ConfigurePlatformDecryptor,
+    privateKey: PrivateKey, configure: ConfigurePlatformDecryptor,
 ): Decryptor =
     when (this) {
-        is AsymmetricEncryptionAlgorithm.RSA -> PlatformRSADecryptor(
+        is RsaEncryptionAlgorithm -> PlatformRSADecryptor(
             this,
-            privateKey.let { require(it is CryptoPrivateKey.RSA);it },
+            privateKey.let { require(it is RsaPrivateKey);it },
             configure
         )
+        else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm $this")
     }
 /**
  * Obtains a Decryptor.
  *
  * @see PlatformDecryptorConfiguration
  */
-fun AsymmetricEncryptionAlgorithm.RSA.decryptorFor(
-    privateKey: CryptoPrivateKey.RSA,
+fun RsaEncryptionAlgorithm.decryptorFor(
+    privateKey: RsaPrivateKey,
     configure: ConfigurePlatformDecryptor = null
 ) = decryptorForImpl(privateKey, configure)

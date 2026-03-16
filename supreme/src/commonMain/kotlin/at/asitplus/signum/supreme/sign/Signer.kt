@@ -2,10 +2,16 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.key.PrivateKey
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.key.EcPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.agree.UsableECDHPrivateValue
 import at.asitplus.signum.supreme.dsl.DSL
@@ -88,13 +94,13 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
  */
 interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
-    val publicKey: CryptoPublicKey
+    val publicKey: PublicKey
 
     /** Whether the signer may ask for user interaction when [sign] is called */
     val mayRequireUserUnlock: Boolean get() = true
 
     @SecretExposure
-    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
+    fun exportPrivateKey(): KmmResult<PrivateKey.WithPublicKey<*>>
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer
@@ -102,10 +108,10 @@ interface Signer {
     /** A [Signer] that signs using ECDSA. */
     interface ECDSA : AlgTrait, UsableECDHPrivateValue {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
-        override val publicKey: CryptoPublicKey.EC
+        override val publicKey: EcPublicKey
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
+        override fun exportPrivateKey(): KmmResult<EcPrivateKey.WithPublicKey>
 
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
@@ -113,10 +119,10 @@ interface Signer {
     /** A [Signer] that signs using RSA. */
     interface RSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
-        override val publicKey: CryptoPublicKey.RSA
+        override val publicKey: RsaPublicKey
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
+        override fun exportPrivateKey(): KmmResult<RsaPrivateKey>
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
@@ -149,22 +155,38 @@ interface Signer {
 /**
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
  */
-fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>): KmmResult<Signer> =
-    if ((this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)) {
-        when (this) {
-            is SignatureAlgorithm.ECDSA -> this.signerFor(privateKey as CryptoPrivateKey.EC.WithPublicKey)
-            is SignatureAlgorithm.RSA -> this.signerFor(privateKey as CryptoPrivateKey.RSA)
-        }
-    } else {
-        KmmResult.failure(IllegalArgumentException("Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"))
+fun SignatureAlgorithm.signerFor(privateKey: PrivateKey.WithPublicKey<*>): KmmResult<Signer> =
+    when (this) {
+        is SignatureAlgorithm.ECDSA ->
+            if (privateKey is EcPrivateKey) {
+                this.signerFor(privateKey as EcPrivateKey.WithPublicKey)
+            } else {
+                KmmResult.failure(
+                    IllegalArgumentException(
+                        "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
+                    )
+                )
+            }
+
+        is SignatureAlgorithm.RSA ->
+            if (privateKey is RsaPrivateKey) {
+                this.signerFor(privateKey as RsaPrivateKey)
+            } else {
+                KmmResult.failure(
+                    IllegalArgumentException(
+                        "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
+                    )
+                )
+            }
+
+        else -> KmmResult.failure(UnsupportedCryptoException("Unsupported signature algorithm $this"))
     }
 
-fun SignatureAlgorithm.ECDSA.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
-    catching { makePrivateKeySigner(privateKey, this) }
+fun SignatureAlgorithm.ECDSA.signerFor(privateKey: EcPrivateKey.WithPublicKey) =
+    catching { makePrivateKeySigner(privateKey, this as EcdsaSignatureAlgorithm) }
 
-fun SignatureAlgorithm.RSA.signerFor(privateKey: CryptoPrivateKey.RSA) =
-    catching { makePrivateKeySigner(privateKey, this) }
+fun SignatureAlgorithm.RSA.signerFor(privateKey: RsaPrivateKey) =
+    catching { makePrivateKeySigner(privateKey, this as RsaSignatureAlgorithm) }
 
 /**
  * Get a verifier for signatures generated by this [Signer].

@@ -1,7 +1,7 @@
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
-import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
+import at.asitplus.signum.indispensable.WithCurveConstraint
+import at.asitplus.signum.indispensable.cosef.algorithm.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
@@ -23,20 +23,20 @@ val ConversionTests by testSuite {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
-            withData(CoseAlgorithm.DataIntegrity.entries) {
+            withData(at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.DataIntegrity.entries) {
                 it.algorithm.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {
-            withData(CoseAlgorithm.DataIntegrity.entries) {
+            withData(at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.DataIntegrity.entries) {
                 it.toCoseAlgorithm() shouldSucceedWith it
             }
         }
     }
     "COSE -> X509 -> COSE" - {
-        withData(CoseAlgorithm.Signature.entries) - {
+        withData(at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.entries) - {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
-                if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
+                if ((it.algorithm as? WithCurveConstraint)?.requiredCurve != null) {
                     "Curve information is lost" {
                         val algorithm = x509.toCoseAlgorithm().getOrThrow()
                         algorithm shouldNotBe it

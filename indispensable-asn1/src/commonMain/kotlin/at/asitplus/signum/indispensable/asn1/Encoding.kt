@@ -9,6 +9,10 @@ import kotlinx.io.unsafe.UnsafeBufferOperations
  * Therefore, operating on these bytes after wrapping leads to undefined behaviour.
  */
 @UnsafeIoApi
+@Deprecated(
+    "Moved to kotlinx.io based helpers in awesn1; prefer ByteArray inputs or awesn1 parsing APIs directly.",
+    ReplaceWith("kotlinx.io.Buffer().apply { write(this@wrapInUnsafeSource) }")
+)
 fun ByteArray.wrapInUnsafeSource(): Source = Buffer().apply {
     UnsafeBufferOperations.moveToTail(this, this@wrapInUnsafeSource)
 }

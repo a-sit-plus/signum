@@ -85,10 +85,9 @@ Different block cipher modes of operation can be added on request.
 
 ## High-Level ASN.1 Abstractions
 
-The `indispensable-asn1` module comes with a fully-featured ASN.1 engine including a builder DSL.
-In addition to low-level, generic abstractions, it also provides higher-level datatypes with enriched
-semantics. The `indispensable` module builds on top of it, adding cryptography-specific data types.
-Combined these two modules provide the following abstractions:
+The ASN.1 engine has been externalized to [awesn1](https://a-sit-plus.github.io/awesn1/), which now provides the low-level ASN.1 primitives, builders, encoding/decoding helpers, PEM support, and OID infrastructure that older Signum versions exposed through `indispensable-asn1`.
+The `indispensable` module builds on top of that foundation and adds cryptography-specific data types.
+Combined, `awesn1` and Signum provide the following abstractions:
 
 | Abstraction                  |   | Remarks                                                                                                                                                                              |
 |------------------------------|:-:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

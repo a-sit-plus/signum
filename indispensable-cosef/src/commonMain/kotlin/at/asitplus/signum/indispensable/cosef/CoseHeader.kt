@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString

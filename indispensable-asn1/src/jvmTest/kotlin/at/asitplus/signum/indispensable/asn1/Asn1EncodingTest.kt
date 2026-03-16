@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.BitSet
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
@@ -40,12 +42,12 @@ val Asn1EncodingTest by testSuite {
             "30 1D 06 03 55 1D 0E 04 16 04 14 EB 92 86 2F 31 C3 DB 96 A3 49 FF CB A5 15 64 23 14 B3 D2 3D"
         ) {
 
-            Asn1Element.Companion.parseFromDerHexString(it).toDerHexString() shouldBe it.replace(" ", "")
+            Asn1Element.parseFromDerHexString(it).toDerHexString() shouldBe it.replace(" ", "")
         }
     }
 
 
-    val bitSet = BitSet.fromBitString("011011100101110111")
+    val bitSet = BitSet.fromString("011011100101110111")
     "Bit String" {
         val fromBitSet = Asn1BitString(bitSet)
         fromBitSet.encodeToTlv().toDerHexString() shouldBe "0304066E5DC0"

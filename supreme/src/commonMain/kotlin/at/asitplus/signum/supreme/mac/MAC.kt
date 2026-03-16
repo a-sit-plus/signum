@@ -2,7 +2,8 @@ package at.asitplus.signum.supreme.mac
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.HmacAlgorithm
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -15,9 +16,9 @@ import kotlin.experimental.inv
 fun MessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = mac(key, sequenceOf(msg))
 fun MessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = mac(key, msg.asSequence())
 
-private val HMAC.blockLength get() = digest.inputBlockSize.bytes.toInt()
-private val HMAC.innerPad get() = ByteArray(blockLength) { 0x36 }
-private val HMAC.outerPad get() = ByteArray(blockLength) { 0x5C }
+private val HmacAlgorithm.blockLength get() = digest.inputBlockSize.bytes.toInt()
+private val HmacAlgorithm.innerPad get() = ByteArray(blockLength) { 0x36 }
+private val HmacAlgorithm.outerPad get() = ByteArray(blockLength) { 0x5C }
 
 fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> =
     algorithm.mac(key, msg)
@@ -32,11 +33,12 @@ private fun ByteArray.truncateTo(size: BitLength): ByteArray {
 
 fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> =
     when (this@mac) {
-        is HMAC -> catching { hmac(key, msg) }
+        is HmacAlgorithm -> catching { hmac(key, msg) }
         is MessageAuthenticationCode.Truncated -> inner.mac(key, msg).map { it.truncateTo(outputLength) }
+        else -> KmmResult.failure(UnsupportedCryptoException("Unsupported MAC algorithm $this"))
     }
 
-internal fun HMAC.hmac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray {
+internal fun HmacAlgorithm.hmac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray {
     val realKey = (if (key.size <= blockLength) key else digest.digest(key)).let {
         if (it.size < blockLength) it + ByteArray(blockLength - it.size) else it
     }
@@ -45,5 +47,3 @@ internal fun HMAC.hmac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray {
     val outerHash = digest.digest(sequenceOf(realKey xor outerPad, innerHash))
     return outerHash
 }
-
-

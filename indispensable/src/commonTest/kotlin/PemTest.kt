@@ -1,8 +1,12 @@
 package at.asitplus.signum
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.encodeToPEM
+import at.asitplus.signum.indispensable.key.EcPrivateKey as PemPrivateKeyEC
+import at.asitplus.signum.indispensable.key.RsaPrivateKey as PemPrivateKeyRSA
+import at.asitplus.signum.indispensable.key.EcPublicKey as PemPublicKeyEC
+import at.asitplus.signum.indispensable.key.RsaPublicKey as PemPublicKeyRSA
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 
@@ -11,9 +15,6 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val PemTest  by testSuite {
@@ -79,7 +80,7 @@ val PemTest  by testSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val key = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.EC>()
+        val key = PublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<PemPublicKeyEC>()
     }
     "CSR" {
         val pem = """
@@ -92,7 +93,7 @@ val PemTest  by testSuite {
         """.trimIndent()
 
         val csr  = Pkcs10CertificationRequest.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<Pkcs10CertificationRequest>()
-        csr.tbsCsr.publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        csr.tbsCsr.publicKey.shouldBeInstanceOf<PemPublicKeyEC>()
     }
 
     "RSA Public Key" {
@@ -113,7 +114,7 @@ val PemTest  by testSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val rsa = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+        val rsa = PublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<PemPublicKeyRSA>()
 
         val pkcs1= """
             -----BEGIN RSA PUBLIC KEY-----
@@ -123,7 +124,7 @@ val PemTest  by testSuite {
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
-         CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+         PublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<PemPublicKeyRSA>()
     }
 
 
@@ -137,10 +138,10 @@ val PemTest  by testSuite {
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(rnd + sec1).getOrThrow().let {
-            it.shouldBeInstanceOf<CryptoPrivateKey.EC>()
-            CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow() shouldBe it
-            CryptoPrivateKey.RSA.decodeFromPem(sec1).isSuccess shouldBe false
+        PrivateKey.decodeFromPem(rnd + sec1).getOrThrow().let {
+            it.shouldBeInstanceOf<PemPrivateKeyEC>()
+            PemPrivateKeyEC.decodeFromPem(sec1).getOrThrow() shouldBe it
+            PemPrivateKeyRSA.decodeFromPem(sec1).isSuccess shouldBe false
 
             it.asSEC1.encodeToPEM().getOrThrow().lines() shouldBe sec1.lines()
         }
@@ -155,9 +156,9 @@ val PemTest  by testSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(rnd + pkcs8).getOrThrow().let {
-            CryptoPrivateKey.EC.decodeFromPem(pkcs8).getOrThrow() shouldBe it
-            CryptoPrivateKey.RSA.decodeFromPem(pkcs8).isSuccess shouldBe false
+        PrivateKey.decodeFromPem(rnd + pkcs8).getOrThrow().let {
+            PemPrivateKeyEC.decodeFromPem(pkcs8).getOrThrow() shouldBe it
+            PemPrivateKeyRSA.decodeFromPem(pkcs8).isSuccess shouldBe false
             it.encodeToPEM().getOrThrow().lines() shouldBe pkcs8.lines()
         }
     }
@@ -178,13 +179,13 @@ val PemTest  by testSuite {
         )
 
         rsa.forEach { string ->
-            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
-                .shouldBeInstanceOf<CryptoPrivateKey.RSA>()
+            PrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+                .shouldBeInstanceOf<PemPrivateKeyRSA>()
         }
 
         ec.forEach { string ->
-            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
-                .shouldBeInstanceOf<CryptoPrivateKey.EC>()
+            PrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+                .shouldBeInstanceOf<PemPrivateKeyEC>()
 
         }
     }
@@ -499,7 +500,7 @@ val PemTest  by testSuite {
             """.trimIndent()
         )
         rsa.forEach {
-            CryptoPrivateKey.decodeFromPem(it).getOrThrow()
+            PrivateKey.decodeFromPem(it).getOrThrow()
         }
     }
 }

@@ -1,10 +1,16 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.awesn1.encoding.decodeFromDer
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.RsaSignaturePadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.withData
@@ -27,11 +33,11 @@ val RSAVerifierCommonTests  by testSuite {
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.valueOf(test.dig)
-        val padding = RSAPadding.valueOf(test.pad)
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.RSA
+        val padding = RSAPadding.entries.first { it.toString() == test.pad }
+        val key = PublicKey.decodeFromDer(Base64.decode(test.key)) as RsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
-        val sig = CryptoSignature.RSA(Base64.decode(test.sig))
+        val sig = RsaSignature(Base64.decode(test.sig))
     }
 
     /*
@@ -152,7 +158,7 @@ fun main() {
     withData(tests) - { byPadding ->
         withData(byPadding) - { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) - { test ->
-                val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
+                val verifier = RsaSignatureAlgorithm(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {
@@ -162,11 +168,11 @@ fun main() {
                     }
                 }
                 checkAll(Arb.of(Digest.entries.filter { it != test.digest })) { dig ->
-                    SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
+                    RsaSignatureAlgorithm(dig, test.padding).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
-                checkAll(Arb.of(RSAPadding.entries.filter{ it != test.padding })) { pad ->
-                    SignatureAlgorithm.RSA(test.digest, pad).verifierFor(test.key)
+                checkAll(Arb.of(RsaSignaturePadding.entries.filter{ it != test.padding })) { pad ->
+                    RsaSignatureAlgorithm(test.digest, pad).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
             }

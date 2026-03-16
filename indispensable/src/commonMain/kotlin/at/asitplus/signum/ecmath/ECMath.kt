@@ -1,6 +1,6 @@
 package at.asitplus.signum.ecmath
 
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ec.ECPoint
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlin.math.max

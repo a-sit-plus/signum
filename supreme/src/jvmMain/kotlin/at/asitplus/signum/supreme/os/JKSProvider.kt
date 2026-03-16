@@ -1,26 +1,30 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.Asn1Time
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
+import at.asitplus.awesn1.encoding.decodeFromDer
+import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.PssRsaSignaturePadding
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.RsaSignaturePadding
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
-import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.CertificateInfo
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
@@ -65,12 +69,12 @@ class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSig
 
 interface JKSSigner: Signer, Signer.WithAlias {
     class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                   publicKey: CryptoPublicKey.EC, signatureAlgorithm: SignatureAlgorithm.ECDSA,
+                                   publicKey: EcPublicKey, signatureAlgorithm: SignatureAlgorithm.ECDSA,
                                    override val alias: String)
         : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                    publicKey: CryptoPublicKey.RSA, signatureAlgorithm: SignatureAlgorithm.RSA,
+                                    publicKey: RsaPublicKey, signatureAlgorithm: SignatureAlgorithm.RSA,
                                     override val alias: String)
         : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }
@@ -130,17 +134,17 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
 
             val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
                 is SigningKeyConfiguration.RSAConfiguration ->
-                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), X509SignatureAlgorithm.RS256)
+                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
                 is SigningKeyConfiguration.ECConfiguration ->
-                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), X509SignatureAlgorithm.ES256)
+                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), SignatureAlgorithm.ECDSAwithSHA256)
             }
             val keyPair = getKPGInstance(jcaAlg, config.provider).run {
                 initialize(jcaSpec)
                 generateKeyPair()
             }
-            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(alias))))
-            val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
-            val tbsCert = TbsCertificate(
+            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(alias))))
+            val publicKey = keyPair.public.toPublicKey().getOrThrow()
+            val tbsCert = CertificateInfo(
                 serialNumber = CryptoRand.Default.nextBytes(ByteArray(32)),
                 signatureAlgorithm = certAlg,
                 issuerName = cn,
@@ -153,7 +157,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initSign(keyPair.private)
                 update(tbsCert.encodeToDer())
                 sign()
-            }.let { X509Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
+            }.let { Certificate(tbsCert, certAlg, Signature.parseFromJca(it, certAlg)) }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                             arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()
@@ -166,18 +170,20 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         alias: String,
         config: JKSSignerConfiguration,
         privateKey: PrivateKey,
-        certificate: X509Certificate
+        certificate: Certificate
     ): JKSSigner = when (val publicKey = certificate.decodedPublicKey.getOrThrow()) {
-        is CryptoPublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
+        is EcPublicKey -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
             SignatureAlgorithm.ECDSA(
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                 requiredCurve = publicKey.curve),
             alias)
-        is CryptoPublicKey.RSA -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
+        is RsaPublicKey -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
             SignatureAlgorithm.RSA(
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
-                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),
+                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else PssRsaSignaturePadding),
             alias)
+
+        else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
     }
 
     override suspend fun getSignerForKey(
@@ -187,7 +193,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         access.forReading().use { ctx ->
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { X509Certificate.decodeFromDer(it.encoded) }
+            val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
             return@catching getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

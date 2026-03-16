@@ -79,10 +79,10 @@ markdown_extensions:
 nav:
   - Manual:
       - Overview: index.md
+      - Migration from 3.19: migration.md
       - CHANGELOG.md
       - Examples: examples.md
       - Modules:
-          - Indispensable ASN.1: indispensable-asn1.md
           - Indispensable: indispensable.md
           - Indispensable Josef: indispensable-josef.md
           - Indispensable Cosef: indispensable-cosef.md

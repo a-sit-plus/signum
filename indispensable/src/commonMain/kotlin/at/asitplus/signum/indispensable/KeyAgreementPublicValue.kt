@@ -1,23 +1,34 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.PemDecodable
-import at.asitplus.signum.indispensable.asn1.PemEncodable
+import at.asitplus.awesn1.Asn1PemEncodable
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.LabelPemDecodable
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.PublicKey
 
 /**
  * Key agreement public value. Must be PEM encodable/decodable.
  */
-sealed interface KeyAgreementPublicValue : PemEncodable<Asn1Sequence> {
+sealed interface KeyAgreementPublicValue : Asn1PemEncodable<Asn1Sequence> {
     /**
-     * ECDH key agreement public value. Is always an EC public key, thus comes with [asCryptoPublicKey]
+     * ECDH key agreement public value. Is always an EC public key.
      */
     interface ECDH: KeyAgreementPublicValue {
         /**
-         * Returns this value ad a [CryptoPublicKey.EC]
+         * Returns this value as a [PublicKey.EcPublicKey]
          */
-        fun asCryptoPublicKey(): CryptoPublicKey.EC
+        fun asPublicKey(): EcPublicKey
+
+        /**
+         * Returns this value as a [PublicKey.EcPublicKey]
+         */
+        @Deprecated(
+            "Renamed to asPublicKey().",
+            ReplaceWith("asPublicKey()")
+        )
+        fun asCryptoPublicKey(): EcPublicKey = asPublicKey()
     }
-    companion object : PemDecodable<Asn1Sequence, ECDH>("PUBLIC KEY") {
-        override fun doDecode(src: Asn1Sequence) = CryptoPublicKey.doDecode(src) as CryptoPublicKey.EC
+    companion object : LabelPemDecodable<Asn1Sequence, ECDH>("PUBLIC KEY") {
+        override fun doDecode(src: Asn1Sequence) = PublicKey.doDecode(src) as EcPublicKey
     }
 }

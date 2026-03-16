@@ -1,75 +1,208 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
-enum class RSAPadding {
-    PKCS1,
-    PSS;
+interface RsaSignaturePadding : Enumerable {
+    companion object : Enumeration<RsaSignaturePadding> {
+
+
+        override val entries: Iterable<RsaSignaturePadding>
+            get() {
+                return AlgorithmRegistry.signatureRsaPaddings
+            }
+
+        fun register(padding: RsaSignaturePadding): RsaSignaturePadding =
+            AlgorithmRegistry.registerSignatureRsaPadding(padding)
+    }
 }
 
-sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
+data object Pkcs1RsaSignaturePadding : RsaSignaturePadding {
+    override fun toString() = "PKCS1"
+}
 
-    data class ECDSA(
-        /** The digest to apply to the data, or `null` to directly process the raw data. */
-        val digest: Digest?,
-        /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
+data object PssRsaSignaturePadding : RsaSignaturePadding {
+    override fun toString() = "PSS"
+}
+
+interface SignatureAlgorithm : DataIntegrityAlgorithm {
+    @Deprecated("Use EcdsaSignatureAlgorithm.", ReplaceWith("EcdsaSignatureAlgorithm"))
+    interface ECDSA : SignatureAlgorithm {
+        val digest: Digest?
         val requiredCurve: ECCurve?
-    ) : SignatureAlgorithm {
-
-        companion object : Enumeration<ECDSA> {
-            override val entries: Set<ECDSA> by lazy {
-                setOf(
-                    ECDSAwithSHA256,
-                    ECDSAwithSHA384,
-                    ECDSAwithSHA512
-                )
-            }
-        }
     }
 
-    data class RSA(
-        /** The digest to apply to the data. */
-        val digest: Digest,
-        /** The padding to apply to the data. */
-        val padding: RSAPadding
-    ) : SignatureAlgorithm {
-
-        companion object : Enumeration<RSA> {
-            override val entries: Set<RSA> by lazy {
-                setOf(
-                    RSAwithSHA256andPSSPadding,
-                    RSAwithSHA384andPSSPadding,
-                    RSAwithSHA512andPSSPadding,
-
-                    RSAwithSHA256andPKCS1Padding,
-                    RSAwithSHA384andPKCS1Padding,
-                    RSAwithSHA512andPKCS1Padding
-                )
-            }
-
-        }
+    @Deprecated("Use RsaSignatureAlgorithm.", ReplaceWith("RsaSignatureAlgorithm"))
+    interface RSA : SignatureAlgorithm {
+        val digest: Digest
+        val padding: RsaSignaturePadding
     }
 
     companion object : Enumeration<SignatureAlgorithm> {
-        val ECDSAwithSHA256 = ECDSA(Digest.SHA256, null)
-        val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
-        val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
-
-        val RSAwithSHA256andPKCS1Padding = RSA(Digest.SHA256, RSAPadding.PKCS1)
-        val RSAwithSHA384andPKCS1Padding = RSA(Digest.SHA384, RSAPadding.PKCS1)
-        val RSAwithSHA512andPKCS1Padding = RSA(Digest.SHA512, RSAPadding.PKCS1)
-
-        val RSAwithSHA256andPSSPadding = RSA(Digest.SHA256, RSAPadding.PSS)
-        val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS)
-        val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS)
-
-        override val entries: Iterable<SignatureAlgorithm> by lazy {
-            ECDSA.entries + RSA.entries
+        private val builtIns   by lazy {
+            listOf(
+                ECDSA_SHA256,
+                ECDSA_SHA384,
+                ECDSA_SHA512,
+                RSA_SHA256_PKCS1,
+                RSA_SHA384_PKCS1,
+                RSA_SHA512_PKCS1,
+                RSA_SHA256_PSS,
+                RSA_SHA384_PSS,
+                RSA_SHA512_PSS,
+            )
         }
 
+        override val entries: Iterable<SignatureAlgorithm>
+            get() {
+                builtIns
+                return AlgorithmRegistry.signatureAlgorithms
+            }
+
+        fun register(algorithm: SignatureAlgorithm): SignatureAlgorithm {
+            builtIns
+            return AlgorithmRegistry.registerSignatureAlgorithm(algorithm)
+        }
+
+        @Deprecated(
+            "Use EcdsaSignatureAlgorithm(...).",
+            ReplaceWith("EcdsaSignatureAlgorithm(digest, requiredCurve)")
+        )
+        fun ECDSA(digest: Digest?, requiredCurve: ECCurve?) =
+            EcdsaSignatureAlgorithm(digest, requiredCurve)
+
+        @Deprecated(
+            "Use RsaSignatureAlgorithm(...).",
+            ReplaceWith("RsaSignatureAlgorithm(digest, padding)")
+        )
+        fun RSA(digest: Digest, padding: RsaSignaturePadding) =
+            RsaSignatureAlgorithm(digest, padding)
+
+        @Deprecated(
+            "Use SignatureAlgorithm.ECDSA_SHA256.",
+            ReplaceWith("SignatureAlgorithm.ECDSA_SHA256")
+        )
+        val ECDSAwithSHA256: SignatureAlgorithm get() = ECDSA_SHA256
+
+        @Deprecated(
+            "Use SignatureAlgorithm.ECDSA_SHA384.",
+            ReplaceWith("SignatureAlgorithm.ECDSA_SHA384")
+        )
+        val ECDSAwithSHA384: SignatureAlgorithm get() = ECDSA_SHA384
+
+        @Deprecated(
+            "Use SignatureAlgorithm.ECDSA_SHA512.",
+            ReplaceWith("SignatureAlgorithm.ECDSA_SHA512")
+        )
+        val ECDSAwithSHA512: SignatureAlgorithm get() = ECDSA_SHA512
+
+        @Deprecated(
+            "Use SignatureAlgorithm.RSA_SHA256_PKCS1.",
+            ReplaceWith("SignatureAlgorithm.RSA_SHA256_PKCS1")
+        )
+        val RSAwithSHA256andPKCS1Padding: SignatureAlgorithm get() = RSA_SHA256_PKCS1
+
+        @Deprecated(
+            "Use SignatureAlgorithm.RSA_SHA384_PKCS1.",
+            ReplaceWith("SignatureAlgorithm.RSA_SHA384_PKCS1")
+        )
+        val RSAwithSHA384andPKCS1Padding: SignatureAlgorithm get() = RSA_SHA384_PKCS1
+
+        @Deprecated(
+            "Use SignatureAlgorithm.RSA_SHA512_PKCS1.",
+            ReplaceWith("SignatureAlgorithm.RSA_SHA512_PKCS1")
+        )
+        val RSAwithSHA512andPKCS1Padding: SignatureAlgorithm get() = RSA_SHA512_PKCS1
+
+        @Deprecated(
+            "Use SignatureAlgorithm.RSA_SHA256_PSS.",
+            ReplaceWith("SignatureAlgorithm.RSA_SHA256_PSS")
+        )
+        val RSAwithSHA256andPSSPadding: SignatureAlgorithm get() = RSA_SHA256_PSS
+
+        @Deprecated(
+            "Use SignatureAlgorithm.RSA_SHA384_PSS.",
+            ReplaceWith("SignatureAlgorithm.RSA_SHA384_PSS")
+        )
+        val RSAwithSHA384andPSSPadding: SignatureAlgorithm get() = RSA_SHA384_PSS
+
+        @Deprecated(
+            "Use SignatureAlgorithm.RSA_SHA512_PSS.",
+            ReplaceWith("SignatureAlgorithm.RSA_SHA512_PSS")
+        )
+        val RSAwithSHA512andPSSPadding: SignatureAlgorithm get() = RSA_SHA512_PSS
     }
 }
 
-interface SpecializedSignatureAlgorithm: SpecializedDataIntegrityAlgorithm {
+open class EcdsaSignatureAlgorithm(
+    /** The digest to apply to the data, or `null` to directly process the raw data. */
+    override val digest: Digest?,
+    /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
+    override val requiredCurve: ECCurve?
+) : SignatureAlgorithm, SignatureAlgorithm.ECDSA, WithDigest, WithCurveConstraint {
+    override fun toString(): String = buildString {
+        append("ECDSA")
+        digest?.let { append("with").append(it) }
+        requiredCurve?.let { append("@").append(it) }
+    }
+}
+
+open class RsaSignatureAlgorithm(
+    /** The digest to apply to the data. */
+    override val digest: Digest,
+    /** The padding to apply to the data. */
+    override val padding: RsaSignaturePadding
+) : SignatureAlgorithm, SignatureAlgorithm.RSA, WithDigest, WithRsaSignaturePadding {
+    override fun toString(): String = "RSAwith${digest}and$padding"
+}
+
+
+val SignatureAlgorithm.Companion.ECDSA_SHA256: EcdsaSignatureAlgorithm get() = EcdsaSignatureAlgorithm(
+    Digest.SHA256,
+    null
+)
+val SignatureAlgorithm.Companion.ECDSA_SHA384: EcdsaSignatureAlgorithm get() = EcdsaSignatureAlgorithm(
+    Digest.SHA384,
+    null
+)
+val SignatureAlgorithm.Companion.ECDSA_SHA512: EcdsaSignatureAlgorithm get() = EcdsaSignatureAlgorithm(
+    Digest.SHA512,
+    null
+)
+val SignatureAlgorithm.Companion.RSA_SHA256_PKCS1: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA256,
+    RsaSignaturePadding.PKCS1
+)
+val SignatureAlgorithm.Companion.RSA_SHA384_PKCS1: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA384,
+    RsaSignaturePadding.PKCS1
+)
+val SignatureAlgorithm.Companion.RSA_SHA512_PKCS1: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA512,
+    RsaSignaturePadding.PKCS1
+)
+val SignatureAlgorithm.Companion.RSA_SHA256_PSS: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA256,
+    RsaSignaturePadding.PSS
+)
+val SignatureAlgorithm.Companion.RSA_SHA384_PSS: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA384,
+    RsaSignaturePadding.PSS
+)
+val SignatureAlgorithm.Companion.RSA_SHA512_PSS: RsaSignatureAlgorithm get() = RsaSignatureAlgorithm(
+    Digest.SHA512,
+    RsaSignaturePadding.PSS
+)
+
+val RsaSignaturePadding.Companion.PKCS1: RsaSignaturePadding get() = Pkcs1RsaSignaturePadding
+val RsaSignaturePadding.Companion.PSS: RsaSignaturePadding get() = PssRsaSignaturePadding
+
+@Deprecated(
+    "Use RsaSignaturePadding.",
+    ReplaceWith("RsaSignaturePadding")
+)
+typealias RSAPadding = RsaSignaturePadding
+
+interface SpecializedSignatureAlgorithm : SpecializedDataIntegrityAlgorithm {
     override val algorithm: SignatureAlgorithm
 }

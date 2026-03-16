@@ -22,16 +22,22 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api("at.asitplus.awesn1:core:${libs.versions.awesn1.get()}")
+            api("at.asitplus.awesn1:crypto:${libs.versions.awesn1.get()}")
+            api("at.asitplus.awesn1:io:${libs.versions.awesn1.get()}")
+            api("at.asitplus.awesn1:oids:${libs.versions.awesn1.get()}")
             api(project(":indispensable-asn1"))
             api(project(":indispensable-oids"))
             api(libs.multibase)
             api(libs.bignum)
             implementation(project(":internals"))
+            implementation(serialization("json"))
             api(libs.securerandom)
         }
 
         jvmTest.dependencies {
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
+            implementation(project(":awesn1:kxs"))
         }
 
         androidJvmMain {

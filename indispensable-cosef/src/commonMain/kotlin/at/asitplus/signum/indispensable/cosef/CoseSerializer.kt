@@ -1,13 +1,18 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.awesn1.encoding.decodeFromDerOrNull
+import at.asitplus.signum.indispensable.EcdsaSignatureMappingFamily
+import at.asitplus.signum.indispensable.signatureMappingKeyOrNull
+import at.asitplus.signum.indispensable.toSignatureAlgorithmOrNull
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
+import at.asitplus.signum.indispensable.signature.Signature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -102,10 +107,10 @@ private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>):
 private fun ByteArray.toSignature(
     protectedHeader: CoseHeader,
     unprotectedHeader: CoseHeader?,
-): CryptoSignature.RawByteEncodable =
+): Signature.RawByteEncodable =
     if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        CryptoSignature.EC.fromRawBytes(this)
-    else CryptoSignature.RSA(this)
+        EcSignature.fromRawBytes(this)
+    else RsaSignature(this)
 
 private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
     if (serializer == ByteArraySerializer()) {
@@ -125,12 +130,11 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
         this
     ).value
 
+//TODO make open
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-        ?.let { X509Certificate.decodeFromDerOrNull(it) }
-        ?.let { it.signatureAlgorithm is X509SignatureAlgorithm.ECDSA }
-    is CoseAlgorithm.Signature -> (algorithm.algorithm is SignatureAlgorithm.ECDSA)
+        ?.let { Certificate.decodeFromDerOrNull(it) }
+        ?.let { it.signatureAlgorithm.toSignatureAlgorithmOrNull()?.signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily }
+    is CoseAlgorithm.Signature -> algorithm.algorithm.signatureMappingKeyOrNull()?.family == EcdsaSignatureMappingFamily
     else -> false
 }
-
-

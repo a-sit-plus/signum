@@ -1,6 +1,9 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
@@ -123,10 +126,10 @@ val JKSProviderTest  by testSuite {
             CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
             when (signer.signatureAlgorithm) {
                 is SignatureAlgorithm.RSA ->
-                    CryptoSignature.RSA.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                    RsaSignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
 
                 is SignatureAlgorithm.ECDSA ->
-                    CryptoSignature.EC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                    EcSignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
             }
 
             signer.signatureAlgorithm.let {

@@ -28,6 +28,9 @@ develocity {
 
 // Include the local build logic as a composite build
 includeBuild("build-logic")
+if (file("awesn1/settings.gradle.kts").isFile) {
+    includeBuild("awesn1")
+}
 
 include(":internals")
 include(":indispensable-asn1")

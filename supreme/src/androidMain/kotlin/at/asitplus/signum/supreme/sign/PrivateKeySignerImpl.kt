@@ -1,13 +1,17 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.key.EcPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.RSA,
-    algorithm: SignatureAlgorithm.RSA
+    key: RsaPrivateKey,
+    algorithm: RsaSignatureAlgorithm
 ): Signer.RSA = AndroidEphemeralSigner.RSA(
     config = EphemeralSignerConfiguration(),
     privateKey = key.toJcaPrivateKey().getOrThrow(),
@@ -16,8 +20,8 @@ actual fun makePrivateKeySigner(
 )
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC.WithPublicKey,
-    algorithm: SignatureAlgorithm.ECDSA
+    key: EcPrivateKey.WithPublicKey,
+    algorithm: EcdsaSignatureAlgorithm
 ): Signer.ECDSA = AndroidEphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
     privateKey = key.toJcaPrivateKey().getOrThrow(),

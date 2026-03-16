@@ -7,6 +7,11 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.key.PrivateKey as CryptoPrivateKey
+import at.asitplus.signum.indispensable.key.PrivateKey.WithPublicKey as CryptoPrivateKeyWithPublicKey
+import at.asitplus.signum.indispensable.key.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.key.EcPublicKey as CryptoPublicKeyEC
+import at.asitplus.signum.indispensable.key.RsaPublicKey as CryptoPublicKeyRSA
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
@@ -27,9 +32,6 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val KeyTest  by testSuite {
@@ -53,7 +55,7 @@ val KeyTest  by testSuite {
 
                 val own = pubKey.toCryptoPublicKey().getOrThrow()
 
-                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKeyWithPublicKey<*>
 
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
@@ -68,9 +70,9 @@ val KeyTest  by testSuite {
                 }
 
                 withClue("Compressed Test") {
-                    own as CryptoPublicKey.EC
+                    own as CryptoPublicKeyEC
                     val compressedPresentation = own.toAnsiX963Encoded(useCompressed = true)
-                    val fromCompressed = CryptoPublicKey.EC.fromAnsiX963Bytes(own.curve, compressedPresentation)
+                    val fromCompressed = CryptoPublicKeyEC.fromAnsiX963Bytes(own.curve, compressedPresentation)
 
                     // bouncy castle compressed representation is calculated by exposing public coordinate from key and then encode that
                     compressedPresentation shouldBe (pubKey as BCECPublicKey).q.getEncoded(true)
@@ -86,6 +88,13 @@ val KeyTest  by testSuite {
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
+        }
+
+        "Raw delegation uses SubjectPublicKeyInfo encoding" {
+            val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
+            val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
+
+            publicKey.encodeToTlv() shouldBe publicKey.raw.encodeToTlv()
         }
 
         "DID Tests" {
@@ -114,15 +123,15 @@ val KeyTest  by testSuite {
                 keys
             ) { (privKey, pubKey) ->
 
-                val own = CryptoPublicKey.RSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
+                val own = CryptoPublicKeyRSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
-                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKeyWithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
-                val own1 = CryptoPublicKey.RSA(
+                val own1 = CryptoPublicKeyRSA(
                     Asn1Integer.fromUnsignedByteArray(ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray()),
                     Asn1Integer.fromUnsignedByteArray(pubKey.publicExponent.toByteArray())
                 )

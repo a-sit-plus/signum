@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
+import at.asitplus.signum.indispensable.symmetric.AES
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
@@ -31,28 +31,28 @@ private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray)
 internal object AESIOS {
     @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
     fun encrypt(
-        alg: SymmetricEncryptionAlgorithm.AES<*, *, *>,
+        alg: AES<*, *, *>,
         data: ByteArray,
         key: ByteArray,
         nonce: ByteArray?,
         aad: ByteArray?
     ) = when (alg) {
-        is AES.CBC.Unauthenticated -> {
+        is AesCbcAlgorithm -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
             alg.sealedBox.withNonce(nonce!!).from(bytes).getOrThrow()
         }
 
-        is AES.ECB -> {
+        is AesEcbAlgorithm -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
             alg.sealedBox.from(bytes).getOrThrow()
         }
 
-        is AES.WRAP.RFC3394 -> {
+        is AesWrapAlgorithm -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = false)
             alg.sealedBox.from(bytes).getOrThrow()
         }
 
-        is AES.GCM -> {
+        is AesGcmAlgorithm -> {
             val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce?.toNSData(), aad?.toNSData())
             if (ciphertext == null) throw IllegalStateException("Error from swift code!")
             alg.sealedBox.withNonce(ciphertext.iv().toByteArray()).from(
@@ -84,7 +84,7 @@ internal object AESIOS {
 
     @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
     internal fun cbcEcbCrypt(
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>,
+        algorithm: AES<*, KeyType.Integrated, *>,
         encrypt: Boolean,
         secretKey: ByteArray,
         nonce: ByteArray?,
@@ -93,7 +93,7 @@ internal object AESIOS {
     ): ByteArray {
         //padding check == size check at this point, regardless of whether pad is set!
         //WRAP is cursed!
-        if (!encrypt && (algorithm !is AES.WRAP.RFC3394))
+        if (!encrypt && (algorithm !is AesWrapAlgorithm))
             require(data.size % algorithm.blockSize.bytes.toInt() == 0) { "Illegal data size: ${data.size}" }
 
         //better safe than sorry
@@ -121,7 +121,7 @@ internal object AESIOS {
                 data.let { if (encrypt && pad) algorithm.addPKCS7Padding(it) else it }.usePinned { input ->
                     bytesEncrypted.usePinned { bytesEncrypted ->
                         when (algorithm) {
-                            is AES.CBC.Unauthenticated, is AES.ECB -> {
+                            is AesCbcAlgorithm, is AesEcbAlgorithm -> {
                                 CCCrypt(
                                     (if (encrypt) kCCEncrypt else kCCDecrypt),
                                     (kCCAlgorithmAES),
@@ -134,7 +134,7 @@ internal object AESIOS {
                                 )
                             }
 
-                            is AES.WRAP.RFC3394 -> {
+                            is AesWrapAlgorithm -> {
                                 //Why Apple, why???
                                 bytesEncrypted.get()[0] = output.get().size.toULong()
                                 //Why, Apple, Why are these separate operations and not parameterized as others???
@@ -171,9 +171,9 @@ internal object AESIOS {
     }
 }
 
-val SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>.iosOptions: UInt
+val AES<*, KeyType.Integrated, *>.iosOptions: UInt
     get() = @OptIn(HazardousMaterials::class) when (this) {
-        is AES.CBC.Unauthenticated, is AES.WRAP.RFC3394 -> 0u //no options (=manual padding).
-        is AES.ECB -> kCCOptionECBMode
+        is AesCbcAlgorithm, is AesWrapAlgorithm -> 0u //no options (=manual padding).
+        is AesEcbAlgorithm -> kCCOptionECBMode
         else -> throw ImplementationError()
     }

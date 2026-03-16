@@ -8,9 +8,9 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
 val digestBugTest by testSuite {
-    withData(JwsAlgorithm.Signature.entries) {
+    withData(at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm.Signature.entries) {
         val json = joseCompliantSerializer.encodeToJsonElement(it)
-        val decoded = joseCompliantSerializer.decodeFromJsonElement<JwsAlgorithm.Signature>(json)
+        val decoded = joseCompliantSerializer.decodeFromJsonElement<at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm.Signature>(json)
         decoded.digest shouldBe it.digest
     }
 }

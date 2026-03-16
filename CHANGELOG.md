@@ -1,7 +1,64 @@
 # Changelog
 
 ## NEXT
-* fix build setup on non-macos
+* **Major ASN.1 refactor:**
+    * Externalize the ASN.1 implementation into [`awesn1`](https://github.com/a-sit-plus/awesn1)
+    * `indispensable` now re-exports `awesn1` core, crypto, io, and oids modules
+    * `indispensable-asn1` is now primarily a compatibility layer over `awesn1`
+    * ASN.1 imports and encode/decode helpers should migrate from `at.asitplus.signum.indispensable.asn1` to `at.asitplus.awesn1`
+    * Signum-side ASN.1 compatibility wrappers remain for migration, but are deprecated
+* **Extensibility overhaul:**
+    * Signum algorithm families are no longer treated as closed built-in sets
+    * `SignatureAlgorithm`, `MessageAuthenticationCode`, `SymmetricEncryptionAlgorithm`, `AsymmetricEncryptionAlgorithm`, `JwsAlgorithm`, `CoseAlgorithm`, and related families now support third-party extension
+    * Add central `AlgorithmRegistry` plus semantic mapping keys in `AlgorithmTraits`
+    * `entries` collections are now registry-backed and may include custom algorithms registered by consumers
+    * Add registration APIs for custom algorithms and mappings:
+        * `registerSignatureAlgorithm`
+        * `registerMessageAuthenticationCode`
+        * `registerSymmetricEncryptionAlgorithm`
+        * `registerAsymmetricEncryptionAlgorithm`
+        * `registerSignatureMapping`
+        * `registerMacMapping`
+        * `registerSymmetricMapping`
+        * `registerAsymmetricMapping`
+        * `registerX509SignatureMapping`
+* **JOSE and COSE made extensible:**
+    * Open up `JwsAlgorithm` and nested signature / MAC families for registration of custom values
+    * Open up `CoseAlgorithm` and nested signature / MAC / symmetric families for registration of custom values
+    * JOSE and COSE conversions now resolve through `AlgorithmRegistry` mappings instead of assuming a fixed built-in universe
+    * Custom algorithms without explicit JOSE / COSE mappings now fail conversion explicitly with `UnsupportedCryptoException`
+* **X.509 signature model cleanup:**
+    * Move the raw X.509 signature algorithm representation to `at.asitplus.awesn1.crypto.SignatureAlgorithmIdentifier`
+    * `X509SignatureAlgorithmDescription` now remains only as a deprecated compatibility alias
+    * Refactor `X509SignatureAlgorithm` mapping logic to use the new registry-backed raw-to-semantic resolution model
+    * Remove the temporary CURSED RSA PKCS#1 X.509 signature algorithm variants introduced in `3.19.2`
+* **Core crypto API cleanup:**
+    * Replace more legacy namespace-style construction APIs with concrete extensible classes such as `EcdsaSignatureAlgorithm`, `RsaSignatureAlgorithm`, `HmacAlgorithm`, and `RsaEncryptionAlgorithm`
+    * Continue deprecating old compatibility aliases such as the older `RSAPadding` naming where the new split between signature and encryption padding applies
+    * Refine crypto data types, PKI models, signature handling, and key abstractions to align with the new raw-model and extensibility design
+* **Platform and provider mapping cleanup:**
+    * Move and consolidate JCA initialization and mapping logic behind the new registry-based approach
+    * Update Apple / CommonCrypto and JCA mapping code to register algorithm support through the new extension points
+* **Supreme updates:**
+    * Adapt signer / verifier / asymmetric / MAC / KDF integrations to the new extensible algorithm model
+    * Add regression coverage around unsupported custom algorithms in Supreme
+* **Build and project setup:**
+    * Fix project setup on non-macOS build hosts
+    * Continue improving Apple target and cinterop setup
+    * Dependency updates:
+        * ASP conventions `20260310`
+        * `awesn1` `0.1.0-SNAPSHOT`
+* **Package hierarchy cleanup in `indispensable`:**
+    * Move core crypto types into focused subpackages:
+        * `PublicKey`, `PrivateKey` -> `at.asitplus.signum.indispensable.key`
+        * `Signature` -> `at.asitplus.signum.indispensable.signature`
+        * `ECCurve`, `ECPoint` -> `at.asitplus.signum.indispensable.ec`
+        * attestation types -> `at.asitplus.signum.indispensable.attestation`
+    * Move JOSE algorithm types into `at.asitplus.signum.indispensable.josef.algorithm`
+    * Move COSE algorithm types into `at.asitplus.signum.indispensable.cosef.algorithm`
+    * Keep deprecated outer typealiases in the old packages where Kotlin allows it
+    * Document and accept that nested old names such as `PublicKey.EC`, `Signature.EC`, `JwsAlgorithm.Signature`, `JweAlgorithm.Symmetric`, and `CoseAlgorithm.Signature` cannot be preserved fully through typealias compatibility
+    * No restructure of the `supreme` module package hierarchy in this change
 
 ## 3.19.3 / Supreme 0.11.3
 * Support CURSED X.509 Certificate extensions that encode critical=false instead of omitting it

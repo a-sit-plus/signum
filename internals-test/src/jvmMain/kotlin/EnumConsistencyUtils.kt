@@ -132,7 +132,7 @@ fun enumConsistencyTest(@TestElementName name: String = "") = testSuite(name = n
                         .loadClasses(Enumeration::class.java)
                         .asSequence()
                         .filterNot { GLOBAL_IGNORES.any { i -> it.name.startsWith(i) } }
-                        .map { withClue(it) { it.kotlin.objectInstance } }
+                        .map { withClue(it) { it.kotlin.objectInstance } }.filterNotNull()
                         .toSet()
                 }
 

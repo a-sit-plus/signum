@@ -2,6 +2,8 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.minus
@@ -21,6 +23,7 @@ import de.infix.testBalloon.framework.core.testScope
 
 val ConfigTests  by testSuite {
     "Asymmetric Provider Config" {
+        val algorithm = RsaEncryptionAlgorithm(OaepRsaEncryptionPadding.Sha256)
         val kp =
             EphemeralKey {
                 rsa {
@@ -28,11 +31,11 @@ val ConfigTests  by testSuite {
                 }
             }.getOrThrow()
         val ciphertext =
-            AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.encryptorFor(kp.publicKey).encrypt(byteArrayOf(1, 3, 3, 7))
+            algorithm.encryptorFor(kp.publicKey).encrypt(byteArrayOf(1, 3, 3, 7))
                 .getOrThrow()
 
         shouldThrow<NoSuchProviderException> {
-            AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.encryptorFor(kp.publicKey) {
+            algorithm.encryptorFor(kp.publicKey) {
                 provider = "IllegalProvider"
             }.encrypt(byteArrayOf(1, 3, 3, 7)).getOrThrow()
         }
@@ -42,13 +45,13 @@ val ConfigTests  by testSuite {
 
         if (bcPresent) Security.removeProvider("BC")
         shouldThrow<NoSuchProviderException> {
-            AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.encryptorFor(kp.publicKey) {
+            algorithm.encryptorFor(kp.publicKey) {
                 provider = "BC"
             }.encrypt(byteArrayOf(1, 3, 3, 7)).getOrThrow()
         }
 
         Security.addProvider(BouncyCastleProvider())
-        val bcCipherText = AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.encryptorFor(kp.publicKey) {
+        val bcCipherText = algorithm.encryptorFor(kp.publicKey) {
             provider = "BC"
         }.encrypt(byteArrayOf(1, 3, 3, 7)).getOrThrow()
 
@@ -56,17 +59,17 @@ val ConfigTests  by testSuite {
         if (!bcPresent) Security.removeProvider("BC")
 
         @OptIn(SecretExposure::class)
-        AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.decryptorFor(kp.exportPrivateKey().getOrThrow())
+        algorithm.decryptorFor(kp.exportPrivateKey().getOrThrow())
             .decrypt(ciphertext).getOrThrow() shouldBe byteArrayOf(1, 3, 3, 7)
         @OptIn(SecretExposure::class)
-        AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.decryptorFor(kp.exportPrivateKey().getOrThrow())
+        algorithm.decryptorFor(kp.exportPrivateKey().getOrThrow())
             .decrypt(bcCipherText).getOrThrow() shouldBe byteArrayOf(1, 3, 3, 7)
 
 
 
         shouldThrow<NoSuchProviderException> {
             @OptIn(SecretExposure::class)
-            AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.decryptorFor(kp.exportPrivateKey().getOrThrow()) {
+            algorithm.decryptorFor(kp.exportPrivateKey().getOrThrow()) {
                 provider = "IllegalProvider"
             }.decrypt(ciphertext).getOrThrow()
         }
@@ -74,16 +77,16 @@ val ConfigTests  by testSuite {
         if (bcPresent) Security.removeProvider("BC")
         shouldThrow<NoSuchProviderException> {
             @OptIn(SecretExposure::class)
-            AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.decryptorFor(kp.exportPrivateKey().getOrThrow())
+            algorithm.decryptorFor(kp.exportPrivateKey().getOrThrow())
             { provider = "BC" }.decrypt(ciphertext).getOrThrow() shouldBe byteArrayOf(1, 3, 3, 7)
         }
 
         Security.addProvider(BouncyCastleProvider())
         @OptIn(SecretExposure::class)
-        AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.decryptorFor(kp.exportPrivateKey().getOrThrow())
+        algorithm.decryptorFor(kp.exportPrivateKey().getOrThrow())
         { provider = "BC" }.decrypt(ciphertext).getOrThrow() shouldBe byteArrayOf(1, 3, 3, 7)
         @OptIn(SecretExposure::class)
-        AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.decryptorFor(kp.exportPrivateKey().getOrThrow())
+        algorithm.decryptorFor(kp.exportPrivateKey().getOrThrow())
         { provider = "BC" }.decrypt(bcCipherText).getOrThrow() shouldBe byteArrayOf(1, 3, 3, 7)
 
 

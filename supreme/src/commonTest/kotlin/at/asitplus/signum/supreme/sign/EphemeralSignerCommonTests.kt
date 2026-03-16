@@ -1,11 +1,20 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.*
+
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
+import at.asitplus.awesn1.Asn1OctetString
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.PssRsaSignaturePadding
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
@@ -80,9 +89,9 @@ object TestSuites {
         RSAPadding.entries.forEach { padding ->
             Digest.entries.forEach { digest ->
                 when {
-                    digest == Digest.SHA512 && padding == RSAPadding.PSS
+                    digest == Digest.SHA512 && padding == PssRsaSignaturePadding
                         -> listOf(2048, 3072, 4096)
-                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
+                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == PssRsaSignaturePadding
                         -> listOf(1024,2048,3072,4096)
                     else
                         -> listOf(512, 1024, 2048, 3072, 4096)
@@ -230,18 +239,18 @@ val EphemeralSignerCommonTests  by testSuite {
                 }
 
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         Pkcs10CertificationRequestAttribute(
                             // No OID is assigned for this; choose one!
                             KnownOIDs.id_sMIME,
                             // ↓↓↓ contains challenge ↓↓↓
-                            Asn1String.UTF8("foo").encodeToTlv()
+                            at.asitplus.awesn1.Asn1String.UTF8("foo").encodeToTlv()
                         )
                     )
                 )
-                if(digest == Digest.SHA1 && padding== RSAPadding.PSS) return@withData
+                if(digest == Digest.SHA1 && padding== PssRsaSignaturePadding) return@withData
                 val signedCSR = signer.sign(csr).getOrThrow()
 
 
@@ -251,13 +260,13 @@ val EphemeralSignerCommonTests  by testSuite {
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
-                    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    signatureAlgorithm = signer.signatureAlgorithm,
+                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("Foo")))),
                     validFrom = Asn1Time(
                         Clock.System.now()
                     ),
                     validUntil = Asn1Time(Clock.System.now() + 356.days),
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         X509CertificateExtension(
@@ -283,14 +292,14 @@ val EphemeralSignerCommonTests  by testSuite {
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         Pkcs10CertificationRequestAttribute(
                             // No OID is assigned for this; choose one!
                             KnownOIDs.id_sMIME,
                             // ↓↓↓ contains challenge ↓↓↓
-                            Asn1String.UTF8("foo").encodeToTlv()
+                            at.asitplus.awesn1.Asn1String.UTF8("foo").encodeToTlv()
                         )
                     )
                 )
@@ -303,8 +312,8 @@ val EphemeralSignerCommonTests  by testSuite {
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
-                    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    signatureAlgorithm = signer.signatureAlgorithm,
+                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(at.asitplus.awesn1.Asn1String.UTF8("Foo")))),
                     validFrom = Asn1Time(
                         Clock.System.now()
                     ),

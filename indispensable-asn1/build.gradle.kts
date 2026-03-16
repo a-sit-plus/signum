@@ -23,21 +23,22 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                api(libs.kotlinx.io.core)
+                api("at.asitplus.awesn1:core:${libs.versions.awesn1.get()}")
+                api("at.asitplus.awesn1:io:${libs.versions.awesn1.get()}")
                 api(kmmresult())
-                api(serialization("json"))
-                api(datetime())
-                implementation(project(":internals"))
             }
         }
         commonTest {
             dependencies {
                 implementation(kotest("property"))
+                implementation(serialization("json"))
+                implementation(datetime())
                 implementation(project(":indispensable"))
             }
         }
         jvmTest.dependencies {
-            gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
+            gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }
+                ?: implementation(project(":internals-test"))
         }
     }
 }

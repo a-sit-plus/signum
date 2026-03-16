@@ -1,17 +1,24 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.key.PrivateKey
+import at.asitplus.signum.indispensable.key.PublicKey
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.key.EcPrivateKey
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.RSA,
-    algorithm: SignatureAlgorithm.RSA
+    key: RsaPrivateKey,
+    algorithm: RsaSignatureAlgorithm
 ): Signer.RSA = EphemeralSigner.RSA(
     config = EphemeralSignerConfiguration(),
     privateKey = key.toJcaPrivateKey().getOrThrow(),
@@ -20,8 +27,8 @@ actual fun makePrivateKeySigner(
 )
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC.WithPublicKey,
-    algorithm: SignatureAlgorithm.ECDSA
+    key: EcPrivateKey.WithPublicKey,
+    algorithm: EcdsaSignatureAlgorithm
 ): Signer.ECDSA = EphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
     privateKey = key.toJcaPrivateKey().getOrThrow(),
@@ -37,33 +44,40 @@ actual fun makePrivateKeySigner(
  *
  */
 fun SignatureAlgorithm.signerFor(
-    privateKey: CryptoPrivateKey.WithPublicKey<*>,
+    privateKey: PrivateKey.WithPublicKey<*>,
     configure: DSLConfigureFn<JvmEphemeralSignerCompatibleConfiguration>
 ) = catching {
-    require(
-        (this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)
-    ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
-
     when (this) {
-        is SignatureAlgorithm.ECDSA -> EphemeralSigner.EC(
+        is SignatureAlgorithm.ECDSA -> {
+            require(privateKey is EcPrivateKey) {
+                "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
+            }
+            EphemeralSigner.EC(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
-            publicKey = privateKey.publicKey as CryptoPublicKey.EC,
+            publicKey = privateKey.publicKey as EcPublicKey,
             signatureAlgorithm = this
         )
+        }
 
-        is SignatureAlgorithm.RSA -> EphemeralSigner.RSA(
+        is SignatureAlgorithm.RSA -> {
+            require(privateKey is RsaPrivateKey) {
+                "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"
+            }
+            EphemeralSigner.RSA(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
-            publicKey = privateKey.publicKey as CryptoPublicKey.RSA,
+            publicKey = privateKey.publicKey as RsaPublicKey,
             signatureAlgorithm = this
         )
+        }
+
+        else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
     }
 }

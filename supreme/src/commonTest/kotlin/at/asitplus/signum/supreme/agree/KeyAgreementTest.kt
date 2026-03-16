@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.agree
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.testballoon.invoke

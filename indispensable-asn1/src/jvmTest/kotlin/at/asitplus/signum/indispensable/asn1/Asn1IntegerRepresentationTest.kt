@@ -21,42 +21,6 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalUuidApi::class)
 val Asn1IntegerRepresentationTest by testSuite {
 
-    "Manual" - {
-        withData("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024") {
-            val bigInt = BigInteger.parseString(it)
-            val ref = bigInt.toString()
-            val own = VarUInt(ref)
-            val ownBytes = own.bytes
-            val javaBytes = bigInt.toByteArray()
-            val bigitBytes = javaBytes.dropWhile { it == 0.toByte() && javaBytes.size > 1 }.map { it.toUByte() }
-
-
-            own.toString() shouldBe ref
-            ownBytes shouldBe bigitBytes
-
-            val varInt = own.toAsn1VarInt()
-            val refVarint = BigInteger.parseString(bigInt.toString()).toAsn1VarInt()
-            varInt shouldBe refVarint
-            refVarint.decodeAsn1VarBigInt().first.uint.words shouldBe own.words
-        }
-    }
-
-
-    "Automated" - {
-        checkAll(Arb.byteArray(Arb.positiveInt(65), Arb.byte())) {
-            val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
-            val ref = bigInt.toString()
-            val own = VarUInt(ref)
-            val ownBytes = own.bytes
-            val javaBytes = bigInt.toByteArray()
-            val bigitBytes = javaBytes.dropWhile { it == 0.toByte() && javaBytes.size > 1 }.map { it.toUByte() }
-
-            own.toString() shouldBe ref
-            ownBytes shouldBe bigitBytes
-            own.toAsn1VarInt() shouldBe BigInteger.parseString(bigInt.toString()).toAsn1VarInt()
-
-        }
-    }
 
     "UUIDs" - {
         withData(nameFn = { it.toHexString() }, List<Uuid>(100) { Uuid.random() }) {

@@ -2,6 +2,9 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.*
 import at.asitplus.testballoon.minus
@@ -28,7 +31,7 @@ val VerifierTests by testSuite {
     Security.addProvider(BouncyCastleProvider())
 
     withDataSuites(
-        mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
+        mapOf<String, (EcdsaSignatureAlgorithm, EcPublicKey) -> Verifier.EC>(
             "BC -> PlatformVerifier" to { a, k ->
                 a.verifierFor(k) { provider = "BC" }.getOrThrow()
                     .also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
@@ -45,7 +48,7 @@ val VerifierTests by testSuite {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
-                    val publicKey = keypair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC
+                    val publicKey = keypair.public.toCryptoPublicKey().getOrThrow() as EcPublicKey
                     val data = Random.nextBytes(256)
                     val sig = Signature.getInstance("${digest.jcaAlgorithmComponent}withECDSA", "BC").run {
                         initSign(keypair.private)
@@ -55,7 +58,7 @@ val VerifierTests by testSuite {
                     keypair.public.encoded
                     Triple(publicKey, data, sig)
                 }.take(5)) { (key, data, sig) ->
-                    val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)
+                    val verifier = factory(EcdsaSignatureAlgorithm(digest, null), key)
                     verifier.verify(byteArrayOf(), sig) shouldNot succeed
                     if (digest != null) {
                         verifier.verify(data.copyOfRange(0, 128), sig) shouldNot succeed
@@ -63,7 +66,7 @@ val VerifierTests by testSuite {
                     }
                     verifier.verify(data, sig) should succeed
                     Random.of(Digest.entries.filter { it != digest }).let { dig ->
-                        catching { factory(SignatureAlgorithm.ECDSA(dig, null), key) }
+                        catching { factory(EcdsaSignatureAlgorithm(dig, null), key) }
                             .transform { it.verify(data, sig) } shouldNot succeed
                     }
                 }

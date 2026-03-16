@@ -1,10 +1,13 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.awesn1.encoding.decodeFromDer
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.PublicKey
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
@@ -34,7 +37,7 @@ val ECDSAVerifierCommonTests  by testSuite {
             "None" -> null
             else -> Digest.valueOf(test.dig)
         }
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.EC
+        val key = PublicKey.decodeFromDer(Base64.decode(test.key)) as EcPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = CryptoSignature.decodeFromDer(Base64.decode(test.sig))

@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.jcaName
+import at.asitplus.signum.indispensable.josef.algorithm.JweAlgorithm
 
 val JweAlgorithm.jcaName: String?
     get() = when (this) {

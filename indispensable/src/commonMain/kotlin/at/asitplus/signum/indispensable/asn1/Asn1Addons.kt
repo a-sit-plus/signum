@@ -1,8 +1,23 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.awesn1.Asn1Decodable
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Encodable
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1PemDecodable
+import at.asitplus.awesn1.Asn1Primitive
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.PemBlock
+import at.asitplus.awesn1.decodeRethrowing
+import at.asitplus.awesn1.runRethrowing
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.decode
+import at.asitplus.awesn1.encoding.decodeFromDer
+import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -15,6 +30,7 @@ import kotlinx.io.Source
 import kotlinx.io.readByteArray
 import kotlin.experimental.and
 import kotlin.experimental.or
+import kotlin.jvm.JvmInline
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -94,7 +110,7 @@ fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
  *
  * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
  */
-fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = Buffer().let { it.decodeAsn1VarBigInt() }
+fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = Buffer().apply { write(this@decodeAsn1VarBigInt) }.decodeAsn1VarBigInt()
 
 /**
  * Converts this UUID to a BigInteger representation
@@ -144,5 +160,42 @@ inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = A
 @Throws(Asn1Exception::class)
 fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigInteger =
     runRethrowing { fromTwosComplementByteArray(bytes) }
+
+private sealed interface PemDecoder<out T> {
+    @JvmInline
+    value class Real<out T>(val fn: (ByteArray) -> T) : PemDecoder<T>
+
+    data object Default : PemDecoder<Nothing>
+
+    companion object {
+        inline operator fun <T> invoke(noinline fn: ((ByteArray) -> T)?) = when (fn) {
+            null -> Default
+            else -> Real(fn)
+        }
+    }
+}
+
+abstract class LabelPemDecodable<A : Asn1Element, out T : Asn1Encodable<A>>
+private constructor(private val decoders: Map<String, PemDecoder<T>>) : Asn1PemDecodable<A, T> {
+
+    constructor(vararg labels: String) : this(labels.associateWith { PemDecoder.Default })
+
+    constructor(vararg decoders: Pair<String, ((ByteArray) -> T)?>) :
+        this(decoders.associate { it.first to PemDecoder(it.second) })
+
+    override fun decodeFromPem(src: PemBlock): T {
+        val decoder = decoders[src.label]
+            ?: throw IllegalArgumentException("Unknown encapsulation boundary string ${src.label}")
+        return when (decoder) {
+            PemDecoder.Default -> decodeFromDer(src.payload)
+            is PemDecoder.Real<T> -> decoder.fn(src.payload)
+        }
+    }
+
+    fun decodeFromPem(src: String): KmmResult<T> = catching {
+        val pemBlock: PemBlock = at.asitplus.awesn1.decodeFromPem(src)
+        this@LabelPemDecodable.decodeFromPem(pemBlock)
+    }
+}
 
 internal val DEFAULT_PEM_DECODER: ((ByteArray)->Nothing)? = null

@@ -2,11 +2,12 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.signature.Signature
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.DeserializationStrategy
@@ -23,7 +24,7 @@ import kotlinx.serialization.json.Json
 data class JwsSigned<out P : Any>(
     val header: JwsHeader,
     val payload: P,
-    val signature: CryptoSignature.RawByteEncodable,
+    val signature: Signature.RawByteEncodable,
     val plainSignatureInput: ByteArray,
 ) {
 
@@ -73,12 +74,8 @@ data class JwsSigned<out P : Any>(
             }
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
-                when (val alg = header.algorithm) {
-                    is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(alg.ecCurve, this)
-                    is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(this)
-                    else -> throw IllegalArgumentException("unsupported algorithm: $alg")
-                }
-
+                (header.algorithm as? JwsAlgorithm.Signature)?.decodeRawSignature(this)
+                    ?: throw IllegalArgumentException("unsupported algorithm: ${header.algorithm}")
             }
             val plainSignatureInput = (stringList[0] + "." + stringList[1]).encodeToByteArray()
             JwsSigned(header, payload, signature, plainSignatureInput)
@@ -124,4 +121,3 @@ data class JwsSigned<out P : Any>(
         ): ByteArray = prepareJwsSignatureInput(header, json.encodeToString(serializer, payload).encodeToByteArray())
     }
 }
-

@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -64,4 +65,5 @@ class SignatureInput private constructor (
 val SignatureAlgorithm.preHashedSignatureFormat: SignatureInputFormat get() = when(this) {
     is SignatureAlgorithm.RSA -> this.digest
     is SignatureAlgorithm.ECDSA -> this.digest
+    else -> throw UnsupportedCryptoException("Unsupported signature algorithm $this")
 }

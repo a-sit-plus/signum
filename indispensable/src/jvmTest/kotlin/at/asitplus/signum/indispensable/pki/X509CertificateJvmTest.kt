@@ -1,10 +1,22 @@
 package at.asitplus.signum.indispensable.pki
 
+
+import at.asitplus.awesn1.crypto.pki.AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.RelativeDistinguishedName
+import at.asitplus.awesn1.Asn1String as Awesn1String
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.key.EcPublicKey as PublicKeyEC
+import at.asitplus.signum.indispensable.signature.Signature
+import at.asitplus.signum.indispensable.signature.EcSignature.IndefiniteLength as SignatureECIndefiniteLength
+import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toJcaCertificate
+import at.asitplus.signum.indispensable.toKmpCertificate
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -56,7 +68,7 @@ val X509CertificateJvmTest by testSuite {
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
-        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm.encoded)
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
@@ -92,7 +104,7 @@ val X509CertificateJvmTest by testSuite {
                 issuerName = listOf(
                     RelativeDistinguishedName(
                         AttributeTypeAndValue.CommonName(
-                            Asn1String.UTF8(
+                            Awesn1String.UTF8(
                                 commonName
                             )
                         )
@@ -104,7 +116,7 @@ val X509CertificateJvmTest by testSuite {
                 subjectName = listOf(
                     RelativeDistinguishedName(
                         AttributeTypeAndValue.CommonName(
-                            Asn1String.UTF8(
+                            Awesn1String.UTF8(
                                 commonName
                             )
                         )
@@ -116,7 +128,7 @@ val X509CertificateJvmTest by testSuite {
                 initSign(keyPair.private)
                 update(tbsCertificate.encodeToTlv().derEncoded)
             }.sign()
-            val test = CryptoSignature.decodeFromDer(signed)
+            val test = Signature.decodeFromDer(signed)
             val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
             val kotlinEncoded = x509Certificate.encodeToDer()
             val jvmEncoded = certificateHolder.encoded
@@ -153,18 +165,18 @@ val X509CertificateJvmTest by testSuite {
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
             validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
+        val test = Signature.decodeFromDer(signed)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         repeat(500) {
@@ -217,7 +229,7 @@ val X509CertificateJvmTest by testSuite {
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
         val parsedPublicKey = x509Certificate.tbsCertificate.decodedPublicKey.getOrThrow()
-        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        parsedPublicKey.shouldBeInstanceOf<PublicKeyEC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
     }
@@ -248,53 +260,53 @@ val X509CertificateJvmTest by testSuite {
         val tbsCertificate1 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate2 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate3 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm512,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate4 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("DefaultCryptoService1")))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8("DefaultCryptoService1")))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate5 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = Asn1Time(Date.from(Instant.now().plusSeconds(1)).toInstant().toKotlinInstant()),
             validUntil = Asn1Time(
                 Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds)).toInstant().toKotlinInstant()
             ),
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
 
@@ -327,11 +339,11 @@ val X509CertificateJvmTest by testSuite {
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()
         val signature1 =
-            (CryptoSignature.decodeFromDer(signed1) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (Signature.decodeFromDer(signed1) as SignatureECIndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature2 =
-            (CryptoSignature.decodeFromDer(signed2) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (Signature.decodeFromDer(signed2) as SignatureECIndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature3 =
-            (CryptoSignature.decodeFromDer(signed3) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
+            (Signature.decodeFromDer(signed3) as SignatureECIndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
         val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
         val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
         val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)
@@ -398,17 +410,17 @@ val X509CertificateJvmTest by testSuite {
         val tbsCertificate6 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Awesn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey,
             extensions = listOf(ext1)
         )
 
         tbsCertificate6 shouldBe tbsCertificate6
-        tbsCertificate1 shouldNotBe tbsCertificate6
+        (tbsCertificate1 != tbsCertificate6) shouldBe true
 
         tbsCertificate6.hashCode() shouldBe tbsCertificate6.hashCode()
         tbsCertificate1.hashCode() shouldNotBe tbsCertificate6.hashCode()

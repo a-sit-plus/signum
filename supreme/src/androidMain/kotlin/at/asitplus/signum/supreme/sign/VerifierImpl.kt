@@ -1,16 +1,20 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
-import java.security.Signature
+import at.asitplus.signum.indispensable.EcdsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.RsaSignatureAlgorithm
+import at.asitplus.signum.indispensable.key.EcPublicKey
+import at.asitplus.signum.indispensable.key.RsaPublicKey
+import at.asitplus.signum.indispensable.signature.EcSignature
+import at.asitplus.signum.indispensable.signature.RsaSignature
 
 /**
  * Configures JVM-specific properties.
@@ -23,13 +27,13 @@ actual class PlatformVerifierConfiguration internal actual constructor() : DSL.D
 
 private fun getSigInstance(alg: String, p: String?) =
     when (p) {
-        null -> Signature.getInstance(alg)
-        else -> Signature.getInstance(alg, p)
+        null -> java.security.Signature.getInstance(alg)
+        else -> java.security.Signature.getInstance(alg, p)
     }
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+            (signatureAlgorithm: EcdsaSignatureAlgorithm, publicKey: EcPublicKey,
              config: PlatformVerifierConfiguration)
 {
     catchingUnwrappedAs(a=::UnsupportedCryptoException) {
@@ -40,8 +44,8 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 
 @JvmSynthetic
 internal actual fun verifyECDSAImpl
-    (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-     data: SignatureInput, signature: CryptoSignature.EC,
+    (signatureAlgorithm: EcdsaSignatureAlgorithm, publicKey: EcPublicKey,
+     data: SignatureInput, signature: EcSignature,
      config: PlatformVerifierConfiguration)
 {
     val (input, alg) = when {
@@ -59,15 +63,12 @@ internal actual fun verifyECDSAImpl
     }
 }
 
-private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
-    getSigInstance(when (alg.padding) {
-        RSAPadding.PKCS1 -> "${alg.digest.jcaAlgorithmComponent}withRSA"
-        RSAPadding.PSS -> "${alg.digest.jcaAlgorithmComponent}withRSA/PSS"
-    }, config.provider)
+private fun getRSAInstance(alg: RsaSignatureAlgorithm, config: PlatformVerifierConfiguration) =
+    alg.getJCASignatureInstance(config.provider).getOrThrow()
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
+            (signatureAlgorithm: RsaSignatureAlgorithm, publicKey: RsaPublicKey,
              config: PlatformVerifierConfiguration)
 {
     catchingUnwrappedAs(a=::UnsupportedCryptoException) {
@@ -78,8 +79,8 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 
 @JvmSynthetic
 internal actual fun verifyRSAImpl
-    (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-     data: SignatureInput, signature: CryptoSignature.RSA,
+    (signatureAlgorithm: RsaSignatureAlgorithm, publicKey: RsaPublicKey,
+     data: SignatureInput, signature: RsaSignature,
      config: PlatformVerifierConfiguration)
 {
     getRSAInstance(signatureAlgorithm, config).run {

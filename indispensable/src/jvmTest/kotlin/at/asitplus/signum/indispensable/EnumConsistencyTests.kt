@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestSuite
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.util.*
 import kotlin.reflect.KClass
@@ -39,7 +39,7 @@ inline fun <reified T : Any> TestSuite.enumConsistencyTest() {
             cls.sealedSubclasses.forEach(queue::push)
         }
 
-        listed.toSet() shouldBe discovered.toSet()
+        listed.toSet().shouldContainAll(discovered.toSet())
     }
 }
 

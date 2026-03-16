@@ -1,9 +1,11 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm
+import at.asitplus.signum.indispensable.Signature as CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.signature.RsaSignature
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -31,10 +33,10 @@ val CoseSerializationTest by testSuite {
         val payload = ByteStringWrapper("StringType")
         shouldThrow<IllegalArgumentException> {
             CoseSigned.create(
-                protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256),
+                protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.ES256),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSA(byteArrayOf()),
+                signature = RsaSignature(byteArrayOf()),
                 payloadSerializer = ByteStringWrapper.serializer(String.serializer())
             )
         }
@@ -44,7 +46,7 @@ val CoseSerializationTest by testSuite {
         val payload = ByteStringWrapper("StringType")
         shouldThrow<IllegalArgumentException> {
             CoseMac.create(
-                protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
+                protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256),
                 unprotectedHeader = null,
                 payload = payload,
                 tag = byteArrayOf(),
@@ -56,10 +58,10 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct with JSON CoseSigned" {
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         )
 
@@ -69,7 +71,7 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct with JSON CoseMac" {
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseMac.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256),
             unprotectedHeader = null,
             payload = payload,
             tag = byteArrayOf(),
@@ -82,10 +84,10 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct with JSON for data class CoseSigned" {
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         )
 
@@ -95,7 +97,7 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct with JSON for data class CoseMac" {
         val payload = DataClass("This is the content.")
         val cose = CoseMac.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256),
             unprotectedHeader = null,
             payload = payload,
             tag = byteArrayOf(),
@@ -108,10 +110,10 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct for byte array CoseSigned" {
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = RsaSignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -127,7 +129,7 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct for byte array with CoseMac" {
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseMac.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256),
             unprotectedHeader = null,
             payload = payload,
             tag = byteArrayOf(),
@@ -146,10 +148,10 @@ val CoseSerializationTest by testSuite {
 
     "Serialization is correct for null CoseSigned" {
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = null,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = RsaSignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -164,7 +166,7 @@ val CoseSerializationTest by testSuite {
 
     "Serialization is correct for null CoseMac" {
         val cose = CoseMac.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256),
             unprotectedHeader = null,
             payload = null,
             tag = byteArrayOf(),
@@ -231,10 +233,10 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct for data class CoseSigned" {
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = RsaSignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = DataClass.serializer(),
         )
         val serialized = cose.serialize(DataClass.serializer())
@@ -250,7 +252,7 @@ val CoseSerializationTest by testSuite {
     "Serialization is correct for data class CoseMac" {
         val payload = DataClass("This is the content.")
         val cose = CoseMac.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
+            protectedHeader = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256),
             unprotectedHeader = null,
             payload = payload,
             tag = byteArrayOf(),
@@ -305,7 +307,7 @@ val CoseSerializationTest by testSuite {
     }
 
     "Serialize header" {
-        val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256, kid = "11".encodeToByteArray())
+        val header = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.ES256, kid = "11".encodeToByteArray())
 
         val deserialized = coseCompliantSerializer.decodeFromByteArray<CoseHeader>(
             coseCompliantSerializer.encodeToByteArray(header)
@@ -329,7 +331,7 @@ val CoseSerializationTest by testSuite {
 
     "CoseInput is correct for ByteArray" {
         val payload = Random.nextBytes(32)
-        var header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
+        var header = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.ES256)
         val inputManualSignature = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "Signature1",
@@ -342,7 +344,7 @@ val CoseSerializationTest by testSuite {
         val inputObjectSignature = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
@@ -350,7 +352,7 @@ val CoseSerializationTest by testSuite {
         inputManualSignature.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
         inputObjectSignature shouldBe inputManualSignature
 
-        header = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256)
+        header = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.MAC.HS256)
         val inputManualMac = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "MAC0",
@@ -374,7 +376,7 @@ val CoseSerializationTest by testSuite {
 
     "CoseInput is correct for custom types" {
         val payload = DataClass(Random.nextBytes(32).encodeToString(Base16Strict))
-        var header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
+        var header = CoseHeader(algorithm = at.asitplus.signum.indispensable.cosef.algorithm.CoseAlgorithm.Signature.ES256)
         val inputManualSignature = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "Signature1",
@@ -387,7 +389,7 @@ val CoseSerializationTest by testSuite {
         val inputObjectSignature = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())

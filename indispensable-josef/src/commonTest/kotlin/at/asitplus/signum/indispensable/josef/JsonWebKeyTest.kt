@@ -1,9 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey as CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.algorithm.JwsAlgorithm
+import at.asitplus.signum.indispensable.key.RsaPublicKey
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withFixtureGenerator
 import de.infix.testBalloon.framework.core.testSuite
@@ -77,7 +79,7 @@ val JsonWebKeyTest by testSuite {
         }
 
         ("RSA Key should properly encode n and e (RFC 7518 sample)") {
-            val key = CryptoPublicKey.RSA(
+            val key = RsaPublicKey(
                 n = Asn1Integer.fromUnsignedByteArray(("80".repeat(256)).hexToByteArray()), // high bit is set
                 e = Asn1Integer(65537u) // explicit example from RFC7518 6.3.1.2
             ).toJsonWebKey()

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.Asn1String
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe

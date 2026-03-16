@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.misc
 
-import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ec.ECCurve
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 

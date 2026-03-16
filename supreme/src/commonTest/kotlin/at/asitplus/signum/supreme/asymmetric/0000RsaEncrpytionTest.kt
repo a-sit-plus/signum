@@ -1,11 +1,18 @@
 package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey as CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.indispensable.asymmetric.NoRsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.OaepRsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.Pkcs1RsaEncryptionPadding
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RsaEncryptionPadding
+import at.asitplus.signum.indispensable.encodeToPEM
+import at.asitplus.signum.indispensable.key.RsaPrivateKey
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
@@ -23,14 +30,14 @@ import kotlinx.serialization.json.Json
 val RsaEncryptionTest  by testSuite {
     "From OpenSSL" - {
         withData(nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }, testData) {
-            it.key as CryptoPrivateKey.RSA
-            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
+            it.key as RsaPrivateKey
+            RsaEncryptionAlgorithm(it.padding).decryptorFor(it.key).decrypt(it.enc)
                 .getOrThrow() shouldBe it.plain
             val newEncrypted =
-                AsymmetricEncryptionAlgorithm.RSA(it.padding).encryptorFor(it.key.publicKey).encrypt(it.plain)
+                RsaEncryptionAlgorithm(it.padding).encryptorFor(it.key.publicKey).encrypt(it.plain)
                     .getOrThrow()
 
-            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(newEncrypted)
+            RsaEncryptionAlgorithm(it.padding).decryptorFor(it.key).decrypt(newEncrypted)
                 .getOrThrow() shouldBe it.plain
         }
     }
@@ -63,12 +70,23 @@ class RsaTestData(
                 CryptoPrivateKey.decodeFromPem(decoder.decodeString()).getOrThrow()
         }
 
+        @OptIn(HazardousMaterials::class)
         object PaddingSerializer : KSerializer<RSAPadding> {
             override val descriptor: SerialDescriptor =
                 PrimitiveSerialDescriptor("Padding", PrimitiveKind.STRING)
 
             override fun deserialize(decoder: Decoder) =
-                decoder.decodeString().let { decoded -> RSAPadding.entries.first { it.toString() == decoded } }
+                decoder.decodeString().let { decoded ->
+                    when (decoded) {
+                        "PKCS1" -> Pkcs1RsaEncryptionPadding
+                        "NONE" -> NoRsaEncryptionPadding
+                        "OAEP_SHA1" -> OaepRsaEncryptionPadding.Sha1
+                        "OAEP_SHA256" -> OaepRsaEncryptionPadding.Sha256
+                        "OAEP_SHA384" -> OaepRsaEncryptionPadding.Sha384
+                        "OAEP_SHA512" -> OaepRsaEncryptionPadding.Sha512
+                        else -> throw IllegalArgumentException("Unsupported RSA encryption padding $decoded")
+                    }
+                }
 
             override fun serialize(
                 encoder: Encoder,

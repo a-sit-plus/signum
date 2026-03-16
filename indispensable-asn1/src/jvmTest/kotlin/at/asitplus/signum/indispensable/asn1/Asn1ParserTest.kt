@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1OctetString
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
 import at.asitplus.testballoon.invoke

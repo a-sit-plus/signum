@@ -34,7 +34,7 @@ val SymmetricEncryptionTest by testSuite {
                 key.macKey.getOrThrow().size shouldBe key.algorithm.preferredMacKeyLength.bytes.toInt()
             }
 
-            else -> error("unreachable")
+            else -> throw UnsupportedCryptoException("Unsupported public key algorithm $this")
         }
     }
 }

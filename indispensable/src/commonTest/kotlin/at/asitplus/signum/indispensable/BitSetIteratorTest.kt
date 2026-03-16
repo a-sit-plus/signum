@@ -15,7 +15,7 @@ val BitSetIteratorTest  by testSuite {
     "simple test" {
         var remaining = 1
         BitSet(1).apply {
-            set(0)
+            set(0, true)
         }.forEach { _ ->
             remaining -= 1
         }
