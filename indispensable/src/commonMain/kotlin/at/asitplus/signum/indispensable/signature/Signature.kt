@@ -69,7 +69,7 @@ interface Signature : Awesn1Backed<SignatureValue<Asn1Element>, Asn1Element, Sig
         parent = serializer<SignatureValue<Asn1Element>>(),
         encodeAs = {
             it.raw as? SignatureValue
-                ?: throw IllegalArgumentException("Unsupported raw signature type ${it.raw::class.qualifiedName}")
+                ?: throw IllegalArgumentException("Unsupported raw signature type ${it.raw::class.simpleName}")
         },
         decodeAs = Signature::fromRaw,
         serialName = "Signature",
@@ -79,7 +79,7 @@ interface Signature : Awesn1Backed<SignatureValue<Asn1Element>, Asn1Element, Sig
         fun fromRaw(raw: SignatureValue<Asn1Element>): Signature = when (raw) {
             is EcdsaSignatureValue -> EcSignature.IndefiniteLength(raw)
             is BitStringSignatureValue -> RsaSignature(raw)
-            else -> throw IllegalArgumentException("Unsupported raw signature type ${raw::class.qualifiedName}")
+            else -> throw IllegalArgumentException("Unsupported raw signature type ${raw::class.simpleName}")
         }
 
         @Throws(Asn1Exception::class)
