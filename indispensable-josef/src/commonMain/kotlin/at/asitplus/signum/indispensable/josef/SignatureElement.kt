@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -35,6 +36,8 @@ data class SignatureElement(
 ) {
     @Transient
     val jwsHeader: JwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    @Transient
+    val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
