@@ -22,9 +22,16 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.time.Instant
 
 /**
- * Header of a [JwsSigned].
+ * Effective JWS header after combining protected and unprotected header members.
  *
- * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
+ * [JwsCompact] carries this header entirely in the protected section. [JwsFlattened], [JwsGeneral], and
+ * [SignatureElement] represent the protected and unprotected fragments as [Part] and reconstruct the effective
+ * header with [fromParts].
+ *
+ * Individual fragments may be incomplete. Only the combination of protected and unprotected parameters must
+ * constitute a valid [JwsHeader].
+ *
+ * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515).
  */
 @Serializable
 data class JwsHeader(
@@ -245,9 +252,10 @@ data class JwsHeader(
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     /**
-     * Typed representation of a protected or unprotected JWS header fragment.
+     * Typed representation of either the protected or unprotected JWS header fragment.
      *
-     * Individual fragments may be incomplete. Only [fromParts] guarantees a valid [JwsHeader].
+     * A [Part] may be incomplete and does not have to be a valid [JwsHeader] on its own. Only the merged protected
+     * plus unprotected representation must decode to a valid [JwsHeader].
      */
     @Serializable
     data class Part(
@@ -423,6 +431,11 @@ data class JwsHeader(
     }
 
     companion object {
+        /**
+         * Merges protected and unprotected header fragments into the effective [JwsHeader].
+         *
+         * Either fragment may be partial, but their combined content must form a valid header.
+         */
         fun fromParts(
             protectedHeader: Part? = null,
             unprotectedHeader: Part? = null,
@@ -431,6 +444,11 @@ data class JwsHeader(
             unprotectedHeader = unprotectedHeader?.toJsonObject(),
         )
 
+        /**
+         * Decodes the protected fragment and merges it with the optional unprotected fragment.
+         *
+         * This is the form used when reading serialized JWS values such as [JwsCompact] or [JwsFlattened].
+         */
         fun fromParts(
             protectedHeader: ByteArray? = null,
             unprotectedHeader: Part? = null,
@@ -455,6 +473,12 @@ data class JwsHeader(
     }
 }
 
+/**
+ * Converts the effective header into a single [JwsHeader.Part].
+ *
+ * Use this when one fragment should represent the whole header, for example the protected header in [JwsCompact].
+ * When protected and unprotected members differ, construct the two [JwsHeader.Part] values explicitly.
+ */
 fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
     keyId = keyId,
     type = type,
