@@ -247,10 +247,6 @@ data class JwsHeader(
     @SerialName("vctm")
     val vcTypeMetadata: Set<String>? = null,
 ) {
-
-    @Deprecated("To be removed in next release")
-    fun serialize() = joseCompliantSerializer.encodeToString(this)
-
     /**
      * Typed representation of either the protected or unprotected JWS header fragment.
      *
