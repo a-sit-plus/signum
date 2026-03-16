@@ -463,13 +463,6 @@ data class JwsHeader(
         ): JwsHeader = joseCompliantSerializer.decodeFromJsonElement<JwsHeader>(
             protectedHeader.strictUnion(unprotectedHeader)
         )
-
-        // TODO usages!
-        @Deprecated("To be removed in next release")
-        fun deserialize(it: String) = catching {
-            joseCompliantSerializer.decodeFromString<JwsHeader>(it)
-        }
-
     }
 }
 
