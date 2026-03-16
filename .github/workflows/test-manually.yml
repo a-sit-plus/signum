@@ -30,7 +30,7 @@ on:
 
 jobs:
   test-manually:
-    uses: a-sit-plus/internal-workflows/.github/workflows/test-manually.yml@feature/modularTests
+    uses: a-sit-plus/internal-workflows/.github/workflows/test-manually.yml@v2
     with:
       override-cache: ${{ inputs.override-cache }}
       matrix-path: ${{ inputs.matrix-path }}

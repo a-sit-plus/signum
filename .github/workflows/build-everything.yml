@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-everything:
-    uses: a-sit-plus/internal-workflows/.github/workflows/build-everything.yml@feature/modularTests
+    uses: a-sit-plus/internal-workflows/.github/workflows/build-everything.yml@v2
     with:
       matrix-file-name: ".github/config/build-strategy-matrix.json"
       kotlin-version: ${{ inputs.kotlin-version }}
