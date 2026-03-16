@@ -6,7 +6,16 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
-
+/**
+ * Flattened JSON JWS serialization.
+ *
+ * A flattened JWS carries one payload and one signature. The protected header is stored as encoded bytes in
+ * [plainProtectedHeader]; the optional unprotected header is represented as [JwsHeader.Part]. The effective
+ * [jwsHeader] is reconstructed by merging both fragments with [JwsHeader.fromParts].
+ *
+ * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
+ * constitute a valid [JwsHeader].
+ */
 @Serializable
 data class JwsFlattened(
     @Serializable(ByteArrayBase64UrlSerializer::class)
@@ -54,6 +63,11 @@ data class JwsFlattened(
     }
 
     companion object {
+        /**
+         * Creates a flattened JWS from protected and unprotected header fragments.
+         *
+         * The fragments may be partial, but their merged content must form a valid [JwsHeader].
+         */
         operator fun invoke(
             protectedHeader: JwsHeader.Part?,
             unprotectedHeader: JwsHeader.Part?,
@@ -72,6 +86,12 @@ data class JwsFlattened(
     }
 }
 
+/**
+ * Converts flattened JSON serialization to compact serialization.
+ *
+ * This requires the absence of an unprotected header, because compact JWS can only carry protected parameters.
+ * The protected fragment must therefore represent a valid [JwsHeader] by itself.
+ */
 fun JwsFlattened.toJwsCompact(): JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
@@ -83,6 +103,9 @@ fun JwsFlattened.toJwsCompact(): JwsCompact {
     )
 }
 
+/**
+ * Converts multiple flattened JWS values with the same payload into general JSON JWS representation.
+ */
 fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
     require(isNotEmpty()) { "General JWS requires at least one signature" }
     val payload = this[0].payload
