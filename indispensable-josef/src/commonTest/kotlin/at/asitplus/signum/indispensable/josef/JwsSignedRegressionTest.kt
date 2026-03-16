@@ -55,10 +55,10 @@ val JwsSignedRegressionTest by testSuite {
         regressionCase.legacy.signature shouldBe regressionCase.compact.signature
         regressionCase.legacy.plainSignatureInput shouldBe regressionCase.compact.signatureInput
 
-        val compactJson = joseCompliantSerializer.encodeToString(JwsCompact.serializer(), regressionCase.compact)
+        val compactJson = joseCompliantSerializer.encodeToString(JwsCompactStringSerializer, regressionCase.compact)
 
         compactJson.removeSurrounding("\"") shouldBe regressionCase.legacy.serialize()
-        joseCompliantSerializer.decodeFromString(JwsCompact.serializer(), compactJson) shouldBe regressionCase.compact
+        joseCompliantSerializer.decodeFromString(JwsCompactStringSerializer, compactJson) shouldBe regressionCase.compact
         JwsSigned.deserialize(regressionCase.legacy.serialize()).getOrThrow() shouldBe regressionCase.legacy
     }
 

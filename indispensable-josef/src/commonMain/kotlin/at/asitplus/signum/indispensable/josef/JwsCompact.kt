@@ -1,11 +1,9 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -22,18 +20,15 @@ import kotlinx.serialization.encoding.Encoder
  *
  * This class does not support an unprotected header field!
  *
- * When [JwsCompact] is serialized through a JSON format, the compact representation becomes a JSON string literal.
- * That is correct for nested usage inside a larger JSON document, but the surrounding JSON text contains quotes.
+ * [JwsCompact] is intentionally *not* annotated with `@Serializable`: its JSON representation is only the compact
+ * JWS string, not a JSON object. Use [JwsCompactStringSerializer] explicitly when you want that string form inside
+ * a JSON document.
  *
- * For a standalone compact JWS string, use [toString] and [JwsCompact.invoke]
+ * For a standalone compact JWS string, use [toString] and [JwsCompact.invoke].
  */
-@Serializable(with = JwsCompact.JwsCompactSerializer::class)
 data class JwsCompact(
-    @Serializable(ByteArrayBase64UrlSerializer::class)
     val plainProtectedHeader: ByteArray,
-    @Serializable(ByteArrayBase64UrlSerializer::class)
     override val payload: ByteArray,
-    @Serializable(ByteArrayBase64UrlSerializer::class)
     val plainSignature: ByteArray,
 ) : JWS() {
 
@@ -67,17 +62,6 @@ data class JwsCompact(
         result = 31 * result + payload.contentHashCode()
         result = 31 * result + plainSignature.contentHashCode()
         return result
-    }
-
-    object JwsCompactSerializer : KSerializer<JwsCompact> {
-        override val descriptor: SerialDescriptor =
-            PrimitiveSerialDescriptor("JwsCompact", PrimitiveKind.STRING)
-
-        override fun serialize(encoder: Encoder, value: JwsCompact) =
-            encoder.encodeString(value.toString())
-
-        override fun deserialize(decoder: Decoder): JwsCompact =
-            JwsCompact(decoder.decodeString())
     }
 
     companion object {
@@ -116,6 +100,22 @@ data class JwsCompact(
             )
         }
     }
+}
+
+/**
+ * Serializes a [JwsCompact] as its compact JWS string form inside JSON.
+ *
+ * This serializer must be opted into explicitly to avoid accidentally treating [JwsCompact] as a JSON object.
+ */
+object JwsCompactStringSerializer : KSerializer<JwsCompact> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("JwsCompact", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: JwsCompact) =
+        encoder.encodeString(value.toString())
+
+    override fun deserialize(decoder: Decoder): JwsCompact =
+        JwsCompact(decoder.decodeString())
 }
 
 fun JwsCompact.toJwsFlattened(): JwsFlattened = JwsFlattened(
