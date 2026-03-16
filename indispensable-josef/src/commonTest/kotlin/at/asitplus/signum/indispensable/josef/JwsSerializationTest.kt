@@ -1,10 +1,13 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.core.TestCompartment
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
@@ -204,14 +207,14 @@ val JwsSerializerTest by testSuite {
         val appendMismatchResult = runCatching { JwsGeneral(listOf(first)).appendSignature(second) }
 
         emptyResult.isSuccess shouldBe false
-        emptyResult.exceptionOrNull() shouldBe IllegalArgumentException("General JWS requires at least one signature")
+        emptyResult.shouldBeFailure() shouldBe IllegalArgumentException("General JWS requires at least one signature")
 
         listMismatchResult.isSuccess shouldBe false
-        listMismatchResult.exceptionOrNull() shouldBe
+        listMismatchResult.shouldBeFailure() shouldBe
                 IllegalArgumentException("Additional signed JWS payload must match existing payload")
 
         appendMismatchResult.isSuccess shouldBe false
-        appendMismatchResult.exceptionOrNull() shouldBe
+        appendMismatchResult.shouldBeFailure() shouldBe
                 IllegalArgumentException("Additional signed JWS payload must match existing payload")
     }
 
@@ -229,16 +232,16 @@ val JwsSerializerTest by testSuite {
         val invalidBase64Result = runCatching { JwsCompact("!!.e30.AQ") }
 
         missingHeaderResult.isSuccess shouldBe false
-        missingHeaderResult.exceptionOrNull().shouldBeInstanceOf<IllegalArgumentException>()
+        missingHeaderResult.shouldBeFailure().shouldBeInstanceOf<IllegalArgumentException>()
 
         missingPartResult.isSuccess shouldBe false
-        missingPartResult.exceptionOrNull()?.message?.shouldContain("expected 3 parts, got 2")
+        missingPartResult.shouldBeFailure().message.shouldContain("expected 3 parts, got 2")
 
         extraPartResult.isSuccess shouldBe false
-        extraPartResult.exceptionOrNull()?.message?.shouldContain("expected 3 parts, got 4")
+        extraPartResult.shouldBeFailure().message.shouldContain("expected 3 parts, got 4")
 
         invalidBase64Result.isSuccess shouldBe false
-        invalidBase64Result.exceptionOrNull()?.message?.shouldContain("Invalid base64url content")
+        invalidBase64Result.shouldBeFailure().message.shouldContain("Invalid base64url content")
     }
 
     "raw-signature decoding rejects MAC algorithms" {
@@ -247,7 +250,7 @@ val JwsSerializerTest by testSuite {
         }
 
         result.isSuccess shouldBe false
-        result.exceptionOrNull()?.message?.shouldContain("Unsupported algorithm")
+        result.shouldBeFailure().message.shouldContain("Unsupported algorithm")
     }
 
     "signature and general equality include unprotected headers" {
@@ -321,13 +324,13 @@ val JwsSerializerTest by testSuite {
         }
 
         ambiguousResult.isSuccess shouldBe false
-        ambiguousResult.exceptionOrNull()?.message?.shouldContain("must not contain both")
+        ambiguousResult.shouldBeFailure().message.shouldContain("must not contain both")
 
         incompleteResult.isSuccess shouldBe false
-        incompleteResult.exceptionOrNull()?.message?.shouldContain("must contain 'signature' or 'signatures'")
+        incompleteResult.shouldBeFailure().message.shouldContain("must contain 'signature' or 'signatures'")
 
         arrayResult.isSuccess shouldBe false
-        arrayResult.exceptionOrNull()?.message?.shouldContain("expected a compact string or JSON object")
+        arrayResult.shouldBeFailure().message.shouldContain("expected a compact string or JSON object")
     }
 }
 
