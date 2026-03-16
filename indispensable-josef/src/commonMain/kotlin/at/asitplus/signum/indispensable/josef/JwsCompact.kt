@@ -68,6 +68,7 @@ data class JwsCompact(
         operator fun invoke(
             base64UrlString: String,
         ): JwsCompact {
+            require(!base64UrlString.contains("=")) { "Trailing = are not supported. See RFC 7515" }
             val parts = base64UrlString.split('.')
 
             if (parts.size != 3) {

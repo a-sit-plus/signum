@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -38,7 +37,7 @@ private val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonO
 private val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD]!!.jsonPrimitive.content
 private val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES]!!.jsonArray
 
-val JwsSerializerTest by testSuite {
+val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential }) {
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
 
@@ -150,6 +149,77 @@ val JwsSerializerTest by testSuite {
         val jsonString = joseCompliantSerializer.encodeToString(JwsCompactStringSerializer, compact)
             .removeSurrounding("\"")
         compactPattern.matches(jsonString) shouldBe true
+    }
+
+    "compact JWS rejects padded base64url segments" {
+        val canonical = JwsCompact.invoke(
+            protectedHeader = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                keyId = "kid-1",
+            ),
+            payload = "x".encodeToByteArray(),
+        ) { _, _ ->
+            byteArrayOf(1, 2, 3, 4)
+        }.toString()
+        val (protectedSegment, payloadSegment, signatureSegment) = canonical.split('.')
+        val nonCanonical = buildString {
+            append(protectedSegment)
+            append('.')
+            append(payloadSegment.toPaddedBase64UrlVariant())
+            append('.')
+            append(signatureSegment.toPaddedBase64UrlVariant())
+        }
+
+        nonCanonical shouldNotBe canonical
+
+        val result = runCatching { JwsCompact(nonCanonical) }
+
+        result.isSuccess shouldBe false
+        result.shouldBeFailure().message.shouldContain("Trailing = are not supported")
+    }
+
+    "flattened JSON JWS rejects padded base64url members" {
+        val paddedProtectedHeaderResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsFlattened>(
+                flattenedJson(protectedHeaderBase64 = "eyJhbGciOiJSUzI1NiJ9".toPaddedBase64UrlVariant())
+            )
+        }
+        val paddedPayloadResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsFlattened>(
+                flattenedJson(payloadBase64 = "e30".toPaddedBase64UrlVariant())
+            )
+        }
+        val paddedSignatureResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsFlattened>(
+                flattenedJson(signatureBase64 = "AQ".toPaddedBase64UrlVariant())
+            )
+        }
+
+        paddedProtectedHeaderResult.shouldBeRejectedPaddedBase64Url()
+        paddedPayloadResult.shouldBeRejectedPaddedBase64Url()
+        paddedSignatureResult.shouldBeRejectedPaddedBase64Url()
+    }
+
+    "general JSON JWS rejects padded base64url members" {
+        val paddedPayloadResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(
+                generalJson(payloadBase64 = "e30".toPaddedBase64UrlVariant())
+            )
+        }
+        val paddedProtectedHeaderResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(
+                generalJson(protectedHeaderBase64 = "eyJhbGciOiJSUzI1NiJ9".toPaddedBase64UrlVariant())
+            )
+        }
+        val paddedSignatureResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(
+                generalJson(signatureBase64 = "AQ".toPaddedBase64UrlVariant())
+            )
+        }
+
+        paddedPayloadResult.shouldBeRejectedPaddedBase64Url()
+        paddedProtectedHeaderResult.shouldBeRejectedPaddedBase64Url()
+        paddedSignatureResult.shouldBeRejectedPaddedBase64Url()
     }
 
     "general to flattened to compact preserves each single-signature view" {
@@ -341,6 +411,22 @@ private fun compactSerializationAt(index: Int): String {
     return "$protectedHeaderBase64.$generalVectorPayload.$signatureBase64"
 }
 
+private fun flattenedJson(
+    protectedHeaderBase64: String = "eyJhbGciOiJSUzI1NiJ9",
+    payloadBase64: String = "e30",
+    signatureBase64: String = "AQ",
+): String = """
+    {"protected":"$protectedHeaderBase64","payload":"$payloadBase64","signature":"$signatureBase64"}
+""".trimIndent()
+
+private fun generalJson(
+    protectedHeaderBase64: String = "eyJhbGciOiJSUzI1NiJ9",
+    payloadBase64: String = "e30",
+    signatureBase64: String = "AQ",
+): String = """
+    {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"}]}
+""".trimIndent()
+
 private fun flattenedSample(
     protectedHeader: JwsHeader.Part,
     payload: ByteArray,
@@ -352,3 +438,16 @@ private fun flattenedSample(
     payload = payload,
     plainSignature = plainSignature,
 )
+
+private fun String.toPaddedBase64UrlVariant(): String = when (length % 2) {
+    1 -> "${this}=="
+    else -> "${this}="
+}
+
+private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
+    isSuccess shouldBe false
+    val failure = shouldBeFailure()
+    failure.message.orEmpty().shouldContain("Decoding failed")
+    failure.cause shouldNotBe null
+    failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
+}
