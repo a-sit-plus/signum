@@ -42,6 +42,12 @@ sealed class JWS {
         const val SIGNATURE = "signature"
         const val SIGNATURES = "signatures"
         const val PAYLOAD = "payload"
+
+        /* Shapes */
+        const val COMPACT = "compact"
+        const val FLATTENED = "flattened"
+        const val GENERAL = "general"
+
     }
 
     companion object {
@@ -62,9 +68,9 @@ sealed class JWS {
     object JwsSerializer: KSerializer<JWS> {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
-            element("compact", JwsCompactStringSerializer.descriptor)
-            element("flattened", JwsFlattened.serializer().descriptor)
-            element("general", JwsGeneral.serializer().descriptor)
+            element(SerialNames.COMPACT, JwsCompactStringSerializer.descriptor)
+            element(SerialNames.FLATTENED, JwsFlattened.serializer().descriptor)
+            element(SerialNames.GENERAL, JwsGeneral.serializer().descriptor)
         }
 
         override fun serialize(
