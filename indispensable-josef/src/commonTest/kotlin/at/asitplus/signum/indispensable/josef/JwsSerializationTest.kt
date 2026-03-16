@@ -12,6 +12,8 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -365,15 +367,20 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         )
         val generalValue = listOf(flattenedValue).toJwsGeneral()
 
-        val compactDecoded = joseCompliantSerializer.decodeFromString<JWS>(
-            joseCompliantSerializer.encodeToString(JWS.serializer(), compactValue)
-        ).shouldBeInstanceOf<JwsCompact>()
-        val flattenedDecoded = joseCompliantSerializer.decodeFromString<JWS>(
-            joseCompliantSerializer.encodeToString(JWS.serializer(), flattenedValue)
-        ).shouldBeInstanceOf<JwsFlattened>()
-        val generalDecoded = joseCompliantSerializer.decodeFromString<JWS>(
-            joseCompliantSerializer.encodeToString(JWS.serializer(), generalValue)
-        ).shouldBeInstanceOf<JwsGeneral>()
+        val compactSerialized = joseCompliantSerializer.encodeToString(JWS.serializer(), compactValue)
+        val flattenedSerialized = joseCompliantSerializer.encodeToString(JWS.serializer(), flattenedValue)
+        val generalSerialized = joseCompliantSerializer.encodeToString(JWS.serializer(), generalValue)
+
+        joseCompliantSerializer.decodeFromString<JsonElement>(compactSerialized).shouldNotContainKey("type")
+        joseCompliantSerializer.decodeFromString<JsonElement>(flattenedSerialized).shouldNotContainKey("type")
+        joseCompliantSerializer.decodeFromString<JsonElement>(generalSerialized).shouldNotContainKey("type")
+
+        val compactDecoded = joseCompliantSerializer.decodeFromString<JWS>(compactSerialized)
+            .shouldBeInstanceOf<JwsCompact>()
+        val flattenedDecoded = joseCompliantSerializer.decodeFromString<JWS>(flattenedSerialized)
+            .shouldBeInstanceOf<JwsFlattened>()
+        val generalDecoded = joseCompliantSerializer.decodeFromString<JWS>(generalSerialized)
+            .shouldBeInstanceOf<JwsGeneral>()
 
         compactDecoded shouldBe compactValue
         flattenedDecoded shouldBe flattenedValue
@@ -450,4 +457,16 @@ private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
     failure.message.orEmpty().shouldContain("Decoding failed")
     failure.cause shouldNotBe null
     failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
+}
+
+private fun JsonElement.shouldNotContainKey(key: String) {
+    when (this) {
+        is JsonObject -> {
+            keys.contains(key) shouldBe false
+            values.forEach { it.shouldNotContainKey(key) }
+        }
+
+        is JsonArray -> forEach { it.shouldNotContainKey(key) }
+        else -> Unit
+    }
 }
