@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
@@ -62,7 +63,7 @@ val JwsHeaderPartsTest by testSuite {
             )
         }
 
-        exception.exceptionOrNull() shouldBe IllegalArgumentException("Duplicate keys: kid")
+        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
     }
 
     "encoded protected header bytes can be merged with unprotected fields" {
@@ -98,7 +99,7 @@ val JwsHeaderPartsTest by testSuite {
             )
         }
 
-        exception.exceptionOrNull() shouldBe IllegalArgumentException("Duplicate keys: kid")
+        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
     }
 
     "flattened JWS accepts typed header parts" {
