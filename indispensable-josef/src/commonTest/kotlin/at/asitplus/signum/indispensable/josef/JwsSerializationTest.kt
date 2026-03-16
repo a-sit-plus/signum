@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.TestCompartment
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -33,8 +32,8 @@ private val generalVectorJson = """
 """.trimIndent()
 
 private val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), generalVectorJson)
-private val generalVectorPayload = generalVectorSource["payload"]!!.jsonPrimitive.content
-private val generalVectorSignatures = generalVectorSource["signatures"]!!.jsonArray
+private val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD]!!.jsonPrimitive.content
+private val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES]!!.jsonArray
 
 val JwsSerializerTest by testSuite {
     "general JWS keeps vector bytes stable through serialization and flattening" {
@@ -48,8 +47,8 @@ val JwsSerializerTest by testSuite {
 
         general.signatureElements.forEachIndexed { index, signatureElement ->
             val sourceSignature = generalVectorSignatures[index].jsonObject
-            val protectedHeaderBase64 = sourceSignature["protected"]!!.jsonPrimitive.content
-            val signatureBase64 = sourceSignature["signature"]!!.jsonPrimitive.content
+            val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED]!!.jsonPrimitive.content
+            val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE]!!.jsonPrimitive.content
 
             signatureElement.plainProtectedHeader shouldBe protectedHeaderBase64.decodeToByteArray(Base64UrlStrict)
             signatureElement.plainSignature shouldBe signatureBase64.decodeToByteArray(Base64UrlStrict)
@@ -334,8 +333,8 @@ val JwsSerializerTest by testSuite {
 
 private fun compactSerializationAt(index: Int): String {
     val sourceSignature = generalVectorSignatures[index].jsonObject
-    val protectedHeaderBase64 = sourceSignature["protected"]!!.jsonPrimitive.content
-    val signatureBase64 = sourceSignature["signature"]!!.jsonPrimitive.content
+    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED]!!.jsonPrimitive.content
+    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE]!!.jsonPrimitive.content
     return "$protectedHeaderBase64.$generalVectorPayload.$signatureBase64"
 }
 

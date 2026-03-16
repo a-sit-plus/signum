@@ -32,6 +32,7 @@ sealed class JWS {
     /**
      * Find correct serializer at compile time
      */
+    @Suppress("unused")
     inline fun <reified P> getPayload(serialFormat: SerialFormat = joseCompliantSerializer): P =
         getPayload(serialFormat.serializersModule.serializer(), serialFormat)
 
