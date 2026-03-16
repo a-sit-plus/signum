@@ -74,11 +74,10 @@ data class JwsFlattened(
 
 fun JwsFlattened.toJwsCompact(): JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
+    requireNotNull(plainProtectedHeader)
     runCatching { JwsHeader.fromParts(plainProtectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
     return JwsCompact(
-        plainProtectedHeader = requireNotNull(plainProtectedHeader) {
-            "Compact JWS requires a protected header"
-        },
+        plainProtectedHeader = plainProtectedHeader,
         payload = payload,
         plainSignature = plainSignature,
     )
