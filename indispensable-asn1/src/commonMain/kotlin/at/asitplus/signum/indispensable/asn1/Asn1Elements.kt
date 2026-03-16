@@ -390,21 +390,16 @@ sealed class Asn1Element(
 
         /**
          * As per ITU-T X.680 8824-1 8.6
-         *
+         * (class, then tag number). The constructed bit is intentionally ignored for canonical
+         * tag ordering.
          */
         override fun compareTo(other: Tag) = EncodedTagComparator.compare(this, other)
 
         private object EncodedTagComparator : Comparator<Tag> {
             override fun compare(a: Tag, b: Tag): Int {
-                val lenCompare = a.encodedTagLength.compareTo(b.encodedTagLength)
-                if (lenCompare != 0) return lenCompare
+                val classCompare = a.tagClass.ordinal.compareTo(b.tagClass.ordinal)
+                if (classCompare != 0) return classCompare
 
-                val firstCompare =
-                    a.encodedTag.first().toUByte().toUShort().compareTo(b.encodedTag.first().toUByte().toUShort())
-                if (firstCompare != 0) return firstCompare
-
-
-                //now, we're down to numbers
                 return a.tagValue.compareTo(b.tagValue)
             }
 
@@ -526,13 +521,52 @@ sealed class Asn1Structure(
 ) :
     Asn1Element(tag), Iterable<Asn1Element> {
 
-    val children: List<Asn1Element> = if (!sortChildren) children else children.sortedBy { it.tag }
+    private object DerEncodedElementComparator : Comparator<Asn1Element> {
+        override fun compare(a: Asn1Element, b: Asn1Element): Int {
+            val tagCompare = compareUnsignedLexicographically(a.tag.encodedTag, b.tag.encodedTag)
+            if (tagCompare != 0) return tagCompare
+
+            val lengthCompare = compareUnsignedLexicographically(a.encodedLength, b.encodedLength)
+            if (lengthCompare != 0) return lengthCompare
+
+            return compareContent(a, b)
+        }
+
+        private fun compareUnsignedLexicographically(a: ByteArray, b: ByteArray): Int {
+            val minLength = minOf(a.size, b.size)
+            for (index in 0 until minLength) {
+                val byteCompare = a[index].toUByte().compareTo(b[index].toUByte())
+                if (byteCompare != 0) return byteCompare
+            }
+            return a.size.compareTo(b.size)
+        }
+
+        private fun compareContent(a: Asn1Element, b: Asn1Element): Int = when {
+            a is Asn1Primitive && b is Asn1Primitive ->
+                compareUnsignedLexicographically(a.content, b.content)
+
+            a is Asn1Structure && b is Asn1Structure -> {
+                val minSize = minOf(a.children.size, b.children.size)
+                for (index in 0 until minSize) {
+                    val childCompare = compare(a.children[index], b.children[index])
+                    if (childCompare != 0) return childCompare
+                }
+                a.children.size.compareTo(b.children.size)
+            }
+
+            else -> compareUnsignedLexicographically(a.derEncoded, b.derEncoded)
+        }
+    }
+
+    val children: List<Asn1Element> = if (!sortChildren) children else children.sortedWith(DerEncodedElementComparator)
 
     /**
      * indicated whether the structure's children are actually sorted.
      * This could be false for parsing non-compliant SETs, for example.
      */
-    val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy { children.sortedBy { it.tag } == children }
+    val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy {
+        children.sortedWith(DerEncodedElementComparator) == children
+    }
 
     private val backwardsCompatibilityIterator by lazy { iterator() }
 
@@ -983,7 +1017,7 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
     Asn1Structure(Tag.SET, children, !dontSort, shouldBeSorted = true) {
 
     /**
-     * @param children the elements to put into this set. will be automatically sorted by tag
+     * @param children the elements to put into this set. will be automatically sorted by DER-encoded bytes
      */
     internal constructor(children: List<Asn1Element>) : this(children, false)
 
@@ -1005,7 +1039,7 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
 
 /**
  * ASN.1 SET OF 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
- * @param children the elements to put into this set. will be automatically checked to have the same tag and sorted by value
+ * @param children the elements to put into this set. will be automatically checked to have the same tag and sorted by DER-encoded bytes
  * @throws Asn1Exception if children are using different tags
  */
 class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>) :
