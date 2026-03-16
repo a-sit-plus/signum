@@ -26,7 +26,7 @@ sealed class CertificateValidationResult {
         get() {
             contract {
                 returns(true) implies (this@CertificateValidationResult is Success)
-                returns(false) implies (this@CertificateValidationResult is Failure)
+                returns(false) implies (this@CertificateValidationResult is Failure || this@CertificateValidationResult is BuildPathFailure)
             }
             return this is Success
         }
@@ -71,7 +71,7 @@ data class ValidatorFailure(
  *                 and returns a list of `CertificateValidator` instances to be applied.
  */
 fun interface ValidatorFactory {
-    fun AnchoredCertificateChain.generate(
+    fun CertificateChain.generate(
         context: CertificateValidationContext
     ): List<CertificateChainValidator>
 
@@ -97,19 +97,18 @@ fun interface ValidatorFactory {
  */
 @OptIn(HazardousMaterials::class)
 @ExperimentalPkiApi
-@Throws(Asn1Exception::class, CancellationException::class)
 suspend fun AnchoredCertificateChain.validate(
     validatorFactory: ValidatorFactory,
     context: CertificateValidationContext = CertificateValidationContext()
 ): CertificateValidationResult {
 
-    val validators = with(validatorFactory) { this@validate.generate(context) }
     val processingChain =
         if (context.allowIncludedTrustAnchor && trustAnchor.cert?.let { it == chain.root } == true) {
             AnchoredCertificateChain(chain.dropLast(1), trustAnchor)
         } else {
             this
         }
+    val validators = with(validatorFactory) { processingChain.chain.generate(context) }
     val validatorFailures = mutableListOf<ValidatorFailure>()
     val checkedCriticalExtensions: MutableMap<X509Certificate, MutableSet<ObjectIdentifier>> =
         processingChain.chain.associateWith { mutableSetOf<ObjectIdentifier>() }
@@ -162,26 +161,16 @@ suspend fun CertificateChain.buildPathAndValidate(
     val aggregatedFailures = mutableMapOf<CertificateChain, CertificateValidationResult.Failure>()
 
     for (anchoredChain in candidateChains) {
-        try {
-            val validationResult = anchoredChain.validate(validatorFactory, context)
+        val validationResult = anchoredChain.validate(validatorFactory, context)
 
-            if (validationResult is CertificateValidationResult.Success) return validationResult
-
-            if (validationResult is CertificateValidationResult.Failure) {
+        when (validationResult) {
+            is CertificateValidationResult.Success -> return validationResult
+            is CertificateValidationResult.Failure -> {
                 aggregatedFailures[anchoredChain.chain] = validationResult
             }
-        } catch (e: Throwable) {
-            val failure = CertificateValidationResult.Failure(
-                listOf(
-                    ValidatorFailure(
-                        validatorName = "buildPathAndValidate",
-                        validator = null,
-                        errorMessage = e.message ?: "Unexpected validation exception",
-                        cause = e
-                    )
-                )
-            )
-            aggregatedFailures[anchoredChain.chain] = failure
+            is CertificateValidationResult.BuildPathFailure -> {
+                error("Unexpected BuildPathFailure from validate(): $validationResult")
+            }
         }
     }
 
@@ -189,7 +178,7 @@ suspend fun CertificateChain.buildPathAndValidate(
 }
 
 /**
- * Performs an RFC 5280-compliant validation of this [CertificateChain] using default validators.
+ * Performs an RFC 5280-compliant validation of this [AnchoredCertificateChain] using default validators.
  *
  * This function automatically adds all mandatory validators required for standard X.509
  * path validation according to RFC 5280, including:
@@ -200,7 +189,6 @@ suspend fun CertificateChain.buildPathAndValidate(
  * [ChainValidator] – for signature chain integrity
  * [TimeValidityValidator] – for certificate validity period
  * [CertValidityValidator] – for checking whether the certificate is constructed correctly, since some components are decoded too leniently
- *
  * [KeyIdentifierValidator] is added to validate Subject and Authority key identifiers
  *
  * Validation results are collected rather than throwing exceptions
@@ -210,25 +198,23 @@ suspend fun CertificateChain.buildPathAndValidate(
  *
  * @throws Asn1Exception on structurally invalid input
  */
-
-@Throws(Asn1Exception::class, CancellationException::class)
 @ExperimentalPkiApi
 suspend fun AnchoredCertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext()
 ): CertificateValidationResult = validate(ValidatorFactory.RFC5280, context)
 
+/**
+ * Performs an RFC 5280-compliant validation of this [CertificateChain] using default validators.
+ */
+@OptIn(ExperimentalPkiApi::class)
+suspend fun CertificateChain.buildPathAndValidate(
+    context: CertificateValidationContext = CertificateValidationContext()
+): CertificateValidationResult = buildPathAndValidate(ValidatorFactory.RFC5280, context)
+
 /** Constructs list of default validator used in RFC5280 validation based on [context] */
 private fun defineRFC5280Validators(): List<CertificateChainValidator> =
     listOf(
-        PolicyValidator(
-            rootNode = PolicyNode(
-                parent = null,
-                validPolicy = KnownOIDs.anyPolicy,
-                criticalityIndicator = false,
-                expectedPolicySet = setOf(KnownOIDs.anyPolicy),
-                generatedByPolicyMapping = false
-            )
-        ),
+        PolicyValidator(),
         CertValidityValidator(),
         NameConstraintsValidator(),
         KeyUsageValidator(),

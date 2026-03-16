@@ -19,9 +19,7 @@ import at.asitplus.signum.indispensable.pki.validationPath
 /**
 * PolicyValidator checks policy information on X509Certificate path
 */
-class PolicyValidator(
-    var rootNode: PolicyNode?
-) : CertificateChainValidator {
+class PolicyValidator: CertificateChainValidator {
     private var supportedExtensions: Set<ObjectIdentifier> = setOf(
         KnownOIDs.certificatePolicies_2_5_29_32,
         KnownOIDs.policyMappings,
@@ -30,6 +28,7 @@ class PolicyValidator(
     )
 
     var explicitPolicy = 0
+    var rootNode: PolicyNode? = null
 
     @ExperimentalPkiApi
     override suspend fun validate(
@@ -45,6 +44,13 @@ class PolicyValidator(
         var policyMapping = if (context.policyMappingInhibited) 0 else certPathLen + 1
         var inhibitAnyPolicy = if (context.anyPolicyInhibited) 0 else certPathLen + 1
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
+        rootNode = PolicyNode(
+            parent = null,
+            validPolicy = KnownOIDs.anyPolicy,
+            criticalityIndicator = false,
+            expectedPolicySet = setOf(KnownOIDs.anyPolicy),
+            generatedByPolicyMapping = false
+        )
 
         for (currCert in anchoredChain.chain.validationPath) {
             checkedCriticalExtensions
