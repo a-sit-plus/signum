@@ -6,6 +6,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
+/**
+ * General JSON JWS.
+ *
+ * A general JWS carries one payload and one or more [signatureElements]. Each [SignatureElement] contains the header
+ * fragments for one signature and exposes its merged effective [JwsHeader]. All signatures in a [JwsGeneral] share
+ * the same payload.
+ */
 @Serializable
 data class JwsGeneral(
     @Serializable(ByteArrayBase64UrlSerializer::class)
@@ -30,7 +37,7 @@ data class JwsGeneral(
     val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, payload) }
 
     /**
-     * @return New [JwsGeneral] object with appended Signature
+     * Returns a new [JwsGeneral] with one additional signature over the same payload.
      */
     fun appendSignature(jwsFlattened: JwsFlattened): JwsGeneral {
         require(payload.contentEqualsIfArray(jwsFlattened.payload)) {
@@ -69,7 +76,9 @@ data class JwsGeneral(
     }
 }
 
-
+/**
+ * Expands general JSON JWS representation into one flattened JWS per signature.
+ */
 fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
     signatureElements.map {
         JwsFlattened(

@@ -118,6 +118,12 @@ object JwsCompactStringSerializer : KSerializer<JwsCompact> {
         JwsCompact(decoder.decodeString())
 }
 
+/**
+ * Converts compact serialization to the equivalent flattened JSON form.
+ *
+ * The protected header bytes are preserved and the unprotected header is absent, because compact serialization does
+ * not support unprotected header parameters.
+ */
 fun JwsCompact.toJwsFlattened(): JwsFlattened = JwsFlattened(
     plainProtectedHeader = plainProtectedHeader,
     unprotectedHeader = null,

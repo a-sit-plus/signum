@@ -7,7 +7,16 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 /**
- * Signature element as defined in [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1)
+ * One signature entry of general JSON JWS serialization.
+ *
+ * A [SignatureElement] contains the signature bytes plus the header fragments for that signature. The protected
+ * fragment is stored as encoded bytes in [plainProtectedHeader], while the optional unprotected fragment is
+ * represented as [JwsHeader.Part]. The effective [jwsHeader] is reconstructed by merging both fragments.
+ *
+ * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
+ * constitute a valid [JwsHeader].
+ *
+ * See [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1).
  */
 @Serializable
 data class SignatureElement(
