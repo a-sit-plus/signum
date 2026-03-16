@@ -61,7 +61,7 @@ sealed class JWS {
     object JwsSerializer: KSerializer<JWS> {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
-            element("compact", JwsCompact.serializer().descriptor)
+            element("compact", JwsCompactStringSerializer.descriptor)
             element("flattened", JwsFlattened.serializer().descriptor)
             element("general", JwsGeneral.serializer().descriptor)
         }
@@ -71,7 +71,7 @@ sealed class JWS {
             value: JWS
         ) {
             when (value) {
-                is JwsCompact -> encoder.encodeSerializableValue(JwsCompact.serializer(), value)
+                is JwsCompact -> encoder.encodeSerializableValue(JwsCompactStringSerializer, value)
                 is JwsFlattened -> encoder.encodeSerializableValue(JwsFlattened.serializer(), value)
                 is JwsGeneral -> encoder.encodeSerializableValue(JwsGeneral.serializer(), value)
             }
@@ -82,7 +82,7 @@ sealed class JWS {
             val jsonElement = decoder.decodeJsonElement()
 
             return when (jsonElement) {
-                is JsonPrimitive -> decoder.json.decodeFromJsonElement(JwsCompact.serializer(), jsonElement)
+                is JsonPrimitive -> decoder.json.decodeFromJsonElement(JwsCompactStringSerializer, jsonElement)
                 is JsonObject -> {
                     val hasGeneralSignatures = SerialNames.SIGNATURES in jsonElement
                     val hasFlattenedSignature = SerialNames.SIGNATURE in jsonElement

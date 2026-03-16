@@ -217,6 +217,7 @@ data class JwsHeader(
      * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
      */
     @SerialName("jwt")
+    @Serializable(with = JwsCompactStringSerializer::class)
     val attestationJwt: JwsCompact? = null,
 
     /**
@@ -224,6 +225,7 @@ data class JwsHeader(
      * Should be a [JwsCompact], with [JsonWebToken] as the payload
      */
     @SerialName("key_attestation")
+    @Serializable(with = JwsCompactStringSerializer::class)
     val keyAttestation: JwsCompact? = null,
 
     /**
@@ -282,8 +284,10 @@ data class JwsHeader(
         @Serializable(with = ByteArrayBase64UrlSerializer::class)
         val certificateSha256Thumbprint: ByteArray? = null,
         @SerialName("jwt")
+        @Serializable(with = JwsCompactStringSerializer::class)
         val attestationJwt: JwsCompact? = null,
         @SerialName("key_attestation")
+        @Serializable(with = JwsCompactStringSerializer::class)
         val keyAttestation: JwsCompact? = null,
         @SerialName("vctm")
         val vcTypeMetadata: Set<String>? = null,

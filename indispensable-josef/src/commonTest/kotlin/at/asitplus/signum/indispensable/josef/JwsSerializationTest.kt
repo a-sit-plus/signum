@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.core.TestCompartment
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -113,10 +114,10 @@ val JwsSerializerTest by testSuite {
         compact.signature.shouldBeInstanceOf<CryptoSignature.RSA>()
         compact.toString() shouldBe compactString
 
-        val serialized = joseCompliantSerializer.encodeToString(JwsCompact.serializer(), compact)
+        val serialized = joseCompliantSerializer.encodeToString(JwsCompactStringSerializer, compact)
 
         serialized shouldBe "\"$compactString\""
-        joseCompliantSerializer.decodeFromString(JwsCompact.serializer(), serialized) shouldBe compact
+        joseCompliantSerializer.decodeFromString(JwsCompactStringSerializer, serialized) shouldBe compact
 
         val flattened = compact.toJwsFlattened()
 
@@ -143,6 +144,10 @@ val JwsSerializerTest by testSuite {
         compactPattern.matches(serialized) shouldBe true
         reparsed shouldBe compact
         reparsed.toString() shouldBe serialized
+
+        val jsonString = joseCompliantSerializer.encodeToString(JwsCompactStringSerializer, compact)
+            .removeSurrounding("\"")
+        compactPattern.matches(jsonString) shouldBe true
     }
 
     "general to flattened to compact preserves each single-signature view" {
