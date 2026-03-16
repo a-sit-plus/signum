@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -26,7 +26,7 @@ data class SignatureElement(
      * Serialization: BASE64URL(JWS Signature).
      */
     @SerialName(JWS.SerialNames.SIGNATURE)
-    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     val plainSignature: ByteArray,
 
     /**
@@ -37,7 +37,7 @@ data class SignatureElement(
      * Serialization: BASE64URL(UTF8(JWS Protected Header))
      */
     @SerialName(JWS.SerialNames.PROTECTED)
-    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    @Serializable(with = ByteArrayBase64UrlNoPaddingSerializer::class)
     val plainProtectedHeader: ByteArray? = null,
 
     @SerialName(JWS.SerialNames.HEADER)

@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
-import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -15,7 +15,7 @@ import kotlinx.serialization.Transient
  */
 @Serializable
 data class JwsGeneral(
-    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val payload: ByteArray,
     @Serializable

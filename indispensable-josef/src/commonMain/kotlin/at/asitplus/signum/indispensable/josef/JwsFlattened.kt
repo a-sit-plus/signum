@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
-import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -18,15 +18,15 @@ import kotlinx.serialization.Transient
  */
 @Serializable
 data class JwsFlattened(
-    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
     @SerialName(SerialNames.HEADER)
     val unprotectedHeader: JwsHeader.Part? = null,
-    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val payload: ByteArray,
-    @Serializable(ByteArrayBase64UrlSerializer::class)
+    @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.SIGNATURE)
     val plainSignature: ByteArray
 ) : JWS() {
