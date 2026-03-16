@@ -23,8 +23,11 @@ data class JwsGeneral(
     @Transient
     val jwsHeaders: List<JwsHeader> = signatureElements.map { it.jwsHeader }
 
-    fun getSignatureAt(index: Int) = getSignature(jwsHeaders[index].algorithm, signatureElements[index].plainSignature)
-    fun getSignatureInputAt(index: Int) = getSignatureInput(signatureElements[index].plainProtectedHeader, payload)
+    @Transient
+    val signatures = signatureElements.map { it.signature }
+
+    @Transient
+    val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, payload) }
 
     /**
      * @return New [JwsGeneral] object with appended Signature

@@ -25,8 +25,11 @@ data class JwsFlattened(
     @Transient
     val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
-    val signature by lazy { getSignature(jwsHeader.algorithm, plainSignature) }
-    val signatureInput by lazy { getSignatureInput(plainProtectedHeader, payload) }
+    @Transient
+    val signature = getSignature(jwsHeader.algorithm, plainSignature)
+
+    @Transient
+    val signatureInput = getSignatureInput(plainProtectedHeader, payload)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -70,7 +73,7 @@ data class JwsFlattened(
 }
 
 fun JwsFlattened.toJwsCompact(): JwsCompact {
-    require(unprotectedHeader == null) {"Compact Serialization does not support unprotected header"}
+    require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     runCatching { JwsHeader.fromParts(plainProtectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
     return JwsCompact(
         plainProtectedHeader = requireNotNull(plainProtectedHeader) {

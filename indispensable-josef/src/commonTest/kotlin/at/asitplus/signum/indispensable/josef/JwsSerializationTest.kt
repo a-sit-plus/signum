@@ -42,8 +42,8 @@ val JwsSerializerTest by testSuite {
         general.signatureElements.size shouldBe 2
         general.jwsHeaders[0].algorithm shouldBe JwsAlgorithm.Signature.RS256
         general.jwsHeaders[1].algorithm shouldBe JwsAlgorithm.Signature.ES256
-        general.getSignatureAt(0).shouldBeInstanceOf<CryptoSignature.RSA>()
-        general.getSignatureAt(1).shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
+        general.signatures[0].shouldBeInstanceOf<CryptoSignature.RSA>()
+        general.signatures[1].shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
 
         general.signatureElements.forEachIndexed { index, signatureElement ->
             val sourceSignature = generalVectorSignatures[index].jsonObject
@@ -52,7 +52,7 @@ val JwsSerializerTest by testSuite {
 
             signatureElement.plainProtectedHeader shouldBe protectedHeaderBase64.decodeToByteArray(Base64UrlStrict)
             signatureElement.plainSignature shouldBe signatureBase64.decodeToByteArray(Base64UrlStrict)
-            general.getSignatureInputAt(index).decodeToString() shouldBe "$protectedHeaderBase64.$generalVectorPayload"
+            general.signatureInputs[index].decodeToString() shouldBe "$protectedHeaderBase64.$generalVectorPayload"
         }
 
         val reserialized = joseCompliantSerializer.encodeToString(general)
@@ -100,8 +100,8 @@ val JwsSerializerTest by testSuite {
 
         general.payload shouldBe payload
         general.jwsHeaders[0] shouldBe flattened.jwsHeader
-        general.getSignatureAt(0) shouldBe flattened.signature
-        general.getSignatureInputAt(0) shouldBe flattened.signatureInput
+        general.signatures[0] shouldBe flattened.signature
+        general.signatureInputs[0] shouldBe flattened.signatureInput
         general.toJwsFlattened() shouldBe listOf(flattened)
     }
 
@@ -124,6 +124,27 @@ val JwsSerializerTest by testSuite {
         flattened.toJwsCompact() shouldBe compact
     }
 
+    "compact JWS invoke methods round-trip as three base64url segments" {
+        val compactPattern = Regex("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")
+        val compact = JwsCompact.invoke(
+            protectedHeader = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                keyId = "kid-1",
+                type = "application/example+jws",
+            ),
+            payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray(),
+        ) { _, _ ->
+            byteArrayOf(1, 2, 3, 4)
+        }
+
+        val serialized = compact.toString()
+        val reparsed = JwsCompact(serialized)
+
+        compactPattern.matches(serialized) shouldBe true
+        reparsed shouldBe compact
+        reparsed.toString() shouldBe serialized
+    }
+
     "general to flattened to compact preserves each single-signature view" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
         val flattened = general.toJwsFlattened()
@@ -131,8 +152,8 @@ val JwsSerializerTest by testSuite {
         flattened.size shouldBe general.signatureElements.size
         flattened.forEachIndexed { index, entry ->
             entry.jwsHeader shouldBe general.jwsHeaders[index]
-            entry.signature shouldBe general.getSignatureAt(index)
-            entry.signatureInput shouldBe general.getSignatureInputAt(index)
+            entry.signature shouldBe general.signatures[index]
+            entry.signatureInput shouldBe general.signatureInputs[index]
             entry.toJwsCompact().toString() shouldBe compactSerializationAt(index)
         }
     }

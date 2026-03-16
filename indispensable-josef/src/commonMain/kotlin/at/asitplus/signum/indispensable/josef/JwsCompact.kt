@@ -7,7 +7,6 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.StringFormat
 import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -41,16 +40,14 @@ data class JwsCompact(
     @Transient
     val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, null)
 
-    val signature by lazy { getSignature(jwsHeader.algorithm, plainSignature) }
-    val signatureInput by lazy { getSignatureInput(plainProtectedHeader, payload) }
+    @Transient
+    val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
-    override fun toString(): String {
-        val signingInput =
-            getSignatureInput(plainProtectedHeader, payload).decodeToString()
-        val signature =
-            plainSignature.encodeToString(Base64UrlStrict)
-        return "$signingInput.$signature"
-    }
+    @Transient
+    val signatureInput = getSignatureInput(plainProtectedHeader, payload)
+
+    override fun toString() =
+        "${signatureInput.decodeToString()}.${plainSignature.encodeToString(Base64UrlStrict)}"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

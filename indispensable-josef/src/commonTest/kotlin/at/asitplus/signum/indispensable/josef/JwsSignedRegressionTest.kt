@@ -110,8 +110,8 @@ val JwsSignedRegressionTest by testSuite {
         flattened.signatureInput shouldBe regressionCase.legacy.plainSignatureInput
 
         general.jwsHeaders[0] shouldBe regressionCase.legacy.header
-        general.getSignatureAt(0) shouldBe regressionCase.legacy.signature
-        general.getSignatureInputAt(0) shouldBe regressionCase.legacy.plainSignatureInput
+        general.signatures[0] shouldBe regressionCase.legacy.signature
+        general.signatureInputs[0] shouldBe regressionCase.legacy.plainSignatureInput
     }
 
     "empty payload keeps the compact separator for both APIs" {

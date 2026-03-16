@@ -1,9 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
 val JwsHeaderPartsTest by testSuite {
     "full JWS header can be converted to a typed header part" {
@@ -116,7 +118,7 @@ val JwsHeaderPartsTest by testSuite {
             payload = payload,
         ) { algorithm, _ ->
             capturedAlgorithm = algorithm
-            byteArrayOf(1, 2, 3)
+            validEs256SignatureFixture
         }
 
         capturedAlgorithm shouldBe JwsAlgorithm.Signature.ES256
@@ -133,12 +135,12 @@ val JwsHeaderPartsTest by testSuite {
         val payload = "payload".encodeToByteArray()
         var capturedAlgorithm: JwsAlgorithm? = null
 
-        val compact = JwsCompact.invoke(
+        val compact = JwsCompact(
             protectedHeader = header,
             payload = payload,
         ) { algorithm, _ ->
             capturedAlgorithm = algorithm
-            byteArrayOf(1, 2, 3)
+            validEs256SignatureFixture
         }
 
         capturedAlgorithm shouldBe JwsAlgorithm.Signature.ES256
@@ -161,3 +163,8 @@ val JwsHeaderPartsTest by testSuite {
         JwsProtectedHeaderSerializer.decodeFromByteArray(encoded) shouldBe protectedHeader
     }
 }
+
+// RFC 7515 Appendix A.6 ES256 signature; reused so constructors get a parseable raw ES256 signature.
+private val validEs256SignatureFixture =
+    "DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQxfKTUJqPP3-Kg6NU1Q"
+        .decodeToByteArray(Base64UrlStrict)
