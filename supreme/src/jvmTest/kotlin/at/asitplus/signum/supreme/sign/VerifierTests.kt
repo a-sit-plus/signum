@@ -2,11 +2,10 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInputFormat
-import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.*
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
 import de.infix.testBalloon.framework.core.testSuite

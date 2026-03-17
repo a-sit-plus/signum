@@ -8,7 +8,10 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.DigestProvider
+import at.asitplus.signum.internals.ServiceLoader
 
 sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
     /** output size of MAC */
@@ -45,13 +48,12 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
 /**
  * RFC 2104 HMAC
  */
-enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable,
+class HMAC(val digest: Digest) : MessageAuthenticationCode, Identifiable,
     Asn1Encodable<Asn1Sequence> {
-    SHA1(Digest.SHA1, KnownOIDs.hmacWithSHA1),
-    SHA256(Digest.SHA256, KnownOIDs.hmacWithSHA256),
-    SHA384(Digest.SHA384, KnownOIDs.hmacWithSHA384),
-    SHA512(Digest.SHA512, KnownOIDs.hmacWithSHA512),
-    ;
+
+    override val oid = ServiceLoader.load<DigestProvider>().firstNotNullOfOrNull {
+        it.getRFC2104HMACOID(digest)
+    } ?: throw UnsupportedCryptoException("$digest does not support RFC2014-style HMAC composition")
 
     override fun toString() = "HMAC-$digest"
 
@@ -60,19 +62,17 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
         +Null()
     }
 
-
     companion object : Asn1Decodable<Asn1Sequence, HMAC>, Enumeration<HMAC> {
+
+        val SHA1 = HMAC(Digest.SHA1)
+        val SHA256 = HMAC(Digest.SHA256)
+        val SHA384 = HMAC(Digest.SHA384)
+        val SHA512 = HMAC(Digest.SHA512)
 
         fun byOID(oid: ObjectIdentifier): HMAC? = entries.find { it.oid == oid }
 
-        fun byDigest(digest: Digest): HMAC = entries.find { it.digest == digest }!!
-
-        operator fun invoke(digest: Digest) = when (digest) {
-            Digest.SHA1 -> SHA1
-            Digest.SHA256 -> SHA256
-            Digest.SHA384 -> SHA384
-            Digest.SHA512 -> SHA512
-        }
+        @Deprecated("Use the HMAC() constructor directly", replaceWith = ReplaceWith("HMAC(digest)"))
+        fun byDigest(digest: Digest): HMAC = HMAC(digest)
 
         override fun doDecode(src: Asn1Sequence): HMAC = src.decodeRethrowing {
             val oid = next().asPrimitive().readOid()
@@ -80,7 +80,9 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
             byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
 
-        override val entries: Iterable<HMAC> by lazy { HMAC.entries }
+        override val entries: Iterable<HMAC> get() = Digest.entries.asSequence().mapNotNull {
+            try { HMAC(it) } catch (_: UnsupportedCryptoException) { null }
+        }.asIterable()
     }
 
     override val outputLength: BitLength get() = digest.outputLength

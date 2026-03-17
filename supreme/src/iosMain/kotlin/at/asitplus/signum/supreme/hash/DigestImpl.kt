@@ -1,7 +1,8 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.hash
 
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import kotlinx.cinterop.CValuesRef
 import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -9,7 +10,6 @@ import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.objcPtr
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
 import platform.CoreCrypto.CC_LONG
@@ -47,7 +47,7 @@ private inline fun <reified T: CVariable> digestTemplate(
         return output.toByteArray()
     }
 }
-internal actual fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray = when(digest) {
+internal actual fun doDigest(digest: WellKnownDigest, data: Sequence<ByteArray>): ByteArray = when(digest) {
     Digest.SHA1 -> digestTemplate(data, digest.outputLength.bytes.toInt(), ::CC_SHA1_Init, ::CC_SHA1_Update, ::CC_SHA1_Final)
     Digest.SHA256 -> digestTemplate(data, digest.outputLength.bytes.toInt(), ::CC_SHA256_Init, ::CC_SHA256_Update, ::CC_SHA256_Final)
     Digest.SHA384 -> digestTemplate(data, digest.outputLength.bytes.toInt(), ::CC_SHA384_Init, ::CC_SHA384_Update, ::CC_SHA384_Final)

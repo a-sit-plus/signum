@@ -1,10 +1,10 @@
 package at.asitplus.signum.ecmath
 
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.supreme.hash.digest
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger

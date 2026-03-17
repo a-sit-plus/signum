@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput

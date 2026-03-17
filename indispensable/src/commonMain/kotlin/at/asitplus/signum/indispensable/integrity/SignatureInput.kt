@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 
 typealias SignatureInputFormat = Digest?
 private fun Digest.digest(data: Sequence<ByteArray>): ByteArray = TODO()

@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.kdf
 
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.internals.*
 
@@ -12,25 +13,20 @@ sealed interface KDF
  *
  * To obtain an actual [KDF] for key derivation, invoke as `(info = ...)`
  * */
-enum class HKDF(val digest: Digest) {
-    SHA1(Digest.SHA1),
-    SHA256(Digest.SHA256),
-    SHA384(Digest.SHA384),
-    SHA512(Digest.SHA512);
+// TODO: this probably belongs entirely in supreme (via provider infrastructure on KDF)
+class HKDF(val digest: Digest) {
+
+    companion object {
+        val SHA1 = HKDF(WellKnownDigest.SHA1)
+        val SHA256 = HKDF(WellKnownDigest.SHA256)
+        val SHA384 = HKDF(WellKnownDigest.SHA384)
+        val SHA512 = HKDF(WellKnownDigest.SHA512)
+    }
 
     /**
      * Creates a fully instantiated HKDF object with info
      */
     operator fun invoke(info: ByteArray) = WithInfo(info)
-
-    companion object {
-        operator fun invoke(digest: Digest) = when (digest) {
-            Digest.SHA1 -> SHA1
-            Digest.SHA256 -> SHA256
-            Digest.SHA384 -> SHA384
-            Digest.SHA512 -> SHA512
-        }
-    }
 
     val hmac = HMAC.entries.first { it.digest == digest }
 
@@ -56,8 +52,6 @@ enum class HKDF(val digest: Digest) {
             result = 31 * result + hkdf.hashCode()
             return result
         }
-
-
     }
 }
 
@@ -66,23 +60,17 @@ enum class HKDF(val digest: Digest) {
  *
  *  To obtain an actual [KDF] for key derivation, invoke as `(iterations = ...)`
  */
-enum class PBKDF2(val prf: HMAC) {
-    HMAC_SHA1(HMAC.SHA1),
-    HMAC_SHA256(HMAC.SHA256),
-    HMAC_SHA384(HMAC.SHA384),
-    HMAC_SHA512(HMAC.SHA512);
+class PBKDF2(val prf: HMAC) {
+
+    constructor(digest: Digest) : this(HMAC(digest))
 
     operator fun invoke(iterations: Int) = WithIterations(iterations)
 
     companion object {
-        operator fun invoke(prf: HMAC) = when (prf) {
-            HMAC.SHA1 -> HMAC_SHA1
-            HMAC.SHA256 -> HMAC_SHA256
-            HMAC.SHA384 -> HMAC_SHA384
-            HMAC.SHA512 -> HMAC_SHA512
-        }
-
-        operator fun invoke(digest: Digest) = invoke(HMAC(digest))
+        val HMAC_SHA1 = PBKDF2(HMAC.SHA1)
+        val HMAC_SHA256 = PBKDF2(HMAC.SHA256)
+        val HMAC_SHA384 = PBKDF2(HMAC.SHA384)
+        val HMAC_SHA512 = PBKDF2(HMAC.SHA512)
 
     }
 

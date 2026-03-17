@@ -8,6 +8,7 @@ import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.integrity.HMAC

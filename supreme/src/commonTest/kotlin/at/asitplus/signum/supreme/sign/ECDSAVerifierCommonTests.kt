@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
@@ -35,7 +35,7 @@ val ECDSAVerifierCommonTests  by testSuite {
         }
         val digest = when(test.dig) {
             "None" -> null
-            else -> Digest.valueOf(test.dig)
+            else -> Digest.entries.first { it.name == test.dig }
         }
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.EC
         val b64msg = test.msg

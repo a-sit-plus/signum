@@ -4,7 +4,7 @@ import android.security.keystore.KeyProperties
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm

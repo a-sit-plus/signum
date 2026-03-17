@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.signum.Enumeration
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.ECCurve
 
 enum class RSAPadding {

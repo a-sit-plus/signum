@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureInput

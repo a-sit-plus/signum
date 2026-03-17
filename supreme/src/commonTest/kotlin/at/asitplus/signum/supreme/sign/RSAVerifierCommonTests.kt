@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
@@ -28,7 +28,7 @@ val RSAVerifierCommonTests  by testSuite {
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {
-        val digest = Digest.valueOf(test.dig)
+        val digest = Digest.entries.first { it.name == test.dig }
         val padding = RSAPadding.valueOf(test.pad)
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.RSA
         val b64msg = test.msg

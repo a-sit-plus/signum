@@ -6,6 +6,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -47,6 +48,7 @@ val Digest.jcaPSSParams
         Digest.SHA256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
         Digest.SHA384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
+        else -> null
     }
 
 internal fun sigGetInstance(alg: String, provider: String?): Signature =
@@ -92,6 +94,7 @@ val Digest.jcaName
         Digest.SHA384 -> "SHA-384"
         Digest.SHA512 -> "SHA-512"
         Digest.SHA1 -> "SHA-1"
+        else -> TODO()
     }
 
 
@@ -102,6 +105,7 @@ val Digest?.jcaAlgorithmComponent
         Digest.SHA256 -> "SHA256"
         Digest.SHA384 -> "SHA384"
         Digest.SHA512 -> "SHA512"
+        else -> TODO()
     }
 
 val ECCurve.jcaName
@@ -292,6 +296,7 @@ val HMAC.jcaName: String
         HMAC.SHA256 -> "HmacSHA256"
         HMAC.SHA384 -> "HmacSHA384"
         HMAC.SHA512 -> "HmacSHA512"
+        else -> TODO()
     }
 
 /**

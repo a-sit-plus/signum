@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
@@ -266,6 +267,7 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm(): KmmResult<X509SignatureAlgori
                 Digest.SHA256 -> X509SignatureAlgorithm.RS256
                 Digest.SHA384 -> X509SignatureAlgorithm.RS384
                 Digest.SHA512 -> X509SignatureAlgorithm.RS512
+                else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by PKCS1 EC")
             }
 
             RSAPadding.PSS -> when (this.digest) {

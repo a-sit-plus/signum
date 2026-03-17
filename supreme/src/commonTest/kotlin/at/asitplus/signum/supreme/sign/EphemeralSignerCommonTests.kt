@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration

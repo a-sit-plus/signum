@@ -2,6 +2,7 @@ package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.supreme.Supreme
 import at.asitplus.signum.supreme.azString
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.minus
@@ -33,6 +34,9 @@ val RFC9380Test by testSuite {
             crv.modulus.mod(BigInteger(4)) shouldBe BigInteger(3)
         }
     }
+
+    Supreme.init()
+
     "RFC 9380 Appendix J. Test Vectors" - {
         data class SuiteTestInfo(
             val suiteName: String, val suiteRef: (ByteArray) -> RFC9380.HashToEllipticCurve,

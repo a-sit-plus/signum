@@ -23,6 +23,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput

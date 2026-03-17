@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.kdf
 
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2
 import at.asitplus.signum.indispensable.misc.bytes
@@ -10,11 +10,8 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testScope
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.TestConfig
 
 val KDFTest  by testSuite {
     "HKDF" - {
@@ -23,10 +20,10 @@ val KDFTest  by testSuite {
                 val Comment: String, val Hash: Digest, IKM: String, salt: String?,
                 info: String, val L: Int, PRK: String, OKM: String
             ) {
-                val IKM = b(IKM);
-                val salt = salt?.let(::b);
-                val info = b(info);
-                val PRK = b(PRK);
+                val IKM = b(IKM)
+                val salt = salt?.let(::b)
+                val info = b(info)
+                val PRK = b(PRK)
                 val OKM = b(OKM)
 
                 init {

@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode

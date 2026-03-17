@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.SignatureResult

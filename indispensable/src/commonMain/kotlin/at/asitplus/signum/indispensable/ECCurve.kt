@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.misc.BitLength
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
@@ -222,6 +223,13 @@ object ECCurveSerializer : KSerializer<ECCurve?> {
         return ECCurve.entries.firstOrNull { it.jwkName == decoded }
     }
 
+}
+
+/** A digest well-suited to operations on this curve, with output length near the curve's coordinate length. */
+val ECCurve.nativeDigest get() = when (this) {
+    ECCurve.SECP_256_R_1 -> Digest.SHA256
+    ECCurve.SECP_384_R_1 -> Digest.SHA384
+    ECCurve.SECP_521_R_1 -> Digest.SHA512
 }
 
 /**

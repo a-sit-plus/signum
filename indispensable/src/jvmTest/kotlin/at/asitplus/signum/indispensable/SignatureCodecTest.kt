@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.signum.indispensable.integrity.RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
