@@ -2,9 +2,8 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.supreme.sign.verifierFor
-import at.asitplus.signum.supreme.sign.verify
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite

@@ -1,8 +1,10 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.supreme.Supreme
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.minus
@@ -12,7 +14,8 @@ import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
 @OptIn(SecretExposure::class)
-val PrivateKeyCommonTests  by testSuite {
+val PrivateKeyCommonTests by testSuite {
+    Supreme.init()
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----

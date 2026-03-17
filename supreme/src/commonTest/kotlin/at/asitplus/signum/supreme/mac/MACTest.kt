@@ -1,7 +1,7 @@
 
 package at.asitplus.signum.supreme.mac
 
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.supreme.b
 import at.asitplus.testballoon.minus
@@ -9,9 +9,6 @@ import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val MACTest  by testSuite {
     "RFC4231" - {

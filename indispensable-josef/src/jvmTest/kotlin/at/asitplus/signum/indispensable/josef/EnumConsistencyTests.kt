@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
-import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestSuite
 import de.infix.testBalloon.framework.core.testSuite
@@ -13,9 +11,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.memberProperties
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
     T::class.simpleName!! {

@@ -9,6 +9,14 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -106,6 +114,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
             get() = when (algorithm) {
                 is SignatureAlgorithm.ECDSA -> (algorithm as SignatureAlgorithm.ECDSA).digest
                 is SignatureAlgorithm.RSA -> (algorithm as SignatureAlgorithm.RSA).digest
+                else -> TODO()
             }
 
         companion object : Enumeration<Signature> {
@@ -199,6 +208,8 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
                 else -> throw IllegalArgumentException("RSA-PSS with ${this.digest} is unsupported by JWS")
             }
         }
+
+        else -> TODO()
     }
 }
 

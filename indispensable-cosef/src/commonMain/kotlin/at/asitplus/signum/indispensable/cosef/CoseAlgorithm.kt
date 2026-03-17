@@ -9,6 +9,14 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
@@ -254,6 +262,8 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 else -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
             }
         }
+
+        else -> TODO("migrate")
     }
 }
 

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
@@ -9,6 +10,9 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.integrity.RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -247,7 +251,7 @@ sealed class X509SignatureAlgorithm(
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
+fun SignatureAlgorithm.toX509SignatureAlgorithm(): KmmResult<X509SignatureAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> X509SignatureAlgorithm.ES256
@@ -271,6 +275,8 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
             }
         }
+
+        else -> TODO("migrate to provider infrastructure")
     }
 }
 

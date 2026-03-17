@@ -3,12 +3,13 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.supreme.Supreme
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
@@ -22,6 +23,7 @@ import kotlin.random.Random
 
 @OptIn(ExperimentalEncodingApi::class)
 val RSAVerifierCommonTests  by testSuite {
+    Supreme.init()
     @Serializable
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)

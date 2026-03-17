@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.Digest
 
 sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
     /** output size of MAC */
@@ -15,7 +16,7 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable 
 
     companion object : Enumeration<MessageAuthenticationCode> {
         // lazy due to https://youtrack.jetbrains.com/issue/KT-79161
-        override val entries: Iterable<MessageAuthenticationCode> by lazy {  HMAC.entries }
+        override val entries: Iterable<MessageAuthenticationCode> by lazy { HMAC.entries }
     }
 
     @ConsistentCopyVisibility

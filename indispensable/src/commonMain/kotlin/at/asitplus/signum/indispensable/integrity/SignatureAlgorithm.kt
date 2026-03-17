@@ -1,13 +1,15 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.ECCurve
 
 enum class RSAPadding {
     PKCS1,
     PSS;
 }
 
-sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
+interface SignatureAlgorithm: DataIntegrityAlgorithm {
 
     data class ECDSA(
         /** The digest to apply to the data, or `null` to directly process the raw data. */

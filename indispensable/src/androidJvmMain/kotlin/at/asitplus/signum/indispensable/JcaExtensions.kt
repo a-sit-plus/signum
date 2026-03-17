@@ -6,9 +6,11 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.internals.isAndroid
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -60,6 +62,7 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): KmmRes
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
 
         is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
+        else -> TODO()
     }
 }
 
@@ -74,6 +77,7 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
+        else -> TODO()
     }
 }
 

@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
@@ -10,7 +10,7 @@ import at.asitplus.signum.Enumeration
  */
 sealed interface DataIntegrityAlgorithm : Enumerable {
     companion object : Enumeration<DataIntegrityAlgorithm> {
-        override val entries: Iterable<DataIntegrityAlgorithm> by lazy { MessageAuthenticationCode.entries + SignatureAlgorithm.entries }
+        override val entries: Iterable<DataIntegrityAlgorithm> by lazy { MessageAuthenticationCode.Companion.entries + SignatureAlgorithm.entries }
     }
 
 }

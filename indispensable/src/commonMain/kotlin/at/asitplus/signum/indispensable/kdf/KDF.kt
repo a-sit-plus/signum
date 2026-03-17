@@ -1,8 +1,7 @@
 package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.indispensable.kdf.PBKDF2.WithIterations
+import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.internals.*
 
 

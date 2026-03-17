@@ -52,7 +52,6 @@ import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
-import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
 import at.asitplus.signum.indispensable.CryptoPublicKey
@@ -162,7 +161,7 @@ internal fun App() {
             } ?: ""
         }
         val verifyPossible by getter { signatureData?.isSuccess == true }
-        var verifyState by remember { mutableStateOf<KmmResult<Verifier.Success>?>(null) }
+        var verifyState by remember { mutableStateOf<KmmResult<SignatureVerifier.Success>?>(null) }
         var encRT by remember { mutableStateOf<String?>(null) }
         val verifySucceededStr by getter {
             verifyState?.fold(onSuccess = {

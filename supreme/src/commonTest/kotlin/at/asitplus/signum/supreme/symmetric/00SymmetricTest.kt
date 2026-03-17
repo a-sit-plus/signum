@@ -3,7 +3,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.misc.bit
@@ -29,9 +29,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Clock
-import de.infix.testBalloon.framework.core.TestConfig
-import de.infix.testBalloon.framework.core.testScope
-import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
 val SymmetricTest by testSuite {

@@ -4,7 +4,9 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.supreme.Supreme
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
@@ -21,6 +23,7 @@ internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
 val ECDSAVerifierCommonTests  by testSuite {
+    Supreme.init()
     @Serializable data class RawTestInfo(
         val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {

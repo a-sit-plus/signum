@@ -2,14 +2,13 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureInputFormat
+import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
@@ -20,9 +19,6 @@ import java.security.Security
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val VerifierTests by testSuite {
     Security.addProvider(BouncyCastleProvider())
@@ -30,10 +26,13 @@ val VerifierTests by testSuite {
     withDataSuites(
         mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
             "BC -> PlatformVerifier" to { a, k ->
-                a.verifierFor(k) { provider = "BC" }.getOrThrow()
-                    .also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
+                SupremePlatformVerifierProvider.verifierFor(a, k) { provider = "BC" }
+                    .shouldBeInstanceOf<PlatformECDSAVerifier>()
             },
-            "BC -> KotlinVerifier" to ::KotlinECDSAVerifier
+            "BC -> KotlinVerifier" to { a, k ->
+                SupremeKotlinVerifierProvider.verifierFor(a, k)
+                    .shouldBeInstanceOf<KotlinECDSAVerifier>()
+            }
         )
     ) { factory ->
         withDataSuites(ECCurve.entries)  { curve ->

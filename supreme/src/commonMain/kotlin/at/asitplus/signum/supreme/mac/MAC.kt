@@ -2,9 +2,9 @@ package at.asitplus.signum.supreme.mac
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.hash.digest
