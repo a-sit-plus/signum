@@ -16,6 +16,7 @@ import java.io.File
 import kotlin.random.Random
 import kotlin.random.nextInt
 import at.asitplus.testballoon.invoke
+import io.kotest.matchers.shouldNotBe
 
 
 @OptIn(UnsafeIoApi::class)
@@ -28,7 +29,7 @@ val X509CRLParserTest by testSuite {
            val src = Asn1Element.parse(it.second) as Asn1Sequence
            val decoded = CertificateList.decodeFromTlv(src)
            decoded shouldBe CertificateList.decodeFromByteArray(it.second)
-
+           decoded.tbsCertList.extensions?.forEach { extension -> extension::class shouldNotBe X509CertificateExtension.InvalidCertificateExtension::class }
            withClue(decoded.encodeToPEM().getOrNull()) {
                decoded.encodeToDer() shouldBe it.second
            }

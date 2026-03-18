@@ -15,12 +15,14 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.basicConstraints_2_5_29_19
+import at.asitplus.signum.indispensable.asn1.cRLDistributionPoints_2_5_29_31
 import at.asitplus.signum.indispensable.asn1.certificatePolicies_2_5_29_32
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
 import at.asitplus.signum.indispensable.asn1.extKeyUsage
 import at.asitplus.signum.indispensable.asn1.inhibitAnyPolicy
+import at.asitplus.signum.indispensable.asn1.issuingDistributionPoint_2_5_29_28
 import at.asitplus.signum.indispensable.asn1.keyUsage
 import at.asitplus.signum.indispensable.asn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.asn1.policyConstraints_2_5_29_36
@@ -31,9 +33,11 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.d
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.doDecode
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.IssuingDistributionPointExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
@@ -101,7 +105,9 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 KnownOIDs.keyUsage to { seq, tag -> KeyUsageExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.authorityKeyIdentifier_2_5_29_35 to { seq, tag -> AuthorityKeyIdentifierExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.extKeyUsage to { seq, tag -> ExtendedKeyUsageExtension.decodeFromTlv(seq, tag) },
-                KnownOIDs.subjectKeyIdentifier to { seq, tag -> SubjectKeyIdentifierExtension.decodeFromTlv(seq, tag) }
+                KnownOIDs.subjectKeyIdentifier to { seq, tag -> SubjectKeyIdentifierExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.cRLDistributionPoints_2_5_29_31 to { seq, tag -> CRLDistributionPointsExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.issuingDistributionPoint_2_5_29_28 to { seq, tag -> IssuingDistributionPointExtension.decodeFromTlv(seq, tag) }
             )
         )
         val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension>
