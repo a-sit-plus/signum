@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
-import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -125,7 +124,7 @@ val PolicyQualifierTest by testSuite {
                 "-----END CERTIFICATE-----"
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf)
+        val chain = AnchoredCertificateChain(listOf(leaf), trustAnchor)
 
         var result = chain.validate(defaultContext)
         result.shouldBeValid()
@@ -162,7 +161,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val result = chain.validate(defaultContext)
         result.shouldBeValid()
@@ -207,7 +206,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
         val result = chain.validate(defaultContext)
 
         result.shouldBeValid()
@@ -279,7 +278,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(policiesP12CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
@@ -353,7 +352,7 @@ val PolicyQualifierTest by testSuite {
                 "-----END CERTIFICATE-----"
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf), trustAnchor)
         val result = chain.validate(defaultContext)
         result.shouldBeValid()
 
@@ -397,7 +396,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
@@ -477,7 +476,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(p12Mapping1to3CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false, initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
@@ -537,7 +536,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(p1anyPolicyMapping1to2CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val result = chain.validate(defaultContext)
         result.shouldBeValid()
@@ -580,7 +579,7 @@ val PolicyQualifierTest by testSuite {
 
         val ca = X509Certificate.decodeFromPem(p1anyPolicyMapping1to2CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca)
+        val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val result = chain.validate(defaultContext)
         result.shouldBeValid()
