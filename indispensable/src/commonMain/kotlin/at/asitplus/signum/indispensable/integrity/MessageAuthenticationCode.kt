@@ -51,7 +51,9 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
 class HMAC(val digest: Digest) : MessageAuthenticationCode, Identifiable,
     Asn1Encodable<Asn1Sequence> {
 
-    override val oid = ServiceLoader.load<DigestProvider>().firstNotNullOfOrNull {
+    override val oid = ServiceLoader.load<DigestProvider>().also {
+        if (it.none()) throw UnsupportedCryptoException("No Digest providers are loaded")
+    }.firstNotNullOfOrNull {
         it.getRFC2104HMACOID(digest)
     } ?: throw UnsupportedCryptoException("$digest does not support RFC2014-style HMAC composition")
 

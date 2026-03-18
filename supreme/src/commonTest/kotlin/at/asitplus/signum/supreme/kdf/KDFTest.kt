@@ -3,7 +3,9 @@ package at.asitplus.signum.supreme.kdf
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2
+import at.asitplus.signum.indispensable.kdf.deriveKey
 import at.asitplus.signum.indispensable.misc.bytes
+import at.asitplus.signum.supreme.Supreme
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
@@ -14,6 +16,7 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 
 val KDFTest  by testSuite {
+    Supreme.init()
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(
