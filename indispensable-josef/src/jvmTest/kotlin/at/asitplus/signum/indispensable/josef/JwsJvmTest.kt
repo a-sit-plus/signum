@@ -13,7 +13,6 @@ import com.nimbusds.jose.crypto.ECDSAVerifier
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.runBlocking
 import java.security.interfaces.ECPublicKey
 
 val JwsJvmTest by testSuite {
@@ -32,8 +31,8 @@ val JwsJvmTest by testSuite {
         val verifier1 = ECDSAVerifier(signer1.publicKey.toJcaPublicKey().getOrThrow() as ECPublicKey)
         val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey().getOrThrow() as ECPublicKey)
 
-        fun signerFor(signer: Signer): (JwsAlgorithm, ByteArray) -> ByteArray = { _, input ->
-            runBlocking { signer.sign(input).signature.rawByteArray }
+        fun signerFor(signer: Signer): suspend (ByteArray) -> ByteArray = { input ->
+            signer.sign(input).signature.rawByteArray
         }
     }
 

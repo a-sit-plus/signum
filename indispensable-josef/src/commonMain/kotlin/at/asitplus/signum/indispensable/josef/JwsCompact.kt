@@ -28,7 +28,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 data class JwsCompact(
     val plainProtectedHeader: ByteArray,
-    override val payload: ByteArray,
+    override val plainPayload: ByteArray,
     val plainSignature: ByteArray,
 ) : JWS() {
 
@@ -39,7 +39,7 @@ data class JwsCompact(
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
     @Transient
-    val signatureInput = getSignatureInput(plainProtectedHeader, payload)
+    val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
 
     override fun toString() =
         "${signatureInput.decodeToString()}.${plainSignature.encodeToString(Base64UrlStrict)}"
@@ -51,7 +51,7 @@ data class JwsCompact(
         other as JwsCompact
 
         if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
-        if (!payload.contentEquals(other.payload)) return false
+        if (!plainPayload.contentEquals(other.plainPayload)) return false
         if (!plainSignature.contentEquals(other.plainSignature)) return false
 
         return true
@@ -59,7 +59,7 @@ data class JwsCompact(
 
     override fun hashCode(): Int {
         var result = plainProtectedHeader.contentHashCode()
-        result = 31 * result + payload.contentHashCode()
+        result = 31 * result + plainPayload.contentHashCode()
         result = 31 * result + plainSignature.contentHashCode()
         return result
     }
@@ -80,7 +80,7 @@ data class JwsCompact(
             return try {
                 JwsCompact(
                     plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
-                    payload = parts[1].decodeToByteArray(Base64UrlStrict),
+                    plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
                 )
             } catch (e: Exception) {
@@ -88,16 +88,16 @@ data class JwsCompact(
             }
         }
 
-        operator fun invoke(
+        suspend operator fun invoke(
             protectedHeader: JwsHeader,
             payload: ByteArray,
-            signer: (JwsAlgorithm, ByteArray) -> ByteArray
+            signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
             val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
-                payload = payload,
-                plainSignature = signer(protectedHeader.algorithm, getSignatureInput(plainProtectedHeader, payload)),
+                plainPayload = payload,
+                plainSignature = signer(getSignatureInput(plainProtectedHeader, payload)),
             )
         }
     }
@@ -128,6 +128,6 @@ object JwsCompactStringSerializer : KSerializer<JwsCompact> {
 fun JwsCompact.toJwsFlattened(): JwsFlattened = JwsFlattened(
     plainProtectedHeader = plainProtectedHeader,
     unprotectedHeader = null,
-    payload = payload,
+    plainPayload = plainPayload,
     plainSignature = plainSignature,
 )

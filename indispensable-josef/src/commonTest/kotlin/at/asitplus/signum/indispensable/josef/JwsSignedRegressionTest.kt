@@ -9,6 +9,7 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -20,21 +21,18 @@ val JwsSignedRegressionTest by testSuite {
             keyId = "kid-1",
         )
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        var capturedAlgorithm: JwsAlgorithm? = null
         var capturedInput: ByteArray? = null
 
         val compact = JwsCompact.invoke(
             protectedHeader = header,
             payload = payload,
-        ) { algorithm, signingInput ->
-            capturedAlgorithm = algorithm
+        ) { signingInput ->
             capturedInput = signingInput
             byteArrayOf(1, 2, 3, 4)
         }
 
         val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
 
-        capturedAlgorithm shouldBe header.algorithm
         compact.plainProtectedHeader shouldBe expectedProtectedHeader
         capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
         compact.signatureInput shouldBe capturedInput
@@ -87,7 +85,7 @@ val JwsSignedRegressionTest by testSuite {
         ).getOrThrow()
 
         legacyTyped.header shouldBe regressionCase.compact.jwsHeader
-        legacyTyped.payload shouldBe regressionCase.compact.getPayload(JsonObject.serializer())
+        legacyTyped.payload shouldBe regressionCase.compact.getPayload(JsonObject.serializer()).getOrThrow()
         legacyTyped.signature shouldBe regressionCase.compact.signature
         legacyTyped.plainSignatureInput shouldBe regressionCase.compact.signatureInput
     }
@@ -164,7 +162,7 @@ private fun compactRegressionCase(
     val header = JwsHeader.fromParts(protectedHeader, null)
     val compact = JwsCompact(
         plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
-        payload = payload,
+        plainPayload = payload,
         plainSignature = plainSignature,
     )
 

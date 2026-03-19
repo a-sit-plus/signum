@@ -17,7 +17,7 @@ import kotlinx.serialization.Transient
 data class JwsGeneral(
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
-    override val payload: ByteArray,
+    override val plainPayload: ByteArray,
     @Serializable
     @SerialName(SerialNames.SIGNATURES)
     val signatureElements: List<SignatureElement>
@@ -34,13 +34,13 @@ data class JwsGeneral(
     val signatures = signatureElements.map { it.signature }
 
     @Transient
-    val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, payload) }
+    val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, plainPayload) }
 
     /**
      * Returns a new [JwsGeneral] with one additional signature over the same payload.
      */
     fun appendSignature(jwsFlattened: JwsFlattened): JwsGeneral {
-        require(payload.contentEqualsIfArray(jwsFlattened.payload)) {
+        require(plainPayload.contentEqualsIfArray(jwsFlattened.plainPayload)) {
             "Additional signed JWS payload must match existing payload"
         }
 
@@ -59,14 +59,14 @@ data class JwsGeneral(
 
         other as JwsGeneral
 
-        if (!payload.contentEquals(other.payload)) return false
+        if (!plainPayload.contentEquals(other.plainPayload)) return false
         if (signatureElements != other.signatureElements) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = payload.contentHashCode()
+        var result = plainPayload.contentHashCode()
         result = 31 * result + signatureElements.hashCode()
         return result
     }
@@ -84,7 +84,7 @@ fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
         JwsFlattened(
             plainProtectedHeader = it.plainProtectedHeader,
             unprotectedHeader = it.unprotectedHeader,
-            payload = this.payload,
+            plainPayload = this.plainPayload,
             plainSignature = it.plainSignature
         )
     }

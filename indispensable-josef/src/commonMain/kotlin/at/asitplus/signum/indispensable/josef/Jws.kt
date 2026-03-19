@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -21,20 +23,21 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 @Serializable(with = JWS.JwsSerializer::class)
 sealed class JWS {
-    abstract val payload: ByteArray
+    abstract val plainPayload: ByteArray
 
-    fun <P> getPayload(serializer: KSerializer<P>, serialFormat: SerialFormat = joseCompliantSerializer): P =
+    fun <P> getPayload(serializer: KSerializer<P>, serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> = runCatching {
         when (serialFormat) {
-            is StringFormat -> serialFormat.decodeFromString(serializer, payload.decodeToString())
-            is BinaryFormat -> serialFormat.decodeFromByteArray(serializer, payload)
+            is StringFormat -> serialFormat.decodeFromString(serializer, plainPayload.decodeToString())
+            is BinaryFormat -> serialFormat.decodeFromByteArray(serializer, plainPayload)
             else -> throw NotImplementedError("Unknown serial format $serialFormat")
         }
+    }.wrap()
 
     /**
      * Find correct serializer at compile time
      */
     @Suppress("unused")
-    inline fun <reified P> getPayload(serialFormat: SerialFormat = joseCompliantSerializer): P =
+    inline fun <reified P> getPayload(serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
         getPayload(serialFormat.serializersModule.serializer(), serialFormat)
 
     object SerialNames {
