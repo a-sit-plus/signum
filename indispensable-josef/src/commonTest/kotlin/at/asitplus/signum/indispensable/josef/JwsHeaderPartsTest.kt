@@ -111,18 +111,15 @@ val JwsHeaderPartsTest by testSuite {
             vcTypeMetadata = setOf("bWV0YWRhdGE"),
         )
         val payload = "payload".encodeToByteArray()
-        var capturedAlgorithm: JwsAlgorithm? = null
 
         val flattened = JwsFlattened.invoke(
             protectedHeader = protectedHeader,
             unprotectedHeader = unprotectedHeader,
             payload = payload,
-        ) { algorithm, _ ->
-            capturedAlgorithm = algorithm
+        ) {
             validEs256SignatureFixture
         }
 
-        capturedAlgorithm shouldBe JwsAlgorithm.Signature.ES256
         flattened.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader)
     }
 
@@ -134,17 +131,14 @@ val JwsHeaderPartsTest by testSuite {
             vcTypeMetadata = setOf("bWV0YWRhdGE"),
         )
         val payload = "payload".encodeToByteArray()
-        var capturedAlgorithm: JwsAlgorithm? = null
 
-        val compact = JwsCompact(
+        val compact = JwsCompact.invoke(
             protectedHeader = header,
             payload = payload,
-        ) { algorithm, _ ->
-            capturedAlgorithm = algorithm
+        ) {
             validEs256SignatureFixture
         }
 
-        capturedAlgorithm shouldBe JwsAlgorithm.Signature.ES256
         compact.jwsHeader shouldBe header
         compact.plainProtectedHeader shouldBe
                 JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())

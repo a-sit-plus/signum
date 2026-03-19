@@ -77,20 +77,17 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         )
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
         val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
-        var capturedAlgorithm: JwsAlgorithm? = null
         var capturedSignatureInput: ByteArray? = null
 
-        val flattened = JwsFlattened(
+        val flattened = JwsFlattened.invoke(
             protectedHeader = protectedHeader,
             unprotectedHeader = unprotectedHeader,
             payload = payload,
-        ) { algorithm, signatureInput ->
-            capturedAlgorithm = algorithm
+        ) { signatureInput ->
             capturedSignatureInput = signatureInput
             byteArrayOf(1, 2, 3, 4)
         }
 
-        capturedAlgorithm shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader).algorithm
         capturedSignatureInput shouldBe JWS.getSignatureInput(plainProtectedHeader, payload)
 
         val serialized = joseCompliantSerializer.encodeToString(flattened)
@@ -102,7 +99,7 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         }
         val general = listOf(flattened).toJwsGeneral()
 
-        general.payload shouldBe payload
+        general.plainPayload shouldBe payload
         general.jwsHeaders[0] shouldBe flattened.jwsHeader
         general.signatures[0] shouldBe flattened.signature
         general.signatureInputs[0] shouldBe flattened.signatureInput
@@ -137,7 +134,7 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
                 type = "application/example+jws",
             ),
             payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray(),
-        ) { _, _ ->
+        ) {
             byteArrayOf(1, 2, 3, 4)
         }
 
@@ -160,7 +157,7 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
                 keyId = "kid-1",
             ),
             payload = "x".encodeToByteArray(),
-        ) { _, _ ->
+        ) {
             byteArrayOf(1, 2, 3, 4)
         }.toString()
         val (protectedSegment, payloadSegment, signatureSegment) = canonical.split('.')
@@ -294,7 +291,7 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         val missingProtectedHeader = JwsFlattened(
             plainProtectedHeader = null,
             unprotectedHeader = JwsHeader.Part(keyId = "kid-1", algorithm = JwsAlgorithm.Signature.RSA.RS256),
-            payload = "payload".encodeToByteArray(),
+            plainPayload = "payload".encodeToByteArray(),
             plainSignature = byteArrayOf(1),
         )
 
@@ -343,11 +340,11 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         signatureA shouldNotBe signatureB
 
         val generalA = JwsGeneral(
-            payload = "payload".encodeToByteArray(),
+            plainPayload = "payload".encodeToByteArray(),
             signatureElements = listOf(signatureA),
         )
         val generalB = JwsGeneral(
-            payload = "payload".encodeToByteArray(),
+            plainPayload = "payload".encodeToByteArray(),
             signatureElements = listOf(signatureB),
         )
 
@@ -442,7 +439,7 @@ private fun flattenedSample(
 ): JwsFlattened = JwsFlattened(
     plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
     unprotectedHeader = unprotectedHeader,
-    payload = payload,
+    plainPayload = payload,
     plainSignature = plainSignature,
 )
 

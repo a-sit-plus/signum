@@ -25,7 +25,7 @@ data class JwsFlattened(
     val unprotectedHeader: JwsHeader.Part? = null,
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
-    override val payload: ByteArray,
+    override val plainPayload: ByteArray,
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.SIGNATURE)
     val plainSignature: ByteArray
@@ -38,7 +38,7 @@ data class JwsFlattened(
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
     @Transient
-    val signatureInput = getSignatureInput(plainProtectedHeader, payload)
+    val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -48,7 +48,7 @@ data class JwsFlattened(
 
         if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
-        if (!payload.contentEquals(other.payload)) return false
+        if (!plainPayload.contentEquals(other.plainPayload)) return false
         if (!plainSignature.contentEquals(other.plainSignature)) return false
 
         return true
@@ -57,7 +57,7 @@ data class JwsFlattened(
     override fun hashCode(): Int {
         var result = plainProtectedHeader?.contentHashCode() ?: 0
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
-        result = 31 * result + payload.contentHashCode()
+        result = 31 * result + plainPayload.contentHashCode()
         result = 31 * result + plainSignature.contentHashCode()
         return result
     }
@@ -68,19 +68,18 @@ data class JwsFlattened(
          *
          * The fragments may be partial, but their merged content must form a valid [JwsHeader].
          */
-        operator fun invoke(
+        suspend operator fun invoke(
             protectedHeader: JwsHeader.Part?,
             unprotectedHeader: JwsHeader.Part?,
             payload: ByteArray,
-            signer: (JwsAlgorithm, ByteArray) -> ByteArray
+            signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val jwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
             val plainProtectedHeader = protectedHeader?.let { JwsProtectedHeaderSerializer.encodeToByteArray(it) }
             return JwsFlattened(
                 plainProtectedHeader,
                 unprotectedHeader,
                 payload,
-                signer(jwsHeader.algorithm, getSignatureInput(plainProtectedHeader, payload))
+                signer(getSignatureInput(plainProtectedHeader, payload))
             )
         }
     }
@@ -98,7 +97,7 @@ fun JwsFlattened.toJwsCompact(): JwsCompact {
     runCatching { JwsHeader.fromParts(plainProtectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
     return JwsCompact(
         plainProtectedHeader = plainProtectedHeader,
-        payload = payload,
+        plainPayload = plainPayload,
         plainSignature = plainSignature,
     )
 }
@@ -108,9 +107,9 @@ fun JwsFlattened.toJwsCompact(): JwsCompact {
  */
 fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
     require(isNotEmpty()) { "General JWS requires at least one signature" }
-    val payload = this[0].payload
+    val payload = this[0].plainPayload
     val signatures = this.map {
-        require(payload.contentEqualsIfArray(it.payload)) {
+        require(payload.contentEqualsIfArray(it.plainPayload)) {
             "Additional signed JWS payload must match existing payload"
         }
         SignatureElement(
@@ -120,7 +119,7 @@ fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
         )
     }
     return JwsGeneral(
-        payload = payload,
+        plainPayload = payload,
         signatureElements = signatures
     )
 }
