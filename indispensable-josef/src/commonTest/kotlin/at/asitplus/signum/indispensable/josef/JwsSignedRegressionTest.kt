@@ -6,10 +6,10 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -56,8 +56,35 @@ val JwsSignedRegressionTest by testSuite {
         val compactJson = joseCompliantSerializer.encodeToString(JwsCompactStringSerializer, regressionCase.compact)
 
         compactJson.removeSurrounding("\"") shouldBe regressionCase.legacy.serialize()
-        joseCompliantSerializer.decodeFromString(JwsCompactStringSerializer, compactJson) shouldBe regressionCase.compact
+        joseCompliantSerializer.decodeFromString(
+            JwsCompactStringSerializer,
+            compactJson
+        ) shouldBe regressionCase.compact
         JwsSigned.deserialize(regressionCase.legacy.serialize()).getOrThrow() shouldBe regressionCase.legacy
+    }
+
+    "JwsCompact.parse decodes compact serialization and typed payload" {
+        val typedPayload = JsonObject(
+            mapOf(
+                "iss" to JsonPrimitive("https://issuer.example"),
+                "sub" to JsonPrimitive("alice"),
+            )
+        )
+        val regressionCase = compactRegressionCase(
+            protectedHeader = JwsHeader.Part(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                type = "JWT",
+            ),
+            payload = joseCompliantSerializer.encodeToString(JsonObject.serializer(), typedPayload).encodeToByteArray(),
+            plainSignature = byteArrayOf(1, 2, 3, 4),
+        )
+
+        val (parsedCompact, parsedPayload) = JwsCompact.parse<JsonObject>(regressionCase.compact.toString())
+            .getOrThrow()
+
+        parsedCompact shouldBe regressionCase.compact
+        parsedCompact.jwsHeader shouldBe regressionCase.compact.jwsHeader
+        parsedPayload shouldBe typedPayload
     }
 
     "typed payload decoding matches between JwsSigned and JwsCompact" {
