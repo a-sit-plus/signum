@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -41,8 +43,7 @@ data class JwsCompact(
     @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
 
-    override fun toString() =
-        "${signatureInput.decodeToString()}.${plainSignature.encodeToString(Base64UrlStrict)}"
+    override fun toString() = "${signatureInput.decodeToString()}.${plainSignature.encodeToString(Base64UrlStrict)}"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -65,6 +66,20 @@ data class JwsCompact(
     }
 
     companion object {
+
+        /**
+         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
+         * and immediately resolve the payload
+         */
+        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching{
+            val jws = JwsCompact(base64UrlString)
+            val payload = jws.getPayload<P>().getOrThrow()
+            jws to payload
+        }
+
+        /**
+         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
+         */
         operator fun invoke(
             base64UrlString: String,
         ): JwsCompact {
@@ -88,6 +103,10 @@ data class JwsCompact(
             }
         }
 
+        /**
+         * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
+         * from components and immediately sign the correct representation
+         */
         suspend operator fun invoke(
             protectedHeader: JwsHeader,
             payload: ByteArray,
@@ -109,14 +128,11 @@ data class JwsCompact(
  * This serializer must be opted into explicitly to avoid accidentally treating [JwsCompact] as a JSON object.
  */
 object JwsCompactStringSerializer : KSerializer<JwsCompact> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("JwsCompact", PrimitiveKind.STRING)
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("JwsCompact", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: JwsCompact) =
-        encoder.encodeString(value.toString())
+    override fun serialize(encoder: Encoder, value: JwsCompact) = encoder.encodeString(value.toString())
 
-    override fun deserialize(decoder: Decoder): JwsCompact =
-        JwsCompact(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): JwsCompact = JwsCompact(decoder.decodeString())
 }
 
 /**
