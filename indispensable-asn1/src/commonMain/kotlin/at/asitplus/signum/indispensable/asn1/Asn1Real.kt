@@ -40,8 +40,10 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
 
     @Serializable(with = Asn1RealSerializer::class)
     object Zero : Asn1Real
+
     @Serializable(with = Asn1RealSerializer::class)
     object PositiveInfinity : Asn1Real
+
     @Serializable(with = Asn1RealSerializer::class)
     object NegativeInfinity : Asn1Real
 
@@ -143,41 +145,34 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         fun decodeFromAsn1ContentBytes(bytes: ByteArray): Asn1Real = runRethrowing {
             if (bytes.isEmpty()) return Asn1Real.Zero
 
-            val identifierOctet = bytes.first().toInt()
+            val identifierOctet = bytes.first().toInt() and 0xFF
             when (identifierOctet) {
                 0x40 -> Asn1Real.PositiveInfinity
                 0x41 -> Asn1Real.NegativeInfinity
                 else -> {
-                    require(identifierOctet < 0) { "ASN.1 REAL is not binary encoded" }
+                    require((identifierOctet and 0x80) != 0) { "ASN.1 REAL is not binary encoded" }
                     val sign =
-                        if (0x40 and identifierOctet == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
-                    val exponentLength = when (identifierOctet and 0b11) {
-                        0 -> 1
-                        1 -> 2
-                        2 -> 3
-                        else -> null
+                        if ((0x40 and identifierOctet) == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
+                    val (exponentLength, exponentOffset) = when (identifierOctet and 0b11) {
+                        0 -> 1 to 1
+                        1 -> 2 to 1
+                        2 -> 3 to 1
+                        else -> {
+                            require(bytes.size >= 3) { "ASN.1 REAL content too short for extended exponent length" }
+                            val explicitExponentLength = bytes[1].toInt() and 0xFF
+                            require(explicitExponentLength > 0) { "ASN.1 REAL exponent length must be > 0" }
+                            explicitExponentLength to 2
+                        }
                     }
+                    val mantissaOffset = exponentOffset + exponentLength
+                    require(bytes.size > mantissaOffset) { "ASN.1 REAL content missing mantissa" }
 
+                    val exponentSlice = bytes.copyOfRange(exponentOffset, mantissaOffset)
                     val exponent = when (exponentLength) {
-                        1 -> bytes[1].toLong()
-                        2 -> Long.fromTwosComplementByteArray(bytes.sliceArray(1..2))
-                        3 -> Long.fromTwosComplementByteArray(bytes.sliceArray(1..3))
-                        else -> Long.fromTwosComplementByteArray(
-                            bytes.sliceArray(
-                                2..Int.fromTwosComplementByteArray(
-                                    byteArrayOf(0, bytes[1])
-                                )
-                            )
-                        )
+                        1 -> exponentSlice[0].toLong()
+                        else -> Long.fromTwosComplementByteArray(exponentSlice)
                     }
-                    val mantissaOffset = when (exponentLength) {
-                        1 -> 2
-                        2 -> 3
-                        3 -> 4
-                        else -> 2 + Int.fromTwosComplementByteArray(byteArrayOf(0, bytes[1]))
-                    }
-
-                    val mantissa = VarUInt(bytes.sliceArray(mantissaOffset..<bytes.size))
+                    val mantissa = VarUInt(bytes.copyOfRange(mantissaOffset, bytes.size))
                     if (sign == Asn1Integer.Sign.POSITIVE) Asn1Real.Finite(Asn1Integer.Positive(mantissa), exponent)
                     else Asn1Real.Finite(Asn1Integer.Negative(mantissa), exponent)
                 }
