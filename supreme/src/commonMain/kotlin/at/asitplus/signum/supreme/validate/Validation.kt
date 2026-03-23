@@ -77,7 +77,7 @@ fun interface ValidatorFactory {
 
     companion object {
         val RFC5280: ValidatorFactory =
-            ValidatorFactory { context -> defineRFC5280Validators() }
+            ValidatorFactory { context -> defineRFC5280Validators(context) }
     }
 }
 
@@ -212,8 +212,8 @@ suspend fun CertificateChain.buildPathAndValidate(
 ): CertificateValidationResult = buildPathAndValidate(ValidatorFactory.RFC5280, context)
 
 /** Constructs list of default validator used in RFC5280 validation based on [context] */
-private fun defineRFC5280Validators(): List<CertificateChainValidator> =
-    listOf(
+private fun defineRFC5280Validators(context: CertificateValidationContext): List<CertificateChainValidator> =
+    listOfNotNull(
         PolicyValidator(),
         CertValidityValidator(),
         NameConstraintsValidator(),
@@ -221,7 +221,8 @@ private fun defineRFC5280Validators(): List<CertificateChainValidator> =
         BasicConstraintsValidator(),
         ChainValidator(),
         TimeValidityValidator(),
-        KeyIdentifierValidator()
+        KeyIdentifierValidator(),
+        if (context.supportRevocationChecking) CrlRevocationValidator() else null
     )
 
 /**

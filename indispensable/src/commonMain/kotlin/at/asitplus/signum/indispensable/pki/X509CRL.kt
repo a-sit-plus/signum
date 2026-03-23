@@ -22,6 +22,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.TbsCertList.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -33,9 +34,9 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 data class TbsCertList @Throws(Asn1Exception::class) constructor(
     val version: Int? = 2,
     val signature: X509SignatureAlgorithmDescription,
-    val issuer: List<RelativeDistinguishedName>,
+    val issuer: X500Name,
     val thisUpdate: Asn1Time,
-    val nextUpdate: Asn1Time,
+    val nextUpdate: Asn1Time? = null,
     val revokedCertificates: List<CRLEntry>?,
     val extensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
@@ -43,9 +44,9 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence {
         version?.let { +Asn1.Int(version) }
         +signature
-        +Asn1.Sequence { issuer.forEach { +it } }
+        +issuer
         +thisUpdate
-        +nextUpdate
+        nextUpdate?.let { +it }
 
         revokedCertificates?.let {
             if (it.isNotEmpty()) {
@@ -111,12 +112,10 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
             }
 
             val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
-            val issuerNames = (next().asSequence()).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it.asSet())
-            }
+            val issuerNames = X500Name.decodeFromTlv(next().asSequence())
 
             val thisUpdateTime = Asn1Time.decodeFromTlv(next().asPrimitive())
-            val nextUpdateTime = Asn1Time.decodeFromTlv(next().asPrimitive())
+            val nextUpdateTime = if (hasNext() && peek() is Asn1Primitive) { Asn1Time.decodeFromTlv(next().asPrimitive()) } else null
 
             val certs = if (hasNext() && peek() is Asn1Sequence) {
                 next().asSequence().children.map {
@@ -166,6 +165,10 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
         }
     }
 
+    inline fun <reified T : X509CertificateExtension> findExtension(): T? {
+        return this.crlEntryExtensions?.firstNotNullOfOrNull { it as? T }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -210,7 +213,7 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
 
 /**
  * X509 CRL (Certificate List)
- * */
+ */
 data class CertificateList @Throws(Asn1Exception::class) constructor(
     val tbsCertList: TbsCertList,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
@@ -235,6 +238,10 @@ data class CertificateList @Throws(Asn1Exception::class) constructor(
         signatureAlgorithm.requireSupported()
         CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
     }}
+
+    inline fun <reified T : X509CertificateExtension> findExtension(): T? {
+        return this.tbsCertList.extensions?.firstNotNullOfOrNull { it as? T }
+    }
 
     companion object : PemDecodable<Asn1Sequence, CertificateList>(EB_STRINGS.DEFAULT) {
 

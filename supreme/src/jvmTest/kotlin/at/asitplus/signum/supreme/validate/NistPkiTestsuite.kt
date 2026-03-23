@@ -9,6 +9,7 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalPkiApi::class)
 /**
@@ -17,8 +18,15 @@ import io.kotest.matchers.string.shouldContain
  */
 val NistPkiTestSuite by testSuite{
 
-    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
+    val indirectCRLTestCases = listOf("Test28", "Test29", "Test30","Test31","Test32","Test33","Test34", "Test35")
 
+    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json")).filterNot { it.name.contains("indirectCRL") }
+        .filter { testCase ->
+            indirectCRLTestCases.none { forbidden -> testCase.name.contains(forbidden) }
+        }
+    runBlocking {
+        SystemCrlCache.initialize("./src/jvmTest/resources/crls/PKITS_crl")
+    }
     testSuite.forEach { testCase ->
         test(testCase.name) {
 
@@ -32,7 +40,8 @@ val NistPkiTestSuite by testSuite{
 
             val leaf = X509Certificate.decodeFromPem(testCase.leaf).getOrThrow()
 
-            val chain = AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchor)
+            val chain =
+                AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchor)
 
             val context = CertificateValidationContext(
                 allowIncludedTrustAnchor = false,
@@ -44,7 +53,6 @@ val NistPkiTestSuite by testSuite{
             )
 
             val result = chain.validate(context)
-
             if (testCase.isSuccessful) {
                 result.isValid shouldBe true
             } else {

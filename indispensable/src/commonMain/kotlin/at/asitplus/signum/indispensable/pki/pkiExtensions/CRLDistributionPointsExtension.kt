@@ -131,7 +131,7 @@ sealed class DistributionPointName : Asn1Encodable<Asn1ExplicitlyTagged> {
                     child.decodeRethrowing {
                         buildList {
                             while (hasNext()) {
-                                GeneralName.decodeFromTlv(next())
+                                add(GeneralName.decodeFromTlv(next()))
                             }
                         }
                     }
