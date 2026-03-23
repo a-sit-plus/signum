@@ -209,8 +209,14 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
         override fun toString(): String = name
 
-        companion object {
+        companion object : Enumeration<AES<*, *, *>> {
             val blockSize = 128.bit
+
+            override val entries: List<AES<*, *, *>> by lazy {
+                SymmetricEncryptionAlgorithm.AES_128.entries +
+                    SymmetricEncryptionAlgorithm.AES_192.entries +
+                    SymmetricEncryptionAlgorithm.AES_256.entries
+            }
         }
 
 
