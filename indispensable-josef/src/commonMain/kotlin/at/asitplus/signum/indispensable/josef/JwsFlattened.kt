@@ -16,8 +16,9 @@ import kotlinx.serialization.Transient
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
  * constitute a valid [JwsHeader].
  */
+@ConsistentCopyVisibility
 @Serializable
-data class JwsFlattened(
+data class JwsFlattened internal constructor(
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
