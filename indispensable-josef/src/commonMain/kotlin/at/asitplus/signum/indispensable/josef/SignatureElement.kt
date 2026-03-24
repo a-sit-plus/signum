@@ -43,6 +43,10 @@ data class SignatureElement(
     @SerialName(JWS.SerialNames.HEADER)
     val unprotectedHeader: JwsHeader.Part? = null
 ) {
+    init {
+        JwsProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+    }
+
     @Transient
     val jwsHeader: JwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
     @Transient
