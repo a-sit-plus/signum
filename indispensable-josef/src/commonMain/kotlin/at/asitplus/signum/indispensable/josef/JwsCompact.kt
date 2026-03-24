@@ -28,7 +28,8 @@ import kotlinx.serialization.encoding.Encoder
  *
  * For a standalone compact JWS string, use [toString] and [JwsCompact.invoke].
  */
-data class JwsCompact(
+@ConsistentCopyVisibility
+data class JwsCompact internal constructor(
     val plainProtectedHeader: ByteArray,
     override val plainPayload: ByteArray,
     val plainSignature: ByteArray,

@@ -13,8 +13,9 @@ import kotlinx.serialization.Transient
  * fragments for one signature and exposes its merged effective [JwsHeader]. All signatures in a [JwsGeneral] share
  * the same payload.
  */
+@ConsistentCopyVisibility
 @Serializable
-data class JwsGeneral(
+data class JwsGeneral internal constructor(
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val plainPayload: ByteArray,
