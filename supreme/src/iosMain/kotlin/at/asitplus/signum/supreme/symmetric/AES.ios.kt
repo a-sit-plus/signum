@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.internals.ImplementationError
@@ -44,6 +45,10 @@ internal object AESIOS {
 
         is AES.ECB -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
+            alg.sealedBox.from(bytes).getOrThrow()
+        }
+        is AES.ECB_NOPADDING -> {
+            val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = false)
             alg.sealedBox.from(bytes).getOrThrow()
         }
 
@@ -121,7 +126,7 @@ internal object AESIOS {
                 data.let { if (encrypt && pad) algorithm.addPKCS7Padding(it) else it }.usePinned { input ->
                     bytesEncrypted.usePinned { bytesEncrypted ->
                         when (algorithm) {
-                            is AES.CBC.Unauthenticated, is AES.ECB -> {
+                            is AES.CBC.Unauthenticated, is AES.ECB, is AES.ECB_NOPADDING -> {
                                 CCCrypt(
                                     (if (encrypt) kCCEncrypt else kCCDecrypt),
                                     (kCCAlgorithmAES),
@@ -174,6 +179,6 @@ internal object AESIOS {
 val SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>.iosOptions: UInt
     get() = @OptIn(HazardousMaterials::class) when (this) {
         is AES.CBC.Unauthenticated, is AES.WRAP.RFC3394 -> 0u //no options (=manual padding).
-        is AES.ECB -> kCCOptionECBMode
+        is AES.ECB, is AES.ECB_NOPADDING -> kCCOptionECBMode
         else -> throw ImplementationError()
     }

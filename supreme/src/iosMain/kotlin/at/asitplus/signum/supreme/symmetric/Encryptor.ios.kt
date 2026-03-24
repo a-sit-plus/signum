@@ -61,7 +61,7 @@ private class IosPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : K
                     data,
                     pad = when (algorithm) {
                         is AES.CBC.Unauthenticated, is AES.ECB -> true
-                        is AES.WRAP.RFC3394 -> false
+                        is AES.WRAP.RFC3394, is AES.ECB_NOPADDING -> false
                     }
                 )
             }

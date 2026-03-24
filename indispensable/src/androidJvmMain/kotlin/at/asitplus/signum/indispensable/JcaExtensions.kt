@@ -270,6 +270,7 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING -> "AES/ECB/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
         else -> TODO("$this is unsupported")
