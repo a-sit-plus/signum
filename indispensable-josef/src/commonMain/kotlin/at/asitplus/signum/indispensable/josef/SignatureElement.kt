@@ -18,8 +18,9 @@ import kotlinx.serialization.Transient
  *
  * See [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1).
  */
+@ConsistentCopyVisibility
 @Serializable
-data class SignatureElement(
+data class SignatureElement internal constructor(
     /**
      * The [plainSignature] member MUST be present
      *
