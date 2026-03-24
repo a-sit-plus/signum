@@ -1,19 +1,20 @@
 [versions]
-kotlin = "2.3.0"
+kotlin = "2.3.20"
 agp = "8.12.3"
 core = "1.5.0"
-kotlinxIoCore = "0.8.0"
+kotlinxIoCore = "0.9.0"
 kotlinxMetadataJvm = "0.9.0"
 multibase = "1.2.2"
 bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "2.2.0"
 kotlincryptoRandom = "0.6.0"
-asp = "20251217"
+asp = "20260314"
 classgraph = "4.8.184"
 bouncycastle= "1.83"
-testballoon = "0.8.2-K2.3.0"
+testballoon = "0.8.4-K2.3.20"
 testballoonAddons = "0.7.1"
+serialization = "1.10.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
