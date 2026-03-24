@@ -18,7 +18,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.time.Instant
 
 /**
- * Effective JWS header after combining protected and unprotected header members.
+ * Effective JWS header as defined in [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
+ * after combining protected and unprotected header members.
  *
  * [JwsCompact] carries this header entirely in the protected section. [JwsFlattened], [JwsGeneral], and
  * [SignatureElement] represent the protected and unprotected fragments as [Part] and reconstruct the effective
@@ -27,7 +28,7 @@ import kotlin.time.Instant
  * Individual fragments may be incomplete. Only the combination of protected and unprotected parameters must
  * constitute a valid [JwsHeader].
  *
- * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515).
+ * Private Header Parameters as specified in RFC 7515 4.3 are currently not implemented
  */
 @Serializable
 data class JwsHeader(
