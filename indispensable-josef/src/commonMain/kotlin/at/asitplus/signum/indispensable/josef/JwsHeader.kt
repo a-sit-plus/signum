@@ -40,7 +40,7 @@ data class JwsHeader(
      * When used with a JWK, the "kid" value is used to match a JWK "kid"
      * parameter value.
      */
-    @SerialName("kid")
+    @SerialName(SerialNames.KEY_ID)
     val keyId: String? = null,
 
     /**
@@ -55,7 +55,7 @@ data class JwsHeader(
      * processing of this parameter is performed by the JWS application.
      * Use of this Header Parameter is OPTIONAL.
      */
-    @SerialName("typ")
+    @SerialName(SerialNames.TYPE)
     val type: String? = null,
 
     /**
@@ -71,7 +71,7 @@ data class JwsHeader(
      * Parameter MUST be present and MUST be understood and processed by
      * implementations.
      */
-    @SerialName("alg")
+    @SerialName(SerialNames.ALGORITHM)
     val algorithm: JwsAlgorithm,
 
     /**
@@ -86,7 +86,7 @@ data class JwsHeader(
      * parameter is performed by the JWS application.  Use of this Header
      * Parameter is OPTIONAL.
      */
-    @SerialName("cty")
+    @SerialName(SerialNames.CONTENT_TYPE)
     val contentType: String? = null,
 
     /**
@@ -105,7 +105,7 @@ data class JwsHeader(
      * the certificate or certificate chain to be invalid if any validation
      * failure occurs.  Use of this Header Parameter is OPTIONAL.
      */
-    @SerialName("x5c")
+    @SerialName(SerialNames.CERTIFICATE_CHAIN)
     @Serializable(with = CertificateChainBase64Serializer::class)
     val certificateChain: CertificateChain? = null,
 
@@ -118,7 +118,7 @@ data class JwsHeader(
      * account for clock skew.  Its value MUST be a number containing a
      * NumericDate value.  Use of this claim is OPTIONAL.
      */
-    @SerialName("nbf")
+    @SerialName(SerialNames.NOT_BEFORE)
     @Serializable(with = InstantLongSerializer::class)
     val notBefore: Instant? = null,
 
@@ -128,7 +128,7 @@ data class JwsHeader(
      * value MUST be a number containing a NumericDate value.  Use of this
      * claim is OPTIONAL.
      */
-    @SerialName("iat")
+    @SerialName(SerialNames.ISSUED_AT)
     @Serializable(with = InstantLongSerializer::class)
     val issuedAt: Instant? = null,
 
@@ -141,7 +141,7 @@ data class JwsHeader(
      * a few minutes, to account for clock skew.  Its value MUST be a number
      * containing a NumericDate value.  Use of this claim is OPTIONAL.
      */
-    @SerialName("exp")
+    @SerialName(SerialNames.EXPIRATION)
     @Serializable(with = InstantLongSerializer::class)
     val expiration: Instant? = null,
 
@@ -151,7 +151,7 @@ data class JwsHeader(
      * represented as a JSON Web Key (JWK).  Use of this Header Parameter is
      * OPTIONAL.
      */
-    @SerialName("jwk")
+    @SerialName(SerialNames.JSON_WEB_KEY)
     val jsonWebKey: JsonWebKey? = null,
 
     /**
@@ -166,7 +166,7 @@ data class JwsHeader(
      * Section 8 on TLS requirements.  Use of this Header Parameter is
      * OPTIONAL.
      */
-    @SerialName("jku")
+    @SerialName(SerialNames.JSON_WEB_KEY_SET_URL)
     val jsonWebKeySetUrl: String? = null,
 
     /**
@@ -187,7 +187,7 @@ data class JwsHeader(
      * Also, see Section 8 on TLS requirements.  Use of this Header
      * Parameter is OPTIONAL.
      */
-    @SerialName("x5u")
+    @SerialName(SerialNames.CERTIFICATE_URL)
     val certificateUrl: String? = null,
 
     /**
@@ -198,7 +198,7 @@ data class JwsHeader(
      * are also sometimes known as certificate fingerprints.  Use of this
      * Header Parameter is OPTIONAL.
      */
-    @SerialName("x5t")
+    @SerialName(SerialNames.CERTIFICATE_SHA1_THUMBPRINT)
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val certificateSha1Thumbprint: ByteArray? = null,
 
@@ -210,7 +210,7 @@ data class JwsHeader(
      * thumbprints are also sometimes known as certificate fingerprints.
      * Use of this Header Parameter is OPTIONAL.
      */
-    @SerialName("x5t#S256")
+    @SerialName(SerialNames.CERTIFICATE_SHA256_THUMBPRINT)
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val certificateSha256Thumbprint: ByteArray? = null,
 
@@ -218,7 +218,7 @@ data class JwsHeader(
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
      * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
      */
-    @SerialName("jwt")
+    @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactStringSerializer::class)
     val attestationJwt: JwsCompact? = null,
 
@@ -226,7 +226,7 @@ data class JwsHeader(
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
      * Should be a [JwsCompact], with [JsonWebToken] as the payload
      */
-    @SerialName("key_attestation")
+    @SerialName(SerialNames.KEY_ATTESTATION)
     @Serializable(with = JwsCompactStringSerializer::class)
     val keyAttestation: JwsCompact? = null,
 
@@ -239,7 +239,7 @@ data class JwsHeader(
      *
      * Defined as a [String] here, so client applications can parse to appropriate types.
      */
-    @SerialName("vctm")
+    @SerialName(SerialNames.VC_TYPE_METADATA)
     val vcTypeMetadata: Set<String>? = null,
 ) {
     /**
@@ -250,45 +250,45 @@ data class JwsHeader(
      */
     @Serializable
     data class Part(
-        @SerialName("kid")
+        @SerialName(SerialNames.KEY_ID)
         val keyId: String? = null,
-        @SerialName("typ")
+        @SerialName(SerialNames.TYPE)
         val type: String? = null,
-        @SerialName("alg")
+        @SerialName(SerialNames.ALGORITHM)
         val algorithm: JwsAlgorithm? = null,
-        @SerialName("cty")
+        @SerialName(SerialNames.CONTENT_TYPE)
         val contentType: String? = null,
-        @SerialName("x5c")
+        @SerialName(SerialNames.CERTIFICATE_CHAIN)
         @Serializable(with = CertificateChainBase64Serializer::class)
         val certificateChain: CertificateChain? = null,
-        @SerialName("nbf")
+        @SerialName(SerialNames.NOT_BEFORE)
         @Serializable(with = InstantLongSerializer::class)
         val notBefore: Instant? = null,
-        @SerialName("iat")
+        @SerialName(SerialNames.ISSUED_AT)
         @Serializable(with = InstantLongSerializer::class)
         val issuedAt: Instant? = null,
-        @SerialName("exp")
+        @SerialName(SerialNames.EXPIRATION)
         @Serializable(with = InstantLongSerializer::class)
         val expiration: Instant? = null,
-        @SerialName("jwk")
+        @SerialName(SerialNames.JSON_WEB_KEY)
         val jsonWebKey: JsonWebKey? = null,
-        @SerialName("jku")
+        @SerialName(SerialNames.JSON_WEB_KEY_SET_URL)
         val jsonWebKeySetUrl: String? = null,
-        @SerialName("x5u")
+        @SerialName(SerialNames.CERTIFICATE_URL)
         val certificateUrl: String? = null,
-        @SerialName("x5t")
+        @SerialName(SerialNames.CERTIFICATE_SHA1_THUMBPRINT)
         @Serializable(with = ByteArrayBase64UrlSerializer::class)
         val certificateSha1Thumbprint: ByteArray? = null,
-        @SerialName("x5t#S256")
+        @SerialName(SerialNames.CERTIFICATE_SHA256_THUMBPRINT)
         @Serializable(with = ByteArrayBase64UrlSerializer::class)
         val certificateSha256Thumbprint: ByteArray? = null,
-        @SerialName("jwt")
+        @SerialName(SerialNames.ATTESTATION_JWT)
         @Serializable(with = JwsCompactStringSerializer::class)
         val attestationJwt: JwsCompact? = null,
-        @SerialName("key_attestation")
+        @SerialName(SerialNames.KEY_ATTESTATION)
         @Serializable(with = JwsCompactStringSerializer::class)
         val keyAttestation: JwsCompact? = null,
-        @SerialName("vctm")
+        @SerialName(SerialNames.VC_TYPE_METADATA)
         val vcTypeMetadata: Set<String>? = null,
     ) {
         fun toJsonObject(): JsonObject =
@@ -419,6 +419,25 @@ data class JwsHeader(
             )
                 .getOrNull()
         }
+    }
+
+    object SerialNames {
+        const val KEY_ID = "kid"
+        const val TYPE = "typ"
+        const val ALGORITHM = "alg"
+        const val CONTENT_TYPE = "cty"
+        const val CERTIFICATE_CHAIN = "x5c"
+        const val NOT_BEFORE = "nbf"
+        const val ISSUED_AT = "iat"
+        const val EXPIRATION = "exp"
+        const val JSON_WEB_KEY = "jwk"
+        const val JSON_WEB_KEY_SET_URL = "jku"
+        const val CERTIFICATE_URL = "x5u"
+        const val CERTIFICATE_SHA1_THUMBPRINT = "x5t"
+        const val CERTIFICATE_SHA256_THUMBPRINT = "x5t#S256"
+        const val ATTESTATION_JWT = "jwt"
+        const val KEY_ATTESTATION = "key_attestation"
+        const val VC_TYPE_METADATA = "vctm"
     }
 
     companion object {
