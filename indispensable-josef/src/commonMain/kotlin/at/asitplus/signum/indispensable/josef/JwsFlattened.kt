@@ -32,6 +32,10 @@ data class JwsFlattened internal constructor(
     val plainSignature: ByteArray
 ) : JWS() {
 
+    init {
+        JwsProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+    }
+
     @Transient
     val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
@@ -75,7 +79,7 @@ data class JwsFlattened internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val plainProtectedHeader = protectedHeader?.let { JwsProtectedHeaderSerializer.encodeToByteArray(it) }
+            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)
             return JwsFlattened(
                 plainProtectedHeader,
                 unprotectedHeader,

@@ -106,6 +106,54 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         general.toJwsFlattened() shouldBe listOf(flattened)
     }
 
+    "empty protected header part is omitted from flattened/general JWS and signing input" {
+        val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
+        val emptyProtectedHeader = JwsHeader.Part()
+        val unprotectedHeader = JwsHeader.Part(
+            algorithm = JwsAlgorithm.Signature.RS256,
+            keyId = "kid-1",
+        )
+        val conformantWithoutProtected = JwsFlattened(
+            plainProtectedHeader = null,
+            unprotectedHeader = unprotectedHeader,
+            plainPayload = payload,
+            plainSignature = byteArrayOf(1, 2, 3, 4),
+        )
+        var capturedSignatureInput: ByteArray? = null
+
+        val flattened = JwsFlattened(
+            protectedHeader = emptyProtectedHeader,
+            unprotectedHeader = unprotectedHeader,
+            payload = payload,
+        ) { signatureInput ->
+            capturedSignatureInput = signatureInput
+            byteArrayOf(1, 2, 3, 4)
+        }
+        val general = listOf(flattened).toJwsGeneral()
+
+        flattened shouldBe conformantWithoutProtected
+        flattened.plainProtectedHeader shouldBe null
+        capturedSignatureInput shouldBe JWS.getSignatureInput(null, payload)
+        flattened.signatureInput shouldBe capturedSignatureInput
+        flattened.signatureInput shouldBe conformantWithoutProtected.signatureInput
+
+        val flattenedJson = joseCompliantSerializer.decodeFromString<JsonObject>(
+            joseCompliantSerializer.encodeToString(flattened)
+        )
+        flattenedJson.shouldNotContainKey(JWS.SerialNames.PROTECTED)
+
+        general.signatureElements.single().plainProtectedHeader shouldBe null
+        general.signatureInputs.single() shouldBe conformantWithoutProtected.signatureInput
+
+        val generalJson = joseCompliantSerializer.decodeFromString<JsonObject>(
+            joseCompliantSerializer.encodeToString(general)
+        )
+        generalJson[JWS.SerialNames.SIGNATURES]!!
+            .jsonArray
+            .single()
+            .shouldNotContainKey(JWS.SerialNames.PROTECTED)
+    }
+
     "compact JWS keeps its exact string form and round-trips through flattened" {
         val compactString = compactSerializationAt(0)
         val compact = JwsCompact(compactString)
@@ -219,6 +267,28 @@ val JwsSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         paddedPayloadResult.shouldBeRejectedPaddedBase64Url()
         paddedProtectedHeaderResult.shouldBeRejectedPaddedBase64Url()
         paddedSignatureResult.shouldBeRejectedPaddedBase64Url()
+    }
+
+    "flattened and general JSON JWS reject explicitly empty protected headers" {
+        val flattenedResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsFlattened>(
+                flattenedJson(
+                    protectedHeaderBase64 = "e30",
+                    headerJson = """{"alg":"RS256","kid":"kid-1"}""",
+                )
+            )
+        }
+        val generalResult = runCatching {
+            joseCompliantSerializer.decodeFromString<JwsGeneral>(
+                generalJson(
+                    protectedHeaderBase64 = "e30",
+                    headerJson = """{"alg":"RS256","kid":"kid-1"}""",
+                )
+            )
+        }
+
+        flattenedResult.shouldBeRejectedEmptyProtectedHeader()
+        generalResult.shouldBeRejectedEmptyProtectedHeader()
     }
 
     "general to flattened to compact preserves each single-signature view" {
@@ -419,16 +489,18 @@ private fun flattenedJson(
     protectedHeaderBase64: String = "eyJhbGciOiJSUzI1NiJ9",
     payloadBase64: String = "e30",
     signatureBase64: String = "AQ",
+    headerJson: String? = null,
 ): String = """
-    {"protected":"$protectedHeaderBase64","payload":"$payloadBase64","signature":"$signatureBase64"}
+    {"protected":"$protectedHeaderBase64","payload":"$payloadBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}
 """.trimIndent()
 
 private fun generalJson(
     protectedHeaderBase64: String = "eyJhbGciOiJSUzI1NiJ9",
     payloadBase64: String = "e30",
     signatureBase64: String = "AQ",
+    headerJson: String? = null,
 ): String = """
-    {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"}]}
+    {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}]}
 """.trimIndent()
 
 private fun flattenedSample(
@@ -454,6 +526,11 @@ private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
     failure.message.orEmpty().shouldContain("Decoding failed")
     failure.cause shouldNotBe null
     failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
+}
+
+private fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
+    isSuccess shouldBe false
+    shouldBeFailure().message.orEmpty().shouldContain("must be absent when it would otherwise be empty")
 }
 
 private fun JsonElement.shouldNotContainKey(key: String) {

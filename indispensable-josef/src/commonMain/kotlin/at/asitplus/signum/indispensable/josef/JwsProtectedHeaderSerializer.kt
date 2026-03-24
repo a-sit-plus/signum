@@ -26,6 +26,23 @@ object JwsProtectedHeaderSerializer : TransformingSerializerTemplate<JwsHeader.P
 ) {
     fun encodeToByteArray(header: JwsHeader.Part): ByteArray = header.toProtectedHeaderBytes()
 
+    /**
+     * RFC 7515 requires empty protected header values to be absent rather than encoded as `{}`.
+     */
+    fun encodeToByteArrayOrNull(header: JwsHeader.Part?): ByteArray? =
+        header
+            ?.takeUnless { it.toJsonObject().isEmpty() }
+            ?.toProtectedHeaderBytes()
+
+    /**
+     * RFC 7515 requires empty protected header values to be absent rather than encoded as `{}`.
+     */
+    internal fun requireAbsentIfEmpty(encodedHeader: ByteArray?) {
+        require(encodedHeader == null || decodeToJsonObject(encodedHeader).isNotEmpty()) {
+            "JWS protected header must be absent when it would otherwise be empty"
+        }
+    }
+
     fun decodeFromByteArray(encodedHeader: ByteArray): JwsHeader.Part = encodedHeader.toProtectedHeaderPart()
 
     fun decodeToJsonObject(encodedHeader: ByteArray): JsonObject = encodedHeader.toProtectedHeaderJsonObject()
