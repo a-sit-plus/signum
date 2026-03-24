@@ -1,12 +1,15 @@
 # Changelog
 
-## NEXT
-* fix build setup on non-macos
+## 3.20.0 / Supreme 0.12.0
 * Fix ASN.1 SET ordering and Tag comparator
 * Add AES.ECB_NOPADDING
 * Fatal crash if decline FaceID permission and cancel Passcode input
 * Fix ASN.1 REAL parsing causing a crash on WASM
-
+* fix build setup on non-macOS hosts
+* Dependency Updates:
+    * Kotlin 2.3.20
+    * Kotlinx serialization 1.10.0
+    * Kotlinx IO 0.9.0
 
 ## 3.19.3 / Supreme 0.11.3
 * Support CURSED X.509 Certificate extensions that encode critical=false instead of omitting it

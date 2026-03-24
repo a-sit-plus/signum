@@ -11,8 +11,10 @@ import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import org.kotlincrypto.random.CryptoRand
+import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.experimental.xor
 import kotlin.jvm.JvmInline
+import kotlin.native.HiddenFromObjC
 
 private typealias HashToFieldFn = (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
 private typealias MapToCurveFn = (ModularBigInteger) -> ECPoint
@@ -258,6 +260,8 @@ object RFC9380 {
     /** The P256_XMD:SHA-256_SSWU_RO_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
      *  @see ECCurve.hashToCurve */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
     fun `P256_XMD∶SHA-256_SSWU_RO_`(domain: ByteArray) =
         hashToCurveComposition(
             hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA256), ECCurve.SECP_256_R_1, domain),
@@ -267,6 +271,8 @@ object RFC9380 {
     /** The P256_XMD:SHA-256_SSWU_NU_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
      *  @see ECCurve.hashToCurve */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
     fun `P256_XMD∶SHA-256_SSWU_NU_`(domain: ByteArray) =
         encodeToCurveComposition(
             hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA256), ECCurve.SECP_256_R_1, domain),
@@ -276,6 +282,8 @@ object RFC9380 {
     /** The P384_XMD:SHA-384_SSWU_RO_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
      *  @see ECCurve.hashToCurve */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
     fun `P384_XMD∶SHA-384_SSWU_RO_`(domain: ByteArray) =
         hashToCurveComposition(
             hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA384), ECCurve.SECP_384_R_1, domain),
@@ -285,6 +293,8 @@ object RFC9380 {
     /** The P384_XMD:SHA-384_SSWU_NU_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
      *  @see ECCurve.hashToCurve */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
     fun `P384_XMD∶SHA-384_SSWU_NU_`(domain: ByteArray) =
         encodeToCurveComposition(
             hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA384), ECCurve.SECP_384_R_1, domain),
@@ -294,6 +304,8 @@ object RFC9380 {
     /** The P521_XMD:SHA-512_SSWU_RO_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
      *  @see ECCurve.hashToCurve */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
     fun `P521_XMD∶SHA-512_SSWU_RO_`(domain: ByteArray) =
         hashToCurveComposition(
             hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA512), ECCurve.SECP_521_R_1, domain),
@@ -303,6 +315,8 @@ object RFC9380 {
     /** The P521_XMD:SHA-512_SSWU_NU_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
      *  @see ECCurve.hashToCurve */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
     fun `P521_XMD∶SHA-512_SSWU_NU_`(domain: ByteArray) =
         encodeToCurveComposition(
             hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA512), ECCurve.SECP_521_R_1, domain),

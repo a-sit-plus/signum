@@ -4,6 +4,11 @@ plugins {
 // Adapted from https://github.com/openwallet-foundation/multipaz
 listOf("iphoneos", "iphonesimulator").forEach { sdk ->
     val taskName = "build${sdk.replaceFirstChar { it.titlecase() }}"
+    val destination = when (sdk) {
+        "iphoneos" -> "generic/platform=iOS"
+        "iphonesimulator" -> "generic/platform=iOS Simulator"
+        else -> error("Unsupported Apple SDK: $sdk")
+    }
 
     tasks.register<Exec>(taskName) {
         group = "build"
@@ -14,6 +19,7 @@ listOf("iphoneos", "iphonesimulator").forEach { sdk ->
             "-project", "AESwift.xcodeproj",
             "-scheme", "AESwift",
             "-sdk", sdk,
+            "-destination", destination,
             "-configuration", "Release",
             "SYMROOT=${projectDir}/build"
         )
