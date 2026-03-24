@@ -15,6 +15,9 @@ import kotlinx.serialization.Transient
  *
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
  * constitute a valid [JwsHeader].
+ *
+ * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
+ * member, so callers should not pre-encode them.
  */
 @ConsistentCopyVisibility
 @Serializable
@@ -72,6 +75,8 @@ data class JwsFlattened internal constructor(
          * Creates a flattened JWS from protected and unprotected header fragments.
          *
          * The fragments may be partial, but their merged content must form a valid [JwsHeader].
+         * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
+         * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
         suspend operator fun invoke(
             protectedHeader: JwsHeader.Part?,

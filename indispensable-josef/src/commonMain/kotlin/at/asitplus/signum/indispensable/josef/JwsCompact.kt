@@ -106,7 +106,10 @@ data class JwsCompact internal constructor(
 
         /**
          * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
-         * from components and immediately sign the correct representation
+         * from components and immediately sign the correct representation.
+         *
+         * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
+         * compact serialization and signing input construction apply base64url encoding internally.
          */
         suspend operator fun invoke(
             protectedHeader: JwsHeader,

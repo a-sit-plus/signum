@@ -23,6 +23,12 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 @Serializable(with = JWS.JwsSerializer::class)
 sealed class JWS {
+    /**
+     * Raw payload bytes.
+     *
+     * JWS serializers and signature-input construction base64url-encode these bytes where required.
+     * Callers should not pre-encode the payload.
+     */
     abstract val plainPayload: ByteArray
 
     fun <P> getPayload(serializer: KSerializer<P>, serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> = runCatching {
@@ -65,6 +71,11 @@ sealed class JWS {
         fun getEncodedProtectedHeader(protectedHeader: ByteArray?): String =
             protectedHeader?.encodeToString(Base64UrlStrict).orEmpty()
 
+        /**
+         * Builds the RFC 7515 signing input from raw protected-header bytes and raw payload bytes.
+         *
+         * [payload] must be plain payload bytes; this helper base64url-encodes it internally.
+         */
         fun getSignatureInput(protectedHeader: ByteArray?, payload: ByteArray) =
             "${getEncodedProtectedHeader(protectedHeader)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
