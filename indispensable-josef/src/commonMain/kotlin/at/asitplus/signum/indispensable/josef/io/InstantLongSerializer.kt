@@ -11,7 +11,7 @@ import kotlin.time.Instant
 /**
  * JWS-Compliant [Instant] serializer. An instant is represented as seconds from epoch.
  */
-class InstantLongSerializer : KSerializer<Instant> {
+object InstantLongSerializer : KSerializer<Instant> {
 
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("InstantLongSerializer", PrimitiveKind.LONG)
 
