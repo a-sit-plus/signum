@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.basicConstraints_2_5_29_19
 import at.asitplus.signum.indispensable.asn1.cRLDistributionPoints_2_5_29_31
 import at.asitplus.signum.indispensable.asn1.cRLReason
+import at.asitplus.signum.indispensable.asn1.certificateIssuer
 import at.asitplus.signum.indispensable.asn1.certificatePolicies_2_5_29_32
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -36,6 +37,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifier
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReasonCodeExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificateIssuerExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
@@ -110,7 +112,9 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 KnownOIDs.subjectKeyIdentifier to { seq, tag -> SubjectKeyIdentifierExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.cRLDistributionPoints_2_5_29_31 to { seq, tag -> CRLDistributionPointsExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.issuingDistributionPoint_2_5_29_28 to { seq, tag -> IssuingDistributionPointExtension.decodeFromTlv(seq, tag) },
-                KnownOIDs.cRLReason to { seq, tag -> CRLReasonCodeExtension.decodeFromTlv(seq, tag) }
+                KnownOIDs.cRLReason to { seq, tag -> CRLReasonCodeExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.certificateIssuer to { seq, tag -> CertificateIssuerExtension.decodeFromTlv(seq, tag) }
+
             )
         )
         val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension>

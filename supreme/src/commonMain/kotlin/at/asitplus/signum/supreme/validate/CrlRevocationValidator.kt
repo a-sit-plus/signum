@@ -1,7 +1,16 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CRLRevocationException
 import at.asitplus.signum.CertificateException
+import at.asitplus.signum.CrlDistributionPointMismatchException
+import at.asitplus.signum.CrlInvalidSignatureAlgorithmException
+import at.asitplus.signum.CrlIssuerMismatchException
+import at.asitplus.signum.CrlMissingPublicKeyException
+import at.asitplus.signum.CrlScopeViolationException
+import at.asitplus.signum.CrlSignatureException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.IndirectCrlNotSupportedException
+import at.asitplus.signum.MissingCrlDistributionPointsException
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
@@ -9,7 +18,6 @@ import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.cRLDistributionPoints_2_5_29_31
 import at.asitplus.signum.indispensable.asn1.cRLReason
 import at.asitplus.signum.indispensable.asn1.certificateIssuer
-import at.asitplus.signum.indispensable.asn1.crlExtReason
 import at.asitplus.signum.indispensable.asn1.deltaCRLIndicator
 import at.asitplus.signum.indispensable.asn1.freshestCRL
 import at.asitplus.signum.indispensable.asn1.invalidityDate
@@ -25,6 +33,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtens
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReason
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReasonCodeExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificateIssuerExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.DistributionPointName
 import at.asitplus.signum.indispensable.pki.pkiExtensions.IssuingDistributionPointExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ReasonFlag
@@ -42,15 +51,14 @@ class CrlRevocationValidator(
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
 
         if (!context.supportRevocationChecking) return emptyMap()
-
+        var currentCertIndex = 0
         val checkedExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
-        val chain = anchoredChain.trustAnchor.cert?.let { anchoredChain.chain + it }
+        val processingChain = anchoredChain.trustAnchor.cert?.let { anchoredChain.chain + it }
             ?: anchoredChain.chain
 
-        for (i in 0 until chain.size - 1) {
-            val cert = chain[i]
-            val issuerCert = chain[i + 1]
-
+        for (currCert in processingChain.dropLast(1)) {
+            val issuerCert = processingChain.find { it.tbsCertificate.subjectName == currCert.tbsCertificate.issuerName }
+                ?: throw CertificateException("Cannot find issuer in chain for certificate with index $currentCertIndex")
             val remainingReasons = CRLReason.entries
                 .filter { it != CRLReason.UNUSED_7 &&
                         it != CRLReason.REMOVE_FROM_CRL &&
@@ -59,23 +67,32 @@ class CrlRevocationValidator(
 
             val possibleCrls = mutableListOf<CertificateList>()
 
-            crlProvider.getCrl(cert, issuerCert).let { possibleCrls.addAll(it) }
+            crlProvider.getCrl(currCert, issuerCert).let { possibleCrls.addAll(it) }
+            val cdpExtension = currCert.findExtension<CRLDistributionPointsExtension>()
+            cdpExtension?.distributionPoints?.forEach { dp ->
+                val crlIssuer = dp.crlIssuer?.let { name ->
+                    processingChain.find { it.tbsCertificate.subjectName == name.name }
+                } ?: issuerCert
+
+                val crlsFromIssuer = crlProvider.getCrl(currCert, crlIssuer)
+                possibleCrls.addAll(crlsFromIssuer)
+            }
 
             runCatching {
-                possibleCrls.addAll(crlProvider.getCrlsFromDistributionPoints(cert))
+                possibleCrls.addAll(crlProvider.getCrlsFromDistributionPoints(currCert))
             }
 
             val approvedCrls = mutableListOf<CertificateList>()
 
             for (crl in possibleCrls) {
                 try {
-                    val crlSignerCert = chain.findLast { chainCert ->
+                    val crlSignerCert = processingChain.findLast { chainCert ->
                         chainCert.tbsCertificate.subjectName == crl.tbsCertList.issuer
                     } ?: throw CertificateException("No certificate in the chain matches CRL issuer")
 
-                    verifyCrl(crl, cert, crlSignerCert, context)
+                    verifyCrl(crl, currCert, crlSignerCert, context)
 
-                    val coveredReasons = getCoveredReasons(crl, cert)
+                    val coveredReasons = getCoveredReasons(crl, currCert)
                     approvedCrls.add(crl)
 
                     val newCoverage = coveredReasons.intersect(remainingReasons)
@@ -83,19 +100,18 @@ class CrlRevocationValidator(
 
                     if (remainingReasons.isEmpty()) break
 
-                } catch (_: Exception) {
-                }
+                } catch (_: Throwable) {}
             }
 
             if (remainingReasons.isNotEmpty()) {
                 try {
-                    val dpCrls = crlProvider.getCrlsFromDistributionPoints(cert)
+                    val dpCrls = crlProvider.getCrlsFromDistributionPoints(currCert)
 
                     for (crl in dpCrls) {
                         try {
-                            verifyCrl(crl, cert, issuerCert, context)
+                            verifyCrl(crl, currCert, issuerCert, context)
 
-                            val coveredReasons = getCoveredReasons(crl, cert)
+                            val coveredReasons = getCoveredReasons(crl, currCert)
                             val newCoverage = coveredReasons.intersect(remainingReasons)
 
                             if (newCoverage.isNotEmpty()) {
@@ -108,12 +124,12 @@ class CrlRevocationValidator(
                         } catch (_: Exception) {}
                     }
 
-                } catch (_: Exception) {
+                } catch (_: Throwable) {
                     // ignore DP failure
                 }
             }
 
-            checkRevocationInCrls(approvedCrls, cert, context)
+            checkRevocationInCrls(approvedCrls, currCert, context)
 
             if (remainingReasons.isNotEmpty()) {
                 throw CertificateException(
@@ -121,13 +137,14 @@ class CrlRevocationValidator(
                 )
             }
 
-            checkedExtensions.getOrPut(cert) { mutableSetOf() }
+            checkedExtensions.getOrPut(currCert) { mutableSetOf() }
                 .addAll(
                     listOf(
                         KnownOIDs.cRLDistributionPoints_2_5_29_31,
                         KnownOIDs.freshestCRL
                     )
                 )
+            currentCertIndex++
         }
 
         return checkedExtensions
@@ -139,7 +156,7 @@ class CrlRevocationValidator(
         issuerCert: X509Certificate,
         context: CertificateValidationContext
     ) {
-        validateCrlIntegrity(crl, issuerCert, context)
+        validateCrlIntegrity(crl, cert, issuerCert, context)
         validateCrlExtensions(crl)
         validateIssuingDistributionPoint(crl, cert)
     }
@@ -150,30 +167,34 @@ class CrlRevocationValidator(
         context: CertificateValidationContext
     ) {
         val serial = cert.tbsCertificate.serialNumber
+        val certIssuer = cert.tbsCertificate.issuerName
 
         for (crl in crls) {
 
-            val entry = crl.tbsCertList.revokedCertificates
-                ?.find { it.certSerialNumber.contentEquals(serial) }
-                ?: continue
+            for (entry in crl.tbsCertList.revokedCertificates ?: emptyList()) {
+                val entryIssuer = entry.findExtension<CertificateIssuerExtension>()?.issuer
+                    ?.firstOrNull { it.name.type == GeneralNameOption.NameType.DIRECTORY }
+                    ?.name as? X500Name ?: crl.tbsCertList.issuer
 
-            validateCrlEntryExtensions(entry)
+                if (entryIssuer != certIssuer) continue
+                if (!entry.certSerialNumber.contentEquals(serial)) continue
 
-            val reason = getReasonCode(entry) ?: CRLReason.UNSPECIFIED
+                validateCrlEntryExtensions(entry)
 
-            if (reason == CRLReason.REMOVE_FROM_CRL) continue
+                val reason = getReasonCode(entry) ?: CRLReason.UNSPECIFIED
 
-            val coveredReasons = getCoveredReasons(crl, cert)
+                if (reason == CRLReason.REMOVE_FROM_CRL) continue
 
-            if (reason !in coveredReasons) {
-                continue
-            }
+                val coveredReasons = getCoveredReasons(crl, cert)
 
-            val revocationDate = entry.revocationTime.instant
-            if (revocationDate <= context.date) {
-                throw CertificateException(
-                    "Certificate revoked. Reason: $reason"
-                )
+                if (reason !in coveredReasons) continue
+
+                val revocationDate = entry.revocationTime.instant
+                if (revocationDate <= context.date) {
+                    throw CRLRevocationException(
+                        "Certificate revoked. Reason: $reason"
+                    )
+                }
             }
         }
     }
@@ -188,48 +209,52 @@ class CrlRevocationValidator(
         validateIssuingDistributionPoint(crl, cert)
 
         val restricted = idp?.onlySomeReasons
-            ?.let { ReasonFlag.parseReasons(it) }
-            ?: return CRLReason.entries.toSet()
-
-        return restricted.map {
-            when (it) {
-                ReasonFlag.UNSPECIFIED -> CRLReason.UNSPECIFIED
-                ReasonFlag.KEY_COMPROMISE -> CRLReason.KEY_COMPROMISE
-                ReasonFlag.CA_COMPROMISE -> CRLReason.CA_COMPROMISE
-                ReasonFlag.AFFILIATION_CHANGED -> CRLReason.AFFILIATION_CHANGED
-                ReasonFlag.SUPERSEDED -> CRLReason.SUPERSEDED
-                ReasonFlag.CESSATION_OF_OPERATION -> CRLReason.CESSATION_OF_OPERATION
-                ReasonFlag.CERTIFICATE_HOLD -> CRLReason.CERTIFICATE_HOLD
-                ReasonFlag.PRIVILEGE_WITHDRAWN -> CRLReason.PRIVILEGE_WITHDRAWN
-                ReasonFlag.AA_COMPROMISE -> CRLReason.AA_COMPROMISE
-            }
-        }.toSet()
+        return if (restricted != null) {
+            ReasonFlag.parseReasons(restricted).map { it.crlReason }.toSet()
+        } else {
+            CRLReason.entries
+                .filter { it != CRLReason.UNUSED_7 &&
+                        it != CRLReason.REMOVE_FROM_CRL &&
+                        it != CRLReason.UNSPECIFIED }
+                .toSet()
+        }
     }
 
     private suspend fun validateCrlIntegrity(
         crl: CertificateList,
+        currCert: X509Certificate,
         issuerCert: X509Certificate,
         context: CertificateValidationContext
     ) {
-        val now = context.date
+        crl.checkValidityAt(context.date)
+        crl.checkValidityAt(context.date)
 
-        if (now < crl.tbsCertList.thisUpdate.instant) {
-            throw CertificateException("CRL not yet valid")
-        }
+        val certIssuer = currCert.tbsCertificate.issuerName
+        val crlIssuer = crl.tbsCertList.issuer
 
-        crl.tbsCertList.nextUpdate?.instant?.let {
-            if (now > it) throw CertificateException("CRL expired")
-        }
+        val idp = crl.findExtension<IssuingDistributionPointExtension>()
 
-        if (crl.tbsCertList.issuer != issuerCert.tbsCertificate.subjectName) {
-            throw CertificateException("CRL issuer mismatch")
+        val isIndirectUsage = crlIssuer != certIssuer
+
+        if (isIndirectUsage) {
+            if (idp == null || !idp.indirectCRL) {
+                throw CertificateException(
+                    "CRL is used as indirect but IssuingDistributionPoint is missing"
+                )
+            }
+        } else {
+            if (idp?.indirectCRL == false &&
+                crlIssuer != issuerCert.tbsCertificate.subjectName
+            ) {
+                throw CrlIssuerMismatchException("CRL issuer mismatch")
+            }
         }
 
         val publicKey = issuerCert.decodedPublicKey.getOrNull()
-            ?: throw CertificateException("Missing public key")
+            ?: throw CrlMissingPublicKeyException("Missing public key")
 
         val sigAlg = crl.signatureAlgorithm as? X509SignatureAlgorithm
-            ?: throw CertificateException("Invalid signature algorithm")
+            ?: throw CrlInvalidSignatureAlgorithmException("Invalid signature algorithm")
 
         val verified = sigAlg.verifierFor(publicKey)
             .getOrThrow()
@@ -238,7 +263,7 @@ class CrlRevocationValidator(
                 crl.decodedSignature.getOrThrow()
             ).isSuccess
 
-        if (!verified) throw CertificateException("Invalid CRL signature")
+        if (!verified) throw CrlSignatureException("Invalid CRL signature")
     }
 
     private fun validateIssuingDistributionPoint(crl: CertificateList, cert: X509Certificate) {
@@ -246,38 +271,27 @@ class CrlRevocationValidator(
         val isCa = cert.findExtension<BasicConstraintsExtension>()?.ca ?: false
 
         if (issuingDistPoint.onlyContainsUserCerts && isCa) {
-            throw CertificateException("CRL only contains user certs, but cert is a CA")
+            throw CrlScopeViolationException("CRL only contains user certs, but cert is a CA")
         }
         if (issuingDistPoint.onlyContainsCACerts && !isCa) {
-            throw CertificateException("CRL only contains CA certs, but cert is an end-entity")
+            throw CrlScopeViolationException("CRL only contains CA certs, but cert is an end-entity")
         }
 
         if (issuingDistPoint.onlyContainsAttributeCerts) {
-            throw CertificateException(
+            throw CrlScopeViolationException(
                 "CRL only contains attribute certificates and cannot be used for X.509 certificates"
             )
-        }
-
-        if (issuingDistPoint.indirectCRL) {
-            if (crl.tbsCertList.issuer != cert.tbsCertificate.issuerName) {
-                throw CertificateException("True Indirect CRLs (different issuer) not supported")
-            }
         }
 
         val idpName = issuingDistPoint.distributionPointName ?: return
 
         val certDpExtension = cert.findExtension<CRLDistributionPointsExtension>()
-            ?: throw CertificateException("CRL has restricted scope (IDP), but Certificate has no CDP extension")
+            ?: throw MissingCrlDistributionPointsException("CRL has restricted scope (IDP), but Certificate has no CDP extension")
 
         val matchFound = certDpExtension.distributionPoints.any { certDp ->
             val namesMatch = matchesDistributionPointNames(idpName,certDp.distributionPointName, crl)
-
-            val issuerMatches = if (certDp.crlIssuer != null) {
-                val expectedIssuer = when (certDp.crlIssuer!!.name.type) {
-                    GeneralNameOption.NameType.DIRECTORY -> certDp.crlIssuer!!.name
-                    else -> null
-                }
-                crl.tbsCertList.issuer == expectedIssuer
+            val issuerMatches = if (issuingDistPoint.indirectCRL) {
+                true
             } else {
                 crl.tbsCertList.issuer == cert.tbsCertificate.issuerName
             }
@@ -285,14 +299,14 @@ class CrlRevocationValidator(
         }
 
         if (!matchFound) {
-            throw CertificateException("CRL IssuingDistributionPoint name does not match any name in Certificate CDP")
+            throw CrlDistributionPointMismatchException("CRL IssuingDistributionPoint name does not match any name in Certificate CDP")
         }
     }
 
     private fun validateCrlExtensions(crl: CertificateList) {
         crl.tbsCertList.extensions?.forEach {
             if (it.critical && !isSupportedCrlExtension(it.oid)) {
-                throw CertificateException("Unsupported CRL extension: ${it.oid}")
+                throw CRLRevocationException("Unsupported CRL extension: ${it.oid}")
             }
         }
     }
@@ -300,7 +314,7 @@ class CrlRevocationValidator(
     private fun validateCrlEntryExtensions(entry: CRLEntry) {
         entry.crlEntryExtensions?.forEach {
             if (it.critical && !isSupportedEntryExtension(it.oid)) {
-                throw CertificateException("Unsupported CRL entry extension: ${it.oid}")
+                throw CRLRevocationException("Unsupported CRL entry extension: ${it.oid}")
             }
         }
     }
@@ -323,23 +337,6 @@ class CrlRevocationValidator(
 }
 
 @OptIn(ExperimentalPkiApi::class)
-private fun generalNamesMatch(a: GeneralName, b: GeneralName): Boolean {
-    if (a.name.type != b.name.type) return false
-
-    return when (a.name.type) {
-        GeneralNameOption.NameType.DIRECTORY -> {
-            val aName = a.name as X500Name
-            val bName = b.name as X500Name
-
-            aName.constrains(bName) == GeneralNameOption.ConstraintResult.MATCH
-        }
-
-        else -> {
-            a == b
-        }
-    }
-}
-
 fun matchesDistributionPointNames(
     idpName: DistributionPointName,
     cdpName: DistributionPointName?,
@@ -348,61 +345,36 @@ fun matchesDistributionPointNames(
 
     if (cdpName == null) return false
 
-    val crlIssuer = crl.tbsCertList.issuer
+    val issuer = crl.tbsCertList.issuer
 
-    return when (idpName) {
+    val idpFullNames = idpName.toGeneralNames(issuer)
+    val cdpFullNames = cdpName.toGeneralNames(issuer)
 
-        is DistributionPointName.FullName -> {
-            when (cdpName) {
-
-                is DistributionPointName.FullName -> {
-                    idpName.names.any { idpGn ->
-                        cdpName.names.any { cdpGn ->
-                            generalNamesMatch(idpGn, cdpGn)
-                        }
-                    }
-                }
-
-                is DistributionPointName.NameRelativeToCrlIssuer -> {
-                    val resolved = resolveRelativeToFullName(cdpName, crlIssuer)
-
-                    idpName.names.any { idpGn ->
-                        generalNamesMatch(idpGn, resolved)
-                    }
-                }
-            }
-        }
-
-        is DistributionPointName.NameRelativeToCrlIssuer -> {
-            when (cdpName) {
-
-                is DistributionPointName.NameRelativeToCrlIssuer -> {
-                    idpName.name == cdpName.name
-                }
-
-                is DistributionPointName.FullName -> {
-                    val resolved = resolveRelativeToFullName(idpName, crlIssuer)
-
-                    cdpName.names.any { cdpGn ->
-                        generalNamesMatch(resolved, cdpGn)
-                    }
-                }
-            }
+    return idpFullNames.any { idpGn ->
+        cdpFullNames.any { cdpGn ->
+            idpGn.name.constrains(cdpGn.name) ==
+                    GeneralNameOption.ConstraintResult.MATCH
         }
     }
+}
+
+private fun DistributionPointName.toGeneralNames(
+    issuer: X500Name
+): List<GeneralName> = when (this) {
+
+    is DistributionPointName.FullName -> names
+
+    is DistributionPointName.NameRelativeToCrlIssuer ->
+        listOf(resolveRelativeToFullName(this, issuer))
 }
 
 private fun resolveRelativeToFullName(
     relative: DistributionPointName.NameRelativeToCrlIssuer,
     issuer: X500Name
 ): GeneralName {
-
     val newRdns = issuer.relativeDistinguishedNames + RelativeDistinguishedName(
         listOf(relative.name)
     )
-
-    val fullName = X500Name(newRdns)
-
-    return GeneralName(fullName)
+    return GeneralName(X500Name(newRdns))
 }
 

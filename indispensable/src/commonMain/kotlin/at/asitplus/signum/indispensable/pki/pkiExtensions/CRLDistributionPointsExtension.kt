@@ -88,9 +88,9 @@ data class DistributionPoint(
                         DistributionPointName.decodeFromTlv(child.asExplicitlyTagged())
                     1uL -> reasons =
                         Asn1BitString.decodeFromTlv(child.asPrimitive())
-                    2uL -> crlIssuer =
-                        GeneralName.decodeFromTlv(child)
-
+                    2uL -> crlIssuer = child.asExplicitlyTagged().decodeRethrowing {
+                        GeneralName.decodeFromTlv(next())
+                    }
                     else -> throw Asn1Exception(
                         "Invalid DistributionPoint tag: ${child.tag.tagValue}"
                     )
@@ -151,16 +151,16 @@ sealed class DistributionPointName : Asn1Encodable<Asn1ExplicitlyTagged> {
 }
 
 
-enum class ReasonFlag(val bitNumber: Long) {
-    UNSPECIFIED(0),
-    KEY_COMPROMISE(1),
-    CA_COMPROMISE(2),
-    AFFILIATION_CHANGED(3),
-    SUPERSEDED(4),
-    CESSATION_OF_OPERATION(5),
-    CERTIFICATE_HOLD(6),
-    PRIVILEGE_WITHDRAWN(7),
-    AA_COMPROMISE(8)
+enum class ReasonFlag(val bitNumber: Long, val crlReason: CRLReason) {
+    UNSPECIFIED(0, CRLReason.UNSPECIFIED),
+    KEY_COMPROMISE(1, CRLReason.KEY_COMPROMISE),
+    CA_COMPROMISE(2, CRLReason.CA_COMPROMISE),
+    AFFILIATION_CHANGED(3, CRLReason.AFFILIATION_CHANGED),
+    SUPERSEDED(4, CRLReason.SUPERSEDED),
+    CESSATION_OF_OPERATION(5, CRLReason.CESSATION_OF_OPERATION),
+    CERTIFICATE_HOLD(6, CRLReason.CERTIFICATE_HOLD),
+    PRIVILEGE_WITHDRAWN(7, CRLReason.PRIVILEGE_WITHDRAWN),
+    AA_COMPROMISE(8, CRLReason.AA_COMPROMISE);
 
     ;
 

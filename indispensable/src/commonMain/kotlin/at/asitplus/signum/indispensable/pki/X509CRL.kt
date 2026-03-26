@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CRLExpiredException
+import at.asitplus.signum.CRLNotYetValidException
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
@@ -19,13 +21,15 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.TbsCertList.Companion.Tags.EXTENSIONS
-import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * TBSCertList
@@ -239,8 +243,43 @@ data class CertificateList @Throws(Asn1Exception::class) constructor(
         CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
     }}
 
-    inline fun <reified T : X509CertificateExtension> findExtension(): T? {
-        return this.tbsCertList.extensions?.firstNotNullOfOrNull { it as? T }
+    inline fun <reified T : X509CertificateExtension> findExtension(): T? = this.tbsCertList.extensions?.firstNotNullOfOrNull { it as? T }
+
+    /**
+     * Checks whether this CRL has expired at the specified [date].
+     *
+     * @return `true` if the certificate is expired, `false` otherwise.
+     */
+    fun isExpired(date: Instant = Clock.System.now()): Boolean =
+        tbsCertList.nextUpdate?.instant?.let { nextUpdate ->
+            date > nextUpdate
+        } ?: false
+
+    /**
+     * Checks whether this CRL is not yet valid at the specified [date].
+     *
+     * @return `true` if the certificate is not yet valid, `false` otherwise.
+     */
+    fun isNotYetValid(date: Instant = Clock.System.now()): Boolean =
+        Instant.fromEpochSeconds(date.epochSeconds) < tbsCertList.thisUpdate.instant
+
+    @Throws(CertificateValidityException::class)
+    fun checkValidityAt(date: Instant = Clock.System.now()) {
+        if (isExpired(date)) {
+            throw CRLExpiredException(
+                "CRL expired on " +
+                        tbsCertList.nextUpdate!!.instant
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+            )
+        }
+
+        if (isNotYetValid(date)) {
+            throw CRLNotYetValidException(
+                "CRL not valid till " +
+                        tbsCertList.thisUpdate.instant
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+            )
+        }
     }
 
     companion object : PemDecodable<Asn1Sequence, CertificateList>(EB_STRINGS.DEFAULT) {
