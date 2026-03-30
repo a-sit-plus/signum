@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.typed
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
@@ -39,7 +40,7 @@ val JwsTypedTest by testSuite {
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedCompact.toString() shouldBe typedCompact.jws.toString()
 
-        JwsTyped<JsonObject, JwsCompact>(typedCompact.jws) shouldBe typedCompact
+        typedCompact.jws.typed<JsonObject, JwsCompact>() shouldBe typedCompact
         JwsTyped<JsonObject>(typedCompact.toString()) shouldBe typedCompact
     }
 
@@ -90,7 +91,7 @@ val JwsTypedTest by testSuite {
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
-        JwsTyped<JsonObject, JwsFlattened>(typedFlattened.jws) shouldBe typedFlattened
+        typedFlattened.jws.typed<JsonObject, JwsFlattened>() shouldBe typedFlattened
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
@@ -122,6 +123,6 @@ val JwsTypedTest by testSuite {
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toJwsFlattenedTyped() shouldBe listOf(first, second)
 
-        JwsTyped<JsonObject, JwsGeneral>(typedGeneral.jws) shouldBe typedGeneral
+        typedGeneral.jws.typed<JsonObject, JwsGeneral>() shouldBe typedGeneral
     }
 }
