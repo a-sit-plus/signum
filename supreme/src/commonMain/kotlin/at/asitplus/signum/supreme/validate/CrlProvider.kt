@@ -116,36 +116,49 @@ class DirectoryCrlProvider @OptIn(ExperimentalPkiApi::class) constructor(
     override suspend fun getCrlsFromDistributionPoints(
         cert: X509Certificate
     ): List<CertificateList> {
-
         val result = mutableListOf<CertificateList>()
-
-        val cdpExt = cert.findExtension<CRLDistributionPointsExtension>()
-            ?: return emptyList()
+        val cdpExt = cert.findExtension<CRLDistributionPointsExtension>() ?: return emptyList()
 
         for (dp in cdpExt.distributionPoints) {
-
             val dpName = dp.distributionPointName
+            val currentCrlIssuers = dp.crlIssuer
 
             for (crl in crlCache) {
+                val idp = crl.findExtension<IssuingDistributionPointExtension>()
+                val idpName = idp?.distributionPointName
 
-                if (dp.crlIssuer != null) {
-                    val expectedIssuer = dp.crlIssuer!!.name
-                    if (crl.tbsCertList.issuer == expectedIssuer) {
-                        result.add(crl)
+                if (!currentCrlIssuers.isNullOrEmpty()) {
+                    val isAuthorized = currentCrlIssuers.any { it.name == crl.tbsCertList.issuer }
+
+                    if (isAuthorized && idp?.indirectCRL == true) {
+                        if (dpName != null && idpName != null) {
+                            if (matchesDistributionPointNames(
+                                    idpName = idpName,
+                                    idpBase = crl.tbsCertList.issuer,
+                                    cdpName = dpName,
+                                    cdpBase = crl.tbsCertList.issuer
+                                )
+                            ) {
+                                result.add(crl)
+                            }
+                        } else {
+                            result.add(crl)
+                        }
                     }
                     continue
                 }
 
-                if (crl.tbsCertList.issuer != cert.tbsCertificate.issuerName) {
-                    continue
-                }
+                if (crl.tbsCertList.issuer != cert.tbsCertificate.issuerName) continue
 
                 if (dpName != null) {
-                    val idp = crl.findExtension<IssuingDistributionPointExtension>()
-                    val idpName = idp?.distributionPointName
-
                     if (idpName != null) {
-                        if (matchesDistributionPointNames(idpName,dpName, crl)) {
+                        if (matchesDistributionPointNames(
+                                idpName = idpName,
+                                idpBase = crl.tbsCertList.issuer,
+                                cdpName = dpName,
+                                cdpBase = cert.tbsCertificate.issuerName
+                            )
+                        ) {
                             result.add(crl)
                         }
                     } else {
@@ -156,7 +169,6 @@ class DirectoryCrlProvider @OptIn(ExperimentalPkiApi::class) constructor(
                 }
             }
         }
-
         return result.distinct()
     }
 }

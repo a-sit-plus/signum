@@ -59,7 +59,7 @@ class CRLDistributionPointsExtension(
 data class DistributionPoint(
     val distributionPointName: DistributionPointName?,
     val reasons: Asn1BitString?,
-    val crlIssuer: GeneralName?
+    val crlIssuer: List<GeneralName>?
 ) : Asn1Encodable<Asn1Sequence> {
 
     val decodedReasons: Set<ReasonFlag>? by lazy {
@@ -69,7 +69,7 @@ data class DistributionPoint(
     override fun encodeToTlv() = Asn1.Sequence {
         distributionPointName?.let { +it }
         reasons?.let { +it }
-        crlIssuer?.let { +it }
+        crlIssuer?.let { names -> names.forEach { +it } }
     }
 
     companion object : Asn1Decodable<Asn1Sequence, DistributionPoint> {
@@ -78,7 +78,7 @@ data class DistributionPoint(
 
             var name: DistributionPointName? = null
             var reasons: Asn1BitString? = null
-            var crlIssuer: GeneralName? = null
+            var crlIssuer: List<GeneralName>? = null
 
             while (hasNext()) {
                 val child = next()
@@ -89,7 +89,11 @@ data class DistributionPoint(
                     1uL -> reasons =
                         Asn1BitString.decodeFromTlv(child.asPrimitive())
                     2uL -> crlIssuer = child.asExplicitlyTagged().decodeRethrowing {
-                        GeneralName.decodeFromTlv(next())
+                        buildList {
+                            while (hasNext()) {
+                                add(GeneralName.decodeFromTlv(next()))
+                            }
+                        }
                     }
                     else -> throw Asn1Exception(
                         "Invalid DistributionPoint tag: ${child.tag.tagValue}"

@@ -18,17 +18,9 @@ import kotlinx.coroutines.runBlocking
  * Certification Path Validation
  */
 val NistPkiTestSuite by testSuite{
-
-    val indirectCRLTestCases = listOf("Test28", "Test29", "Test30","Test31","Test32","Test33","Test34", "Test35")
-
+    
     val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
-//        .filterNot { it.name.contains("indirectCRL") }
-        .filter { testCase ->
-            testCase.name.contains("Invalid cRLIssuer Test35")
-        }
-//        .filter { testCase ->
-//            indirectCRLTestCases.none { forbidden -> testCase.name.contains(forbidden) }
-//        }
+
     runBlocking {
         SystemCrlCache.initialize("./src/jvmTest/resources/crls/PKITS_crl")
     }

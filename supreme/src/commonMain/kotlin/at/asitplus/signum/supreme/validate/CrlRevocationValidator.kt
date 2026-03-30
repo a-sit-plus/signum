@@ -29,6 +29,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralName
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.generalNames.X500Name
+import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReason
@@ -37,6 +38,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificateIssuerExten
 import at.asitplus.signum.indispensable.pki.pkiExtensions.DistributionPointName
 import at.asitplus.signum.indispensable.pki.pkiExtensions.IssuingDistributionPointExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ReasonFlag
+import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 
@@ -70,12 +72,18 @@ class CrlRevocationValidator(
             crlProvider.getCrl(currCert, issuerCert).let { possibleCrls.addAll(it) }
             val cdpExtension = currCert.findExtension<CRLDistributionPointsExtension>()
             cdpExtension?.distributionPoints?.forEach { dp ->
-                val crlIssuer = dp.crlIssuer?.let { name ->
-                    processingChain.find { it.tbsCertificate.subjectName == name.name }
-                } ?: issuerCert
+                val crlIssuerCerts = dp.crlIssuer?.let { names ->
+                    // Find any cert in the chain whose subject matches ANY DirectoryName in the list
+                    processingChain.filter { cert ->
+                        names.any { it.name == cert.tbsCertificate.subjectName }
+                    }
+                }?.takeIf { it.isNotEmpty() } ?: listOf(issuerCert) // Fallback to CA if no match or no crlIssuer
 
-                val crlsFromIssuer = crlProvider.getCrl(currCert, crlIssuer)
-                possibleCrls.addAll(crlsFromIssuer)
+                // Fetch CRLs for each potential issuer found
+                crlIssuerCerts.forEach { issuer ->
+                    val crlsFromIssuer = crlProvider.getCrl(currCert, issuer)
+                    possibleCrls.addAll(crlsFromIssuer)
+                }
             }
 
             runCatching {
@@ -170,13 +178,15 @@ class CrlRevocationValidator(
         val certIssuer = cert.tbsCertificate.issuerName
 
         for (crl in crls) {
-
+            var currentEntryIssuer = crl.tbsCertList.issuer
             for (entry in crl.tbsCertList.revokedCertificates ?: emptyList()) {
-                val entryIssuer = entry.findExtension<CertificateIssuerExtension>()?.issuer
-                    ?.firstOrNull { it.name.type == GeneralNameOption.NameType.DIRECTORY }
-                    ?.name as? X500Name ?: crl.tbsCertList.issuer
+                val issuerExt = entry.findExtension<CertificateIssuerExtension>()
+                issuerExt?.issuer?.firstOrNull { it.name.type == GeneralNameOption.NameType.DIRECTORY }?.let {
+                    currentEntryIssuer = it.name as X500Name
+                }
 
-                if (entryIssuer != certIssuer) continue
+                // 2. ONLY check the serial if the current issuer matches our certificate's issuer
+                if (currentEntryIssuer != certIssuer) continue
                 if (!entry.certSerialNumber.contentEquals(serial)) continue
 
                 validateCrlEntryExtensions(entry)
@@ -250,6 +260,8 @@ class CrlRevocationValidator(
             }
         }
 
+        validateAuthorityKeyIdentifier(crl, issuerCert)
+
         val publicKey = issuerCert.decodedPublicKey.getOrNull()
             ?: throw CrlMissingPublicKeyException("Missing public key")
 
@@ -289,17 +301,74 @@ class CrlRevocationValidator(
             ?: throw MissingCrlDistributionPointsException("CRL has restricted scope (IDP), but Certificate has no CDP extension")
 
         val matchFound = certDpExtension.distributionPoints.any { certDp ->
-            val namesMatch = matchesDistributionPointNames(idpName,certDp.distributionPointName, crl)
-            val issuerMatches = if (issuingDistPoint.indirectCRL) {
-                true
+            val expectedCdpIssuer = certDp.crlIssuer?.firstOrNull { it.name is X500Name }?.name as? X500Name
+                ?: cert.tbsCertificate.issuerName
+
+            val namesMatch = matchesDistributionPointNames(
+                idpName = idpName,
+                idpBase = crl.tbsCertList.issuer,
+                cdpName = certDp.distributionPointName,
+                cdpBase = expectedCdpIssuer
+            )
+
+            val currentCrlIssuers = certDp.crlIssuer
+            val issuerMatches = if (currentCrlIssuers != null) {
+                val isAuthorized = currentCrlIssuers.any { it.name == crl.tbsCertList.issuer }
+                issuingDistPoint.indirectCRL && isAuthorized
             } else {
                 crl.tbsCertList.issuer == cert.tbsCertificate.issuerName
             }
+
             namesMatch && issuerMatches
         }
 
         if (!matchFound) {
             throw CrlDistributionPointMismatchException("CRL IssuingDistributionPoint name does not match any name in Certificate CDP")
+        }
+    }
+
+    private fun validateAuthorityKeyIdentifier(
+        crl: CertificateList,
+        issuerCert: X509Certificate
+    ) {
+        val akid = crl.findExtension<AuthorityKeyIdentifierExtension>() ?: return
+
+        akid.keyIdentifier?.let { crlKeyId ->
+
+            val skiExt = issuerCert.findExtension<SubjectKeyIdentifierExtension>()
+                ?: throw CrlIssuerMismatchException(
+                    "CRL has AKID but issuer certificate has no SKI"
+                )
+
+            val issuerKeyId = skiExt.keyIdentifier
+
+            if (!crlKeyId.contentEquals(issuerKeyId)) {
+                throw CrlIssuerMismatchException(
+                    "CRL AKID keyIdentifier does not match issuer SKI"
+                )
+            }
+        }
+
+        val akidIssuer = akid.authorityCertIssuer
+        val akidSerial = akid.authorityCertSerialNumber
+
+        if (akidSerial != null) {
+
+            val issuerMatches = akidIssuer.any { gn ->
+                gn.name == issuerCert.tbsCertificate.subjectName
+            }
+
+            if (!issuerMatches) {
+                throw CrlIssuerMismatchException(
+                    "CRL AKID authorityCertIssuer does not match issuer certificate"
+                )
+            }
+
+            if (!akidSerial.contentEquals(issuerCert.tbsCertificate.serialNumber)) {
+                throw CrlIssuerMismatchException(
+                    "CRL AKID authorityCertSerialNumber does not match issuer certificate"
+                )
+            }
         }
     }
 
@@ -339,25 +408,21 @@ class CrlRevocationValidator(
 @OptIn(ExperimentalPkiApi::class)
 fun matchesDistributionPointNames(
     idpName: DistributionPointName,
+    idpBase: X500Name,
     cdpName: DistributionPointName?,
-    crl: CertificateList
+    cdpBase: X500Name
 ): Boolean {
-
     if (cdpName == null) return false
 
-    val issuer = crl.tbsCertList.issuer
-
-    val idpFullNames = idpName.toGeneralNames(issuer)
-    val cdpFullNames = cdpName.toGeneralNames(issuer)
+    val idpFullNames = idpName.toGeneralNames(idpBase)
+    val cdpFullNames = cdpName.toGeneralNames(cdpBase)
 
     return idpFullNames.any { idpGn ->
         cdpFullNames.any { cdpGn ->
-            idpGn.name.constrains(cdpGn.name) ==
-                    GeneralNameOption.ConstraintResult.MATCH
+            idpGn.name.constrains(cdpGn.name) == GeneralNameOption.ConstraintResult.MATCH
         }
     }
 }
-
 private fun DistributionPointName.toGeneralNames(
     issuer: X500Name
 ): List<GeneralName> = when (this) {
