@@ -412,7 +412,7 @@ data class JwsHeader(
     }
 
     val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
-        keyAttestation?.let { invoke(it) }
+        keyAttestation?.typed()
     }
 
     object SerialNames {

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.serializer
 
@@ -10,6 +11,9 @@ typealias JwsGeneralTyped<P> = JwsTyped<JwsGeneral, P>
 fun <P> JwsCompactTyped<P>.toJwsFlattenedTyped() = JwsFlattenedTyped(this.jws.toJwsFlattened(), this.payload)
 fun <P> JwsFlattenedTyped<P>.toJwsCompactTyped() = JwsCompactTyped(this.jws.toJwsCompact(), this.payload)
 fun <P> JwsGeneralTyped<P>.toJwsFlattenedTyped() = this.jws.toJwsFlattened().map { JwsFlattenedTyped(it, this.payload) }
+
+inline fun <reified P, J : JWS> J.typed(): JwsTyped<J, P> =
+    JwsTyped(this, getPayload<P>().getOrThrow())
 
 /**
  * Wrapper for [at.asitplus.signum.indispensable.josef.JWS]. Useful when [payload] type is known as part of the contract.
@@ -23,16 +27,12 @@ data class JwsTyped<out J : JWS, out P>(
 ) {
     override fun toString() = jws.toString()
 
-
     companion object {
-        inline operator fun <reified P, J : JWS> invoke(jws: J) =
-            JwsTyped(jws, jws.getPayload<P>().getOrThrow())
-
         inline operator fun <reified P> invoke(base64UrlString: String) =
             JwsCompact.parse<P>(base64UrlString).getOrThrow().let { (jws, payload) -> JwsTyped(jws, payload) }
 
         inline operator fun <reified P> invoke(jwsFlattened: List<JwsFlattened>): JwsTyped<JwsGeneral, P> =
-            JwsTyped(jwsFlattened.toJwsGeneral())
+            jwsFlattened.toJwsGeneral().typed()
 
         /**
          * Creates [JwsCompact]. [protectedHeader] must form a valid [JwsHeader].
