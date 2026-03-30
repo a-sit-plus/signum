@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
+import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -410,16 +411,8 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.decodedPublicKey?.getOrNull()
     }
 
-    @Deprecated("Use [keyAttestation] directly", replaceWith = ReplaceWith("keyAttestation"))
-    val keyAttestationParsed: JwsSigned<KeyAttestationJwt>? by lazy {
-        keyAttestation?.let {
-            JwsSigned.deserialize<KeyAttestationJwt>(
-                KeyAttestationJwt.serializer(),
-                it.toString(),
-                joseCompliantSerializer
-            )
-                .getOrNull()
-        }
+    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
+        keyAttestation?.let { invoke(it) }
     }
 
     object SerialNames {
