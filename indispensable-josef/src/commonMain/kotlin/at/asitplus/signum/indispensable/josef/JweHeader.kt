@@ -3,12 +3,12 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
-import at.asitplus.signum.indispensable.josef.io.InstantLongSerializer
+import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * Header of a [JweEncrypted] or [JweDecrypted].
@@ -47,7 +47,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "kid" Header Parameter defined in Section 4.1.4 of (JWS), except
+     * the "kid" Header Parameter defined in Section 4.1.4 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the key hint references the public key to which the JWE was
      * encrypted; this can be used to determine the private key needed to
      * decrypt the JWE.  This parameter allows originators to explicitly
@@ -60,7 +60,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "typ" Header Parameter defined in Section 4.1.9 of (JWS), except
+     * the "typ" Header Parameter defined in Section 4.1.9 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the type is that of this complete JWE.
      *
      * See [JwsHeader.type]
@@ -70,7 +70,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "cty" Header Parameter defined in Section 4.1.10 of [JWS], except
+     * the "cty" Header Parameter defined in Section 4.1.10 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the type is that of the secured content (the plaintext).
      *
      * See [JwsHeader.contentType]
@@ -129,7 +129,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "jwk" Header Parameter defined in Section 4.1.3 of [JWS], except
+     * the "jwk" Header Parameter defined in Section 4.1.3 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the key is the public key to which the JWE was encrypted; this
      * can be used to determine the private key needed to decrypt the JWE.
      *
@@ -140,7 +140,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "jku" Header Parameter defined in Section 4.1.2 of [JWS], except
+     * the "jku" Header Parameter defined in Section 4.1.2 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the JWK Set resource contains the public key to which the JWE
      * was encrypted; this can be used to determine the private key needed
      * to decrypt the JWE.
@@ -211,7 +211,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "x5u" Header Parameter defined in Section 4.1.5 of (JWS), except
+     * the "x5u" Header Parameter defined in Section 4.1.5 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the X.509 public key certificate or certificate chain (RFC5280)
      * contains the public key to which the JWE was encrypted; this can be
      * used to determine the private key needed to decrypt the JWE.
@@ -223,7 +223,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "x5c" Header Parameter defined in Section 4.1.6 of (JWS), except
+     * the "x5c" Header Parameter defined in Section 4.1.6 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the X.509 public key certificate or certificate chain (RFC5280)
      * contains the public key to which the JWE was encrypted; this can be
      * used to determine the private key needed to decrypt the JWE.
@@ -236,7 +236,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "x5t" Header Parameter defined in Section 4.1.7 of (JWS), except
+     * the "x5t" Header Parameter defined in Section 4.1.7 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the certificate referenced by the thumbprint contains the public
      * key to which the JWE was encrypted; this can be used to determine the
      * private key needed to decrypt the JWE.  Note that certificate
@@ -250,7 +250,7 @@ data class JweHeader(
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
-     * the "x5t#S256" Header Parameter defined in Section 4.1.8 of (JWS),
+     * the "x5t#S256" Header Parameter defined in Section 4.1.8 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html),
      * except that the certificate referenced by the thumbprint contains the
      * public key to which the JWE was encrypted; this can be used to
      * determine the private key needed to decrypt the JWE.  Note that

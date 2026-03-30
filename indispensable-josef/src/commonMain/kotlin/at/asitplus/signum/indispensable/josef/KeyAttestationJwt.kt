@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.josef.io.InstantLongSerializer
+import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.cbor.ByteString
