@@ -16,10 +16,12 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.basicConstraints_2_5_29_19
 import at.asitplus.signum.indispensable.asn1.cRLDistributionPoints_2_5_29_31
+import at.asitplus.signum.indispensable.asn1.cRLNumber
 import at.asitplus.signum.indispensable.asn1.cRLReason
 import at.asitplus.signum.indispensable.asn1.certificateIssuer
 import at.asitplus.signum.indispensable.asn1.certificatePolicies_2_5_29_32
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
+import at.asitplus.signum.indispensable.asn1.deltaCRLIndicator
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
 import at.asitplus.signum.indispensable.asn1.extKeyUsage
@@ -36,9 +38,11 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.d
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLNumberExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReasonCodeExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificateIssuerExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.DeltaCRLIndicatorExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.IssuingDistributionPointExtension
@@ -113,8 +117,9 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 KnownOIDs.cRLDistributionPoints_2_5_29_31 to { seq, tag -> CRLDistributionPointsExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.issuingDistributionPoint_2_5_29_28 to { seq, tag -> IssuingDistributionPointExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.cRLReason to { seq, tag -> CRLReasonCodeExtension.decodeFromTlv(seq, tag) },
-                KnownOIDs.certificateIssuer to { seq, tag -> CertificateIssuerExtension.decodeFromTlv(seq, tag) }
-
+                KnownOIDs.certificateIssuer to { seq, tag -> CertificateIssuerExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.cRLNumber to { seq, tag -> CRLNumberExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.deltaCRLIndicator to { seq, tag -> DeltaCRLIndicatorExtension.decodeFromTlv(seq, tag) }
             )
         )
         val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension>

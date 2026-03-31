@@ -22,6 +22,7 @@ import at.asitplus.signum.indispensable.asn1.deltaCRLIndicator
 import at.asitplus.signum.indispensable.asn1.freshestCRL
 import at.asitplus.signum.indispensable.asn1.invalidityDate
 import at.asitplus.signum.indispensable.asn1.issuingDistributionPoint_2_5_29_28
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.CRLEntry
 import at.asitplus.signum.indispensable.pki.CertificateList
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
@@ -32,9 +33,11 @@ import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLNumberExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReason
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLReasonCodeExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificateIssuerExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.DeltaCRLIndicatorExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.DistributionPointName
 import at.asitplus.signum.indispensable.pki.pkiExtensions.IssuingDistributionPointExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ReasonFlag
@@ -90,7 +93,7 @@ class CrlRevocationValidator(
                 possibleCrls.addAll(crlProvider.getCrlsFromDistributionPoints(currCert))
             }
 
-            val approvedCrls = mutableListOf<CertificateList>()
+            val approvedCrlSets = mutableListOf<CrlSet>()
 
             for (crl in possibleCrls) {
                 try {
@@ -100,8 +103,20 @@ class CrlRevocationValidator(
 
                     verifyCrl(crl, currCert, crlSignerCert, context)
 
+                    val deltaCrls = runCatching { crlProvider.getDeltaCrls(crl, currCert) }.getOrDefault(emptyList())
+                    val approvedDeltas = mutableListOf<CertificateList>()
+
+                    for (delta in deltaCrls) {
+                        try {
+                            verifyDeltaCrl(delta, crl, currCert, crlSignerCert, context)
+                            approvedDeltas.add(delta)
+                        } catch (_: Throwable) {
+                            // Ignore invalid delta CRLs; fallback to just using the Base CRL
+                        }
+                    }
+
                     val coveredReasons = getCoveredReasons(crl, currCert)
-                    approvedCrls.add(crl)
+                    approvedCrlSets.add(CrlSet(baseCrl = crl, deltaCrls = approvedDeltas))
 
                     val newCoverage = coveredReasons.intersect(remainingReasons)
                     remainingReasons.removeAll(newCoverage)
@@ -119,11 +134,21 @@ class CrlRevocationValidator(
                         try {
                             verifyCrl(crl, currCert, issuerCert, context)
 
+                            val deltaCrls = runCatching { crlProvider.getDeltaCrls(crl, currCert) }.getOrDefault(emptyList())
+                            val approvedDeltas = mutableListOf<CertificateList>()
+
+                            for (delta in deltaCrls) {
+                                try {
+                                    verifyDeltaCrl(delta, crl, currCert, issuerCert, context)
+                                    approvedDeltas.add(delta)
+                                } catch (_: Throwable) { }
+                            }
+
                             val coveredReasons = getCoveredReasons(crl, currCert)
                             val newCoverage = coveredReasons.intersect(remainingReasons)
 
                             if (newCoverage.isNotEmpty()) {
-                                approvedCrls.add(crl)
+                                approvedCrlSets.add(CrlSet(baseCrl = crl, deltaCrls = approvedDeltas))
                                 remainingReasons.removeAll(newCoverage)
                             }
 
@@ -137,7 +162,7 @@ class CrlRevocationValidator(
                 }
             }
 
-            checkRevocationInCrls(approvedCrls, currCert, context)
+            checkRevocationInCrls(approvedCrlSets, currCert, context)
 
             if (remainingReasons.isNotEmpty()) {
                 throw CertificateException(
@@ -165,48 +190,11 @@ class CrlRevocationValidator(
         context: CertificateValidationContext
     ) {
         validateCrlIntegrity(crl, cert, issuerCert, context)
+        if (crl.findExtension<DeltaCRLIndicatorExtension>() != null) {
+            throw CertificateException("A Delta CRL cannot be used as a Base CRL.")
+        }
         validateCrlExtensions(crl)
         validateIssuingDistributionPoint(crl, cert)
-    }
-
-    private fun checkRevocationInCrls(
-        crls: List<CertificateList>,
-        cert: X509Certificate,
-        context: CertificateValidationContext
-    ) {
-        val serial = cert.tbsCertificate.serialNumber
-        val certIssuer = cert.tbsCertificate.issuerName
-
-        for (crl in crls) {
-            var currentEntryIssuer = crl.tbsCertList.issuer
-            for (entry in crl.tbsCertList.revokedCertificates ?: emptyList()) {
-                val issuerExt = entry.findExtension<CertificateIssuerExtension>()
-                issuerExt?.issuer?.firstOrNull { it.name.type == GeneralNameOption.NameType.DIRECTORY }?.let {
-                    currentEntryIssuer = it.name as X500Name
-                }
-
-                // 2. ONLY check the serial if the current issuer matches our certificate's issuer
-                if (currentEntryIssuer != certIssuer) continue
-                if (!entry.certSerialNumber.contentEquals(serial)) continue
-
-                validateCrlEntryExtensions(entry)
-
-                val reason = getReasonCode(entry) ?: CRLReason.UNSPECIFIED
-
-                if (reason == CRLReason.REMOVE_FROM_CRL) continue
-
-                val coveredReasons = getCoveredReasons(crl, cert)
-
-                if (reason !in coveredReasons) continue
-
-                val revocationDate = entry.revocationTime.instant
-                if (revocationDate <= context.date) {
-                    throw CRLRevocationException(
-                        "Certificate revoked. Reason: $reason"
-                    )
-                }
-            }
-        }
     }
 
     private fun getCoveredReasons(
@@ -372,6 +360,109 @@ class CrlRevocationValidator(
         }
     }
 
+    private suspend fun verifyDeltaCrl(
+        deltaCrl: CertificateList,
+        baseCrl: CertificateList,
+        cert: X509Certificate,
+        issuerCert: X509Certificate,
+        context: CertificateValidationContext
+    ) {
+        validateCrlIntegrity(deltaCrl, cert, issuerCert, context)
+        validateCrlExtensions(deltaCrl)
+
+        val deltaIndicator = deltaCrl.findExtension<DeltaCRLIndicatorExtension>()
+            ?: throw CertificateException("Delta CRL missing DeltaCRLIndicator extension")
+
+        val baseCrlNumber = baseCrl.findExtension<CRLNumberExtension>()?.crlNumber
+            ?: throw CertificateException("Base CRL missing CRLNumber extension, but Delta CRL is provided")
+
+        if (baseCrlNumber.toBigInteger() < deltaIndicator.crlNumber.toBigInteger()) {
+            throw CrlScopeViolationException("Base CRL is older than the minimum required by the Delta CRL")
+        }
+
+        val baseIdp = baseCrl.findExtension<IssuingDistributionPointExtension>()
+        val deltaIdp = deltaCrl.findExtension<IssuingDistributionPointExtension>()
+
+        if (baseIdp != deltaIdp) {
+            throw CrlScopeViolationException("IssuingDistributionPoint of Base and Delta CRL do not match")
+        }
+    }
+
+    private fun findCrlEntry(
+        crl: CertificateList,
+        serial: ByteArray,
+        certIssuer: X500Name
+    ): CRLEntry? {
+        var currentEntryIssuer = crl.tbsCertList.issuer
+        for (entry in crl.tbsCertList.revokedCertificates ?: emptyList()) {
+            val issuerExt = entry.findExtension<CertificateIssuerExtension>()
+            issuerExt?.issuer?.firstOrNull { it.name.type == GeneralNameOption.NameType.DIRECTORY }?.let {
+                currentEntryIssuer = it.name as X500Name
+            }
+
+            if (currentEntryIssuer == certIssuer && entry.certSerialNumber.contentEquals(serial)) {
+                return entry
+            }
+        }
+        return null
+    }
+
+    private fun checkRevocationInCrls(
+        crlSets: List<CrlSet>,
+        cert: X509Certificate,
+        context: CertificateValidationContext
+    ) {
+        val serial = cert.tbsCertificate.serialNumber
+        val certIssuer = cert.tbsCertificate.issuerName
+
+        for (crlSet in crlSets) {
+            val baseCrl = crlSet.baseCrl
+            val coveredReasons = getCoveredReasons(baseCrl, cert)
+            var unrevokedByDelta = false
+
+            // 1. Check Delta CRLs first
+            for (deltaCrl in crlSet.deltaCrls) {
+                val entry = findCrlEntry(deltaCrl, serial, certIssuer)
+                if (entry != null) {
+                    validateCrlEntryExtensions(entry)
+                    val reason = getReasonCode(entry) ?: CRLReason.UNSPECIFIED
+
+                    // REMOVE_FROM_CRL means the certificate is no longer revoked
+                    if (reason == CRLReason.REMOVE_FROM_CRL) {
+                        unrevokedByDelta = true
+                        break
+                    }
+
+                    if (reason in coveredReasons) {
+                        val revocationDate = entry.revocationTime.instant
+                        if (revocationDate <= context.date) {
+                            throw CRLRevocationException("Certificate revoked in Delta CRL. Reason: $reason")
+                        }
+                    }
+                }
+            }
+
+            // If the delta CRL explicitly un-revoked it, skip the base CRL check for this set
+            if (unrevokedByDelta) continue
+
+            // 2. Check Base CRL
+            val baseEntry = findCrlEntry(baseCrl, serial, certIssuer)
+            if (baseEntry != null) {
+                validateCrlEntryExtensions(baseEntry)
+                val reason = getReasonCode(baseEntry) ?: CRLReason.UNSPECIFIED
+
+                if (reason == CRLReason.REMOVE_FROM_CRL) continue
+
+                if (reason in coveredReasons) {
+                    val revocationDate = baseEntry.revocationTime.instant
+                    if (revocationDate <= context.date) {
+                        throw CRLRevocationException("Certificate revoked in Base CRL. Reason: $reason")
+                    }
+                }
+            }
+        }
+    }
+
     private fun validateCrlExtensions(crl: CertificateList) {
         crl.tbsCertList.extensions?.forEach {
             if (it.critical && !isSupportedCrlExtension(it.oid)) {
@@ -442,4 +533,9 @@ private fun resolveRelativeToFullName(
     )
     return GeneralName(X500Name(newRdns))
 }
+
+private data class CrlSet(
+    val baseCrl: CertificateList,
+    val deltaCrls: List<CertificateList> = emptyList()
+)
 

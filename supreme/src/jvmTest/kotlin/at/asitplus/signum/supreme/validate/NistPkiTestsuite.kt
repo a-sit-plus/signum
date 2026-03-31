@@ -51,7 +51,7 @@ val NistPkiTestSuite by testSuite{
 
             val result = chain.validate(context)
             if (testCase.isSuccessful) {
-                if (testCase.name.contains("4.")) {
+                if (testCase.name.contains("4.") || testCase.name.contains("delta")) {
                     if (!result.isValid) {
                         result.shouldBeInvalid()
                         result.validatorFailures

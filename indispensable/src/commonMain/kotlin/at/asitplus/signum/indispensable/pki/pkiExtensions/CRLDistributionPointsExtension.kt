@@ -19,11 +19,11 @@ import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralName
 
-class CRLDistributionPointsExtension(
+open class CRLDistributionPointsExtension(
     oid: ObjectIdentifier,
     critical: Boolean,
     value: Asn1EncapsulatingOctetString,
-    val distributionPoints: List<DistributionPoint>
+    open val distributionPoints: List<DistributionPoint>
 ) : X509CertificateExtension(oid, critical, value) {
 
     constructor(

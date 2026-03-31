@@ -3,6 +3,8 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.deltaCRLIndicator
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.CertificateList
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -32,6 +34,11 @@ interface CrlProvider {
      * Fetch CRLs from CRL Distribution Points (CDP extension).
      */
     suspend fun getCrlsFromDistributionPoints(cert: X509Certificate): List<CertificateList>
+
+    /**
+     * Fetch Delta CRLs associated with a specific Base CRL.
+     */
+    suspend fun getDeltaCrls(baseCrl: CertificateList, targetCert: X509Certificate): List<CertificateList>
 }
 
 
@@ -170,5 +177,26 @@ class DirectoryCrlProvider @OptIn(ExperimentalPkiApi::class) constructor(
             }
         }
         return result.distinct()
+    }
+
+    override suspend fun getDeltaCrls(
+        baseCrl: CertificateList,
+        targetCert: X509Certificate
+    ): List<CertificateList> {
+        val baseIssuer = baseCrl.tbsCertList.issuer
+        val baseIdp = baseCrl.findExtension<IssuingDistributionPointExtension>()
+
+        return crlCache.filter { crl ->
+            // 1. Must have the same issuer as the base CRL
+            if (crl.tbsCertList.issuer != baseIssuer) return@filter false
+
+            // 2. Must be a Delta CRL (contains DeltaCRLIndicator extension)
+            val isDelta = crl.tbsCertList.extensions?.any { it.oid == KnownOIDs.deltaCRLIndicator } == true
+            if (!isDelta) return@filter false
+
+            // 3. IssuingDistributionPoint must match exactly between Base and Delta CRL
+            val deltaIdp = crl.findExtension<IssuingDistributionPointExtension>()
+            deltaIdp == baseIdp
+        }
     }
 }
