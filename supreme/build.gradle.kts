@@ -66,10 +66,15 @@ kotlin {
             implementation(coroutines())
             implementation(napier()) //TODO: modulator!
             implementation(libs.securerandom) //fix composite build
+            implementation("io.ktor:ktor-client-core:2.3.5")
+            implementation("io.ktor:ktor-client-content-negotiation:2.3.5")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.5")
+            implementation("io.ktor:ktor-client-cio:2.3.5")
         }
 
         androidMain.dependencies {
             implementation("androidx.biometric:biometric:1.2.0-alpha05")
+            implementation("io.ktor:ktor-client-android:2.3.5")
         }
 
         commonTest.dependencies {
@@ -77,6 +82,9 @@ kotlin {
         }
         iosMain{
             kotlin.srcDir(appleRootsSrcDir)
+            dependencies {
+                implementation("io.ktor:ktor-client-darwin:2.3.5")
+            }
         }
 
         jvmTest.dependencies {

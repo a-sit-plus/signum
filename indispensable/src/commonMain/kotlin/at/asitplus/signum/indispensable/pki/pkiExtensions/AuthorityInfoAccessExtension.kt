@@ -25,7 +25,7 @@ class AuthorityInfoAccessExtension(
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
             val base = decodeBase(src)
-            val accessDescriptions = base.value.asEncapsulatingOctetString().decodeRethrowing {
+            val accessDescriptions = base.value.asEncapsulatingOctetString().first().asSequence().decodeRethrowing {
                 buildList {
                     while (hasNext())
                         add(AccessDescription.decodeFromTlv(next().asSequence()))

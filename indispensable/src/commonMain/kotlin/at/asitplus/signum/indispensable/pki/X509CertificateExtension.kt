@@ -13,6 +13,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.authorityInfoAccess
 import at.asitplus.signum.indispensable.asn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.signum.indispensable.asn1.basicConstraints_2_5_29_19
 import at.asitplus.signum.indispensable.asn1.cRLDistributionPoints_2_5_29_31
@@ -35,6 +36,7 @@ import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.subjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.decodeBase
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.doDecode
+import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityInfoAccessExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
@@ -119,7 +121,8 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 KnownOIDs.cRLReason to { seq, tag -> CRLReasonCodeExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.certificateIssuer to { seq, tag -> CertificateIssuerExtension.decodeFromTlv(seq, tag) },
                 KnownOIDs.cRLNumber to { seq, tag -> CRLNumberExtension.decodeFromTlv(seq, tag) },
-                KnownOIDs.deltaCRLIndicator to { seq, tag -> DeltaCRLIndicatorExtension.decodeFromTlv(seq, tag) }
+                KnownOIDs.deltaCRLIndicator to { seq, tag -> DeltaCRLIndicatorExtension.decodeFromTlv(seq, tag) },
+                KnownOIDs.authorityInfoAccess to { seq, tag -> AuthorityInfoAccessExtension.decodeFromTlv(seq, tag) }
             )
         )
         val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension>
