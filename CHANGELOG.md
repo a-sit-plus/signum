@@ -1,5 +1,10 @@
 # Changelog
 
+
+
+## 3.20.1 / Supreme 0.12.1
+* Kotlinx serialization 1.11.0 [fixing CBOR number decoding](https://github.com/Kotlin/kotlinx.serialization/pull/3167)
+
 ## 3.20.0 / Supreme 0.12.0
 * Fix ASN.1 SET ordering and Tag comparator
 * Add AES.ECB_NOPADDING

@@ -14,7 +14,7 @@ classgraph = "4.8.184"
 bouncycastle= "1.83"
 testballoon = "0.8.4-K2.3.20"
 testballoonAddons = "0.7.1"
-serialization = "1.10.0"
+serialization = "1.11.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
