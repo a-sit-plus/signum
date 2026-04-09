@@ -18,6 +18,9 @@ import kotlinx.serialization.Transient
  *
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.
+ *
+ *
+ * If [plainPayload] data structure is defined as part of the contact consider [JwsFlattenedTyped]
  */
 @ConsistentCopyVisibility
 @Serializable

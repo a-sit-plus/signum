@@ -27,6 +27,8 @@ import kotlinx.serialization.encoding.Encoder
  * a JSON document.
  *
  * For a standalone compact JWS string, use [toString] and [JwsCompact.invoke].
+ *
+ * If [plainPayload] data structure is defined as part of the contact consider [JwsCompactTyped]
  */
 @ConsistentCopyVisibility
 data class JwsCompact internal constructor(
