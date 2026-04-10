@@ -1,6 +1,7 @@
 # Changelog
 
 ## NEXT
+* Move `InstantLongSerializer` from indispensable-josef/indispensable-cosef to indispensable
 
 
 
