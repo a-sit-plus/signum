@@ -1,6 +1,7 @@
 # Changelog
 
 ## NEXT
+* Move `InstantLongSerializer` from indispensable-josef/indispensable-cosef to indispensable
 
 ## 3.20.0 / Supreme 0.12.0
 * Fix ASN.1 SET ordering and Tag comparator
