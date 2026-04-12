@@ -20,11 +20,10 @@ signumConventions {
 kotlin {
     jvm()
 
-    val iosTargets = if (disableAppleTargets) listOf() else listOf(iosX64(), iosArm64(), iosSimulatorArm64())
+    val iosTargets = if (disableAppleTargets) listOf() else listOf(iosArm64(), iosSimulatorArm64())
     // Adapted from https://github.com/openwallet-foundation/multipaz
     iosTargets.forEach { target ->
         val platform = when (target.name) {
-            "iosX64" -> "iphonesimulator"
             "iosArm64" -> "iphoneos"
             "iosSimulatorArm64" -> "iphonesimulator"
             else -> error("Unsupported target ${target.name}")

@@ -1,6 +1,7 @@
 # Changelog
 
 ## NEXT
+* Drop Apple X64 targets
 * Move `InstantLongSerializer` from indispensable-josef/indispensable-cosef to indispensable
 
 
