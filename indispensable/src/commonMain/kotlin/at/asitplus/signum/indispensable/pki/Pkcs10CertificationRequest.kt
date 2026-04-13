@@ -86,17 +86,27 @@ data class TbsCertificationRequest(
 /**
  * Very simple implementation of a PKCS#10 Certification Request
  */
-data class Pkcs10CertificationRequest(
-    val tbsCsr: TbsCertificationRequest,
-    val signatureAlgorithm: X509SignatureAlgorithmDescription,
+@ConsistentCopyVisibility
+data class Pkcs10CertificationRequest private constructor(
+    val rawTbsCsr: Asn1Sequence,
+    val rawSignatureAlgorithm: Asn1Sequence,
     val rawSignature: Asn1Primitive
 ) : PemEncodable<Asn1Sequence> {
+
+    constructor(
+         tbsCsr: TbsCertificationRequest,
+         signatureAlgorithm: X509SignatureAlgorithmDescription,
+         rawSignature: Asn1Primitive
+    ):this(tbsCsr.encodeToTlv(), signatureAlgorithm.encodeToTlv(), rawSignature)
 
     constructor(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
         signature: CryptoSignature
     ) : this(tbsCsr, signatureAlgorithm, signature.x509Encoded)
+
+    val tbsCsr: TbsCertificationRequest = TbsCertificationRequest.decodeFromTlv(rawTbsCsr)
+    val signatureAlgorithm: X509SignatureAlgorithmDescription = X509SignatureAlgorithmDescription.decodeFromTlv(rawSignatureAlgorithm)
 
     val decodedSignature by lazy { catching {
         signatureAlgorithm.requireSupported()
@@ -111,8 +121,8 @@ data class Pkcs10CertificationRequest(
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
-        +tbsCsr
-        +signatureAlgorithm
+        +rawTbsCsr
+        +rawSignatureAlgorithm
         +rawSignature
     }
 
@@ -126,8 +136,8 @@ data class Pkcs10CertificationRequest(
         }
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = src.decodeRethrowing {
-            val tbsCsr = TbsCertificationRequest.decodeFromTlv(next() as Asn1Sequence)
-            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next() as Asn1Sequence)
+            val tbsCsr = next() as Asn1Sequence
+            val sigAlg =next() as Asn1Sequence
             val signature = next() as Asn1Primitive
             if (hasNext()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
             Pkcs10CertificationRequest(tbsCsr, sigAlg, signature)

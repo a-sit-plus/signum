@@ -627,8 +627,8 @@ fun Boolean.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Boolean {
     if (bytes.size != 1) throw Asn1Exception("Not a Boolean!")
     return when (bytes.first().toUByte()) {
         0.toUByte() -> false
-        0xff.toUByte() -> true
-        else -> throw Asn1Exception("${bytes.first().toString(16).uppercase()} is not a boolean value!")
+        //be more lenient, reality is a *****!
+        else -> true
     }
 }
 
