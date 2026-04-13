@@ -3,8 +3,8 @@
 ## NEXT
 * Drop Apple X64 targets
 * Move `InstantLongSerializer` from indispensable-josef/indispensable-cosef to indispensable
-
-
+* More lenient boolean decoding
+  * Preserve cursed CSR and PKCS1 encodings
 
 ## 3.20.1 / Supreme 0.12.1
 * Kotlinx serialization 1.11.0 [fixing CBOR number decoding](https://github.com/Kotlin/kotlinx.serialization/pull/3167)
