@@ -65,35 +65,45 @@ open class TransformingSerializerTemplate<ValueT, EncodedT>
 }
 
 /** De-/serializes Base64 strings to/from [ByteArray] */
-object ByteArrayBase64Serializer: TransformingSerializerTemplate<ByteArray, String>(
+object ByteArrayBase64Serializer : TransformingSerializerTemplate<ByteArray, String>(
     parent = String.serializer(),
     encodeAs = { it.encodeToString(Base64Strict) },
     decodeAs = { it.decodeToByteArray(Base64Strict) }
 )
 
 /** De-/serializes Base64Url strings to/from [ByteArray] */
-object ByteArrayBase64UrlSerializer: TransformingSerializerTemplate<ByteArray, String>(
+object ByteArrayBase64UrlSerializer : TransformingSerializerTemplate<ByteArray, String>(
     parent = String.serializer(),
     encodeAs = { it.encodeToString(Base64UrlStrict) },
     decodeAs = { it.decodeToByteArray(Base64UrlStrict) }
 )
 
+/** De-/serializes Base64Url strings to/from [ByteArray] rejecting padded strings for protocols that require unpadded Base64Url such as RFC7515 */
+object ByteArrayBase64UrlNoPaddingSerializer : TransformingSerializerTemplate<ByteArray, String>(
+    parent = String.serializer(),
+    encodeAs = { it.encodeToString(Base64UrlStrict) },
+    decodeAs = {
+        require(!it.contains("=")) { "Trailing = are not supported" }
+        it.decodeToByteArray(Base64UrlStrict)
+    }
+)
+
 /** De-/serializes X509Certificate as Base64Url-encoded String */
-object X509CertificateBase64UrlSerializer: TransformingSerializerTemplate<X509Certificate, ByteArray>(
+object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<X509Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
     encodeAs = X509Certificate::encodeToDer,
     decodeAs = { X509Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
 )
 
 /** De-/serializes X509Certificate as Base64-encoded String */
-object X509CertificateBase64Serializer: TransformingSerializerTemplate<X509Certificate, ByteArray>(
+object X509CertificateBase64Serializer : TransformingSerializerTemplate<X509Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
     encodeAs = X509Certificate::encodeToDer,
     decodeAs = { X509Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
 )
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
-object IosPublicKeySerializer: TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(
+object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
     encodeAs = CryptoPublicKey::iosEncoded,
     decodeAs = CryptoPublicKey::fromIosEncoded)
@@ -115,9 +125,9 @@ sealed class ListSerializerTemplate<ValueT>(
 }
 
 /** De-/serializes X509Certificate as collection of Base64Url-encoded Strings */
-object CertificateChainBase64UrlSerializer: ListSerializerTemplate<X509Certificate>(
+object CertificateChainBase64UrlSerializer : ListSerializerTemplate<X509Certificate>(
     using = X509CertificateBase64UrlSerializer)
 
 /** De-/serializes X509Certificate as collection of Base64-encoded Strings */
-object CertificateChainBase64Serializer: ListSerializerTemplate<X509Certificate>(
+object CertificateChainBase64Serializer : ListSerializerTemplate<X509Certificate>(
     using = X509CertificateBase64Serializer)
