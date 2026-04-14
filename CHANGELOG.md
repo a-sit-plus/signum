@@ -1,6 +1,14 @@
 # Changelog
 
+
 ## NEXT
+* Rework JWS support around explicit compact, flattened, and general representations
+    * Add sealed `JWS` support with dedicated `JwsCompact`, `JwsFlattened`, `JwsGeneral`
+    * Add conversions between compact, flattened, and general JWS representations
+    * Represent protected and unprotected header fragments explicitly via `JwsHeader.Part`, merging them into a `JwsHeader` only when the combined header is valid
+    * Parse `JwsHeader.attestationJwt` and `JwsHeader.keyAttestation` as `JwsCompact` instead of raw strings
+    * Deprecate `JwsSigned` in favor of `JwsCompact`
+    * Typed payloads remain supported via `JwsTyped`
 
 ## 3.22.0 / (Supreme unaffected)
 * Update `KeyAttestationJwt` to [EUDI Wallet TS3](https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md) from 2026-03-15
