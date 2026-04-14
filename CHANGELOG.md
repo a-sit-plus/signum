@@ -7,6 +7,7 @@
     * Represent protected and unprotected header fragments explicitly via `JwsHeader.Part`, merging them into a `JwsHeader` only when the combined header is valid
     * Parse `JwsHeader.attestationJwt` and `JwsHeader.keyAttestation` as `JwsCompact` instead of raw strings
     * Deprecate `JwsSigned` in favor of `JwsCompact`
+    * Typed payloads remain supported via `JwsTyped`
 
 ## 3.21.0 / Supreme 0.13.0
 * Drop Apple X64 targets

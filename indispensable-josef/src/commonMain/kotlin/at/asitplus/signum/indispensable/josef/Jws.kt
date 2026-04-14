@@ -20,6 +20,8 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Wrapper for all JWS formats.
+ *
+ * If [plainPayload] data structure is defined as part of the contact consider [JwsTyped]
  */
 @Serializable(with = JWS.JwsSerializer::class)
 sealed class JWS {
