@@ -1,5 +1,7 @@
 # Changelog
 
+## NEXT
+
 ## 3.21.0 / Supreme 0.13.0
 * Drop Apple X64 targets
 * Move `InstantLongSerializer` from indispensable-josef/indispensable-cosef to indispensable
