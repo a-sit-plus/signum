@@ -28,6 +28,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1TreeBuilder
 import at.asitplus.signum.indispensable.requireSupported
 
 
@@ -209,8 +210,10 @@ data class ResponseData(
     val responsesExtensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
+    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(TbsCertificate.Companion.Tags.VERSION.tagValue) { +Asn1.Int(value) }
+
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence{
-        version?.let { Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(version) } }
+        version?.let { +Version(it) }
         +responderID
         +producedAt
         +Asn1.Sequence { responses.forEach { +it } }
@@ -234,8 +237,8 @@ data class ResponseData(
 
         override fun doDecode(src: Asn1Sequence): ResponseData = src.decodeRethrowing {
             val version = peek().let {
-                if (it is Asn1ExplicitlyTagged && runCatching { it.verifyTag(Tags.VERSION) }.isSuccess) {
-                    it.asPrimitive().decodeToInt()
+                if (it is Asn1ExplicitlyTagged) {
+                    it.verifyTag(TbsCertificate.Companion.Tags.VERSION).single().asPrimitive().decodeToInt()
                         .also { next() }
                 } else {
                     null

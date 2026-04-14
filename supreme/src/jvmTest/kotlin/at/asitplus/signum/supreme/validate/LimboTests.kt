@@ -36,7 +36,6 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-//                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
                 } else {
                     result.shouldBeValid()
                 }

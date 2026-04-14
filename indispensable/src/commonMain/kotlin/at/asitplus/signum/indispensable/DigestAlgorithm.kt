@@ -77,10 +77,10 @@ fun DigestAlgorithmDescription.requireSupported() {
 
 sealed class DigestAlgorithm(
     override val oid: ObjectIdentifier,
-    override val digest: Digest
+    override val digest: Digest,
 ) : DigestAlgorithmDescription(oid), SpecializedDigestAlgorithm {
 
-    override val parameters get() = Asn1Null
+    override val parameters get() = null
 
     internal object Provider : DigestAlgorithmProvider {
         override fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> DigestAlgorithm)? {

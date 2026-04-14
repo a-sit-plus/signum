@@ -9,7 +9,6 @@ import at.asitplus.signum.CrlMissingPublicKeyException
 import at.asitplus.signum.CrlScopeViolationException
 import at.asitplus.signum.CrlSignatureException
 import at.asitplus.signum.ExperimentalPkiApi
-import at.asitplus.signum.IndirectCrlNotSupportedException
 import at.asitplus.signum.MissingCrlDistributionPointsException
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
@@ -45,6 +44,9 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierEx
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 
+/**
+ * CRL revocation validator
+ */
 class CrlRevocationValidator(
     private val crlProvider: CrlProvider = DirectoryCrlProvider()
 ) : CertificateChainValidator {

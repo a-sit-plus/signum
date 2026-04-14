@@ -49,6 +49,26 @@ class CrlMissingPublicKeyException(message: String) : CRLRevocationException(mes
 class CrlInvalidSignatureAlgorithmException(message: String) : CRLRevocationException(message)
 class CrlDistributionPointMismatchException (message: String) : CRLRevocationException(message)
 class MissingCrlDistributionPointsException (message: String) : CRLRevocationException(message)
-class IndirectCrlNotSupportedException (message: String) : CRLRevocationException(message)
 class CrlScopeViolationException (message: String) : CRLRevocationException(message)
+
+open class OCSPRevocationException(message: String) : RevocationException(message)
+class OCSPExpiredException(message: String) : OCSPRevocationException(message)
+class OCSPNotYetValidException(message: String) : OCSPRevocationException(message)
+class OCSPMissingBasicResponseException(message: String) : OCSPRevocationException(message)
+class OCSPStatusException(message: String) : OCSPRevocationException(message)
+
+class OCSPResponseSignatureException(message: String) : OCSPRevocationException(message)
+class OCSPResponderMismatchException(message: String) : OCSPRevocationException(message)
+class OCSPDelegatedResponderException(message: String) : OCSPRevocationException(message)
+class OCSPUnauthorizedResponderException(message: String) : OCSPRevocationException(message)
+
+class OCSPUnsupportedCriticalExtensionException(message: String) : OCSPRevocationException(message)
+class OCSPUnsupportedVersionException(message: String) : OCSPRevocationException(message)
+
+class OCSPCertRevokedException(message: String) : OCSPRevocationException(message)
+class OCSPCertUnknownException(message: String) : OCSPRevocationException(message)
+
+class OCSPNoMatchingResponseException(message: String) : OCSPRevocationException(message)
+class OCSPMissingAiaExtensionException(message: String) : OCSPRevocationException(message)
+class OCSPMissingOcspUrlException(message: String) : OCSPRevocationException(message)
 
