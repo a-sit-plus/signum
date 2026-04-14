@@ -22,6 +22,11 @@
       "testCommand": "./gradlew jsTest --scan"
     },
     {
+      "os": "ubuntu-latest",
+      "name": "wasmJsRunner",
+      "testCommand": "./gradlew wasmJsTest --scan"
+    },
+    {
       "os": "windows-latest",
       "name": "mingwRunner",
       "testCommand": "./gradlew mingwX64Test --scan"
