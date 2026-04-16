@@ -34,6 +34,8 @@ data class JwsGeneral internal constructor(
     }
 
     @Transient
+    val protectedHeaders: List<JwsHeader.Part?> = signatureElements.map { it.protectedHeader }
+    @Transient
     val jwsHeaders: List<JwsHeader> = signatureElements.map { it.jwsHeader }
 
     @Transient
