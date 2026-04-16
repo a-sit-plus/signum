@@ -34,12 +34,12 @@
     {
       "os": "macos-latest",
       "name": "iosRunner",
-      "testCommand": "./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary iosSimulatorArm64Test --scan"
+      "testCommand": "./gradlew iosSimulatorArm64MainKlibrary iosSimulatorArm64Test --scan"
     },
     {
       "os": "macos-latest",
       "name": "appleOtherRunner",
-      "testCommand": "./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary tvosSimulatorArm64Test watchosSimulatorArm64Test --scan"
+      "testCommand": "./gradlew iosSimulatorArm64MainKlibrary tvosSimulatorArm64Test watchosSimulatorArm64Test --scan"
     },
     {
       "os": "macos-latest",
