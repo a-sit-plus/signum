@@ -244,6 +244,12 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.VC_TYPE_METADATA)
     val vcTypeMetadata: Set<String>? = null,
+
+    /**
+     * This header contains a Client Identifier. A Client Identifier is used in OAuth to identify a certain client. It is defined in [RFC6749], section 2.2.
+     */
+    @SerialName(SerialNames.CLIENT_ID)
+    val clientId: String? = null,
 ) {
     /**
      * Typed representation of either the protected or unprotected JWS header fragment.
@@ -293,6 +299,8 @@ data class JwsHeader(
         val keyAttestation: JwsCompact? = null,
         @SerialName(SerialNames.VC_TYPE_METADATA)
         val vcTypeMetadata: Set<String>? = null,
+        @SerialName(SerialNames.CLIENT_ID)
+        val clientId: String? = null,
     ) {
         fun toJsonObject(): JsonObject =
             joseCompliantSerializer.encodeToJsonElement(serializer(), this).jsonObject
@@ -314,17 +322,12 @@ data class JwsHeader(
             if (jsonWebKey != other.jsonWebKey) return false
             if (jsonWebKeySetUrl != other.jsonWebKeySetUrl) return false
             if (certificateUrl != other.certificateUrl) return false
-            if (certificateSha1Thumbprint != null) {
-                if (other.certificateSha1Thumbprint == null) return false
-                if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
-            } else if (other.certificateSha1Thumbprint != null) return false
-            if (certificateSha256Thumbprint != null) {
-                if (other.certificateSha256Thumbprint == null) return false
-                if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
-            } else if (other.certificateSha256Thumbprint != null) return false
+            if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
+            if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
             if (attestationJwt != other.attestationJwt) return false
             if (keyAttestation != other.keyAttestation) return false
             if (vcTypeMetadata != other.vcTypeMetadata) return false
+            if (clientId != other.clientId) return false
 
             return true
         }
@@ -346,8 +349,10 @@ data class JwsHeader(
             result = 31 * result + (attestationJwt?.hashCode() ?: 0)
             result = 31 * result + (keyAttestation?.hashCode() ?: 0)
             result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
+            result = 31 * result + (clientId?.hashCode() ?: 0)
             return result
         }
+
     }
 
     override fun equals(other: Any?): Boolean {
@@ -367,17 +372,15 @@ data class JwsHeader(
         if (jsonWebKey != other.jsonWebKey) return false
         if (jsonWebKeySetUrl != other.jsonWebKeySetUrl) return false
         if (certificateUrl != other.certificateUrl) return false
-        if (certificateSha1Thumbprint != null) {
-            if (other.certificateSha1Thumbprint == null) return false
-            if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
-        } else if (other.certificateSha1Thumbprint != null) return false
-        if (certificateSha256Thumbprint != null) {
-            if (other.certificateSha256Thumbprint == null) return false
-            if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
-        } else if (other.certificateSha256Thumbprint != null) return false
+        if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
+        if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
         if (attestationJwt != other.attestationJwt) return false
         if (keyAttestation != other.keyAttestation) return false
         if (vcTypeMetadata != other.vcTypeMetadata) return false
+        if (clientId != other.clientId) return false
+        if (publicKey != other.publicKey) return false
+        if (keyAttestationParsed != other.keyAttestationParsed) return false
+        if (verifierAttestationParsed != other.verifierAttestationParsed) return false
 
         return true
     }
@@ -399,6 +402,10 @@ data class JwsHeader(
         result = 31 * result + (attestationJwt?.hashCode() ?: 0)
         result = 31 * result + (keyAttestation?.hashCode() ?: 0)
         result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
+        result = 31 * result + (clientId?.hashCode() ?: 0)
+        result = 31 * result + (publicKey?.hashCode() ?: 0)
+        result = 31 * result + (keyAttestationParsed?.hashCode() ?: 0)
+        result = 31 * result + (verifierAttestationParsed?.hashCode() ?: 0)
         return result
     }
 
@@ -414,6 +421,10 @@ data class JwsHeader(
 
     val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
         keyAttestation?.typed()
+    }
+
+    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken>? by lazy {
+        attestationJwt?.typed()
     }
 
     object SerialNames {
@@ -433,6 +444,7 @@ data class JwsHeader(
         const val ATTESTATION_JWT = "jwt"
         const val KEY_ATTESTATION = "key_attestation"
         const val VC_TYPE_METADATA = "vctm"
+        const val CLIENT_ID= "client_id"
     }
 
     companion object {
@@ -494,4 +506,5 @@ fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
     attestationJwt = attestationJwt,
     keyAttestation = keyAttestation,
     vcTypeMetadata = vcTypeMetadata,
+    clientId = clientId,
 )
