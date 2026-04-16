@@ -49,7 +49,9 @@ data class SignatureElement internal constructor(
     }
 
     @Transient
-    val jwsHeader: JwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    val protectedHeader: JwsHeader.Part? = plainProtectedHeader?.let(JwsProtectedHeaderSerializer::decodeFromByteArray)
+    @Transient
+    val jwsHeader: JwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
     @Transient
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
