@@ -6,8 +6,6 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
-import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
-import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
@@ -248,6 +246,13 @@ data class JwsHeader(
     /**
      * This header contains a Client Identifier. A Client Identifier is used in OAuth to identify a certain client. It is defined in [RFC6749], section 2.2.
      * OpenID4VP: This parameter MUST be part of the protected header
+     *
+     * DC API: The client_id parameter MUST be omitted in unsigned requests defined in Appendix
+     * A.3.1. The Wallet MUST ignore any client_id parameter that is present in an unsigned request.
+     * The client_id parameter MUST be present in signed requests defined in Appendix A.3.2,
+     * as it communicates to the wallet which Client Identifier Prefix and Client Identifier to use
+     * when authenticating the client through verification of the request signature or retrieving
+     * client metadata.
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
@@ -445,7 +450,7 @@ data class JwsHeader(
         const val ATTESTATION_JWT = "jwt"
         const val KEY_ATTESTATION = "key_attestation"
         const val VC_TYPE_METADATA = "vctm"
-        const val CLIENT_ID= "client_id"
+        const val CLIENT_ID = "client_id"
     }
 
     companion object {
