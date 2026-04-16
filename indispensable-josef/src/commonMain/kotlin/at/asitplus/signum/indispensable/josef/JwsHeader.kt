@@ -247,6 +247,7 @@ data class JwsHeader(
 
     /**
      * This header contains a Client Identifier. A Client Identifier is used in OAuth to identify a certain client. It is defined in [RFC6749], section 2.2.
+     * OpenID4VP: This parameter MUST be part of the protected header
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
