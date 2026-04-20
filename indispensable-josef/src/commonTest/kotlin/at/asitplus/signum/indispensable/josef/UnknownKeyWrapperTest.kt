@@ -63,6 +63,25 @@ val UnknownKeyWrapperTest by testSuite {
         )
     }
 
+    "getParameter decodes unknown keys as the requested type" {
+        val decoded = joseCompliantSerializer.decodeFromString(
+            JsonWebTokenAllKeys.serializer(),
+            """
+                {
+                  "iss": "issuer",
+                  "custom_string": "custom",
+                  "custom_object": { "flag": true }
+                }
+            """.trimIndent()
+        )
+
+        decoded.getParameter<String>("custom_string") shouldBe "custom"
+        decoded.getParameter<JsonObject>("custom_object") shouldBe buildJsonObject {
+            put("flag", true)
+        }
+        decoded.getParameter<String>("missing") shouldBe null
+    }
+
     "encoding rejects unknown keys that collide with known JOSE names" {
         val serializer = JwsHeaderAllKeysSerializer
 
