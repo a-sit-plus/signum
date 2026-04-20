@@ -222,7 +222,7 @@ private fun defineRFC5280Validators(context: CertificateValidationContext): List
         ChainValidator(),
         TimeValidityValidator(),
         KeyIdentifierValidator(),
-        if (context.supportRevocationChecking) CrlRevocationValidator() else null
+        if (context.supportRevocationChecking) RevocationValidator() else null
     )
 
 /**

@@ -49,29 +49,31 @@ val NistPkiTestSuite by testSuite{
                 supportRevocationChecking = true
             )
 
-            val result = chain.validate(context)
-            if (testCase.isSuccessful) {
-                if (testCase.name.contains("4.") || testCase.name.contains("delta")) {
-                    if (!result.isValid) {
-                        result.shouldBeInvalid()
-                        result.validatorFailures
-                            .firstOrNull { it.validatorName == "CrlRevocationValidator" }  shouldBe null
-                    } else result.shouldBeValid()
-                } else {
-                    result.shouldBeValid()
-                }
-            } else {
-                result.shouldBeInvalid()
-                val validatorFailure =
-                    result.validatorFailures.firstOrNull {
-                        it.validator!!::class.simpleName == testCase.failedValidator
+            if (testCase.name.contains("")) {
+                val result = chain.validate(context)
+                if (testCase.isSuccessful) {
+                    if (testCase.name.contains("4.") || testCase.name.contains("delta")) {
+                        if (!result.isValid) {
+                            result.shouldBeInvalid()
+                            result.validatorFailures
+                                .firstOrNull { it.validatorName == "CrlRevocationValidator" } shouldBe null
+                        } else result.shouldBeValid()
+                    } else {
+                        result.shouldBeValid()
                     }
-
-                validatorFailure shouldNotBe null
-                if (testCase.failedValidator == "TimeValidityValidator") {
-                    validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
                 } else {
-                    validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                    result.shouldBeInvalid()
+                    val validatorFailure =
+                        result.validatorFailures.firstOrNull {
+                            it.validator!!::class.simpleName == testCase.failedValidator
+                        }
+
+                    validatorFailure shouldNotBe null
+                    if (testCase.failedValidator == "TimeValidityValidator") {
+                        validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
+                    } else {
+                        validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                    }
                 }
             }
         }

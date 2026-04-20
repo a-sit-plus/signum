@@ -706,7 +706,7 @@ val OcspRequestTest by testSuite {
                 context
             )
         }.also {
-            it.message shouldBe "Response is not yet valid"
+            it.message shouldBe "OCSP response is not yet valid"
         }
     }
 
