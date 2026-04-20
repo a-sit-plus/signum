@@ -29,6 +29,7 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1TreeBuilder
+import at.asitplus.signum.indispensable.pki.ResponseData.Companion.Tags.VERSION
 import at.asitplus.signum.indispensable.requireSupported
 
 
@@ -237,8 +238,8 @@ data class ResponseData(
 
         override fun doDecode(src: Asn1Sequence): ResponseData = src.decodeRethrowing {
             val version = peek().let {
-                if (it is Asn1ExplicitlyTagged) {
-                    it.verifyTag(TbsCertificate.Companion.Tags.VERSION).single().asPrimitive().decodeToInt()
+                if (it is Asn1ExplicitlyTagged && it.tag == VERSION) {
+                    it.verifyTag(VERSION).single().asPrimitive().decodeToInt()
                         .also { next() }
                 } else {
                     null

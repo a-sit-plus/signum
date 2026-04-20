@@ -28,31 +28,37 @@ sealed class DigestAlgorithmDescription(
 
     abstract val parameters: Asn1Element?
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is X509SignatureAlgorithmDescription) return false
-        return (oid == other.oid) && (parameters == other.parameters)
-    }
-
-    override fun hashCode() = (31 * oid.hashCode() + parameters.hashCode())
-
-    internal class Unknown(oid: ObjectIdentifier, override val parameters: Asn1Element?) :
-        DigestAlgorithmDescription(oid)
-
     override fun encodeToTlv() = Asn1.Sequence {
         +oid
         parameters?.let { +it }
     }
 
+    internal class Unknown(
+        oid: ObjectIdentifier,
+        override val parameters: Asn1Element?
+    ) : DigestAlgorithmDescription(oid)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is DigestAlgorithmDescription) return false
+        return oid == other.oid && parameters == other.parameters
+    }
+
+    override fun hashCode(): Int =
+        31 * oid.hashCode() + (parameters?.hashCode() ?: 0)
+
+
     companion object : Asn1Decodable<Asn1Sequence, DigestAlgorithmDescription> {
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val oid = next().asPrimitive().readOid()
 
-            // future: SPI
             sequenceOf<DigestAlgorithmProvider>(DigestAlgorithm.Provider)
                 .firstNotNullOfOrNull { it.loaderForOid(oid) }
                 ?.invoke(this@decodeRethrowing)
-                ?: Unknown(oid, nextOrNull())
+                ?: run {
+                    val p = if (hasNext()) next() else null
+                    Unknown(oid, p)
+                }
         }
     }
 }
@@ -79,20 +85,24 @@ sealed class DigestAlgorithm(
     override val oid: ObjectIdentifier,
     override val digest: Digest,
 ) : DigestAlgorithmDescription(oid), SpecializedDigestAlgorithm {
-
-    override val parameters get() = null
+//    TODO: make immutable
+    override var parameters: Asn1Element? = Asn1Null
 
     internal object Provider : DigestAlgorithmProvider {
         override fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> DigestAlgorithm)? {
             val algorithm = fromOid(oid) ?: return null
+
             return { iter ->
                 val param = if (iter.hasNext()) iter.next() else null
+
                 if (param != null && param != Asn1Null) {
                     throw Asn1TagMismatchException(
-                        Asn1Element.Tag.NULL, param.tag,
-                        "Expected NULL or no parameters for digest algorithm"
+                        Asn1Element.Tag.NULL,
+                        param.tag,
+                        "Expected NULL or no parameters"
                     )
                 }
+                algorithm.parameters = param
                 algorithm
             }
         }
@@ -111,13 +121,16 @@ sealed class DigestAlgorithm(
             )
         }
 
-        @Suppress("NOTHING_TO_INLINE")
-        private inline fun fromOid(oid: ObjectIdentifier) = entries.firstOrNull { it.oid == oid }
+        private fun fromOid(oid: ObjectIdentifier) =
+            entries.firstOrNull { it.oid == oid }
 
         override fun doDecode(src: Asn1Sequence): DigestAlgorithm =
             DigestAlgorithmDescription.doDecode(src).let {
-                (it as? DigestAlgorithm)
-                    ?: throw Asn1OidException("Unsupported digest algorithm OID: ${it.oid}", it.oid)
+                it as? DigestAlgorithm
+                    ?: throw Asn1OidException(
+                        "Unsupported digest algorithm OID: ${it.oid}",
+                        it.oid
+                    )
             }
 
     }

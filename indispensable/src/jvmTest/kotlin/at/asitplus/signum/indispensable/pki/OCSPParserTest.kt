@@ -30,6 +30,7 @@ val OCSPParserTest by testSuite{
                 val decoded = OCSPRequest.decodeFromTlv(src)
                 decoded shouldBe OCSPRequest.decodeFromByteArray(bytes)
 
+                val reencoded = decoded.encodeToTlv()
                 withClue(decoded.encodeToPEM().getOrNull()) {
                     decoded.encodeToDer() shouldBe bytes
                 }
