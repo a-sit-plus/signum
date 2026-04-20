@@ -26,12 +26,12 @@ val UnknownKeyWrapperTest by testSuite {
                 issuer = "issuer",
                 subject = "subject",
             ),
-            unknownKeys = mapOf(
+            unknownKeys = JsonObject(mapOf(
                 "custom_string" to JsonPrimitive("custom"),
                 "custom_object" to buildJsonObject {
                     put("flag", true)
                 },
-            ),
+            )),
         )
 
         val encoded = joseCompliantSerializer.encodeToJsonElement(serializer, decoded)
@@ -59,7 +59,7 @@ val UnknownKeyWrapperTest by testSuite {
                 algorithm = JwsAlgorithm.Signature.ES256,
                 keyId = "did:example:signer",
             ),
-            unknownKeys = mapOf("private_claim" to JsonPrimitive("value")),
+            unknownKeys = JsonObject(mapOf("private_claim" to JsonPrimitive("value"))),
         )
     }
 
@@ -92,7 +92,7 @@ val UnknownKeyWrapperTest by testSuite {
                     baseStructure = JwsHeader(
                         algorithm = JwsAlgorithm.Signature.ES256,
                     ),
-                    unknownKeys = mapOf("alg" to JsonPrimitive("HS256")),
+                    unknownKeys = JsonObject(mapOf("alg" to JsonPrimitive("HS256"))),
                 ),
             )
         }.shouldBeFailure().message shouldBe "Encoding failed"

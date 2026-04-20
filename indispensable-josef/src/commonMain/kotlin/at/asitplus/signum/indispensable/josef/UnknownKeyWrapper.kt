@@ -3,30 +3,34 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.serializer
 
 interface UnknownKeyWrapper<T> {
     val baseStructure: T
-    val unknownKeys: Map<String, JsonElement>
+    val unknownKeys: JsonObject
     fun <G> getParameter(key: String, deserializer: KSerializer<G>): G? =
         unknownKeys[key]?.let {
             joseCompliantSerializer.decodeFromJsonElement(deserializer, it)
         }
+
+    fun <D> getDataClass(deserializer: KSerializer<D>): D? =
+        joseCompliantSerializer.decodeFromJsonElement(deserializer, unknownKeys)
 }
 
 @Serializable(with = JwsHeaderAllKeysSerializer::class)
 data class JwsHeaderAllKeys(
     override val baseStructure: JwsHeader,
-    override val unknownKeys: Map<String, JsonElement> = emptyMap(),
+    override val unknownKeys: JsonObject = JsonObject(mapOf()),
 ) : UnknownKeyWrapper<JwsHeader>
 
 
 @Serializable(with = JsonWebTokenAllKeysSerializer::class)
 data class JsonWebTokenAllKeys(
     override val baseStructure: JsonWebToken,
-    override val unknownKeys: Map<String, JsonElement> = emptyMap(),
+    override val unknownKeys: JsonObject = JsonObject(mapOf()),
 ) : UnknownKeyWrapper<JsonWebToken>
 
 object JwsHeaderAllKeysSerializer : KSerializer<JwsHeaderAllKeys> by UnknownKeyWrapperTransformingSerializer(
@@ -41,3 +45,6 @@ object JsonWebTokenAllKeysSerializer : KSerializer<JsonWebTokenAllKeys> by Unkno
 
 inline fun <reified G> UnknownKeyWrapper<*>.getParameter(key: String): G? =
     getParameter(key, joseCompliantSerializer.serializersModule.serializer())
+
+inline fun <reified D> UnknownKeyWrapper<*>.getDataClass(): D? =
+    getDataClass(joseCompliantSerializer.serializersModule.serializer())
