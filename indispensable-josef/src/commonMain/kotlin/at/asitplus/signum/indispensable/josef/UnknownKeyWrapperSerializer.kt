@@ -4,9 +4,6 @@ import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 class UnknownKeyWrapperTransformingSerializer<T, U : UnknownKeyWrapper<T>>(
     val structSerializer: KSerializer<T>,
@@ -15,17 +12,8 @@ class UnknownKeyWrapperTransformingSerializer<T, U : UnknownKeyWrapper<T>>(
 ) : TransformingSerializerTemplate<U, JsonObject>(
     parent = JsonObject.serializer(),
     encodeAs = { value ->
-        val overlappingKeys = value.unknownKeys.keys.intersect(serialNames)
-        require(overlappingKeys.isEmpty()) {
-            "unknownKeys must not contain known keys: ${overlappingKeys.sorted().joinToString()}"
-        }
-
-        val knownKeys =
-            joseCompliantSerializer.encodeToJsonElement(structSerializer, value.baseStructure) as JsonObject
-        buildJsonObject {
-            value.unknownKeys.forEach { (key, jsonElement) -> put(key, jsonElement) }
-            knownKeys.forEach { (key, jsonElement) -> put(key, jsonElement) }
-        }
+        val knownKeys = joseCompliantSerializer.encodeToJsonElement(structSerializer, value.baseStructure) as JsonObject
+        knownKeys.strictUnion(value.unknownKeys)
     },
     decodeAs = { jsonObject ->
         val knownStructure = joseCompliantSerializer.decodeFromJsonElement(structSerializer, jsonObject)
