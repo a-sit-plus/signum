@@ -19,8 +19,7 @@ class UnknownKeyWrapperTransformingSerializer<T, U : UnknownKeyWrapper<T>>(
         val knownStructure = joseCompliantSerializer.decodeFromJsonElement(structSerializer, jsonObject)
         val unknownKeys = JsonObject(jsonObject.filterKeys { it !in serialNames })
         wrap(knownStructure, unknownKeys)
-    },
-    serialName = "${structSerializer.descriptor.serialName}AllKeys",
+    }
 )
 
 private fun KSerializer<*>.topLevelSerialNames(): Set<String> =
