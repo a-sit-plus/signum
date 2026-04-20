@@ -3,10 +3,62 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
+
+@Serializable
+data class KeyAttestationElements(
+    /**
+     * Array of attested keys from the same key storage component using the syntax of JWK as defined in RFC7517.
+     */
+    @SerialName("attested_keys")
+    val attestedKeys: Collection<JsonWebKey>,
+
+    /**
+     * Optional. Array of case sensitive strings that assert the attack potential resistance of the key storage
+     * component and its keys attested in the attested_keys parameter. This specification defines initial values in
+     * Appendix D.2.
+     */
+    @SerialName("key_storage")
+    val keyStorage: Collection<String>? = null,
+
+    /**
+     * Optional. Array of case sensitive strings that assert the attack potential resistance of the user authentication
+     * methods allowed to access the private keys from the [attestedKeys] parameter.
+     * This specification defines initial values in Appendix D.2.
+     */
+    @SerialName("user_authentication")
+    val userAuthentication: Collection<String>? = null,
+
+    /**
+     * Optional. A String that contains a URL that links to the certification of the key storage component.
+     */
+    @SerialName("certification")
+    val certification: String? = null,
+
+    /**
+     * Optional. JSON Object representing the supported revocation check mechanisms, such as the one defined in
+     * ietf-oauth-status-list.
+     */
+    @SerialName("status")
+    val status: JsonObject? = null,
+)
+
+object ExperimentalKeyAttSerializer : KSerializer<ExperimentalKeyAtt> by UnknownKeyWrapperTransformingSerializer(
+    structSerializer = JsonWebToken.serializer(),
+    wrap = ::ExperimentalKeyAtt,
+)
+
+@Serializable(with=ExperimentalKeyAttSerializer::class)
+data class ExperimentalKeyAtt(
+    override val baseStructure: JsonWebToken,
+    override val unknownKeys: JsonObject
+): UnknownKeyWrapper<JsonWebToken> {
+    val keyAttestationElements: KeyAttestationElements = this.getDataClass<KeyAttestationElements>()
+}
 
 /**
  * Content of a Key Attestation in JWT format, according to
