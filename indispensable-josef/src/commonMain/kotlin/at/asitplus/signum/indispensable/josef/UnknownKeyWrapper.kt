@@ -4,8 +4,6 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.serializer
 
 interface UnknownKeyWrapper<T> {
@@ -16,7 +14,7 @@ interface UnknownKeyWrapper<T> {
             joseCompliantSerializer.decodeFromJsonElement(deserializer, it)
         }
 
-    fun <D> getDataClass(deserializer: KSerializer<D>): D? =
+    fun <D> getDataClass(deserializer: KSerializer<D>): D =
         joseCompliantSerializer.decodeFromJsonElement(deserializer, unknownKeys)
 }
 
@@ -46,5 +44,5 @@ object JsonWebTokenAllKeysSerializer : KSerializer<JsonWebTokenAllKeys> by Unkno
 inline fun <reified G> UnknownKeyWrapper<*>.getParameter(key: String): G? =
     getParameter(key, joseCompliantSerializer.serializersModule.serializer())
 
-inline fun <reified D> UnknownKeyWrapper<*>.getDataClass(): D? =
+inline fun <reified D> UnknownKeyWrapper<*>.getDataClass(): D =
     getDataClass(joseCompliantSerializer.serializersModule.serializer())
