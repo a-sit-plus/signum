@@ -9,6 +9,7 @@ import at.asitplus.signum.OCSPMissingAiaExtensionException
 import at.asitplus.signum.OCSPMissingBasicResponseException
 import at.asitplus.signum.OCSPMissingOcspUrlException
 import at.asitplus.signum.OCSPNoMatchingResponseException
+import at.asitplus.signum.OCSPNonceMismatchException
 import at.asitplus.signum.OCSPNotYetValidException
 import at.asitplus.signum.OCSPResponderMismatchException
 import at.asitplus.signum.OCSPResponseSignatureException
@@ -19,10 +20,13 @@ import at.asitplus.signum.OCSPUnsupportedVersionException
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.DigestAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.authorityInfoAccess
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.ocsp
+import at.asitplus.signum.indispensable.asn1.ocspNonce
 import at.asitplus.signum.indispensable.asn1.ocspSigning
 import at.asitplus.signum.indispensable.pki.BasicOCSPResponse
 import at.asitplus.signum.indispensable.pki.CertId
@@ -36,9 +40,13 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.generalNames.UriName
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityInfoAccessExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.ExtendedKeyUsageExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.OCSPNonceExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.SubjectKeyIdentifierExtension
 import at.asitplus.signum.supreme.hash.digest
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 /**
@@ -47,6 +55,9 @@ import kotlin.time.Instant
 class OCSPRevocationValidator(
     private val provider: OcspProvider = HttpOCSPProvider(),
 ): CertificateChainValidator {
+
+    private val DEFAULT_NONCE_BYTES = 16
+    private val MAX_CLOCK_SKEW = 15.minutes
 
     @ExperimentalPkiApi
     override suspend fun validate(
@@ -67,21 +78,23 @@ class OCSPRevocationValidator(
             val issuerCert = processingChain[currentCertIndex + 1]
             val ocspUrl = extractOcspUrl(currCert) ?: throw OCSPMissingOcspUrlException("No OCSP URL found in AIA extension")
             val certId = buildCertId(currCert, issuerCert)
-            val request = buildOcspRequest(certId)
+            val nonce = generateNonce()
+            val request = buildOcspRequest(certId, nonce)
             val responseBody = provider.fetchOcspResponse(ocspUrl, request)
 
             val basicResponse = parseOcspResponse(responseBody).responseBytes?.basicOCSPResponse
                 ?: throw OCSPMissingBasicResponseException("No basic response data")
 
             verifyResponseSignature(basicResponse, issuerCert)
-            checkCriticalExtensions(basicResponse.tbsResponseData.responsesExtensions)
-            checkOcspResponseVersion(basicResponse)
+            verifyCriticalExtensions(basicResponse.tbsResponseData.responsesExtensions)
+            verifyOcspResponseVersion(basicResponse)
+            verifyNonce(basicResponse, nonce)
 
             val singleResponse = basicResponse.tbsResponseData.responses.firstOrNull { it.certId == certId }
                 ?: throw OCSPNoMatchingResponseException("Responder did not include status for the requested certificate")
 
-            checkCriticalExtensions(singleResponse.singleExtensions)
-            checkResponseTime(singleResponse, context.date)
+            verifyCriticalExtensions(singleResponse.singleExtensions)
+            verifyResponseTime(singleResponse, context.date)
 
             when (singleResponse.certStatus) {
                 SingleResponse.CertStatus.GOOD -> Unit
@@ -114,7 +127,16 @@ class OCSPRevocationValidator(
         )
     }
 
-    fun buildOcspRequest(certId: CertId): OCSPRequest {
+    fun buildOcspRequest(certId: CertId, nonce: ByteArray): OCSPRequest {
+        val nonceExt = OCSPNonceExtension(
+            oid = KnownOIDs.ocspNonce,
+            critical = false,
+            value = Asn1EncapsulatingOctetString(
+                listOf(Asn1.OctetString(nonce))
+            ),
+            nonce = nonce
+        )
+
         val singleRequest = SingleRequest(
             reqCert = certId,
             singleRequestExtensions = null
@@ -124,7 +146,7 @@ class OCSPRevocationValidator(
             version = 0,
             requestorName = null,
             requestList = listOf(singleRequest),
-            requestExtensions = null
+            requestExtensions = listOf(nonceExt)
         )
 
         return OCSPRequest(
@@ -143,20 +165,33 @@ class OCSPRevocationValidator(
         return response
     }
 
-    fun checkResponseTime(
+    fun verifyResponseTime(
         response: SingleResponse,
         validationDate: Instant
     ) {
-        if (response.thisUpdate.instant > validationDate) {
-            throw OCSPNotYetValidException("Response is not yet valid")
+        val nowPlusSkew = validationDate + MAX_CLOCK_SKEW
+        val nowMinusSkew = validationDate - MAX_CLOCK_SKEW
+
+        val thisUpdate = response.thisUpdate.instant
+
+        val upperBound =
+            response.nextUpdate?.instant?.let {
+                if (it > thisUpdate) it else thisUpdate
+            } ?: thisUpdate
+
+        if (nowPlusSkew < thisUpdate) {
+            throw OCSPNotYetValidException(
+                "OCSP response is not yet valid"
+            )
         }
 
-        response.nextUpdate?.let {
-            if (it.instant < validationDate) {
-                throw OCSPExpiredException("OCSP response has expired")
-            }
+        if (nowMinusSkew > upperBound) {
+            throw OCSPExpiredException(
+                "OCSP response has expired"
+            )
         }
     }
+
 
     suspend fun verifyResponseSignature(
         basicResponse: BasicOCSPResponse,
@@ -220,10 +255,18 @@ class OCSPRevocationValidator(
             }
 
             responderId.byKey != null -> {
-                val keyHash = Digest.SHA1.digest(
-                    responderCert.decodedPublicKey.getOrThrow().iosEncoded
-                )
-                keyHash.contentEquals(responderId.byKey)
+                val skid = responderCert.findExtension<SubjectKeyIdentifierExtension>()
+                    ?.keyIdentifier
+
+                val matchesSkid =
+                    skid?.contentEquals(responderId.byKey) == true
+
+                val matchesDerived =
+                    Digest.SHA1.digest(
+                        responderCert.decodedPublicKey.getOrThrow().iosEncoded
+                    ).contentEquals(responderId.byKey)
+
+                matchesSkid || matchesDerived
             }
 
             else -> false
@@ -234,7 +277,7 @@ class OCSPRevocationValidator(
         }
     }
 
-    fun checkCriticalExtensions(
+    fun verifyCriticalExtensions(
         extensions: List<X509CertificateExtension>?
     ) {
         val unsupported = extensions
@@ -247,13 +290,32 @@ class OCSPRevocationValidator(
         }
     }
 
-    fun checkOcspResponseVersion(basicResponse: BasicOCSPResponse) {
+    fun verifyOcspResponseVersion(basicResponse: BasicOCSPResponse) {
         basicResponse.tbsResponseData.version?.let { version ->
             if (version != 0) {
                 throw OCSPUnsupportedVersionException(
                     "Unsupported OCSP response version: $version"
                 )
             }
+        }
+    }
+
+    private fun generateNonce(): ByteArray {
+        return Random.Default.nextBytes(DEFAULT_NONCE_BYTES)
+    }
+
+    fun verifyNonce(
+        basicResponse: BasicOCSPResponse,
+        requestNonce: ByteArray
+    ) {
+        val responseNonce = basicResponse.tbsResponseData.responsesExtensions
+            ?.filterIsInstance<OCSPNonceExtension>()
+            ?.firstOrNull()
+            ?.nonce
+
+        if (responseNonce != null &&
+            !responseNonce.contentEquals(requestNonce)) {
+            throw OCSPNonceMismatchException("OCSP nonce mismatch")
         }
     }
 }
