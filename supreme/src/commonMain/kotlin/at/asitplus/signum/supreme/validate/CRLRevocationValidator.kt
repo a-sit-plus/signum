@@ -54,8 +54,8 @@ import at.asitplus.signum.supreme.sign.verify
 /**
  * CRL revocation validator
  */
-class CrlRevocationValidator(
-    private val crlProvider: CrlProvider = DirectoryCrlProvider()
+class CRLRevocationValidator(
+    private val crlProvider: CRLProvider = DirectoryCRLProvider()
 ) : CertificateChainValidator {
 
     @OptIn(ExperimentalPkiApi::class)
@@ -81,7 +81,7 @@ class CrlRevocationValidator(
 
             val possibleCrls = mutableListOf<CertificateList>()
 
-            crlProvider.getCrl(currCert, issuerCert).let { possibleCrls.addAll(it) }
+            crlProvider.fetchCRLs(currCert, issuerCert).let { possibleCrls.addAll(it) }
             val cdpExtension = currCert.findExtension<CRLDistributionPointsExtension>()
             cdpExtension?.distributionPoints?.forEach { dp ->
                 val crlIssuerCerts = dp.crlIssuer?.let { names ->
@@ -93,13 +93,13 @@ class CrlRevocationValidator(
 
                 // Fetch CRLs for each potential issuer found
                 crlIssuerCerts.forEach { issuer ->
-                    val crlsFromIssuer = crlProvider.getCrl(currCert, issuer)
+                    val crlsFromIssuer = crlProvider.fetchCRLs(currCert, issuer)
                     possibleCrls.addAll(crlsFromIssuer)
                 }
             }
 
             runCatching {
-                possibleCrls.addAll(crlProvider.getCrlsFromDistributionPoints(currCert))
+                possibleCrls.addAll(crlProvider.fetchCRLsFromDistributionPoints(currCert))
             }
 
             val approvedCrlSets = mutableListOf<CrlSet>()
@@ -112,7 +112,7 @@ class CrlRevocationValidator(
 
                     verifyCrl(crl, currCert, crlSignerCert, context)
 
-                    val deltaCrls = runCatching { crlProvider.getDeltaCrls(crl, currCert) }.getOrDefault(emptyList())
+                    val deltaCrls = runCatching { crlProvider.fetchDeltaCRLs(crl, currCert) }.getOrDefault(emptyList())
                     val approvedDeltas = mutableListOf<CertificateList>()
 
                     for (delta in deltaCrls) {
@@ -137,13 +137,13 @@ class CrlRevocationValidator(
 
             if (remainingReasons.isNotEmpty()) {
                 try {
-                    val dpCrls = crlProvider.getCrlsFromDistributionPoints(currCert)
+                    val dpCrls = crlProvider.fetchCRLsFromDistributionPoints(currCert)
 
                     for (crl in dpCrls) {
                         try {
                             verifyCrl(crl, currCert, issuerCert, context)
 
-                            val deltaCrls = runCatching { crlProvider.getDeltaCrls(crl, currCert) }.getOrDefault(emptyList())
+                            val deltaCrls = runCatching { crlProvider.fetchDeltaCRLs(crl, currCert) }.getOrDefault(emptyList())
                             val approvedDeltas = mutableListOf<CertificateList>()
 
                             for (delta in deltaCrls) {
@@ -429,14 +429,13 @@ class CrlRevocationValidator(
             val coveredReasons = getCoveredReasons(baseCrl, cert)
             var unrevokedByDelta = false
 
-            // 1. Check Delta CRLs first
+            // Check Delta CRLs first
             for (deltaCrl in crlSet.deltaCrls) {
                 val entry = findCrlEntry(deltaCrl, serial, certIssuer)
                 if (entry != null) {
                     validateCrlEntryExtensions(entry)
                     val reason = getReasonCode(entry) ?: CRLReason.UNSPECIFIED
 
-                    // REMOVE_FROM_CRL means the certificate is no longer revoked
                     if (reason == CRLReason.REMOVE_FROM_CRL) {
                         unrevokedByDelta = true
                         break
@@ -454,7 +453,7 @@ class CrlRevocationValidator(
             // If the delta CRL explicitly un-revoked it, skip the base CRL check for this set
             if (unrevokedByDelta) continue
 
-            // 2. Check Base CRL
+            // Check Base CRL
             val baseEntry = findCrlEntry(baseCrl, serial, certIssuer)
             if (baseEntry != null) {
                 validateCrlEntryExtensions(baseEntry)

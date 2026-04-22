@@ -53,7 +53,7 @@ import kotlin.time.Instant
  * OCSP revocation validator
  */
 class OCSPRevocationValidator(
-    private val provider: OcspProvider = HttpOCSPProvider(),
+    private val provider: OCSPProvider = DirectoryOcspProvider(),
 ): CertificateChainValidator {
 
     private val DEFAULT_NONCE_BYTES = 16

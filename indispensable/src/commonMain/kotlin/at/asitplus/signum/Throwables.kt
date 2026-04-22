@@ -60,6 +60,7 @@ class UnsupportedCrlExtensionException(message: String) : CRLRevocationException
 class CRLCertRevokedException(message: String) : CRLRevocationException(message)
 
 open class OCSPRevocationException(message: String) : RevocationException(message)
+class OCSPResponseException(message: String) : OCSPRevocationException(message)
 class OCSPExpiredException(message: String) : OCSPRevocationException(message)
 class OCSPNotYetValidException(message: String) : OCSPRevocationException(message)
 class OCSPMissingBasicResponseException(message: String) : OCSPRevocationException(message)

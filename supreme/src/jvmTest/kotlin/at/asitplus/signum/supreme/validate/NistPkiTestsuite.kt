@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.signum.supreme.shouldBeValid
@@ -22,7 +21,7 @@ val NistPkiTestSuite by testSuite{
     val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
 
     runBlocking {
-        SystemCrlCache.initialize("./src/jvmTest/resources/crls/PKITS_crl")
+        SystemCRLCache.initialize("./src/jvmTest/resources/crls/PKITS_crl")
     }
     testSuite.forEach { testCase ->
         test(testCase.name) {
@@ -49,31 +48,29 @@ val NistPkiTestSuite by testSuite{
                 supportRevocationChecking = true
             )
 
-            if (testCase.name.contains("")) {
-                val result = chain.validate(context)
-                if (testCase.isSuccessful) {
-                    if (testCase.name.contains("4.") || testCase.name.contains("delta")) {
-                        if (!result.isValid) {
-                            result.shouldBeInvalid()
-                            result.validatorFailures
-                                .firstOrNull { it.validatorName == "CrlRevocationValidator" } shouldBe null
-                        } else result.shouldBeValid()
-                    } else {
-                        result.shouldBeValid()
-                    }
+            val result = chain.validate(context)
+            if (testCase.isSuccessful) {
+                if (testCase.name.contains("4.") || testCase.name.contains("delta")) {
+                    if (!result.isValid) {
+                        result.shouldBeInvalid()
+                        result.validatorFailures
+                            .firstOrNull { it.validatorName == "CrlRevocationValidator" } shouldBe null
+                    } else result.shouldBeValid()
                 } else {
-                    result.shouldBeInvalid()
-                    val validatorFailure =
-                        result.validatorFailures.firstOrNull {
-                            it.validator!!::class.simpleName == testCase.failedValidator
-                        }
-
-                    validatorFailure shouldNotBe null
-                    if (testCase.failedValidator == "TimeValidityValidator") {
-                        validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
-                    } else {
-                        validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                    result.shouldBeValid()
+                }
+            } else {
+                result.shouldBeInvalid()
+                val validatorFailure =
+                    result.validatorFailures.firstOrNull {
+                        it.validator!!::class.simpleName == testCase.failedValidator
                     }
+
+                validatorFailure shouldNotBe null
+                if (testCase.failedValidator == "TimeValidityValidator") {
+                    validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
+                } else {
+                    validatorFailure!!.errorMessage shouldBe testCase.errorMessage
                 }
             }
         }

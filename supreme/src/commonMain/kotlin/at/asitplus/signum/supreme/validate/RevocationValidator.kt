@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 
 class RevocationValidator(
     private val ocspValidator: OCSPRevocationValidator = OCSPRevocationValidator(),
-    private val crlValidator: CrlRevocationValidator = CrlRevocationValidator()
+    private val crlValidator: CRLRevocationValidator = CRLRevocationValidator()
 ) : CertificateChainValidator {
 
     @ExperimentalPkiApi

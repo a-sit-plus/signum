@@ -2,9 +2,9 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateException
 import at.asitplus.signum.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.CertificateList
+import at.asitplus.signum.OCSPResponseException
 import at.asitplus.signum.indispensable.pki.OCSPRequest
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.supreme.validate.SystemOcspCache.initialize
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -27,13 +27,21 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readByteArray
 import kotlinx.serialization.json.Json
 
-interface OcspProvider {
+/**
+ * Provides OCSP responses for certificate validation
+ * The returned response is expected to be the raw DER-encoded OCSP response bytes
+ * as defined in RFC 6960.
+ */
+interface OCSPProvider {
 
     suspend fun fetchOcspResponse(ocspUrl: String, request: OCSPRequest): ByteArray
 
 }
 
-class HttpOCSPProvider : OcspProvider {
+/**
+ * Basic HTTP based implementation
+ */
+class HttpOCSPProvider : OCSPProvider {
 
     private val httpClient = HttpClient {
         install(ContentNegotiation) {
@@ -55,7 +63,7 @@ class HttpOCSPProvider : OcspProvider {
         }
 
         if (response.status != HttpStatusCode.OK) {
-            throw CertificateException("OCSP responder returned status ${response.status}")
+            throw OCSPResponseException("OCSP responder returned status ${response.status}")
         }
 
         return response.body()
@@ -63,6 +71,9 @@ class HttpOCSPProvider : OcspProvider {
 
 }
 
+/**
+ * Global cache of OCSP responses
+ */
 @ExperimentalPkiApi
 object SystemOcspCache {
     private val mutex = Mutex()
@@ -74,9 +85,6 @@ object SystemOcspCache {
     val responses: Map<String, ByteArray>
         get() = _cache ?: throw IllegalStateException("SystemOcspCache not initialized. Call initialize() first.")
 
-    /**
-     * Suspendable initializer. Safe to call multiple times; only the first succeeds.
-     */
     suspend fun initialize(path: String, fileSystem: FileSystem = SystemFileSystem) {
         if (_cache != null) return
         mutex.withLock {
@@ -88,9 +96,14 @@ object SystemOcspCache {
     }
 }
 
+/**
+ * File system–based implementation of [OCSPProvider].
+ *
+ * This provider serves OCSP responses from a preloaded in-memory cache
+ */
 class DirectoryOcspProvider @OptIn(ExperimentalPkiApi::class) constructor(
     val ocspCache: Map<String, ByteArray> = SystemOcspCache.responses
-) : OcspProvider {
+) : OCSPProvider {
 
     override suspend fun fetchOcspResponse(ocspUrl: String, request: OCSPRequest): ByteArray {
         // Extract the last path segment from the URL
