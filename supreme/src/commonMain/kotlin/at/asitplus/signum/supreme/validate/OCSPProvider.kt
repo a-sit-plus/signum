@@ -17,8 +17,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.io.buffered
 import kotlinx.io.files.FileSystem
@@ -76,7 +74,6 @@ class HttpOCSPProvider : OCSPProvider {
  */
 @ExperimentalPkiApi
 object SystemOcspCache {
-    private val mutex = Mutex()
     private var _cache: Map<String, ByteArray>? = null
 
     /**
@@ -86,12 +83,9 @@ object SystemOcspCache {
         get() = _cache ?: throw IllegalStateException("SystemOcspCache not initialized. Call initialize() first.")
 
     suspend fun initialize(path: String, fileSystem: FileSystem = SystemFileSystem) {
-        if (_cache != null) return
-        mutex.withLock {
-            if (_cache == null) {
-                val provider = DirectoryOcspProvider.create(path, fileSystem)
-                _cache = provider.ocspCache
-            }
+        if (_cache == null) {
+            val provider = DirectoryOcspProvider.create(path, fileSystem)
+            _cache = provider.ocspCache
         }
     }
 }

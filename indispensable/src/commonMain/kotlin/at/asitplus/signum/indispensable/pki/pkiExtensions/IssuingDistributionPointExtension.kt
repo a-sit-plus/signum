@@ -5,10 +5,14 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
+import at.asitplus.signum.indispensable.asn1.extKeyUsage
+import at.asitplus.signum.indispensable.asn1.issuingDistributionPoint_2_5_29_28
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
 class IssuingDistributionPointExtension(
@@ -45,7 +49,10 @@ class IssuingDistributionPointExtension(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): IssuingDistributionPointExtension = src.decodeRethrowing{
-            val base = decodeBase(src)
+            val base = decodeBase()
+
+            if (base.oid != KnownOIDs.issuingDistributionPoint_2_5_29_28) throw Asn1StructuralException(message = "Expected IssuingDistributionPoint extension (OID: ${KnownOIDs.issuingDistributionPoint_2_5_29_28}), but found OID: ${base.oid}")
+
             val inner = base.value.asEncapsulatingOctetString().single().asSequence()
 
             return inner.decodeRethrowing {

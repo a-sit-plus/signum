@@ -11,9 +11,8 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLDistributionPointsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.IssuingDistributionPointExtension
+import at.asitplus.signum.supreme.validate.SystemCRLCache.initialize
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.io.buffered
 import kotlinx.io.files.FileSystem
@@ -44,7 +43,6 @@ interface CRLProvider {
 
 @ExperimentalPkiApi
 object SystemCRLCache {
-    private val mutex = Mutex()
     private var _cache: List<CertificateList>? = null
 
     /**
@@ -55,12 +53,9 @@ object SystemCRLCache {
 
 
     suspend fun initialize(path: String, fileSystem: FileSystem = SystemFileSystem) {
-        if (_cache != null) return
-        mutex.withLock {
-            if (_cache == null) {
-                val provider = DirectoryCRLProvider.create(path, fileSystem)
-                _cache = provider.crlCache
-            }
+        if (_cache == null) {
+            val provider = DirectoryCRLProvider.create(path, fileSystem)
+            _cache = provider.crlCache
         }
     }
 }

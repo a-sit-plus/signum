@@ -4,7 +4,10 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.authorityInfoAccess
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -24,7 +27,10 @@ class AuthorityInfoAccessExtension(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
+
+            if (base.oid != KnownOIDs.authorityInfoAccess) throw Asn1StructuralException(message = "Expected AuthorityInfoAccess extension (OID: ${KnownOIDs.authorityInfoAccess}), but found OID: ${base.oid}")
+
             val accessDescriptions = base.value.asEncapsulatingOctetString().first().asSequence().decodeRethrowing {
                 buildList {
                     while (hasNext())
