@@ -8,7 +8,8 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.AuthorityKeyIdentifierExtension
-import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import at.asitplus.signum.indispensable.pki.root
+import at.asitplus.signum.indispensable.pki.validationPath
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 
@@ -18,22 +19,34 @@ import at.asitplus.signum.supreme.sign.verify
  * This validator verifies that each certificate is properly signed by its issuer,
  * ensures that the subject of the issuer certificate matches the issuer of the child certificate.
  */
-class ChainValidator(
-    private val certChain: CertificateChain,
-    private var currentCertIndex: Int = 0
-) : CertificateValidator {
+class ChainValidator: CertificateChainValidator {
 
     @ExperimentalPkiApi
-    override suspend fun check(
-        currCert: X509Certificate,
-        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
-    ) {
-        if (currentCertIndex < certChain.lastIndex) {
-            val childCert = certChain[currentCertIndex + 1]
-            verifySignature(childCert, issuer = currCert, childCert == certChain.last())
-            subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
-            currentCertIndex++
+    override suspend fun validate(
+        anchoredChain: AnchoredCertificateChain,
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
+        var currentCertIndex = 0
+        val trustAnchor = anchoredChain.trustAnchor
+        val processingChain = trustAnchor.cert?.let { anchoredChain.chain + it } ?: anchoredChain.chain
+        for (currCert in processingChain.validationPath) {
+            if (currentCertIndex < processingChain.validationPath.lastIndex) {
+                val childCert = processingChain.validationPath[currentCertIndex + 1]
+                verifySignature(childCert, issuer = currCert, childCert == processingChain.validationPath.last())
+                subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
+                currentCertIndex++
+            }
         }
+
+        // only if trust anchor is key based
+        if (trustAnchor.cert == null) {
+            if (!trustAnchor.isIssuerOf(processingChain.root)) {
+                throw CertificateChainValidatorException(
+                    "Root certificate not issued by trust anchor."
+                )
+            }
+        }
+        return emptyMap()
     }
 
     private suspend fun verifySignature(
@@ -44,10 +57,6 @@ class ChainValidator(
         val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(issuer.decodedPublicKey.getOrThrow()).getOrThrow()
         if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()).isSuccess) {
             throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
-        }
-
-        if (!cert.isSelfIssued) {
-            if (cert.findExtension<AuthorityKeyIdentifierExtension>() == null) throw CertificateChainValidatorException("Missing AuthorityKeyIdentifier extension in certificate.")
         }
     }
 

@@ -32,7 +32,7 @@ class InhibitAnyPolicyExtension(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): InhibitAnyPolicyExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.inhibitAnyPolicy) throw Asn1StructuralException(message = "Expected InhibitAnyPolicy extension (OID: ${KnownOIDs.inhibitAnyPolicy}), but found OID: ${base.oid}")
 

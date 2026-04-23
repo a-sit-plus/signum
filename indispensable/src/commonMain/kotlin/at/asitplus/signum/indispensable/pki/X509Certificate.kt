@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateExpiredException
+import at.asitplus.signum.CertificateNotYetValidException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -21,6 +23,8 @@ import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 import kotlin.time.Clock
@@ -344,7 +348,26 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     /**
      * Checks whether this certificate is valid at the specified [date].
      */
-    fun isValidAt(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
+    fun isValidAt(date: Instant = Clock.System.now()): Boolean = runCatching { checkValidityAt(date) }.isSuccess
+
+    @Throws(CertificateValidityException::class)
+    fun checkValidityAt(date: Instant = Clock.System.now()) {
+        if (isExpired(date)) {
+            throw CertificateExpiredException(
+                "certificate expired on " +
+                        tbsCertificate.validUntil.instant
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+            )
+        }
+
+        if (isNotYetValid(date)) {
+            throw CertificateNotYetValidException(
+                "certificate not valid till " +
+                        tbsCertificate.validFrom.instant
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+            )
+        }
+    }
 
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
@@ -390,6 +413,7 @@ typealias CertificateChain = List<X509Certificate>
 
 val CertificateChain.leaf: X509Certificate get() = first()
 val CertificateChain.root: X509Certificate get() = last()
+val CertificateChain.validationPath: CertificateChain get() = reversed()
 
 private
 /** De-/serializes Base64 strings to/from [ByteArray] */

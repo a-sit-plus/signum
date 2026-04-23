@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1Structure
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
@@ -119,15 +120,15 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
             val decoder = registeredExtensionDecoders[oid]
             return if (decoder != null) {
                 catchingUnwrapped { decoder(src, null) }.getOrElse {
-                    InvalidCertificateExtension(decodeBase(src), it)
+                    InvalidCertificateExtension(decodeBase(), it)
                 }
             } else {
-                decodeBase(src)
+                decodeBase()
             }
         }
 
         @Throws(Asn1Exception::class)
-        fun decodeBase(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
+        fun Asn1Structure.Iterator.decodeBase(): X509CertificateExtension {
             val oid = next().asPrimitive().readOid()
             val critical =
                 if (peek()?.tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false

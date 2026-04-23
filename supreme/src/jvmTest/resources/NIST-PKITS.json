@@ -36,7 +36,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDpjCCAo6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBiMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEyMDAGA1UEAxMpYmFzaWND\nb25zdHJhaW50cyBOb3QgQ3JpdGljYWwgY0EgRmFsc2UgQ0EwHhcNMTAwMTAxMDgz\nMDAwWhcNMzAxMjMxMDgzMDAwWjBeMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVz\ndCBDZXJ0aWZpY2F0ZXMgMjAxMTEuMCwGA1UEAxMlSW52YWxpZCBjQSBGYWxzZSBF\nRSBDZXJ0aWZpY2F0ZSBUZXN0MzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBAOMqfzk11boRFBbpNA1tq4GZJbk1M45bsflY/IBB0d8KUdhotWgSOm065GL3\nsB10F5JZI/sLVpXuH7R9TABBvnZu8XqX5RKKkNB7zMXlkpr4TFXGZnYgSmX09ta+\nfuZ4TQgj6BdztW1l/634f4exa7qZirzCISqddB99CN318WhQgMqxmounqUfkUD12\ne1UM3TjOPKqI7eYOJIfnfw2Ea6BhT55ncTXp5lcAhAajos+iWYhiqlPWc+cd1c8U\n3VrVi7kuKK6uuVBqA68QTiDnuaPEJsxadp9AuYY5WYGT4HT2HpsXzCd6R2fk94hZ\niV/C0hSIAq0mVtq9FJF9qh/XwsECAwEAAaNrMGkwHwYDVR0jBBgwFoAUOdCbt08p\nN77TsIp26mqeze9GvlgwHQYDVR0OBBYEFI/4W2j9iCltyb9KCY6b8q11whJ3MA4G\nA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcN\nAQELBQADggEBAG22QQs5JmmHtqLDRPAiJP+IjtpGyiOCH7IhyGLW6MKk88cjH9xe\nM066O9SE3asTYTrhQBirfy+nOxV1Qg+DdSmtA6ibr3USxTkH5xcz3OR+Sd3fkxEI\nqkjK5nYkXWs6B/xbX8A3iUrRmG2Yp/gLI4Fs3ZEobwh93E7wIamQ8PJ1SbnXTTcx\nxBy/IKY/usd7NdwtobmHP6fH2bWM0GyNxmOscLCxAhESLjmuq30srVG/jHs/Q0vL\nJww3lWZSPbJXcRxKMzlu35IrP92RZWjtByv1Wndugh7q5rjT1ccw0eF95b/U5whx\nX2XPc74bSpqoh8dfNGTWjtq2JeHhGoJd+9k=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "BasicConstraintsValidator",
-    "errorMessage": "basicConstraints extension must be critical (index 1).",
+    "errorMessage": "basicConstraints extension must be critical at cert index 1.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -51,7 +51,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDnjCCAoagAwIBAgIBATANBgkqhkiG9w0BAQsFADBRMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEhMB8GA1UEAxMYcGF0aExl\nbkNvbnN0cmFpbnQwIHN1YkNBMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAw\nMFowZzELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIw\nMTExNzA1BgNVBAMTLkludmFsaWQgcGF0aExlbkNvbnN0cmFpbnQgRUUgQ2VydGlm\naWNhdGUgVGVzdDUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDPgxp+\nHpglfzp9XX1K1glTgljSpG1M9dGpAlVk7K39GMVwkmnAtSBhQVBdG8GDNnr3kqCC\nJ7LPOrNTDcRRkO4T7xdBL1RqmzOAuHHgJCiFt51qziQe//kZcmyIOwY8pgHN4Cy1\nq0BeWybbU4B9ybMiIVzFImOoOPUzkaADKic1iW1OBj5NpGCZ91qFyZx0Itk/iBC3\nv7CN2B8Qaho3hypDTCSRmVHiBB1kD/AKFU8UohIiHXsyGxbCg1bBLuKmWRTZ43y7\nL1m4qHBOg2i3do13YLss2oZoknsoOHOBa0YLrFXPPMQTNrOU6Im4IYiUU+Ge7+1g\n2a05ooIRBTS+QhSTAgMBAAGjazBpMB8GA1UdIwQYMBaAFBRiZxB90jfFcgbQ3n+1\nFh3Ko3NeMB0GA1UdDgQWBBQPpyPBesQ9pYPwqgwp6+Jq4890gDAOBgNVHQ8BAf8E\nBAMCBPAwFwYDVR0gBBAwDjAMBgpghkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IB\nAQB/58kEOCkIVV2FaRCkyOKRYGVC3KnDEBQjc6w3ZEm+f3vFHJyB8V63J+zf9MBi\ni2LvwwRTaUusfrrVteAcCYcoXOSHmRo82sY4vWJ0KBn0CDHuQw/WakD12geNfcjn\nyTu2LTe+0as0RhQ91krC5qJuzoN4FBVj8eKhVoD9YQFCzoD+Rq7WqabgUVVjowvL\nUzSm4adqK9x0pGxgwFwuBgdjuY6gKyAnLUpbC0E2mkLuuhQh0tAcYu9LIPpM/l+M\n6c2DlhKdQ/I3KvPxjCpaUxTVQ6iX8OyocQlszKp+LWb4NRBnHYmBpiO5vSC3aBPg\nGa3ewshaPQBSsN7f29AEHSgh\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "BasicConstraintsValidator",
-    "errorMessage": "pathLenConstraint violated at cert index 2.",
+    "errorMessage": "pathLenConstraint violated at cert index 1.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -95,7 +95,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDozCCAougAwIBAgIBATANBgkqhkiG9w0BAQsFADBWMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEmMCQGA1UEAxMdcGF0aExl\nbkNvbnN0cmFpbnQ2IHN1YnN1YkNBMDAwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMx\nMDgzMDAwWjBnMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0\nZXMgMjAxMTE3MDUGA1UEAxMuSW52YWxpZCBwYXRoTGVuQ29uc3RyYWludCBFRSBD\nZXJ0aWZpY2F0ZSBUZXN0OTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\nANLGB2+a1z3R1ROq3nfJr1wwDsswYFEnvsa/Wr3TmkHChPZaiqssCUawxeeCR1uu\nFS9X+Lt3CTROXKQ0G3GujkpNxTP+tLTjzSIRUOaxcyN8AipiKL3wwBGm36Mvy5Nh\nPGCOuQnvqpysvKtV4FOt+zlFZRpYnFR/Qom+v26vwECAPKmP86Uxs7o0umgUJtDd\nSk5ihTMqD/aZ+ig+dCze8Ornxe3fS6NrnnvLWKSB9APN8CI3q2DWaiN5HtSU7la3\nm39Jzu/mPD2tEwrqJr9GZlj1Wgy3a0+zbHjiLYVQmXVcyfsH7LrQzXGuEMc1WKCo\n5KZMqejlnBPgeVTs1fNFa70CAwEAAaNrMGkwHwYDVR0jBBgwFoAUurniiPfUWSWK\n4ynfT6AGON1xdIIwHQYDVR0OBBYEFHkjxiIM9f+ESDif+mKJj9uEIvlSMA4GA1Ud\nDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQEL\nBQADggEBAFDUrcx9Aq6taCu2kipVTgU4GQ9gJ/lEwCW6LP7p+D5iRJZsmXpXHIw3\nYZDBgxGXJXHzUFzeBbySLu/lQfabnq0XcLViWhgi++Ikqr8MPxoqbUvQH412kdbe\nb2Rf90fk3Mu31VrIBLbEp6U/h0QWWWPKJGcY+Z1jgdA14m3b1LPK7/p1kfT1yb3/\ncTtmliG7wzcWsecmK5xz0irZrywun2yWQhcps5g+lhMcMghogHKEmN0XnFqgL7ta\nbeXQ4GEHuyyRoRuXrh2QMyDkFgr+CyqCbEQO3UKbvTQD1Q+jPkYpApi58UXxaKfa\nJTfJg896LS1hDrZG1R2AOrhUFidhPXw=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "BasicConstraintsValidator",
-    "errorMessage": "pathLenConstraint violated at cert index 3.",
+    "errorMessage": "pathLenConstraint violated at cert index 1.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -112,7 +112,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDqDCCApCgAwIBAgIBATANBgkqhkiG9w0BAQsFADBaMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEqMCgGA1UEAxMhcGF0aExl\nbkNvbnN0cmFpbnQ2IHN1YnN1YnN1YkNBMTFYMB4XDTEwMDEwMTA4MzAwMFoXDTMw\nMTIzMTA4MzAwMFowaDELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlm\naWNhdGVzIDIwMTExODA2BgNVBAMTL0ludmFsaWQgcGF0aExlbkNvbnN0cmFpbnQg\nRUUgQ2VydGlmaWNhdGUgVGVzdDExMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\nCgKCAQEA1cl8/9ip/J/At2SsSX+IJEEVyheRfuATAjbGXo7Cxrc0hDSRHTovhpBn\n9bvr2U3tLle6PnM+04bGz+Xt4+XAwq3bYepL0Y9TKx6S9sFwdVSWM3tpfS15OfeB\nG0dIugOZMSm+o8VQUoFRkEazcWCOUdu+9KEHXBecAeWxRof3IM0R6i3cTprfjCs5\nyXgsCln5HUPLDw5twRYOEE5mnEWtraWEFUeYE8xVFwwk69N9b95gpTsEvzPnyc7Y\nvcEeVGDsezBQmPxDSOXA1pDOqBswDj90rFy/ZxQWPSOdV7dSk08Aa2KayXgL30gz\nmO6ENzNWfIZ0g6TN9Oq8K+lhRx/E6wIDAQABo2swaTAfBgNVHSMEGDAWgBSD2ri1\nxp3Iiwh8iz/tGnIl4q8b6jAdBgNVHQ4EFgQUOVf5EG2PkPu3WYGjOi+xdDjbuacw\nDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATANBgkqhkiG\n9w0BAQsFAAOCAQEApEdV59RrhEgGjn1V6YgmOZrmFoy7Vr1Ss36w+MY7OqJ5zdYj\nBJPk/cDWct/Fk/X+i735WzzY11K4KrLc1DVkfrTyRPLHChRFma5g0p5OUUDvofyj\n5gky5i8S3+3l8GthFqJyVgjqagILlj6+az/liTiCLrlKk3+MOeI3xZfqu0fhfWTL\nCMmxAhrG5hjMR/YAcoSLsM3Vu7cwWVn8zB7PA22EnEBspIxwjrH1diVSSix0Mr2U\nVIjrBMmLHIuYv2s4ZS29iPsKcikiXK6+GynT6QuNf0hXEB9a/H1NEBu69+AnXnNN\n8KDP6+hPJxVKCLApWqbmGqJE8b6swlhRomACaA==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "BasicConstraintsValidator",
-    "errorMessage": "pathLenConstraint violated at cert index 4.",
+    "errorMessage": "pathLenConstraint violated at cert index 1.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -160,7 +160,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDrDCCApSgAwIBAgIBATANBgkqhkiG9w0BAQsFADBSMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEiMCAGA1UEAxMZcGF0aExl\nbkNvbnN0cmFpbnQwIHN1YkNBMjAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMw\nMDBaMHQxCzAJBgNVBAYTAlVTMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAy\nMDExMUQwQgYDVQQDEztJbnZhbGlkIFNlbGYtSXNzdWVkIHBhdGhMZW5Db25zdHJh\naW50IEVFIENlcnRpZmljYXRlIFRlc3QxNjCCASIwDQYJKoZIhvcNAQEBBQADggEP\nADCCAQoCggEBAMUAJaSBrAZoZKqqNKxkwBcU+6HyF8FbDUmVONn7QXBreqY5hP/u\niH4t1VgIIQfYuDq4KuFG8w+j8XlwNyG1/LRipLXAGFPTthfve4YqxksDMlEtjKEv\n6/Ed2/u27iRmTN4Xclfae50TcS/lPI7LcGhA3xb8i1zRV9jhwSOze/lUrH7w7XTd\nS0l+PZXwjFlz4rQF0nglux9GWUIIfi6j98lKkSlozIJ+i9UheODwktnaLcYIJdvW\nfh7c5g023RzmkF35VetdYnalZRQuAoqxRMMMJbUP4fQdHePTSG4N4tazyjeFebnE\nbvZcaXaTpXPe4EGW4oLQQ4yg6RP5f3hQEkECAwEAAaNrMGkwHwYDVR0jBBgwFoAU\nxgkqG/u46T5oYHrHl86zWFF7dt4wHQYDVR0OBBYEFPfHm47xpBBMA/uidLHze1WU\n6Yn1MA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJ\nKoZIhvcNAQELBQADggEBAEaV6lhnnBOu4mwaZuNF2UldqMeLtPZchw0uoVW0fwjL\n9BLVSV6A8kwJnxINPrpcCOY56IHjfYR8cT1cbGRABEq+FDsdNFhRLXnUWnaPprGW\nfZo/Fb1KS6EfGupVp2h3jKG8fsSD81KfRaJNc/jbEJi0vKoHIlW87/SHk1B2sN57\nwMWG1d13zwbVULq34Dr125HMU4kgvvwyBPx2pf3tf4mAeXK8WlLyu5s3aTrLACso\nZYRkh6hcY+LNx5nUa6xwU6LmwNg6VgnHu4aHCrjcofFDcF9Ww488XisnugMVo7FR\n8QiAz8k5MWqiBbvpfHkgvWLOdpj56uvH+waD3GjD+04=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "BasicConstraintsValidator",
-    "errorMessage": "pathLenConstraint violated at cert index 3.",
+    "errorMessage": "pathLenConstraint violated at cert index 1.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -947,7 +947,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDvjCCAqagAwIBAgIBATANBgkqhkiG9w0BAQsFADBfMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEvMC0GA1UEAxMma2V5VXNh\nZ2UgQ3JpdGljYWwga2V5Q2VydFNpZ24gRmFsc2UgQ0EwHhcNMTAwMTAxMDgzMDAw\nWhcNMzAxMjMxMDgzMDAwWjB5MQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBD\nZXJ0aWZpY2F0ZXMgMjAxMTFJMEcGA1UEAxNASW52YWxpZCBrZXlVc2FnZSBDcml0\naWNhbCBrZXlDZXJ0U2lnbiBGYWxzZSBFRSBDZXJ0aWZpY2F0ZSBUZXN0MTCCASIw\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANf896E4DA1yEvLrX3/cGYNrRlVf\nA76pwTLL8ttdnT5H5CjhJ+iiSRGJex/SIqyw65lOAji765fxX7F4zxrYr3fdS+d2\ndPzMwT4K7a7EHoM+CbjS4cK6/8h6YinfliLa8vsma1/cNNTImaTCAwbJu12j7PzY\n9c/z6mkdrrtl2FFO2QNATVfkr+W0ySGvl6i3ptILE4cveSRZcUBXJZRF5PF35ntz\nDETThlUZ3gm3BpW+qVskj4EkaVvdsVh4dAU1knFbzC5QeamvtIsaVnOcGl4bq7dy\nPQcNI1BNUfcM8ohqq8DaHl+lxpIkL2Wctd+C/TivzyP7dAXFk6tkjWcJ/SkCAwEA\nAaNrMGkwHwYDVR0jBBgwFoAUNFULZ/wcsdzCcgoU8GPp1JvwY/kwHQYDVR0OBBYE\nFIQbJBPifwi611fyrtWctSgqZB4dMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAO\nMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAJmjrWO0GlQGCOakvQrm\nqhUsHPSqpZKgM1i2NSp+MnJp3zJoHa9kp8jwkykLSK2AuKKfoLOixQ4r6dLmwLkJ\nrlB5V5vmNVUCSqgIjD+vN2QAiNsE9R0ct40c0XUiTNv+87XTzZ0Y9XrsvHi5OAhy\nt0d3R6lFVDmLB0S0/BueNpW9JPW0R6Hj5p9aDJyYHllAWNzONsr6PVwIfKAw3I2T\nPTS2uEwVSCRi1bp1itJJOsefwogh+EXVwAaT4CcA98XllAGn4aw7l3niL3GRhDN0\nr4a80Zy4bCS42pAvqpq7BvzGlP3UaW5vRSPwV3MGyX2W7765rm05lT/QuGApTZ+K\nIgk=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "KeyUsageValidator",
-    "errorMessage": "Digital signature key usage extension not present at cert index 1.",
+    "errorMessage": "Digital signature key usage extension not present at cert index 0.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -961,7 +961,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDvzCCAqegAwIBAgIBATANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEzMDEGA1UEAxMqa2V5VXNh\nZ2UgTm90IENyaXRpY2FsIGtleUNlcnRTaWduIEZhbHNlIENBMB4XDTEwMDEwMTA4\nMzAwMFoXDTMwMTIzMTA4MzAwMFowdjELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRl\nc3QgQ2VydGlmaWNhdGVzIDIwMTExRjBEBgNVBAMTPUludmFsaWQga2V5VXNhZ2Ug\nTm90IENyaXRpY2FsIGtleUNlcnRTaWduIEZhbHNlIEVFIENlcnQgVGVzdDIwggEi\nMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCc8DNtbU9YabxHAoWqRyRxHTrx\nVL8YwSE94cbcBbMA4tskut30Eqd/j1CYbCrD9KIyn68THeypVDFGL82wg3/N2lZM\nP44b8KvH2ouJNqljDVDhipAu8Tjiun0y+3L9diMlpsfrx2ZSdDO+WbeHoUjovd8Y\nDrPtG0U6THisgQj9sgWI8oIgPpQRjoMIb1ZAC/IsMPYVNJL/a14dlqit2PsGpLnW\nRYEG064MAde5SHUfgV66pwAxisEWH5xl/v4Bbrh2mqMsQ16izLKStQiuW/sVMEdH\niEJefQh4y8anEbWkudAUDvV31mUyHivZmfz8eldAy9ICi2RdSEOf0QCfARalAgMB\nAAGjazBpMB8GA1UdIwQYMBaAFLIl0igw0FVobky1wkjzypsV8kBFMB0GA1UdDgQW\nBBTzsk4G1clcuVdkoLbl/++tircPZDAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAw\nDjAMBgpghkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQB4eFm1jkEg53bNCSXO\npa2ViAfw7FgAGt0+trq/MaMv0SVuIWZRgkhDWSuTffNi6zC0cIXO+H/IlOA9pPz9\nCHnH9FRigpZleyl8/WMx9EeEYzpS8Bde6LLZh8nzeLiBsXZ3A9+Bp8lqfgMoj3kW\nGUIcMGyN0MS4PtXuuwz0Ur3FXfyXEEJCqwQ3iyiIfDvYaA2Qq+ttHZcJlwkzeMEZ\npwM/lZZEnapou8sdKtfbA9h0+0ep6tamOC6tRv7Gz4OGtPKWstl0jdf382Oq60hX\n0TqCs8uCX5l46vnYweDOFzj9118sceZ9XXCYxNmRXPNbEf2guCrirvPZCRXcmE0v\n7AOi\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "KeyUsageValidator",
-    "errorMessage": "Digital signature key usage extension not present at cert index 1.",
+    "errorMessage": "Digital signature key usage extension not present at cert index 0.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -989,7 +989,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDtjCCAp6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBbMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTErMCkGA1UEAxMia2V5VXNh\nZ2UgQ3JpdGljYWwgY1JMU2lnbiBGYWxzZSBDQTAeFw0xMDAxMDEwODMwMDBaFw0z\nMDEyMzEwODMwMDBaMHUxCzAJBgNVBAYTAlVTMR8wHQYDVQQKExZUZXN0IENlcnRp\nZmljYXRlcyAyMDExMUUwQwYDVQQDEzxJbnZhbGlkIGtleVVzYWdlIENyaXRpY2Fs\nIGNSTFNpZ24gRmFsc2UgRUUgQ2VydGlmaWNhdGUgVGVzdDQwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQDEU52VUxkPNxFuLOEIPwROevCUVbZbolJu2uOK\nhMqmu3yXDYKR1FBC5xGsxfZeep3tn+PGr9z5+O2gaD39SGxlMhxvSdbVc/QT1u25\n0fTq1U0gte59c0JsrG9MhvZBwz0kC7jMkc/1De1UTKtz8kSLwTqZgKQKruSHBgM1\nQLeMl47cR27fiUnzXAa2ZEOGIByyxdEG37yXJ924NHffS3Ig9PrPYFyt74Ck9Fir\npc+gS5ayFmJLrmerYNTDkA1lVehXWkxZeK/xwj1+PIhlOFylbKKPrB3gFN6fqppT\nTkP/PSLoJcAA40b91W8T1sJvqRvgx31t/72sTup5zEUIHnglAgMBAAGjazBpMB8G\nA1UdIwQYMBaAFMLKafW0rxMt9JzyEVXLKjCz0lpJMB0GA1UdDgQWBBQ+1JjhVKTI\nYcfsx9NS9lCKWrDbIjAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAwDjAMBgpghkgB\nZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQBiFYY8R0mw8pMTdH+nZzSKMKj3aONg\nmhYYsS5cKGpx8oQOv/iNdYZf+W2f20nLKt9iKoCwbV7qWFai5HasT2AeXypTgEMc\nnRcn5NkQCIkOFYjKwouSFUF9Lt5gcRfQhD2E6yEORH+6OuhRhkydk0NbmOu3EctI\nhR9RKSIY3cCS1got9Kxmj1N8/KFqKTOXleg6tdC27Fqo3tfPQOYccxagBPAzmZbR\nf17XUbqiY0fl0CVUBZImmUY1C18ov0xgnUF5m7vc+DQOhFemNemdi3wMbIN77Dva\n925L/R1Pek6PDaTRYrikU9zS+CkdEgfB7Pt/+PkV01xA11ew60ob+QEB\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "KeyUsageValidator",
-    "errorMessage": "CRL signature key usage extension not present at cert index 1.",
+    "errorMessage": "CRL signature key usage extension not present at cert index 0.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1003,7 +1003,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDvjCCAqagAwIBAgIBATANBgkqhkiG9w0BAQsFADBfMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEvMC0GA1UEAxMma2V5VXNh\nZ2UgTm90IENyaXRpY2FsIGNSTFNpZ24gRmFsc2UgQ0EwHhcNMTAwMTAxMDgzMDAw\nWhcNMzAxMjMxMDgzMDAwWjB5MQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBD\nZXJ0aWZpY2F0ZXMgMjAxMTFJMEcGA1UEAxNASW52YWxpZCBrZXlVc2FnZSBOb3Qg\nQ3JpdGljYWwgY1JMU2lnbiBGYWxzZSBFRSBDZXJ0aWZpY2F0ZSBUZXN0NTCCASIw\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL6kAGMAGNnO8CvJ2PjAYd6v3pcL\nvPjKj7gXi4mOj0xJc1rp6f/8pxy/Ua1aPCyRiGonwfc8rZb/mdR+HKpTTJjZgygW\n26aX93qRrJIvvb/Vie0yu63PraLINIUKzg4FeTIAmCu3g58FhVdsaLALdA9wD6st\nRu+BcE5BbZCssejYjMxiAxjrv7GWE08R/O+6u5GxqE+3ZWg4StDq1UyvDL/HhEjc\nDmuODxI/sruN7fMv3SN4o+GfkkennaAnYE4YWK37p8gbeUSglVsTHliyEPFcclH0\nsAElmBLEOfkZK6XRGQVln7g4+CjmbSuvuoZUKT4RHOPTwdoXB68uwIALDW8CAwEA\nAaNrMGkwHwYDVR0jBBgwFoAU+X5SoHlmBAhECGV5EA7dkOZD8dgwHQYDVR0OBBYE\nFP/OMrJ781bfdvIdIFOwNrNmArfaMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAO\nMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAIvo2bd8LXplAdh4RhqY\nXGsOB5E6oyj5lqaZ9SH+wi8ss5J+Oiv28rYRYVqYnS4ceffJz0q9waAuab8GIbfS\nNWXIfsXTncRqEq2kM3W+/77qIItkjcfEOCxV3rtWayCd/ugW+dwO+YChBRdiAMV6\nVkBLR4lo8pO+rT/pS4REBTZbdoZ2ToQB3RF2M4AJMrHGzeBi4vMNcxTVo9iMnvOb\nQvGLwU20mmMt5+WsR8HZviXmOnyhikb/pba5sLhFm+kY6VZoZ4eMaGIjbs9okOjs\nhOyxLkfZYsICWxDMrHeLnat1/hV7dQ2jZd4iZzvXaHfRK16y9c9kX6nXeQRDuays\nHpM=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "KeyUsageValidator",
-    "errorMessage": "CRL signature key usage extension not present at cert index 1.",
+    "errorMessage": "CRL signature key usage extension not present at cert index 0.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1184,8 +1184,8 @@
     ],
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDfzCCAmegAwIBAgIBATANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEWMBQGA1UEAxMNQmFkIFNp\nZ25lZCBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBaMFMxCzAJBgNV\nBAYTAlVTMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMSMwIQYDVQQD\nExpJbnZhbGlkIENBIFNpZ25hdHVyZSBUZXN0MjCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBAJpto6V//mi4jC6Q4e/y1J79mi//TInYf0KaP3Aw5rsaMhC8\nIJbEAdkIhfj6Skvg6uPj6gJB0zsmN9Tf8NVArEfcRwjAq7IvvDtVrDz6I5Ie0bFD\n8MGkcdP0otJIpbTTHAcefxoqQQeTCt39X9viZokrLeBHWnB4L6zE4d05f/7Wh8ca\nKlDiKjRQl8aIqj8wPsu4MlVC4jnSYTQ6wEd6cA3gJRygcUWkaLaVleaV+PYyUqD7\n8X7p3+i16q1DzgtL9yXUP1b0rt48UWqfGBiIkTNUB0zN9heA7GyI/ilo1Ga8THpN\npha2SLqNB1rMWl3T9fRTsu0HGKRHZobhzGi7zJsCAwEAAaNrMGkwHwYDVR0jBBgw\nFoAUe90QO0rgyN1EhU6IPFqLzZkik68wHQYDVR0OBBYEFK0h9T1WA6JYJDOopjeq\nQZiYko4FMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEw\nDQYJKoZIhvcNAQELBQADggEBAJKcaDXNDhjePhSydqe+QrUBUS0YNqamRezwkiQ/\nNoKO8CMTNvta/bbq/tIYarPtac6n4d0rTuHURuCSC1l6VsruAWsNgn6Ja+G3nqeV\nMP8WM5XYIToIPHy8OMzCXfu04IV2dAuaX4igWL3hn0PXrh7JnrTwfnK5ytSbzxbh\nIWcFLpSqxL0XzEAfJz24325SbAyXqvwx+McF5UU34JHgEUQcvTUTXjr2Xp1i5moV\n68a0CjqYABdZ2pDpHAWoFzvVrcv7o93Y+/DbR+5dVpuN2184q7cJcoez/c7aSp8W\nA7R6Ggi+lJEic2RkktRRZTjh0oMM0ndj5c9Ya7CGfEN3gEY=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
-    "failedValidator": "TrustAnchorValidator",
-    "errorMessage": "No trusted issuer found in the chain.",
+    "failedValidator": "ChainValidator",
+    "errorMessage": "Signature verification failed in CA certificate.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1199,7 +1199,7 @@
     "leaf":"-----BEGIN CERTIFICATE-----\nMIIDmzCCAoOgAwIBAgIBATANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVQmFkIG5v\ndEJlZm9yZSBEYXRlIENBMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFow\nZzELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTEx\nNzA1BgNVBAMTLkludmFsaWQgQ0Egbm90QmVmb3JlIERhdGUgRUUgQ2VydGlmaWNh\ndGUgVGVzdDEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC8ENtBwoEZ\nCsDl8JmmxVIgE7Oxt2NxKj5KrXslioWozKJzjRKKK1N2jHF/RHEmzFYoolOnNMJJ\ngIFFYSeAeJshYirpGm9mI5xZ9l72ZfaxtA7SA8m2UhE78WwJJ+oa82CDIiqoOCEm\n26yEV1M8OgtFFu/g3by/PcknMXXLd3C7zYPynO/ExnHUfiPfTsorYCTEPqr/p7Ds\nyGjTRwdNbF9diPObop4B29TZanZ3gYOVBOTn9N0k1oy2eLF12W9W5CwY+FgywI4R\nZMYQHNK3XNde4KuBoUxgXdAGUBzL/Puz2LY3Vd+2AjNS/hl3i76SKKwK9VrbUkXl\nv0EVWvc00ZDJAgMBAAGjazBpMB8GA1UdIwQYMBaAFGM+vBqe+6HyWaEvS5X+5t5W\nuIZAMB0GA1UdDgQWBBSp+Lh7Vm9xnfn/IdnPPSVIJfemjTAOBgNVHQ8BAf8EBAMC\nBPAwFwYDVR0gBBAwDjAMBgpghkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQBK\nOJZjmGp4sWnBQ541UKsMzBO4X8+YGKPA8tGpC/ZjLPG/G7zwq9IUaKekb6KZ3Q17\nKeX8YwORze2nSsMzAkED+rJKa8Bgx7+OFBU10b5qTdVc0Ac9PCDhhq9CGa/sj/yv\nggEXLKq3f2BRnDLKdWO20hR2+FkOrmqtDx4q7wZQDtspGFl20AigOV83joWKHPcB\nDtjS5/N8zxeOzciNMHhxy1Sv6A9RCUw95ujhrs7c6WM7yXqWbsWhF2sT2856/FIH\nm+Hl4rSmu2MMsrZbcWSbga3AbanFdDX2wsccdmsqAPBzYGpJbTdR/s5HXnPei4fw\nPY7kH4Kc9zHuOqFxkL6k\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "certificate not valid till 2047-01-01T12:01",
+    "errorMessage": "Certificate at index 1 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1213,7 +1213,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDjTCCAnWgAwIBAgIBAzANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAeFw00NzAxMDExMjAxMDBaFw00OTAxMDExMjAxMDBaMGcxCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMTcwNQYDVQQDEy5JbnZh\nbGlkIEVFIG5vdEJlZm9yZSBEYXRlIEVFIENlcnRpZmljYXRlIFRlc3QyMIIBIjAN\nBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtc20YJ/j2rSNlGJ/J9rqsxZKwQvD\n+f2lCf9yV6nowMsJGRYdX5ERKWoqW29xpRaseNUf38roqv9TiBy5bXzOoJ3a6zfN\nSvhWPf//uk4zP5fBAEwq7VL8+UrpZBsKpbTaVIvIeOfTpvWr9qW1N9J1aH0Y5B8D\nVsFsdzrGc7rjbDvb3bz2bymkDKGW2A4XClecaAIGJiJOguEuYMhq4B5tndQ0cAQN\nQcDXS9li//HO3vlYyiRYv40hZwaTt41m5cQ21xTfFOa/ORsCa96sAL2TR64sT/u4\nDWck/9kh3qxsw9gRSkRydr1xOX3HjA6gYUl7nv04OmUSHwf/w590ry4elwIDAQAB\no2swaTAfBgNVHSMEGDAWgBRYAYQkG7wrUpRKPaUQchRR9a86yTAdBgNVHQ4EFgQU\nmXSnPUJsL24xEXiVXHTV4VzB9nIwDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4w\nDAYKYIZIAWUDAgEwATANBgkqhkiG9w0BAQsFAAOCAQEAPSuzpUlBOhAZ8lTzHWdq\nZoo5cC8+mX8vg3YOTm02idO47H/HcqUjQMJZaUr/gsnr0dABy2kuiU802/JbLp3i\njLGTygmGtU7Wqj2t9IEgDeZdQflrYfaCm8rPqNeiwrQb0Mw52dXLMz3YFLqG1BAG\nFqrxg2utLDQfstLrpMs2BHXsSxSBq6ad7BS32qRweNr1KXQJ4QNnRGFrOARTMxi6\nMBY3zCiMJWYtgtV6aCt9t/q1kt1NFCkc8CzFdpgV8/rz4poS4FNweXhT+RqyF7UT\nPBzHycgL90/QG2N6LlTHxux9ElHQYy8HwwxlJoE+lPv89DSLNwra1mQ8MJMu7h9+\nqg==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 0 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1227,7 +1227,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDlDCCAnygAwIBAgIBBDANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAeFw01MDAxMDExMjAxMDBaFw0zMDEyMzEwODMwMDBaMG4xCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMT4wPAYDVQQDEzVWYWxp\nZCBwcmUyMDAwIFVUQyBub3RCZWZvcmUgRGF0ZSBFRSBDZXJ0aWZpY2F0ZSBUZXN0\nMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALOY1i2dfQm7MR3F7FEB\neUvqhyz0RVOJ5W9ffzQpg8puuROsdevN68qfhN/GTIHMLmeQeEv56Zsl1hRIKMqB\nhDpOvSNoaAeZUGJpAaMBzEdEE0KyVlh70u2IaKk3JYDzsWhmbN4ESXFGpmDccsfZ\n8kFZo+XTapSeFEc5ETbyVIV7HHPE54zPX9Ce67kJI0e41R5hsXUKFBA7ORycbcFh\n8c8sN3mDYhFFX8m7a2qTN6oHQ6I1fReKKOCfYDs671bbiyFCQWNl+7Ok19qUVOgQ\nL/g2HyA1YNvueh8ivNNRRwfv6RTPwhuOWF5FyOXRCTzDaS309Lb3TN9d3a3kAoEf\nHdMCAwEAAaNrMGkwHwYDVR0jBBgwFoAUWAGEJBu8K1KUSj2lEHIUUfWvOskwHQYD\nVR0OBBYEFEBvkKgDjazQ6vxQ2V37VnUlYMSbMA4GA1UdDwEB/wQEAwIE8DAXBgNV\nHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBABDntMraC1zS\nkjUQmdbhI+l1j8Is7ApNjb03/Hgq8pjDxP2VNPEy9XgXYDOHaAmt7p7jDYMwBxzV\n7TSnFIvR3kYjb5k7YhCMIQXkJJgM2QvZ8m0B5c9YJI6qktAp2sxPfzLuBg7fm4Oe\nBqQ6f2NlmLorDqhXG3QSJmXWRXMxti4rWz4mJfuWuzPdZERE9bJ118ijfksQjGfu\npjoWizxTCt8kRMP9+RSD8Hzipuxfc2JPn16fNrXMkyBtek82L7tNo1raLueyPcEg\nZ5RpwEX/C4nlsQV3JS2viDxhcdtgcmn/A/ho7Ta4QazDqWjQywXExpEpgrp7ExFn\nhiss7AFKddQ=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 0 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1241,7 +1241,7 @@
     "leaf":"-----BEGIN CERTIFICATE-----\nMIIDmjCCAoKgAwIBAgIBBTANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAgGA8yMDAyMDEwMTEyMDEwMFoXDTMwMTIzMTA4MzAwMFowcjELMAkGA1UEBhMC\nVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTExQjBABgNVBAMTOVZh\nbGlkIEdlbmVyYWxpemVkVGltZSBub3RCZWZvcmUgRGF0ZSBFRSBDZXJ0aWZpY2F0\nZSBUZXN0NDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK0TXsIKGzxY\niX5lX1bWQb/MZ9pouA3EQT8bxiWbQe3iWrZE5xIU4jFopRL8RXASP+lQIROJWqjT\nGtZhEaNQyB9CmNSz5w3Q/dME6LPrdiUF63klD3lY/J1cJheLov0Ql9Rshvrcjluq\nxR0aMebihrCVAbGB9fjapEf4D8xtm/l5SMvO7olLyDZKkibHgmzgZ66/ebGPrc3o\nOmxjoqvkyyH+vlRQgfv4oAVFetdVyYB8i2eJp47d2aFGTsWmn6zIoM7fy4iuu0kK\n07KGV+RGIif3sHoWXv2Uahz56Y7MGr135s/S8e80jA4KrfQpzqpN07ncyEtFGEs5\n3WeTcZi5zLsCAwEAAaNrMGkwHwYDVR0jBBgwFoAUWAGEJBu8K1KUSj2lEHIUUfWv\nOskwHQYDVR0OBBYEFM3r3nHYztXgRqo9a88ywemUwz7vMA4GA1UdDwEB/wQEAwIE\n8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAHWf\nJSZe+DwVSi+fwy98C4I5bZrrkWUX5P3ffOQkO1NrPjVURAvXqyTXbzYcf+PM5W+k\nJ6XD2jJvNCRNQ2R8AIdVbG1fIfAzBR3PhEZPL9qKhi2H1q2IloF1Kw26ghxS5cAF\ncfwkOyQgNUpyFp9kKT2OE+3GM6/zf8SVy0/bFL6Rf/5yrJ273Of0+ymy2CY/irTM\n/4X7WLSkSGyPz9RHiT+LoRSel59eclRDxQKXgyToiTgGTKXbEFcilTBT6+0WCgcJ\n3Lw5qc+s12lQDFF8T903ef6C77dPOYMcxnCD2WlBInOSoqsGhn8NDf6YQYsDFCbl\nOj2T6kRdn8YUigjmrhM=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 0 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1255,7 +1255,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDmTCCAoGgAwIBAgIBATANBgkqhkiG9w0BAQsFADBNMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEdMBsGA1UEAxMUQmFkIG5v\ndEFmdGVyIERhdGUgQ0EwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgzMDAwWjBm\nMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTE2\nMDQGA1UEAxMtSW52YWxpZCBDQSBub3RBZnRlciBEYXRlIEVFIENlcnRpZmljYXRl\nIFRlc3Q1MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3CcZ0DqE9Pw6\nP0I9jfc3becBcujw8y+uEiSGI2WWZvtY/5cEnif001zkbDJYCCXsaegUoJeh1/uv\nGL+wFCAw9ZKJ/po3NzuLSq9ER+jZrkjQeskhs1TWFVAL5Z1HphBRruutpMB31nhx\nP6MCP1ZS1wxbWwZRTtg2yINKqX2wRRGTIPB2dWa5Dlv0UL7DfypPfQsVoQF6XZ/7\nX6yWyYmRsiL9OJRh07ExsVAQFALZ/6tIXrWpgyQWRJInygoNwmkSTTc9gmetr53d\n5e0W/EPBSr8sCbmYpDI6MWJsyZvh16lAc3Zf6sx1PHJtaZ9tt6/WJ148aLV0ffUS\ngnvHrdBjjwIDAQABo2swaTAfBgNVHSMEGDAWgBQsDv337jzzpGbs5wWfiLPiz3RG\n2DAdBgNVHQ4EFgQUc086TbYTKqLTmNpBE0qlpFjKkKMwDgYDVR0PAQH/BAQDAgTw\nMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATANBgkqhkiG9w0BAQsFAAOCAQEANsYL\naZkskh6vUFY0z42Z3HqV7ewk535l/Zcqytm9JFoUtt4tX11iVVLvzKRzE1xRZQrI\n1SIvfCSexc+vwMjw4bIRV8PSytQqXI6R27RERT5RLkpSBFfSXYJXrl6z4txFcEGD\ned9220tfXUDOt5lZ/V9qlvOKInpq1gKj2C8mknHDYm6643I4Sefi+Mw5M3ohPfEs\n8y1AdEwow02R702NYa2dvBDu309BpjryhYrRxfXezN2l0Yc7z8Y2bISXclx3W2dh\ndqeABI571GE28EkfhPbRKuW+yQOUnjyMqvik6y5A7jtnFicTeoi/IIT8COWEg7gE\n/6N/kRUqqgeRucK71g==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "certificate expired on 2011-01-01T08:30",
+    "errorMessage": "certificate expired",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1269,7 +1269,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDjDCCAnSgAwIBAgIBBjANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAeFw0xMDAxMDEwODMwMDBaFw0xMTAxMDEwODMwMDBaMGYxCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMTYwNAYDVQQDEy1JbnZh\nbGlkIEVFIG5vdEFmdGVyIERhdGUgRUUgQ2VydGlmaWNhdGUgVGVzdDYwggEiMA0G\nCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDVkIXCcTqIC0o6oloj+rv8wFYVu8ss\n0yLlBy5nINdpFsuWwMezsprPdut5NnThg0m+t6SiQpFqJcqQKVh2i+z8/DUWfWNr\n1H6ShCDO7xPupe2o5pSJe5dTonyC2LHLABc9HQxGxCvL6hAXz+/nMciADvYrCHlr\nn8ztVSKXI6jaBZwb0KzcsWHtjFxVWbPZ2KVp2yElWUJxUdX9rUnOYVATeKVKHohV\nQFYA6wAe/UETnkCdz1JWqs+vG3QMjw5/w1V1lthf+SFbJiT3PVV8VCxq23bNy4wF\nM5GVeDJYs3lIm7rIo0/d7PvLhVUCQWmsQKMyLwS3xgBrOeIWNsVAPM5LAgMBAAGj\nazBpMB8GA1UdIwQYMBaAFFgBhCQbvCtSlEo9pRByFFH1rzrJMB0GA1UdDgQWBBQl\n6Mt3tdW2ryNfEQ9WI7oGr62koTAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAwDjAM\nBgpghkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQBUXyfp0KcfRQdV031V8bA9\ngngzQtrEI05Aa0VbgTv3b7VKeIcgwsUMeNjuJZ5hUxAISm8+xwoY5e27EOHxWG+y\nDtk2Czfv46Ga7Pau5P5wag2QkPk2WlmVovMp92zb+GI5vyLFnEdNY3zkTtFxCbYI\nLEMROtRjDM3EGkXmkoblz+Z+u7NaLW4cKI9gBYytP3Ezg0R8dCRjDRkXy+95CE8q\n6taAwnxIQ6FqGxjBgf84oXVW81qcIf8N3i+ZztMK2a3swEDY1CyeSnj9WAX4kt18\nQou/YP2hqVJxApNFFcBfqybSUOyLu8mbYlBAAYNB70QchygcEayvAXOIXX/NunA5\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "certificate expired on 2011-01-01T08:30",
+    "errorMessage": "certificate expired",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1283,7 +1283,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDmjCCAoKgAwIBAgIBBzANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\nQTAgGA8xOTk3MDEwMTEyMDEwMFoXDTk5MDEwMTEyMDEwMFowcjELMAkGA1UEBhMC\nVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTExQjBABgNVBAMTOUlu\ndmFsaWQgcHJlMjAwMCBVVEMgRUUgbm90QWZ0ZXIgRGF0ZSBFRSBDZXJ0aWZpY2F0\nZSBUZXN0NzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ8k5yDE7wMf\nwlOhyZcxb9+PlGIC417Lq+G5CDDQQGbytGuZKYQR3+0AhiEUO7YwxfIeOtE4YOBl\nQsZsPUSOgSCb2l4s2rbH7V5QFfRcf8f3RQVDjMqhFXvIIWW5uys1poKMqXVDLw3x\ng3ysL2kVl/zORmqI3obmehIa2m1EUHR3jY++I43rJnFUsTvTNGKsE7HLTpkLDABH\nwptY+Ztt7J+sMc5w/pXweCkYLSdulazQ0EKwjDdmWS4BE/3CLIeQkTCB/CTkkseg\ndHPaD18xeV+4LLjAB2dsAmIwAnRiI+LouvCaF52pVBedX5cg6xMPTz1XfLzX3SkL\n3hj4LgUtuJMCAwEAAaNrMGkwHwYDVR0jBBgwFoAUWAGEJBu8K1KUSj2lEHIUUfWv\nOskwHQYDVR0OBBYEFNUChZ5TMCZHiJZ+TyOTFmSU8xivMA4GA1UdDwEB/wQEAwIE\n8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBABiL\nKJrH+iYNkDzEmwMr9Iebl4gc2uzCObyDkbaQ/UeuxbCvfUm3x1vYbty3HNEKp+tY\nJBXAEDh2GbHU1cLzhP+tNTYQuqgWzE86ZOKWLYI7wUkezHwL00wtOYI8RQfAScGV\nOySp2qwKgeKjXUAd/BVa6FVOzXkHavXNy903ssmko4d9sD+yb9FFY9UrlmIhXewl\nlR2rcUDtHT0dH5PJf7arPoGTRoePSFWeY6D7IBNuXfuhB3WEj+UQzzoANelmavIL\nVwM88Eszmwmofr2sbWi16b6z7XAKbwQm7n4hrwOd3vYTO/zRM0KBB9Y27p/trFLL\n6CmNjRghrN1erPNL1Z0=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "TimeValidityValidator",
-    "errorMessage": "Certificate issued outside issuer validity period.",
+    "errorMessage": "Certificate at index 0 issued outside issuer validity period.",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1325,7 +1325,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDuTCCAqGgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIEROMSBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nMIGDMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTEZMBcGA1UECxMQZXhjbHVkZWRTdWJ0cmVlMTE4MDYGA1UEAxMvSW52YWxpZCBE\nTiBuYW1lQ29uc3RyYWludHMgRUUgQ2VydGlmaWNhdGUgVGVzdDIwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDEhHHtIQeSm0sk2SFRU1s6R4tZgm0tafsm\ndRRDgwig7Ne2fUawQFelK+hr+kMzQJMCb+ogMkzZfPtgOjDnhH7Z2964MaZPHzpf\nJlxY4aM6A91wZ4WopRp24jyeMmKlH/CO19LqjOc+UBuhtGUHKk4ZFdPac3PMXIXj\nx9ogd57ttbYdjIk9Ix+X+o/tPnrL1Lp4RSjhkPs4VnsOkm90rgxEwNZTyCTgNVkc\nqhJE/0eXgBIV7ZXc59uS1TDVImybZa8NY79ClvJ0Lhl6mvtPnoUvOgOZh+SQu0nh\nOOuy8hzmhqNLqTYkTDzjtVzOHW4wKZ1qfwVjcmXq0fCR7uyHdup7AgMBAAGjazBp\nMB8GA1UdIwQYMBaAFEF4QkbNTqiC5+E53/epFsAK/O+GMB0GA1UdDgQWBBT8c/+k\n4lqB9ybLskI79g0ctafZ1TAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAwDjAMBgpg\nhkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQBW6ljxbVxaa654QlFBrLWa3bDc\nFfC1lnbmE0Ya1pzkcIbsD+ayZ0JcKcuLPUjWp36m7BpuIrmEpndmc1O0cEQyqveH\nR9vfSDxd3/R6jVMQbFfa10HVNDmlKrjYyIq+FQla0qv3qn3W2icJWRds031t92+6\ngb+fLBd3YMXEtEH7+VCQNyfVZo+9F2xoUTxKWSr52jsxsMaIdRXjZUIZBI8pZI21\nQcYSdNPk4TxvHgbQijY8+n9y8qV0aPUckZOjo00KczVPtytT9v5tzvNk3JubXJ9W\nhh+9WSe9uJT92xu6e3aAt1WVhCx0XIdg49GK0hFQs50dTT1mLAoi6aGEd8+R\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1339,7 +1339,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIEVTCCAz2gAwIBAgIBAzANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIEROMSBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nMIGEMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTEaMBgGA1UECxMRcGVybWl0dGVkU3VidHJlZTExODA2BgNVBAMTL0ludmFsaWQg\nRE4gbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRpZmljYXRlIFRlc3QzMIIBIjANBgkq\nhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxQ+BCdHFQbNq1Bp0GEuyOvaYS2gc2xwp\nYD7153M9L0wHxwNCAnjTjFdAc5e2SLlaCI8Bb3ZbGl8yTKyXaJ25CceHxpyzNWW+\nelq9FJDZjGpxZ5hbiYnhdkS9RVwgkDbVXwv4QfU2blSlQy1vyAH8gfy4mF5XJqfh\n58o+tcECrOZcD+116VHrK4HIMsp+FBGowH6VNhuyOOp3FaXII0NLLUVjBsjGwbkj\n3gFoTq5dPnTuFkr5Q3RQw55A9vcJkmzxHbZko1UiywiVIbcXHneqWrKgyJCp00sb\nw3gEc1Gk8jpKtluNsj3ogmnRrG27SKjcpVhZi+KLzOkAEOvBAVU2/wIDAQABo4IB\nBDCCAQAwHwYDVR0jBBgwFoAUQXhCRs1OqILn4Tnf96kWwAr874YwHQYDVR0OBBYE\nFDipyuJ4S5MA+1KCLlTd2a5ByjG0MA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAO\nMAwGCmCGSAFlAwIBMAEwgZQGA1UdEQSBjDCBiaSBhjCBgzELMAkGA1UEBhMCVVMx\nHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTExGTAXBgNVBAsTEGV4Y2x1\nZGVkU3VidHJlZTExODA2BgNVBAMTL0ludmFsaWQgRE4gbmFtZUNvbnN0cmFpbnRz\nIEVFIENlcnRpZmljYXRlIFRlc3QzMA0GCSqGSIb3DQEBCwUAA4IBAQAbvjL5yhOt\nfWiiB5PSQ+FM3M39S/xDOI5uMQpo0Z/KMs/ENKT5SVqKeOGuNOItovk0pNpBfrOr\n8jHuo4KuZbWiVUFSrUeB7gX6lJHXoM+Vqa602UHkrxKeZVQGEQ899RTysUH/zW5e\nRIRTbU4GVuYYyFl6PXp5Ve7Fb5grC6moak+bzuF0eN/GTrp1o7l036LHSdAbi2qz\nBlg5KbihSptmhELFjnC2lZyD6eyYvpcBeW0qUjH+PqQzqdOnrxpfy2aH0qGWceMa\ny7RE3OZklQsUbF06hrhuviBgkz988Ih/fVXtANKOIrdsEZXx2UoHOGILDpZxa+WG\nFov/1Hl0j699\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1395,7 +1395,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDuTCCAqGgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIEROMyBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nMIGDMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTEZMBcGA1UECxMQZXhjbHVkZWRTdWJ0cmVlMTE4MDYGA1UEAxMvSW52YWxpZCBE\nTiBuYW1lQ29uc3RyYWludHMgRUUgQ2VydGlmaWNhdGUgVGVzdDcwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCeg0Q4UuYbfP+YbFOzQ9YSaIj6bLj1XqVJ\nwNegsJlRNNFOlEqGjLx2s7WKQQz+GhTXN49e09Dnsf8V1uYS02UlaSMM5NKF5mJ/\nxq7eOAbq+yzYMjl9GsL8HQghiy9E6igRDOIrvfYDIJydWGMAyMO2AjW0MGJHzvFl\nF/kV3c9b9goVmWSvxCzHuv2aTyaPPzXQQpY5ZNkquU12xRiujJzCdiXU7csjySJA\n1FHHI3n8oE/+fi/LMnPdBO+rpaLfr/IA5XKUeJUHb3WEXJ3iwi+mMoZrn9doiUvb\ngnWUsKmPSoQ85RL0HWVSU/Qw7vItixSHKcKrXCSanL7A4jRWrI9VAgMBAAGjazBp\nMB8GA1UdIwQYMBaAFAbcW77HEjdZpIpAdHwJnUU8SqHbMB0GA1UdDgQWBBSFsJW4\nSPk0c+uYjBzxBnzjY03dtTAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAwDjAMBgpg\nhkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQAihLqlYMuqWs3P74TsKop+Ilgy\nd+zng8ltbEFodH7lYIIdbghsS4nHHmYIApf8Fd++zpf2Vg5NY1Celolriqb8v6nb\nVeygO1Mhtwq/yKUCAU2DgSpj3KkbcP4gaS8PwHtSTNzus/soD8jaRd1y3/37QGMl\nLxatbtPI3+nHsaVPqwQJfeeyQAnOXGyB2t11LD171aS2uoRkGp+9ZwX1lhXEGV2D\noNnwQ9NzO1JJUWYtnDl0Q9xbWzT2AZ2FXQr4uVBnkdtTOPvpH88gNpRt8y5WIkjd\n0pQDFt+EyePgBAKk2HXPImtseHPPH3z+ZRoRUGet4iESVIFVekv5/olJrfeL\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1409,7 +1409,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDuTCCAqGgAwIBAgIBATANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIERONCBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nMIGDMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTEZMBcGA1UECxMQZXhjbHVkZWRTdWJ0cmVlMTE4MDYGA1UEAxMvSW52YWxpZCBE\nTiBuYW1lQ29uc3RyYWludHMgRUUgQ2VydGlmaWNhdGUgVGVzdDgwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDd8E++Do+azS0Y/46cd+mli2KpLKET6z1f\nh6a2XTdv41TEtc0FJwgrEUxzzPX9gbx/NVNU0lHpVs9xoZ3/g8k4sC3/tSB5Ud8o\ndNy5yjOzrkCqMmf3dwxQ5bmf/8pQUsN4qch/nCnnLH6LllR8S6ZlO7HD2+jqS7jS\nFnGm/ExZs1fvBz647RQi1RxojTdd8ek18y2xMMf5c+0BqNBjuuSQ2l7iWCSPsT9n\nUVrvwhJopi5irEti0QP/bUcax7okraeFT0RnJTGrrxIREx+/bvTJ8jc4yFAsmuu5\nKsMzROuEPWz6tPjXHJItIAy9hhtIjHOE5tkfFwfBQI6KJpwi0RzXAgMBAAGjazBp\nMB8GA1UdIwQYMBaAFGxJNq0uWIkSNlFBO1RSJiQA08p1MB0GA1UdDgQWBBQdy6zN\neXfT6urnrougyDWvP3JkPDAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAwDjAMBgpg\nhkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQAmvLMakt11xX2Nh0adOhzCqqB2\nEa9gZ1LAusrw87JblOzSrHUGrwR3cL/yTAdyNhuudqJQTe4aobU+7DorluFEF29v\nhvwtIEHAhw+WRmX/pNZ9txamcYTfH4Pi/HHaSxG0nFNNT4LWTr0ACO61wkIH8FhZ\nY+K6iHx7+e1vvGfuUFimKyH6lW2Ia59LCo3E02OUEv7r/d8z4oc2sH7wYZ1fFlOF\nRHzcE/rMmO+3t41Ejwg8WXCrojdeYpWxXjA/kL7dOQoYs4E0fffiousFtMkAi57V\ndaf/BhKsPsr6vCIucSZVcoFXqVTXhRdKR9bqcczLjG8um0VXD+GcABkC/5Rs\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1423,7 +1423,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDuTCCAqGgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIERONCBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nMIGDMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTEZMBcGA1UECxMQZXhjbHVkZWRTdWJ0cmVlMjE4MDYGA1UEAxMvSW52YWxpZCBE\nTiBuYW1lQ29uc3RyYWludHMgRUUgQ2VydGlmaWNhdGUgVGVzdDkwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCyBT5iEc/Tv46A838epWd5siS3H6q5kdzw\nwinlJhMTUca8dVCuiZ9Xwgh+N86g54NvIJXzQiAey/KJan+2DXRcMu5EGOJjABk8\nt6jc/oTvdX4KjMkvYobBKcSsRuhuMkCn3vy47e40e8nxhmVhO/f0crEsmWGE4Eaq\npnrcFD3YPRZLaW/2HRWXiOn0TpwJLpus+NYxghAwvI/IKDh5ymBj2BywUvvxngT3\niKQ4BgoT5W/4Ce5XMekn/S78BD/DWiQMHqNjBPeb6eH+WvyPXpn6pTuIGg/Vpn3d\nKJzpl9t3WMo0yQaFzYlrUhNYGOJMXWboX27tHetlmdhQ7kF+E8WPAgMBAAGjazBp\nMB8GA1UdIwQYMBaAFGxJNq0uWIkSNlFBO1RSJiQA08p1MB0GA1UdDgQWBBRQpDE2\nBhuO18HQzangbKt4zr2s7zAOBgNVHQ8BAf8EBAMCBPAwFwYDVR0gBBAwDjAMBgpg\nhkgBZQMCATABMA0GCSqGSIb3DQEBCwUAA4IBAQCom5SmP8qsQSlBzA8HM0nOGzLG\noD7VEV8/kxv8VBLzXzgI7bijCIWzSReTUFCp8gBzdMYLlvXHkfy+5kvC9fIEmzyw\nuq7vNwjmFOA2sXtoGcbn5LwOhEepf0qdi2Y5oOxqQRrj98FelZ62bsXjOEKdR5g9\nJ+2+VcU3P0ENrAQisVy7mw/MteuUEL7v8iEtfpvxjR6ZP9IsRQY2XsPXNX5hzlzZ\nC+M3eKDVmg3c4QEjXvbBdhntVU9H+YYaEtQZ2F0vKH/lv2f2/Vj7yupxExakxpQP\n6ukRNeDvnG6ujitq8qhWu6QDEfCdzzEx2ZuAVZqTJjAKWC6HwfZUioDjhHFZ\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1437,7 +1437,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID1jCCAr6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIERONSBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nMIGgMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTEaMBgGA1UECxMRcGVybWl0dGVkU3VidHJlZTExGTAXBgNVBAsTEGV4Y2x1ZGVk\nU3VidHJlZTExOTA3BgNVBAMTMEludmFsaWQgRE4gbmFtZUNvbnN0cmFpbnRzIEVF\nIENlcnRpZmljYXRlIFRlc3QxMDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBAMtcOJE/RnaVHILDfZtHlUhM1+XAYb43ZVRpNwV5FSIRq9QuSR5liQ/UspVX\nSf8+7TtcTN2jsJf8mpTsMFRg7bM7U9MYdtKkEMCuSZw23p7ViAdMXA8C1ZTrQP/a\neqWRqjxcnywYAygYhxq3zJ+JPUzKJSOosgfd5bzhnteVXKUktQeOZkoJyi421/1b\neXkMGK6EeMl7wQY0LofwaXVdjo07iv9T5c4CeHhTTctGqxEvpvkx5tf/eP7wEdvV\n5sQ9/FxcG+lzlnsi5G1ScvPoHrbWzSL18qnm7cVkTnl5qhKVWrGluFca9UDNgXEZ\nfMjrPn0KbHzma61GVkg9+W5SSRkCAwEAAaNrMGkwHwYDVR0jBBgwFoAUup8JypA5\nnE53Wuv7EJWs06dKXScwHQYDVR0OBBYEFPh89wp4MlOC1+WYAt+HqvvzZdLQMA4G\nA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcN\nAQELBQADggEBABeqoXPiGjUdCzGWnsb1grkUibPx8tfb31bfSFuo0iWoKA+RVecI\nxaepmZjcSRFdYN3lKRiPpmCXsBa8zN3vnQzAc53FGkxKmX/0FCUI/tKAKdeWN4Tj\ndahGQAjXBVWBUCaRlonqQ8xDzkWEGIuYS2/indcUZ3b4mp2QOD9tWMbglcRIpwoo\n+Jp/VT0GjCncj/NOr5tnsImNUbZDSXUSQEatXsjQCK4kPqRhe56A7AWAXvS28L+2\n1BOYIyshE8G/2zYHwexSna4gvhrN23NbvLE0Jib+XzHekc2s2sss26qY7ZlkzMLq\nAd88C6Kz0Va/w3kSxfmhF1fUrmYWgHkJ75w=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1466,7 +1466,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID2zCCAsOgAwIBAgIBATANBgkqhkiG9w0BAQsFADBvMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEaMBgGA1UECxMRcGVybWl0\ndGVkU3VidHJlZTExIzAhBgNVBAMTGm5hbWVDb25zdHJhaW50cyBETjEgc3ViQ0Ex\nMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFowgYUxCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMRowGAYDVQQLExFwZXJt\naXR0ZWRTdWJ0cmVlMTE5MDcGA1UEAxMwSW52YWxpZCBETiBuYW1lQ29uc3RyYWlu\ndHMgRUUgQ2VydGlmaWNhdGUgVGVzdDEyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\nMIIBCgKCAQEAsaY3YvZQ0g7cMEm8Ci7BM6eT6NjOLozJ+1H72HTRBstqGwFfoQow\n3jyt9v5Ea1qcrsDbzaCtV2JJDEx5jmt3//MkuJLNpXJRic2AZzK5zBlV5PoxzjId\nTiB28gPJ9JASOO6tC142FjxfZzn1/Id4xcEf4WccFfJiQbNMUe9kuIIBfEVLfVco\ngfEB1Vo5WblyMPbUWwt+b8xY7wFF2NQpNb8Cg6ebTGqPy9OSOaraNZQ+mLQOVVDT\nNqfwAaEY3QoqObS/zoI+aDE/ebim7U6MvWzZU1NZkbWY1ngD0+pLZX9l8op4NjJV\nZ4SOoUvhdn5NRdcEqYcpCXMW2ETJnMj9jwIDAQABo2swaTAfBgNVHSMEGDAWgBTh\nOA4UGBRDXM7nS2LHGsGS9maC6jAdBgNVHQ4EFgQUhQ2EBOSyja4LSx4MxUG0kb2e\n/jkwDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATANBgkq\nhkiG9w0BAQsFAAOCAQEAj32dGQGImnemdjlbIgsR+DypC8tThQ6wED4/9HUarJ34\nNJ7yHV3s3GhPyfjGr+WiGgqp6Yo1Prd/epDxbDvdBKfrTV0yDZI/yCYZtZ6WHc9J\nx/ThYTx2XyTKdZs6GrgOMviX+ZgpV8147nxK6DKZv5jk0WoshMh7nYh84JeehjQY\nUON3XZ5NoiQD57HCUSNGrc0M7pUOK1CQHZzDh9pJnqSbR1sHERVgD8U38bEUFfUv\nmweQov0WolmQJmcVuzPZioDeNlhv72gt4qg9gAZEgbQDSyKo72qbcEZ7EMVB4nFU\nQOcPMqU0aq6HXBcML7OcgGZQm0iqDJrCpVwlqsaWlA==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1481,7 +1481,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID2zCCAsOgAwIBAgIBATANBgkqhkiG9w0BAQsFADBvMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEaMBgGA1UECxMRcGVybWl0\ndGVkU3VidHJlZTExIzAhBgNVBAMTGm5hbWVDb25zdHJhaW50cyBETjEgc3ViQ0Ey\nMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFowgYUxCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMRowGAYDVQQLExFwZXJt\naXR0ZWRTdWJ0cmVlMTE5MDcGA1UEAxMwSW52YWxpZCBETiBuYW1lQ29uc3RyYWlu\ndHMgRUUgQ2VydGlmaWNhdGUgVGVzdDEzMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\nMIIBCgKCAQEAuD/PFvZ4Qii7uYsJkBh3y1o8UCIOhlno/UJa9fVTjh3hwChhv4mR\nV2+1yfOib7xKN7694HOCyl/u13ZrsLG7rG/7FcQnZmEd43+1gpinF1Y9QNYv6Ilh\n/inHyGe4iLRveuNCzneUH5JcDtklbuaEhUZvVBch9BWEeD/Jp/th2q0ojbFzltMI\n3dG2a24zL4BGbNHBdD8PkbfKdE2N9CYC6f2Rd1c0TYdhZ8ZCW2WZ7zUiK70zUKAO\nNg/Bs1VGhaB1DjWu3gbrC+d4z4Q77FN1h1ZPJP5ON/SC7Tf93TWHHXHfWT1lCot7\n+abuzyuN6kCKjunaC5tRCaMXGTT5EMEt3QIDAQABo2swaTAfBgNVHSMEGDAWgBSi\nL1iDW0yVl7fu9oe0lw7gf+CXFTAdBgNVHQ4EFgQUwJd0yB0ypi+GIJqugHjmrt1C\nHB8wDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATANBgkq\nhkiG9w0BAQsFAAOCAQEAJv/hxkQtOORch6bfYubBEe1urCmntR2Fj73iIooxcewT\n5iC1EPgWR3IluR44YUoWulHhmRNeUqnAtfJYJu5HhYIt1NLXU5yODWJKJ+ZSIUsa\nWkFqdPAVp1GDRhDUP4shZC1Nur3gH0wXBQQ3pxsWjwPWNccxF9ZHR7gJxPRPPdE+\nFYGeeTyfzpOaDdiQ8Tgihhjh3CTk463nA5XaFWd/7MG+YjnbvGQWb/ag5TZh4yHo\nO0Qm5dWFzqyY/UUDV8D2YaDY9DFEk0rpJsfRTCg6fvq+PviGAY+D6uC4YMe3mVBz\n+HYIIgOC1OOet4dCoXsgIiy/0nyx5lRU1LSWOCUCSw==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1511,7 +1511,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDvjCCAqagAwIBAgIBATANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEjMCEGA1UEAxMabmFtZUNv\nbnN0cmFpbnRzIEROMyBzdWJDQTEwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgz\nMDAwWjCBhDELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVz\nIDIwMTExGTAXBgNVBAsTEGV4Y2x1ZGVkU3VidHJlZTExOTA3BgNVBAMTMEludmFs\naWQgRE4gbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRpZmljYXRlIFRlc3QxNTCCASIw\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4B4XI7DVIEJPX7gqGREXO6XSno\n4X9Z4RamnbW0YiB1VGZeK6xusEN/StHlO4bDt/KfrvqUXJvm9D1oJjPX2rE6By+t\nMi5al/5fCGE9rUov73jyKb4eUSCy5aTHfyjuu5b/ts46WkYOKqGEwSBCQLPqGR4O\nYXK5/QSZPIJwuvVJXwEp5/4dv9Fg2WRwRab7EXQfYut7AbQcyb4FrMwGPpja84JW\nq5jCvM7EsdmWZXhRvoDrqUtap+aotmfhps67INDFvoL4waIKzrTX2gmjO5kU62VT\n78gJfCWE2boB0tUsGGZLyRdvJ8SPbd0eEKykBejqvHcXb51ea205H8xZarECAwEA\nAaNrMGkwHwYDVR0jBBgwFoAUgLzHLveOGn/xOHv0Nevd6VjGPFAwHQYDVR0OBBYE\nFHfYNlCl24s86ePnQaSo5hQFK+GuMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAO\nMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAGqCCsaPWvIjVZbJd4Eh\nwY/G7O/cnYbUjVR4IRbj5Ce0lS2+nspJK3D6gqT+DCOxZF6LJQuGOJP6sQUX9OHR\nT2oAbrb02A0UqlrpA3s9DtbspM1/yWcHoU9hAP81zVcNq5VNrcdqdFMvmV2MwSiy\n+Fvlc6K8QhHxnDaL6kSfdci+C27FWCahH5r2N/1l3Bpou8WhTtjsRqvAgzj2yHRd\nDgJhZKMjtieSQkSWQF4yvkUMH/AVnD5xOpSqceaiVFqUFfRSRhHKbtq/eCNZW0RY\ni1she5uNHI3aMZS7cajWOltPZ6GYCQ9ovLddg5foIcr6YMaH5u3BYAUCdvMwZeZw\n8Qw=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1526,7 +1526,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDvjCCAqagAwIBAgIBAjANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEjMCEGA1UEAxMabmFtZUNv\nbnN0cmFpbnRzIEROMyBzdWJDQTEwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgz\nMDAwWjCBhDELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVz\nIDIwMTExGTAXBgNVBAsTEGV4Y2x1ZGVkU3VidHJlZTIxOTA3BgNVBAMTMEludmFs\naWQgRE4gbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRpZmljYXRlIFRlc3QxNjCCASIw\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANZg8OxefrZytpf0OyjRrUzPyqCB\nBZveBF5ZuHB7qRZwF/Qq1v05U23mk3+7fz7oE6xGAgPvNKjktkfflGZI2hRdPNlN\nGGqlc2YwMWDwLTmtS0hyyT8Ui7AL0cwHJrDeau7litk6uFOBP6VE7FlUEnMU9ENm\nhHBOmYt/tjARDf+kzSle2+saArLbWqBPdMtLtRwD3vTS9Zr+DvccEn2Jx7YiSZDM\ntRJaPgoiv+15Voln0E2/XS2fDdog4olDCO5fZ51KNIokMmp+6r55yevXxWxUae2j\nZBLFyfD7hS3NTGDBhCFEry2dbRZb/sXOlPSwKN+x+QwCWBRo63UArRoi348CAwEA\nAaNrMGkwHwYDVR0jBBgwFoAUgLzHLveOGn/xOHv0Nevd6VjGPFAwHQYDVR0OBBYE\nFGC39OnVftLAciz19L+MYPKsjyXGMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAO\nMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAE7YpcJArWSxTC/zSZh/\n22a7N/+JOQysAJJ+wKuudXUeN//eiycICbpkUy+hVF9JtZ8Ryy07GyEXm/CMg/Ub\nPX1EEvIkH3nyAI6rw13hw2PywCzRabDXwaipbRU8A4dhTh3IAcuQoCcnO4gYVBk5\n2Z2Wl5v1jXsCzgEj9gUuZdwLeWqJ2NIQvrOIvauRDP11OcUs69lC7zjJLWgCQ9y3\n2UC8nFkkN85P7Mc4A90HcGPJuc1DnPCTvhY5JdXem9/snjVcpa7PTbusyZbrh0X0\ninB2hldbyOVTyX4mpUsUW1h2X3rOETdkBHZuLwWRwbyXc01ElGuGnfgihaX1w1i5\nBoM=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1541,7 +1541,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDvjCCAqagAwIBAgIBATANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEjMCEGA1UEAxMabmFtZUNv\nbnN0cmFpbnRzIEROMyBzdWJDQTIwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgz\nMDAwWjCBhDELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVz\nIDIwMTExGTAXBgNVBAsTEGV4Y2x1ZGVkU3VidHJlZTExOTA3BgNVBAMTMEludmFs\naWQgRE4gbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRpZmljYXRlIFRlc3QxNzCCASIw\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMP9rpCat1D5Io1BWYqPNBT3HkkQ\n+k2vKuqHt9zXif0WRtnmGzqUvpy5crHBlToyawqJQAMVPMt5W/gTJrzzV+Bf79+X\nyetrlM3qs5n5eNfIU5D897S1AEfPIkRdjR9kdL1xZYkDZrEBmFHgsRS9TDK+01rt\naJ2qOKscJI1z1ngZUZscSLwCwznvw44W5AP6WLxX+g0ERBsNRjakWQS6JlWgGvn5\noq5PYqnrIh7TgtGgjL9jVX+xbz8lg/f5iLwbfTw6SxGMZV+89jrMPHjW+58NMUDy\n2kn5W7B6eUqUOA2Eb+oYKWLujNqYeaoUZa5TUBo2iUV9WnJ4ndiMHwzveOUCAwEA\nAaNrMGkwHwYDVR0jBBgwFoAUzATtaigdft5k6gCIKux1Eb+lLmcwHQYDVR0OBBYE\nFBFLTj7lB0xsW4f9PPb1I2VfHkVqMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAO\nMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBADjr4s6VekQmcVVddOQH\n8wbIQNXHEQINEtlqUQqaCE+wlszME24sKPs3qMNEuVyQVFvwZdpnPXF7/oSxAyMw\nyO/hzSGcJmBEd1VvlabY0IJ/PAy5vq5XuQk0sWbWRAOF4bcgAdn8gH0vCX+6+ajC\no7znSglF/G0vsEkaqPhaUk7Ookee59hpHSKOOqhp/f82/BFjrF6lo+AJcRKqj3rx\naMckYizxJ4+pLPEtG7shS5KKZsz8PW6DHDhJpNe733gSKU4wx/Lf9BNBRdlKmnqo\nEmIG/lzkZWwd4kh3/CGOko7qTLcLQy3ARHRQg6z+8qhmtTySJriamAHL/3nIFKCx\nz84=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1585,7 +1585,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDhDCCAmygAwIBAgIBCTANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\nbnN0cmFpbnRzIEROMSBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\nME8xCzAJBgNVBAYTAlVTMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDEx\nMR8wHQYDVQQDExZuYW1lQ29uc3RyYWludHMgRE4xIENBMIIBIjANBgkqhkiG9w0B\nAQEFAAOCAQ8AMIIBCgKCAQEA1ExvqY+GA/Rkxpv9Ks8KcNqtdknXm5idOg9XrvIe\nd8xy9vkyIs8iZbBgoOI9JI2mhabIchnw9ALe+XFtKL64UEWS2dTH8EqhLgkoIfBB\nB8kHZhNaiUxf6kjvOx+/H4TWeTws9iawctciW2FwmmP4G4bZlBP10tZFAspJj/fu\nUWJ4rZn4jks7qHNpUOpZw4z8Q8Xf7cKLLSloCIDIJtyUxpM2bT/fC5w2Q6Z3MmKQ\nBMi38zWscyG7z7zy6ceYyRBlG5xRsgCYUsj5sWVvtHn3uDpJ6XAW27Im3YxqnRuA\nR7fO/i4pNX2RZpkFuJhQ+CveyXXvj0loAbcyDAX8OcbnHQIDAQABo2swaTAfBgNV\nHSMEGDAWgBRBeEJGzU6ogufhOd/3qRbACvzvhjAdBgNVHQ4EFgQUWEq64IDyyEM8\nlrIC90qylY3WwjMwDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUD\nAgEwATANBgkqhkiG9w0BAQsFAAOCAQEASvXlo2YzLidKbhlVkkfFsdclc0NAn1yT\nYgVEgLpFixmVilXQqH4lX1cZ/wkFljd90H7VUQacMnqfacLOyJyHLBhxA1kBv+bG\nbERpTDveXwmBgNxs2uMinO+EbCEZbWdSrALyUyLrJUaiqVln/m9gtA3tnLJ6/9lS\nuHcZ8uYHjZC05SQOgCp2GI6yo/nS0Pm4D9Z6Ljh676Zoc+Xqe8mbOPUdCNfnv/xS\n6jIIN7HtRNLUWlrq0RfT7T2oOls0lVX6vE6tunEwh5Nqw+aHLFcQNRJw8nqeoJ3o\n+1t4936HAgpU6H9+qejS3qXKnGSalhyEZF4B7YIjMw+QgMq1iy3FDQ==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1613,7 +1613,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID0jCCArqgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEjMCEGA1UEAxMabmFtZUNv\nbnN0cmFpbnRzIFJGQzgyMiBDQTEwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgz\nMDAwWjBtMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMg\nMjAxMTE9MDsGA1UEAxM0SW52YWxpZCBSRkM4MjIgbmFtZUNvbnN0cmFpbnRzIEVF\nIENlcnRpZmljYXRlIFRlc3QyMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBANL6mw8zfZFK7YonjGlE008qAPEdOsOk+EExeugqWGTUCv/Dq74SUVM5jDWf\nCsQtfPc/miyUEvcl5ep3fISwLriz3lSSQW3Qn5RzYJdpA5U4ahg4FKqMjNTqt9/2\nVAEsRiP3tdsyYREY1G0QT9ROpN95Cr6siEm2qVa2r4iPApydbxxYr2yR4uIk5HsY\nIZ5gnJvnrP68ibAoKrhVr0V5Y9bhsYEreS4LpBpHGwidcrN49vg3WhuRNFVhCNz7\nqgfAU2vnCJdWsE/4R4rlhmlm7uvorkDX2++YoOMKxS8Q7OreLzMHdDqAFMtjyj9C\nN+FEQZBku2asKYHBehARSa8nCL0CAwEAAaOBljCBkzAfBgNVHSMEGDAWgBTIao6x\nD0uqpYi4p4+R2+ozSujV4jAdBgNVHQ4EFgQUz4Q/P/5DzDB2OPkED44YfyyeisEw\nDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAoBgNVHREE\nITAfgR1UZXN0MjJFRUB0ZXN0Y2VydGlmaWNhdGVzLmdvdjANBgkqhkiG9w0BAQsF\nAAOCAQEAAU/7LeKzJxvHV8Z871YW+xG1i2nsULXHrweWhaKU3u6L7HYNxvZJSHti\n9vhgqOBc8JyyIvu8GUCyqED7S0/VDalPwCysrbAJDNTfgxx2amlOp9gb2LBgpMVv\nEROwfwFsZhl486M57w8qK/PvRuVFDhm1+QhDm1q7boTU4+az+9DgX+UjBtWPPYGq\nnAMyH/0X9Abmkv7Tm9egKtVxe3ScjV1P0Ti385LaUVqIekrxjItWZIU8lMBgsbXV\n1jA3HKOwHNJGyL8D0TnoF/8Q2GRA4j747hHyz4bkSxnLi/GwTLb4ldEab87vzzOp\ntlNkycHkL4+iAMH1ZBHG5CnoVVmg6g==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1641,7 +1641,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID3TCCAsWgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEjMCEGA1UEAxMabmFtZUNv\nbnN0cmFpbnRzIFJGQzgyMiBDQTIwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgz\nMDAwWjBtMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMg\nMjAxMTE9MDsGA1UEAxM0SW52YWxpZCBSRkM4MjIgbmFtZUNvbnN0cmFpbnRzIEVF\nIENlcnRpZmljYXRlIFRlc3QyNDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBAO3QrhcrFnARNcuvNoKoiR9dNECwpiyjNYIMkr/sbcZQnnDHLTX+KgQf09Mm\n5DI6sXWmBwFlZCJYDP03ntCXO5thnb9X2fU5eYlsKivE/gPsasDXYjBCkhiztSzG\nn8P504ZOy/lfnn4AryvauvAnN/2PjPCoysWp5hUmSotCCbpu7i6MyLdjVx1slPbg\nW+nIthsZGIbo/6n4eXq70D+PA0fpnS47DLaT2wgmveiXE+493ilAE8LcQqhcHJo6\nPw08KQtPo23Fpf3o3Kh5QWOPm8lw4AAE2A7btkYJr8LsN8hYF3EApmEjFelHI4wW\n3OpRe0FKh6l00rZzmWyrwom8nrMCAwEAAaOBoTCBnjAfBgNVHSMEGDAWgBRRgM36\nSXJIPO0OTgvOzh9AZRJwoDAdBgNVHQ4EFgQUjKQ6o0y35k1d94MC6HLB+wAbONAw\nDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAzBgNVHREE\nLDAqgShUZXN0MjRFRUBtYWlsc2VydmVyLnRlc3RjZXJ0aWZpY2F0ZXMuZ292MA0G\nCSqGSIb3DQEBCwUAA4IBAQAw+N6NgtahpWR9GAlOpTU6BDQ1jAUlL04btBcufBrr\n6QCBibzNfigkYBS014FyJ86qCj7JoRLjzyYP7C6PE3tKBXklxB1hwoqE6CdLL200\namMPsWfORjIBp5vSC1m99pPUOVyxFJSFV4oRZQ752AoXEWXJj7qYlqL+3hdNdxjH\nxw1UQQITlsEYmPJSmhh/HrBXNB6+5rRxyu0uYo3y3f1B8khq10wSrQV5pXj1Jowk\noZjjqd/pMUWWJU7UoJom9FdwKUZ9hhfEwL8pT75yVgZLvqoqGsqR/o3ni1NJ5LK0\nGST2v+jrlvs4riCqbFPRMk70Ix6UOoO3Psv2urfsxTx0\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1669,7 +1669,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID0jCCArqgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEjMCEGA1UEAxMabmFtZUNv\nbnN0cmFpbnRzIFJGQzgyMiBDQTMwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgz\nMDAwWjBtMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMg\nMjAxMTE9MDsGA1UEAxM0SW52YWxpZCBSRkM4MjIgbmFtZUNvbnN0cmFpbnRzIEVF\nIENlcnRpZmljYXRlIFRlc3QyNjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBAOPaHJrQm/Kqqf/4/xBLsdQP9fekUUNe2JiuIA3XdwLgabu6paTFdV5jVcR/\nimqnAWJ8Wx2IBlfy6li6la4rhHrc0aU1T2mmiqXcbFyxnslvKsPTOevBh++PfbLx\nzP+NkPl8tA6W33/oLnCQsDBYmqdZiLrjL5hZStWAq0YugLKE2HSjRorXTRT6Ged9\nxwawSrbCsG2RRP5+jJtvtu/AhCjx+75mVBsBinhlDN10/7TNmwA1hYNQ1BBiszxZ\nPuWkI72jCjsJtI4uG5Ds9B4FzWMLjCRMS/eCO4/wX3WbeQHzHsTbPg+qsgo4kElv\nXvInxXNc7ZJH8UC1WfKbryDd4L0CAwEAAaOBljCBkzAfBgNVHSMEGDAWgBSaujlN\n2iF1r+pBwzxsUdioRal/ozAdBgNVHQ4EFgQUImSefsikOFzboCbTld2bd2ooI/cw\nDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAoBgNVHREE\nITAfgR1UZXN0MjZFRUB0ZXN0Y2VydGlmaWNhdGVzLmdvdjANBgkqhkiG9w0BAQsF\nAAOCAQEAXr9hF23UlbewDYWKUwzUTOrAUaEQ3SiN8f+D9c0bX0S61RUZWDcsiqVb\npThRuIamdDPEPoyxOSJOGNHKJc/mIixymmnjDRwSCho+FvbI75T710aOecpmrQ8k\nIymBEXfebP9GXc1jQxi0tDKYpv4avAz1zMnKs4JLxiUYftwiQd99JizQKnG9bqsS\nM2Ogn1QWsZRzW/YZD8i4k69WQIV/a4M45b510y/qHU6T5U61JO/EXiEJPxsjOwta\nW613Q0ow022r4b7pTyU8gKyDgi0sgF6k2GL+cD9Q0+rcFwT8w0OQlynq5yM9n1Dp\ngHWSV1lpJjz1R59LX1j77NESaDhDyw==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1699,7 +1699,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIEFTCCAv2gAwIBAgIBAjANBgkqhkiG9w0BAQsFADBvMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEaMBgGA1UECxMRcGVybWl0\ndGVkU3VidHJlZTExIzAhBgNVBAMTGm5hbWVDb25zdHJhaW50cyBETjEgc3ViQ0Ez\nMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFowgZAxCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMRowGAYDVQQLExFwZXJt\naXR0ZWRTdWJ0cmVlMTFEMEIGA1UEAxM7SW52YWxpZCBETiBhbmQgUkZDODIyIG5h\nbWVDb25zdHJhaW50cyBFRSBDZXJ0aWZpY2F0ZSBUZXN0MjgwggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQC4vbpQh0jJq3Nji3nx4Sfd4a9Ek4bG4H6jLwpj\nrsy/shoK6yz8nnXe/w8ZSIYH/pETrz72I3kEz5/VI6rxHf9Qo+lqLURImkRhxwSc\nylpDPcbu6LApCackMGAms8ocHu+g6ZELzg5ubrcfg7IcHjnZMdUjXqEWptkZf74X\ncDGjkJtpA1jJgvEiwSy5A2MkBRkf51/4SGxpN0tbnLyW4P9T4s9p0ZECanXijTK0\npx8Ln6lAaV8/mwjat4G1WzpMsiMKYkzD7dC4uSunEY+1+M0NOsiWJwxS8oIA8AcF\nDOzTjx9WV8xeofZeY3ZJQJyJoCI+L70s+/9dwHxeXVbBbkGbAgMBAAGjgZkwgZYw\nHwYDVR0jBBgwFoAUJ0nkBNlF+myYlGz87Q3DJFJtVUQwHQYDVR0OBBYEFK8MG92q\n3AJ6cZcpow9Tp0emF1RiMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCG\nSAFlAwIBMAEwKwYDVR0RBCQwIoEgVGVzdDI4RUVAaW52YWxpZGNlcnRpZmljYXRl\ncy5nb3YwDQYJKoZIhvcNAQELBQADggEBAIZk5m0SIfQF5ZF59PLUTrwGaG3jiJKm\n+IdyCCM2JsVcKiJ/DoWkU3Ao14nmJkyjAFG3HoYqap5lxKyWpwvmv9VzBGmvJun5\nv38Z6zVGWSAKMt/w4yAJBVWWaDKHTP4nfBBYX8uAKmAewlNxn4LjWuZ3AWKfbuqx\nve0yYWP9wBs95PlW47j9ky9uYjwAgXX3z4XnG3NkOH13uxPI6ZjBCdacVuIKDVZt\n3pqzHcBT5FV+9JrwvPxnaIauRpb07aWopvcl8vUF5Z2ndZjtBIjAtlnH8AHo3dwy\nb1v4tBbIjYfNUSlCtBjUC2SrlX0AiAqzq0jPL9YBiT+E0VnjRaYHmM8=\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1714,7 +1714,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIEFzCCAv+gAwIBAgIBAzANBgkqhkiG9w0BAQsFADBvMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEaMBgGA1UECxMRcGVybWl0\ndGVkU3VidHJlZTExIzAhBgNVBAMTGm5hbWVDb25zdHJhaW50cyBETjEgc3ViQ0Ez\nMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFowgcExCzAJBgNVBAYTAlVT\nMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMRowGAYDVQQLExFwZXJt\naXR0ZWRTdWJ0cmVlMTFEMEIGA1UEAxM7SW52YWxpZCBETiBhbmQgUkZDODIyIG5h\nbWVDb25zdHJhaW50cyBFRSBDZXJ0aWZpY2F0ZSBUZXN0MjkxLzAtBgkqhkiG9w0B\nCQEWIFRlc3QyOUVFQGludmFsaWRjZXJ0aWZpY2F0ZXMuZ292MIIBIjANBgkqhkiG\n9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnoHPUN2bg6yLDHBYTGVFhMWB7jFvgUuh1geM\ni3nK4E4UqszjE3nm6YRJDExcfBRCPuH4NoiF7aQtOXqAP90h6hY+6ikQ18WZDx07\n1FxSDTqwSgDpNS3UyheEDvTyD9d5GpcVasvuLmQ4ITibTT3GHaGcV6Tg7jwif3lY\n6GxNl73YoOzscwtYuzSNmVerlrUAoy+w5LhLjuwWxPzeoaUHayamLXipBwiaKLWL\n4WYr/S7rNHz92cHFzIHjF3bQuFLpP9r6El3MDfZbXmu6K5vj/LDGKcOj1gCHbIC5\nGZIW0tbPxuMfLh4CPZfsrpGw7Cw+fnTocUPTv1yasn46YzhA1wIDAQABo2swaTAf\nBgNVHSMEGDAWgBQnSeQE2UX6bJiUbPztDcMkUm1VRDAdBgNVHQ4EFgQUKqooRqSK\nejekpkSf3GDoIwRd8JgwDgYDVR0PAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZI\nAWUDAgEwATANBgkqhkiG9w0BAQsFAAOCAQEAIJzDlmebZhMjzkhP+mOudtaSDpex\nGaQjDFetxOQ84CcVDofcsMoxWqRv/DRBHd3YfY90nbRpxNVPx55/C8hjYugK+KIB\ntY8JfMZrLY+nb4Ol2IFdPIDBX129nKrpaudrRE7onKdCAmfneGQfZIA4Hy7PozB2\nI0AscYOZp+e4F/0YBo5iaO74fafllHCN5nj3WL5+hRcghhvTaOrmTea3D14OIl17\nwn1aIdclzOQoMu/SQUXuwflUDDbDHntudZBpr9TTtm0M+fuAYcJvsXdrT0PfoQSj\nBpV5kId6JE3tjhsIc0e+Hv27Hrifq2xQAIonuOgqlDLPqlTHeoAgofv43g==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 3",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1742,7 +1742,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID0TCCArmgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBQMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEgMB4GA1UEAxMXbmFtZUNv\nbnN0cmFpbnRzIEROUzEgQ0EwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgzMDAw\nWjBqMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTE6MDgGA1UEAxMxSW52YWxpZCBETlMgbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRp\nZmljYXRlIFRlc3QzMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMWz\nPkxcjfrTx5HDvt3XZVNg70GescrEk15PleNAp9F5sKxnbKvlJXk9Ei6imacf6tqY\nGH4gtc0fdD/Tk77oT26I+Q6E/hPk+QvoFi5CyHEKa1EsupAWS+/yudrVkKCxQgoi\n43pTUFPVZf2OgnTyGAqR+n4EjOeFKCQbXblGQjOQm0gHXiSDqYgsAam1Hw3P/R33\n6SNSrs1ClBL6m2cLE36e5zANzNfl9ev0avuc2QS46XNteE+Dol6d6B0StjCV2CSi\nIpl0tqvurU/fYPJsYFVVPt2cdHEmig35BY3R+A+LLyYtT8j565p0tsoFtpTxC07e\nFaV7CAwwF6qtUj0TpPkCAwEAAaOBmzCBmDAfBgNVHSMEGDAWgBSxqhfw48/M0qeJ\npoMH3f9u2gfjSTAdBgNVHQ4EFgQUcth3X+ns0hx1Nih4TvYCKoI/bXMwDgYDVR0P\nAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAtBgNVHREEJjAkgiJ0\nZXN0c2VydmVyLmludmFsaWRjZXJ0aWZpY2F0ZXMuZ292MA0GCSqGSIb3DQEBCwUA\nA4IBAQA6HLry6wY654Uab5ADefymDgTAUI+zFlTB4rxL+zz5H01iwjyFOQDhkpWO\nyJLbj7Ncwr1AZW19zYAeJ9et3mWTv6assHW22CRecv1M/oSFGmNlbTUYS/UPO4wc\nrCOx4rAnTXwIPaUdzF88HVdGqlTr45sUuH9OwQDnPmb+TKLCkLfRo+TUsvBhzjeF\n+tuaca3sFhLvw8hZixlySkpYRmQ2Ih+w16G2ocA3tfqSb4U+vhM4PAqeRP/E1i5K\n1WRY5ZTuSn2nMS3s+ItayivhPoWjMBa3+LIqvlZM1vB6ALREKt9ab5B0lj9IO3Jf\nSHQ4skVRdnOis7u2cSrdZnbCy3Xx\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1770,7 +1770,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDxjCCAq6gAwIBAgIBAjANBgkqhkiG9w0BAQsFADBQMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEgMB4GA1UEAxMXbmFtZUNv\nbnN0cmFpbnRzIEROUzIgQ0EwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgzMDAw\nWjBqMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTE6MDgGA1UEAxMxSW52YWxpZCBETlMgbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRp\nZmljYXRlIFRlc3QzMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMYb\nB1v9GpRI/WrpcpiPQwAnQbViU0MATTXN5t8MypI72+0ExFrnmC3gPpZkImwXOlIn\nEpFA/EU2xNrc5+1mzC+rfPUzZ9W1xpM189Nsdobp7UP8laTGpeP1qB/5bYKwHr3w\npoPYnm189HfyTcVfOBqrb4w8SxyfZBZv9znzHlNayguKAgx+7v1IBrPSYz2dQKpm\n44UfeKpdRLfBYmfwtFn8fo7G+gSzLev19SdPiiTM6Mm/7c3wvSjPfoFChOmCDjmR\nhHcDC/Y3IOp9913OU6MyfX1JWWtCekDmovPzH9FdYvmYA4qJEP+RTHLG3Tjjx1MY\nrGfjZf+FnQktoa7DG1kCAwEAAaOBkDCBjTAfBgNVHSMEGDAWgBRGSJxCCY5dU3DY\nFh7gwckYFTUKBjAdBgNVHQ4EFgQUqPuoi5cYHAfhxk4Sb8kAu3oLs1MwDgYDVR0P\nAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAiBgNVHREEGzAZghdp\nbnZhbGlkY2VydGlmaWNhdGVzLmdvdjANBgkqhkiG9w0BAQsFAAOCAQEAL59qoRdK\nH5WO0ZnkKiOAfs0egI4Hm9xbC+xax2LVNHxtmsXa1ksxOgX9dMuJH4uo6XXzNqyp\nKbZ3m6z6g1lAsdfww1o7d+7EOIGhTNOBWhRZOxYe+XEWxzIKKgO7qPGffYbEhpM4\nHI+2QsGnKGP2iBcVWS22KE3O/3xRGjiSUff9hGsroTtv8xTbPBA93d4Vr36VzRp6\nnoAywsV0iZt45Zpoo368aX+Ph62TqXCg/1+VERrG8OJe3+lWQqeBfKo05pwZhh7D\nVi1VnGCLRptvUiwJuiOBksuCI6Uidi9vEN2DaIz5K+8mGAWn9C9Qjps/Kat9dHFD\nctZ9Gd4lR1XzyA==\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1798,7 +1798,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID1zCCAr+gAwIBAgIBAjANBgkqhkiG9w0BAQsFADBQMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEgMB4GA1UEAxMXbmFtZUNv\nbnN0cmFpbnRzIFVSSTEgQ0EwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgzMDAw\nWjBqMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTE6MDgGA1UEAxMxSW52YWxpZCBVUkkgbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRp\nZmljYXRlIFRlc3QzNTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALA8\nCtHPii7fw28cFZaZuH3dG0rXPq84FZPv6pvNJw69Z2qgNbiwyudr+U3JacGVOQl0\nDxncAg+RfSCSzkZoIwtukH9TC+IFD3J4POTu1uLATudMVsiDM0gmzHR64zc9GRSQ\n2pfSDs5zHFStkdfcZau0xxSff0vXU59UtO+n6AuVOZcZfosrFWTxSf2hEyyt04MH\nFVH/vDIT0mym1kChxQ+NYLqo7A104ZTrJq4ejxFP7Fp62JGqvDGLSnisFNjkcVac\n5f1dehlAIm/ssRyMHK+Q6Dh2KrjPRdkcSuYzDFz82ZhWGaoBj3OrYYljISCZnT8p\ns0HqA6BFbBXhveCFVgMCAwEAAaOBoTCBnjAfBgNVHSMEGDAWgBT6KK1BFt4qaBfI\nDxwjPyYD3gIUAjAdBgNVHQ4EFgQUokLglRky7eXtrwkCdqZ9KB4g5tMwDgYDVR0P\nAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAzBgNVHREELDAqhiho\ndHRwOi8vdGVzdGNlcnRpZmljYXRlcy5nb3YvaW52YWxpZC5odG1sMA0GCSqGSIb3\nDQEBCwUAA4IBAQBY+uta9QOhKurTMvpDULkPL4HU4wWHAN7+kL+Q9va6SDimwLTt\nN+PT5OfoPbALrC3ETTdcfyJXcvvEbuLcu2/mozR8ZPE76pLeV03v73UlApv3pfzM\nu0ydogvBtA+//I2cZv9JDN55LwM2NxHzEps0GBNjDSqgF5jEPqOqJYZF3U5JvIvd\ntx6OzIGAbq4Y1p4iiyMjEhOZUZ11V9V37LPl7wkWxbp7a6a2+jZCupfWJbDLJHiR\nMrEM7imDoSbkOkwgajrtmRHksuQi1fk/faJfP84fVRFIrBzHhPgG8yV5fLSmLgTp\nO7lmeu5uvo7psQ2Qa1JHtMbw+9YqgK23nR2I\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1826,7 +1826,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIID1zCCAr+gAwIBAgIBAjANBgkqhkiG9w0BAQsFADBQMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEgMB4GA1UEAxMXbmFtZUNv\nbnN0cmFpbnRzIFVSSTIgQ0EwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgzMDAw\nWjBqMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTE6MDgGA1UEAxMxSW52YWxpZCBVUkkgbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRp\nZmljYXRlIFRlc3QzNzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAM2x\nnbrTtgYrZ7vvgjKR+rj+GcPuu7hubTLNz64dJYq4bO1F2Pp3AGeit4SFt5mWT67B\np+jjMo8dpqoO7+Y6+sebnJv1pharZ0fzQodcfl9/wTPTCwQ3hd5hOIwIKEC5rwhF\nOfC7CfAG0LBIc3L8ayYbDu3rfvHr43tSrXeNQCDs4sT50yYrkmSc9cSx9zrBin7y\n1XEEsyvcxbwG6vfazFyBtWylBIxrryPqp8/tCpj4v+YKpjNtBXbtI/rh3NQRWqmC\n0/byyDKuu+ZqkOwBZ/VWX0QysdoH+z010rhboJp09kQqL9P9hgB8WW+8zBk1mjnK\nfhk9TBzniVk7SZFntLUCAwEAAaOBoTCBnjAfBgNVHSMEGDAWgBRN64lx3/AEAbL6\ndjpYsbpg3YzTwzAdBgNVHQ4EFgQUtJ9QNnzYVFt58I4Udp2pJfKkuSAwDgYDVR0P\nAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAzBgNVHREELDAqhihm\ndHA6Ly9pbnZhbGlkY2VydGlmaWNhdGVzLmdvdjoyMS90ZXN0MzcvMA0GCSqGSIb3\nDQEBCwUAA4IBAQBB9r2UKkXqMVYrheLH937+0QmR/JOtK+oaJcw+mJBOzy2NbIPO\n7m9OEAElkt/PSaONwtLyuoEm3/c2Z9DVyFE/ep1ndQ/58Ow9vj0WE2mwU1zhwn1x\nR/pZz2WAfFQrgJZLqFoACN38Hsb4SsGbDIWGQrJSabtJPr2XDfKE6TBhVAMHYtcs\nXia5zyRiL8c4BEATlHrBlw1CngLBfBIDGDc9sKaXboOoz44uyisAwG6FJ9XR/v47\nWt1hVvxa2WF7AJAI+HZn8KdlLyJK9zi+eCETErxPu0hwMLhe53M+MllHSzD9kOfq\n7gHu2jUzx/W4G4YH5jEo0EW8qEUcCEQX1cR9\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 
@@ -1840,7 +1840,7 @@
     "leaf": "-----BEGIN CERTIFICATE-----\nMIIDxTCCAq2gAwIBAgIBAzANBgkqhkiG9w0BAQsFADBQMQswCQYDVQQGEwJVUzEf\nMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEgMB4GA1UEAxMXbmFtZUNv\nbnN0cmFpbnRzIEROUzEgQ0EwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMxMDgzMDAw\nWjBqMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\nMTE6MDgGA1UEAxMxSW52YWxpZCBETlMgbmFtZUNvbnN0cmFpbnRzIEVFIENlcnRp\nZmljYXRlIFRlc3QzODCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKh6\ndMeji/U5K/ekBPo8CedDexJtu59S60Zbb3AdsoCF+t7mMkB7bkSY9aNOPXfsmBfi\nYH7FJFNzIwIoG0yHAB8qROxhbt4STVpB4c3XyqkWByLdHAzPM/+CAwX2ZtYTLF81\nFqT8KM7QmUMbjkcNx87nD+r8OQ795j0fAQQ3fC8XXgYVdDdfuoACAyYVgJplwLMF\nejdjj72LERuDgiJKHy5BiUrtOr74ZRRoysDnX6C9cAD6BJjkrvFryQmCsnifit41\n3X5TWR3nSYY+93/ioiZ8kr+xDCtx6ODFs8DohTpue+SNnTW8w7QwtoR4gxnLWw2C\n3FNRWu1l++/VOOZEd0UCAwEAAaOBjzCBjDAfBgNVHSMEGDAWgBSxqhfw48/M0qeJ\npoMH3f9u2gfjSTAdBgNVHQ4EFgQUzkAnIqjWGiY7B5H+8RntUEbOS3cwDgYDVR0P\nAQH/BAQDAgTwMBcGA1UdIAQQMA4wDAYKYIZIAWUDAgEwATAhBgNVHREEGjAYghZt\neXRlc3RjZXJ0aWZpY2F0ZXMuZ292MA0GCSqGSIb3DQEBCwUAA4IBAQBFZ1PNe87h\nxxEKYU1zDBenTJ4doWDxfNls/SC1fl9y4sV5gYdVvXMfMvFNpv3cuO9RdFhc/r7U\nan8zS8YA1bP+ts5EDma3yIuRkOAifEeE1ivPjzmEH0acOsfFmjgF5OBqS850KFqS\nGtxa5YDgeuV6/GaUh+QTnkweGcQau51QIalB34UMxmG93hsNI3M4ZxPAiInJjb5n\n+XKyQBWwAhaPhGPVbLIU0BtnyafxIs3fkksxFvp0TvrxNoDKmyGn1xMPf66rKgPV\nziiayHvu9e8uhwEjXmugCy0T5zxb67CVVgHofZZfphlk99gUzeqr0rxA+7gPsoVt\n99WV0A+bbNk7\n-----END CERTIFICATE-----",
     "isSuccessful": false,
     "failedValidator": "NameConstraintsValidator",
-    "errorMessage": "NameConstraints violation at cert index 2",
+    "errorMessage": "NameConstraints violation at cert index 0",
     "explicitPolicyRequired": false,
     "initialPolicies": [],
     "anyPolicyInhibited": false, "policyMappingInhibited": false 

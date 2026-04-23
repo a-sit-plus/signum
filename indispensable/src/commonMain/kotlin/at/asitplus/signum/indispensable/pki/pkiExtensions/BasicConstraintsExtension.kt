@@ -33,7 +33,7 @@ class BasicConstraintsExtension(
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         override fun doDecode(src: Asn1Sequence): BasicConstraintsExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.basicConstraints_2_5_29_19) throw Asn1StructuralException(message = "Expected BasicConstraints extension (OID: ${KnownOIDs.basicConstraints_2_5_29_19}), but found OID: ${base.oid}")
 

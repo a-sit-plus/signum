@@ -1,36 +1,25 @@
-package at.asitplus.signum.indispensable.pki.validate
+package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificatePolicyException
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.inhibitAnyPolicy
+import at.asitplus.signum.indispensable.asn1.policyMapping
 import at.asitplus.signum.indispensable.asn1.toBigInteger
+import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
+import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
 * PolicyValidator checks policy information on X509Certificate path
 */
-class PolicyValidator(
-    initialPolicies: Set<ObjectIdentifier>,
-    expPolicyRequired: Boolean,
-    polMappingInhibited: Boolean,
-    anyPolicyInhibited: Boolean,
-    private val certPathLen: Int,
-    private val rejectPolicyQualifiers: Boolean,
-    var rootNode: PolicyNode?
-) : CertificateValidator {
-    private val initPolicies: Set<ObjectIdentifier> =
-        initialPolicies.ifEmpty { setOf(KnownOIDs.anyPolicy) }.toSet()
-    private var explicitPolicy: Int = 0
-    private var policyMapping: Int = 0
-    private var inhibitAnyPolicy: Int = 0
-    private var certIndex: Int = 0
-
+class PolicyValidator: CertificateChainValidator {
     private var supportedExtensions: Set<ObjectIdentifier> = setOf(
         KnownOIDs.certificatePolicies_2_5_29_32,
         KnownOIDs.policyMappings,
@@ -38,35 +27,56 @@ class PolicyValidator(
         KnownOIDs.inhibitAnyPolicy
     )
 
-    init {
-        certIndex = 1
-        explicitPolicy = if (expPolicyRequired) 0 else certPathLen + 1
-        policyMapping = if (polMappingInhibited) 0 else certPathLen + 1
-        inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
-    }
+    var explicitPolicy = 0
+    var rootNode: PolicyNode? = null
 
     @ExperimentalPkiApi
-    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
-        remainingCriticalExtensions.removeAll(supportedExtensions)
-
-        rootNode = processPolicies(
-            certIndex,
-            initPolicies,
-            explicitPolicy,
-            policyMapping,
-            inhibitAnyPolicy,
-            rejectPolicyQualifiers,
-            rootNode,
-            currCert,
-            certIndex == certPathLen
+    override suspend fun validate(
+        anchoredChain: AnchoredCertificateChain,
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
+        var certIndex = 1
+        val certPathLen = anchoredChain.chain.size
+        val rejectPolicyQualifiers = context.policyQualifiersRejected
+        val initPolicies: Set<ObjectIdentifier> =
+            context.initialPolicies.ifEmpty { setOf(KnownOIDs.anyPolicy) }.toSet()
+        explicitPolicy = if (context.explicitPolicyRequired) 0 else certPathLen + 1
+        var policyMapping = if (context.policyMappingInhibited) 0 else certPathLen + 1
+        var inhibitAnyPolicy = if (context.anyPolicyInhibited) 0 else certPathLen + 1
+        val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
+        rootNode = PolicyNode(
+            parent = null,
+            validPolicy = KnownOIDs.anyPolicy,
+            criticalityIndicator = false,
+            expectedPolicySet = setOf(KnownOIDs.anyPolicy),
+            generatedByPolicyMapping = false
         )
 
-        if (certIndex != certPathLen) {
-            explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
-            policyMapping = updatePolicyMapping(policyMapping, currCert)
-            inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
+        for (currCert in anchoredChain.chain.validationPath) {
+            checkedCriticalExtensions
+                .getOrPut(currCert) { mutableSetOf() }
+                .addAll(supportedExtensions)
+            rootNode = processPolicies(
+                certIndex,
+                initPolicies,
+                explicitPolicy,
+                policyMapping,
+                inhibitAnyPolicy,
+                rejectPolicyQualifiers,
+                rootNode,
+                currCert,
+                certIndex == certPathLen
+            )
+
+            if (certIndex != certPathLen) {
+                explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
+                policyMapping = updatePolicyMapping(policyMapping, currCert)
+                inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
+            }
+            certIndex++
         }
-        certIndex++
+
+        return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 
     /**
@@ -239,7 +249,7 @@ class PolicyValidator(
 
         if (root != null && !initialPolicies.contains(KnownOIDs.anyPolicy)) {
             root = policyExtension?.let {
-                removeInvalidNodes(root!!, certIndex, initialPolicies, it)
+                removeInvalidNodes(root, certIndex, initialPolicies, it)
             }
 
             // RFC 5280: 6.1.5 (g)(iii)

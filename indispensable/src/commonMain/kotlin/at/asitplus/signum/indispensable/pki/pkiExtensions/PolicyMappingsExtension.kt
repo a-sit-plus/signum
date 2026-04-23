@@ -34,7 +34,7 @@ class PolicyMappingsExtension (
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): PolicyMappingsExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.policyMappings) throw Asn1StructuralException(message = "Expected PolicyMappings extension (OID: ${KnownOIDs.policyMappings}), but found OID: ${base.oid}")
 

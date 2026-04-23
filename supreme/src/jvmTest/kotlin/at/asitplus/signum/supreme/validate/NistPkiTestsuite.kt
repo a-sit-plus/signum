@@ -8,6 +8,7 @@ import at.asitplus.signum.supreme.shouldBeInvalid
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 
 @OptIn(ExperimentalPkiApi::class)
 /**
@@ -16,14 +17,12 @@ import io.kotest.matchers.shouldNotBe
  */
 val NistPkiTestSuite by testSuite{
 
-    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json")).filter { tc ->
-        !tc.name.contains("cRLSign", ignoreCase = true)
-    }
+    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
 
     testSuite.forEach { testCase ->
         test(testCase.name) {
 
-            val trustAnchors = TrustAnchor.Certificate(
+            val trustAnchor = TrustAnchor.Certificate(
                 X509Certificate.decodeFromPem(testCase.root).getOrThrow()
             )
 
@@ -33,15 +32,15 @@ val NistPkiTestSuite by testSuite{
 
             val leaf = X509Certificate.decodeFromPem(testCase.leaf).getOrThrow()
 
-            val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
+            val chain = AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchor)
 
             val context = CertificateValidationContext(
                 allowIncludedTrustAnchor = false,
-                trustAnchors = setOf(trustAnchors),
                 explicitPolicyRequired = testCase.explicitPolicyRequired,
                 initialPolicies = testCase.initialPolicies.map { ObjectIdentifier(it) }.toSet(),
                 anyPolicyInhibited = testCase.anyPolicyInhibited,
-                policyMappingInhibited = testCase.policyMappingInhibited
+                policyMappingInhibited = testCase.policyMappingInhibited,
+                supportRevocationChecking = true
             )
 
             val result = chain.validate(context)
@@ -56,7 +55,11 @@ val NistPkiTestSuite by testSuite{
                     }
 
                 validatorFailure shouldNotBe null
-                validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                if (testCase.failedValidator == "TimeValidityValidator") {
+                    validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
+                } else {
+                    validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                }
             }
         }
     }
