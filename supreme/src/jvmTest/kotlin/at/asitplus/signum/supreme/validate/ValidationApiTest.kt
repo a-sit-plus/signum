@@ -1,19 +1,16 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.InvalidCertificateValidityPeriodException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.pki.root
-import at.asitplus.signum.indispensable.pki.validate.CertValidityValidator
-import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
-import at.asitplus.signum.indispensable.pki.validate.KeyIdentifierValidator
-import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
+import java.util.Base64
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -51,7 +48,7 @@ val ValidationApiTest by testSuite{
                     date = validationTime
                 )
 
-                val result = chain.validate(context)
+                val result = chain.buildPathAndValidate(context)
 
                 if (it.expected_result == "FAILURE") {
                     result.isValid shouldBe false
@@ -111,24 +108,27 @@ val ValidationApiTest by testSuite{
         )
 
         val chain: CertificateChain = attestationProofB64.map {
-            X509Certificate.decodeFromByteArray(java.util.Base64.getMimeDecoder()
+            X509Certificate.decodeFromByteArray(
+                Base64.getMimeDecoder()
                 .decode(it))!!
         }
 
-        chain.validate(
+        chain.buildPathAndValidate(
             CertificateValidationContext(
                 trustAnchors = setOf(TrustAnchor.Certificate(chain.root)),
             )
         ).isValid shouldBe false
 
         val customValidatorFactory = ValidatorFactory { context ->
-            val validators = ValidatorFactory.RFC5280.run { chain.generate(context) }
+            val validators = ValidatorFactory.RFC5280.run { chain.generate(
+                context = context
+            ) }.toMutableList()
             validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator || it is TimeValidityValidator }
-            validators.add(AttestationTimeValidator(this))
+            validators.add(AttestationTimeValidator())
             validators
         }
 
-        chain.validate(
+        chain.buildPathAndValidate(
             customValidatorFactory,
             CertificateValidationContext(
                 trustAnchors = setOf(TrustAnchor.Certificate(chain.root))
@@ -138,18 +138,22 @@ val ValidationApiTest by testSuite{
 }
 
 // Example of custom validator, it checks validity only in intermediate certificate
-class AttestationTimeValidator(
-    val certChain: CertificateChain
-) : CertificateValidator {
+class AttestationTimeValidator: CertificateValidator {
 
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
-        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
-    ) {
-        if (currCert != certChain.leaf) {
-            if (!currCert.isValidAt()) throw CertificateValidityException("Certificate is not valid")
-        }
+    ): Set<ObjectIdentifier> {
+        if (!currCert.isValidAt(currCert.tbsCertificate.validUntil.instant)) throw InvalidCertificateValidityPeriodException("Certificate is not valid")
+        return emptySet()
     }
 
+    @ExperimentalPkiApi
+    override suspend fun validate(
+        anchoredChain: AnchoredCertificateChain,
+        context: CertificateValidationContext
+    ): Map<X509Certificate, Set<ObjectIdentifier>> {
+        anchoredChain.chain.forEach { if (it != anchoredChain.chain.leaf) check(it) }
+        return emptyMap()
+    }
 }

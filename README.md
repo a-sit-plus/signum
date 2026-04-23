@@ -701,9 +701,9 @@ Provides a flexible framework for X.509 certificate chain validation, supporting
 
 Validation never throws; instead it returns a structured `CertificateValidationResult` describing all encountered issues.
 
-The validation system is built around the `CertificateValidator` interface. Each validator:
-* Receives a certificate being processed
-* Removes supported critical extensions
+The validation system is built around the `CertificateChainValidator` interface. Each validator:
+* Receives a `AnchoredCertificateChain` (chain + trust anchor)
+* Returns checked critical extensions for each certificate in the chain
 * Throws an exception when it cannot validate (caught and recorded by the framework)
 
 Unsupported / Not Yet Implemented:
@@ -724,7 +724,21 @@ val context = CertificateValidationContext(
   policyQualifiersRejected = false,
   initialPolicies = emptySet(),
   trustAnchors = setOf(TrustAnchor.Certificate(myRootCert)),
-  expectedEku = setOf(KnownOIDs.id_kp_serverAuth)
+  expectedEku = setOf(KnownOIDs.id_kp_serverAuth),
+  leafKeyUsageCheck = { currCert ->
+    val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
+  
+    if (basicConstraints?.ca == true) {
+      if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
+        throw KeyUsageException("Digital signature key usage extension not present at leaf cert.")
+      }
+    }
+  
+    if (basicConstraints?.ca != true && currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) == true) {
+      throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
+    }
+},
+supportRevocationChecking = false  
 )
 ```
 This lets you specify:
@@ -734,6 +748,8 @@ This lets you specify:
 * `policyQualifiersRejected` flag, which indicates should certificates that include policy qualifiers in a certificate policies extension that is marked critical be rejected
 * Expected EKUs
 * Which trust anchors are acceptable
+* how to handle key usage in leaf certificate
+* should the validation handle revocation checking 
 
 ### Trust anchors
 A TrustAnchor represents the starting point of trust for certificate path validation.
@@ -762,18 +778,21 @@ constructor(publicKey: CryptoPublicKey)
 
 
 ### RFC 5280 validation:
+The library provides two validation entry points:
+* `buildPathAndValidate` - Automatically constructs a certification path using available trust anchors
+* `validate` - Validates a chain with a preselected trust anchor
 ```kotlin
+/** Preselected trust anchor */
 val root: X509Certificate = TODO("Trusted root")
 val intermediate: X509Certificate = TODO()
 val leaf: X509Certificate = TODO("Certificate to validate")
 
-val context = CertificateValidationContext(
-  trustAnchors = setOf(TrustAnchor.Certificate(root)),
-)
 // Build chain leaf → intermediates
-val chain: CertificateChain = listOf(leaf, intermediate, root)
+val chain: CertificateChain = listOf(leaf, intermediate)
+val anchoredChain = AnchoredCertificateChain(chain, root)
 
-val result = chain.validate(context)
+// default context 
+val result = anchoredChain.validate()
 
 println("Chain valid? ${result.isValid}")
 
@@ -784,8 +803,22 @@ if (!result.isValid) {
   }
 }
 ```
-If no trust anchors are explicitly specified, the validation will fall back to using the system trust store.
-If `allowIncludedTrustAnchor` is set to `true` in the validation context, validation will try to match root with one of the trust anchors and the if match is found root will be omitted from the chain during the validation.
+If `allowIncludedTrustAnchor` is set to `true` in the validation context, validation will try to match root with the trust anchor and if match is found root will be omitted from the chain during the validation.
+
+```kotlin
+/** Automatic path construction */
+val trustAnchors: List<X509Certificate> = TODO("Trusted certificates")
+val intermediate: X509Certificate = TODO()
+val leaf: X509Certificate = TODO("Certificate to validate")
+
+// Build chain leaf → intermediates
+val chain: CertificateChain = listOf(leaf, intermediate)
+
+val result = chain.buildPathAndValidate(context = CertificateValidationContext(trustAnchors = trustAnchors))
+
+println("Chain valid? ${result.isValid}")
+```
+If no trust anchors are explicitly specified, the validation will fall back to using the system trust store. `buildPathAndValidate` builds all possible `AnchoredCertificateChain`s. If any of them validates successfully, the validation succeeds.
 ### Custom validation:
 ```kotlin
 val intermediate: X509Certificate = TODO()
@@ -807,7 +840,7 @@ val myValidatorFactory = ValidatorFactory { context ->
   validators
 }
 
-val result = chain.validate(
+val result = chain.buildPathAndValidate(
   validatorFactory = myValidatorFactory,
   context = context
 )

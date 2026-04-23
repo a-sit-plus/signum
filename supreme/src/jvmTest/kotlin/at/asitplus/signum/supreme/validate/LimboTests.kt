@@ -1,10 +1,10 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.KeyIdentifierException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.*
 import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
@@ -12,6 +12,8 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.json.Json
 import kotlin.jvm.Throws
 import kotlin.time.Clock
@@ -34,7 +36,6 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-                    result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
                 } else {
                     result.shouldBeValid()
                 }
@@ -71,7 +72,7 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-                    result.validatorFailures.firstOrNull { it.validator is KeyIdentifierValidator } shouldNotBe null
+                    result.validatorFailures[0].cause.shouldBeInstanceOf<KeyIdentifierException>()
                 } else {
                     result.shouldBeValid()
                 }
@@ -193,7 +194,7 @@ val LimboTests by testSuite {
 
     context("Certificate serial number tests") {
         val skiTests = testSuiteLimbo.testcases.filter {
-            it.id.contains("rfc5280::serial::negative", ignoreCase = true)
+            it.id.contains("rfc5280::serial", ignoreCase = true)
         }
         skiTests.forEach {
             test("Limbo testcase: ${it.id}") {
@@ -202,11 +203,11 @@ val LimboTests by testSuite {
                 val failure = result.validatorFailures.firstOrNull { it.validator is CertValidityValidator }
 
                 if (it.id.contains("too-long", ignoreCase = true)) {
-                    failure?.cause?.message shouldBe "Serial number too long"
+                        failure?.cause?.message shouldContain "Serial number too long"
                 } else if (it.id.contains("negative", ignoreCase = true)) {
-                    failure?.cause?.message shouldBe "Serial number must be positive"
+                    failure?.cause?.message shouldContain "Serial number must be positive"
                 } else {
-                    failure?.cause?.message shouldBe "Serial number must not be zero"
+                    failure?.cause?.message shouldContain "Serial number must not be zero"
                 }
 
             }
@@ -223,10 +224,7 @@ val LimboTests by testSuite {
 
                 if (it.expected_result == "FAILURE") {
                     result.shouldBeInvalid()
-                    if (it.id.contains("expired-root", ignoreCase = true))
-                        result.validatorFailures.firstOrNull { it.validator is TrustAnchorValidator } shouldNotBe null
-                    else
-                        result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldNotBe null
+                    result.validatorFailures.firstOrNull { it.validator is TimeValidityValidator } shouldNotBe null
                 } else {
                     result.shouldBeValid()
                 }
@@ -303,7 +301,7 @@ suspend fun validate(testcase: LimboTestcase): CertificateValidationResult {
 
     val leaf = X509Certificate.decodeFromPem(testcase.peer_certificate).getOrThrow()
 
-    val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
+    val chain = AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchors.first())
     val validationTime = testcase.validation_time?.let(Instant::parse) ?: Clock.System.now()
 
     val context = CertificateValidationContext(

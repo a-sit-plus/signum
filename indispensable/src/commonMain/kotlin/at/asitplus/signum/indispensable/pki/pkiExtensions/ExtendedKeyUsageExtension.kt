@@ -30,14 +30,11 @@ class ExtendedKeyUsageExtension(
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         override fun doDecode(src: Asn1Sequence): ExtendedKeyUsageExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
-            if (next().asPrimitive().readOid() != KnownOIDs.extKeyUsage) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.extKeyUsage}), but found OID: ${base.oid}")
+            if (base.oid != KnownOIDs.extKeyUsage) throw Asn1StructuralException(message = "Expected ExtendedKeyUsage extension (OID: ${KnownOIDs.extKeyUsage}), but found OID: ${base.oid}")
 
-            val critical =
-                if (peek()?.tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false
-
-            val inner = next().asEncapsulatingOctetString().single().asSequence()
+            val inner = base.value.asEncapsulatingOctetString().single().asSequence()
 
             val keyUsages : Set<ObjectIdentifier> = inner.decodeRethrowing {
                 buildSet {

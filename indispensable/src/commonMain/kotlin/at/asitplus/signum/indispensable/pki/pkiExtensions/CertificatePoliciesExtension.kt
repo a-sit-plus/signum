@@ -39,7 +39,7 @@ class CertificatePoliciesExtension(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): CertificatePoliciesExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "Expected CertificatePolicies extension (OID: ${KnownOIDs.certificatePolicies_2_5_29_32}), but found OID: ${base.oid}")
 

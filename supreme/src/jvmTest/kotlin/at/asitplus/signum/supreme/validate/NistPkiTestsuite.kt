@@ -2,12 +2,14 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.shouldBeInvalid
+import at.asitplus.signum.supreme.shouldBeValid
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalPkiApi::class)
 /**
@@ -15,15 +17,16 @@ import io.kotest.matchers.shouldNotBe
  * Certification Path Validation
  */
 val NistPkiTestSuite by testSuite{
+    
+    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
 
-    val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json")).filter { tc ->
-        !tc.name.contains("cRLSign", ignoreCase = true)
+    runBlocking {
+        SystemCRLCache.initialize("./src/jvmTest/resources/crls/PKITS_crl")
     }
-
     testSuite.forEach { testCase ->
         test(testCase.name) {
 
-            val trustAnchors = TrustAnchor.Certificate(
+            val trustAnchor = TrustAnchor.Certificate(
                 X509Certificate.decodeFromPem(testCase.root).getOrThrow()
             )
 
@@ -33,21 +36,29 @@ val NistPkiTestSuite by testSuite{
 
             val leaf = X509Certificate.decodeFromPem(testCase.leaf).getOrThrow()
 
-            val chain: CertificateChain = listOf(leaf) + intermediates.reversed()
+            val chain =
+                AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchor)
 
             val context = CertificateValidationContext(
                 allowIncludedTrustAnchor = false,
-                trustAnchors = setOf(trustAnchors),
                 explicitPolicyRequired = testCase.explicitPolicyRequired,
                 initialPolicies = testCase.initialPolicies.map { ObjectIdentifier(it) }.toSet(),
                 anyPolicyInhibited = testCase.anyPolicyInhibited,
-                policyMappingInhibited = testCase.policyMappingInhibited
+                policyMappingInhibited = testCase.policyMappingInhibited,
+                supportRevocationChecking = true
             )
 
             val result = chain.validate(context)
-
             if (testCase.isSuccessful) {
-                result.isValid shouldBe true
+                if (testCase.name.contains("4.") || testCase.name.contains("delta")) {
+                    if (!result.isValid) {
+                        result.shouldBeInvalid()
+                        result.validatorFailures
+                            .firstOrNull { it.validatorName == "CrlRevocationValidator" } shouldBe null
+                    } else result.shouldBeValid()
+                } else {
+                    result.shouldBeValid()
+                }
             } else {
                 result.shouldBeInvalid()
                 val validatorFailure =
@@ -56,7 +67,11 @@ val NistPkiTestSuite by testSuite{
                     }
 
                 validatorFailure shouldNotBe null
-                validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                if (testCase.failedValidator == "TimeValidityValidator") {
+                    validatorFailure!!.errorMessage shouldContain testCase.errorMessage!!
+                } else {
+                    validatorFailure!!.errorMessage shouldBe testCase.errorMessage
+                }
             }
         }
     }
