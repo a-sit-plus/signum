@@ -34,14 +34,11 @@ open class CRLDistributionPointsExtension(
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         override fun doDecode(src: Asn1Sequence): CRLDistributionPointsExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
-            if (next().asPrimitive().readOid() != KnownOIDs.cRLDistributionPoints_2_5_29_31) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.cRLDistributionPoints_2_5_29_31}), but found OID: ${base.oid}")
+            if (base.oid != KnownOIDs.cRLDistributionPoints_2_5_29_31) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.cRLDistributionPoints_2_5_29_31}), but found OID: ${base.oid}")
 
-            val critical =
-                if (peek()?.tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false
-
-            val inner = next().asEncapsulatingOctetString().single().asSequence()
+            val inner = base.value.asEncapsulatingOctetString().single().asSequence()
 
             val distributionPoints : List<DistributionPoint> = inner.decodeRethrowing {
                 buildList {

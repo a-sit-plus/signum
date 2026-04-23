@@ -4,8 +4,13 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.cRLDistributionPoints_2_5_29_31
+import at.asitplus.signum.indispensable.asn1.cRLNumber
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
+import at.asitplus.signum.indispensable.asn1.deltaCRLIndicator
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CRLNumberExtension
 
@@ -26,7 +31,9 @@ open class CRLNumberExtension (
 
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
 
-            val base = decodeBase(src)
+            val base = decodeBase()
+
+            if (base.oid != KnownOIDs.cRLNumber) throw Asn1StructuralException(message = "Expected CRLNumber extension (OID: ${KnownOIDs.cRLNumber}), but found OID: ${base.oid}")
 
             val crlNumber = base.value.asEncapsulatingOctetString().decodeRethrowing { Asn1Integer.decodeFromTlv(next().asPrimitive()) }
 
@@ -52,7 +59,9 @@ class DeltaCRLIndicatorExtension(
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
 
-            val base = decodeBase(src)
+            val base = decodeBase()
+
+            if (base.oid != KnownOIDs.deltaCRLIndicator) throw Asn1StructuralException(message = "Expected DeltaCRLIndicator extension (OID: ${KnownOIDs.deltaCRLIndicator}), but found OID: ${base.oid}")
 
             val crlNumber = base.value.asEncapsulatingOctetString().decodeRethrowing { Asn1Integer.decodeFromTlv(next().asPrimitive()) }
 
