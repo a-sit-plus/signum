@@ -36,7 +36,7 @@ class AuthorityKeyIdentifierExtension(
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.authorityKeyIdentifier_2_5_29_35) throw Asn1StructuralException(message = "Expected AKI extension (OID: ${KnownOIDs.authorityKeyIdentifier_2_5_29_35}), but found OID: ${base.oid}")
 

@@ -49,7 +49,7 @@ class NameConstraintsExtension(
         private val EXCLUDED: ULong = 1u
 
         override fun doDecode(src: Asn1Sequence): NameConstraintsExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "Expected NameConstraints extension (OID: ${KnownOIDs.nameConstraints_2_5_29_30}), but found OID: ${base.oid}")
 

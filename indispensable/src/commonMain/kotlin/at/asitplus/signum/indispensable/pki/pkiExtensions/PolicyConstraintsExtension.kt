@@ -37,7 +37,7 @@ class PolicyConstraintsExtension (
         private val INHIBIT: ULong = 1u
 
         override fun doDecode(src: Asn1Sequence): PolicyConstraintsExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.policyConstraints_2_5_29_36) throw Asn1StructuralException(message = "Expected PolicyConstraints extension (OID: ${KnownOIDs.policyConstraints_2_5_29_36}), but found OID: ${base.oid}")
 
