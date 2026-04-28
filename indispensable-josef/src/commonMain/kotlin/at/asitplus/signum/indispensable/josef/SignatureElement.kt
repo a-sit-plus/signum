@@ -47,9 +47,8 @@ data class SignatureElement internal constructor(
     init {
         JwsProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
     }
-
     @Transient
-    val jwsHeader: JwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    val jwsHeader: JwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
     @Transient
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
@@ -72,3 +71,6 @@ data class SignatureElement internal constructor(
         return result
     }
 }
+
+val SignatureElement.protectedHeader: JwsHeader.Part?
+    get() = plainProtectedHeader?.let(JwsProtectedHeaderSerializer::decodeFromByteArray)

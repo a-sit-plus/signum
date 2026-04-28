@@ -82,6 +82,9 @@ data class JwsGeneral internal constructor(
     }
 }
 
+val JwsGeneral.protectedHeaders: List<JwsHeader.Part?>
+    get() = signatureElements.map { it.protectedHeader }
+
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.
  */

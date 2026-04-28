@@ -43,7 +43,7 @@ data class JwsFlattened internal constructor(
     }
 
     @Transient
-    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    val jwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
 
     @Transient
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
@@ -98,6 +98,9 @@ data class JwsFlattened internal constructor(
     }
 }
 
+val JwsFlattened.protectedHeader: JwsHeader.Part?
+        get() = plainProtectedHeader?.let(JwsProtectedHeaderSerializer::decodeFromByteArray)
+
 /**
  * Converts flattened JSON serialization to compact serialization.
  *
@@ -107,7 +110,7 @@ data class JwsFlattened internal constructor(
 fun JwsFlattened.toJwsCompact(): JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
-    runCatching { JwsHeader.fromParts(plainProtectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
+    runCatching { JwsHeader.fromParts(protectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
     return JwsCompact(
         plainProtectedHeader = plainProtectedHeader,
         plainPayload = plainPayload,
