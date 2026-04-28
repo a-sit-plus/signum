@@ -34,8 +34,6 @@ data class JwsGeneral internal constructor(
     }
 
     @Transient
-    val protectedHeaders: List<JwsHeader.Part?> = signatureElements.map { it.protectedHeader }
-    @Transient
     val jwsHeaders: List<JwsHeader> = signatureElements.map { it.jwsHeader }
 
     @Transient
@@ -83,6 +81,9 @@ data class JwsGeneral internal constructor(
         operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
     }
 }
+
+val JwsGeneral.protectedHeaders: List<JwsHeader.Part?>
+    get() = signatureElements.map { it.protectedHeader }
 
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.

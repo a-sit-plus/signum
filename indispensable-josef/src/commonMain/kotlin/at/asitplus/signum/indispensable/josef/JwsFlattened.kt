@@ -43,9 +43,6 @@ data class JwsFlattened internal constructor(
     }
 
     @Transient
-    val protectedHeader: JwsHeader.Part? = plainProtectedHeader?.let(JwsProtectedHeaderSerializer::decodeFromByteArray)
-
-    @Transient
     val jwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
 
     @Transient
@@ -100,6 +97,9 @@ data class JwsFlattened internal constructor(
         }
     }
 }
+
+val JwsFlattened.protectedHeader: JwsHeader.Part?
+        get() = plainProtectedHeader?.let(JwsProtectedHeaderSerializer::decodeFromByteArray)
 
 /**
  * Converts flattened JSON serialization to compact serialization.
