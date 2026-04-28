@@ -26,14 +26,11 @@ class SubjectKeyIdentifierExtension(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
-            if (next().asPrimitive().readOid() != KnownOIDs.subjectKeyIdentifier) throw Asn1StructuralException(message = "Expected SKI extension (OID: ${KnownOIDs.subjectKeyIdentifier}), but found OID: ${base.oid}")
+            if (base.oid != KnownOIDs.subjectKeyIdentifier) throw Asn1StructuralException(message = "Expected SKI extension (OID: ${KnownOIDs.subjectKeyIdentifier}), but found OID: ${base.oid}")
 
-            val critical =
-                if (peek()?.tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false
-
-            val keyIdentifier = next().asEncapsulatingOctetString().single().asPrimitive().content
+            val keyIdentifier = base.value.asEncapsulatingOctetString().single().asPrimitive().content
 
             SubjectKeyIdentifierExtension(base, keyIdentifier)
         }

@@ -30,7 +30,7 @@ class KeyUsageExtension(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         override fun doDecode(src: Asn1Sequence): KeyUsageExtension = src.decodeRethrowing {
-            val base = decodeBase(src)
+            val base = decodeBase()
 
             if (base.oid != KnownOIDs.keyUsage) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.keyUsage}), but found OID: ${base.oid}")
 

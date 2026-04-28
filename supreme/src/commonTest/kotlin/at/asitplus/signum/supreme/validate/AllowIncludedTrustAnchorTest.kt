@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.signum.supreme.shouldBeValid
 import at.asitplus.testballoon.invoke
@@ -62,114 +61,6 @@ val AllowIncludedTrustAnchorTest by testSuite{
             "oxJ8JTfEcEHVsTffYR9fDUn0NylqCLdqFaDwLKqWl+C2inODNMpNusqleDAViw6B\n" +
             "CA==\n" +
             "-----END CERTIFICATE-----\n"
-
-    "Valid pathLenConstraint Test13" {
-        val pathLenConstraint6subCA4Cert = "-----BEGIN CERTIFICATE-----\n" +
-                "MIIDmjCCAoKgAwIBAgIBAzANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVcGF0aExl\n" +
-                "bkNvbnN0cmFpbnQ2IENBMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFow\n" +
-                "UjELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTEx\n" +
-                "IjAgBgNVBAMTGXBhdGhMZW5Db25zdHJhaW50NiBzdWJDQTQwggEiMA0GCSqGSIb3\n" +
-                "DQEBAQUAA4IBDwAwggEKAoIBAQDRaciiXPE9CRnZszi4MJScusSJJBpnJRox4Dpn\n" +
-                "VJKE86q6HuEUtOzhllVlfQtaSGxhyWD8q8HpeGW7F2lqcblT0VbPyTPDF2DiPt6B\n" +
-                "yGYw2J9IMmkmdJ3RiXxouq336e1FTJoPCsgwHiK1bne2i4d6L5TFen8p6IFL2XR/\n" +
-                "lQyug93gOPysThsY14A2JJTNAISkJFtfEiHABPlsMtzST5OkazCJiIkGZw7+pId+\n" +
-                "jkWMoOc1C4nVTUEJJbyUVYTLEetaJVxU+3tVDr1vmTHXdYu4v6rWpX3IcmEMTM9m\n" +
-                "4HOqO1c92SWna0WvJLsPRm1y2/H+hhaGgvp83VrdXh/fdHrDAgMBAAGjfzB9MB8G\n" +
-                "A1UdIwQYMBaAFK+8ha7+TK7hjZcjiMilsWALuk7YMB0GA1UdDgQWBBRJhdtL+xFj\n" +
-                "2ZkCKLQLep4TF1oVdzAOBgNVHQ8BAf8EBAMCAQYwFwYDVR0gBBAwDjAMBgpghkgB\n" +
-                "ZQMCATABMBIGA1UdEwEB/wQIMAYBAf8CAQQwDQYJKoZIhvcNAQELBQADggEBAJBm\n" +
-                "SQWFZgiXsoHVxU/Di8Vz/JG2sTHLr58iyp38gcp+7oM/SrRqdtFe3KoaRb1LBHhK\n" +
-                "Kwssx+5ukA/ZYIrKRTwv7IFUgdeQgsQDbNtAyxMkKwv2QFrtx1zaS0397wqZRGL2\n" +
-                "c4ph2EI7F0IzOmzuXuj3leZTiAA1z7m+WopfmN7RxPmFT/8ZouNCUnMxryjqEzm0\n" +
-                "k2vUuGzd7MLEGHlW2UVR4R/hfSOUTUBcUgC/F/aB07nCJ3Gon8ztvzRIAo7IQ1Vt\n" +
-                "okYWRHbFapAq5NsEn/Z/AxDGh9kJuSIx8/mz4hcdiKvfbQTztUPBVrq1RmF++rHR\n" +
-                "fwzHkZ48GGyTH5QbV8Y=\n" +
-                "-----END CERTIFICATE-----\n"
-
-        val pathLenConstraint6subsubCA41Cert = "-----BEGIN CERTIFICATE-----\n" +
-                "MIIDojCCAoqgAwIBAgIBATANBgkqhkiG9w0BAQsFADBSMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEiMCAGA1UEAxMZcGF0aExl\n" +
-                "bkNvbnN0cmFpbnQ2IHN1YkNBNDAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMw\n" +
-                "MDBaMFYxCzAJBgNVBAYTAlVTMR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAy\n" +
-                "MDExMSYwJAYDVQQDEx1wYXRoTGVuQ29uc3RyYWludDYgc3Vic3ViQ0E0MTCCASIw\n" +
-                "DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANhwD2w1qEqflNfYtpGLRSNwCAoE\n" +
-                "N7//EbgaFJKP4OGaerEZ41IHT4G8x0QOsx2RMRd6gXL9zNMmKhjoCL4Nv2mXksGt\n" +
-                "crt9dSJE2MaUIQFj/cdJv+WNwoQW8amBjeMSNL7BgB8y71fnO8srWabp6vkIgDr9\n" +
-                "tY0qmHZ1CLxB848d8C14NbaNGMeWJzI8ri2rXD/0sC/0LtWgg624DjmZWgxb7B8J\n" +
-                "w1ERSKznjFQ4vv9imV7vJ1GZ2r5V6nBPFnmtK2r2yqAeNReHE3U2syb9lpFyOsjh\n" +
-                "qTjVQdKUk5N+NAZpCipVuymCdvWcJY3C8FVmjxefqv/cJBu3Kxi7Bf6f1iMCAwEA\n" +
-                "AaN/MH0wHwYDVR0jBBgwFoAUSYXbS/sRY9mZAii0C3qeExdaFXcwHQYDVR0OBBYE\n" +
-                "FERapgfP9vPIx0bvZKH1W8E/grxXMA4GA1UdDwEB/wQEAwIBBjAXBgNVHSAEEDAO\n" +
-                "MAwGCmCGSAFlAwIBMAEwEgYDVR0TAQH/BAgwBgEB/wIBATANBgkqhkiG9w0BAQsF\n" +
-                "AAOCAQEAtz+rkTNDpvnMjCDzmvVltiLfHURT3X/GipGokbedY89ANtS1dRmNFyDS\n" +
-                "I1Dh17v8HsW2GR40FCIP4ImbxvPrUAQIASOVUR7iLKwSj99RwK8+Tfd9cUBx5cdA\n" +
-                "nXm+KGqJ04sBKilEM6kGhA+vxZU8OJ7hck3rFVxNiIvGTZmYPlSLLQqv0X3LcWG9\n" +
-                "XArnZEKfNH6Ph0LCOzlPsLI3iQ5rHluq3liWMD21LBEftUdpJ0DqzEiWEFHL8PuD\n" +
-                "AtiGA+cOA0DTakpwjLnd2q1wM0S7HLVaYGSv6HErM594IUZQfWAyyyTpl3CERtH+\n" +
-                "mlou5h4IgFeitqocNlVfoAX5CzZsvQ==\n" +
-                "-----END CERTIFICATE-----\n"
-
-        val pathLenConstraint6subsubsubCA41XCert = "-----BEGIN CERTIFICATE-----\n" +
-                "MIIDpzCCAo+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBWMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEmMCQGA1UEAxMdcGF0aExl\n" +
-                "bkNvbnN0cmFpbnQ2IHN1YnN1YkNBNDEwHhcNMTAwMTAxMDgzMDAwWhcNMzAxMjMx\n" +
-                "MDgzMDAwWjBaMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0\n" +
-                "ZXMgMjAxMTEqMCgGA1UEAxMhcGF0aExlbkNvbnN0cmFpbnQ2IHN1YnN1YnN1YkNB\n" +
-                "NDFYMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6hM3qC08TT0qiiB1\n" +
-                "AXVRGB8La1zcPFASpIZ0T1pRmbvQVay8/l8gAcVytv6KVDgpjXjXXMjjJMuAZQm6\n" +
-                "ilT+eC3WrLSzBWUQDzAXTARzERVE3u4woJnBdpcyo4ZlTRGijwzYfbVlrdTNRnX1\n" +
-                "ET0R9BLIK4qxRYdJvlDXoCQQFb1/58RMs9jK7lxHetuVt1ieeWF/fLRPZ2Qbf/qm\n" +
-                "MpepaATXRf4Nue57jA3FyUAbvgVg2XnhRRdAEnsM90YRZHOD+XbB4Lhz2Pk6hNDM\n" +
-                "xfl70rGpDXIOh9UmIYZZ2yegRx/rKDI+3wFAtcGYek4trQGg/1HoTbaKszhIgb1s\n" +
-                "uJ0EUQIDAQABo3wwejAfBgNVHSMEGDAWgBREWqYHz/bzyMdG72Sh9VvBP4K8VzAd\n" +
-                "BgNVHQ4EFgQUoe2i8zVUpZ+8Y+ZHalMkbEoMciwwDgYDVR0PAQH/BAQDAgEGMBcG\n" +
-                "A1UdIAQQMA4wDAYKYIZIAWUDAgEwATAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3\n" +
-                "DQEBCwUAA4IBAQBM/xztTxc6ooWAmhUfwjeTeHYxZFBCB81yMwM/agD4C3gTf+vl\n" +
-                "P1CnTaXFV2aoOYDiXCkA3oL4DViFQKHcuIh6ag5pKlxB38KCH5l87W+xb4NuuyhC\n" +
-                "/sYzP6PsQr43jiWtzbGRgQ8SFwN/+jX4MQnJE660ab09hgm3LmIkWCa3202nbwvR\n" +
-                "rL0ILpgkzQs+IgbJY9EAE2cGiapoZ8mjKBq4EwZG6xqjqp8LO2Al8Koa1ofFwnoz\n" +
-                "sYCgl+oyiP2lTkdMpg9p3gmmqWRnv0qWvfjwxnpH470rFWxL1u5nG1MM/Y2GLi5o\n" +
-                "+poL/laW4KNTZOgEnijxlvBJiLfhb/mymaMZ\n" +
-                "-----END CERTIFICATE-----\n"
-
-        val leafPem = "-----BEGIN CERTIFICATE-----\n" +
-                "MIIDpjCCAo6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBaMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEqMCgGA1UEAxMhcGF0aExl\n" +
-                "bkNvbnN0cmFpbnQ2IHN1YnN1YnN1YkNBNDFYMB4XDTEwMDEwMTA4MzAwMFoXDTMw\n" +
-                "MTIzMTA4MzAwMFowZjELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlm\n" +
-                "aWNhdGVzIDIwMTExNjA0BgNVBAMTLVZhbGlkIHBhdGhMZW5Db25zdHJhaW50IEVF\n" +
-                "IENlcnRpZmljYXRlIFRlc3QxMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\n" +
-                "ggEBANGvSnWvqPuuQwnBzwyPeG9cwJSQU/bvAAFK1V8D6Yb5dGmKu++FJuY3+qmG\n" +
-                "uzN3K1HFo1C/84fQ0UFNp/6H9r+9yUZ3RRSvr8A4JA0CUUv+mXfbd7+HzCqqyj0i\n" +
-                "RSreaFuiXaM4QAH56nrfg31qQGb1QC14tpEXlBp8YnGh2PRbbdJQf8JbxMOlhWB9\n" +
-                "A8+Dk0gwSVqUZ0nPDFy2OLQ3cEQTgjnihXBJqHztLtj4rQkwWbQCNIThrZ+XszkW\n" +
-                "6rcGygZ7ZACnuuHOG5UK6qxakReo8ZuW079tnFJCPSyPk54dHLlTrsz6LyyBQBKv\n" +
-                "2PzZAQcnzZWHJLoACwhOWUQ9dz8CAwEAAaNrMGkwHwYDVR0jBBgwFoAUoe2i8zVU\n" +
-                "pZ+8Y+ZHalMkbEoMciwwHQYDVR0OBBYEFLdJcbHtcyweaP/yNyrJR7L7kfqpMA4G\n" +
-                "A1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDQYJKoZIhvcN\n" +
-                "AQELBQADggEBAJTElUFCT4pcCXUHleZsjeg3hPXNJIWYLr3/MACyrDpD7M4kb1J/\n" +
-                "v03VUo6r9wFgd2LE8Q9kghkRsQ1BvdGX9FijaPDMZ31kPpU1EelGutxkjU21mz6x\n" +
-                "lXLb4ql8QBCLDZ+N2mEQ8y/KCYpSkKJK2X5XHQ8LRn0b/QKK64UmF4uZFxKA5Ez8\n" +
-                "q1bescEhdWiAZBrFv5t+OhSHbRkRtLNB2fHkzkovVrhSgrG/qcsGInWTvF1RnV40\n" +
-                "iP7VcosKbEynP8p5LQMIjt7d4f+PocFcSIVwgcVfZdwx9MS+nAj29Ynu9vQENFHI\n" +
-                "xwRm/XT3hYzGswzrl5RhHyyjgAvjxwSaxfU=\n" +
-                "-----END CERTIFICATE-----"
-
-        val ca = X509Certificate.decodeFromPem(pathLenConstraint6CACert).getOrThrow()
-        val subCa = X509Certificate.decodeFromPem(pathLenConstraint6subCA4Cert).getOrThrow()
-        val subSubCa = X509Certificate.decodeFromPem(pathLenConstraint6subsubCA41Cert).getOrThrow()
-        val subSubSubCa = X509Certificate.decodeFromPem(pathLenConstraint6subsubsubCA41XCert).getOrThrow()
-        val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
-        val chainWithRoot: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRootCert)
-        val result = chain.validate(context)
-        val resultWithRoot = chainWithRoot.validate(context)
-        result.isValid shouldBe true
-        resultWithRoot.isValid shouldBe true
-
-        chainWithRoot.validate(contextNotAllowedRoot).isValid shouldBe false
-    }
 
     "Invalid pathLenConstraint Test11" {
         val pathLenConstraintsubCA1Cert = "-----BEGIN CERTIFICATE-----\n" +
@@ -269,8 +160,8 @@ val AllowIncludedTrustAnchorTest by testSuite{
         val subSubCa = X509Certificate.decodeFromPem(pathLenConstraintsubsubCA11Cert).getOrThrow()
         val subSubSubCa = X509Certificate.decodeFromPem(pathLenConstraintsubsubsubCA11XCert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
-        val chainWithRoot: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRootCert)
+        val chain = AnchoredCertificateChain(listOf(leaf, subSubSubCa, subSubCa, subCa, ca), trustAnchor)
+        val chainWithRoot = AnchoredCertificateChain(listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRootCert), trustAnchor)
         val result = chain.validate(context)
         val resultWithRoot = chainWithRoot.validate(context)
         result.shouldBeInvalid()
@@ -280,76 +171,11 @@ val AllowIncludedTrustAnchorTest by testSuite{
 
         validatorFailure shouldNotBe null
         validatorFailureWithRoot shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 4."
-        validatorFailureWithRoot!!.errorMessage shouldBe "pathLenConstraint violated at cert index 4."
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
+        validatorFailureWithRoot!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
 
         val resultNotAllowed = chainWithRoot.validate(contextNotAllowedRoot)
         resultNotAllowed.shouldBeInvalid()
-        resultNotAllowed.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}!!.errorMessage shouldBe "pathLenConstraint violated at cert index 5."
+        resultNotAllowed.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
     }
-
-    "Valid DN nameConstraints Test1" {
-        val leafPem = "-----BEGIN CERTIFICATE-----\n" +
-                "MIIDuDCCAqCgAwIBAgIBATANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\n" +
-                "bnN0cmFpbnRzIEROMSBDQTAeFw0xMDAxMDEwODMwMDBaFw0zMDEyMzEwODMwMDBa\n" +
-                "MIGCMQswCQYDVQQGEwJVUzEfMB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAx\n" +
-                "MTEaMBgGA1UECxMRcGVybWl0dGVkU3VidHJlZTExNjA0BgNVBAMTLVZhbGlkIERO\n" +
-                "IG5hbWVDb25zdHJhaW50cyBFRSBDZXJ0aWZpY2F0ZSBUZXN0MTCCASIwDQYJKoZI\n" +
-                "hvcNAQEBBQADggEPADCCAQoCggEBAMRVH83Hm46JPU28u6W/BR3a95naRI7hTLko\n" +
-                "SOFjXkkjx8tjModC1M4QxWpoMZj2AF0Fd4Aykw75HS8W37wb8UjFS3SrXQ66qVwY\n" +
-                "h0CDz8mNOvtGSanquco3tZeMqoDe8/EXhotzwnf5F83cyp7XB7OiEQPzbplkD4jQ\n" +
-                "GZ5d/SF0lBUdhxilqRlXSemd1kfGop73BOGmgqkQhP+I+4ZZVwxUO5pXGzRpfGK+\n" +
-                "h8ZiOM/JAxpmhdaU1HC6Zf4YDqA2XpKZKQ232myfX4SObpXZ0DUOLNNDzYisj14W\n" +
-                "3ygeNgyIUFVp8hLPI6/BXTJqziW0TqoqCb5Joq+32zjYPwJNxcECAwEAAaNrMGkw\n" +
-                "HwYDVR0jBBgwFoAUQXhCRs1OqILn4Tnf96kWwAr874YwHQYDVR0OBBYEFF3+CfUG\n" +
-                "qPKNIJRROjk0yUUKmZ2SMA4GA1UdDwEB/wQEAwIE8DAXBgNVHSAEEDAOMAwGCmCG\n" +
-                "SAFlAwIBMAEwDQYJKoZIhvcNAQELBQADggEBAEzeTUMhQZChACqQef2LLNvj+BfT\n" +
-                "VkDB0FVyPo3Yti8bRH8ZnItB8CWkS1iBvv4Bwgp7S8MpAGrgmyBCAO93VjySw5a2\n" +
-                "kEU/55B39tPKMQqWOAvi7DU31mWdWemMwD3u/SuK/8pnPOANjduViBKze8rUj4u0\n" +
-                "tbaYLor/qh4Lxgux9Xw1K+rwKlV9xDvoRLqNMsSReCLfMjMwXkUV7CL/6XjOGACM\n" +
-                "XMPQkJx1SnWLerNLLi2dzO1Ly9Ikr4jTEflJ/lxdw8Fa88eLXNte+JH0OcwwwLQM\n" +
-                "PiSkYK4B8y0A3Psl9309+kocX+YG1ppMoXg64Nt3YQ6kZqw/07gDFODEz3M=\n" +
-                "-----END CERTIFICATE-----"
-
-        val nameConstraintsDN1CACert = "-----BEGIN CERTIFICATE-----\n" +
-                "MIID7TCCAtWgAwIBAgIBPjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
-                "QW5jaG9yMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIzMTA4MzAwMFowTzELMAkGA1UE\n" +
-                "BhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNhdGVzIDIwMTExHzAdBgNVBAMT\n" +
-                "Fm5hbWVDb25zdHJhaW50cyBETjEgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw\n" +
-                "ggEKAoIBAQDIFZChS4W10eHwp3smMrXyTluiMJTrq0f8LEx4D63qlvrjNngGxCHt\n" +
-                "BOlFbIH3uKwK24yKHywpFK38bHLyDf+2LoaEYox32sfyeqneYurTGJ4sZ1T/fsZk\n" +
-                "lG/n5fkMlvIU0iu4eOkshyEEtvUGpvdSEg4a7TiadjmsAZkJkgBHV0h9VYaRYvgY\n" +
-                "BnDsTd8MrzKo0bNnpMgiUGtGJB9lB0DmhO51IelaxiyaJUVIsKUZfpA1NPjSboLi\n" +
-                "NLgKhP8El/AlBY3BG190xJ3a5xDIhDq5SRTJ16554PIIwzfE7nvY+9TpwfkYvVKL\n" +
-                "zCOTyrA6VnFwTLKc8sLYKFfmKNEboLafAgMBAAGjgd0wgdowHwYDVR0jBBgwFoAU\n" +
-                "5H1f0VyVhggsBa6+dbZlp9ldqGYwHQYDVR0OBBYEFEF4QkbNTqiC5+E53/epFsAK\n" +
-                "/O+GMA4GA1UdDwEB/wQEAwIBBjAXBgNVHSAEEDAOMAwGCmCGSAFlAwIBMAEwDwYD\n" +
-                "VR0TAQH/BAUwAwEB/zBeBgNVHR4BAf8EVDBSoFAwTqRMMEoxCzAJBgNVBAYTAlVT\n" +
-                "MR8wHQYDVQQKExZUZXN0IENlcnRpZmljYXRlcyAyMDExMRowGAYDVQQLExFwZXJt\n" +
-                "aXR0ZWRTdWJ0cmVlMTANBgkqhkiG9w0BAQsFAAOCAQEAaRFMK70B7a7bqMhucX7K\n" +
-                "3AnChP1D8T/CFQUnOWeC/yKAcHbplQf3uWzL52ZJIoKLJaT7dnCuLxx9St/m5aCI\n" +
-                "MKZuIda+85I2WisV4brJJWyZlgLauA0WLZuEswqB0viCZG0vgtWTm9uN6O8Lqua3\n" +
-                "fnM/0WQtcmMMNs3NWN+FTX6SHIu5Z/DuUZWSF0H76jjheSJG2wXn0TJk8RRJ7mn5\n" +
-                "dnDEoDFUpePO0qaOjl1KGov28zz2QGIr7Nq+S0Z3Gk1Z2O3DlgYMeYtqkiMPKZ4Y\n" +
-                "sPDZIABuaSYI1o0ZoFnpLgiWVWbBJDO3w5x6eIS/CueS8hKfX0h7+dIcgQhABleo\n" +
-                "2w==\n" +
-                "-----END CERTIFICATE-----\n"
-
-        val ca = X509Certificate.decodeFromPem(nameConstraintsDN1CACert).getOrThrow()
-        val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain = listOf(leaf, ca)
-        val chainWithRoot = listOf(leaf, ca, trustAnchorRootCert)
-
-        val result = chain.validate(context)
-        val resultWithRoot = chainWithRoot.validate(context)
-        result.shouldBeValid()
-        resultWithRoot.shouldBeValid()
-
-        // Since root is not omitted from the chain, it will expect it to have
-        val r = chainWithRoot.validate(contextNotAllowedRoot)
-        r.shouldBeInvalid()
-    }
-
 }

@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -50,13 +51,18 @@ sealed class TrustAnchor {
     }
 
     suspend fun isIssuerOf(cert: X509Certificate): Boolean {
+        if (cert.tbsCertificate.issuerName != principal) return false
+
+        // If trust anchor is certificate based, check issuerUniqueID
+        this.cert?.let { anchorCert ->
+            if (cert.tbsCertificate.issuerUniqueID != anchorCert.tbsCertificate.subjectUniqueID) return false
+        }
+
         val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(publicKey).getOrElse { return false }
-        val signatureValid = verifier.verify(
+
+        return verifier.verify(
             cert.tbsCertificate.encodeToDer(),
             cert.decodedSignature.getOrThrow()
         ).isSuccess
-
-        val issuerName = cert.tbsCertificate.issuerName
-        return signatureValid && issuerName == principal
     }
 }

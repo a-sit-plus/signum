@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.parse
@@ -39,17 +40,20 @@ data class GeneralSubtree(
         override fun doDecode(src: Asn1Sequence): GeneralSubtree = src.decodeRethrowing { 
             val base = GeneralName.decodeFromTlv(next())
             var minimum = Asn1Integer(0)
-            if (hasNext()) {
-                minimum = Asn1Integer.decodeFromTlv(next().asPrimitive())
-            }
+            var maximum: Asn1Integer? = null
 
-            return if (!hasNext()) GeneralSubtree(
+            while (hasNext()) {
+                val child = next()
+                when (child.tag.tagValue) {
+                    0uL -> minimum = Asn1Integer.decodeFromTlv(child.asPrimitive())
+                    1uL -> maximum = Asn1Integer.decodeFromTlv(child.asPrimitive())
+                    else -> throw Asn1StructuralException("Unexpected tag in GeneralSubtree: ${child.tag}")
+                }
+            }
+            GeneralSubtree(
                 base = base,
-                minimum = minimum
-            ) else GeneralSubtree(
-                base,
-                minimum,
-                Asn1Integer.decodeFromTlv(next().asPrimitive())
+                minimum = minimum,
+                maximum = maximum
             )
         }
     }
