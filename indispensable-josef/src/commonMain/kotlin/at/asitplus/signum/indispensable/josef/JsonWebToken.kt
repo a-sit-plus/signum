@@ -156,15 +156,36 @@ data class JsonWebToken(
     val walletLink: String? = null,
 
     /**
+     * EUDI TS3 WUA 1.5: version of the Wallet Solution.
+     */
+    @SerialName("wallet_version")
+    val walletVersion: String? = null,
+
+    /**
+     * EUDI TS3 WUA 1.5: information about the certification achieved by the Wallet Solution.
+     */
+    @SerialName("wallet_solution_certification_information")
+    val walletSolutionCertificationInformation: String? = null,
+
+    /**
+     * EUDI TS3 WUA 1.5: status list reference for the Wallet Instance and the time until which the Wallet Provider
+     * commits to maintaining the referenced status.
+     */
+    @SerialName("client_status")
+    val clientStatus: ClientStatus? = null,
+
+    /**
      * OPTIONAL: Data class containing information for instance/unit attestation
      * See: https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
      */
+    @Deprecated("TS3 WUA 1.5 removed eudi_wallet_info from Wallet Instance Attestations.")
     @SerialName("eudi_wallet_info")
     val eudiWalletInfo: EudiWalletInfo? = null,
 
     /**
      * OID4VCI: OPTIONAL. Status mechanism for the Wallet Attestation as defined in ietf-oauth-status-list.
      */
+    @Deprecated("TS3 WUA 1.5 replaced top-level status with client_status.")
     @SerialName("status")
     val status: JsonObject? = null,
 ) {
@@ -173,6 +194,7 @@ data class JsonWebToken(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
+    @Suppress("DEPRECATION")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -193,12 +215,16 @@ data class JsonWebToken(
         if (accessTokenHash != other.accessTokenHash) return false
         if (walletName != other.walletName) return false
         if (walletLink != other.walletLink) return false
+        if (walletVersion != other.walletVersion) return false
+        if (walletSolutionCertificationInformation != other.walletSolutionCertificationInformation) return false
+        if (clientStatus != other.clientStatus) return false
         if (eudiWalletInfo != other.eudiWalletInfo) return false
         if (status != other.status) return false
 
         return true
     }
 
+    @Suppress("DEPRECATION")
     override fun hashCode(): Int {
         var result = issuer?.hashCode() ?: 0
         result = 31 * result + (subject?.hashCode() ?: 0)
@@ -214,6 +240,9 @@ data class JsonWebToken(
         result = 31 * result + (accessTokenHash?.hashCode() ?: 0)
         result = 31 * result + (walletName?.hashCode() ?: 0)
         result = 31 * result + (walletLink?.hashCode() ?: 0)
+        result = 31 * result + (walletVersion?.hashCode() ?: 0)
+        result = 31 * result + (walletSolutionCertificationInformation?.hashCode() ?: 0)
+        result = 31 * result + (clientStatus?.hashCode() ?: 0)
         result = 31 * result + (eudiWalletInfo?.hashCode() ?: 0)
         result = 31 * result + (status?.hashCode() ?: 0)
         return result
@@ -227,3 +256,20 @@ data class JsonWebToken(
         }
     }
 }
+
+@Serializable
+data class ClientStatus(
+    /**
+     * Status list reference as specified by OID4VCI Appendix E. The value represents the revocation state of the
+     * Wallet Instance.
+     */
+    @SerialName("status")
+    val status: JsonObject,
+
+    /**
+     * NumericDate specifying how long the Wallet Provider maintains revocation status at the referenced index.
+     */
+    @SerialName("exp")
+    @Serializable(with = InstantLongSerializer::class)
+    val expiration: Instant,
+)

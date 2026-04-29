@@ -54,6 +54,7 @@ data class KeyAttestationJwt(
      * which are not part of the OID4VCI specification.
      * See https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
      */
+    @Deprecated("TS3 WUA 1.5 removed eudi_wallet_info from Key Attestations.")
     @SerialName("eudi_wallet_info")
     val eudiWalletInfo: EudiWalletInfo? = null,
 
@@ -86,9 +87,17 @@ data class KeyAttestationJwt(
     val certification: String? = null,
 
     /**
+     * EUDI TS3 WUA 1.5: status list reference for the attested key storage and the time until which the Wallet
+     * Provider commits to maintaining the referenced status.
+     */
+    @SerialName("key_storage_status")
+    val keyStorageStatus: KeyStorageStatus? = null,
+
+    /**
      * Optional. JSON Object representing the supported revocation check mechanisms, such as the one defined in
      * ietf-oauth-status-list.
      */
+    @Deprecated("TS3 WUA 1.5 replaced top-level status with key_storage_status.")
     @SerialName("status")
     val status: JsonObject? = null,
 ) {
@@ -96,6 +105,7 @@ data class KeyAttestationJwt(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
+    @Suppress("DEPRECATION")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -114,11 +124,13 @@ data class KeyAttestationJwt(
         if (keyStorage != other.keyStorage) return false
         if (userAuthentication != other.userAuthentication) return false
         if (certification != other.certification) return false
+        if (keyStorageStatus != other.keyStorageStatus) return false
         if (status != other.status) return false
 
         return true
     }
 
+    @Suppress("DEPRECATION")
     override fun hashCode(): Int {
         var result = issuer?.hashCode() ?: 0
         result = 31 * result + (subject?.hashCode() ?: 0)
@@ -132,6 +144,7 @@ data class KeyAttestationJwt(
         result = 31 * result + (keyStorage?.hashCode() ?: 0)
         result = 31 * result + (userAuthentication?.hashCode() ?: 0)
         result = 31 * result + (certification?.hashCode() ?: 0)
+        result = 31 * result + (keyStorageStatus?.hashCode() ?: 0)
         result = 31 * result + (status?.hashCode() ?: 0)
         return result
     }
@@ -143,3 +156,20 @@ data class KeyAttestationJwt(
         }
     }
 }
+
+@Serializable
+data class KeyStorageStatus(
+    /**
+     * Status list reference as specified by OID4VCI Appendix D.1. The value represents either the revocation state
+     * of the WSCD/keystore type or, for per-KA indexing, the individual Wallet Unit's WSCD/keystore instance.
+     */
+    @SerialName("status")
+    val status: JsonObject,
+
+    /**
+     * NumericDate specifying how long the Wallet Provider maintains revocation status at the referenced index.
+     */
+    @SerialName("exp")
+    @Serializable(with = InstantLongSerializer::class)
+    val expiration: Instant,
+)
