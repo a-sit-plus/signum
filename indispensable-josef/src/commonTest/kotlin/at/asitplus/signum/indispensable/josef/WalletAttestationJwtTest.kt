@@ -3,25 +3,33 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val WalletAttestationJwtTest by testSuite {
 
-    // https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-wallet-attestations-in-jwt-
+    // https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
     "Wallet Instance Attestation"  {
         val input = """
             {
-              "iss": "https://client.example.com",
               "sub": "https://client.example.com",
+              "iat": 1300815780,
+              "exp": 1300902179,
               "wallet_name": "Wallet Solution X by Wonderland State Department",
+              "wallet_version": "1.2.3",
               "wallet_link": "https://example.com/wallet/detail_info.html",
-              "nbf": 1300815780,
-              "exp": 1300819380,
+              "wallet_solution_certification_information": "https://example.com/wallet/certification.html",
+              "client_status": {
+                "status": {
+                  "status_list": {
+                    "idx": 42,
+                    "uri": "https://example.com/status/wallet-instance"
+                  }
+                },
+                "exp": 1303494180
+              },
               "cnf": {
                 "jwk": {
                   "kty": "EC",
@@ -36,8 +44,12 @@ val WalletAttestationJwtTest by testSuite {
 
         val parsed: JsonWebToken = Json.decodeFromString(input)
 
+        parsed.issuer.shouldBeNull()
         parsed.walletName shouldBe "Wallet Solution X by Wonderland State Department"
+        parsed.walletVersion shouldBe "1.2.3"
         parsed.walletLink shouldBe "https://example.com/wallet/detail_info.html"
+        parsed.walletSolutionCertificationInformation shouldBe "https://example.com/wallet/certification.html"
+        parsed.clientStatus.shouldNotBeNull()
         parsed.confirmationClaim.shouldNotBeNull()
 
         Json.decodeFromString<JsonWebToken>(Json.encodeToString(parsed)) shouldBe parsed
