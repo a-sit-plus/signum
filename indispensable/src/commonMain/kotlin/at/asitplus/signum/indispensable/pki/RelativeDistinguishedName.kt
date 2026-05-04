@@ -1,68 +1,46 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1Primitive
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.Asn1Decodable
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Asn1Set
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.commonName
-import at.asitplus.signum.indispensable.asn1.countryName
-import at.asitplus.signum.indispensable.asn1.decodeRethrowing
-import at.asitplus.signum.indispensable.asn1.emailAddress_1_2_840_113549_1_9_1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.organizationName
-import at.asitplus.signum.indispensable.asn1.organizationalUnitName
-import at.asitplus.signum.indispensable.asn1.readOid
-import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.asn1.Awesn1Backed
+import at.asitplus.signum.indispensable.asn1.Awesn1BackedSerializer
+import kotlin.text.toHexString
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-class RelativeDistinguishedName private constructor(
-    val attrsAndValues: List<AttributeTypeAndValue>,
+class RelativeDistinguishedName(
+    override val backing: X500RelativeDistinguishedName,
     performValidation: Boolean
-) : Asn1Encodable<Asn1Set> {
+) : Awesn1Backed<X500RelativeDistinguishedName> {
 
     val isValid: Boolean by lazy {
-        attrsAndValues.all { it.isValid == true }
+        backing.attrsAndValues.map { AttributeTypeAndValue(it) }.all { it.isValid == true }
     }
 
     init {
-        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName.")
+        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
     }
 
     constructor(attrsAndValues: List<AttributeTypeAndValue>) : this(
-        attrsAndValues.sortedWith(compareBy { atv ->
-            Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
-        }),
+        X500RelativeDistinguishedName(attrsAndValues.map { it.backing }.toSet()),
         true
     )
 
     constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
 
-    override fun encodeToTlv() = runRethrowing {
-        Asn1.Set {
-            attrsAndValues.forEach { +it }
-        }
-    }
 
-    companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
-        override fun doDecode(src: Asn1Set): RelativeDistinguishedName = src.decodeRethrowing {
-            val attrsAndValues = buildList {
-                while (hasNext()) {
-                    val child = next().asSequence()
-                    add(AttributeTypeAndValue.decodeFromTlv(child))
-                }
-            }
-            RelativeDistinguishedName(attrsAndValues, false)
-        }
+    companion object : Awesn1BackedSerializer<X500RelativeDistinguishedName, RelativeDistinguishedName>(
+        X500RelativeDistinguishedName.serializer(), {
+            RelativeDistinguishedName(it,false)
+        }){
 
         /**
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company")
@@ -72,7 +50,7 @@ class RelativeDistinguishedName private constructor(
             val atvs = atvStrings.map { atvStr ->
                 val parts = splitFirstUnescaped(atvStr, '=')
                 if (parts.size != 2) throw IllegalArgumentException("Invalid RDN part: $atvStr")
-                AttributeTypeAndValue.fromString(parts[0], parts[1])
+                AttributeTypeAndValue.fromString(parts[0], parts[1])?:throw  IllegalArgumentException("Unknown RDN part: $atvStr")
             }
             return RelativeDistinguishedName(atvs)
         }
@@ -114,32 +92,33 @@ class RelativeDistinguishedName private constructor(
         }
     }
 
-    override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || this::class != other::class) return false
+        if (other !is RelativeDistinguishedName) return false
 
-        other as RelativeDistinguishedName
-
-        if (isValid != other.isValid) return false
-        if (attrsAndValues != other.attrsAndValues) return false
+        if (backing != other.backing) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = isValid.hashCode()
-        result = 31 * result + attrsAndValues.hashCode()
-        return result
+        return backing.hashCode()
+    }
+
+    override fun toString(): String {
+        return "RelativeDistinguishedName(" +
+                "backing=$backing, " +
+                "isValid=$isValid" +
+                ")"
     }
 }
-
 open class AttributeTypeAndValue(
-    override val oid: ObjectIdentifier,
-    val value: Asn1Element,
-    val attrType: String = oid.toString()
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
+    override val backing: X500AttributeTypeAndValue
+) : Identifiable, Awesn1Backed<X500AttributeTypeAndValue> {
+
+    override val oid: ObjectIdentifier get() = backing.oid
+
+    val displayName: String? get() = AttributeTypeOidMap.nameFor(oid)
 
     /**
      * Returns whether this string is valid:
@@ -148,184 +127,377 @@ open class AttributeTypeAndValue(
      * - `null`: no validation implemented
      */
     val isValid: Boolean? by lazy {
-        catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
+        catchingUnwrapped { Asn1String.decodeFromTlv(backing.value.asPrimitive()).isValid }.getOrNull()
     }
 
-    protected constructor(value: Asn1Element, attrType: String, oid: ObjectIdentifier) : this(oid, value, attrType) {
-        if (isValid == false) throw Asn1Exception("Invalid $attrType!")
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(oid: ObjectIdentifier, value: Asn1String) : this(X500AttributeTypeAndValue(oid, value)) {
+        if (isValid == false) {
+            throw Asn1Exception(
+                "Invalid AttributeTypeAndValue: $oid ${displayName?.let { "($it)" }} for value $value!"
+            )
+        }
     }
 
-    override fun toString() = value.toString()
-
-    class CommonName internal constructor(
-        value: Asn1Element,
-    ) : AttributeTypeAndValue(value, TYPE, OID) {
-
-        /**
-         * @throws Asn1Exception if illegal CommonName is provided
-         */
-        @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class CommonName
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
-            const val TYPE = "CN"
-            val OID = KnownOIDs.commonName
+            val OID = AttributeTypeOidMap.oidFor("CN")!!
         }
     }
 
-    class Country internal constructor(
-        value: Asn1Element,
-    ) : AttributeTypeAndValue(value, TYPE, OID) {
-
-        /**
-         * @throws Asn1Exception if illegal Country is provided
-         */
-        @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class Country
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
-            const val TYPE = "C"
-            val OID = KnownOIDs.countryName
+            val OID = AttributeTypeOidMap.oidFor("C")!!
         }
     }
 
-    class Organization internal constructor(
-        value: Asn1Element,
-    ) : AttributeTypeAndValue(value, TYPE, OID) {
-
-        /**
-         * @throws Asn1Exception if illegal Organization is provided
-         */
-        @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (isValid == false) throw Asn1Exception("Invalid Organization!")
-        }
+    class Locality
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
-            const val TYPE = "O"
-            val OID = KnownOIDs.organizationName
+            val OID = AttributeTypeOidMap.oidFor("L")!!
         }
     }
 
-    class OrganizationalUnit internal constructor(
-        value: Asn1Element,
-    ) : AttributeTypeAndValue(value, TYPE, OID) {
-
-        /**
-         * @throws Asn1Exception if illegal OrganizationalUnit is provided
-         */
-        @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class StateOrProvince
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
-            const val TYPE = "OU"
-            val OID = KnownOIDs.organizationalUnitName
+            val OID = AttributeTypeOidMap.oidFor("ST")!!
         }
     }
 
-    class EmailAddress internal constructor(
-        value: Asn1Element,
-    ) : AttributeTypeAndValue(value, TYPE, OID) {
-
-        /**
-         * @throws Asn1Exception if illegal EmailAddress is provided
-         */
-        @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class Organization
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
-            const val TYPE = "EMAILADDRESS"
-            val OID = KnownOIDs.emailAddress_1_2_840_113549_1_9_1
+            val OID = AttributeTypeOidMap.oidFor("O")!!
         }
     }
 
-    override fun encodeToTlv() = Asn1.Sequence {
-        +oid
-        +value
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as AttributeTypeAndValue
-
-        val thisNormalized = runCatching {
-            Asn1String.decodeFromTlv(value.asPrimitive()).value.replace("\\s+".toRegex(), "").lowercase()
-        }.getOrNull()
-        val otherNormalized = runCatching {
-            Asn1String.decodeFromTlv(other.value.asPrimitive()).value.replace("\\s+".toRegex(), "").lowercase()
-        }.getOrNull()
-
-        if (thisNormalized != null && otherNormalized != null) {
-            if (thisNormalized != otherNormalized) return false
-        } else if (value != other.value) return false
-
-        if (oid != other.oid) return false
-        if (attrType != other.attrType) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = value.hashCode()
-        result = 31 * result + oid.hashCode()
-        return result
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, AttributeTypeAndValue> {
+    class OrganizationalUnit
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): AttributeTypeAndValue = src.decodeRethrowing {
-            val oid = next().asPrimitive().readOid()
-            if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
-                val asn1String = next().asPrimitive()
-                return@decodeRethrowing when (oid) {
-                    CommonName.OID -> CommonName(asn1String)
-                    Country.OID -> Country(asn1String)
-                    EmailAddress.OID -> EmailAddress(asn1String)
-                    Organization.OID -> Organization(asn1String)
-                    OrganizationalUnit.OID -> OrganizationalUnit(asn1String)
-                    else -> AttributeTypeAndValue(oid, asn1String)
-                }
-            }
-            AttributeTypeAndValue(oid, next())
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("OU")!!
         }
+    }
+
+    class Title
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("T")!!
+        }
+    }
+
+    class Street
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("STREET")!!
+        }
+    }
+
+    class DomainComponent
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("DC")!!
+        }
+    }
+
+    class DistinguishedNameQualifier
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("DNQUALIFIER")!!
+        }
+    }
+
+    class Surname
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("SURNAME")!!
+        }
+    }
+
+    class GivenName
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("GIVENNAME")!!
+        }
+    }
+
+    class Initials
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("INITIALS")!!
+        }
+    }
+
+    class Generation
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("GENERATION")!!
+        }
+    }
+
+    class EmailAddress
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("EMAILADDRESS")!!
+        }
+    }
+
+    class UserId
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("UID")!!
+        }
+    }
+
+    class SerialNumber
+    /**
+     * @throws Asn1Exception if an illegal value is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(
+        val value: Asn1String,
+    ) : AttributeTypeAndValue(OID, value) {
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
+
+        companion object {
+            val OID = AttributeTypeOidMap.oidFor("SERIALNUMBER")!!
+        }
+    }
+
+    companion object {
 
         /**
-         * Parse an individual type=value string into the correct AttributeTypeAndValue subclass
+         * Parse an individual type=value string into the correct AttributeTypeAndValue subclass.
+         *
+         * @return null if none fits
          */
-        fun fromString(type: String, value: String): AttributeTypeAndValue {
+        fun fromString(type: String, value: String): AttributeTypeAndValue? {
             val trimmed = value.trim()
             val asn1String = Asn1String.UTF8(trimmed)
+
             return when (type.uppercase()) {
                 "CN" -> CommonName(asn1String)
+                "C" -> Country(asn1String)
+                "L" -> Locality(asn1String)
+                "S", "ST" -> StateOrProvince(asn1String)
                 "O" -> Organization(asn1String)
                 "OU" -> OrganizationalUnit(asn1String)
-                "C" -> Country(asn1String)
-                "EMAILADDRESS" -> EmailAddress(asn1String)
-                else -> AttributeTypeAndValue(ObjectIdentifier("0.0"), asn1String.encodeToTlv(), type)
+                "T" -> Title(asn1String)
+                "STREET" -> Street(asn1String)
+                "DC" -> DomainComponent(asn1String)
+                "DNQ", "DNQUALIFIER" -> DistinguishedNameQualifier(asn1String)
+                "SURNAME" -> Surname(asn1String)
+                "GIVENNAME" -> GivenName(asn1String)
+                "INITIALS" -> Initials(asn1String)
+                "GENERATION" -> Generation(asn1String)
+                "EMAIL", "EMAILADDRESS" -> EmailAddress(asn1String)
+                "UID" -> UserId(asn1String)
+                "SERIALNUMBER" -> SerialNumber(asn1String)
+                else -> null
+            }
+        }
+
+        /**
+         * Wrap an already-decoded X500AttributeTypeAndValue in the matching subclass.
+         */
+        fun fromBacking(backing: X500AttributeTypeAndValue): AttributeTypeAndValue {
+            val stringValue = runCatching {
+                Asn1String.decodeFromTlv(backing.value.asPrimitive())
+            }.getOrNull()
+
+            return when {
+                stringValue == null -> AttributeTypeAndValue(backing)
+                backing.oid == CommonName.OID -> CommonName(stringValue)
+                backing.oid == Country.OID -> Country(stringValue)
+                backing.oid == Locality.OID -> Locality(stringValue)
+                backing.oid == StateOrProvince.OID -> StateOrProvince(stringValue)
+                backing.oid == Organization.OID -> Organization(stringValue)
+                backing.oid == OrganizationalUnit.OID -> OrganizationalUnit(stringValue)
+                backing.oid == Title.OID -> Title(stringValue)
+                backing.oid == Street.OID -> Street(stringValue)
+                backing.oid == DomainComponent.OID -> DomainComponent(stringValue)
+                backing.oid == DistinguishedNameQualifier.OID -> DistinguishedNameQualifier(stringValue)
+                backing.oid == Surname.OID -> Surname(stringValue)
+                backing.oid == GivenName.OID -> GivenName(stringValue)
+                backing.oid == Initials.OID -> Initials(stringValue)
+                backing.oid == Generation.OID -> Generation(stringValue)
+                backing.oid == EmailAddress.OID -> EmailAddress(stringValue)
+                backing.oid == UserId.OID -> UserId(stringValue)
+                backing.oid == SerialNumber.OID -> SerialNumber(stringValue)
+                else -> AttributeTypeAndValue(backing)
             }
         }
     }
 
     fun toRfc2253String(): String {
-        val attrValue = (value as? Asn1Primitive)?.let { prim ->
+        val attrValue = (backing.value as? Asn1Primitive)?.let { prim ->
             runCatching {
                 var decodedValue = Asn1String.decodeFromTlv(prim).value
                 val wasQuoted = decodedValue.startsWith("\"") && decodedValue.endsWith("\"")
@@ -335,12 +507,10 @@ open class AttributeTypeAndValue(
 
                 canonicalizeString(unescaped, wasQuoted, wasBackslashFirst)
             }.getOrElse { "#" + prim.content.toHexString() }
-        } ?: ("#" + value.toDerHexString())
+        } ?: ("#" + backing.value.toDerHexString())
 
-        return "$attrType=$attrValue".lowercase()
+        return "${AttributeTypeOidMap.nameFor(oid) ?: oid}=$attrValue".lowercase()
     }
-
-
 
     /**
      * Canonicalize string according to RFC 2253 rules.
@@ -392,10 +562,12 @@ open class AttributeTypeAndValue(
                             previousWasSpace = true
                         }
                     }
+
                     c in escapees -> {
                         append('\\').append(c)
                         previousWasSpace = false
                     }
+
                     else -> {
                         append(c)
                         previousWasSpace = false
@@ -404,10 +576,58 @@ open class AttributeTypeAndValue(
             }
         }
     }
+
+    override fun toString(): String {
+        return "AttributeTypeAndValue(" +
+                "backing=$backing" +
+                ")"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AttributeTypeAndValue) return false
+
+        if (backing != other.backing) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return backing.hashCode()
+    }
 }
 
-object Rfc2253Constants {
-    // Predefined RFC2253 keyword order
+
+object AttributeTypeOidMap {
+    private val nameToOid: Map<String, ObjectIdentifier> = mapOf(
+        "CN" to ObjectIdentifier("2.5.4.3"),
+        "C" to ObjectIdentifier("2.5.4.6"),
+        "L" to ObjectIdentifier("2.5.4.7"),
+        "ST" to ObjectIdentifier("2.5.4.8"),
+        "O" to ObjectIdentifier("2.5.4.10"),
+        "OU" to ObjectIdentifier("2.5.4.11"),
+        "T" to ObjectIdentifier("2.5.4.12"),
+        "STREET" to ObjectIdentifier("2.5.4.9"),
+        "DC" to ObjectIdentifier("0.9.2342.19200300.100.1.25"),
+        "DNQUALIFIER" to ObjectIdentifier("2.5.4.46"),
+        "SURNAME" to ObjectIdentifier("2.5.4.4"),
+        "GIVENNAME" to ObjectIdentifier("2.5.4.42"),
+        "INITIALS" to ObjectIdentifier("2.5.4.43"),
+        "GENERATION" to ObjectIdentifier("2.5.4.44"),
+        "EMAILADDRESS" to ObjectIdentifier("1.2.840.113549.1.9.1"),
+        "UID" to ObjectIdentifier("0.9.2342.19200300.100.1.1"),
+        "SERIALNUMBER" to ObjectIdentifier("2.5.4.5"),
+    )
+
+    private val oidToName: Map<ObjectIdentifier, String> =
+        nameToOid.entries.associate { (name, oid) -> oid to name }
+
+    fun oidFor(name: String): ObjectIdentifier? =
+        nameToOid[name.uppercase()]
+
+    fun nameFor(oid: ObjectIdentifier): String? =
+        oidToName[oid]
+
     val ORDER = listOf(
         "CN", "C", "L", "S", "ST", "O", "OU", "T", "IP", "STREET",
         "DC", "DNQUALIFIER", "DNQ", "SURNAME", "GIVENNAME",
