@@ -26,10 +26,11 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceA
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, NonceTrait.Required, out K>> = catching {
+    val second = second
     @OptIn(SecretExposure::class) Encryptor(
         second.algorithm,
-        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey.getOrThrow() else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
-        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey.getOrThrow() else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
+        if (second.hasDedicatedMacKey()) second.encryptionKey.getOrThrow() else second.secretKey.getOrThrow(),
+        if (second.hasDedicatedMacKey()) second.macKey.getOrThrow() else second.secretKey.getOrThrow(),
         first,
         authenticatedData,
     ).encrypt(data) as SealedBox<A, NonceTrait.Required, K>
@@ -49,10 +50,11 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceA
 suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
+    val first = first
     @OptIn(SecretExposure::class) Encryptor(
         first.algorithm,
-        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).encryptionKey.getOrThrow() else (first as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
-        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).macKey.getOrThrow() else null,
+        if (first.hasDedicatedMacKey()) first.encryptionKey.getOrThrow() else first.secretKey.getOrThrow(),
+        if (first.hasDedicatedMacKey()) first.macKey.getOrThrow() else null,
         second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, out K>
