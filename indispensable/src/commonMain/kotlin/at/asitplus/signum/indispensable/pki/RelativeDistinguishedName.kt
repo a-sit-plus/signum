@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Primitive
 import at.asitplus.awesn1.Asn1String
@@ -11,11 +10,13 @@ import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Awesn1Backed
 import at.asitplus.signum.indispensable.asn1.Awesn1BackedSerializer
+import kotlinx.serialization.Serializable
 import kotlin.text.toHexString
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
+@Serializable(with = RelativeDistinguishedName.Companion::class)
 class RelativeDistinguishedName(
     override val backing: X500RelativeDistinguishedName,
     performValidation: Boolean
@@ -112,6 +113,7 @@ class RelativeDistinguishedName(
                 ")"
     }
 }
+@Serializable(with = AttributeTypeAndValue.Companion::class)
 open class AttributeTypeAndValue(
     override val backing: X500AttributeTypeAndValue
 ) : Identifiable, Awesn1Backed<X500AttributeTypeAndValue> {
@@ -431,7 +433,8 @@ open class AttributeTypeAndValue(
         }
     }
 
-    companion object {
+    companion object: Awesn1BackedSerializer<X500AttributeTypeAndValue, AttributeTypeAndValue>(X500AttributeTypeAndValue.serializer(),
+        ::AttributeTypeAndValue ) {
 
         /**
          * Parse an individual type=value string into the correct AttributeTypeAndValue subclass.
