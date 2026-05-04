@@ -3,149 +3,64 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.ECPoint
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
+
 import kotlin.math.max
 
-/** adds `other` to `this` and returns the result */
-/* Algorithm 4 from https://eprint.iacr.org/2015/1060.pdf */
-operator fun ECPoint.plus(other: ECPoint): ECPoint {
-    require(this.curve == other.curve)
-    val b = this.curve.b
-    val X1 = this.homX
-    val Y1 = this.homY
-    val Z1 = this.homZ
-    val X2 = other.homX
-    val Y2 = other.homY
-    val Z2 = other.homZ
-    var t0: ModularBigInteger
-    var t1: ModularBigInteger
-    var t2: ModularBigInteger
-    var t3: ModularBigInteger
-    var t4: ModularBigInteger
-    var X3: ModularBigInteger
-    var Y3: ModularBigInteger
-    var Z3: ModularBigInteger
-    /*  1. */ t0 = X1 * X2
-    /*  2. */ t1 = Y1 * Y2
-    /*  3. */ t2 = Z1 * Z2
-    /*  4. */ t3 = X1 + Y1
-    /*  5. */ t4 = X2 + Y2
-    /*  6. */ t3 = t3 * t4
-    /*  7. */ t4 = t0 + t1
-    /*  8. */ t3 = t3 - t4
-    /*  9. */ t4 = Y1 + Z1
-    /* 10. */ X3 = Y2 + Z2
-    /* 11. */ t4 = t4 * X3
-    /* 12. */ X3 = t1 + t2
-    /* 13. */ t4 = t4 - X3
-    /* 14. */ X3 = X1 + Z1
-    /* 15. */ Y3 = X2 + Z2
-    /* 16. */ X3 = X3 * Y3
-    /* 17. */ Y3 = t0 + t2
-    /* 18. */ Y3 = X3 - Y3
-    /* 19. */ Z3 = b * t2
-    /* 20. */ X3 = Y3 - Z3
-    /* 21. */ Z3 = X3 + X3
-    /* 22. */ X3 = X3 + Z3
-    /* 23. */ Z3 = t1 - X3
-    /* 24. */ X3 = t1 + X3
-    /* 25. */ Y3 = b * Y3
-    /* 26. */ t1 = t2 + t2
-    /* 27. */ t2 = t1 + t2
-    /* 28. */ Y3 = Y3 - t2
-    /* 29. */ Y3 = Y3 - t0
-    /* 30. */ t1 = Y3 + Y3
-    /* 31. */ Y3 = t1 + Y3
-    /* 32. */ t1 = t0 + t0
-    /* 33. */ t0 = t1 + t0
-    /* 34. */ t0 = t0 - t2
-    /* 35. */ t1 = t4 * Y3
-    /* 36. */ t2 = t0 * Y3
-    /* 37. */ Y3 = X3 * Z3
-    /* 38. */ Y3 = Y3 + t2
-    /* 39. */ X3 = t3 * X3
-    /* 40. */ X3 = X3 - t1
-    /* 41. */ Z3 = t4 * Z3
-    /* 42. */ t1 = t3 * t0
-    /* 43. */ Z3 = Z3 + t1
-    return ECPoint.General.unsafeFromXYZ(curve, X3, Y3, Z3)
+// ECMathNIST -> https://eprint.iacr.org/2015/1060
+// TODO eddsa https://datatracker.ietf.org/doc/html/rfc8032
+// TODO brainpool https://datatracker.ietf.org/doc/html/rfc5639
+interface ECMath
+{
+    fun plus(point1: ECPoint, point2: ECPoint): ECPoint
+
+    fun double(point: ECPoint): ECPoint
+
+    fun unaryMinus(point: ECPoint): ECPoint
+
+    fun unaryMinus(point: ECPoint.Normalized): ECPoint.Normalized
 }
 
-/** adds `this` to `this` and returns the result */
-/* Algorithm 6 from https://eprint.iacr.org/2015/1060.pdf */
-fun ECPoint.double(): ECPoint {
-    val b = this.curve.b
-    val X = this.homX
-    val Y = this.homY
-    val Z = this.homZ
-    var t0: ModularBigInteger
-    var t1: ModularBigInteger
-    var t2: ModularBigInteger
-    var t3: ModularBigInteger
-    var X3: ModularBigInteger
-    var Y3: ModularBigInteger
-    var Z3: ModularBigInteger
-    /*  1. */ t0 = X * X
-    /*  2. */ t1 = Y * Y
-    /*  3. */ t2 = Z * Z
-    /*  4. */ t3 = X * Y
-    /*  5. */ t3 = t3 + t3
-    /*  6. */ Z3 = X * Z
-    /*  7. */ Z3 = Z3 + Z3
-    /*  8. */ Y3 = b * t2
-    /*  9. */ Y3 = Y3 - Z3
-    /* 10. */ X3 = Y3 + Y3
-    /* 11. */ Y3 = X3 + Y3
-    /* 12. */ X3 = t1 - Y3
-    /* 13. */ Y3 = t1 + Y3
-    /* 14. */ Y3 = X3 * Y3
-    /* 15. */ X3 = X3 * t3
-    /* 16. */ t3 = t2 + t2
-    /* 17. */ t2 = t2 + t3
-    /* 18. */ Z3 = b * Z3
-    /* 19. */ Z3 = Z3 - t2
-    /* 20. */ Z3 = Z3 - t0
-    /* 21. */ t3 = Z3 + Z3
-    /* 22. */ Z3 = Z3 + t3
-    /* 23. */ t3 = t0 + t0
-    /* 24. */ t0 = t3 + t0
-    /* 25. */ t0 = t0 - t2
-    /* 26. */ t0 = t0 * Z3
-    /* 27. */ Y3 = Y3 + t0
-    /* 28. */ t0 = Y * Z
-    /* 29. */ t0 = t0 + t0
-    /* 30. */ Z3 = t0 * Z3
-    /* 31. */ X3 = X3 - Z3
-    /* 32. */ Z3 = t0 * t1
-    /* 33. */ Z3 = Z3 + Z3
-    /* 34. */ Z3 = Z3 + Z3
-    return ECPoint.General.unsafeFromXYZ(curve, X3, Y3, Z3)
-}
+
+@Suppress("NOTHING_TO_INLINE")
+inline operator fun ECPoint.plus(other: ECPoint): ECPoint
+    = this.curve.ecMathImplementation.plus(this,other)
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun ECPoint.double(): ECPoint
+    = this.curve.ecMathImplementation.double(this)
 
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.unaryPlus() = this
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.unaryMinus() =
-    ECPoint.General.unsafeFromXYZ(curve, homX, -homY, homZ)
+inline operator fun ECPoint.unaryMinus()
+    = this.curve.ecMathImplementation.unaryMinus(this)
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.Normalized.unaryMinus() =
-    ECPoint.Normalized.unsafeFromXY(curve, x, -y)
+inline operator fun ECPoint.Normalized.unaryMinus()
+    = this.curve.ecMathImplementation.unaryMinus(this)
 
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.minus(other: ECPoint) = this + (-other)
 
-// TODO: i'm sure this could be smarter (keyword: "comb")
-// i'm also sure this isn't resistant to timing side channels if that is something you care about
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
+
+// TODO resistance to timing side channels depends on CMOV-implementation
 operator fun BigInteger.times(point: ECPoint): ECPoint {
-    var o = point
-    var sum = if (this.bitAt(0)) point else point.curve.IDENTITY
+    val modulus = point.curve.order
+    var p = point
+    var sum = p.curve.IDENTITY
+    var sum2 = p
+    sum = CMOV(sum,sum2,this.bitAt(0))
+
     /* double-and-add */
-    for (i in 1L..<this.bitLength()) {
+    for (i in 1L..<modulus.bitLength()) {
         /* we double o on each iteration (it is (2^i)*point) */
-        o = o.double()
+        p = p.double()
         /* and decide whether to add it based on the bit */
-        if (this.bitAt(i)) sum += o
+        sum2 = sum+p
+        sum = CMOV(sum,sum2,this.bitAt(i))
     }
     return sum
 }
