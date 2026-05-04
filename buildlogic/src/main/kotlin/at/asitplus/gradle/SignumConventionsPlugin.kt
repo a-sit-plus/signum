@@ -51,8 +51,12 @@ class SignumConventionsExtension(private val project: Project) {
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
             //work around IDEA BUG not finding any test deps on non-JVM!
+            (project.kotlinExtension as KotlinMultiplatformExtension). compilerOptions {
+                freeCompilerArgs.add("-Xcontext-parameters")
+            }
             (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets.filter { it.name.endsWith("Test") }
-                .forEach { it.dependencies { addTestExtensions() } }
+                .forEach {
+                    it.dependencies { addTestExtensions() } }
             tasks.withType<Test>().configureEach {
                 maxHeapSize = "10G"
             }

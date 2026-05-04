@@ -1,8 +1,9 @@
 package at.asitplus.signum
 
+import at.asitplus.awesn1.decodeFromPem
+import at.asitplus.awesn1.encodeToPem
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.pki.CertificateSigningRequest
 import at.asitplus.signum.indispensable.pki.Certificate
 
@@ -28,8 +29,8 @@ val PemTest  by testSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val cert= Certificate.decodeFromPem(pemEC).getOrThrow()
-        cert.encodeToPEM().getOrThrow() shouldBe pemEC
+        val cert= Certificate.decodeFromPem(pemEC)
+        cert.encodeToPem() shouldBe pemEC
         val pemRSA= """
             -----BEGIN CERTIFICATE-----
             MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
@@ -88,7 +89,7 @@ val PemTest  by testSuite {
         -----END CERTIFICATE REQUEST-----
         """.trimIndent()
 
-        val csr  = CertificateSigningRequest.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CertificateSigningRequest>()
+        val csr  = CertificateSigningRequest.decodeFromPem(pem).shouldBeInstanceOf<CertificateSigningRequest>()
         csr.tbsCsr.publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
     }
 
@@ -110,7 +111,7 @@ val PemTest  by testSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val rsa = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+        val rsa = CryptoPublicKey.decodeFromPem(pem).shouldBeInstanceOf<CryptoPublicKey.RSA>()
 
         val pkcs1= """
             -----BEGIN RSA PUBLIC KEY-----
@@ -120,7 +121,7 @@ val PemTest  by testSuite {
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
-         CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+         CryptoPublicKey.decodeFromPem(pem).shouldBeInstanceOf<CryptoPublicKey.RSA>()
     }
 
 
@@ -134,7 +135,7 @@ val PemTest  by testSuite {
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(rnd + sec1).getOrThrow().let {
+        CryptoPrivateKey.decodeFromPem(rnd + sec1).let {
             it.shouldBeInstanceOf<CryptoPrivateKey.EC>()
             CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow() shouldBe it
             CryptoPrivateKey.RSA.decodeFromPem(sec1).isSuccess shouldBe false

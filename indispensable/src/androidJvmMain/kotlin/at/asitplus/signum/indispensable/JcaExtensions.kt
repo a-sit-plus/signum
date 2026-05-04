@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.encoding.encodeToDer
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
@@ -13,6 +15,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.sec.SECNamedCurves
@@ -180,7 +184,7 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
  */
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
-        is CryptoSignature.EC -> encodeToDer()
+        is CryptoSignature.EC -> DER.encodeToByteArray(this.backing)
         is CryptoSignature.RSA -> rawByteArray
     }
 
@@ -205,7 +209,7 @@ fun CryptoSignature.Companion.parseFromJca(
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
  */
 fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.EC.decodeFromDer(input)
+    DER.decodeFromByteArray<CryptoSignature.EC>(input)
 
 /**
  * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
@@ -221,8 +225,7 @@ fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
 suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
-    certificateFactoryMutex.withLock {
-        certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
+    certificateFactoryMutex.withLock {DER.encodeToByteArray(this).inputStream()) as java.security.cert.X509Certificate
     }
 }
 
@@ -236,7 +239,7 @@ fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Cer
  * Converts this [java.security.cert.X509Certificate] to an [Certificate]
  */
 fun java.security.cert.X509Certificate.toKmpCertificate() =
-    catching { Certificate.decodeFromDer(encoded) }
+    catching { DER.decodeFromByteArray<Certificate>(encoded) }
 
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
@@ -27,6 +28,7 @@ import kotlin.time.Duration.Companion.days
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import kotlinx.serialization.encodeToByteArray
 
 @OptIn(ExperimentalStdlibApi::class)
 val SignatureCodecTest  by testSuite {
@@ -57,7 +59,7 @@ val SignatureCodecTest  by testSuite {
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(CryptoSignature.EC.parseFromJca(sig).encodeToDer())
+                verify(DER.encodeToByteArray(CryptoSignature.EC.parseFromJca(sig)))
             }
 
         }
@@ -104,11 +106,11 @@ val SignatureCodecTest  by testSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
-            CryptoSignature.parseFromJca(
+            CryptoSignature.RSA.parseFromJca(DER.encodeToByteArray(certificateHolder.signature)) shouldBe bcSig
+            DER.encodeToByteArray(CryptoSignature.parseFromJca(
                 certificateHolder.signature,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
-            ).encodeToDer() shouldBe bcSig
+            )) shouldBe bcSig
 
         }
     }

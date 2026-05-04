@@ -1,5 +1,15 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.brainpoolP512r1
+import at.asitplus.awesn1.country
+import at.asitplus.awesn1.countryName
+import at.asitplus.awesn1.houseIdentifier
+import at.asitplus.awesn1.organization
+import at.asitplus.awesn1.organizationName
+import at.asitplus.awesn1.organizationalPerson
+import at.asitplus.awesn1.organizationalUnit
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -18,22 +28,22 @@ val DistinguishedNameTest by testSuite {
             KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
             KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
-        withDataSuites(oids) { first ->
+        withData(oids) - { first ->
             withData(oids, compact= true) { second ->
                 if (first != second) {
-                    val cn1 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
-                    val cn2 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
-                    val cn3 = AttributeTypeAndValue.CommonName(second.encodeToTlv())
-                    val c1 = AttributeTypeAndValue.Country(first.encodeToTlv())
-                    val c2 = AttributeTypeAndValue.Country(second.encodeToTlv())
-                    val o1 = AttributeTypeAndValue.Organization(first.encodeToTlv())
-                    val o2 = AttributeTypeAndValue.Organization(second.encodeToTlv())
-                    val ou1 = AttributeTypeAndValue.OrganizationalUnit(first.encodeToTlv())
-                    val ou2 = AttributeTypeAndValue.OrganizationalUnit(second.encodeToTlv())
-                    val ot1 = AttributeTypeAndValue.Other(first, first.encodeToTlv())
-                    val ot2 = AttributeTypeAndValue.Other(first, second.encodeToTlv())
-                    val ot3 = AttributeTypeAndValue.Other(second, first.encodeToTlv())
-                    val ot4 = AttributeTypeAndValue.Other(second, second.encodeToTlv())
+                    val cn1 = AttributeTypeAndValue.CommonName(first.toString())
+                    val cn2 = AttributeTypeAndValue.CommonName(first.toString())
+                    val cn3 = AttributeTypeAndValue.CommonName(second.toString())
+                    val c1 = AttributeTypeAndValue.Country(first.toString())
+                    val c2 = AttributeTypeAndValue.Country(second.toString())
+                    val o1 = AttributeTypeAndValue.Organization(first.toString())
+                    val o2 = AttributeTypeAndValue.Organization(second.toString())
+                    val ou1 = AttributeTypeAndValue.OrganizationalUnit(first.toString())
+                    val ou2 = AttributeTypeAndValue.OrganizationalUnit(second.toString())
+                    val ot1 = AttributeTypeAndValue(first, Asn1String.UTF8(first.toString()))
+                    val ot2 = AttributeTypeAndValue(first, Asn1String.UTF8(second.toString()))
+                    val ot3 = AttributeTypeAndValue(second, Asn1String.UTF8(first.toString()))
+                    val ot4 = AttributeTypeAndValue(second, Asn1String.UTF8(second.toString()))
 
                     // equals()
                     cn1 shouldBe cn1

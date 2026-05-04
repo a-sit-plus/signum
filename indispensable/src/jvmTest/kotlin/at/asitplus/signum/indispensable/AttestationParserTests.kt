@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
@@ -8,6 +9,7 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.json.*
 import java.io.ByteArrayInputStream
 import java.nio.file.FileSystems
@@ -74,7 +76,7 @@ val CustomParserTests by testSuite {
         attestationCertChain.forEachIndexed { index, certificate ->
 
             withClue(index.toString()) {
-                certificate.toKmpCertificate().getOrThrow().encodeToDer() shouldBe certificate.encoded
+                DER.encodeToByteArray(certificate.toKmpCertificate().getOrThrow()) shouldBe certificate.encoded
             }
         }
     }

@@ -28,6 +28,8 @@ class RelativeDistinguishedName(
         backing.attrsAndValues.map { AttributeTypeAndValue(it) }.all { it.isValid == true }
     }
 
+
+    val attrsAndValues: List<AttributeTypeAndValue> by lazy {backing.attrsAndValues.map { AttributeTypeAndValue(it) } }
     init {
         if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
     }
@@ -122,6 +124,8 @@ open class AttributeTypeAndValue(
 
     override val oid: ObjectIdentifier get() = backing.oid
 
+    val rawValue get() = backing.value
+
     val displayName: String? get() = AttributeTypeOidMap.nameFor(oid)
 
     /**
@@ -190,7 +194,7 @@ open class AttributeTypeAndValue(
      */
     @Throws(Asn1Exception::class)
     constructor(
-        val value: Asn1String,
+         val value: Asn1String,
     ) : AttributeTypeAndValue(OID, value) {
 
         @Throws(Asn1Exception::class)

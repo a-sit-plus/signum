@@ -13,6 +13,7 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.toInt
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
@@ -53,6 +54,20 @@ data class TbsCertificationRequest(
             attributes.mergeWith(extensions)
         )
     )
+
+    /**
+     *
+     * `backing.rawVersion` reopresents the encoded integer, (semantic) version denotes the
+     * version commonly referred to as the version of a CSR
+     *
+     * | RAW Version | (Semantic) Version |
+     * |:-----------:|:----------------:|
+     * | 0           | 1                |
+     * The integer must fit the valid Int value range (within Int.MIN_VALUE..Int.MAX_VALUE), otherwise a [NumberFormatException] will be thrown.
+     */
+    @get:Throws(NumberFormatException::class)
+    val version: Int by lazy { backing.version }
+
 
     @get:Throws(Asn1Exception::class)
     val subjectName: List<RelativeDistinguishedName> by lazy {

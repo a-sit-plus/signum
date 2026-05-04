@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.encoding.toTwosComplementByteArray
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -9,6 +10,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
+@OptIn(HazardousMaterials::class)
 val CryptoSignatureTest  by testSuite {
 
 

@@ -1,5 +1,9 @@
 # Changelog
 
+# TODOS:
+* bring back derEncoded /decodeFromDer for all Awesn1Backed
+* fix PEM supporting multiple boundaries
+
 ## NEXT
 * Rework JWS support around explicit compact, flattened, and general representations
     * Add sealed `JWS` support with dedicated `JwsCompact`, `JwsFlattened`, `JwsGeneral`

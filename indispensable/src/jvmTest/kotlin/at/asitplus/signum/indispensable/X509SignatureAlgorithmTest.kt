@@ -1,15 +1,16 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
-import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.encodeToPem
+import at.asitplus.awesn1.encoding.encodeToDer
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.Certificate
-import io.kotest.assertions.withClue
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
@@ -19,7 +20,7 @@ import kotlinx.io.UnsafeIoApi
 import java.io.File
 
 @OptIn(UnsafeIoApi::class)
-val X509SignatureAlgorithmTest  by testSuite {
+val X509SignatureAlgorithmTest by testSuite {
 
     val (certsUnsupported, certsSupported) = readCerts()
 
@@ -32,9 +33,9 @@ val X509SignatureAlgorithmTest  by testSuite {
             decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
-             decoded.decodedSignature.isSuccess shouldBe false
+            decoded.decodedSignature.isSuccess shouldBe false
 
-            withClue(decoded.encodeToPEM().getOrNull()) {
+            withClue(decoded.encodeToPem()) {
                 decoded.encodeToDer() shouldBe it.second
             }
         }
@@ -48,7 +49,6 @@ val X509SignatureAlgorithmTest  by testSuite {
             shouldNotThrow<Throwable> { decoded.decodedSignature }
         }
     }
-
 
 
 }

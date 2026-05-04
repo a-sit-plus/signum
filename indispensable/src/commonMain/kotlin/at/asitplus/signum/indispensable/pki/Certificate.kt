@@ -94,6 +94,9 @@ constructor(
     val subjectUniqueID get() = backing.subjectUniqueID
     val issuerUniqueID get() = backing.issuerUniqueID
 
+    val validFrom get() = validity.validFrom
+    val validUntil get() = validity.validUntil
+
     init {
         //do we want to be this strict?
         extensions?.let { require(it.isNotEmpty()) { "Extensions is empty" } }
