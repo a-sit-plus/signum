@@ -3,7 +3,7 @@ package at.asitplus.signum
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
-import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
+import at.asitplus.signum.indispensable.pki.CertificateSigningRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 
 import at.asitplus.testballoon.invoke
@@ -11,9 +11,6 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val PemTest  by testSuite {
@@ -91,7 +88,7 @@ val PemTest  by testSuite {
         -----END CERTIFICATE REQUEST-----
         """.trimIndent()
 
-        val csr  = Pkcs10CertificationRequest.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<Pkcs10CertificationRequest>()
+        val csr  = CertificateSigningRequest.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CertificateSigningRequest>()
         csr.tbsCsr.publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
     }
 

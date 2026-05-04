@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
@@ -26,7 +25,6 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
-import kotlin.time.Duration.Companion.minutes
 
 internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     getJCASignatureInstance().getOrThrow().algorithm.let {
@@ -71,7 +69,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             initSign(keyPair.private)
             update(tbsCsr.encodeToDer())
         }.sign()
-        val csr = Pkcs10CertificationRequest(
+        val csr = CertificateSigningRequest(
             tbsCsr,
             signatureAlgorithm,
             CryptoSignature.parseFromJca(signed, signatureAlgorithm)
@@ -135,7 +133,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(
+        val csr = CertificateSigningRequest(
             tbsCsr,
             signatureAlgorithm,
             CryptoSignature.parseFromJca(signed, signatureAlgorithm)
@@ -206,7 +204,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(
+        val csr = CertificateSigningRequest(
             tbsCsr,
             signatureAlgorithm,
             CryptoSignature.parseFromJca(signed, signatureAlgorithm)
@@ -252,7 +250,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(
+        val csr = CertificateSigningRequest(
             tbsCsr,
             signatureAlgorithm,
             CryptoSignature.parseFromJca(signed, signatureAlgorithm)
@@ -282,7 +280,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
 
-        val csr = Pkcs10CertificationRequest.decodeFromTlv(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
+        val csr = CertificateSigningRequest.decodeFromTlv(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
         csr.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
@@ -390,22 +388,22 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             update(tbsCsr2.encodeToDer())
         }.sign()
 
-        val csr = Pkcs10CertificationRequest(
+        val csr = CertificateSigningRequest(
             tbsCsr1,
             signatureAlgorithm1,
             CryptoSignature.parseFromJca(signed, signatureAlgorithm1)
         )
-        val csr1 = Pkcs10CertificationRequest(
+        val csr1 = CertificateSigningRequest(
             tbsCsr1,
             signatureAlgorithm1,
             CryptoSignature.parseFromJca(signed1, signatureAlgorithm1)
         )
-        val csr11 = Pkcs10CertificationRequest(
+        val csr11 = CertificateSigningRequest(
             tbsCsr1,
             signatureAlgorithm2,
             CryptoSignature.parseFromJca(signed11, signatureAlgorithm2)
         )
-        val csr2 = Pkcs10CertificationRequest(
+        val csr2 = CertificateSigningRequest(
             tbsCsr2,
             signatureAlgorithm1,
             CryptoSignature.parseFromJca(signed2, signatureAlgorithm1)
