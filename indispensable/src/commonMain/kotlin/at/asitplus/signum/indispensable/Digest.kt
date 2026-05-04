@@ -1,5 +1,12 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.sha1
+import at.asitplus.awesn1.sha_256
+import at.asitplus.awesn1.sha_384
+import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit

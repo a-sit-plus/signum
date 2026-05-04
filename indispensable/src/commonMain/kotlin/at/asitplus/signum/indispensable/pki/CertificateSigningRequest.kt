@@ -134,7 +134,7 @@ data class CertificateSigningRequest(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
         signature: CryptoSignature
-    ) : this(tbsCsr, signatureAlgorithm, signature.x509Encoded)
+    ) : this(tbsCsr, signatureAlgorithm, signature.backing)
 
     val tbsCsr: TbsCertificationRequest by lazy { TbsCertificationRequest(backing.certificationRequestInfo) }
     val signatureAlgorithm: X509SignatureAlgorithmDescription =
@@ -144,7 +144,7 @@ data class CertificateSigningRequest(
         val decodedSignature: CryptoSignature by lazy {
             runRethrowing {
                 signatureAlgorithm.requireSupported()
-                CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature)
+                CryptoSignature.fromSignatureValue(rawSignature)
             }
         }
 

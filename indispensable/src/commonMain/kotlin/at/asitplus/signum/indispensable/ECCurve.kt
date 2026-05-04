@@ -1,5 +1,11 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.prime256v1
+import at.asitplus.awesn1.secp384r1
+import at.asitplus.awesn1.secp521r1
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.misc.BitLength
 import com.ionspin.kotlin.bignum.integer.BigInteger

@@ -1,42 +1,30 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.Asn1BitString
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.Asn1PemDecodable
-import at.asitplus.awesn1.Asn1PemEncodable
-import at.asitplus.awesn1.Asn1Primitive
-import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.awesn1.Asn1Time
+import at.asitplus.KmmResult
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.*
 import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findIssuerAltNames
 import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findSubjectAltNames
-import at.asitplus.awesn1.decodeFromPem
-import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
-import kotlin.collections.asSequence
-import kotlin.sequences.asSequence
-import kotlin.text.asSequence
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
+@Serializable(with = TbsCertificate.Companion::class)
 data class TbsCertificate
 @Throws(Asn1Exception::class)
 constructor(
@@ -151,6 +139,7 @@ constructor(
 /**
  * Very simple implementation of an X.509 Certificate
  */
+@Serializable(with = Certificate.Companion::class)
 data class Certificate(
     override val backing: X509Certificate
 ) : Awesn1Backed<X509Certificate>, Asn1PemEncodable<Asn1Sequence> {
@@ -167,9 +156,11 @@ data class Certificate(
         X509Certificate(
             tbsCertificate.backing,
             signatureAlgorithm.toAlgorithmIdentifier(),
-            signature.toSignatureValue()
+            signature.backing
         )
     )
+
+    override fun encodeToTlv(): Asn1Sequence = DER.encodeToTlv(backing) as Asn1Sequence
 
     @get:Throws(Asn1Exception::class)
     val tbsCertificate: TbsCertificate by lazy { TbsCertificate(backing.tbsCertificate) }
@@ -188,10 +179,10 @@ data class Certificate(
 
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
 
-    val decodedSignature: CryptoSignature by lazy {
+    val decodedSignature: KmmResult<CryptoSignature> by lazy {
         catching {
             signatureAlgorithm.requireSupported()
-            CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
+            CryptoSignature.fromSignatureValue(backing.signatureValue)
         }
     }
 
@@ -212,10 +203,14 @@ data class Certificate(
          * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
          */
         fun decodeFromByteArray(src: ByteArray): Certificate? = catchingUnwrapped {
-           D(Asn1Element.parse(src) as Asn1Sequence)
+            DER.decodeFromByteArray<Certificate>(src)
         }.getOrNull() ?: catchingUnwrapped {
-            Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
-        }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString()).getOrNull()
+            DER.decodeFromByteArray<Certificate>(src.decodeToByteArray(Base64()))
+        }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString())
+
+        override fun doDecode(src: Asn1Sequence): Certificate =
+            DER.decodeFromTlv(this, src)
+
     }
 }
 
@@ -223,24 +218,3 @@ typealias CertificateChain = List<Certificate>
 
 val CertificateChain.leaf: Certificate get() = first()
 val CertificateChain.root: Certificate get() = last()
-
-private
-/** De-/serializes Base64 strings to/from [ByteArray] */
-object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, String>(
-    parent = String.serializer(),
-    encodeAs = {
-        if (it == null) "" else byteArrayOf(
-            it.numPaddingBits,
-            *it.rawBytes
-        ).encodeToString(Base64Strict)
-    },
-    decodeAs = {
-        if (it == "") null
-        else Asn1BitString.decodeFromTlv(
-            Asn1Primitive(
-                Asn1Element.Tag.BIT_STRING,
-                it.decodeToByteArray(Base64Strict)
-            )
-        )
-    }
-)

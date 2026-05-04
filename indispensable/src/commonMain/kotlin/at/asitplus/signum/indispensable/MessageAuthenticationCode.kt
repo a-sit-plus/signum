@@ -1,9 +1,21 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
-import at.asitplus.signum.indispensable.asn1.encoding.readNull
+import at.asitplus.awesn1.Asn1Decodable
+import at.asitplus.awesn1.Asn1Encodable
+import at.asitplus.awesn1.Asn1OidException
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.decodeRethrowing
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.Asn1.Null
+import at.asitplus.awesn1.encoding.readNull
+import at.asitplus.awesn1.hmacWithSHA1
+import at.asitplus.awesn1.hmacWithSHA256
+import at.asitplus.awesn1.hmacWithSHA384
+import at.asitplus.awesn1.hmacWithSHA512
+import at.asitplus.awesn1.readOid
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.Enumerable
@@ -44,6 +56,7 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
 /**
  * RFC 2104 HMAC
  */
+//TODO: ASN1 serializable
 enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable,
     Asn1Encodable<Asn1Sequence> {
     SHA1(Digest.SHA1, KnownOIDs.hmacWithSHA1),
