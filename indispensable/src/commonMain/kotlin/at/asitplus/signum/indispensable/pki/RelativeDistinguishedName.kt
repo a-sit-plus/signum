@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndValue>) : Asn1Encodable<Asn1Set> {
+data class RelativeDistinguishedName(val attrsAndValues: Set<AttributeTypeAndValue>) : Asn1Encodable<Asn1Set> {
 
     constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
 

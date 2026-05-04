@@ -1,8 +1,14 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1Primitive
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.decode
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -146,3 +152,9 @@ fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigIntege
     runRethrowing { fromTwosComplementByteArray(bytes) }
 
 internal val DEFAULT_PEM_DECODER: ((ByteArray)->Nothing)? = null
+
+/**
+ * Runs [block] inside [catching] and encapsulates any thrown exception in an [Asn1Exception] unless it already is one
+ */
+@Throws(Asn1Exception::class)
+inline fun <reified R> runRethrowing(block: () -> R) = catchingUnwrappedAs(::Asn1Exception, block).getOrThrow()

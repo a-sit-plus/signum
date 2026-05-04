@@ -1,87 +1,67 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.crypto.pki.Attribute
+import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.requireSupported
+import kotlinx.serialization.Serializable
 
 /**
- * The meat of a PKCS#10 Certification Request:
- * The structure that gets signed
- * @param version defaults to 0
- * @param subjectName list of subject distinguished names
- * @param publicKey nomen est omen
- * @param attributes nomen est omen
+ * The meat of a PKCS#10 Certification Request, backed by a raw [Pkcs10CertificationRequestInfo]
+ *
+ * @see Pkcs10CertificationRequestInfo
  */
+@Serializable(with = TbsCertificationRequest.Companion::class)
 data class TbsCertificationRequest(
-    val version: Int = 0,
-    val subjectName: List<RelativeDistinguishedName>,
-    val publicKey: CryptoPublicKey,
-    val attributes: List<Pkcs10CertificationRequestAttribute> = listOf()
-) : Asn1Encodable<Asn1Sequence> {
+    override val backing: Pkcs10CertificationRequestInfo
+) : Awesn1Backed<Pkcs10CertificationRequestInfo> {
 
     /**
-     * Convenience constructor for adding [X509CertificateExtension]`s` to a CSR (in addition to generic attributes
-     *
-     * @throws IllegalArgumentException if no extensions are provided
+     * @param version defaults to 1 (**Note that this is the semantic version! The actually encoded version is [version]-1.**)
+     * @param subjectName list of subject distinguished names
+     * @param publicKey nomen est omen
+     * @param attributes nomen est omen
      */
     @Throws(IllegalArgumentException::class)
     constructor(
         subjectName: List<RelativeDistinguishedName>,
         publicKey: CryptoPublicKey,
         extensions: List<X509CertificateExtension>? = null,
-        version: Int = 0,
-        attributes: List<Pkcs10CertificationRequestAttribute>? = null,
-    ) : this(version, subjectName, publicKey, mutableListOf<Pkcs10CertificationRequestAttribute>().also { attrs ->
-        attributes?.let { attrs.addAll(it) }
-        extensions?.let { extn ->
-            attrs.add(
-                Pkcs10CertificationRequestAttribute(
-                    KnownOIDs.extensionRequest,
-                    Asn1.Sequence { extn.forEach { +it } })
-            )
-        }
-    })
+        attributes: List<Attribute>? = null,
+        version: Int = 1,
+    ) : this(Pkcs10CertificationRequestInfo(version=version, subjectName=subjectName))
 
-    override fun encodeToTlv() = Asn1.Sequence {
-        +Asn1.Int(version)
-        +Asn1.Sequence { subjectName.forEach { +it } }
+    companion object : Awesn1BackedSerializer<Pkcs10CertificationRequestInfo, TbsCertificationRequest>(
+        Pkcs10CertificationRequestInfo.serializer(),
+        ::TbsCertificationRequest,
+    ) {
 
-        //subject Public Key
-        +publicKey
-        +ExplicitlyTagged(0u) { attributes.map { +it } }
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
-            val version = (next() as Asn1Primitive).decodeToInt()
-            val subject = (next() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next() as Asn1Sequence)
-            val attributes = if (hasNext()) {
-                (next() as Asn1ExplicitlyTagged).verifyTag(0u)
-                    .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
-            } else null
-            TbsCertificationRequest(
-                version = version,
-                subjectName = subject,
-                publicKey = cryptoPublicKey,
-                attributes = attributes,
-            )
-        }
     }
 }
+private fun List<Attribute>?.mergeWith(
+    extensions: List<X509CertificateExtension>?,
+): List<Attribute> {
 
+    runRethrowing {
+        this?.let {
+            require(it.distinctBy { it.oid }.size == it.size) { "Multiple attributes with same OID found" }
+            require(it.firstOrNull { it.oid == Attribute.EXTENSION_REQUEST_OID } == null) { "Certificate extension passed as part of regular attributes" }
+        }
+    }
+    return mutableListOf<Attribute>().apply {
+        this@mergeWith?.let { addAll(it) }
+        extensions?.let { add(Attribute.CertificateExtension(it)) }
+    }
+
+}
 
 /**
  * Very simple implementation of a PKCS#10 Certification Request
@@ -94,10 +74,10 @@ data class Pkcs10CertificationRequest private constructor(
 ) : PemEncodable<Asn1Sequence> {
 
     constructor(
-         tbsCsr: TbsCertificationRequest,
-         signatureAlgorithm: X509SignatureAlgorithmDescription,
-         rawSignature: Asn1Primitive
-    ):this(tbsCsr.encodeToTlv(), signatureAlgorithm.encodeToTlv(), rawSignature)
+        tbsCsr: TbsCertificationRequest,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        rawSignature: Asn1Primitive
+    ) : this(tbsCsr.encodeToTlv(), signatureAlgorithm.encodeToTlv(), rawSignature)
 
     constructor(
         tbsCsr: TbsCertificationRequest,
@@ -106,15 +86,20 @@ data class Pkcs10CertificationRequest private constructor(
     ) : this(tbsCsr, signatureAlgorithm, signature.x509Encoded)
 
     val tbsCsr: TbsCertificationRequest = TbsCertificationRequest.decodeFromTlv(rawTbsCsr)
-    val signatureAlgorithm: X509SignatureAlgorithmDescription = X509SignatureAlgorithmDescription.decodeFromTlv(rawSignatureAlgorithm)
+    val signatureAlgorithm: X509SignatureAlgorithmDescription =
+        X509SignatureAlgorithmDescription.decodeFromTlv(rawSignatureAlgorithm)
 
-    val decodedSignature by lazy { catching {
-        signatureAlgorithm.requireSupported()
-        CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature)
-    } }
+    val decodedSignature by lazy {
+        catching {
+            signatureAlgorithm.requireSupported()
+            CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature)
+        }
+    }
 
-    @Deprecated("Imprecisely named and lacks support for unsupported algorithms; use rawSignature or decodedSignature",
-        level = DeprecationLevel.ERROR)
+    @Deprecated(
+        "Imprecisely named and lacks support for unsupported algorithms; use rawSignature or decodedSignature",
+        level = DeprecationLevel.ERROR
+    )
     val signature get() = decodedSignature.getOrThrow()
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
@@ -134,10 +119,11 @@ data class Pkcs10CertificationRequest private constructor(
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"
         }
+
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = src.decodeRethrowing {
             val tbsCsr = next() as Asn1Sequence
-            val sigAlg =next() as Asn1Sequence
+            val sigAlg = next() as Asn1Sequence
             val signature = next() as Asn1Primitive
             if (hasNext()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
             Pkcs10CertificationRequest(tbsCsr, sigAlg, signature)
