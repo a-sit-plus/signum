@@ -1,5 +1,7 @@
 # Changelog
 
+## NEXT
+
 ## 3.22.0 / (Supreme unaffected)
 * Update `KeyAttestationJwt` to [EUDI Wallet TS3](https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md) from 2026-03-15
 
