@@ -1,23 +1,26 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1PemEncodable
+import at.asitplus.awesn1.Asn1PemDecodable
 import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.PemBlock
+import at.asitplus.awesn1.PemDecodable
+import at.asitplus.awesn1.PemEncodable
 import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.crypto.pki.Attribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
-import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.requireSupported
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 
 /**
  * The meat of a PKCS#10 Certification Request, backed by a raw [Pkcs10CertificationRequestInfo]
@@ -116,15 +119,16 @@ private fun List<Attribute>?.mergeWith(
 @ConsistentCopyVisibility
 data class CertificateSigningRequest(
     override val backing: Pkcs10CertificationRequest,
-) : Awesn1Backed<Pkcs10CertificationRequest>, Asn1PemEncodable<Asn1Sequence> {
+) : Awesn1Backed<Pkcs10CertificationRequest>, PemEncodable { //TODO figure out asn1pem foo
 
-    override val pemLabel: String get() = Pkcs10CertificationRequest.PEM_LABEL
+    override fun encodeToPemBlock(): PemBlock =
+        PemBlock(Pkcs10CertificationRequest.PEM_LABEL, payload = DER.encodeToByteArray(backing))
 
     constructor(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
         rawSignature: SignatureValue
-    ) : this(Pkcs10CertificationRequest(tbsCsr.backing, signatureAlgorithm.toIdentifier(), rawSignature))
+    ) : this(Pkcs10CertificationRequest(tbsCsr.backing, signatureAlgorithm.toAlgorithmIdentifier(), rawSignature))
 
     constructor(
         tbsCsr: TbsCertificationRequest,
@@ -134,37 +138,32 @@ data class CertificateSigningRequest(
 
     val tbsCsr: TbsCertificationRequest by lazy { TbsCertificationRequest(backing.certificationRequestInfo) }
     val signatureAlgorithm: X509SignatureAlgorithmDescription =
-        X509SignatureAlgorithmDescription.decodeFromTlv(rawSignatureAlgorithm)
+        X509SignatureAlgorithmDescription.fromAlgorithmIdentifier(backing.signatureAlgorithm)
 
-    val decodedSignature by lazy {
-        catching {
-            signatureAlgorithm.requireSupported()
-            CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature)
+    @get:Throws(Asn1Exception::class)
+        val decodedSignature: CryptoSignature by lazy {
+            runRethrowing {
+                signatureAlgorithm.requireSupported()
+                CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature)
+            }
         }
-    }
 
     val rawSignature: SignatureValue by lazy { backing.signatureValue }
 
-    override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
+    //TODO: figure our PEM foo
+   // override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
 
+    companion object : PemDecodable<CertificateSigningRequest> {
+        override fun decodeFromPemBlock(src: PemBlock): CertificateSigningRequest {
+           require(src.label == EB_STRINGS.DEFAULT || src.label == EB_STRINGS.LEGACY) {"PEM label mismatch: ${src.label}"}
+            return CertificateSigningRequest(DER.decodeFromByteArray(src.payload))
+        }
 
-    companion object : PemDecodable<Asn1Sequence, CertificateSigningRequest>(
-        EB_STRINGS.DEFAULT,
-        EB_STRINGS.LEGACY
-    ) {
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"
         }
 
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CertificateSigningRequest = src.decodeRethrowing {
-            val tbsCsr = next() as Asn1Sequence
-            val sigAlg = next() as Asn1Sequence
-            val signature = next() as Asn1Primitive
-            if (hasNext()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
-            CertificateSigningRequest(tbsCsr, sigAlg, signature)
-        }
     }
 }

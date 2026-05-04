@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.io
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -89,17 +89,17 @@ object ByteArrayBase64UrlNoPaddingSerializer : TransformingSerializerTemplate<By
 )
 
 /** De-/serializes X509Certificate as Base64Url-encoded String */
-object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<X509Certificate, ByteArray>(
+object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = X509Certificate::encodeToDer,
-    decodeAs = { X509Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
+    encodeAs = Certificate::encodeToDer,
+    decodeAs = { Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
 )
 
 /** De-/serializes X509Certificate as Base64-encoded String */
-object X509CertificateBase64Serializer : TransformingSerializerTemplate<X509Certificate, ByteArray>(
+object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    encodeAs = X509Certificate::encodeToDer,
-    decodeAs = { X509Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
+    encodeAs = Certificate::encodeToDer,
+    decodeAs = { Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
 )
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
@@ -125,9 +125,9 @@ sealed class ListSerializerTemplate<ValueT>(
 }
 
 /** De-/serializes X509Certificate as collection of Base64Url-encoded Strings */
-object CertificateChainBase64UrlSerializer : ListSerializerTemplate<X509Certificate>(
+object CertificateChainBase64UrlSerializer : ListSerializerTemplate<Certificate>(
     using = X509CertificateBase64UrlSerializer)
 
 /** De-/serializes X509Certificate as collection of Base64-encoded Strings */
-object CertificateChainBase64Serializer : ListSerializerTemplate<X509Certificate>(
+object CertificateChainBase64Serializer : ListSerializerTemplate<Certificate>(
     using = X509CertificateBase64Serializer)

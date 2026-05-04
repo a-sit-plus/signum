@@ -16,7 +16,7 @@ import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
@@ -153,7 +153,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initSign(keyPair.private)
                 update(tbsCert.encodeToDer())
                 sign()
-            }.let { X509Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
+            }.let { Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                             arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()
@@ -166,7 +166,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         alias: String,
         config: JKSSignerConfiguration,
         privateKey: PrivateKey,
-        certificate: X509Certificate
+        certificate: Certificate
     ): JKSSigner = when (val publicKey = certificate.decodedPublicKey.getOrThrow()) {
         is CryptoPublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
             SignatureAlgorithm.ECDSA(
@@ -187,7 +187,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         access.forReading().use { ctx ->
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { X509Certificate.decodeFromDer(it.encoded) }
+            val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
             return@catching getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

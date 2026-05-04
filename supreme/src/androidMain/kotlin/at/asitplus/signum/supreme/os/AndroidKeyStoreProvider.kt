@@ -16,7 +16,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.indispensable.SecretExposure
@@ -232,7 +232,7 @@ object AndroidKeyStoreProvider:
         val publicKey: CryptoPublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-            catching { chain.map { X509Certificate.decodeFromDer(it.encoded) } }.let { r ->
+            catching { chain.map { Certificate.decodeFromDer(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
                     publicKey = it.leaf.decodedPublicKey.getOrThrow()
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null

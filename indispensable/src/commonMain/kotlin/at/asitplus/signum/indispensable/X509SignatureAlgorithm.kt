@@ -1,16 +1,48 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.Asn1Decodable
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Encodable
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1Null
+import at.asitplus.awesn1.Asn1OidException
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.Asn1Structure
+import at.asitplus.awesn1.Asn1TagMismatchException
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
+import at.asitplus.awesn1.decodeRethrowing
+import at.asitplus.awesn1.ecdsaWithSHA256
+import at.asitplus.awesn1.ecdsaWithSHA384
+import at.asitplus.awesn1.ecdsaWithSHA512
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.awesn1.encoding.Asn1.Null
+import at.asitplus.awesn1.encoding.decodeToInt
+import at.asitplus.awesn1.pkcs1_MGF
+import at.asitplus.awesn1.readOid
+import at.asitplus.awesn1.rsaPSS
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.serialization.encodeToTlv
+import at.asitplus.awesn1.sha1WithRSAEncryption
+import at.asitplus.awesn1.sha256WithRSAEncryption
+import at.asitplus.awesn1.sha384WithRSAEncryption
+import at.asitplus.awesn1.sha512WithRSAEncryption
+import at.asitplus.awesn1.sha_256
+import at.asitplus.awesn1.sha_384
+import at.asitplus.awesn1.sha_512
 import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
+
+//TODO: this bridge probably needs to be reworked, or maybe not, because it add semantics and sanity checks?
 
 // future: SPI
 private interface X509SignatureAlgorithmProvider {
@@ -24,10 +56,8 @@ sealed class X509SignatureAlgorithmDescription(
     /** Additional algorithm parameters, if any. */
     abstract val parameters: List<Asn1Element>
 
-    override fun encodeToTlv() = Asn1.Sequence {
-        +oid
-        parameters.forEach { +it }
-    }
+    fun toAlgorithmIdentifier() = X509AlgorithmIdentifier(oid, parameters)
+    override fun encodeToTlv() = DER.encodeToTlv(toAlgorithmIdentifier()) as Asn1Sequence
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -43,14 +73,17 @@ sealed class X509SignatureAlgorithmDescription(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
-        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
-            val oid = next().asPrimitive().readOid()
-            // future: SPI
-            sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
-                .firstNotNullOfOrNull { it.loaderForOid(oid) }
-                ?.invoke(this@decodeRethrowing)
-                ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
-        }
+        fun fromAlgorithmIdentifier(identifier: X509AlgorithmIdentifier): X509SignatureAlgorithmDescription =
+            runRethrowing {
+                val params = identifier.parameters as Asn1Sequence
+                return sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
+                    .firstNotNullOfOrNull { it.loaderForOid(identifier.oid) }?.invoke(params.iterator())
+                    ?: Unknown(identifier.oid, params.children)
+            }
+
+        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithmDescription =
+            fromAlgorithmIdentifier(DER.decodeFromTlv<X509AlgorithmIdentifier>(src))
+
     }
 }
 
@@ -84,7 +117,7 @@ sealed class X509SignatureAlgorithm(
             else -> when (val alg = entries.firstOrNull { it.oid == oid }) {
                 null -> null
                 is RSAPKCS1 -> ({
-                    if (!it.hasNext()) null /*this is cursed, illegal, forbidden, evil and non-complaint, but we have to deal with it*/
+                    if (!it.hasNext()) null /*this is cursed, illegal, forbidden, evil, and non-complaint, but we have to deal with it*/
                     else {
                         if (it.next() != Asn1Null) {
                             throw Asn1TagMismatchException(
@@ -95,6 +128,7 @@ sealed class X509SignatureAlgorithm(
                         alg
                     }
                 })
+
                 else -> ({ alg })
             }
         }
@@ -225,7 +259,9 @@ sealed class X509SignatureAlgorithm(
 
             if (mgfOid != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgfOid")
 
-            val (innerHash, innerTagged) = mgfParams.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
+            val (innerHash, innerTagged) = mgfParams.decodeRethrowing {
+                next().asPrimitive().readOid() to next().tag
+            }
 
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
             if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException(

@@ -7,7 +7,7 @@ import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.orLazy
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -49,7 +49,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
          *
          * This inverse "non-trait" is required to group [CryptoSignature] subtypes which cannot be encoded into raw byte arrays,
          * since not all properties required to do so are known. For example, EC signatures parsed from an
-         * [X509Certificate] do not specify a curve. For signatures obtained this way, it is impossible to know
+         * [Certificate] do not specify a curve. For signatures obtained this way, it is impossible to know
          * how the components should be padded before encoding it into raw bytes.
          *
          * The reason this interface exists, is that it allows for grouping all such signatures in the same manner

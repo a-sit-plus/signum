@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.pki.CertificateSigningRequest
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -28,7 +28,7 @@ val PemTest  by testSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val cert= X509Certificate.decodeFromPem(pemEC).getOrThrow()
+        val cert= Certificate.decodeFromPem(pemEC).getOrThrow()
         cert.encodeToPEM().getOrThrow() shouldBe pemEC
         val pemRSA= """
             -----BEGIN CERTIFICATE-----
@@ -64,7 +64,7 @@ val PemTest  by testSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val certRSA= X509Certificate.decodeFromPem(pemRSA).getOrThrow()
+        val certRSA= Certificate.decodeFromPem(pemRSA).getOrThrow()
         certRSA.encodeToPEM().getOrThrow() shouldBe pemRSA
     }
 

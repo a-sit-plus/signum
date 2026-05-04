@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -33,9 +33,6 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val JwkTest  by testSuite {
     "EC" - {
@@ -161,7 +158,7 @@ val JwkTest  by testSuite {
     }
 }
 
-private fun randomCertificate() = X509Certificate(
+private fun randomCertificate() = Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),

@@ -6,20 +6,20 @@ import at.asitplus.signum.indispensable.equalsCryptographically
 import at.asitplus.signum.indispensable.pki.CertificateSigningRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.Signer
 
 /**
- * Shorthand helper to create an [X509Certificate] by signing [tbsCertificate]
+ * Shorthand helper to create an [Certificate] by signing [tbsCertificate]
  */
-suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<X509Certificate> {
+suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<Certificate> {
     val toX509SignatureAlgorithm =
         this.signatureAlgorithm.toX509SignatureAlgorithm().getOrElse { return KmmResult.failure(it) }
     if (toX509SignatureAlgorithm != tbsCertificate.signatureAlgorithm)
         return KmmResult.failure(Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's."))
     return sign(tbsCertificate.encodeToDer()).asKmmResult().map {
-        X509Certificate(tbsCertificate, tbsCertificate.signatureAlgorithm, it)
+        Certificate(tbsCertificate, tbsCertificate.signatureAlgorithm, it)
     }
 }
 

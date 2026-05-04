@@ -56,7 +56,7 @@ val X509CertificateJvmTest by testSuite {
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
-        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        val decoded = Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
@@ -117,7 +117,7 @@ val X509CertificateJvmTest by testSuite {
                 update(tbsCertificate.encodeToTlv().derEncoded)
             }.sign()
             val test = CryptoSignature.decodeFromDer(signed)
-            val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
+            val x509Certificate = Certificate(tbsCertificate, signatureAlgorithm, test)
             val kotlinEncoded = x509Certificate.encodeToDer()
             val jvmEncoded = certificateHolder.encoded
             println(
@@ -165,7 +165,7 @@ val X509CertificateJvmTest by testSuite {
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
         val test = CryptoSignature.decodeFromDer(signed)
-        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
+        val x509Certificate = Certificate(tbsCertificate, signatureAlgorithm, test)
 
         repeat(500) {
             launch {
@@ -200,7 +200,7 @@ val X509CertificateJvmTest by testSuite {
         val certificateHolder = builder.build(contentSigner)
 
         val x509Certificate =
-            X509Certificate.decodeFromTlv(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
+            Certificate.decodeFromTlv(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
         x509Certificate.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
@@ -332,11 +332,11 @@ val X509CertificateJvmTest by testSuite {
             (CryptoSignature.decodeFromDer(signed2) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature3 =
             (CryptoSignature.decodeFromDer(signed3) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
-        val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
-        val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
-        val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)
-        val x509Certificate4 = X509Certificate(tbsCertificate4, signatureAlgorithm256, signature1)
-        val x509Certificate5 = X509Certificate(tbsCertificate5, signatureAlgorithm256, signature1)
+        val x509Certificate1 = Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
+        val x509Certificate2 = Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
+        val x509Certificate3 = Certificate(tbsCertificate3, signatureAlgorithm512, signature3)
+        val x509Certificate4 = Certificate(tbsCertificate4, signatureAlgorithm256, signature1)
+        val x509Certificate5 = Certificate(tbsCertificate5, signatureAlgorithm256, signature1)
 
         x509Certificate1 shouldBe x509Certificate1
         x509Certificate1 shouldNotBe x509Certificate2

@@ -1,8 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
@@ -240,7 +238,8 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             publicKey = cryptoPublicKey,
             extensions = null,
             attributes = listOf(
-                Pkcs10CertificationRequestAttribute(
+
+                Attribute(
                     ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
                     1337.encodeToAsn1Primitive()
                 )
