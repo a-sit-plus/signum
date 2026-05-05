@@ -7,7 +7,6 @@ import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Asn1Time
 import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
@@ -135,7 +134,7 @@ val X509CertificateJvmTest by testSuite {
                 initSign(keyPair.private)
                 update(DER.encodeToByteArray( tbsCertificate))
             }.sign()
-            val test = CryptoSignature.fromSignatureValue(DER.decodeFromByteArray<SignatureValue>(signed))
+            val test = CryptoSignature.parseFromJca(signed, signatureAlgorithm)
             val x509Certificate = Certificate(tbsCertificate, signatureAlgorithm, test)
             val kotlinEncoded = x509Certificate.encodeToDer()
             val jvmEncoded = certificateHolder.encoded
@@ -183,7 +182,7 @@ val X509CertificateJvmTest by testSuite {
             initSign(keyPair.private)
             update(DER.encodeToByteArray(tbsCertificate))
         }.sign()
-        val test = DER.decodeFromByteArray<CryptoSignature>(signed)
+        val test = CryptoSignature.parseFromJca(signed, signatureAlgorithm)
         val x509Certificate = Certificate(tbsCertificate, signatureAlgorithm, test)
 
         repeat(500) {
@@ -227,7 +226,7 @@ val X509CertificateJvmTest by testSuite {
         x509Certificate.tbsCertificate.version shouldBe 3
         (x509Certificate.tbsCertificate.issuerName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         (x509Certificate.tbsCertificate.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
-        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
+        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toAsn1Integer()
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.validFrom.instant shouldBe notBeforeDate.toInstant()
             .truncatedTo(ChronoUnit.SECONDS)
@@ -346,11 +345,11 @@ val X509CertificateJvmTest by testSuite {
             update(DER.encodeToByteArray(tbsCertificate3))
         }.sign()
         val signature1 =
-            (DER.decodeFromByteArray<CryptoSignature>(signed1) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (CryptoSignature.parseFromJca(signed1, signatureAlgorithm256) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature2 =
-            (DER.decodeFromByteArray<CryptoSignature>(signed2) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (CryptoSignature.parseFromJca(signed2, signatureAlgorithm256) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val signature3 =
-            (DER.decodeFromByteArray<CryptoSignature>(signed3) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
+            (CryptoSignature.parseFromJca(signed3, signatureAlgorithm512) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
         val x509Certificate1 = Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
         val x509Certificate2 = Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
         val x509Certificate3 = Certificate(tbsCertificate3, signatureAlgorithm512, signature3)

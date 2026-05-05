@@ -55,6 +55,7 @@ constructor(
             subjectPublicKeyInfo = publicKey.toSubjectPublicKeyInfo(),
             issuerUniqueID = issuerUniqueID,
             subjectUniqueID = subjectUniqueID,
+            extensions = extensions,
         )
     )
 

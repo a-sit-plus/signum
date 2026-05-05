@@ -244,7 +244,8 @@ fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
  */
 suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
-        ByteArrayInputStream(DER.encodeToByteArray(this)) as java.security.cert.X509Certificate
+        certFactory.generateCertificate(ByteArrayInputStream(DER.encodeToByteArray(this)))
+            as java.security.cert.X509Certificate
     }
 }
 
