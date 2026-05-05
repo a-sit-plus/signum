@@ -75,7 +75,12 @@ sealed class X509SignatureAlgorithmDescription(
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
         fun fromAlgorithmIdentifier(identifier: X509AlgorithmIdentifier): X509SignatureAlgorithmDescription =
             runRethrowing {
-                val params = identifier.parameters as Asn1Sequence
+                val parameter = identifier.parameters
+                val params = when {
+                    parameter == null -> Asn1.Sequence { }
+                    identifier.oid == KnownOIDs.rsaPSS -> parameter as Asn1Sequence
+                    else -> Asn1.Sequence { +parameter }
+                }
                 return sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
                     .firstNotNullOfOrNull { it.loaderForOid(identifier.oid) }?.invoke(params.iterator())
                     ?: Unknown(identifier.oid, params.children)

@@ -64,7 +64,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
 
         val tbsCsr = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(
                 RelativeDistinguishedName(
                     listOf(
@@ -121,7 +121,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             .addAttribute(Extension.extendedKeyUsage, extendedKeyUsage)
             .build(contentSigner)
         val tbsCsr = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(
                 RelativeDistinguishedName(
                     listOf(
@@ -299,7 +299,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         csr.signatureAlgorithm shouldBe signatureAlgorithm
-        csr.tbsCsr.version shouldBe 0
+        csr.tbsCsr.version shouldBe 1
         (csr.tbsCsr.subjectName.first().attrsAndValues.first().rawValue as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
@@ -325,37 +325,37 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         val commonName1 = "DefaultCryptoService1"
 
         val tbsCsr1 = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey1
         )
         val tbsCsr11 = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey1
         )
         val tbsCsr111 = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName1)))),
             publicKey = cryptoPublicKey1
         )
         val tbsCsr12 = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey11
         )
         val tbsCsr122 = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName1)))),
             publicKey = cryptoPublicKey11
         )
         val tbsCsr2 = TbsCertificationRequest(
-            version = 0,
+            version = 1,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey2
         )
         val tbsCsr22 = TbsCertificationRequest(
-            version = 1,
+            version = 2,
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey2
         )

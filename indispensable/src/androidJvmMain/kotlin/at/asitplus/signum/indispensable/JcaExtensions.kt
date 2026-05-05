@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
@@ -201,7 +202,7 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
  */
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
-        is CryptoSignature.EC -> DER.encodeToByteArray(this.backing)
+        is CryptoSignature.EC -> backing.rawBytes
         is CryptoSignature.RSA -> rawByteArray
     }
 
@@ -226,7 +227,7 @@ fun CryptoSignature.Companion.parseFromJca(
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
  */
 fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    DER.decodeFromByteArray<CryptoSignature.EC>(input)
+    CryptoSignature.fromSignatureValue(SignatureValue(input)) as CryptoSignature.EC
 
 /**
  * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.

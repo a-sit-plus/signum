@@ -97,9 +97,8 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
                 EC.oid -> {
                     val parameters = spki.algorithmIdentifier.parameters
                     requireNotNull(parameters) { "No EC params found" }
-                    require(parameters.asSequence().children.size == 1)
 
-                    val curveOid = (parameters.asSequence().children[1] as Asn1Primitive).readOid()
+                    val curveOid = (parameters as Asn1Primitive).readOid()
                     val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 

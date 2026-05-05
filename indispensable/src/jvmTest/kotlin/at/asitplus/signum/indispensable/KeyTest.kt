@@ -4,6 +4,7 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
@@ -38,7 +39,7 @@ val KeyTest by testSuite {
     Security.addProvider(BouncyCastleProvider())
 
     "EC" - {
-        withDataSuites(listOf(256, 384, 521)) { bits ->
+        withData(listOf(256, 384, 521)) - { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
@@ -84,8 +85,8 @@ val KeyTest by testSuite {
 
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-            val pubKey1 = DER.decodeFromDer<CryptoPublicKey>(keyPair.public.encoded)
-            val pubKey2 = DER.decodeFromDer<CryptoPublicKey>(keyPair.public.encoded)
+            val pubKey1 = CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromDer<SubjectPublicKeyInfo>(keyPair.public.encoded))
+            val pubKey2 = CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromDer<SubjectPublicKeyInfo>(keyPair.public.encoded))
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -101,7 +102,7 @@ val KeyTest by testSuite {
     }
 
     "RSA" - {
-        withDataSuites(512, 1024, 2048, 3072, 4096) { bits ->
+        withData(512, 1024, 2048, 3072, 4096) - { bits ->
             val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
@@ -145,25 +146,25 @@ val KeyTest by testSuite {
         }
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-            val pubKey1 = DER.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
-            val pubKey2 = DER.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
+            val pubKey1 = CryptoPublicKey.fromSubjectPublicKeyInfo( DER.decodeFromByteArray<SubjectPublicKeyInfo>(keyPair.public.encoded))
+            val pubKey2 = CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromByteArray<SubjectPublicKeyInfo>(keyPair.public.encoded))
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
         }
     }
 
-    "EC and RSA" - {
-        withDataSuites(512, 1024, 2048, 3072, 4096) { rsaBits ->
+    "EC and RSA Public" - {
+        withData(512, 1024, 2048, 3072, 4096) - { rsaBits ->
             withData(256, 384, 521) { ecBits ->
                 val keyPairEC1 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairRSA1 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
                 val keyPairRSA2 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
-                val pubKey1 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairEC1.public.encoded)
-                val pubKey2 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairEC2.public.encoded)
-                val pubKey3 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairRSA1.public.encoded)
-                val pubKey4 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairRSA2.public.encoded)
+                val pubKey1 = CryptoPublicKey.fromSubjectPublicKeyInfo( DER.decodeFromByteArray<SubjectPublicKeyInfo>(keyPairEC1.public.encoded))
+                val pubKey2 = CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromByteArray<SubjectPublicKeyInfo>(keyPairEC2.public.encoded))
+                val pubKey3 = CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromByteArray<SubjectPublicKeyInfo>(keyPairRSA1.public.encoded))
+                val pubKey4 = CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromByteArray<SubjectPublicKeyInfo>(keyPairRSA2.public.encoded))
 
                 pubKey1.hashCode() shouldNotBe pubKey2.hashCode()
                 pubKey1.hashCode() shouldNotBe pubKey3.hashCode()

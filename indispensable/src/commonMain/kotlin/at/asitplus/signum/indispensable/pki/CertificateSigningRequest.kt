@@ -129,6 +129,7 @@ private fun List<Attribute>?.mergeWith(
 /**
  * Very simple implementation of a PKCS#10 Certification Request
  */
+@Serializable(with = CertificateSigningRequest.Companion::class)
 @ConsistentCopyVisibility
 data class CertificateSigningRequest(
     override val backing: Pkcs10CertificationRequest,
@@ -167,7 +168,12 @@ data class CertificateSigningRequest(
    // override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
 
-    companion object : PemDecodable<CertificateSigningRequest> {
+    companion object :
+        Awesn1BackedSerializer<Pkcs10CertificationRequest, CertificateSigningRequest>(
+            Pkcs10CertificationRequest.serializer(),
+            ::CertificateSigningRequest,
+        ),
+        PemDecodable<CertificateSigningRequest> {
         override fun decodeFromPemBlock(src: PemBlock): CertificateSigningRequest {
            require(src.label == EB_STRINGS.DEFAULT || src.label == EB_STRINGS.LEGACY) {"PEM label mismatch: ${src.label}"}
             return CertificateSigningRequest(DER.decodeFromByteArray(src.payload))

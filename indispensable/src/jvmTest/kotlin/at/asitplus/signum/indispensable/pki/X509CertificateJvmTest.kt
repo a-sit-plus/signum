@@ -224,7 +224,7 @@ val X509CertificateJvmTest by testSuite {
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.version shouldBe 2
+        x509Certificate.tbsCertificate.version shouldBe 3
         (x509Certificate.tbsCertificate.issuerName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         (x509Certificate.tbsCertificate.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
