@@ -121,7 +121,7 @@ val KeyTest by testSuite {
                 val own = CryptoPublicKey.RSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
                 val ownPrivate =
-                    DER.decodeFromDer<CryptoPrivateKey>(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                    CryptoPrivateKey.fromPkcs8(DER.decodeFromDer(privKey.encoded)) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
                 DER.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded

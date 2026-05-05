@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.catching
@@ -34,10 +36,7 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.security.spec.RSAPublicKeySpec
+import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
@@ -245,7 +244,7 @@ fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
 suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(ByteArrayInputStream(DER.encodeToByteArray(this)))
-            as java.security.cert.X509Certificate
+                as java.security.cert.X509Certificate
     }
 }
 
@@ -262,13 +261,13 @@ fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { DER.decodeFromByteArray<Certificate>(encoded) }
 
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
-    TODO()/*
-    val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
+
+    val spec = PKCS8EncodedKeySpec(DER.encodeToByteArray(toPkcs8()))
     val kf = when (this) {
         is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
         is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
     }
-    kf.generatePrivate(spec)!!*/
+    kf.generatePrivate(spec)!!
 }
 
 fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
@@ -277,14 +276,15 @@ fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey>
 fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
     (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = TODO()
-//CryptoPrivateKey.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
+fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
+    catching { CryptoPrivateKey.fromPkcs8(DER.decodeFromByteArray<Pkcs8PrivateKeyInfo>(encoded)) }.mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
 
-fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> = TODO()
-//CryptoPrivateKey.EC.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
+    catching { CryptoPrivateKey.fromPkcs8(DER.decodeFromByteArray<Pkcs8PrivateKeyInfo>(encoded)) }.mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
 
-fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> = TODO()
-//CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
+
+fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
+    catching { CryptoPrivateKey.RSA.fromPkcs1(DER.decodeFromByteArray<Pkcs1RsaPrivateKeyInfo>(encoded)) }
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
