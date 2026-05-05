@@ -1,21 +1,26 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromDer
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
-import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
@@ -27,12 +32,9 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val KeyTest  by testSuite {
+val KeyTest by testSuite {
     Security.addProvider(BouncyCastleProvider())
 
     "EC" - {
@@ -53,18 +55,19 @@ val KeyTest  by testSuite {
 
                 val own = pubKey.toCryptoPublicKey().getOrThrow()
 
-                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate =
+                    DER.decodeFromByteArray<CryptoPrivateKey>(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
 
                 ownPrivate.publicKey shouldBe own
-                ownPrivate.encodeToDer() shouldBe privKey.encoded
+                DER.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
                 withClue("Basic Conversions") {
-                    own.encodeToDer() shouldBe pubKey.encoded
+                    DER.encodeToByteArray(own) shouldBe pubKey.encoded
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
-                    CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+                    DER.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(DER.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
                 }
 
                 withClue("Compressed Test") {
@@ -81,8 +84,8 @@ val KeyTest  by testSuite {
 
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
+            val pubKey1 = DER.decodeFromDer<CryptoPublicKey>(keyPair.public.encoded)
+            val pubKey2 = DER.decodeFromDer<CryptoPublicKey>(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -116,9 +119,10 @@ val KeyTest  by testSuite {
 
                 val own = CryptoPublicKey.RSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
-                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate =
+                    DER.decodeFromDer<CryptoPrivateKey>(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
-                ownPrivate.encodeToDer() shouldBe privKey.encoded
+                DER.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
@@ -134,15 +138,15 @@ val KeyTest  by testSuite {
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1
-                own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
-                CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+                DER.encodeToByteArray(own) shouldBe pubKey.encoded //PKCS#8
+                DER.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(DER.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
                 own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
+            val pubKey1 = DER.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
+            val pubKey2 = DER.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -156,10 +160,10 @@ val KeyTest  by testSuite {
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairRSA1 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
                 val keyPairRSA2 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
-                val pubKey1 = CryptoPublicKey.decodeFromDer(keyPairEC1.public.encoded)
-                val pubKey2 = CryptoPublicKey.decodeFromDer(keyPairEC2.public.encoded)
-                val pubKey3 = CryptoPublicKey.decodeFromDer(keyPairRSA1.public.encoded)
-                val pubKey4 = CryptoPublicKey.decodeFromDer(keyPairRSA2.public.encoded)
+                val pubKey1 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairEC1.public.encoded)
+                val pubKey2 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairEC2.public.encoded)
+                val pubKey3 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairRSA1.public.encoded)
+                val pubKey4 = DER.decodeFromByteArray<CryptoPublicKey>(keyPairRSA2.public.encoded)
 
                 pubKey1.hashCode() shouldNotBe pubKey2.hashCode()
                 pubKey1.hashCode() shouldNotBe pubKey3.hashCode()

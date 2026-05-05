@@ -5,6 +5,8 @@ import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.encoding.internal.readAsn1Element
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -19,6 +21,7 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.io.UnsafeIoApi
+import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -39,7 +42,7 @@ val X509CertParserTest by testSuite {
         //ok-uniqueid-incomplete-byte.der
         val derBytes =
             javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
-        Certificate.decodeFromDer(derBytes)
+        DER.decodeFromByteArray<Certificate>(derBytes)
 
         val garbage = Random.nextBytes(Random.nextInt(0..128))
         val input = (derBytes + garbage).wrapInUnsafeSource()
@@ -56,7 +59,7 @@ val X509CertParserTest by testSuite {
             val jcaCert = CertificateFactory.getInstance("X.509")
                 .generateCertificate(ByteArrayInputStream(certBytes)) as JcaCertificate
 
-            val cert = Certificate.decodeFromDer(certBytes)
+            val cert = DER.decodeFromByteArray<Certificate>(certBytes)
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
                         "Actual: ${cert.encodeToDer().encodeToString(Base16)}"
@@ -118,7 +121,7 @@ val X509CertParserTest by testSuite {
                 }
             },
             uniqueCerts.sortedBy { it.subjectX500Principal.name }) { crt ->
-            val parsed = Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
+            val parsed = DER.decodeFromTlv<Certificate>(Asn1Element.parse(crt.encoded) as Asn1Sequence)
             val own = parsed.encodeToDer()
             withClue(
                 "Expect: ${crt.encoded.encodeToString(Base16)}\n" + "Actual: ${own.encodeToString(Base16)}"
@@ -143,7 +146,7 @@ val X509CertParserTest by testSuite {
         "OK certs should parse" - {
             withData(nameFn = { it.first }, ok) {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
-                val decoded = Certificate.decodeFromTlv(src)
+                val decoded = DER.decodeFromTlv<Certificate>(src)
                 decoded shouldBe Certificate.decodeFromByteArray(it.second)
 
                 withClue(decoded.encodeToPem()) {
@@ -162,7 +165,7 @@ val X509CertParserTest by testSuite {
             withData(nameFn = { it.first }, faulty) { crt ->
                 runCatching {
                     shouldThrow<Throwable> {
-                        Certificate.decodeFromTlv(Asn1Element.parse(crt.second) as Asn1Sequence)
+                        DER.decodeFromTlv<Certificate>(Asn1Element.parse(crt.second) as Asn1Sequence)
                     }
                 }.getOrElse { println("W: ${crt.first} parsed too leniently") }
             }
@@ -189,7 +192,7 @@ val X509CertParserTest by testSuite {
                     .getInstance("X509")
                     .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
 
-                val cert = Certificate.decodeFromDer(encodedSrc)
+                val cert = DER.decodeFromByteArray<Certificate>(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
                 cert.encodeToTlv().derEncoded shouldBe encodedSrc

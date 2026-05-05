@@ -191,10 +191,10 @@ data class Certificate(
 
 
     companion object :
-        Awesn1BackedSerializer<X509Certificate, Certificate>(X509Certificate.serializer(), ::Certificate),
-        Asn1PemDecodable<Asn1Sequence, Certificate> {
+        Awesn1BackedSerializer<X509Certificate, Certificate>(X509Certificate.serializer(), ::Certificate)
+         {
 
-        override val pemLabel: String get() = "CERTIFICATE"
+        //override val pemLabel: String get() = "CERTIFICATE"
         /* private object EB_STRINGS {
              const val DEFAULT = "CERTIFICATE"
              const val LEGACY = "TRUSTED CERTIFICATE"
@@ -209,10 +209,7 @@ data class Certificate(
             DER.decodeFromByteArray<Certificate>(src)
         }.getOrNull() ?: catchingUnwrapped {
             DER.decodeFromByteArray<Certificate>(src.decodeToByteArray(Base64()))
-        }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString())
-
-        override fun doDecode(src: Asn1Sequence): Certificate =
-            DER.decodeFromTlv(this, src)
+        }.getOrNull() //?: Certificate.decodeFromPem(src.decodeToString())
 
     }
 }

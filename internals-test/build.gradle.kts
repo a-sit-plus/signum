@@ -23,6 +23,7 @@ kotlin {
                 implementation(libs.awesn1.crypto)
                 implementation(libs.awesn1.oids)
                 implementation(libs.kotlinx.io.core)
+                implementation(project(":indispensable"))
                 implementation("de.infix.testBalloon:testBalloon-framework-core:${libs.versions.testballoon.get()}")
             }
         }

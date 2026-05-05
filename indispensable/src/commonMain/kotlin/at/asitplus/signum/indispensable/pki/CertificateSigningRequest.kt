@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1PemDecodable
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.PemBlock
 import at.asitplus.awesn1.PemDecodable
@@ -13,7 +12,6 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.toInt
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription

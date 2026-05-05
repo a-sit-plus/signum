@@ -5,6 +5,8 @@ import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.encodeToPem
 import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -17,6 +19,7 @@ import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.io.UnsafeIoApi
+import kotlinx.serialization.decodeFromByteArray
 import java.io.File
 
 @OptIn(UnsafeIoApi::class)
@@ -27,7 +30,7 @@ val X509SignatureAlgorithmTest by testSuite {
     "OK certs with DSA signature algorithms, should parse" - {
         withData(nameFn = { it.first }, certsUnsupported) {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = Certificate.decodeFromTlv(src)
+            val decoded = DER.decodeFromTlv<Certificate>(src)
 
             decoded.signatureAlgorithm.isSupported().shouldBeFalse()
             decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
@@ -44,7 +47,7 @@ val X509SignatureAlgorithmTest by testSuite {
     "OK certs with supported signature algorithms" - {
         withData(nameFn = { it.first }, certsSupported) {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = Certificate.decodeFromTlv(src)
+            val decoded =DER.decodeFromTlv<Certificate>(src)
             decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.entries
             shouldNotThrow<Throwable> { decoded.decodedSignature }
         }

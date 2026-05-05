@@ -1,16 +1,14 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
-import at.asitplus.awesn1.encoding.encodeToDer
+import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
-import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -24,6 +22,8 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
+import java.io.ByteArrayInputStream
+import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.PublicKey
@@ -33,10 +33,27 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import java.security.spec.*
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.security.spec.RSAPublicKeySpec
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
+
+private fun Asn1Integer.Sign.toJavaBigIntegerSign() = when (this) {
+    Asn1Integer.Sign.POSITIVE -> 1
+    Asn1Integer.Sign.NEGATIVE -> -1
+}
+
+fun Asn1Integer.toJavaBigInteger() =
+    BigInteger(this.sign.toJavaBigIntegerSign(), this.magnitude)
+
+fun BigInteger.toAsn1Integer() =
+    Asn1Integer.fromByteArray(
+        magnitude = this.abs().toByteArray(),
+        sign = if (this.signum() < 0) Asn1Integer.Sign.NEGATIVE else Asn1Integer.Sign.POSITIVE
+    )
 
 
 private val certificateFactoryMutex = Mutex()
@@ -124,8 +141,8 @@ fun CryptoPublicKey.toJcaPublicKey() = when (this) {
 fun CryptoPublicKey.EC.getJcaPublicKey() = toJcaPublicKey()
 fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-    val x = x.residue.toJavaBigInteger()
-    val y = y.residue.toJavaBigInteger()
+    val x = x.residue.toAsn1Integer().toJavaBigInteger()
+    val y = y.residue.toAsn1Integer().toJavaBigInteger()
     val ecPoint = parameterSpec.curve.createPoint(x, y)
     val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
     JCEECPublicKey("EC", ecPublicKeySpec)
@@ -225,7 +242,8 @@ fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
 suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
-    certificateFactoryMutex.withLock {DER.encodeToByteArray(this).inputStream()) as java.security.cert.X509Certificate
+    certificateFactoryMutex.withLock {
+        ByteArrayInputStream(DER.encodeToByteArray(this)) as java.security.cert.X509Certificate
     }
 }
 
@@ -242,12 +260,13 @@ fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { DER.decodeFromByteArray<Certificate>(encoded) }
 
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
+    TODO()/*
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
     val kf = when (this) {
         is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
         is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
     }
-    kf.generatePrivate(spec)!!
+    kf.generatePrivate(spec)!!*/
 }
 
 fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
@@ -256,14 +275,14 @@ fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey>
 fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
     (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
-    CryptoPrivateKey.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
+fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = TODO()
+//CryptoPrivateKey.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
 
-fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
-    CryptoPrivateKey.EC.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> = TODO()
+//CryptoPrivateKey.EC.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
 
-fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
-    CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
+fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> = TODO()
+//CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String

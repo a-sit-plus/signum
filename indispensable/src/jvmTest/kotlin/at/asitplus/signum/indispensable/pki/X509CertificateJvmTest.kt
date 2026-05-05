@@ -15,6 +15,7 @@ import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.extKeyUsage
 import at.asitplus.awesn1.keyUsage
 import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.io.MultiBase
@@ -74,7 +75,7 @@ val X509CertificateJvmTest by testSuite {
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
-        val decoded = Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        val decoded = DER.decodeFromByteArray<Certificate>(pssCertFromJvm!!.encoded)
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
@@ -218,7 +219,7 @@ val X509CertificateJvmTest by testSuite {
         val certificateHolder = builder.build(contentSigner)
 
         val x509Certificate =
-            Certificate.decodeFromTlv(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
+            DER.decodeFromTlv<Certificate>(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
         x509Certificate.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded

@@ -106,7 +106,7 @@ val SignatureCodecTest  by testSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            CryptoSignature.RSA.parseFromJca(DER.encodeToByteArray(certificateHolder.signature)) shouldBe bcSig
+            DER.encodeToByteArray(CryptoSignature.RSA.parseFromJca(certificateHolder.signature)) shouldBe bcSig
             DER.encodeToByteArray(CryptoSignature.parseFromJca(
                 certificateHolder.signature,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)

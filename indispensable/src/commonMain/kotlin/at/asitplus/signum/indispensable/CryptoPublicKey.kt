@@ -22,7 +22,7 @@ import kotlinx.serialization.encodeToByteArray
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey : PemEncodable, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -42,14 +42,15 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
      */
     abstract val iosEncoded: ByteArray
 
-    override fun encodeToTlv(): Asn1Sequence = DER.encodeToTlv(toSubjectPublicKeyInfo()) as Asn1Sequence
 
     fun toSubjectPublicKeyInfo(): SubjectPublicKeyInfo = when (this) {
         is EC -> SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
         is RSA -> SubjectPublicKeyInfo.rsa(n, e)
     }
 
-    companion object : Asn1PemDecodable<Asn1Sequence, CryptoPublicKey> {
+    override fun encodeToPemBlock(): PemBlock = PemBlock("PUBLIC KEY", payload = DER.encodeToByteArray(toSubjectPublicKeyInfo()))
+
+    companion object : PemDecodable<CryptoPublicKey> {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -119,12 +120,6 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
 
             }
 
-
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
-            fromSubjectPublicKeyInfo(DER.decodeFromTlv<SubjectPublicKeyInfo>(src))
-        }
-
         /**
          * Parses this key from an iOS-encoded one
          */
@@ -142,7 +137,10 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
 
-        override val pemLabel: String get() = "PUBLIC KEY"
+        override fun decodeFromPemBlock(src: PemBlock): CryptoPublicKey =
+            if(src.label=="PUBLIC KEY") CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromDer<SubjectPublicKeyInfo>(src.payload))
+        else throw IllegalArgumentException("Unsupported Key type: ${src.label}")
+
 
     }
 
@@ -156,8 +154,6 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
         /** public exponent */
         val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
-
-        override val pemLabel: String get() = "RSA PUBLIC KEY"
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -241,7 +237,6 @@ sealed class CryptoPublicKey : Asn1PemEncodable<Asn1Sequence>, Identifiable {
 
         override fun asCryptoPublicKey() = this
 
-        override val pemLabel: String get() = "EC PUBLIC KEY"
 
         val curve get() = publicPoint.curve
         val x get() = publicPoint.x
