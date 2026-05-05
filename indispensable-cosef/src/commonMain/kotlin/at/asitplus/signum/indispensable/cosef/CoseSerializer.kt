@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -14,6 +16,7 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.CborEncoder
+import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encodeToByteArray
@@ -127,7 +130,7 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-        ?.let { Certificate.decodeFromDerOrNull(it) }
+        ?.let { catchingUnwrapped { DER.decodeFromByteArray<Certificate>(it) }.getOrNull()}
         ?.let { it.signatureAlgorithm is X509SignatureAlgorithm.ECDSA }
     is CoseAlgorithm.Signature -> (algorithm.algorithm is SignatureAlgorithm.ECDSA)
     else -> false

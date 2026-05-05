@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.agree
 
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
@@ -12,6 +13,8 @@ import io.kotest.matchers.shouldNotBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import kotlinx.serialization.decodeFromByteArray
+import java.util.Base64
 
 val KeyAgreementTest by testSuite {
 
@@ -27,7 +30,7 @@ val KeyAgreementTest by testSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
         val other =
-            CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow() as KeyAgreementPrivateValue.ECDH
+            CryptoPrivateKey.fromPkcs8(DER.decodeFromByteArray(Base64.getMimeDecoder().decode(pkcs8.lines().subList(1,pkcs8.lines().size-1).joinToString(separator = "")))) as KeyAgreementPrivateValue.ECDH
 
         val symmetric1 = self.keyAgreement(other.publicValue).getOrThrow()
         val symmetric2 = other.keyAgreement(self.publicValue).getOrThrow()

@@ -3,13 +3,13 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer

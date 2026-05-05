@@ -1,11 +1,12 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.Asn1Time
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
@@ -160,7 +161,7 @@ val JwkTest  by testSuite {
 
 private fun randomCertificate() = Certificate(
     TbsCertificate(
-        serialNumber = Random.nextBytes(16),
+        serialNumber = Asn1Integer.fromUnsignedByteArray(Random.nextBytes(16)),
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),

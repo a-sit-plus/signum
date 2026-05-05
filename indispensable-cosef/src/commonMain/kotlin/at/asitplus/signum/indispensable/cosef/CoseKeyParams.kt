@@ -2,11 +2,10 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
+import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
 
 /**
  * Wrapper to handle parameters for different COSE public key types.

@@ -1,6 +1,10 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.Asn1Time
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -8,8 +12,6 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
@@ -30,6 +32,8 @@ import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import java.nio.channels.Channels
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -141,7 +145,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(alias))))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
-                serialNumber = CryptoRand.Default.nextBytes(ByteArray(32)),
+                serialNumber = Asn1Integer.fromUnsignedByteArray(CryptoRand.Default.nextBytes(ByteArray(32))),
                 signatureAlgorithm = certAlg,
                 issuerName = cn,
                 subjectName = cn,
@@ -151,7 +155,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             )
             val cert = certAlg.getJCASignatureInstance(provider = config.provider).getOrThrow().run {
                 initSign(keyPair.private)
-                update(tbsCert.encodeToDer())
+                update(DER.encodeToByteArray(tbsCert))
                 sign()
             }.let { Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
@@ -187,7 +191,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         access.forReading().use { ctx ->
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
+            val certificateChain = ctx.ks.getCertificateChain(alias).map { DER.decodeFromByteArray<Certificate>(it.encoded) }
             return@catching getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

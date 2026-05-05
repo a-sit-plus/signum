@@ -226,7 +226,7 @@ fun CryptoSignature.Companion.parseFromJca(
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
  */
 fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.fromSignatureValue(SignatureValue(input)) as CryptoSignature.EC
+    CryptoSignature.fromSignatureValue(SignatureValue(input)) as CryptoSignature.EC.IndefiniteLength
 
 /**
  * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.

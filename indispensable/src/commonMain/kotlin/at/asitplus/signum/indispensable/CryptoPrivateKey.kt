@@ -93,7 +93,7 @@ sealed interface CryptoPrivateKey : Identifiable {
             attributes: Set<Asn1Element>? = null
         ) : this(
             Pkcs1RsaPrivateKeyInfo(
-                version = if (otherPrimeInfos != null) 1 else 0,
+                rawVersion = Asn1Integer(if (otherPrimeInfos != null) 1 else 0),
                 modulus = publicKey.n,
                 publicExponent = publicKey.e,
                 privateExponent = privateKey.toAsn1Integer() as Asn1Integer.Positive,

@@ -1,7 +1,8 @@
 package at.asitplus.signum.supreme
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.equalsCryptographically
 import at.asitplus.signum.indispensable.pki.CertificateSigningRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
@@ -9,6 +10,7 @@ import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.Signer
+import kotlinx.serialization.encodeToByteArray
 
 /**
  * Shorthand helper to create an [Certificate] by signing [tbsCertificate]
@@ -18,7 +20,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<Certificate> 
         this.signatureAlgorithm.toX509SignatureAlgorithm().getOrElse { return KmmResult.failure(it) }
     if (toX509SignatureAlgorithm != tbsCertificate.signatureAlgorithm)
         return KmmResult.failure(Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's."))
-    return sign(tbsCertificate.encodeToDer()).asKmmResult().map {
+    return sign(DER.encodeToByteArray(tbsCertificate)).asKmmResult().map {
         Certificate(tbsCertificate, tbsCertificate.signatureAlgorithm, it)
     }
 }
@@ -31,7 +33,7 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): KmmResult<CertificateS
         this.signatureAlgorithm.toX509SignatureAlgorithm().getOrElse { return KmmResult.failure(it) }
     if (!tbsCsr.publicKey.equalsCryptographically(this.publicKey))
         return KmmResult.failure(Asn1StructuralException("The signer's public key does not match the TbsCSR's."))
-    return sign(tbsCsr.encodeToDer()).asKmmResult().map {
+    return sign(DER.encodeToByteArray(tbsCsr)).asKmmResult().map {
         CertificateSigningRequest(tbsCsr, toX509SignatureAlgorithm, it)
     }
 }

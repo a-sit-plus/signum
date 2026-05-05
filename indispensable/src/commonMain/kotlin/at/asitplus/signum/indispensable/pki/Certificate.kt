@@ -87,13 +87,15 @@ constructor(
     val extensions: List<X509CertificateExtension>? by lazy { backing.extensions?.value }
 
     val version get() = backing.version
-    val rawVersion get() = backing.rawVersion?.value
+    val rawVersion get() = backing.rawVersion
     val serialNumber get() = backing.serialNumber
     val issuerName get() = backing.issuerName
     val subjectName get() = backing.subjectName
     val validity get() = backing.validity
     val subjectUniqueID get() = backing.subjectUniqueID
     val issuerUniqueID get() = backing.issuerUniqueID
+
+    val signatureAlgorithm get() = X509SignatureAlgorithmDescription.fromAlgorithmIdentifier(backing.signatureAlgorithm)
 
     val validFrom get() = validity.validFrom
     val validUntil get() = validity.validUntil
