@@ -4,6 +4,7 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
@@ -57,18 +58,23 @@ val KeyTest by testSuite {
                 val own = pubKey.toCryptoPublicKey().getOrThrow()
 
                 val ownPrivate =
-                    DER.decodeFromByteArray<CryptoPrivateKey>(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                    CryptoPrivateKey.fromPkcs8(DER.decodeFromByteArray<Pkcs8PrivateKeyInfo>(privKey.encoded))
+                            as CryptoPrivateKey.WithPublicKey<*>
 
                 ownPrivate.publicKey shouldBe own
-                DER.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
+                DER.encodeToByteArray(ownPrivate.toPkcs8()) shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
                 withClue("Basic Conversions") {
-                    DER.encodeToByteArray(own) shouldBe pubKey.encoded
+                    DER.encodeToByteArray(own.toSubjectPublicKeyInfo()) shouldBe pubKey.encoded
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
-                    DER.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(DER.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
+                    CryptoPublicKey.fromSubjectPublicKeyInfo(
+                        DER.decodeFromTlv<SubjectPublicKeyInfo>(
+                            Asn1Element.parse(DER.encodeToByteArray(own.toSubjectPublicKeyInfo())) as Asn1Sequence
+                        )
+                    ) shouldBe own
                 }
 
                 withClue("Compressed Test") {
@@ -123,7 +129,7 @@ val KeyTest by testSuite {
                 val ownPrivate =
                     CryptoPrivateKey.fromPkcs8(DER.decodeFromDer(privKey.encoded)) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
-                DER.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
+                DER.encodeToByteArray(ownPrivate.toPkcs8()) shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
@@ -139,8 +145,12 @@ val KeyTest by testSuite {
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1
-                DER.encodeToByteArray(own) shouldBe pubKey.encoded //PKCS#8
-                DER.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(DER.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
+                DER.encodeToByteArray(own.toSubjectPublicKeyInfo()) shouldBe pubKey.encoded //PKCS#8
+                CryptoPublicKey.fromSubjectPublicKeyInfo(
+                    DER.decodeFromTlv<SubjectPublicKeyInfo>(
+                        Asn1Element.parse(DER.encodeToByteArray(own.toSubjectPublicKeyInfo())) as Asn1Sequence
+                    )
+                ) shouldBe own
                 own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
             }
         }

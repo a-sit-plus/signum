@@ -118,10 +118,10 @@ sealed interface CryptoPrivateKey : Identifiable {
         val prime2: BigInteger by lazy { pkcs1.prime2.toBigInteger() }
 
         /** dP: the first factor's CRT exponent */
-        val prime1exponent: BigInteger by lazy { pkcs1.prime1.toBigInteger() }
+        val prime1exponent: BigInteger by lazy { pkcs1.exponent1.toBigInteger() }
 
         /** dQ: the second factor's CRT exponent */
-        val prime2exponent: BigInteger by lazy { pkcs1.prime2.toBigInteger() }
+        val prime2exponent: BigInteger by lazy { pkcs1.exponent2.toBigInteger() }
 
         /** qInv: the factors' CRT coefficient (q^(-1) mod p) */
         val crtCoefficient: BigInteger by lazy { pkcs1.coefficient.toBigInteger() }
@@ -229,7 +229,8 @@ sealed interface CryptoPrivateKey : Identifiable {
         ) : this(
             sec1 = Sec1EcPrivateKeyInfo(
                 version = 1,
-                privateKey = privateKey.toByteArray(),
+                privateKey = curve?.let { privateKey.toByteArray().ensureSize(it.scalarLength.bytes) }
+                    ?: privateKey.toByteArray(),
                 curve?.oid,
                 publicKey?.toSubjectPublicKeyInfo()?.subjectPublicKey
             ), attributes, curve
@@ -248,7 +249,7 @@ sealed interface CryptoPrivateKey : Identifiable {
             ), attributes, null
         )
 
-        val privateKey: BigInteger by lazy { BigInteger.fromByteArray(privateKey.toByteArray(), Sign.POSITIVE) }
+        val privateKey: BigInteger by lazy { BigInteger.fromByteArray(sec1.privateKey, Sign.POSITIVE) }
 
         override val oid = EC.oid
 
