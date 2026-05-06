@@ -11,6 +11,7 @@ import at.asitplus.awesn1.encoding.Asn1.BitString
 import at.asitplus.awesn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.encodeToTlv
 import at.asitplus.signum.indispensable.requireSupported
 
 /**
@@ -53,7 +54,7 @@ data class TbsCertificationRequest(
 
     override fun encodeToTlv() = Asn1.Sequence {
         +Asn1.Int(version)
-        +Asn1.Sequence { subjectName.forEach { +it } }
+        +Asn1.Sequence { subjectName.forEach { +it.encodeToTlv() } }
 
         //subject Public Key
         +publicKey
@@ -65,7 +66,7 @@ data class TbsCertificationRequest(
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val version = (next() as Asn1Primitive).decodeToInt()
             val subject = (next() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+                RelativeDistinguishedName.fromTlv(it as Asn1Set)
             }
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next() as Asn1Sequence)
             val attributes = if (hasNext()) {

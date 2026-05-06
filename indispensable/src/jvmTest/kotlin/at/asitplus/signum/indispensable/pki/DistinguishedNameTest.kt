@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
+import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
@@ -30,10 +32,10 @@ val DistinguishedNameTest by testSuite {
                     val o2 = AttributeTypeAndValue.Organization(second.encodeToTlv())
                     val ou1 = AttributeTypeAndValue.OrganizationalUnit(first.encodeToTlv())
                     val ou2 = AttributeTypeAndValue.OrganizationalUnit(second.encodeToTlv())
-                    val ot1 = AttributeTypeAndValue.Other(first, first.encodeToTlv())
-                    val ot2 = AttributeTypeAndValue.Other(first, second.encodeToTlv())
-                    val ot3 = AttributeTypeAndValue.Other(second, first.encodeToTlv())
-                    val ot4 = AttributeTypeAndValue.Other(second, second.encodeToTlv())
+                    val ot1 = AttributeTypeAndValue(first, first.encodeToTlv())
+                    val ot2 = AttributeTypeAndValue(first, second.encodeToTlv())
+                    val ot3 = AttributeTypeAndValue(second, first.encodeToTlv())
+                    val ot4 = AttributeTypeAndValue(second, second.encodeToTlv())
 
                     // equals()
                     cn1 shouldBe cn1
@@ -79,5 +81,40 @@ val DistinguishedNameTest by testSuite {
                 }
             }
         }
+    }
+
+    "RDN DER roundtrip" - {
+        val rdn = RelativeDistinguishedName(
+            setOf(
+                AttributeTypeAndValue.CommonName(Asn1String.UTF8("Jane Doe")),
+                AttributeTypeAndValue.Country(Asn1String.Printable("AT")),
+                AttributeTypeAndValue.Organization(Asn1String.UTF8("A-SIT")),
+                AttributeTypeAndValue.OrganizationalUnit(Asn1String.UTF8("Crypto")),
+                AttributeTypeAndValue.UserId(Asn1String.UTF8("jdoe")),
+            )
+        )
+
+        val decoded = RelativeDistinguishedName.decodeFromDer(rdn.encodeToDer())
+
+        decoded shouldBe rdn
+        decoded.attrsAndValues.size shouldBe 5
+    }
+
+    "RDN from string" - {
+        val rdn = RelativeDistinguishedName.fromString("CN=John+O=Org")
+
+        rdn.attrsAndValues shouldBe setOf(
+            AttributeTypeAndValue.CommonName("John"),
+            AttributeTypeAndValue.Organization("Org"),
+        )
+    }
+
+    "AttributeTypeAndValue RFC2253 string escaping" - {
+        AttributeTypeAndValue.CommonName(Asn1String.UTF8(" Doe, John+Ops "))
+            .toRfc2253String() shouldBe """cn=\ Doe\, John\+Ops\ """
+        AttributeTypeAndValue.CommonName(Asn1String.UTF8("#123"))
+            .toRfc2253String() shouldBe "cn=#123"
+        AttributeTypeAndValue.CommonName(Asn1String.UTF8("\\#not-hex"))
+            .toRfc2253String() shouldBe """cn=\#not-hex"""
     }
 }

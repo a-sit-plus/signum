@@ -41,7 +41,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             forEach {
                 if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${it.toDerHexString()}")
             }
-        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.decodeFromTlv(it as Asn1Set) } }
+        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.fromTlv(it as Asn1Set) } }
 
     val otherNames: List<Asn1Sequence> =
         extensions.filter { it.tag == SubjectAltNameImplicitTags.otherName }.apply {
