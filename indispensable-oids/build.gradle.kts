@@ -112,23 +112,23 @@ fun generateKnownOIDs() {
     }
 
     val oidMap =
-        FileSpec.builder("at.asitplus.signum.indispensable.asn1", "OidMap")
+        FileSpec.builder("at.asitplus.awesn1", "OidMap")
     val oidMapBuilder = TypeSpec.objectBuilder("OidMap").apply { modifiers += KModifier.INTERNAL }
 
     val knownOIDs =
-        FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOidConstants")
+        FileSpec.builder("at.asitplus.awesn1", "KnownOidConstants")
             .apply {
                 val oidType = ClassName(
-                    packageName = "at.asitplus.signum.indispensable.asn1",
+                    packageName = "at.asitplus.awesn1",
                     "ObjectIdentifier"
                 )
 
                 val knownOIDtype = ClassName(
-                    packageName = "at.asitplus.signum.indispensable.asn1",
+                    packageName = "at.asitplus.awesn1",
                     "KnownOIDs"
                 )
 
-                addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs")
+                addImport(packageName = "at.asitplus.awesn1", "KnownOIDs")
 
                 val codeBlock = StringBuilder("mapOf(\n")
 
@@ -196,7 +196,7 @@ fun generateKnownOIDs() {
             }.build()//@formatter:on
 
 
-    oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs")
+    oidMap.addImport(packageName = "at.asitplus.awesn1", "KnownOIDs")
     val oidMapFile = oidMap.addType(oidMapBuilder.build()).build()
 
 

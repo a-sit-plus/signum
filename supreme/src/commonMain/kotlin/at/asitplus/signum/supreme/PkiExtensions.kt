@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.equalsCryptographically
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate

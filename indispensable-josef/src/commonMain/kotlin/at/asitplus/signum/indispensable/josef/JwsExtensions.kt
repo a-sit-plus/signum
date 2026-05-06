@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
+import at.asitplus.awesn1.encoding.encodeTo4Bytes
 
 object JwsExtensions {
 

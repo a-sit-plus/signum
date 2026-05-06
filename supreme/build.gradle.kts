@@ -153,8 +153,6 @@ exportXCFramework(
     datetime(),
     kmmresult(),
     project(":indispensable"),
-    project(":indispensable-asn1"),
     libs.bignum
 )
-
 

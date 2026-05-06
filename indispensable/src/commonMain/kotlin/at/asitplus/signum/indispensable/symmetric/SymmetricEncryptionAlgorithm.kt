@@ -5,8 +5,8 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.internals.ImplementationError

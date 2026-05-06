@@ -27,11 +27,10 @@ develocity {
 
 
 // Include the local build logic as a composite build
-includeBuild("build-logic")
+includeBuild("buildlogic")
+includeBuild("awesn1")
 
 include(":internals")
-include(":indispensable-asn1")
-include(":indispensable-oids")
 include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
