@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.equalsCryptographically
-import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
+import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -24,14 +24,14 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<X509Certifica
 }
 
 /**
- * Shorthand helper to create a [Pkcs10CertificationRequest] by signing [tbsCsr]
+ * Shorthand helper to create a [CertificationRequest] by signing [tbsCsr]
  */
-suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): KmmResult<Pkcs10CertificationRequest> {
+suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): KmmResult<CertificationRequest> {
     val toX509SignatureAlgorithm =
         this.signatureAlgorithm.toX509SignatureAlgorithm().getOrElse { return KmmResult.failure(it) }
     if (!tbsCsr.publicKey.equalsCryptographically(this.publicKey))
         return KmmResult.failure(Asn1StructuralException("The signer's public key does not match the TbsCSR's."))
     return sign(tbsCsr.encodeToDer()).asKmmResult().map {
-        Pkcs10CertificationRequest(tbsCsr, toX509SignatureAlgorithm, it)
+        CertificationRequest(tbsCsr, toX509SignatureAlgorithm, it)
     }
 }
