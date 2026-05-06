@@ -75,7 +75,7 @@ val X509CertificateJvmTest by testSuite {
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
         val decoded = DER.decodeFromByteArray<Certificate>(pssCertFromJvm!!.encoded)
-        decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
+       DER.encodeToByteArray(decoded) shouldBe pssCertFromJvm.encoded
     }
 
     repeat(100) {
@@ -136,7 +136,7 @@ val X509CertificateJvmTest by testSuite {
             }.sign()
             val test = CryptoSignature.parseFromJca(signed, signatureAlgorithm)
             val x509Certificate = Certificate(tbsCertificate, signatureAlgorithm, test)
-            val kotlinEncoded = x509Certificate.encodeToDer()
+            val kotlinEncoded = DER.encodeToByteArray(x509Certificate)
             val jvmEncoded = certificateHolder.encoded
             println(
                 "Certificates will never entirely match because of randomness in ECDSA signature" +
@@ -187,8 +187,9 @@ val X509CertificateJvmTest by testSuite {
 
         repeat(500) {
             launch {
-                x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow()
-                    .encodeToDer() shouldBe x509Certificate.encodeToDer()
+                x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow().let {
+                    DER.encodeToByteArray(it) shouldBe DER.encodeToByteArray(x509Certificate)
+                }
             }
         }
     }

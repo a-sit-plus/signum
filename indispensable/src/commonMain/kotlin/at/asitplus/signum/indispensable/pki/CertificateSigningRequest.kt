@@ -2,9 +2,8 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.awesn1.PemBlock
-import at.asitplus.awesn1.PemDecodable
-import at.asitplus.awesn1.PemEncodable
+import at.asitplus.awesn1.WithPemLabel
+import at.asitplus.awesn1.PemLabelSpec
 import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.crypto.pki.Attribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
@@ -15,11 +14,11 @@ import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Awesn1Backed
+import at.asitplus.signum.indispensable.asn1.Awesn1BackedSerializer
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.requireSupported
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * The meat of a PKCS#10 Certification Request, backed by a raw [Pkcs10CertificationRequestInfo]
@@ -130,13 +129,10 @@ private fun List<Attribute>?.mergeWith(
  * Very simple implementation of a PKCS#10 Certification Request
  */
 @Serializable(with = CertificateSigningRequest.Companion::class)
-@ConsistentCopyVisibility
 data class CertificateSigningRequest(
     override val backing: Pkcs10CertificationRequest,
-) : Awesn1Backed<Pkcs10CertificationRequest>, PemEncodable { //TODO figure out asn1pem foo
-
-    override fun encodeToPemBlock(): PemBlock =
-        PemBlock(Pkcs10CertificationRequest.PEM_LABEL, payload = DER.encodeToByteArray(backing))
+) : Awesn1Backed<Pkcs10CertificationRequest>, WithPemLabel {
+    override val pemLabel: String get() = canonicalPemLabel
 
     constructor(
         tbsCsr: TbsCertificationRequest,
@@ -155,34 +151,24 @@ data class CertificateSigningRequest(
         X509SignatureAlgorithmDescription.fromAlgorithmIdentifier(backing.signatureAlgorithm)
 
     @get:Throws(Asn1Exception::class)
-        val decodedSignature: CryptoSignature by lazy {
-            runRethrowing {
-                signatureAlgorithm.requireSupported()
-                CryptoSignature.fromSignatureValue(rawSignature)
-            }
+    val decodedSignature: CryptoSignature by lazy {
+        runRethrowing {
+            signatureAlgorithm.requireSupported()
+            CryptoSignature.fromSignatureValue(rawSignature)
         }
+    }
 
     val rawSignature: SignatureValue by lazy { backing.signatureValue }
-
-    //TODO: figure our PEM foo
-   // override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
-
 
     companion object :
         Awesn1BackedSerializer<Pkcs10CertificationRequest, CertificateSigningRequest>(
             Pkcs10CertificationRequest.serializer(),
             ::CertificateSigningRequest,
         ),
-        PemDecodable<CertificateSigningRequest> {
-        override fun decodeFromPemBlock(src: PemBlock): CertificateSigningRequest {
-           require(src.label == EB_STRINGS.DEFAULT || src.label == EB_STRINGS.LEGACY) {"PEM label mismatch: ${src.label}"}
-            return CertificateSigningRequest(DER.decodeFromByteArray(src.payload))
-        }
+        PemLabelSpec<CertificateSigningRequest> {
+        override val canonicalPemLabel: String
+            get() = "CERTIFICATE REQUEST"
 
-        private object EB_STRINGS {
-            const val DEFAULT = "CERTIFICATE REQUEST"
-            const val LEGACY = "NEW CERTIFICATE REQUEST"
-        }
-
+        override val validPemLabels: Set<String> = setOf(canonicalPemLabel, "NEW CERTIFICATE REQUEST")
     }
 }

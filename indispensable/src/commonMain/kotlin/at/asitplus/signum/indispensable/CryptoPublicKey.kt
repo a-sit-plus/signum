@@ -2,15 +2,13 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.RsaPublicKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -22,7 +20,7 @@ import kotlinx.serialization.encodeToByteArray
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : PemEncodable, Identifiable {
+sealed class CryptoPublicKey : WithPemLabel, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -48,9 +46,11 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
         is RSA -> SubjectPublicKeyInfo.rsa(n, e)
     }
 
-    override fun encodeToPemBlock(): PemBlock = PemBlock("PUBLIC KEY", payload = DER.encodeToByteArray(toSubjectPublicKeyInfo()))
+    companion object : PemLabelSpec<CryptoPublicKey> {
 
-    companion object : PemDecodable<CryptoPublicKey> {
+        override val canonicalPemLabel: String get() = "PUBLIC KEY"
+        override val validPemLabels: Set<String> get() = setOf("RSA PUBLIC KEY", canonicalPemLabel)
+
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -136,11 +136,6 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
 
-        override fun decodeFromPemBlock(src: PemBlock): CryptoPublicKey =
-            if(src.label=="PUBLIC KEY") CryptoPublicKey.fromSubjectPublicKeyInfo(DER.decodeFromDer<SubjectPublicKeyInfo>(src.payload))
-        else throw IllegalArgumentException("Unsupported Key type: ${src.label}")
-
-
     }
 
     /** RSA Public key */
@@ -153,6 +148,7 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
         /** public exponent */
         val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
+        override val pemLabel: String get() = canonicalPemLabel
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -200,7 +196,7 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         val pkcsEncoded by lazy {
-            DER.encodeToByteArray(RsaPublicKeyInfo(n, e))
+            DER.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
         }
 
         companion object : Identifiable {
@@ -210,7 +206,7 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
              * @throws Asn1Exception all sorts of exceptions on invalid input
              */
             @Throws(Asn1Exception::class)
-            fun fromPKCS1encoded(input: ByteArray): RSA = DER.decodeFromDer<RsaPublicKeyInfo>(input).let {
+            fun fromPKCS1encoded(input: ByteArray): RSA = DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input).let {
                 RSA(it.modulus, it.publicExponent)
             }
 
@@ -295,7 +291,12 @@ sealed class CryptoPublicKey : PemEncodable, Identifiable {
         override fun hashCode() =
             publicPoint.hashCode()
 
-        companion object : Identifiable {
+        companion object : Identifiable, PemLabelSpec<EC> {
+
+            override val canonicalPemLabel: String
+                get() = KeyAgreementPublicValue.canonicalPemLabel
+            override val validPemLabels: Set<String>
+                get() = KeyAgreementPublicValue.validPemLabels
 
             fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EC {
                 return EC(this.normalize(), preferCompressed)

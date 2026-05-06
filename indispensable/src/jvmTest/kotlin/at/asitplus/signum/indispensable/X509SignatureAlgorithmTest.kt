@@ -7,6 +7,7 @@ import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.serialization.encodeToPem
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -20,6 +21,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.io.UnsafeIoApi
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import java.io.File
 
 @OptIn(UnsafeIoApi::class)
@@ -39,7 +41,7 @@ val X509SignatureAlgorithmTest by testSuite {
             decoded.decodedSignature.isSuccess shouldBe false
 
             withClue(decoded.encodeToPem()) {
-                decoded.encodeToDer() shouldBe it.second
+                DER.encodeToByteArray(decoded) shouldBe it.second
             }
         }
     }

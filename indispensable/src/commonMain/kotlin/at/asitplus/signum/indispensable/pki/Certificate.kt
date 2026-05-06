@@ -6,12 +6,16 @@ import at.asitplus.awesn1.crypto.pki.*
 import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findIssuerAltNames
 import at.asitplus.awesn1.crypto.pki.GeneralNames.Companion.findSubjectAltNames
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.encodeToTlv
+import at.asitplus.awesn1.serialization.decodeFromPem
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
+import at.asitplus.signum.indispensable.asn1.Awesn1Backed
+import at.asitplus.signum.indispensable.asn1.Awesn1BackedSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -58,33 +62,7 @@ constructor(
             extensions = extensions,
         )
     )
-
-    constructor(
-        version: Int? = 3,
-        serialNumber: Asn1Integer,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
-        issuerName: List<RelativeDistinguishedName>,
-        validity: Validity,
-        subjectName: List<RelativeDistinguishedName>,
-        publicKey: CryptoPublicKey,
-        issuerUniqueID: Asn1BitString? = null,
-        subjectUniqueID: Asn1BitString? = null,
-        extensions: List<X509CertificateExtension>? = null,
-    ) : this(
-        version,
-        serialNumber,
-        signatureAlgorithm,
-        issuerName,
-        validity.validFrom,
-        validity.validUntil,
-        subjectName,
-        publicKey,
-        issuerUniqueID,
-        subjectUniqueID,
-        extensions,
-    )
-
-    val extensions: List<X509CertificateExtension>? by lazy { backing.extensions?.value }
+    val extensions: List<X509CertificateExtension>? by lazy { backing.extensions }
 
     val version get() = backing.version
     val rawVersion get() = backing.rawVersion
@@ -148,10 +126,9 @@ constructor(
 @Serializable(with = Certificate.Companion::class)
 data class Certificate(
     override val backing: X509Certificate
-) : Awesn1Backed<X509Certificate>, Asn1PemEncodable<Asn1Sequence> {
+) : Awesn1Backed<X509Certificate>, WithPemLabel {
 
-    override val pemLabel: String
-        get() = "CERTIFICATE"
+    override val pemLabel: String get() = canonicalPemLabel
 
     @Throws(IllegalArgumentException::class)
     constructor(
@@ -165,8 +142,6 @@ data class Certificate(
             signature.backing
         )
     )
-
-    override fun encodeToTlv(): Asn1Sequence = DER.encodeToTlv(backing) as Asn1Sequence
 
     @get:Throws(Asn1Exception::class)
     val tbsCertificate: TbsCertificate by lazy { TbsCertificate(backing.tbsCertificate) }
@@ -194,14 +169,10 @@ data class Certificate(
 
 
     companion object :
-        Awesn1BackedSerializer<X509Certificate, Certificate>(X509Certificate.serializer(), ::Certificate)
-         {
-
-        //override val pemLabel: String get() = "CERTIFICATE"
-        /* private object EB_STRINGS {
-             const val DEFAULT = "CERTIFICATE"
-             const val LEGACY = "TRUSTED CERTIFICATE"
-         }*/
+        Awesn1BackedSerializer<X509Certificate, Certificate>(X509Certificate.serializer(), ::Certificate),
+        PemLabelSpec<Certificate> {
+        override val canonicalPemLabel: String = "CERTIFICATE"
+        override val validPemLabels: Set<String> = setOf(canonicalPemLabel, "TRUSTED CERTIFICATE")
 
         /**
          * Tries to decode [src] into an [Certificate], by parsing the bytes directly as ASN.1 structure,
@@ -212,7 +183,7 @@ data class Certificate(
             DER.decodeFromByteArray<Certificate>(src)
         }.getOrNull() ?: catchingUnwrapped {
             DER.decodeFromByteArray<Certificate>(src.decodeToByteArray(Base64()))
-        }.getOrNull() //?: Certificate.decodeFromPem(src.decodeToString())
+        }.getOrNull() ?: Certificate.decodeFromPem(PemBlock.decodeFromPem(src.decodeToString()))
 
     }
 }

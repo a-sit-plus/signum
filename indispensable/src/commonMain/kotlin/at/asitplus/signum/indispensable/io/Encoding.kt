@@ -18,6 +18,7 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.listSerialDescriptor
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
@@ -95,14 +96,14 @@ object ByteArrayBase64UrlNoPaddingSerializer : TransformingSerializerTemplate<By
 /** De-/serializes X509Certificate as Base64Url-encoded String */
 object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = Certificate::encodeToDer,
+    encodeAs = { DER.encodeToByteArray<Certificate>(it) },
     decodeAs = { DER.decodeFromByteArray<Certificate>(it) }
 )
 
 /** De-/serializes X509Certificate as Base64-encoded String */
 object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    encodeAs = Certificate::encodeToDer,
+    encodeAs = { DER.encodeToByteArray<Certificate>(it) },
     decodeAs = { DER.decodeFromByteArray<Certificate>(it) }
 )
 

@@ -386,8 +386,8 @@ sealed interface CryptoPrivateKey : Identifiable {
 
 
             fun fromSec1(sec1: Sec1EcPrivateKeyInfo, attributes: Set<Asn1Element>?): EC = runRethrowing {
-                val curve: ECCurve? = sec1.parameters?.value?.let(ECCurve::withOid)
-                val publicKey: Asn1BitString? = sec1.publicKey?.value
+                val curve: ECCurve? = sec1.parameters?.let(ECCurve::withOid)
+                val publicKey: Asn1BitString? = sec1.publicKey
                 val privateKey = EC.WithoutPublicKey(
                     BigInteger.fromByteArray(sec1.privateKey, Sign.POSITIVE),
                     publicKey,
