@@ -1,11 +1,11 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
-import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
-import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.encoding.readAsn1Element
+import at.asitplus.awesn1.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke

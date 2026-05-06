@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm

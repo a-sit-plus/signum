@@ -5,7 +5,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
+import at.asitplus.awesn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*

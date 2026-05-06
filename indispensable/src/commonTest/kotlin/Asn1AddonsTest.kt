@@ -1,6 +1,6 @@
 package at.asitplus.signum
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.testballoon.checkAll
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign

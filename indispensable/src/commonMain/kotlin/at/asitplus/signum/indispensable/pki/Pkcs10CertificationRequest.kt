@@ -5,12 +5,12 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.Asn1.BitString
+import at.asitplus.awesn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.awesn1.encoding.asAsn1BitString
+import at.asitplus.awesn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.requireSupported
 
 /**
@@ -91,7 +91,7 @@ data class Pkcs10CertificationRequest private constructor(
     val rawTbsCsr: Asn1Sequence,
     val rawSignatureAlgorithm: Asn1Sequence,
     val rawSignature: Asn1Primitive
-) : PemEncodable<Asn1Sequence> {
+) : Asn1Encodable<Asn1Sequence> {
 
     constructor(
          tbsCsr: TbsCertificationRequest,
@@ -117,7 +117,7 @@ data class Pkcs10CertificationRequest private constructor(
         level = DeprecationLevel.ERROR)
     val signature get() = decodedSignature.getOrThrow()
 
-    override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
+    // PEM disabled during awesn1 migration.
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
@@ -126,10 +126,7 @@ data class Pkcs10CertificationRequest private constructor(
         +rawSignature
     }
 
-    companion object : PemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
-        EB_STRINGS.DEFAULT,
-        EB_STRINGS.LEGACY
-    ) {
+    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest> {
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"

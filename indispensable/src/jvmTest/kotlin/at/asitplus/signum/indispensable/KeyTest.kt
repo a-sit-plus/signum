@@ -1,11 +1,11 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke

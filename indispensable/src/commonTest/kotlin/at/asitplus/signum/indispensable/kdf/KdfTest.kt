@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.kdf
 
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
+import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestConfig

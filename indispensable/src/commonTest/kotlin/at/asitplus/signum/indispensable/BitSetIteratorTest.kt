@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.BitSet
+import at.asitplus.awesn1.BitSet
 
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestConfig

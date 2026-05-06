@@ -15,7 +15,7 @@ import androidx.fragment.app.FragmentActivity
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
