@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.awesn1.runRethrowing
+import at.asitplus.signum.indispensable.encodeToTlv
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -100,14 +101,14 @@ constructor(
             version?.let { +Version(it) }
             +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
             +signatureAlgorithm
-            +Asn1.Sequence { issuerName.forEach { +it } }
+            +Asn1.Sequence { issuerName.forEach { +it.encodeToTlv() } }
 
             +Asn1.Sequence {
                 +validFrom
                 +validUntil
             }
 
-            +Asn1.Sequence { subjectName.forEach { +it } }
+            +Asn1.Sequence { subjectName.forEach { +it.encodeToTlv() } }
 
             //subject public key
             +rawPublicKey
