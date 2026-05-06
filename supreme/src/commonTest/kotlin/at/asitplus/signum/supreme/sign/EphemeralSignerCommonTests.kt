@@ -233,7 +233,7 @@ val EphemeralSignerCommonTests  by testSuite {
                     subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
-                        Pkcs10CertificationRequestAttribute(
+                        CsrAttribute(
                             // No OID is assigned for this; choose one!
                             KnownOIDs.id_sMIME,
                             // ↓↓↓ contains challenge ↓↓↓
@@ -286,7 +286,7 @@ val EphemeralSignerCommonTests  by testSuite {
                     subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
-                        Pkcs10CertificationRequestAttribute(
+                        CsrAttribute(
                             // No OID is assigned for this; choose one!
                             KnownOIDs.id_sMIME,
                             // ↓↓↓ contains challenge ↓↓↓

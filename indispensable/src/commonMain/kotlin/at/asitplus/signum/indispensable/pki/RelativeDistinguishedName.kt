@@ -51,10 +51,10 @@ class RelativeDistinguishedName private constructor(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RelativeDistinguishedName) return false
-        return asn1Representation == other.asn1Representation
+        return attrsAndValues == other.attrsAndValues
     }
 
-    override fun hashCode(): Int = asn1Representation.hashCode()
+    override fun hashCode(): Int = attrsAndValues.hashCode()
 
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
@@ -372,10 +372,14 @@ open class AttributeTypeAndValue private constructor(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is AttributeTypeAndValue) return false
-        return asn1Representation == other.asn1Representation
+        return oid == other.oid && value == other.value
     }
 
-    override fun hashCode(): Int = asn1Representation.hashCode()
+    override fun hashCode(): Int {
+        var result = oid.hashCode()
+        result = 31 * result + value.hashCode()
+        return result
+    }
 
     companion object : DerDecodable<X500AttributeTypeAndValue, AttributeTypeAndValue> {
 

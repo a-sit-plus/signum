@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.*
 import at.asitplus.awesn1.encoding.Asn1.BitString
 import at.asitplus.awesn1.encoding.Asn1.Null
@@ -36,6 +37,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * Representation of the key in the format used by iOS, EC compression is used if key was compressed on reception
      */
     abstract val iosEncoded: ByteArray
+
+    fun toSubjectPublicKeyInfo(): SubjectPublicKeyInfo = when (this) {
+        is EC -> SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
+        is RSA -> SubjectPublicKeyInfo.rsa(n, e)
+    }
 
     override fun encodeToTlv() = when (this) {
         is EC -> Asn1.Sequence {
@@ -136,6 +142,34 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             }
         }
+
+        fun fromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): CryptoPublicKey =
+            when (val oid = spki.algorithmOid) {
+                EC.oid -> {
+                    val parameters = spki.algorithmIdentifier.parameters
+                    requireNotNull(parameters) { "No EC params found" }
+
+                    val curveOid = parameters.asPrimitive().readOid()
+                    val curve = ECCurve.entries.find { it.oid == curveOid }
+                        ?: throw Asn1Exception("Curve not supported: $curveOid")
+
+                    if (!spki.subjectPublicKey.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
+                        throw Asn1Exception("EC key not prefixed with 0x04")
+                    }
+                    val xAndY = spki.subjectPublicKey.rawBytes.drop(1)
+                    val coordLen = curve.coordinateLength.bytes.toInt()
+                    val x = xAndY.take(coordLen).toByteArray()
+                    val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
+                    EC.fromUncompressed(curve, x, y)
+                }
+
+                RSA.oid -> {
+                    val rsaPublicKey = spki.decodeRsaPublicKey()
+                    RSA(n = rsaPublicKey.modulus, e = rsaPublicKey.publicExponent)
+                }
+
+                else -> throw Asn1Exception("Unsupported Key Type: $oid")
+            }
 
         /**
          * Parses this key from an iOS-encoded one
