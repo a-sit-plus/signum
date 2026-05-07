@@ -149,7 +149,9 @@ class TbsCertificationRequest private constructor(
 class CertificationRequest private constructor(
     providedAsn1Representation: Awesn1Pkcs10CertificationRequest?,
     providedContent: Pkcs10CertificationRequestContent?,
-) : DerEncodable<Awesn1Pkcs10CertificationRequest> {
+) : DerPemEncodable<Awesn1Pkcs10CertificationRequest> {
+
+    override val pemLabel: String get() = Companion.canonicalPemLabel
 
     constructor(
         tbsCsr: TbsCertificationRequest,
@@ -200,11 +202,14 @@ class CertificationRequest private constructor(
     override fun toString(): String =
         "Pkcs10CertificationRequest(tbsCsr=$tbsCsr, signatureAlgorithm=$signatureAlgorithm, signature=$signature)"
 
-    companion object : DerDecodable<Awesn1Pkcs10CertificationRequest, CertificationRequest> {
+    companion object : DerPemDecodable<Awesn1Pkcs10CertificationRequest, CertificationRequest> {
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"
         }
+
+        override val canonicalPemLabel: String = EB_STRINGS.DEFAULT
+        override val validPemLabels: Set<String> = setOf(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY)
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(

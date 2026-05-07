@@ -2,10 +2,10 @@ package at.asitplus.signum
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
+import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
-
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -27,9 +27,9 @@ val PemTest  by matrixSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val cert= X509Certificate.decodeFromPem(pemEC).getOrThrow()
-        cert.encodeToPEM().getOrThrow() shouldBe pemEC
-        val pemRSA= """
+        val cert = X509Certificate.decodeFromPem(pemEC)
+        cert.encodeToPem() shouldBe pemEC
+        val pemRSA = """
             -----BEGIN CERTIFICATE-----
             MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
             TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
@@ -63,8 +63,8 @@ val PemTest  by matrixSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val certRSA= X509Certificate.decodeFromPem(pemRSA).getOrThrow()
-        certRSA.encodeToPEM().getOrThrow() shouldBe pemRSA
+        val certRSA = X509Certificate.decodeFromPem(pemRSA)
+        certRSA.encodeToPem() shouldBe pemRSA
     }
 
     "EC Public Key" {
@@ -75,7 +75,8 @@ val PemTest  by matrixSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val key = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.EC>()
+        val key = CryptoPublicKey.decodeFromPem(pem)
+            .shouldBeInstanceOf<CryptoPublicKey.EC>()
     }
     "CSR" {
         val pem = """
@@ -87,7 +88,8 @@ val PemTest  by matrixSuite {
         -----END CERTIFICATE REQUEST-----
         """.trimIndent()
 
-        val csr  = CertificationRequest.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CertificationRequest>()
+        val csr = CertificationRequest.decodeFromPem(pem)
+            .shouldBeInstanceOf<CertificationRequest>()
         csr.tbsCsr.publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
     }
 
@@ -109,9 +111,10 @@ val PemTest  by matrixSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val rsa = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+        val rsa = CryptoPublicKey.decodeFromPem(pem)
+            .shouldBeInstanceOf<CryptoPublicKey.RSA>()
 
-        val pkcs1= """
+        val pkcs1 = """
             -----BEGIN RSA PUBLIC KEY-----
             MIIBigKCAYEAq3DnhgYgLVJknvDA3clATozPtjI7yauqD4/ZuqgZn4KzzzkQ4BzJ
             ar4jRygpzbghlFn0Luk1mdVKzPUgYj0VkbRlHyYfcahbgOHixOOnXkKXrtZW7yWG
@@ -119,7 +122,7 @@ val PemTest  by matrixSuite {
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
-         CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+        CryptoPublicKey.decodeFromPem(pkcs1).shouldBeInstanceOf<CryptoPublicKey.RSA>()
     }
 
 
@@ -133,12 +136,14 @@ val PemTest  by matrixSuite {
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(rnd + sec1).getOrThrow().let {
+        CryptoPrivateKey.decodeFromPem(rnd + sec1).let {
             it.shouldBeInstanceOf<CryptoPrivateKey.EC>()
-            CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow() shouldBe it
-            CryptoPrivateKey.RSA.decodeFromPem(sec1).isSuccess shouldBe false
+            CryptoPrivateKey.EC.decodeFromPem(sec1) shouldBe it
+            kotlin.runCatching {
+                CryptoPrivateKey.RSA.decodeFromPem(sec1)
+            }.isSuccess shouldBe false
 
-            it.asSEC1.encodeToPEM().getOrThrow().lines() shouldBe sec1.lines()
+            it.asSEC1.encodeToPem().lines() shouldBe sec1.lines()
         }
     }
 
@@ -151,10 +156,12 @@ val PemTest  by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(rnd + pkcs8).getOrThrow().let {
-            CryptoPrivateKey.EC.decodeFromPem(pkcs8).getOrThrow() shouldBe it
-            CryptoPrivateKey.RSA.decodeFromPem(pkcs8).isSuccess shouldBe false
-            it.encodeToPEM().getOrThrow().lines() shouldBe pkcs8.lines()
+        CryptoPrivateKey.decodeFromPem(rnd + pkcs8).let {
+            CryptoPrivateKey.EC.decodeFromPem(pkcs8) shouldBe it
+            kotlin.runCatching {
+                CryptoPrivateKey.RSA.decodeFromPem(pkcs8)
+            }.isSuccess shouldBe false
+            it.encodeToPem().lines() shouldBe pkcs8.lines()
         }
     }
 
@@ -495,7 +502,7 @@ val PemTest  by matrixSuite {
             """.trimIndent()
         )
         rsa.forEach {
-            CryptoPrivateKey.decodeFromPem(it).getOrThrow()
+            CryptoPrivateKey.decodeFromPem(it)
         }
     }
 }

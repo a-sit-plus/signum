@@ -2,6 +2,11 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.PemBlock
+import at.asitplus.awesn1.PemLabelSpec
+import at.asitplus.awesn1.WithPemLabel
+import at.asitplus.awesn1.decodeFromPem
+import at.asitplus.awesn1.validate
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.io.encodeToDer
 import at.asitplus.awesn1.io.parse
@@ -31,6 +36,70 @@ interface DerEncodable<Serializable> {
     fun encodeToTlv(serializer: KSerializer<Serializable>, der: Der = DER): Asn1Element =
         der.encodeToTlv(serializer, asn1Representation) as Asn1Element //won't ever be null
 }
+
+interface DerPemEncodable<Serializable> : DerEncodable<Serializable>, WithPemLabel
+
+interface DerPemDecodable<Serializable, out T : DerEncodable<Serializable>> :
+    DerDecodable<Serializable, T>, PemLabelSpec<T> {
+
+    @Throws(Asn1Exception::class)
+    fun decodeFromPemBlockPayload(
+        serializer: KSerializer<Serializable>,
+        src: PemBlock,
+        der: Der = DER,
+    ): T = decodeFromDer(serializer, src.payload, der)
+}
+
+fun <Serializable> DerPemEncodable<Serializable>.encodeToPemBlock(
+    serializer: KSerializer<Serializable>,
+    der: Der = DER,
+): PemBlock = PemBlock(pemLabel, payload = encodeToDer(serializer, der))
+
+inline fun <reified Serializable> DerPemEncodable<Serializable>.encodeToPemBlock(
+    der: Der = DER,
+): PemBlock = encodeToPemBlock(
+    der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
+    der,
+)
+
+fun <Serializable> DerPemEncodable<Serializable>.encodeToPem(
+    serializer: KSerializer<Serializable>,
+    der: Der = DER,
+): String = encodeToPemBlock(serializer, der).encodeToPem()
+
+inline fun <reified Serializable> DerPemEncodable<Serializable>.encodeToPem(
+    der: Der = DER,
+): String = encodeToPemBlock<Serializable>(der).encodeToPem()
+
+fun <Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPemBlock(
+    serializer: KSerializer<Serializable>,
+    src: PemBlock,
+    der: Der = DER,
+): T {
+    validate(src)
+    require(!src.headers.any()) { "Unexpected PEM headers are present in the data" }
+    return decodeFromPemBlockPayload(serializer, src, der)
+}
+
+inline fun <reified Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPemBlock(
+    src: PemBlock,
+    der: Der = DER,
+): T = decodeFromPemBlock(
+    der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
+    src,
+    der,
+)
+
+fun <Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPem(
+    serializer: KSerializer<Serializable>,
+    src: String,
+    der: Der = DER,
+): T = decodeFromPemBlock(serializer, PemBlock.decodeFromPem(src), der)
+
+inline fun <reified Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPem(
+    src: String,
+    der: Der = DER,
+): T = decodeFromPemBlock<Serializable, T>(PemBlock.decodeFromPem(src), der)
 
 /**
  * Encodes the implementing object into an [Asn1Element] through [der] serialization

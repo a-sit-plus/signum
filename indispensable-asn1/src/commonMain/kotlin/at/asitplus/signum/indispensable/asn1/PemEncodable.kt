@@ -91,7 +91,7 @@ private val PemEncodable<*>.postEB: String get() = "$FENCE_PREFIX_END${this.cano
  * Encodes this [PemEncodable] into a PEM-encoded string
  */
 @OptIn(ExperimentalEncodingApi::class)
-fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching {
+fun PemEncodable<*>.encodeToPem(): KmmResult<String> = catching {
     "$preEB\n" + Base64.Mime.encode(encodeToDer()).lines().joinToString("").chunked(64)
         .joinToString(separator = "\n", postfix = "\n") + postEB
 }

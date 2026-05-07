@@ -30,7 +30,7 @@ private data class EcPublicKeyContent(
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : DerEncodable<SubjectPublicKeyInfo>, Identifiable {
+sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -53,8 +53,12 @@ sealed class CryptoPublicKey : DerEncodable<SubjectPublicKeyInfo>, Identifiable 
     fun encodeToTlv(): Asn1Sequence =
         DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), asn1Representation) as Asn1Sequence
 
+    override val pemLabel: String get() = Companion.canonicalPemLabel
 
-    companion object : DerDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
+    companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
+        override val canonicalPemLabel: String = "PUBLIC KEY"
+        override val validPemLabels: Set<String> = setOf(canonicalPemLabel, "RSA PUBLIC KEY")
+
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -102,6 +106,22 @@ sealed class CryptoPublicKey : DerEncodable<SubjectPublicKeyInfo>, Identifiable 
             src: Asn1Element,
             der: Der,
         ): CryptoPublicKey  = CryptoPublicKey(der.decodeFromTlv(serializer, src))
+
+        override fun decodeFromPemBlockPayload(
+            serializer: KSerializer<SubjectPublicKeyInfo>,
+            src: PemBlock,
+            der: Der,
+        ): CryptoPublicKey =
+            when (src.pemLabel) {
+                "RSA PUBLIC KEY" -> der.decodeFromTlv(
+                    Pkcs1RsaPublicKeyInfo.serializer(),
+                    Asn1Element.parse(src.payload),
+                ).let {
+                    RSA(it.modulus as Asn1Integer.Positive, it.publicExponent as Asn1Integer.Positive)
+                }
+
+                else -> decodeFromDer(serializer, src.payload, der)
+            }
 
 
         operator fun invoke(asn1Representation: SubjectPublicKeyInfo): CryptoPublicKey =  when (val oid = asn1Representation.algorithmOid) {
