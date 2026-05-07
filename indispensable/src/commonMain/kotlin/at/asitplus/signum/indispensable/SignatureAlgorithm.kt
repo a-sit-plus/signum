@@ -13,6 +13,7 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.internals.orLazy
+import at.asitplus.signum.internals.orLazyNullable
 import kotlinx.serialization.KSerializer
 
 sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
@@ -110,14 +111,49 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
     }
 }
 
-sealed interface SignatureAlgorithm : DataIntegrityAlgorithm {
+//for now, we just replicate the pattern, but since everything is sealed, we don't actually parse
+sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
 
     data class ECDSA(
-        /** The digest to apply to the data, or `null` to directly process the raw data. */
-        val digest: Digest?,
-        /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
-        val requiredCurve: ECCurve?
+        private val providedParams: Pair<Digest?, ECCurve?>?,
+        private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
+
+        constructor(
+            /** The digest to apply to the data, or `null` to directly process the raw data. */
+            digest: Digest?,
+            /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
+            requiredCurve: ECCurve?
+        ) : this(digest to requiredCurve, null)
+
+
+        /** The digest to apply to the data, or `null` to directly process the raw data. */
+        val digest: Digest? by providedParams.orLazyNullable(
+            provided = { first },
+            fallback = {
+                when (providedAsn1!!.oid) {
+                    KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
+                    KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
+                    KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
+                    else -> throw IllegalArgumentException("Unuspported algorithm ${providedAsn1.oid}")
+                }
+            }
+        )
+
+        /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
+        val requiredCurve: ECCurve? by providedParams.orLazyNullable(
+            provided = { second },
+            fallback = { null },
+        )
+
+        override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
+            X509AlgorithmIdentifier(when(digest) {
+                Digest.SHA256 -> KnownOIDs.ecdsaWithSHA256
+                Digest.SHA384 -> KnownOIDs.ecdsaWithSHA384
+                Digest.SHA512-> KnownOIDs.ecdsaWithSHA512
+                else -> throw IllegalArgumentException("Unsupported digest: $digest")
+            })
+        }
 
         companion object : Enumeration<ECDSA> {
             override val entries: Set<ECDSA> by lazy {
