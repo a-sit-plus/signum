@@ -1,134 +1,184 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.Asn1BitString
+import at.asitplus.awesn1.Asn1Decodable
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Encodable
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Primitive
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.decodeRethrowing
+import at.asitplus.awesn1.ecPublicKey
+import at.asitplus.awesn1.rsaEncryption
+import at.asitplus.awesn1.crypto.Pkcs1RsaOtherPrimeInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.asAsn1BitString
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.runRethrowing
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.toAsn1Integer
+import at.asitplus.awesn1.toBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
-import at.asitplus.awesn1.*
-import at.asitplus.awesn1.encoding.*
-import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.internals.checkedAs
 import at.asitplus.signum.internals.ensureSize
+import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import kotlinx.serialization.KSerializer
 
-private object EB_STRINGS {
-    const val GENERIC_PRIVATE_KEY_PKCS8 = "PRIVATE KEY"
-    const val RSA_PRIVATE_KEY_PKCS1 = "RSA PRIVATE KEY"
-    const val EC_PRIVATE_KEY_SEC1 = "EC PRIVATE KEY"
-    const val ENCRYPTED_PRIVATE_KEY = "ENCRYPTED PRIVATE KEY"
+data class RsaPrivateKeyContent(
+    val publicKey: CryptoPublicKey.RSA,
+    val privateKey: BigInteger,
+    val prime1: BigInteger,
+    val prime2: BigInteger,
+    val prime1exponent: BigInteger,
+    val prime2exponent: BigInteger,
+    val crtCoefficient: BigInteger,
+    val otherPrimeInfos: List<CryptoPrivateKey.RSA.PrimeInfo>?,
+    val attributes: Set<Asn1Element>?,
+) {
+    init {
+        val n = publicKey.n.toBigInteger()
+        val e = publicKey.e.toBigInteger()
+        val primeInfo1 = CryptoPrivateKey.RSA.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
+        val primeInfo2 = CryptoPrivateKey.RSA.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
+
+        var product = BigInteger.ONE
+        (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
+            .forEachIndexed { i, info ->
+                val pminusone = info.prime - BigInteger.ONE
+                require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE) {
+                    "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i"
+                }
+                product *= info.prime
+                require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
+                require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
+            }
+        require(product == n) { "p1 * p2 * ... * pk != n" }
+    }
 }
 
+data class RsaPkcs1Source(
+    val pkcs1Representation: Pkcs1RsaPrivateKeyInfo,
+    val attributes: Set<Asn1Element>?,
+)
+
+data class EcPrivateKeyContent(
+    val privateKey: BigInteger,
+    val publicKey: CryptoPublicKey.EC?,
+    val publicKeyBytes: Asn1BitString?,
+    val encodeCurve: Boolean,
+    val encodePublicKey: Boolean,
+    val curveOrderLengthInBytes: Int,
+    val attributes: Set<Asn1Element>?,
+)
+
+data class EcSec1Source(
+    val sec1Representation: Sec1EcPrivateKeyInfo,
+    val curveFromPkcs8: ECCurve?,
+    val attributes: Set<Asn1Element>?,
+)
+
 /**
- * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
- * Equality checks are performed wrt. cryptographic properties.
+ * PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties.
  */
-sealed interface CryptoPrivateKey : Asn1Encodable<Asn1Sequence>, Identifiable {
+sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifiable {
 
     sealed interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
-        /** [CryptoPublicKey] matching this private key. */
         val publicKey: T
     }
 
-    /** optional attributes relevant when PKCS#8-encoding a private key */
-    val attributes: List<Asn1Element>?
+    val attributes: Set<Asn1Element>?
 
-    /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
-    val asPKCS8: Asn1Encodable<Asn1Sequence> get() = this
+    val asPKCS8: DerEncodable<Pkcs8PrivateKeyInfo> get() = this
 
-    sealed class Impl(
-        /** optional attributes relevant when PKCS#8-encoding a private key */
-        override val attributes: List<Asn1Element>?
-    ) : CryptoPrivateKey {
-        // PEM disabled during awesn1 migration.
+    class RSA private constructor(
+        private val providedContent: RsaPrivateKeyContent?,
+        private val providedPkcs1Source: RsaPkcs1Source?,
+        private val providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
+    ) : CryptoPrivateKey, WithPublicKey<CryptoPublicKey.RSA> {
 
-        /**
-         * PKCS#8 encoding of a private key:
-         * ```asn1
-         * PrivateKeyInfo ::= SEQUENCE {
-         *   version                   Version,
-         *   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
-         *   privateKey                PrivateKey,
-         *   attributes           [0]  IMPLICIT Attributes OPTIONAL
-         * }
-         *
-         * Version ::= INTEGER
-         *
-         * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
-         *
-         * PrivateKey ::= OCTET STRING
-         *
-         * Attributes ::= SET OF Attribute
-         * ```
-         *
-         * @throws Asn1StructuralException if `this` is [EC.WithoutPublicKey], such as decoded from minimal SEC1
-         */
+        constructor(
+            publicKey: CryptoPublicKey.RSA,
+            privateKey: BigInteger,
+            prime1: BigInteger,
+            prime2: BigInteger,
+            prime1exponent: BigInteger,
+            prime2exponent: BigInteger,
+            crtCoefficient: BigInteger,
+            otherPrimeInfos: List<PrimeInfo>?,
+            attributes: Set<Asn1Element>? = null,
+        ) : this(
+            RsaPrivateKeyContent(
+                publicKey = publicKey,
+                privateKey = privateKey,
+                prime1 = prime1,
+                prime2 = prime2,
+                prime1exponent = prime1exponent,
+                prime2exponent = prime2exponent,
+                crtCoefficient = crtCoefficient,
+                otherPrimeInfos = otherPrimeInfos,
+                attributes = attributes,
+            ),
+            null,
+            null,
+        )
 
-        @Throws(Asn1Exception::class)
-        override fun encodeToTlv() = runRethrowing {
-            Asn1.Sequence {
-                +Asn1.Int(0)
-                +Asn1.Sequence {
-                    when (this@Impl) {
-                        is RSA -> {
-                            +RSA.oid
-                            +Asn1.Null()
-                        }
+        internal constructor(asn1Representation: Pkcs8PrivateKeyInfo) : this(null, null, asn1Representation)
 
-                        is EC.WithPublicKey -> {
-                            +EC.oid
-                            +curve.oid
-                        }
+        internal constructor(
+            pkcs1Representation: Pkcs1RsaPrivateKeyInfo,
+            attributes: Set<Asn1Element>? = null,
+        ) : this(null, RsaPkcs1Source(pkcs1Representation, attributes), null)
 
-                        is EC.WithoutPublicKey ->
-                            throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
-                    }
-                }
-                +Asn1.OctetStringEncapsulating {
-                    when (this@Impl) {
-                        is RSA -> +asPKCS1.encodeToTlv()
-                        is EC -> +asSEC1.encodeToTlv()
-                    }
-                }
-                attributes?.let {
-                    +(Asn1.SetOf {
-                        it.forEach { attr -> +attr }
-                    } withImplicitTag 0uL)
-                }
-            }
+        override val oid: ObjectIdentifier get() = Companion.oid
+
+        private val content: RsaPrivateKeyContent by providedContent orLazy {
+            val source = providedPkcs1Source ?: RsaPkcs1Source(
+                requireNotNull(providedPkcs8Representation).decodeRsaPrivateKey(),
+                providedPkcs8Representation.attributes,
+            )
+            source.pkcs1Representation.toSignumContent(source.attributes)
         }
-    }
 
-    /**
-     * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
-     * Attributes are never PKCS#1 encoded, but are relevant when PKCS#8-encoding a private key.
-     */
-    class RSA
-    /** @throws IllegalArgumentException in case invalid parameters are provided*/
-    @Throws(IllegalArgumentException::class)
-    constructor(
-        /** The [CryptoPublicKey.RSA] (n,e) matching this private key */
-        override val publicKey: CryptoPublicKey.RSA,
-        /** d: the private key such that d*e = 1 mod phi(n) */
-        val privateKey: BigInteger,
-        /** p: the first prime factor */
-        val prime1: BigInteger,
-        /** q: the second prime factor */
-        val prime2: BigInteger,
-        /** dP: the first factor's CRT exponent */
-        val prime1exponent: BigInteger,
-        /** dQ: the second factor's CRT exponent */
-        val prime2exponent: BigInteger,
-        /** qInv: the factors' CRT coefficient (q^(-1) mod p) */
-        val crtCoefficient: BigInteger,
-        /** information about additional prime factors: triples (r_i, d_i, t_i) of prime factor, exponent, coefficient */
-        val otherPrimeInfos: List<PrimeInfo>?,
-        /** PKCS#8 attributes */
-        attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey.Impl(attributes), WithPublicKey<CryptoPublicKey.RSA> {
+        override val attributes: Set<Asn1Element>? by lazy {
+            providedContent?.attributes
+                ?: providedPkcs8Representation?.attributes
+                ?: providedPkcs1Source?.attributes
+        }
 
-        override val oid = RSA.oid
+        val pkcs1Representation: Pkcs1RsaPrivateKeyInfo by providedPkcs1Source?.pkcs1Representation orLazy {
+            providedPkcs8Representation?.decodeRsaPrivateKey() ?: content.toPkcs1Representation()
+        }
+
+        override val asn1Representation: Pkcs8PrivateKeyInfo by providedPkcs8Representation orLazy {
+            Pkcs8PrivateKeyInfo.rsa(pkcs1Representation, attributes)
+        }
+
+        val asPKCS1: DerEncodable<Pkcs1RsaPrivateKeyInfo> = object : DerEncodable<Pkcs1RsaPrivateKeyInfo> {
+            override val asn1Representation: Pkcs1RsaPrivateKeyInfo get() = pkcs1Representation
+        }
+
+        override val publicKey: CryptoPublicKey.RSA get() = content.publicKey
+        val privateKey: BigInteger get() = content.privateKey
+        val prime1: BigInteger get() = content.prime1
+        val prime2: BigInteger get() = content.prime2
+        val prime1exponent: BigInteger get() = content.prime1exponent
+        val prime2exponent: BigInteger get() = content.prime2exponent
+        val crtCoefficient: BigInteger get() = content.crtCoefficient
+        val otherPrimeInfos: List<PrimeInfo>? get() = content.otherPrimeInfos
 
         override fun equals(other: Any?): Boolean {
             if (other !is RSA) return false
@@ -137,278 +187,220 @@ sealed interface CryptoPrivateKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         override fun hashCode() = publicKey.hashCode()
 
-        init {
-            val n = publicKey.n.toBigInteger()
-            val e = publicKey.e.toBigInteger()
-            // the primes and exponents are intentionally swapped; see RFC 8017 sec 3.2 note 1
-            val primeInfo1 = PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
-            val primeInfo2 = PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
+        override fun toString() = "RSA private key for public key $publicKey"
 
-            var product = BigInteger.ONE
-            (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
-                .forEachIndexed { i, info ->
-                    val pminusone = info.prime - BigInteger.ONE
-                    require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE)
-                    { "t_$i != (r_0 * ... * r_${i-1})^(-1) mod r_$i" }
-                    product *= info.prime
-                    require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
-                    require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
-                }
-            require(product == n) { "p1 * p2 * … * pk != n" }
-        }
-
-        /** Encodes this private key into a PKCS#1-encoded private key */
-        val asPKCS1 = object : Asn1Encodable<Asn1Sequence> {
-            // PEM disabled during awesn1 migration.
-
-            /**
-             * ```asn1
-             * RSAPrivateKey ::= SEQUENCE {
-             *   version           Version,
-             *   modulus           INTEGER,  -- n
-             *   publicExponent    INTEGER,  -- e
-             *   privateExponent   INTEGER,  -- d
-             *   prime1            INTEGER,  -- p
-             *   prime2            INTEGER,  -- q
-             *   exponent1         INTEGER,  -- d mod (p-1)
-             *   exponent2         INTEGER,  -- d mod (q-1)
-             *   coefficient       INTEGER,  -- (inverse of q) mod p
-             *   otherPrimeInfos   OtherPrimeInfos OPTIONAL
-             * }
-             * ```
-             */
-            override fun encodeToTlv() = runRethrowing {
-                Asn1.Sequence {
-                    if (otherPrimeInfos != null) +Asn1.Int(1) else +Asn1.Int(0)
-                    +publicKey.n
-                    +publicKey.e
-                    +Asn1.Int(privateKey)
-                    +Asn1.Int(prime1)
-                    +Asn1.Int(prime2)
-                    +Asn1.Int(prime1exponent)
-                    +Asn1.Int(prime2exponent)
-                    +Asn1.Int(crtCoefficient)
-                    otherPrimeInfos?.let {
-                        +Asn1.Sequence {
-                            it.forEach { info -> +info }
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * OtherPrimeInfos as per PKCS#1
-         *
-         * ```asn1
-         * OtherPrimeInfo ::= SEQUENCE {
-         *   prime             INTEGER,  -- ri
-         *   exponent          INTEGER,  -- di
-         *   coefficient       INTEGER   -- ti
-         * }
-         * ```
-         */
         data class PrimeInfo(
             val prime: BigInteger,
             val exponent: BigInteger,
             val coefficient: BigInteger,
-        ) : Asn1Encodable<Asn1Sequence> {
-
-            @Throws(Asn1Exception::class)
-            override fun encodeToTlv() = runRethrowing {
-                Asn1.Sequence {
-                    +Asn1.Int(prime)
-                    +Asn1.Int(exponent)
-                    +Asn1.Int(coefficient)
-                }
-            }
-
-            companion object : Asn1Decodable<Asn1Sequence, PrimeInfo> {
-
-                @Throws(Asn1Exception::class)
-                override fun doDecode(src: Asn1Sequence): PrimeInfo = src.decodeRethrowing {
-                    val prime = next().asPrimitive().decodeToBigInteger()
-                    val exponent = next().asPrimitive().decodeToBigInteger()
-                    val coefficient = next().asPrimitive().decodeToBigInteger()
-                    PrimeInfo(prime, exponent, coefficient)
-                }
-
-            }
-        }
-
-        companion object : Asn1Decodable<Asn1Sequence, RSA> {
-            override fun doDecode(src: Asn1Sequence): RSA =
-                checkedAs(CryptoPrivateKey.doDecode(src))
-
-            val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
-        }
-
-        object FromPKCS1 : Asn1Decodable<Asn1Sequence, RSA> {
-            @Throws(Asn1Exception::class)
-            override fun doDecode(src: Asn1Sequence): RSA = doDecode(src, null)
-
-            /** PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding */
-            @Throws(Asn1Exception::class)
-            fun doDecode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA = src.decodeRethrowing {
-                val version = next().asPrimitive().decodeToInt()
-                require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
-                val modulus = next().asPrimitive().decodeToAsn1Integer()
-                val publicExponent = next().asPrimitive().decodeToAsn1Integer()
-                val privateExponent = next().asPrimitive().decodeToBigInteger()
-                val prime1 = next().asPrimitive().decodeToBigInteger()
-                val prime2 = next().asPrimitive().decodeToBigInteger()
-                val exponent1 = next().asPrimitive().decodeToBigInteger()
-                val exponent2 = next().asPrimitive().decodeToBigInteger()
-                val coefficient = next().asPrimitive().decodeToBigInteger()
-
-                val otherPrimeInfos: List<PrimeInfo>? = if (hasNext()) {
-                    require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
-                    next().asSequence().children.map { PrimeInfo.decodeFromTlv(it.asSequence()) }
-                } else {
-                    require(version == 0) { "OtherPrimeInfos is not present. RSA private key version must be 0" }
-                    null
-                }
-
-                RSA(
-                    CryptoPublicKey.RSA(modulus, publicExponent),
-                    privateExponent,
-                    prime1,
-                    prime2,
-                    exponent1,
-                    exponent2,
-                    coefficient,
-                    otherPrimeInfos,
-                    attributes
+        ) : DerEncodable<Pkcs1RsaOtherPrimeInfo> {
+            override val asn1Representation: Pkcs1RsaOtherPrimeInfo
+                get() = Pkcs1RsaOtherPrimeInfo(
+                    prime = positive(prime),
+                    exponent = positive(exponent),
+                    coefficient = positive(coefficient),
                 )
+
+            companion object : DerDecodable<Pkcs1RsaOtherPrimeInfo, PrimeInfo> {
+                override fun decodeFromTlv(
+                    serializer: KSerializer<Pkcs1RsaOtherPrimeInfo>,
+                    src: Asn1Element,
+                    der: Der,
+                ): PrimeInfo =
+                    der.decodeFromTlv(serializer, src).let {
+                        PrimeInfo(it.prime.toBigInteger(), it.exponent.toBigInteger(), it.coefficient.toBigInteger())
+                    }
             }
         }
 
-        override fun toString() = "RSA private key for public key $publicKey"
+        companion object : DerDecodable<Pkcs8PrivateKeyInfo, RSA> {
+            val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
+
+            override fun decodeFromTlv(
+                serializer: KSerializer<Pkcs8PrivateKeyInfo>,
+                src: Asn1Element,
+                der: Der,
+            ): RSA {
+                val decoded = der.decodeFromTlv(serializer, src)
+                require(decoded.algorithmOid == oid) { "Expected RSA private key, got ${decoded.algorithmOid}" }
+                return RSA(decoded)
+            }
+        }
+
+        object FromPKCS1 {
+            fun decodeFromTlv(
+                src: Asn1Element,
+                der: Der = DER,
+            ): RSA = RSA(der.decodeFromTlv(Pkcs1RsaPrivateKeyInfo.serializer(), src))
+
+            fun decodeFromDer(bytes: ByteArray, der: Der = DER): RSA =
+                decodeFromTlv(Asn1Element.parse(bytes), der)
+        }
     }
 
-    /**
-     * SEC1 Elliptic Curve Private Key Structure as per [RFC 5915](https://datatracker.ietf.org/doc/html/rfc5915) augmented with optional [attributes].
-     * Attributes are never SEC1 encoded, but are relevant when PKCS#8-encoding a private key.
-     */
-    sealed class EC(
-        val privateKey: BigInteger,
-        /** PKCS#8 attributes */
-        attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey.Impl(attributes) {
+    sealed class EC private constructor(
+        private val providedContent: EcPrivateKeyContent?,
+        private val providedSec1Source: EcSec1Source?,
+        private val providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
+    ) : CryptoPrivateKey {
 
-        override val oid = EC.oid
+        override val oid: ObjectIdentifier get() = Companion.oid
+
+        protected val content: EcPrivateKeyContent by providedContent orLazy {
+            val source = providedSec1Source ?: requireNotNull(providedPkcs8Representation).let {
+                EcSec1Source(it.decodeEcPrivateKey(), it.algorithmParameters?.let(::decodeEcCurve), it.attributes)
+            }
+            source.sec1Representation.toSignumContent(source.curveFromPkcs8, source.attributes)
+        }
+
+        override val attributes: Set<Asn1Element>? by lazy {
+            providedContent?.attributes
+                ?: providedPkcs8Representation?.attributes
+                ?: providedSec1Source?.attributes
+        }
+
+        val privateKey: BigInteger get() = content.privateKey
 
         abstract val privateKeyBytes: ByteArray
 
+        val sec1Representation: Sec1EcPrivateKeyInfo by providedSec1Source?.sec1Representation orLazy {
+            providedPkcs8Representation?.decodeEcPrivateKey() ?: content.toSec1Representation()
+        }
+
+        override val asn1Representation: Pkcs8PrivateKeyInfo by providedPkcs8Representation orLazy {
+            Pkcs8PrivateKeyInfo.ec(sec1Representation, curveOidForPkcs8(), attributes)
+        }
+
+        val asSEC1: DerEncodable<Sec1EcPrivateKeyInfo> = object : DerEncodable<Sec1EcPrivateKeyInfo> {
+            override val asn1Representation: Sec1EcPrivateKeyInfo get() = sec1Representation
+        }
+
+        protected abstract fun curveOidForPkcs8(): ObjectIdentifier?
+
         override fun equals(other: Any?): Boolean {
             if (other !is EC) return false
-            return (privateKey == other.privateKey)
+            return privateKey == other.privateKey
         }
 
         override fun hashCode() = privateKey.hashCode()
 
-        /** Encodes this private key into a SEC1-encoded private key */
-        val asSEC1 = object : Asn1Encodable<Asn1Sequence> {
-            // PEM disabled during awesn1 migration.
-
-            /**
-             * ```asn1
-             * ECPrivateKey ::= SEQUENCE {
-             *   version INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
-             *   privateKey OCTET STRING,
-             *   parameters [0] ECDomainParameters {{ SECGCurveNames }} OPTIONAL,
-             *   publicKey [1] BIT STRING OPTIONAL
-             * }
-             * ```
-             */
-            override fun encodeToTlv() = runRethrowing {
-                Asn1.Sequence {
-                    +Asn1.Int(1)
-                    +Asn1OctetString(privateKeyBytes)
-                    when (this@EC) {
-                        is WithPublicKey -> {
-                            if (encodeCurve) +Asn1.ExplicitlyTagged(0uL) { +curve.oid }
-                            if (encodePublicKey) +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(publicKey.iosEncoded) }
-                        }
-
-                        is WithoutPublicKey -> {
-                            if (publicKeyBytes != null) +Asn1.ExplicitlyTagged(1uL) { +publicKeyBytes }
-                        }
-                    }
-
-                }
-            }
-        }
-
-        class WithPublicKey
-        /** @throws IllegalArgumentException in case invalid parameters are provided*/
-        @Throws(IllegalArgumentException::class)
-        constructor(
-            privateKey: BigInteger,
-            override val publicKey: CryptoPublicKey.EC,
-            val encodeCurve: Boolean,
-            val encodePublicKey: Boolean,
-            attributes: List<Asn1Element>? = null
-        ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>,
+        class WithPublicKey private constructor(
+            providedContent: EcPrivateKeyContent?,
+            providedSec1Source: EcSec1Source?,
+            providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
+        ) : EC(providedContent, providedSec1Source, providedPkcs8Representation),
+            CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>,
             KeyAgreementPrivateValue.ECDH {
 
             constructor(
-                privateKey: BigInteger, curve: ECCurve,
-                encodeCurve: Boolean, encodePublicKey: Boolean, attributes: List<Asn1Element>? = null
-            ) :
-                    this(
-                        privateKey, curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
-                        encodeCurve, encodePublicKey, attributes
-                    )
-
-            init {
-                require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) { "Public key must match the private key!" }
+                privateKey: BigInteger,
+                publicKey: CryptoPublicKey.EC,
+                encodeCurve: Boolean,
+                encodePublicKey: Boolean,
+                attributes: Set<Asn1Element>? = null,
+            ) : this(
+                EcPrivateKeyContent(
+                    privateKey = privateKey,
+                    publicKey = publicKey,
+                    publicKeyBytes = null,
+                    encodeCurve = encodeCurve,
+                    encodePublicKey = encodePublicKey,
+                    curveOrderLengthInBytes = publicKey.curve.scalarLength.bytes.toInt(),
+                    attributes = attributes,
+                ),
+                null,
+                null,
+            ) {
+                require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
+                    "Public key must match the private key!"
+                }
             }
 
-            val curve get() = publicKey.curve
+            constructor(
+                privateKey: BigInteger,
+                curve: ECCurve,
+                encodeCurve: Boolean,
+                encodePublicKey: Boolean,
+                attributes: Set<Asn1Element>? = null,
+            ) : this(
+                privateKey,
+                curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
+                encodeCurve,
+                encodePublicKey,
+                attributes,
+            )
 
-            override fun toString(): String {
-                return "EC private key for public key $publicKey"
+            internal constructor(source: EcSec1Source) : this(null, source, null)
+            internal constructor(asn1Representation: Pkcs8PrivateKeyInfo) : this(null, null, asn1Representation)
+
+            override val publicKey: CryptoPublicKey.EC by content.publicKey orLazy {
+                val curve = curve
+                content.publicKeyBytes?.let {
+                    CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.rawBytes)
+                } ?: curve.generator.times(privateKey).asPublicKey(preferCompressed = true)
             }
+
+            val curve: ECCurve get() = publicKey.curve
+            val encodeCurve: Boolean get() = content.encodeCurve
+            val encodePublicKey: Boolean get() = content.encodePublicKey
 
             override val privateKeyBytes: ByteArray
                 get() = privateKey.toByteArray().ensureSize(curve.scalarLength.bytes)
 
-            override val publicValue get() = this.publicKey
+            override val publicValue get() = publicKey
+
+            override fun curveOidForPkcs8(): ObjectIdentifier = curve.oid
+
+            override fun toString() = "EC private key for public key $publicKey"
         }
 
-        class WithoutPublicKey constructor(
-            privateKey: BigInteger,
-            val publicKeyBytes: Asn1BitString?,
-            attributes: List<Asn1Element>? = null,
-            private val curveOrderLengthInBytes: Int
-        ) : EC(privateKey, attributes) {
+        class WithoutPublicKey private constructor(
+            providedContent: EcPrivateKeyContent?,
+            providedSec1Source: EcSec1Source?,
+        ) : EC(providedContent, providedSec1Source, null) {
 
-            /** Creates a new [CryptoPrivateKey.EC.WithPublicKey] based on the passed curve. */
+            constructor(
+                privateKey: BigInteger,
+                publicKeyBytes: Asn1BitString?,
+                attributes: Set<Asn1Element>? = null,
+                curveOrderLengthInBytes: Int,
+            ) : this(
+                EcPrivateKeyContent(
+                    privateKey = privateKey,
+                    publicKey = null,
+                    publicKeyBytes = publicKeyBytes,
+                    encodeCurve = false,
+                    encodePublicKey = publicKeyBytes != null,
+                    curveOrderLengthInBytes = curveOrderLengthInBytes,
+                    attributes = attributes,
+                ),
+                null,
+            )
+
+            internal constructor(source: EcSec1Source) : this(null, source)
+
+            val publicKeyBytes: Asn1BitString? get() = content.publicKeyBytes
+
+            private val curveOrderLengthInBytes: Int get() = content.curveOrderLengthInBytes
+
             fun withCurve(
                 curve: ECCurve,
                 encodeCurve: Boolean = true,
-                encodePublicKey: Boolean = (this.publicKeyBytes != null)
-            )
-                    : WithPublicKey {
-                require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes)
-                { "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes" }
+                encodePublicKey: Boolean = (this.publicKeyBytes != null),
+            ): WithPublicKey {
+                require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes) {
+                    "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"
+                }
                 return if (publicKeyBytes != null) {
-                    CryptoPrivateKey.EC.WithPublicKey(
+                    WithPublicKey(
                         privateKey,
-                        CryptoPublicKey.EC.fromAnsiX963Bytes(curve, publicKeyBytes.rawBytes),
+                        CryptoPublicKey.EC.fromAnsiX963Bytes(curve, publicKeyBytes!!.rawBytes),
                         encodeCurve,
                         encodePublicKey,
-                        attributes
+                        attributes,
                     )
                 } else {
-                    CryptoPrivateKey.EC.WithPublicKey(
-                        privateKey,
-                        curve,
-                        encodeCurve,
-                        encodePublicKey,
-                        attributes
-                    )
+                    WithPublicKey(privateKey, curve, encodeCurve, encodePublicKey, attributes)
                 }
             }
 
@@ -416,151 +408,104 @@ sealed interface CryptoPrivateKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 if (this === other) return true
                 if (other !is WithoutPublicKey) return false
                 if (!super.equals(other)) return false
-
-                if (curveOrderLengthInBytes != other.curveOrderLengthInBytes) return false
-
-                return true
+                return curveOrderLengthInBytes == other.curveOrderLengthInBytes
             }
 
-            override fun hashCode(): Int {
-                var result = super.hashCode()
-                result = 31 * result + curveOrderLengthInBytes
-                return result
-            }
+            override fun hashCode(): Int = 31 * super.hashCode() + curveOrderLengthInBytes
 
             override val privateKeyBytes: ByteArray
                 get() = privateKey.toByteArray().ensureSize(curveOrderLengthInBytes)
+
+            override fun curveOidForPkcs8(): ObjectIdentifier? =
+                throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
         }
 
-
-        companion object : Asn1Decodable<Asn1Sequence, EC> {
+        companion object : DerDecodable<Pkcs8PrivateKeyInfo, EC> {
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
-            @Throws(Asn1Exception::class)
-            override fun doDecode(src: Asn1Sequence): EC =
-                checkedAs(CryptoPrivateKey.doDecode(src))
+            override fun decodeFromTlv(
+                serializer: KSerializer<Pkcs8PrivateKeyInfo>,
+                src: Asn1Element,
+                der: Der,
+            ): EC {
+                val decoded = der.decodeFromTlv(serializer, src)
+                require(decoded.algorithmOid == oid) { "Expected EC private key, got ${decoded.algorithmOid}" }
+                return fromPkcs8Representation(decoded)
+            }
+
+            private fun fromPkcs8Representation(representation: Pkcs8PrivateKeyInfo): EC {
+                val curve = representation.algorithmParameters?.let(::decodeEcCurve)
+                return when {
+                    curve != null -> WithPublicKey(representation)
+                    representation.decodeEcPrivateKey().parameters != null -> WithPublicKey(representation)
+                    else -> WithoutPublicKey(EcSec1Source(representation.decodeEcPrivateKey(), null, representation.attributes))
+                }
+            }
 
             internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC.WithPublicKey {
                 val crv = ECCurve.fromIosEncodedPrivateKeyLength(keyBytes.size)
                     ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
-                return EC.WithPublicKey(
+                return WithPublicKey(
                     BigInteger.fromByteArray(
                         keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size),
-                        Sign.POSITIVE
+                        Sign.POSITIVE,
                     ),
                     encodeCurve = false,
                     encodePublicKey = true,
-                    publicKey = CryptoPublicKey.fromIosEncoded(keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)) as CryptoPublicKey.EC
+                    publicKey = CryptoPublicKey.fromIosEncoded(
+                        keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)
+                    ) as CryptoPublicKey.EC,
                 )
             }
         }
 
-        object FromSEC1 : Asn1Decodable<Asn1Sequence, EC> {
+        object FromSEC1 {
+            fun decodeFromTlv(
+                src: Asn1Element,
+                der: Der = DER,
+            ): EC = fromSec1(der.decodeFromTlv(Sec1EcPrivateKeyInfo.serializer(), src), null)
 
-            override fun doDecode(src: Asn1Sequence): EC =
-                doDecode(src, attributes = null)
+            fun decodeFromDer(bytes: ByteArray, der: Der = DER): EC =
+                decodeFromTlv(Asn1Element.parse(bytes), der)
 
-            /**
-             * SEC1 V2 decoding optionally supporting attributes for later PKCS#8 encoding
-             */
-            @Throws(Asn1Exception::class)
-            fun doDecode(
-                src: Asn1Sequence,
-                attributes: List<Asn1Element>? = null
-            ): EC = src.decodeRethrowing {
-                val version = next().asPrimitive().decodeToInt()
-                require(version == 1) { "EC public key version must be 1" }
-                val privateKeyOctets = next().asOctetString().content
-
-                var curve: ECCurve? = null
-                var publicKey: Asn1BitString? = null
-                while (hasNext()) {
-                    val elm = next().asExplicitlyTagged()
-                    when (elm.tag.tagValue) {
-                        0uL -> {
-                            require(curve == null) { "Duplicate EC curve field in EC PrivateKey" }
-                            require(publicKey == null) { "Field order violation in EC PrivateKey" }
-                            require(elm.children.size == 1) { "Invalid EC curve field in EC PrivateKey" }
-                            curve =
-                                ObjectIdentifier.decodeFromTlv(elm.children.first().asPrimitive()).let(ECCurve::withOid)
-                        }
-
-                        1uL -> {
-                            require(publicKey == null) { "Duplicate public key field in EC PrivateKey" }
-                            require(elm.children.size == 1) { "Invalid public key field in EC PrivateKey" }
-                            publicKey = elm.children.first().asPrimitive().asAsn1BitString()
-                        }
-
-                        else -> throw Asn1Exception("Unknown optional field with tag ${elm.tag.tagValue} in EC PrivateKey")
-                    }
-                }
-
-                val privateKey = EC.WithoutPublicKey(
-                    BigInteger.fromByteArray(privateKeyOctets, Sign.POSITIVE),
-                    publicKey,
-                    attributes,
-                    privateKeyOctets.size
-                )
-                when (curve) {
-                    null -> privateKey
-                    else -> privateKey.withCurve(curve)
-                }
+            fun fromSec1(
+                representation: Sec1EcPrivateKeyInfo,
+                attributes: Set<Asn1Element>? = null,
+            ): EC {
+                val source = EcSec1Source(representation, representation.parameters?.let(ECCurve::withOid), attributes)
+                return if (source.curveFromPkcs8 != null) WithPublicKey(source) else WithoutPublicKey(source)
             }
         }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8 {
-        /**
-         * Tries to decode a private key as exported from iOS.
-         * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
-         * RSA keys are exported using PKCS#1 encoding
-         */
+    companion object : DerDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
+        override fun decodeFromTlv(
+            serializer: KSerializer<Pkcs8PrivateKeyInfo>,
+            src: Asn1Element,
+            der: Der,
+        ): CryptoPrivateKey {
+            val decoded = der.decodeFromTlv(serializer, src)
+            require(decoded.version == 1) { "PKCS#8 Private Key VERSION must be 1" }
+            return when (decoded.algorithmOid) {
+                RSA.oid -> RSA(decoded)
+                EC.oid -> EC.decodeFromTlv(Pkcs8PrivateKeyInfo.serializer(), src, der)
+                else -> throw IllegalArgumentException("Unknown Algorithm: ${decoded.algorithmOid}")
+            }
+        }
+
         fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
-            if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) CryptoPrivateKey.EC.iosDecodeInternal((keyBytes))
-            else CryptoPrivateKey.RSA.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes).asSequence())
-        }
-
-    }
-
-    object FromPKCS8 : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> {
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = src.decodeRethrowing<CryptoPrivateKey> {
-            require(next().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
-            val (algIdentifier, algParams) = next().asSequence().decodeRethrowing {
-                ObjectIdentifier.decodeFromTlv(next().asPrimitive()) to next().asPrimitive()
-            }
-
-            val privateKeyStructure = next().asEncapsulatingOctetString().decodeRethrowing { next().asSequence() }
-            val attributes: List<Asn1Element>? =
-                if (hasNext()) next().asStructure().assertTag(0uL).children
-                else null
-            when (algIdentifier) {
-                RSA.oid -> {
-                    algParams.readNull()
-                    RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
-                }
-
-                EC.oid -> {
-                    val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
-                    EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
-                        when (it) {
-                            is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
-                            is EC.WithoutPublicKey -> it.withCurve(predefinedCurve, encodeCurve = false)
-                        }
-                    }
-                }
-
-                else -> throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
+            if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
+                CryptoPrivateKey.EC.iosDecodeInternal(keyBytes)
+            } else {
+                CryptoPrivateKey.RSA.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey<*>
             }
         }
     }
 }
 
-/** Representation of an encrypted private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208) */
+/** Representation of an encrypted private key structure as per RFC 5208. */
 class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encryptedData: ByteArray) :
     Asn1Encodable<Asn1Sequence> {
-
-    // PEM disabled during awesn1 migration.
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv(): Asn1Sequence = runRethrowing {
@@ -571,13 +516,90 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
     }
 
     companion object : Asn1Decodable<Asn1Sequence, EncryptedPrivateKey> {
-
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = src.decodeRethrowing {
             EncryptedPrivateKey(
                 ObjectIdentifier.decodeFromTlv(next().asPrimitive()),
-                next().asPrimitive().asOctetString().content
+                next().asPrimitive().asOctetString().content,
             )
         }
     }
 }
+
+private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?): RsaPrivateKeyContent =
+    RsaPrivateKeyContent(
+        publicKey = CryptoPublicKey.RSA(modulus, publicExponent),
+        privateKey = privateExponent.toBigInteger(),
+        prime1 = prime1.toBigInteger(),
+        prime2 = prime2.toBigInteger(),
+        prime1exponent = exponent1.toBigInteger(),
+        prime2exponent = exponent2.toBigInteger(),
+        crtCoefficient = coefficient.toBigInteger(),
+        otherPrimeInfos = otherPrimeInfos?.map {
+            CryptoPrivateKey.RSA.PrimeInfo(it.prime.toBigInteger(), it.exponent.toBigInteger(), it.coefficient.toBigInteger())
+        },
+        attributes = attributes,
+    )
+
+private fun RsaPrivateKeyContent.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo =
+    Pkcs1RsaPrivateKeyInfo(
+        rawVersion = Asn1Integer(if (otherPrimeInfos != null) 1 else 0),
+        modulus = publicKey.n,
+        publicExponent = publicKey.e,
+        privateExponent = positive(privateKey),
+        prime1 = positive(prime1),
+        prime2 = positive(prime2),
+        exponent1 = positive(prime1exponent),
+        exponent2 = positive(prime2exponent),
+        coefficient = positive(crtCoefficient),
+        otherPrimeInfos = otherPrimeInfos?.map { it.asn1Representation },
+    )
+
+private fun Sec1EcPrivateKeyInfo.toSignumContent(
+    curveFromPkcs8: ECCurve?,
+    attributes: Set<Asn1Element>?,
+): EcPrivateKeyContent {
+    require(version == 1) { "EC public key version must be 1" }
+    val curve = parameters?.let(ECCurve::withOid) ?: curveFromPkcs8
+    val privateValue = BigInteger.fromByteArray(privateKey, Sign.POSITIVE)
+    return if (curve != null) {
+        EcPrivateKeyContent(
+            privateKey = privateValue,
+            publicKey = publicKey?.let { CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.rawBytes) }
+                ?: curve.generator.times(privateValue).asPublicKey(preferCompressed = true),
+            publicKeyBytes = publicKey,
+            encodeCurve = parameters != null,
+            encodePublicKey = publicKey != null,
+            curveOrderLengthInBytes = privateKey.size,
+            attributes = attributes,
+        )
+    } else {
+        EcPrivateKeyContent(
+            privateKey = privateValue,
+            publicKey = null,
+            publicKeyBytes = publicKey,
+            encodeCurve = false,
+            encodePublicKey = publicKey != null,
+            curveOrderLengthInBytes = privateKey.size,
+            attributes = attributes,
+        )
+    }
+}
+
+private fun EcPrivateKeyContent.toSec1Representation(): Sec1EcPrivateKeyInfo =
+    Sec1EcPrivateKeyInfo(
+        version = 1,
+        privateKey = privateKey.toByteArray().ensureSize(curveOrderLengthInBytes.toUInt()),
+        parameters = publicKey?.curve?.oid?.takeIf { encodeCurve },
+        publicKey = when {
+            publicKey != null && encodePublicKey -> Asn1.BitString(publicKey.iosEncoded).asAsn1BitString()
+            publicKey == null && encodePublicKey -> publicKeyBytes
+            else -> null
+        },
+    )
+
+private fun decodeEcCurve(element: Asn1Element): ECCurve =
+    ECCurve.withOid(ObjectIdentifier.decodeFromTlv(element as Asn1Primitive))
+
+private fun positive(value: BigInteger): Asn1Integer.Positive =
+    value.toAsn1Integer() as Asn1Integer.Positive
