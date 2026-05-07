@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
@@ -20,7 +21,7 @@ val DistinguishedNameTest by testSuite {
             KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
             KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
-        withDataSuites(oids) { first ->
+        withData(oids) - { first ->
             withData(oids, compact= true) { second ->
                 if (first != second) {
                     val cn1 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
@@ -83,7 +84,7 @@ val DistinguishedNameTest by testSuite {
         }
     }
 
-    "RDN DER roundtrip" - {
+    "RDN DER roundtrip" {
         val rdn = RelativeDistinguishedName(
             setOf(
                 AttributeTypeAndValue.CommonName(Asn1String.UTF8("Jane Doe")),
@@ -100,7 +101,7 @@ val DistinguishedNameTest by testSuite {
         decoded.attrsAndValues.size shouldBe 5
     }
 
-    "RDN from string" - {
+    "RDN from string" {
         val rdn = RelativeDistinguishedName.fromString("CN=John+O=Org")
 
         rdn.attrsAndValues shouldBe setOf(
@@ -109,7 +110,7 @@ val DistinguishedNameTest by testSuite {
         )
     }
 
-    "AttributeTypeAndValue RFC2253 string escaping" - {
+    "AttributeTypeAndValue RFC2253 string escaping"  {
         AttributeTypeAndValue.CommonName(Asn1String.UTF8(" Doe, John+Ops "))
             .toRfc2253String() shouldBe """cn=\ Doe\, John\+Ops\ """
         AttributeTypeAndValue.CommonName(Asn1String.UTF8("#123"))

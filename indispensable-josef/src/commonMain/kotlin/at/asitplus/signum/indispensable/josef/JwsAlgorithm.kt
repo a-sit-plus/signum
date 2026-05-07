@@ -192,7 +192,7 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
                 Digest.SHA512 -> JwsAlgorithm.Signature.RS512
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            is RSAPadding.PSS -> when (this.digest) {
                 Digest.SHA256 -> JwsAlgorithm.Signature.PS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.PS384
                 Digest.SHA512 -> JwsAlgorithm.Signature.PS512

@@ -2,11 +2,12 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.HazardousMaterials
+import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -182,7 +183,7 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
  */
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
-        is CryptoSignature.EC -> encodeToDer()
+        is CryptoSignature.EC -> asn1Representation.rawBytes
         is CryptoSignature.RSA -> rawByteArray
     }
 
@@ -207,7 +208,7 @@ fun CryptoSignature.Companion.parseFromJca(
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
  */
 fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.EC.decodeFromDer(input)
+    CryptoSignature.EC(SignatureValue(input))
 
 /**
  * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.

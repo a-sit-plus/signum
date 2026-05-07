@@ -247,7 +247,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 Digest.SHA512 -> CoseAlgorithm.Signature.RS512
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            is RSAPadding.PSS -> when (this.digest) {
                 Digest.SHA256 -> CoseAlgorithm.Signature.PS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
