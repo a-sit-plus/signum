@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.josef.io
 
+import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.X509Certificate

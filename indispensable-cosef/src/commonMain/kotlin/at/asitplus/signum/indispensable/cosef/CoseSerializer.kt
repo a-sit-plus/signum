@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -127,10 +126,9 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-        ?.let { X509Certificate.decodeFromDerOrNull(it) }
-        ?.let { it.signatureAlgorithm is X509SignatureAlgorithm.ECDSA }
+        ?.let { X509Certificate.decodeFromByteArray(it) }
+        ?.let { it.signatureAlgorithm is SignatureAlgorithm.ECDSA }
     is CoseAlgorithm.Signature -> (algorithm.algorithm is SignatureAlgorithm.ECDSA)
     else -> false
 }
-
 

@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -80,7 +81,7 @@ val DistinguishedNameTest by matrixSuite {
         }
     }
 
-    "RDN DER roundtrip" - {
+    "RDN DER roundtrip" {
         val rdn = RelativeDistinguishedName(
             setOf(
                 AttributeTypeAndValue.CommonName(Asn1String.UTF8("Jane Doe")),
@@ -97,7 +98,7 @@ val DistinguishedNameTest by matrixSuite {
         decoded.attrsAndValues.size shouldBe 5
     }
 
-    "RDN from string" - {
+    "RDN from string" {
         val rdn = RelativeDistinguishedName.fromString("CN=John+O=Org")
 
         rdn.attrsAndValues shouldBe setOf(
@@ -106,7 +107,7 @@ val DistinguishedNameTest by matrixSuite {
         )
     }
 
-    "AttributeTypeAndValue RFC2253 string escaping" - {
+    "AttributeTypeAndValue RFC2253 string escaping"  {
         AttributeTypeAndValue.CommonName(Asn1String.UTF8(" Doe, John+Ops "))
             .toRfc2253String() shouldBe """cn=\ Doe\, John\+Ops\ """
         AttributeTypeAndValue.CommonName(Asn1String.UTF8("#123"))
