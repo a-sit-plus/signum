@@ -9,6 +9,7 @@ import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_TRAILER_FIELD
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.RSA_SSA_PSS_OID
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Enumeration
@@ -178,13 +179,64 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
     }
 
     data class RSA(
-        /** The digest to apply to the data. */
-        val digest: Digest,
-        /** The padding to apply to the data. */
-        val padding: RSAPadding<*>
+        private val providedParams: Pair<Digest, RSAPadding<*>>?,
+        private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
 
-        companion object : Enumeration<RSA> {
+        constructor(
+            /** The digest to apply to the data. */
+            digest: Digest,
+            /** The padding to apply to the data. */
+            padding: RSAPadding<*>
+        ) : this(digest to padding, null)
+
+        constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+
+        /** The digest to apply to the data. */
+        val digest: Digest by providedParams?.first orLazy {
+            when (providedAsn1!!.oid) {
+                KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
+                KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
+                KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
+                KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
+                KnownOIDs.rsaPSS -> RSAPadding.PSS(providedAsn1.rsaSsaPssParams!!).hashAlgorithm
+                else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
+            }
+        }
+
+        /** The padding to apply to the data. */
+        val padding: RSAPadding<*> by providedParams?.second orLazy {
+            when (providedAsn1!!.oid) {
+                KnownOIDs.sha1WithRSAEncryption,
+                KnownOIDs.sha256WithRSAEncryption,
+                KnownOIDs.sha384WithRSAEncryption,
+                KnownOIDs.sha512WithRSAEncryption -> RSAPadding.PKCS1
+
+                KnownOIDs.rsaPSS -> RSAPadding.PSS(providedAsn1.rsaSsaPssParams!!)
+                else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
+            }
+        }
+
+        override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
+            when (val currentPadding = padding) {
+                RSAPadding.PKCS1 -> X509AlgorithmIdentifier(
+                    when (digest) {
+                        Digest.SHA1 -> KnownOIDs.sha1WithRSAEncryption
+                        Digest.SHA256 -> KnownOIDs.sha256WithRSAEncryption
+                        Digest.SHA384 -> KnownOIDs.sha384WithRSAEncryption
+                        Digest.SHA512 -> KnownOIDs.sha512WithRSAEncryption
+                    },
+                    Asn1Null
+                )
+
+                is RSAPadding.PSS -> X509AlgorithmIdentifier(
+                    KnownOIDs.rsaPSS,
+                    DER.encodeToTlv(RsaSsaPssParams.serializer(), currentPadding.asn1Representation)
+                )
+            }
+        }
+
+        companion object : Enumeration<RSA>, DerDecodable<X509AlgorithmIdentifier, RSA> {
             override val entries: Set<RSA> by lazy {
                 setOf(
                     RSAwithSHA256andPSSPadding,
@@ -196,6 +248,12 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                     RSAwithSHA512andPKCS1Padding
                 )
             }
+
+            override fun decodeFromTlv(
+                serializer: KSerializer<X509AlgorithmIdentifier>,
+                src: Asn1Element,
+                der: Der
+            ) = RSA(der.decodeFromTlv(serializer, src))
 
         }
     }
