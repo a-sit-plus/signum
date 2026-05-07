@@ -17,6 +17,29 @@ import at.asitplus.signum.internals.orLazy
 import at.asitplus.signum.internals.orLazyNullable
 import kotlinx.serialization.KSerializer
 
+private infix fun RSAPadding<*>.sameSignaturePaddingAs(other: RSAPadding<*>): Boolean =
+    when {
+        this === other -> true
+        this is RSAPadding.PSS && other is RSAPadding.PSS ->
+            mgfAlgorithm == other.mgfAlgorithm &&
+                saltLength == other.saltLength &&
+                trailerField == other.trailerField
+
+        else -> this == other
+    }
+
+private fun RSAPadding<*>.signaturePaddingHashCode(): Int =
+    when (this) {
+        is RSAPadding.PSS -> {
+            var result = mgfAlgorithm.hashCode()
+            result = 31 * result + saltLength.hashCode()
+            result = 31 * result + trailerField
+            result
+        }
+
+        else -> hashCode()
+    }
+
 sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
     object PKCS1 :
         RSAPadding<RsaPkcs1PaddingParams>() //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
@@ -132,7 +155,7 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
 //for now, we just replicate the pattern, but since everything is sealed, we don't actually parse
 sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
 
-    data class ECDSA(
+    class ECDSA(
         private val providedParams: Pair<Digest?, ECCurve?>?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
@@ -177,6 +200,18 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             )
         }
 
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is ECDSA) return false
+            return digest == other.digest && requiredCurve == other.requiredCurve
+        }
+
+        override fun hashCode(): Int {
+            var result = digest.hashCode()
+            result = 31 * result + (requiredCurve?.hashCode() ?: 0)
+            return result
+        }
+
         companion object : Enumeration<ECDSA>, DerDecodable<X509AlgorithmIdentifier, ECDSA> {
             override val entries: Set<ECDSA> by lazy {
                 setOf(
@@ -195,7 +230,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         }
     }
 
-    data class RSA(
+    class RSA(
         private val providedParams: Pair<Digest, RSAPadding<*>>?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
@@ -251,6 +286,18 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                     DER.encodeToTlv(RsaSsaPssParams.serializer(), currentPadding.asn1Representation)
                 )
             }
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is RSA) return false
+            return digest == other.digest && padding.sameSignaturePaddingAs(other.padding)
+        }
+
+        override fun hashCode(): Int {
+            var result = digest.hashCode()
+            result = 31 * result + padding.signaturePaddingHashCode()
+            return result
         }
 
         companion object : Enumeration<RSA>, DerDecodable<X509AlgorithmIdentifier, RSA> {
