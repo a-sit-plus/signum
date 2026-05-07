@@ -1,24 +1,36 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.encoding.*
-import at.asitplus.awesn1.encoding.Asn1.BitString
-import at.asitplus.awesn1.encoding.Asn1.Null
-import at.asitplus.awesn1.runRethrowing
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.Der
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
+import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.KSerializer
+
+private data class RsaPublicKeyContent(
+    val n: Asn1Integer.Positive,
+    val e: Asn1Integer.Positive,
+)
+
+private data class EcPublicKeyContent(
+    val publicPoint: ECPoint.Normalized,
+    val preferCompressedRepresentation: Boolean,
+)
 
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey : DerEncodable<SubjectPublicKeyInfo>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -38,33 +50,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     abstract val iosEncoded: ByteArray
 
-    fun toSubjectPublicKeyInfo(): SubjectPublicKeyInfo = when (this) {
-        is EC -> SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
-        is RSA -> SubjectPublicKeyInfo.rsa(n, e)
-    }
-
-    override fun encodeToTlv() = when (this) {
-        is EC -> Asn1.Sequence {
-            +Asn1.Sequence {
-                +oid
-                +curve.oid
-            }
-            +BitString(iosEncoded)
-        }
-
-        is RSA -> {
-            Asn1.Sequence {
-                +Asn1.Sequence {
-                    +oid
-                    +Null()
-                }
-                +BitString(iosEncoded)
-            }
-        }
-    }
+    fun encodeToTlv(): Asn1Sequence =
+        DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), asn1Representation) as Asn1Sequence
 
 
-    companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
+    companion object : DerDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -107,67 +97,35 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = src.decodeRethrowing {
-            if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
-            val keyInfo = next() as Asn1Sequence
-            if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
+        override fun decodeFromTlv(
+            serializer: KSerializer<SubjectPublicKeyInfo>,
+            src: Asn1Element,
+            der: Der,
+        ): CryptoPublicKey  = CryptoPublicKey(der.decodeFromTlv(serializer, src))
 
-            when (val oid = (keyInfo.children.first() as Asn1Primitive).readOid()) {
-                EC.oid -> {
-                    val curveOid = (keyInfo.children[1] as Asn1Primitive).readOid()
-                    val curve = ECCurve.entries.find { it.oid == curveOid }
-                        ?: throw Asn1Exception("Curve not supported: $curveOid")
 
-                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
-                    if (!bitString.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) throw Asn1Exception("EC key not prefixed with 0x04")
-                    val xAndY = bitString.rawBytes.drop(1)
-                    val coordLen = curve.coordinateLength.bytes.toInt()
-                    val x = xAndY.take(coordLen).toByteArray()
-                    val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    EC.fromUncompressed(curve, x, y)
-                }
-
-                RSA.oid -> {
-                    (keyInfo.children[1] as Asn1Primitive).readNull()
-                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
-                    Asn1Element.parse(bitString.rawBytes).asSequence().decodeRethrowing {
-                        RSA(
-                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive,
-                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                        )
-                    }
-                }
-
-                else -> throw Asn1Exception("Unsupported Key Type: $oid")
-
-            }
+        operator fun invoke(asn1Representation: SubjectPublicKeyInfo): CryptoPublicKey =  when (val oid = asn1Representation.algorithmOid) {
+            EC.oid -> EC(asn1Representation)
+            RSA.oid -> RSA(asn1Representation)
+            else -> throw Asn1Exception("Unsupported Key Type: $oid")
         }
+
+        @Throws(Asn1Exception::class)
+        fun decodeFromTlv(src: Asn1Element): CryptoPublicKey =
+            decodeFromTlv(SubjectPublicKeyInfo.serializer(), src, DER)
+
+        @Throws(Asn1Exception::class)
+        fun decodeFromDer(src: ByteArray): CryptoPublicKey =
+            decodeFromTlv(Asn1Element.parse(src))
+
+        @Throws(Asn1Exception::class)
+        fun doDecode(src: Asn1Sequence): CryptoPublicKey =
+            decodeFromTlv(src)
 
         fun fromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): CryptoPublicKey =
             when (val oid = spki.algorithmOid) {
-                EC.oid -> {
-                    val parameters = spki.algorithmIdentifier.parameters
-                    requireNotNull(parameters) { "No EC params found" }
-
-                    val curveOid = parameters.asPrimitive().readOid()
-                    val curve = ECCurve.entries.find { it.oid == curveOid }
-                        ?: throw Asn1Exception("Curve not supported: $curveOid")
-
-                    if (!spki.subjectPublicKey.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
-                        throw Asn1Exception("EC key not prefixed with 0x04")
-                    }
-                    val xAndY = spki.subjectPublicKey.rawBytes.drop(1)
-                    val coordLen = curve.coordinateLength.bytes.toInt()
-                    val x = xAndY.take(coordLen).toByteArray()
-                    val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    EC.fromUncompressed(curve, x, y)
-                }
-
-                RSA.oid -> {
-                    val rsaPublicKey = spki.decodeRsaPublicKey()
-                    RSA(n = rsaPublicKey.modulus, e = rsaPublicKey.publicExponent)
-                }
-
+                EC.oid -> EC(spki)
+                RSA.oid -> RSA(spki)
                 else -> throw Asn1Exception("Unsupported Key Type: $oid")
             }
 
@@ -191,17 +149,37 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 
     /** RSA Public key */
-    data class RSA
-    @Throws(IllegalArgumentException::class)
-    constructor(
-        /** modulus */
-        val n: Asn1Integer.Positive,
-
-        /** public exponent */
-        val e: Asn1Integer.Positive,
+    class RSA private constructor(
+        providedAsn1Representation: SubjectPublicKeyInfo?,
+        providedContent: RsaPublicKeyContent?,
     ) : CryptoPublicKey() {
 
+        @Throws(IllegalArgumentException::class)
+        constructor(
+            /** modulus */
+            n: Asn1Integer.Positive,
+
+            /** public exponent */
+            e: Asn1Integer.Positive,
+        ) : this(null, RsaPublicKeyContent(n, e))
+
+        constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
+
         // PEM disabled during awesn1 migration.
+
+        override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
+            SubjectPublicKeyInfo.rsa(n, e)
+        }
+
+        /** modulus */
+        val n: Asn1Integer.Positive by providedContent?.n orLazy {
+            asn1Representation.decodeRsaPublicKey().modulus as Asn1Integer.Positive
+        }
+
+        /** public exponent */
+        val e: Asn1Integer.Positive by providedContent?.e orLazy {
+            asn1Representation.decodeRsaPublicKey().publicExponent as Asn1Integer.Positive
+        }
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -251,11 +229,22 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         val pkcsEncoded by lazy {
-            Asn1.Sequence {
-                +Asn1.Int(n)
-                +Asn1.Int(e)
-            }.derEncoded
+            DER.encodeToTlv(Pkcs1RsaPublicKeyInfo.serializer(), Pkcs1RsaPublicKeyInfo(n, e)).derEncoded
         }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is RSA) return false
+            return n == other.n && e == other.e
+        }
+
+        override fun hashCode(): Int {
+            var result = n.hashCode()
+            result = 31 * result + e.hashCode()
+            return result
+        }
+
+        override fun toString(): String = "RSA(n=$n, e=$e)"
 
         companion object : Identifiable {
             /**
@@ -264,12 +253,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
              * @throws Asn1Exception all sorts of exceptions on invalid input
              */
             @Throws(Asn1Exception::class)
-            fun fromPKCS1encoded(input: ByteArray): RSA = runRethrowing {
-                Asn1Element.parse(input).asSequence().decodeRethrowing {
-                    val n = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
-                    val e = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
-                    RSA(n, e)
-                }
+            fun fromPKCS1encoded(input: ByteArray): RSA = DER.decodeFromTlv(
+                Pkcs1RsaPublicKeyInfo.serializer(),
+                Asn1Element.parse(input),
+            ).let {
+                RSA(it.modulus as Asn1Integer.Positive, it.publicExponent as Asn1Integer.Positive)
             }
 
             @Suppress("NOTHING_TO_INLINE")
@@ -286,15 +274,28 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * @param preferCompressedRepresentation indicates whether to use point compression where applicable
      */
     @SerialName("EC")
-    @ConsistentCopyVisibility
-    data class EC private constructor(
-        val publicPoint: ECPoint.Normalized,
-        val preferCompressedRepresentation: Boolean = true
+    class EC private constructor(
+        providedAsn1Representation: SubjectPublicKeyInfo?,
+        providedContent: EcPublicKeyContent?,
     ) : CryptoPublicKey(), KeyAgreementPublicValue.ECDH {
+
+        constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
 
         override fun asCryptoPublicKey() = this
 
         // PEM disabled during awesn1 migration.
+
+        override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
+            SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
+        }
+
+        val publicPoint: ECPoint.Normalized by providedContent?.publicPoint orLazy {
+            decodePublicPoint(asn1Representation)
+        }
+
+        val preferCompressedRepresentation: Boolean by providedContent?.preferCompressedRepresentation orLazy {
+            false
+        }
 
         val curve get() = publicPoint.curve
         val x get() = publicPoint.x
@@ -357,7 +358,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         companion object : Identifiable {
 
             fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EC {
-                return EC(this.normalize(), preferCompressed)
+                return EC(null, EcPublicKeyContent(this.normalize(), preferCompressed))
             }
 
             /** Decodes key from big-endian X and sign of Y */
@@ -414,6 +415,24 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
             override val oid = KnownOIDs.ecPublicKey
+
+            private fun decodePublicPoint(spki: SubjectPublicKeyInfo): ECPoint.Normalized {
+                val parameters = spki.algorithmIdentifier.parameters
+                requireNotNull(parameters) { "No EC params found" }
+
+                val curveOid = parameters.asPrimitive().readOid()
+                val curve = ECCurve.entries.find { it.oid == curveOid }
+                    ?: throw Asn1Exception("Curve not supported: $curveOid")
+
+                if (!spki.subjectPublicKey.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
+                    throw Asn1Exception("EC key not prefixed with 0x04")
+                }
+                val xAndY = spki.subjectPublicKey.rawBytes.drop(1)
+                val coordLen = curve.coordinateLength.bytes.toInt()
+                val x = xAndY.take(coordLen).toByteArray()
+                val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
+                return ECPoint.fromUncompressed(curve, x, y).normalize()
+            }
         }
     }
 }
