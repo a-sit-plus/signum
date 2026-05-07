@@ -134,7 +134,7 @@ open class AttributeTypeAndValue private constructor(
     @Throws(Asn1Exception::class)
     constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid to value.encodeToTlv(), true)
 
-    internal constructor(asn1Representation: X500AttributeTypeAndValue) : this(asn1Representation, null, false)
+    constructor(asn1Representation: X500AttributeTypeAndValue) : this(asn1Representation, null, false)
 
     override val asn1Representation: X500AttributeTypeAndValue by providedAsn1Representation orLazy {
         val (oid, value) = requireNotNull(providedContent)

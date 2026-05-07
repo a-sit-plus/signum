@@ -87,7 +87,7 @@ class TbsCertificationRequest private constructor(
         Pkcs10CertificationRequestInfo(
             version = content.version,
             subjectName = content.subjectName.map { it.asn1Representation },
-            publicKey = content.publicKey.toSubjectPublicKeyInfo(),
+            publicKey = content.publicKey.asn1Representation,
             attributes = content.attributes.map { it.asn1Representation },
         )
     }
@@ -103,7 +103,7 @@ class TbsCertificationRequest private constructor(
     }
 
     val publicKey: CryptoPublicKey by providedContent?.publicKey orLazy {
-        CryptoPublicKey.fromSubjectPublicKeyInfo(asn1Representation.publicKey)
+        CryptoPublicKey(asn1Representation.publicKey)
     }
 
     val attributes: List<CsrAttribute> by providedContent?.attributes orLazy {
