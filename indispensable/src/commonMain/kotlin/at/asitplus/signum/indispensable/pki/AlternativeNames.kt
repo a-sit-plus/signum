@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -124,7 +125,11 @@ private constructor(private val extensions: List<Asn1Element>) {
             val matches = filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else ((matches.first().value as Asn1EncapsulatingOctetString).children.firstOrNull() as Asn1Sequence?)?.children
+            else when (val value = matches.first().value) {
+                is Asn1EncapsulatingOctetString -> value.children.firstOrNull()
+                is Asn1OctetString -> Asn1Element.parse(value.content)
+                else -> throw Asn1StructuralException("Extension $oid value is not an OCTET STRING")
+            }.let { it as Asn1Sequence }.children
         }
     }
 }

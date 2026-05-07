@@ -218,16 +218,16 @@ class TbsCertificate private constructor(
     val publicKey get() = decodedPublicKey.getOrThrow()
 
     /**
-     * Contains `SubjectAlternativeName`s parsed from extensions. This property is initialized right away.
+     * Contains `SubjectAlternativeName`s parsed from extensions.
      */
     @Transient
-    val subjectAlternativeNames: AlternativeNames? = extensions.findSubjectAltNames()
+    val subjectAlternativeNames: AlternativeNames? by lazy { extensions.findSubjectAltNames() }
 
     /**
-     * Contains `IssuerAlternativeName`s parsed from extensions. This property is initialized right away.
+     * Contains `IssuerAlternativeName`s parsed from extensions.
      */
     @Transient
-    val issuerAlternativeNames: AlternativeNames? = extensions.findIssuerAltNames()
+    val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
     private val equalitySource: Any get() = providedContent ?: asn1Representation
 
