@@ -127,6 +127,8 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         ) : this(digest to requiredCurve, null)
 
 
+        constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         val digest: Digest? by providedParams.orLazyNullable(
             provided = { first },
@@ -147,15 +149,17 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         )
 
         override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
-            X509AlgorithmIdentifier(when(digest) {
-                Digest.SHA256 -> KnownOIDs.ecdsaWithSHA256
-                Digest.SHA384 -> KnownOIDs.ecdsaWithSHA384
-                Digest.SHA512-> KnownOIDs.ecdsaWithSHA512
-                else -> throw IllegalArgumentException("Unsupported digest: $digest")
-            })
+            X509AlgorithmIdentifier(
+                when (digest) {
+                    Digest.SHA256 -> KnownOIDs.ecdsaWithSHA256
+                    Digest.SHA384 -> KnownOIDs.ecdsaWithSHA384
+                    Digest.SHA512 -> KnownOIDs.ecdsaWithSHA512
+                    else -> throw IllegalArgumentException("Unsupported digest: $digest")
+                }
+            )
         }
 
-        companion object : Enumeration<ECDSA> {
+        companion object : Enumeration<ECDSA>, DerDecodable<X509AlgorithmIdentifier, ECDSA> {
             override val entries: Set<ECDSA> by lazy {
                 setOf(
                     ECDSAwithSHA256,
@@ -163,6 +167,13 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                     ECDSAwithSHA512
                 )
             }
+
+            override fun decodeFromTlv(
+                serializer: KSerializer<X509AlgorithmIdentifier>,
+                src: Asn1Element,
+                der: Der
+            ) = ECDSA(der.decodeFromTlv(serializer, src))
+
         }
     }
 
