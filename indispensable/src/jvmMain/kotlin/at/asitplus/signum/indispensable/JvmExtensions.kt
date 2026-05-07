@@ -8,8 +8,7 @@ internal actual fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provi
         RSAPadding.PKCS1 ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
 
-        RSAPadding.PSS -> sigGetInstance("RSASSA-PSS", provider).also {
+        is RSAPadding.PSS -> sigGetInstance("RSASSA-PSS", provider).also {
             it.setParameter(this.digest.jcaPSSParams)
         }
     }
-

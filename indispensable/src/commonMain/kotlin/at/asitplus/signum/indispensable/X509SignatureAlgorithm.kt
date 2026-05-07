@@ -1,5 +1,5 @@
 package at.asitplus.signum.indispensable
-
+/*
 import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
@@ -152,7 +152,8 @@ sealed class X509SignatureAlgorithm(
             )
         }
 
-        override val algorithm get() = SignatureAlgorithm.RSA(digest, RSAPadding.PSS)
+        override val algorithm get() =
+            SignatureAlgorithm.RSA(digest, RSAPadding.PSS(digest, saltLength = digest.outputLength.bytes.toUInt()))
 
         override fun toString() = algorithm.toString()
 
@@ -272,7 +273,7 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 Digest.SHA512 -> X509SignatureAlgorithm.RS512
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            is RSAPadding.PSS -> when (this.digest) {
                 Digest.SHA256 -> X509SignatureAlgorithm.PS256
                 Digest.SHA384 -> X509SignatureAlgorithm.PS384
                 Digest.SHA512 -> X509SignatureAlgorithm.PS512
@@ -285,3 +286,4 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()
+*/
