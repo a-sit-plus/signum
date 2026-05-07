@@ -91,7 +91,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
                 // create certificate with our structure
                 val tbsCertificate = TbsCertificate(
-                    version = 2,
+                    version = 3,
                     serialNumber = serialNumber.toByteArray(),
                     issuerName = listOf(
                         RelativeDistinguishedName(
@@ -160,7 +160,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         // create certificate with our structure
         val tbsCertificate = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
@@ -214,7 +214,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.version shouldBe 2
+        x509Certificate.tbsCertificate.version shouldBe 3
         (x509Certificate.tbsCertificate.issuerName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         (x509Certificate.tbsCertificate.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
@@ -255,7 +255,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         // create certificate with our structure
         val tbsCertificate1 = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = validFromDate,
@@ -265,7 +265,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             publicKey = cryptoPublicKey
         )
         val tbsCertificate2 = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = validFromDate,
@@ -275,7 +275,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             publicKey = cryptoPublicKey
         )
         val tbsCertificate3 = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = validFromDate,
@@ -285,7 +285,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             publicKey = cryptoPublicKey
         )
         val tbsCertificate4 = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = validFromDate,
@@ -295,7 +295,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             publicKey = cryptoPublicKey
         )
         val tbsCertificate5 = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = Asn1Time(Date.from(Instant.now().plusSeconds(1)).toInstant().toKotlinInstant()),
@@ -405,7 +405,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         ext1.hashCode() shouldNotBe ext5.hashCode()
 
         val tbsCertificate6 = TbsCertificate(
-            version = 2,
+            version = 3,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             validFrom = validFromDate,
