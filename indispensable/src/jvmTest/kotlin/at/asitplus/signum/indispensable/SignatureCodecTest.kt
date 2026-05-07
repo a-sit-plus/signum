@@ -65,7 +65,8 @@ val SignatureCodecTest  by matrixSuite {
 
         val digest = ("SHA256")
 
-        val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.generateKeyPair() }
+        // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
+        val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
         data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
@@ -94,7 +95,8 @@ val SignatureCodecTest  by matrixSuite {
                 /* subject = */ issuer,
                 /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keys.public.encoded)
             )
-            val signatureAlgorithm = SignatureAlgorithm.RSAwithSHA256andPSSPadding
+            val signatureAlgorithm =
+                if (Random.nextBoolean()) SignatureAlgorithm.RSAwithSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
             val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keys.private)
             val certificateHolder = builder.build(contentSigner)
             certificateHolder.signature
@@ -110,4 +112,3 @@ val SignatureCodecTest  by matrixSuite {
         }
     }
 }
-
