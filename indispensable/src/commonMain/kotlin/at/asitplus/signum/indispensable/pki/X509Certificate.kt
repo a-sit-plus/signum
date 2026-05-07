@@ -12,14 +12,11 @@ import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.Asn1Time
 import at.asitplus.awesn1.PemLabelSpec
 import at.asitplus.awesn1.WithPemLabel
-import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
-import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.encoding.decodeToAsn1Integer
 import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
-import at.asitplus.awesn1.encoding.encodeToAsn1BitStringPrimitive
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
@@ -30,7 +27,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509Signature
+import at.asitplus.signum.indispensable.X509SignatureAsn1Representation
 import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -38,7 +36,6 @@ import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.decodeFromDer
-import at.asitplus.signum.indispensable.requireSupported
 import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -96,8 +93,7 @@ private data class TbsCertificateContent(
 
 private data class X509CertificateContent(
     val tbsCertificate: TbsCertificate,
-    val signatureAlgorithm: X509SignatureAlgorithmDescription,
-    val rawSignature: Asn1Primitive,
+    val x509Signature: X509Signature,
 )
 
 /**
@@ -298,28 +294,6 @@ class TbsCertificate private constructor(
 }
 
 /**
- * Signature encoded as per X.509:
- * - RSA remains a bit string
- * - EC is DER-encoded then wrapped in a bit string
- */
-val CryptoSignature.x509Encoded
-    get() = when (this) {
-        is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
-        is CryptoSignature.RSA -> encodeToTlv()
-    }
-
-/**
- * Decode a X.509-encoded signature
- * - RSA is encoded as a bit string
- * - EC is DER-encoded then wrapped in a bit string
- */
-fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
-    when (alg is X509SignatureAlgorithm.ECDSA) {
-        true -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
-        false -> CryptoSignature.RSA.decodeFromTlv(it)
-    }
-
-/**
  * Very simple implementation of an X.509 Certificate
  */
 class X509Certificate private constructor(
@@ -334,14 +308,14 @@ class X509Certificate private constructor(
         tbsCertificate: TbsCertificate,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
         rawSignature: Asn1Primitive,
-    ) : this(null, X509CertificateContent(tbsCertificate, signatureAlgorithm, rawSignature))
+    ) : this(null, X509CertificateContent(tbsCertificate, X509Signature(signatureAlgorithm, rawSignature)))
 
     @Throws(IllegalArgumentException::class)
     constructor(
         tbsCertificate: TbsCertificate,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
         signature: CryptoSignature,
-    ) : this(tbsCertificate, signatureAlgorithm, signature.x509Encoded)
+    ) : this(null, X509CertificateContent(tbsCertificate, X509Signature(signatureAlgorithm, signature)))
 
     constructor(asn1Representation: Awesn1X509Certificate) : this(asn1Representation, null)
 
@@ -349,8 +323,8 @@ class X509Certificate private constructor(
         val content = requireNotNull(providedContent)
         Awesn1X509Certificate(
             tbsCertificate = content.tbsCertificate.asn1Representation,
-            signatureAlgorithm = content.signatureAlgorithm.toAlgorithmIdentifier(),
-            signatureValue = SignatureValue(content.rawSignature.asAsn1BitString()),
+            signatureAlgorithm = content.x509Signature.asn1Representation.algorithmIdentifier,
+            signatureValue = content.x509Signature.asn1Representation.signatureValue,
         )
     }
 
@@ -358,9 +332,20 @@ class X509Certificate private constructor(
         TbsCertificate(asn1Representation.tbsCertificate)
     }
 
-    val signatureAlgorithm: X509SignatureAlgorithmDescription by providedContent?.signatureAlgorithm orLazy {
-        X509SignatureAlgorithmDescription.fromAlgorithmIdentifier(asn1Representation.signatureAlgorithm)
+    val x509Signature: X509Signature by providedContent?.x509Signature orLazy {
+        X509Signature(
+            X509SignatureAsn1Representation(
+                algorithmIdentifier = asn1Representation.signatureAlgorithm,
+                signatureValue = asn1Representation.signatureValue,
+            )
+        )
     }
+
+    val signatureAlgorithm: X509SignatureAlgorithmDescription get() = x509Signature.signatureAlgorithm
+
+    val rawSignature: Asn1Primitive get() = x509Signature.rawSignature
+
+    val rawSignatureAlgorithm: Asn1Sequence get() = x509Signature.rawSignatureAlgorithm
 
     // PEM disabled during awesn1 migration.
 
@@ -368,7 +353,11 @@ class X509Certificate private constructor(
      * Debug String representation. Uses Base64 encoded DER representation
      */
     override fun toString(): String =
-        "X509Certificate(${encodeToDer().encodeToString(Base64Strict)})"
+        "X509Certificate(${
+            DER.encodeToTlv(Awesn1X509Certificate.serializer(), asn1Representation)
+                .derEncoded
+                .encodeToString(Base64Strict)
+        })"
 
     @Deprecated(
         "Confusingly named, and lacks support for unsupported signature algorithms; use `decodedPublicKey` or `rawPublicKey`",
@@ -380,13 +369,7 @@ class X509Certificate private constructor(
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
 
-    val decodedSignature: KmmResult<CryptoSignature> by lazy {
-        catching {
-            val algorithm = signatureAlgorithm
-            algorithm.requireSupported()
-            CryptoSignature.Companion.fromX509Encoded(algorithm, rawSignature)
-        }
-    }
+    val decodedSignature: KmmResult<CryptoSignature> get() = x509Signature.decodedSignature
 
     @Deprecated(
         "Confusingly named, and lacks supported for unsupported signature algorithms; use `decodedSignature` or `rawSignature`",
@@ -398,14 +381,12 @@ class X509Certificate private constructor(
         if (this === other) return true
         if (other !is X509Certificate) return false
         return tbsCertificate == other.tbsCertificate &&
-            signatureAlgorithm == other.signatureAlgorithm &&
-            rawSignature == other.rawSignature
+            x509Signature == other.x509Signature
     }
 
     override fun hashCode(): Int {
         var result = tbsCertificate.hashCode()
-        result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + rawSignature.hashCode()
+        result = 31 * result + x509Signature.hashCode()
         return result
     }
 
@@ -420,6 +401,11 @@ class X509Certificate private constructor(
             der: Der,
         ): X509Certificate =
             X509Certificate(der.decodeFromTlv(serializer, src))
+
+        @Throws(Asn1Exception::class)
+        fun decodeFromTlv(src: Asn1Element): X509Certificate =
+            decodeFromTlv(Awesn1X509Certificate.serializer(), src, DER)
+
         /**
          * Tries to decode [src] into an [X509Certificate], by parsing the bytes directly as ASN.1 structure,
          * or by decoding from Base64.
