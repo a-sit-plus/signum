@@ -4,6 +4,12 @@ import kotlin.experimental.xor
 
 infix fun <T : Any> T?.orLazy(block: () -> T) = if (this != null) lazyOf(this) else lazy(block)
 
+fun <C, T> C?.orLazyNullable(
+    provided: C.() -> T?,
+    fallback: () -> T?,
+) = if (this != null) lazyOf(this.provided()) else lazy(fallback)
+
+
 /** Drops bytes at the start, or adds zero bytes at the start, until the [size] is reached */
 fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop ->
     when {
