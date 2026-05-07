@@ -18,19 +18,39 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.*
 import org.bouncycastle.operator.ContentSigner
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder
+import java.io.OutputStream
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 
-internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey) =
-    getJCASignatureInstance().getOrThrow().algorithm.let {
-        JcaContentSignerBuilder(it).build(key)
+//now it works for PSS too
+internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey): ContentSigner {
+    val signature = getJCASignatureInstance().getOrThrow().apply {
+        initSign(key)
     }
+
+    return object : ContentSigner {
+        override fun getAlgorithmIdentifier(): AlgorithmIdentifier =
+            AlgorithmIdentifier.getInstance(this@getContentSigner.encodeToDer())
+
+        override fun getOutputStream(): OutputStream =
+            object : OutputStream() {
+                override fun write(b: Int) {
+                    signature.update(byteArrayOf(b.toByte()))
+                }
+
+                override fun write(b: ByteArray, off: Int, len: Int) {
+                    signature.update(b, off, len)
+                }
+            }
+
+        override fun getSignature(): ByteArray = signature.sign()
+    }
+}
 
 @OptIn(ExperimentalStdlibApi::class)
 val Pkcs10CertificationRequestJvmTest by testSuite {

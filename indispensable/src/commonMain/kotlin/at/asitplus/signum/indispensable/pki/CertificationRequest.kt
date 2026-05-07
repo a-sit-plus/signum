@@ -47,7 +47,7 @@ class TbsCertificationRequest private constructor(
         publicKey: CryptoPublicKey,
         attributes: List<CsrAttribute> = listOf(),
     ) : this(null, TbsCertificationRequestContent(version, subjectName, publicKey, attributes)) {
-        validateAttributes(attributes)
+        validateAttributes(attributes, allowExtensions = true)
     }
 
     /**
@@ -221,9 +221,9 @@ class CertificationRequest private constructor(
     }
 }
 
-private fun validateAttributes(attributes: List<CsrAttribute>) {
+private fun validateAttributes(attributes: List<CsrAttribute>, allowExtensions: Boolean = false) {
     require(attributes.distinctBy { it.oid }.size == attributes.size) { "Multiple attributes with same OID found" }
-    require(attributes.none { it.oid == Attribute.EXTENSION_REQUEST_OID }) {
+    if (!allowExtensions) require(attributes.none { it.oid == Attribute.EXTENSION_REQUEST_OID }) {
         "Certificate extension passed as part of regular attributes"
     }
 }
