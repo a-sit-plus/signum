@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
@@ -115,11 +116,24 @@ val PemTest by testSuite {
         val rsa = CryptoPublicKey.decodeFromPem(pem)
             .shouldBeInstanceOf<CryptoPublicKey.RSA>()
 
+        //the old test was borked and should never have worked
         val pkcs1 = """
             -----BEGIN RSA PUBLIC KEY-----
-            MIIBigKCAYEAq3DnhgYgLVJknvDA3clATozPtjI7yauqD4/ZuqgZn4KzzzkQ4BzJ
-            ar4jRygpzbghlFn0Luk1mdVKzPUgYj0VkbRlHyYfcahbgOHixOOnXkKXrtZW7yWG
-            jXPqy/ZJ/+...
+            MIICCgKCAgEAregkc/QUN/ObnitXKByHvty33ziQjG485legePd1wqL+9Wpu9gBP
+            KNveaIZsRJO2sWP9FBJrvx/S6jGbIX7RMzy6SPXded+zuP8S8SGaS8GKhnFpSmZm
+            bI9+PHC/rSkiBvPkwOaAruJLj7eZfpQDn9NHl3yZSCNT6DiuTwpvgy7RSVeMgHS2
+            2i/QOI17A3AhG3XyMDz6j67d2mOr6xZPwo4RS37PC+j/tXcu9LJ7SuBMEiUMcI0D
+            KaDhUyTsE9nuGb8Qs0qMP4mjYVHerIcHlPRjcewu4m9bmIHhiVw0eWx27zuQYnnm
+            26SaLybF0BDhDt7ZEI4W+7f3qPfH5QIHmI82CJXn4jeWDTZ1nvsOcrEdm7wD+UkF
+            2IHdBbQq1kHprAF2lQoP2N/VvRIfNS8oF2zSmMGoCWR3bkc3us6sWV5onX9y1onF
+            BkEpPlk+3Sb1JMkRp1qjTEAfRqGZtac6UW6GO559cqcSBXhZ7T5ReBULA4+N0C8F
+            
+            
+                    ###!!!???ö©å®∫å©€
+            
+            sj57ShxLcwUS/Mbq4FATfEOTdLPKdOeOHwEI0DDUW3E2tAe6wTAwXEi3gjuYpn1g
+            iqKjKYLMur2DBBuigwNBodYF8RvCtvCofIY7RqhIKojcdpp2vx9qpT0Zj+s482Te
+            yCsNCij/99viFULUItAnXeF5/hjncIitTubZizrG3SdRbv+8ZPUzQ08CAwEAAQ==
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
