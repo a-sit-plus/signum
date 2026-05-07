@@ -13,6 +13,16 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.KSerializer
 
+private data class EcSignatureContent(
+    val r: BigInteger,
+    val s: BigInteger,
+) {
+    init {
+        require(r.isPositive) { "r must be positive" }
+        require(s.isPositive) { "s must be positive" }
+    }
+}
+
 /**
  * Algorithm-agnostic signature value. X.509 algorithm context lives in [X509Signature].
  */
@@ -37,16 +47,21 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
 
     sealed class EC
     @Throws(IllegalArgumentException::class) private constructor(
-        val r: BigInteger,
-        val s: BigInteger,
+        providedContent: EcSignatureContent?,
+        private val providedAsn1Representation: SignatureValue?,
     ) : CryptoSignature {
 
-        init {
-            require(r.isPositive) { "r must be positive" }
-            require(s.isPositive) { "s must be positive" }
+        private val content: EcSignatureContent by providedContent orLazy {
+            providedAsn1Representation!!.decodeRS().let { (r, s) ->
+                EcSignatureContent(r.toBigInteger(), s.toBigInteger())
+            }
         }
 
-        override val asn1Representation: SignatureValue by lazy {
+        val r: BigInteger get() = content.r
+
+        val s: BigInteger get() = content.s
+
+        override val asn1Representation: SignatureValue by providedAsn1Representation orLazy {
             SignatureValue.fromRS(
                 r.toAsn1Integer() as Asn1Integer.Positive,
                 s.toAsn1Integer() as Asn1Integer.Positive,
@@ -62,10 +77,14 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
 
         override fun hashCode() = 31 * s.hashCode() + r.hashCode()
 
-        class IndefiniteLength internal constructor(
-            r: BigInteger,
-            s: BigInteger,
-        ) : EC(r, s), NotRawByteEncodable {
+        class IndefiniteLength private constructor(
+            providedContent: EcSignatureContent?,
+            providedAsn1Representation: SignatureValue?,
+        ) : EC(providedContent, providedAsn1Representation), NotRawByteEncodable {
+
+            internal constructor(r: BigInteger, s: BigInteger) : this(EcSignatureContent(r, s), null)
+
+            internal constructor(asn1Representation: SignatureValue) : this(null, asn1Representation)
 
             fun withScalarByteLength(l: UInt) =
                 DefiniteLength(l, r, s)
@@ -101,7 +120,7 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
             val scalarByteLength: UInt,
             r: BigInteger,
             s: BigInteger,
-        ) : EC(r, s), RawByteEncodable {
+        ) : EC(EcSignatureContent(r, s), null), RawByteEncodable {
             init {
                 val max = scalarByteLength.toInt() * 8
 
@@ -123,7 +142,7 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
         companion object : DerDecodable<SignatureValue, IndefiniteLength> {
 
             operator fun invoke(asn1Representation: SignatureValue) =
-                asn1Representation.decodeRS().let { (r, s) -> fromRS(r.toBigInteger(), s.toBigInteger()) }
+                IndefiniteLength(asn1Representation)
 
             //TODO: do we still want this?
             fun fromRS(r: BigInteger, s: BigInteger) =
@@ -158,8 +177,7 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
                 src: Asn1Element,
                 der: Der
             ): IndefiniteLength =
-                der.decodeFromTlv(serializer, src).decodeRS()
-                    .let { (r, s) -> fromRS(r.toBigInteger(), s.toBigInteger()) }
+                IndefiniteLength(der.decodeFromTlv(serializer, src))
 
         }
     }
