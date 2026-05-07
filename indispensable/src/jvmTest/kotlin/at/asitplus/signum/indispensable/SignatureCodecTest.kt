@@ -97,7 +97,7 @@ val SignatureCodecTest  by testSuite {
                 /* subject = */ issuer,
                 /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keys.public.encoded)
             )
-            val signatureAlgorithm = X509SignatureAlgorithm.RS256
+            val signatureAlgorithm = SignatureAlgorithm.RSAwithSHA256andPSSPadding
             val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keys.private)
             val certificateHolder = builder.build(contentSigner)
             certificateHolder.signature

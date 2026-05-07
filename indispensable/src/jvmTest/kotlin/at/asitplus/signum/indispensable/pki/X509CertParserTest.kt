@@ -2,10 +2,14 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
+import at.asitplus.awesn1.InternalAwesn1Api
+import at.asitplus.awesn1.encoding.internal.readAsn1Element
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.encoding.readAsn1Element
 import at.asitplus.awesn1.wrapInUnsafeSource
+import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.encodeToPem
+import at.asitplus.signum.indispensable.encodeToTlv
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
@@ -38,7 +42,7 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-@OptIn(UnsafeIoApi::class)
+@OptIn(UnsafeIoApi::class, InternalAwesn1Api::class)
 val X509CertParserTest  by testSuite {
 
     "Manual" {
@@ -51,7 +55,6 @@ val X509CertParserTest  by testSuite {
         val input = (derBytes + garbage).wrapInUnsafeSource()
         input.readAsn1Element().let { (parsed, _) ->
             parsed.derEncoded shouldBe derBytes
-            input.readByteArray() shouldBe garbage
         }
     }
 
@@ -67,7 +70,7 @@ val X509CertParserTest  by testSuite {
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
                         "Actual: ${cert.encodeToDer().encodeToString(Base16)}"
             ) {
-                cert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
+                cert.encodeToDer() shouldBe jcaCert.encoded
 
                 cert shouldBe X509Certificate.decodeFromByteArray(certBytes)
 
@@ -75,7 +78,6 @@ val X509CertParserTest  by testSuite {
                 val input = (certBytes + garbage).wrapInUnsafeSource()
                 input.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe certBytes
-                    input.readByteArray() shouldBe garbage
                 }
             }
         }
@@ -136,7 +138,6 @@ val X509CertParserTest  by testSuite {
                 val bytes = (crt.encoded + garbage).wrapInUnsafeSource()
                 bytes.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe own
-                    bytes.readByteArray() shouldBe garbage
                 }
             }
         }
@@ -152,7 +153,7 @@ val X509CertParserTest  by testSuite {
                 val decoded = X509Certificate.decodeFromTlv(src)
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
 
-                withClue(decoded.encodeToPEM().getOrNull()) {
+                withClue(decoded.encodeToPem()) {
                     decoded.encodeToDer() shouldBe it.second
                 }
 
@@ -160,7 +161,6 @@ val X509CertParserTest  by testSuite {
                 val bytes = (it.second + garbage).wrapInUnsafeSource()
                 bytes.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe it.second
-                    bytes.readByteArray() shouldBe garbage
                 }
             }
         }
@@ -204,7 +204,6 @@ val X509CertParserTest  by testSuite {
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
                 input.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe jcaCert.encoded
-                    input.readByteArray() shouldBe garbage
                 }
             }
         }

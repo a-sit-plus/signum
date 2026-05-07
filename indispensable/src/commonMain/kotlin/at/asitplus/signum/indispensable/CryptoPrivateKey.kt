@@ -13,6 +13,7 @@ import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.PemBlock
 import at.asitplus.awesn1.decodeRethrowing
 import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.rsaEncryption
@@ -94,7 +95,7 @@ data class EcSec1Source(
 /**
  * PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties.
  */
-sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifiable {
+sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable {
 
     sealed interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
         val publicKey: T
@@ -102,7 +103,9 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
 
     val attributes: Set<Asn1Element>?
 
-    val asPKCS8: DerEncodable<Pkcs8PrivateKeyInfo> get() = this
+    val asPKCS8: DerPemEncodable<Pkcs8PrivateKeyInfo> get() = this
+
+    override val pemLabel: String get() = Companion.canonicalPemLabel
 
     class RSA private constructor(
         private val providedContent: RsaPrivateKeyContent?,
@@ -167,7 +170,8 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
             Pkcs8PrivateKeyInfo.rsa(pkcs1Representation, attributes)
         }
 
-        val asPKCS1: DerEncodable<Pkcs1RsaPrivateKeyInfo> = object : DerEncodable<Pkcs1RsaPrivateKeyInfo> {
+        val asPKCS1: DerPemEncodable<Pkcs1RsaPrivateKeyInfo> = object : DerPemEncodable<Pkcs1RsaPrivateKeyInfo> {
+            override val pemLabel: String get() = RSA_PRIVATE_KEY_PEM_LABEL
             override val asn1Representation: Pkcs1RsaPrivateKeyInfo get() = pkcs1Representation
         }
 
@@ -213,7 +217,9 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
             }
         }
 
-        companion object : DerDecodable<Pkcs8PrivateKeyInfo, RSA> {
+        companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, RSA> {
+            override val canonicalPemLabel: String = PRIVATE_KEY_PEM_LABEL
+            override val validPemLabels: Set<String> = setOf(PRIVATE_KEY_PEM_LABEL, RSA_PRIVATE_KEY_PEM_LABEL)
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
 
             override fun decodeFromTlv(
@@ -225,6 +231,16 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
                 require(decoded.algorithmOid == oid) { "Expected RSA private key, got ${decoded.algorithmOid}" }
                 return RSA(decoded)
             }
+
+            override fun decodeFromPemBlockPayload(
+                serializer: KSerializer<Pkcs8PrivateKeyInfo>,
+                src: PemBlock,
+                der: Der,
+            ): RSA =
+                when (src.pemLabel) {
+                    RSA_PRIVATE_KEY_PEM_LABEL -> FromPKCS1.decodeFromDer(src.payload, der)
+                    else -> decodeFromDer(serializer, src.payload, der)
+                }
         }
 
         object FromPKCS1 {
@@ -271,7 +287,8 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
             Pkcs8PrivateKeyInfo.ec(sec1Representation, curveOidForPkcs8(), attributes)
         }
 
-        val asSEC1: DerEncodable<Sec1EcPrivateKeyInfo> = object : DerEncodable<Sec1EcPrivateKeyInfo> {
+        val asSEC1: DerPemEncodable<Sec1EcPrivateKeyInfo> = object : DerPemEncodable<Sec1EcPrivateKeyInfo> {
+            override val pemLabel: String get() = EC_PRIVATE_KEY_PEM_LABEL
             override val asn1Representation: Sec1EcPrivateKeyInfo get() = sec1Representation
         }
 
@@ -420,7 +437,9 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
                 throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
         }
 
-        companion object : DerDecodable<Pkcs8PrivateKeyInfo, EC> {
+        companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, EC> {
+            override val canonicalPemLabel: String = PRIVATE_KEY_PEM_LABEL
+            override val validPemLabels: Set<String> = setOf(PRIVATE_KEY_PEM_LABEL, EC_PRIVATE_KEY_PEM_LABEL)
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             override fun decodeFromTlv(
@@ -432,6 +451,16 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
                 require(decoded.algorithmOid == oid) { "Expected EC private key, got ${decoded.algorithmOid}" }
                 return fromPkcs8Representation(decoded)
             }
+
+            override fun decodeFromPemBlockPayload(
+                serializer: KSerializer<Pkcs8PrivateKeyInfo>,
+                src: PemBlock,
+                der: Der,
+            ): EC =
+                when (src.pemLabel) {
+                    EC_PRIVATE_KEY_PEM_LABEL -> FromSEC1.decodeFromDer(src.payload, der)
+                    else -> decodeFromDer(serializer, src.payload, der)
+                }
 
             private fun fromPkcs8Representation(representation: Pkcs8PrivateKeyInfo): EC {
                 val curve = representation.algorithmParameters?.let(::decodeEcCurve)
@@ -478,7 +507,15 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
         }
     }
 
-    companion object : DerDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
+    companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
+        const val PRIVATE_KEY_PEM_LABEL: String = "PRIVATE KEY"
+        const val RSA_PRIVATE_KEY_PEM_LABEL: String = "RSA PRIVATE KEY"
+        const val EC_PRIVATE_KEY_PEM_LABEL: String = "EC PRIVATE KEY"
+
+        override val canonicalPemLabel: String = PRIVATE_KEY_PEM_LABEL
+        override val validPemLabels: Set<String> =
+            setOf(PRIVATE_KEY_PEM_LABEL, RSA_PRIVATE_KEY_PEM_LABEL, EC_PRIVATE_KEY_PEM_LABEL)
+
         override fun decodeFromTlv(
             serializer: KSerializer<Pkcs8PrivateKeyInfo>,
             src: Asn1Element,
@@ -492,6 +529,17 @@ sealed interface CryptoPrivateKey : DerEncodable<Pkcs8PrivateKeyInfo>, Identifia
                 else -> throw IllegalArgumentException("Unknown Algorithm: ${decoded.algorithmOid}")
             }
         }
+
+        override fun decodeFromPemBlockPayload(
+            serializer: KSerializer<Pkcs8PrivateKeyInfo>,
+            src: PemBlock,
+            der: Der,
+        ): CryptoPrivateKey =
+            when (src.pemLabel) {
+                RSA_PRIVATE_KEY_PEM_LABEL -> RSA.FromPKCS1.decodeFromDer(src.payload, der)
+                EC_PRIVATE_KEY_PEM_LABEL -> EC.FromSEC1.decodeFromDer(src.payload, der)
+                else -> decodeFromDer(serializer, src.payload, der)
+            }
 
         fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {

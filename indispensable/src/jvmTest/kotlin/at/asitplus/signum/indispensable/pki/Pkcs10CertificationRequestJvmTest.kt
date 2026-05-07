@@ -27,7 +27,7 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 
-internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
+internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     getJCASignatureInstance().getOrThrow().algorithm.let {
         JcaContentSignerBuilder(it).build(key)
     }
@@ -48,7 +48,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
 
 
         val tbsCsr = TbsCertificationRequest(
@@ -99,7 +99,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -164,7 +164,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -228,7 +228,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
 
@@ -276,7 +276,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
@@ -318,7 +318,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
 
         val csr = CertificationRequest(
             tbsCsr,
-            X509SignatureAlgorithm.RS256,
+            SignatureAlgorithm.RSAwithSHA256andPKCS1Padding,
             CryptoSignature.RSA(byteArrayOf(1, 2, 3, 4))
         )
         val decodedCsr = CertificationRequest.decodeFromDer(csr.encodeToDer())
@@ -400,8 +400,8 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         /*
             Pkcs10CertificationRequest
         */
-        val signatureAlgorithm1 = X509SignatureAlgorithm.ES256
-        val signatureAlgorithm2 = X509SignatureAlgorithm.ES512
+        val signatureAlgorithm1 = SignatureAlgorithm.ECDSAwithSHA256
+        val signatureAlgorithm2 = SignatureAlgorithm.ECDSAwithSHA512
 
         val signed = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)

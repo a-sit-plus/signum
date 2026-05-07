@@ -2,8 +2,8 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
@@ -21,6 +21,8 @@ import java.io.File
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
 
 @OptIn(UnsafeIoApi::class)
 val X509SignatureAlgorithmTest  by testSuite {
@@ -32,13 +34,13 @@ val X509SignatureAlgorithmTest  by testSuite {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
 
-            decoded.signatureAlgorithm.isSupported().shouldBeFalse()
-            decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
+            shouldThrowAny {
 
-            //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
-             decoded.decodedSignature.isSuccess shouldBe false
+                decoded.signatureAlgorithm.toString()
+            }
 
-            withClue(decoded.encodeToPEM().getOrNull()) {
+
+            withClue(decoded.encodeToPem()) {
                 decoded.encodeToDer() shouldBe it.second
             }
         }
@@ -48,8 +50,8 @@ val X509SignatureAlgorithmTest  by testSuite {
         withData(nameFn = { it.first }, certsSupported) {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
-            decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.entries
-            shouldNotThrow<Throwable> { decoded.decodedSignature }
+            decoded.signatureAlgorithm shouldBeIn SignatureAlgorithm.entries.toList()
+            shouldNotThrow<Throwable> { decoded.signature.toString() }
         }
     }
 
@@ -66,4 +68,3 @@ private fun readCerts(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, B
     val certsSupported = cert1.filter { it.name.startsWith("ok-") }
     return certsUnsupported.map { it.name to it.readBytes() } to certsSupported.map { it.name to it.readBytes() }
 }
-

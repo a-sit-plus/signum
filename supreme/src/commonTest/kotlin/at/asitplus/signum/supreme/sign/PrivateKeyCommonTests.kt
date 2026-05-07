@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.minus
@@ -33,7 +34,7 @@ val PrivateKeyCommonTests  by testSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = CryptoPrivateKey.decodeFromPem(rsa).getOrThrow() as CryptoPrivateKey.WithPublicKey<*>
+        val key = CryptoPrivateKey.decodeFromPem(rsa) as CryptoPrivateKey.WithPublicKey<*>
 
         val signer: Signer = SignatureAlgorithm.RSAwithSHA256andPSSPadding.signerFor(key).getOrThrow()
 
@@ -56,7 +57,7 @@ val PrivateKeyCommonTests  by testSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow() as CryptoPrivateKey.EC.WithPublicKey
+        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as CryptoPrivateKey.EC.WithPublicKey
 
 
         val signer: Signer = SignatureAlgorithm.ECDSAwithSHA256.signerFor(privateKey).getOrThrow()

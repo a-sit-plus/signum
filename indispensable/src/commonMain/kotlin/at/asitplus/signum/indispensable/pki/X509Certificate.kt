@@ -277,7 +277,7 @@ class X509Certificate private constructor(
     providedAsn1Representation: Awesn1X509Certificate?,
     providedContent: TbsCertificate?,
     val signature: CryptoSignature
-) : DerEncodable<Awesn1X509Certificate>, WithPemLabel {
+) : DerPemEncodable<Awesn1X509Certificate> {
 
     override val pemLabel: String get() = canonicalPemLabel
 
@@ -350,7 +350,7 @@ class X509Certificate private constructor(
         return result
     }
 
-    companion object : DerDecodable<Awesn1X509Certificate, X509Certificate>, PemLabelSpec<X509Certificate> {
+    companion object : DerPemDecodable<Awesn1X509Certificate, X509Certificate> {
         override val canonicalPemLabel: String = "CERTIFICATE"
         override val validPemLabels: Set<String> = setOf(canonicalPemLabel, "TRUSTED CERTIFICATE")
 
