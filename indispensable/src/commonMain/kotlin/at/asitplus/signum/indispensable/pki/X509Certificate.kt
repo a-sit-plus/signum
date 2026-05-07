@@ -1,41 +1,21 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.KmmResult
-import at.asitplus.awesn1.Asn1BitString
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.Asn1Primitive
-import at.asitplus.awesn1.Asn1PrimitiveOctetString
-import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.awesn1.Asn1Time
-import at.asitplus.awesn1.PemLabelSpec
-import at.asitplus.awesn1.WithPemLabel
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.decodeToAsn1Integer
-import at.asitplus.awesn1.encoding.decodeFromDer
-import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.X509Signature
-import at.asitplus.signum.indispensable.X509SignatureAsn1Representation
-import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
-import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
-import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.decodeFromDer
 import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -49,7 +29,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 private data class TbsCertificateContent(
     val version: Int,
     val serialNumber: ByteArray,
-    val signatureAlgorithm: X509SignatureAlgorithmDescription,
+    val signatureAlgorithm: SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
@@ -63,16 +43,16 @@ private data class TbsCertificateContent(
         if (this === other) return true
         if (other !is TbsCertificateContent) return false
         return version == other.version &&
-            serialNumber.contentEquals(other.serialNumber) &&
-            signatureAlgorithm == other.signatureAlgorithm &&
-            issuerName == other.issuerName &&
-            validFrom == other.validFrom &&
-            validUntil == other.validUntil &&
-            subjectName == other.subjectName &&
-            subjectPublicKeyInfo == other.subjectPublicKeyInfo &&
-            issuerUniqueID == other.issuerUniqueID &&
-            subjectUniqueID == other.subjectUniqueID &&
-            extensions == other.extensions
+                serialNumber.contentEquals(other.serialNumber) &&
+                signatureAlgorithm == other.signatureAlgorithm &&
+                issuerName == other.issuerName &&
+                validFrom == other.validFrom &&
+                validUntil == other.validUntil &&
+                subjectName == other.subjectName &&
+                subjectPublicKeyInfo == other.subjectPublicKeyInfo &&
+                issuerUniqueID == other.issuerUniqueID &&
+                subjectUniqueID == other.subjectUniqueID &&
+                extensions == other.extensions
     }
 
     override fun hashCode(): Int {
@@ -91,11 +71,6 @@ private data class TbsCertificateContent(
     }
 }
 
-private data class X509CertificateContent(
-    val tbsCertificate: TbsCertificate,
-    val x509Signature: X509Signature,
-)
-
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed.
@@ -111,7 +86,7 @@ class TbsCertificate private constructor(
     constructor(
         version: Int = 3,
         serialNumber: ByteArray,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        signatureAlgorithm: SignatureAlgorithm,
         issuerName: List<RelativeDistinguishedName>,
         validFrom: Asn1Time,
         validUntil: Asn1Time,
@@ -143,7 +118,7 @@ class TbsCertificate private constructor(
     constructor(
         version: Int = 3,
         serialNumber: ByteArray,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        signatureAlgorithm: SignatureAlgorithm,
         issuerName: List<RelativeDistinguishedName>,
         validFrom: Asn1Time,
         validUntil: Asn1Time,
@@ -177,7 +152,7 @@ class TbsCertificate private constructor(
         X509TbsCertificate(
             version = content.version,
             serialNumber = Asn1Primitive(Asn1Element.Tag.INT, content.serialNumber).decodeToAsn1Integer(),
-            signatureAlgorithm = content.signatureAlgorithm.toAlgorithmIdentifier(),
+            signatureAlgorithm = content.signatureAlgorithm.asn1Representation,
             issuerName = content.issuerName.map { it.asn1Representation },
             validFrom = content.validFrom,
             validUntil = content.validUntil,
@@ -193,7 +168,7 @@ class TbsCertificate private constructor(
         TbsCertificateContent(
             version = asn1Representation.version ?: 1,
             serialNumber = asn1Representation.serialNumber.encodeToTlv().content,
-            signatureAlgorithm = X509SignatureAlgorithmDescription.fromAlgorithmIdentifier(asn1Representation.signatureAlgorithm),
+            signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
             issuerName = asn1Representation.issuerName.map(::RelativeDistinguishedName),
             validFrom = asn1Representation.validity.validFrom,
             validUntil = asn1Representation.validity.validUntil,
@@ -201,7 +176,8 @@ class TbsCertificate private constructor(
             subjectPublicKeyInfo = asn1Representation.subjectPublicKeyInfo,
             issuerUniqueID = asn1Representation.issuerUniqueID,
             subjectUniqueID = asn1Representation.subjectUniqueID,
-            extensions = asn1Representation.extensions?.map(Awesn1X509CertificateExtension::toSignumExtension).orEmpty(),
+            extensions = asn1Representation.extensions?.map(Awesn1X509CertificateExtension::toSignumExtension)
+                .orEmpty(),
         )
     }
 
@@ -209,7 +185,7 @@ class TbsCertificate private constructor(
 
     val serialNumber: ByteArray get() = content.serialNumber
 
-    val signatureAlgorithm: X509SignatureAlgorithmDescription get() = content.signatureAlgorithm
+    val signatureAlgorithm: SignatureAlgorithm get() = content.signatureAlgorithm
 
     val issuerName: List<RelativeDistinguishedName> get() = content.issuerName
 
@@ -268,7 +244,8 @@ class TbsCertificate private constructor(
      * Debug String representation. Uses Base64 encoded DER representation
      */
     override fun toString(): String = catchingUnwrapped {
-        "TbsCertificate(${encodeToDer().encodeToString(Base64Strict)})"}.getOrElse { "TbsCertificate cannot be DER-encoded. RAW representation: $content" }
+        "TbsCertificate(${encodeToDer().encodeToString(Base64Strict)})"
+    }.getOrElse { "TbsCertificate cannot be DER-encoded. RAW representation: $content" }
 
     companion object : DerDecodable<X509TbsCertificate, TbsCertificate> {
         @Throws(Asn1Exception::class)
@@ -298,7 +275,8 @@ class TbsCertificate private constructor(
  */
 class X509Certificate private constructor(
     providedAsn1Representation: Awesn1X509Certificate?,
-    providedContent: X509CertificateContent?,
+    providedContent: TbsCertificate?,
+    val signature: CryptoSignature
 ) : DerEncodable<Awesn1X509Certificate>, WithPemLabel {
 
     override val pemLabel: String get() = canonicalPemLabel
@@ -306,46 +284,30 @@ class X509Certificate private constructor(
     @Throws(IllegalArgumentException::class)
     constructor(
         tbsCertificate: TbsCertificate,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
-        rawSignature: Asn1Primitive,
-    ) : this(null, X509CertificateContent(tbsCertificate, X509Signature(signatureAlgorithm, rawSignature)))
-
-    @Throws(IllegalArgumentException::class)
-    constructor(
-        tbsCertificate: TbsCertificate,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
         signature: CryptoSignature,
-    ) : this(null, X509CertificateContent(tbsCertificate, X509Signature(signatureAlgorithm, signature)))
+    ) : this(null, tbsCertificate, signature)
 
-    constructor(asn1Representation: Awesn1X509Certificate) : this(asn1Representation, null)
+    constructor(asn1Representation: Awesn1X509Certificate) : this(
+        asn1Representation,
+        null,
+        CryptoSignature(asn1Representation.signatureValue)
+    )
 
     override val asn1Representation: Awesn1X509Certificate by providedAsn1Representation orLazy {
         val content = requireNotNull(providedContent)
         Awesn1X509Certificate(
-            tbsCertificate = content.tbsCertificate.asn1Representation,
-            signatureAlgorithm = content.x509Signature.asn1Representation.algorithmIdentifier,
-            signatureValue = content.x509Signature.asn1Representation.signatureValue,
+            tbsCertificate = providedContent.asn1Representation,
+            signatureAlgorithm = providedContent.signatureAlgorithm.asn1Representation,
+            signatureValue = signature.asn1Representation
         )
     }
 
-    val tbsCertificate: TbsCertificate by providedContent?.tbsCertificate orLazy {
+    val tbsCertificate: TbsCertificate by providedContent orLazy {
         TbsCertificate(asn1Representation.tbsCertificate)
     }
 
-    val x509Signature: X509Signature by providedContent?.x509Signature orLazy {
-        X509Signature(
-            X509SignatureAsn1Representation(
-                algorithmIdentifier = asn1Representation.signatureAlgorithm,
-                signatureValue = asn1Representation.signatureValue,
-            )
-        )
-    }
 
-    val signatureAlgorithm: X509SignatureAlgorithmDescription get() = x509Signature.signatureAlgorithm
-
-    val rawSignature: Asn1Primitive get() = x509Signature.rawSignature
-
-    val rawSignatureAlgorithm: Asn1Sequence get() = x509Signature.rawSignatureAlgorithm
+    val signatureAlgorithm: SignatureAlgorithm get() = tbsCertificate.signatureAlgorithm
 
     // PEM disabled during awesn1 migration.
 
@@ -369,24 +331,22 @@ class X509Certificate private constructor(
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
 
-    val decodedSignature: KmmResult<CryptoSignature> get() = x509Signature.decodedSignature
 
     @Deprecated(
         "Confusingly named, and lacks supported for unsupported signature algorithms; use `decodedSignature` or `rawSignature`",
         level = DeprecationLevel.ERROR,
     )
-    val signature: CryptoSignature get() = decodedSignature.getOrThrow()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is X509Certificate) return false
         return tbsCertificate == other.tbsCertificate &&
-            x509Signature == other.x509Signature
+                signature == other.signature
     }
 
     override fun hashCode(): Int {
         var result = tbsCertificate.hashCode()
-        result = 31 * result + x509Signature.hashCode()
+        result = 31 * result + signature.hashCode()
         return result
     }
 
@@ -410,7 +370,7 @@ class X509Certificate private constructor(
          * Tries to decode [src] into an [X509Certificate], by parsing the bytes directly as ASN.1 structure,
          * or by decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray, der: Der=DER): X509Certificate? = catchingUnwrapped {
+        fun decodeFromByteArray(src: ByteArray, der: Der = DER): X509Certificate? = catchingUnwrapped {
             X509Certificate(der.decodeFromDer<Awesn1X509Certificate>(src))
         }.getOrNull() ?: catchingUnwrapped {
             X509Certificate(der.decodeFromDer<Awesn1X509Certificate>(src.decodeToByteArray(Base64())) /*TODO PEM*/)

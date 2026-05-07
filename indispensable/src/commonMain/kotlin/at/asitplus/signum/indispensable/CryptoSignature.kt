@@ -5,6 +5,7 @@ import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.indispensable.CryptoSignature.EC
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.ensureSize
@@ -224,10 +225,10 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
             serializer: KSerializer<SignatureValue>,
             src: Asn1Element,
             der: Der
-        ): CryptoSignature = der.decodeFromTlv(serializer, src).let { signatureValue ->
-            catchingUnwrapped { EC(signatureValue) }
-                .getOrElse { RSA(signatureValue) }
-        }
+        ): CryptoSignature = CryptoSignature(der.decodeFromTlv(serializer, src))
+
+        operator fun invoke(asn1Representation: SignatureValue) =   catchingUnwrapped { EC(asn1Representation) }
+            .getOrElse { RSA(asn1Representation) }
     }
 }
 

@@ -15,11 +15,6 @@ import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-// future: SPI
-private interface X509SignatureAlgorithmProvider {
-    fun loaderForOid(oid: ObjectIdentifier): ((X509AlgorithmIdentifier) -> X509SignatureAlgorithm?)?
-}
-
 sealed class X509SignatureAlgorithmDescription(
     override val oid: ObjectIdentifier
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
@@ -56,9 +51,7 @@ sealed class X509SignatureAlgorithmDescription(
                     identifier.oid == KnownOIDs.rsaPSS -> parameter.asSequence()
                     else -> Asn1.Sequence { +parameter }
                 }
-                sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
-                    .firstNotNullOfOrNull { it.loaderForOid(identifier.oid) }
-                    ?.invoke(identifier)
+                catching { SignatureAlgorithm(identifier).toX509SignatureAlgorithm().getOrThrow() }.getOrNull()
                     ?: Unknown(identifier.oid, params.children)
             }
 
@@ -89,30 +82,6 @@ fun X509SignatureAlgorithmDescription.requireSupported() {
 sealed class X509SignatureAlgorithm(
     oid: ObjectIdentifier
 ) : X509SignatureAlgorithmDescription(oid), SpecializedSignatureAlgorithm, Enumerable {
-
-    /** The [X509SignatureAlgorithmProvider] for Signum's natively supported [X509SignatureAlgorithm]s */
-    internal object Provider : X509SignatureAlgorithmProvider {
-        override fun loaderForOid(oid: ObjectIdentifier) = when (oid) {
-            KnownOIDs.rsaPSS -> X509SignatureAlgorithm::parsePssParams
-            else -> when (val alg = entries.firstOrNull { it.oid == oid }) {
-                null -> null
-                is RSAPKCS1 -> ({
-                    val params = it.parameters
-                    if (params == null) null /*this is cursed, illegal, forbidden, evil and non-complaint, but we have to deal with it*/
-                    else {
-                        if (params != Asn1Null) {
-                            throw Asn1TagMismatchException(
-                                Asn1Element.Tag.NULL, params.tag,
-                                "RSA Params not allowed." //unless you are an OEM with massive market share who is too big to fail, then the world just has to deal with it
-                            )
-                        }
-                        alg
-                    }
-                })
-                else -> ({ alg })
-            }
-        }
-    }
 
     // ECDSA with SHA-size
     sealed class ECDSA(oid: ObjectIdentifier, val digest: Digest) :
@@ -210,48 +179,6 @@ sealed class X509SignatureAlgorithm(
                     ?: throw Asn1OidException("Unsupported OID: ${it.oid}", it.oid)
             }
 
-        @Throws(Asn1Exception::class)
-        private fun parsePssParams(identifier: X509AlgorithmIdentifier): X509SignatureAlgorithm = runRethrowing {
-            val params = identifier.rsaSsaPssParams!!
-            val hashAlgorithm = params.effectiveHashAlgorithm
-            val mgfAlgorithm = params.effectiveMaskGenAlgorithm
-            val sigAlg = hashAlgorithm.oid
-            val saltLen = params.effectiveSaltLength
-
-            hashAlgorithm.parameters?.let {
-                if (it != Asn1Null) throw Asn1TagMismatchException(
-                    Asn1Element.Tag.NULL,
-                    it.tag,
-                    "PSS hash params not supported yet"
-                )
-            }
-
-            if (mgfAlgorithm.oid != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: ${mgfAlgorithm.oid}")
-            val innerHashAlgorithm = mgfAlgorithm.parameters?.asSequence()?.let(::X509AlgorithmIdentifier)
-                ?: throw IllegalArgumentException("MGF1 parameters missing")
-
-            if (innerHashAlgorithm.oid != sigAlg) {
-                throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: ${innerHashAlgorithm.oid}")
-            }
-            innerHashAlgorithm.parameters?.let {
-                if (it != Asn1Null) throw Asn1TagMismatchException(
-                    Asn1Element.Tag.NULL,
-                    it.tag,
-                    "PSS MGF1 hash params not supported yet"
-                )
-            }
-
-            sigAlg.let {
-                when (it) {
-                    KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.sha_512 -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-
-                    else -> throw IllegalArgumentException("Unsupported OID: $it")
-                }
-            }
-        }
-
     }
 }
 
@@ -273,10 +200,10 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 Digest.SHA512 -> X509SignatureAlgorithm.RS512
             }
 
-            is RSAPadding.PSS -> when (this.digest) {
-                Digest.SHA256 -> X509SignatureAlgorithm.PS256
-                Digest.SHA384 -> X509SignatureAlgorithm.PS384
-                Digest.SHA512 -> X509SignatureAlgorithm.PS512
+            is RSAPadding.PSS -> when (this.padding) {
+                X509SignatureAlgorithm.PS256.algorithm.padding -> X509SignatureAlgorithm.PS256
+                X509SignatureAlgorithm.PS384.algorithm.padding -> X509SignatureAlgorithm.PS384
+                X509SignatureAlgorithm.PS512.algorithm.padding -> X509SignatureAlgorithm.PS512
                 else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
             }
         }
