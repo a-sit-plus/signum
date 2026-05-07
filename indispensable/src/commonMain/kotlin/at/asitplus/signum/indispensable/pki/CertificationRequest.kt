@@ -1,28 +1,18 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Primitive
 import at.asitplus.awesn1.Asn1PrimitiveOctetString
-import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.crypto.pki.Attribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
-import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
-import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest as Awesn1Pkcs10CertificationRequest
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.X509Signature
-import at.asitplus.signum.indispensable.X509SignatureAsn1Representation
-import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
+import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest as Awesn1Pkcs10CertificationRequest
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 private data class TbsCertificationRequestContent(
     val version: Int,
@@ -33,7 +23,8 @@ private data class TbsCertificationRequestContent(
 
 private data class Pkcs10CertificationRequestContent(
     val tbsCsr: TbsCertificationRequest,
-    val x509Signature: X509Signature,
+    val signatureAlgorithm: SignatureAlgorithm,
+    val signature: CryptoSignature,
 )
 
 /**
@@ -115,6 +106,7 @@ class TbsCertificationRequest private constructor(
                 1 -> extensionAttributes.single().value.single().asSequence().map {
                     DER.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it).toSignumExtension()
                 }
+
                 else -> throw Asn1StructuralException("Multiple extensionRequest attributes found")
             }
         }
@@ -124,9 +116,9 @@ class TbsCertificationRequest private constructor(
         if (this === other) return true
         if (other !is TbsCertificationRequest) return false
         return version == other.version &&
-            subjectName == other.subjectName &&
-            publicKey == other.publicKey &&
-            attributes == other.attributes
+                subjectName == other.subjectName &&
+                publicKey == other.publicKey &&
+                attributes == other.attributes
     }
 
     override fun hashCode(): Int {
@@ -161,24 +153,19 @@ class CertificationRequest private constructor(
 
     constructor(
         tbsCsr: TbsCertificationRequest,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
-        rawSignature: Asn1Primitive,
-    ) : this(null, Pkcs10CertificationRequestContent(tbsCsr, X509Signature(signatureAlgorithm, rawSignature)))
-
-    constructor(
-        tbsCsr: TbsCertificationRequest,
-        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        signatureAlgorithm: SignatureAlgorithm,
         signature: CryptoSignature,
-    ) : this(null, Pkcs10CertificationRequestContent(tbsCsr, X509Signature(signatureAlgorithm, signature)))
+    ) : this(null, Pkcs10CertificationRequestContent(tbsCsr, signatureAlgorithm, signature))
 
-    internal constructor(asn1Representation: Awesn1Pkcs10CertificationRequest) : this(asn1Representation, null)
+    constructor(asn1Representation: Awesn1Pkcs10CertificationRequest) : this(asn1Representation, null)
+
 
     override val asn1Representation: Awesn1Pkcs10CertificationRequest by providedAsn1Representation orLazy {
         val content = requireNotNull(providedContent)
         Awesn1Pkcs10CertificationRequest(
             certificationRequestInfo = content.tbsCsr.asn1Representation,
-            signatureAlgorithm = content.x509Signature.asn1Representation.algorithmIdentifier,
-            signatureValue = content.x509Signature.asn1Representation.signatureValue,
+            signatureAlgorithm = content.signatureAlgorithm.asn1Representation,
+            signatureValue = content.signature.asn1Representation,
         )
     }
 
@@ -186,50 +173,32 @@ class CertificationRequest private constructor(
         TbsCertificationRequest(asn1Representation.certificationRequestInfo)
     }
 
-    val x509Signature: X509Signature by providedContent?.x509Signature orLazy {
-        X509Signature(
-            X509SignatureAsn1Representation(
-                algorithmIdentifier = asn1Representation.signatureAlgorithm,
-                signatureValue = asn1Representation.signatureValue,
-            )
-        )
+    val signatureAlgorithm: SignatureAlgorithm by providedContent?.signatureAlgorithm orLazy {
+        SignatureAlgorithm(asn1Representation.signatureAlgorithm)
     }
 
-    val signatureAlgorithm: X509SignatureAlgorithmDescription get() = x509Signature.signatureAlgorithm
-
-    val rawSignature: Asn1Primitive get() = x509Signature.rawSignature
-
-    val rawTbsCsr: Asn1Sequence by (providedContent?.tbsCsr?.encodeToTlv(Pkcs10CertificationRequestInfo.serializer()) as Asn1Sequence?) orLazy {
-        DER.encodeToTlv(Pkcs10CertificationRequestInfo.serializer(), asn1Representation.certificationRequestInfo) as Asn1Sequence
+    val signature: CryptoSignature by providedContent?.signature orLazy {
+        CryptoSignature(asn1Representation.signatureValue)
     }
-
-    val rawSignatureAlgorithm: Asn1Sequence get() = x509Signature.rawSignatureAlgorithm
-
-    val decodedSignature: KmmResult<CryptoSignature> get() = x509Signature.decodedSignature
-
-    @Deprecated(
-        "Imprecisely named and lacks support for unsupported algorithms; use rawSignature or decodedSignature",
-        level = DeprecationLevel.ERROR,
-    )
-    val signature get() = decodedSignature.getOrThrow()
-
     // PEM disabled during awesn1 migration.
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is CertificationRequest) return false
         return tbsCsr == other.tbsCsr &&
-            x509Signature == other.x509Signature
+                signatureAlgorithm == other.signatureAlgorithm &&
+                signature == other.signature
     }
 
     override fun hashCode(): Int {
         var result = tbsCsr.hashCode()
-        result = 31 * result + x509Signature.hashCode()
+        result = 31 * result + signatureAlgorithm.hashCode()
+        result = 31 * result + signature.hashCode()
         return result
     }
 
     override fun toString(): String =
-        "Pkcs10CertificationRequest(tbsCsr=$tbsCsr, signatureAlgorithm=$signatureAlgorithm, rawSignature=$rawSignature)"
+        "Pkcs10CertificationRequest(tbsCsr=$tbsCsr, signatureAlgorithm=$signatureAlgorithm, signature=$signature)"
 
     companion object : DerDecodable<Awesn1Pkcs10CertificationRequest, CertificationRequest> {
         private object EB_STRINGS {

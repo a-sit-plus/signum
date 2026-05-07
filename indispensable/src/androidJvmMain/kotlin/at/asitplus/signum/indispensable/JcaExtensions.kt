@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.asn1.decodeFromDerSafe
 import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.toAsn1Integer
@@ -257,13 +256,13 @@ fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
     (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
 fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
-    CryptoPrivateKey.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
+    catching { CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*> }
 
 fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
-    CryptoPrivateKey.EC.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+    catching { CryptoPrivateKey.EC.decodeFromDer(encoded) as CryptoPrivateKey.EC.WithPublicKey }
 
 fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
-    CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
+    catching { CryptoPrivateKey.RSA.decodeFromDer(encoded) }
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
