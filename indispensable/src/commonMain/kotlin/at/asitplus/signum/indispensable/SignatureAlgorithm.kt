@@ -77,6 +77,23 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
         override val oid: ObjectIdentifier
             get() = RSA_SSA_PSS_OID
 
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is PSS) return false
+            return hashAlgorithm == other.hashAlgorithm &&
+                mgfAlgorithm == other.mgfAlgorithm &&
+                saltLength == other.saltLength &&
+                trailerField == other.trailerField
+        }
+
+        override fun hashCode(): Int {
+            var result = hashAlgorithm.hashCode()
+            result = 31 * result + mgfAlgorithm.hashCode()
+            result = 31 * result + saltLength.hashCode()
+            result = 31 * result + trailerField
+            return result
+        }
+
 
         private data class PssParams(
             val hashAlgorithm: Digest,
@@ -274,6 +291,24 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         override val entries: Iterable<SignatureAlgorithm> by lazy {
             ECDSA.entries + RSA.entries
         }
+
+        operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =
+            runRethrowing {
+                when (identifier.oid) {
+                    KnownOIDs.ecdsaWithSHA256,
+                    KnownOIDs.ecdsaWithSHA384,
+                    KnownOIDs.ecdsaWithSHA512 -> ECDSA(identifier)
+
+                    KnownOIDs.sha1WithRSAEncryption,
+                    KnownOIDs.sha256WithRSAEncryption,
+                    KnownOIDs.sha384WithRSAEncryption,
+                    KnownOIDs.sha512WithRSAEncryption -> RSA(identifier)
+
+                    KnownOIDs.rsaPSS -> RSA(identifier)
+
+                    else -> throw Asn1OidException("Unsupported OID: ${identifier.oid}", identifier.oid)
+                }
+            }
 
     }
 }
