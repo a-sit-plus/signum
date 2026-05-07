@@ -5,7 +5,6 @@ import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.CryptoSignature.EC
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.ensureSize
@@ -13,6 +12,7 @@ import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.encodeToByteArray
 
 private data class EcSignatureContent(
     val r: BigInteger,
@@ -178,7 +178,12 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
                 src: Asn1Element,
                 der: Der
             ): IndefiniteLength =
-                IndefiniteLength(der.decodeFromTlv(serializer, src))
+                IndefiniteLength(
+                    der.decodeFromTlv(
+                        serializer,   /*we should cater to JCA, and allow base EC signatures*/
+                        if (src is Asn1Sequence) Asn1BitString(der.encodeToByteArray(src)).encodeToTlv() else src
+                    )
+                )
 
         }
     }
@@ -225,9 +230,15 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
             serializer: KSerializer<SignatureValue>,
             src: Asn1Element,
             der: Der
-        ): CryptoSignature = CryptoSignature(der.decodeFromTlv(serializer, src))
+        ): CryptoSignature = CryptoSignature(
+            der.decodeFromTlv(
+                serializer,
+                /*we should cater to JCA, and allow base EC signatures*/
+                if (src is Asn1Sequence) Asn1BitString(der.encodeToByteArray(src)).encodeToTlv() else src
+            )
+        )
 
-        operator fun invoke(asn1Representation: SignatureValue) =   catchingUnwrapped { EC(asn1Representation) }
+        operator fun invoke(asn1Representation: SignatureValue) = catchingUnwrapped { EC(asn1Representation) }
             .getOrElse { RSA(asn1Representation) }
     }
 }
