@@ -148,7 +148,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         }
     }
 
-    class RSA(
+    class RSA private constructor(
         providedParams: Parameters<*>?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
