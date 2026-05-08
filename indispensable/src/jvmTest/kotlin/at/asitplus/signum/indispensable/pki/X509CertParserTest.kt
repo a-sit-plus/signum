@@ -41,6 +41,7 @@ import java.security.cert.X509Certificate as JcaCertificate
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
+import kotlinx.io.bytestring.encode
 
 @OptIn(UnsafeIoApi::class, InternalAwesn1Api::class)
 val X509CertParserTest  by testSuite {
@@ -129,7 +130,7 @@ val X509CertParserTest  by testSuite {
             val parsed = X509Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
             val own = parsed.encodeToDer()
             withClue(
-                "Expect: ${crt.encoded.encodeToString(Base16)}\n" + "Actual: ${own.encodeToString(Base16)}"
+                "Expect: ${kotlin.io.encoding.Base64.Mime.encode(crt.encoded)}\n" + "Actual: ${kotlin.io.encoding.Base64.Mime.encode(own)}"
             ) {
                 own shouldBe crt.encoded
                 parsed shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
