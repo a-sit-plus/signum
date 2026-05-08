@@ -5,7 +5,6 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Asn1Time
@@ -176,12 +175,10 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 requiredCurve = publicKey.curve),
             alias)
         is CryptoPublicKey.RSA -> {
-            val padding = if (config.rsa.v.parametersSpecified) config.rsa.v.parameters else RSAPadding.PSS
+            val params =
+                if (config.rsa.v.parametersSpecified) config.rsa.v.parameters else SignatureAlgorithm.RSAwithSHA256andPSSPadding.parameters
             JKSSigner.RSA(
-                config, privateKey as RSAPrivateKey, publicKey,
-                if (padding is RSAPadding.PSS) SignatureAlgorithm.RSA(padding = padding)
-                else SignatureAlgorithm.RSA(digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256),
-                alias
+                config, privateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(params), alias
             )
         }
     }

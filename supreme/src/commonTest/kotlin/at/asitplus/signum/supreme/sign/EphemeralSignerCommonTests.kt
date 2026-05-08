@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.pki.*
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
@@ -47,12 +46,11 @@ data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val i
         }
     }
 }
-data class RSATestSuite(val padding: RSAPadding<*>, val digest: Digest, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
-    override fun toString() = "RSA/$digest/$padding/${keySize}bit${if (isPreHashed) "/pre" else ""}"
+data class RSATestSuite(val parameters: SignatureAlgorithm.RSA.Parameters<*>, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
+    override fun toString() = "RSA/$parameters/${keySize}bit${if (isPreHashed) "/pre" else ""}"
     override fun configure(it: SigningKeyConfiguration) {
         it.rsa {
-            this.digests = setOf(this@RSATestSuite.digest)
-            this.parameters = setOf(this@RSATestSuite.padding)
+            this.parameters = setOf(this@RSATestSuite.parameters)
             this.bits = this@RSATestSuite.keySize
         }
         if (it is PlatformSigningKeyConfigurationBase<*>) {
@@ -61,8 +59,7 @@ data class RSATestSuite(val padding: RSAPadding<*>, val digest: Digest, val keyS
     }
     override fun configure(it: SignerConfiguration) {
         it.rsa {
-            this.digest = this@RSATestSuite.digest
-            this.parameters = this@RSATestSuite.padding
+            this.parameters = this@RSATestSuite.parameters
         }
     }
 }
@@ -77,18 +74,18 @@ object TestSuites {
         }
     }
     val RSA get() = sequence {
-        RSAPadding.entries.forEach { padding ->
+        listOf(true,false).forEach { pssPadding ->
             Digest.entries.forEach { digest ->
                 when {
-                    digest == Digest.SHA512 && padding == RSAPadding.PSS
+                    digest == Digest.SHA512 && pssPadding
                         -> listOf(2048, 3072, 4096)
-                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
+                    digest == Digest.SHA384 || digest == Digest.SHA512 || pssPadding
                         -> listOf(1024,2048,3072,4096)
                     else
                         -> listOf(512, 1024, 2048, 3072, 4096)
                 }.forEach { keySize ->
-                    yield(RSATestSuite(padding, digest, keySize, false))
-                    yield(RSATestSuite(padding, digest, keySize, true))
+                    yield(RSATestSuite(if(pssPadding) SignatureAlgorithm.RSA.Parameters.PssPadded(digest) else SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(digest), keySize, false))
+                    yield(RSATestSuite(if(pssPadding) SignatureAlgorithm.RSA.Parameters.PssPadded(digest) else SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(digest), keySize, true))
                 }
             }
         }
@@ -99,24 +96,23 @@ object TestSuites {
 val EphemeralSignerCommonTests  by testSuite {
     "Functional" - {
         "RSA" - {
-            withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
+            withData(TestSuites.RSA) { (parameters, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
                 val signature = try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); parameters = setOf(padding); bits = keySize
+                             this.parameters = setOf(parameters); bits = keySize
                         }
                     }.getOrThrow()
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(parameters.digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
                     return@withData
                 }
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
-                    it.digest shouldBe digest
-                    it.padding shouldBe padding
+                    it.parameters shouldBe parameters
                 }
 
                 val secondSig = signer.exportPrivateKey()
@@ -212,18 +208,18 @@ val EphemeralSignerCommonTests  by testSuite {
 
     "Cert signing" - {
         "RSA" - {
-            withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
+            withData(TestSuites.RSA) { (parameters, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
 
                 try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); parameters = setOf(padding); bits = keySize
+                            this.parameters = setOf(parameters); bits = keySize
                         }
                     }.getOrThrow()
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(parameters.digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
                     return@withData
@@ -241,7 +237,7 @@ val EphemeralSignerCommonTests  by testSuite {
                         )
                     )
                 )
-                if(digest == Digest.SHA1 && padding== RSAPadding.PSS) return@withData
+                if(parameters.digest == Digest.SHA1 && parameters is SignatureAlgorithm.RSA.Parameters.PssPadded) return@withData
                 val signedCSR = signer.sign(csr).getOrThrow()
 
 
