@@ -114,7 +114,7 @@ val DistinguishedNameTest by testSuite {
         AttributeTypeAndValue.CommonName(Asn1String.UTF8(" Doe, John+Ops "))
             .toRfc2253String() shouldBe """cn=\ Doe\, John\+Ops\ """
         AttributeTypeAndValue.CommonName(Asn1String.UTF8("#123"))
-            .toRfc2253String() shouldBe "cn=#123"
+            .toRfc2253String() shouldBe """cn=\#123"""
         AttributeTypeAndValue.CommonName(Asn1String.UTF8("\\#not-hex"))
             .toRfc2253String() shouldBe """cn=\#not-hex"""
     }

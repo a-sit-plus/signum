@@ -312,28 +312,19 @@ open class AttributeTypeAndValue private constructor(
             }.getOrElse { "#" + prim.content.toHexString() }
         } ?: ("#" + value.derEncoded.toHexString())
 
-        return "${AttributeTypeOidMap.nameFor(oid) ?: oid}=$attrValue".lowercase()
+        return "${AttributeTypeOidMap.nameFor(oid)?.lowercase() ?: oid}=$attrValue"
     }
 
     private fun canonicalizeString(input: String, wasQuoted: Boolean, wasBackSlashFirst: Boolean): String {
         if (input.isEmpty()) return ""
         if (wasQuoted) return input.trim().replace(Regex("\\s+"), " ")
         val escapees = ",+<>;\"\\="
-        val s = buildString {
-            if (input.startsWith(' ')) append('\\')
-            append(input)
-            if (input.endsWith(' ')) {
-                deleteAt(length - 1)
-                append("\\ ")
-            }
-        }
-
         return buildString {
             var previousWasSpace = false
             var startIndex = 0
 
-            if (s.startsWith("#")) {
-                val hexPart = s.drop(1)
+            if (input.startsWith("#")) {
+                val hexPart = input.drop(1)
                 val isHex = hexPart.length % 2 == 0 && hexPart.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
                 if (isHex && !wasBackSlashFirst) {
                     append('#')
@@ -344,8 +335,15 @@ open class AttributeTypeAndValue private constructor(
                 }
             }
 
-            for (c in s.drop(startIndex)) {
+            input.drop(startIndex).forEachIndexed { index, c ->
                 when {
+                    c == ' ' && index == 0 -> {
+                        append("\\ ")
+                        previousWasSpace = true
+                    }
+
+                    c == ' ' && index == input.lastIndex - startIndex -> append("\\ ")
+
                     c.isWhitespace() -> {
                         if (!previousWasSpace) {
                             append(' ')
