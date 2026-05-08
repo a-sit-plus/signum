@@ -1,10 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.awesn1.crypto.RsaSsaPssParams
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.withData
@@ -15,28 +12,27 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.of
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.security.spec.PSSParameterSpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 
-
-private fun RSAPadding.Companion.valueOf(name: String, digest: Digest) = when(name){
-    "PSS" -> when(digest) {
-        Digest.SHA1 -> TODO("**illegal")
-        Digest.SHA256 -> RSAPadding.PSS.DEFAULT_SAH256
-        Digest.SHA384 -> RSAPadding.PSS.DEFAULT_SAH384
-        Digest.SHA512 -> RSAPadding.PSS.DEFAULT_SAH512
-
-    }
+private fun RSAPadding.Companion.valueOf(name: String, digest: Digest) = when (name) {
+    "PSS" -> RSAPadding.PSS(hashAlgorithm =digest)
     "PKCS1" -> RSAPadding.PKCS1
-    else -> {TODO()}
+    else -> {
+        TODO()
+    }
 }
+
 @OptIn(ExperimentalEncodingApi::class)
-val RSAVerifierCommonTests  by testSuite {
+val RSAVerifierCommonTests by testSuite {
     @Serializable
     data class RawTestInfo(
-        val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
+        val dig: String, val pad: String, val key: String, val msg: String, val sig: String
+    )
+
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.valueOf(test.dig)
         val padding = RSAPadding.valueOf(test.pad, digest)
@@ -159,18 +155,18 @@ fun main() {
     """.trimIndent()
     val tests = testData.lines().map { Json.decodeFromString<RawTestInfo>(it) }
         .groupBy(RawTestInfo::pad)
-        .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo)}}
+        .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_, v) -> v.map(::TestInfo) } }
 
     withData(tests) - { byPadding ->
         withData(byPadding) - { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) - { test ->
                 val verifier =
-                    if(test.padding is RSAPadding.PSS)
-                    SignatureAlgorithm.RSA( test.padding).verifierFor(test.key).getOrThrow()
-                else
-                    SignatureAlgorithm.RSA(test.digest).verifierFor(test.key).getOrThrow()
+                    if (test.padding is RSAPadding.PSS)
+                        SignatureAlgorithm.RSA(test.padding).verifierFor(test.key).getOrThrow()
+                    else
+                        SignatureAlgorithm.RSA(test.digest).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
-                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
+                verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {
                     if (it !== test) {
                         verifier.verify(it.msg, test.sig) shouldNot succeed
@@ -178,12 +174,21 @@ fun main() {
                     }
                 }
                 checkAll(Arb.of(Digest.entries.filter { it != test.digest })) { dig ->
-                    SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
-                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                    (
+                            if (test.padding is RSAPadding.PSS)
+                                SignatureAlgorithm.RSA(test.padding).verifierFor(test.key)
+                            else
+                                SignatureAlgorithm.RSA(dig).verifierFor(test.key)
+                    ).transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
-                checkAll(Arb.of(RSAPadding.entries.filter{ it != test.padding })) { pad ->
-                    SignatureAlgorithm.RSA(test.digest, pad).verifierFor(test.key)
-                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                checkAll(Arb.of(RSAPadding.entries.filter { it != test.padding })) { pad ->
+
+                    (
+                    if (pad is RSAPadding.PSS)
+                        SignatureAlgorithm.RSA(pad).verifierFor(test.key)
+                    else
+                        SignatureAlgorithm.RSA(test.digest).verifierFor(test.key)
+                    ).transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
             }
         }

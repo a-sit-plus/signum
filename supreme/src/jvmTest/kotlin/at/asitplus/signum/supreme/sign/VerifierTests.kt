@@ -51,7 +51,7 @@ val VerifierTests by testSuite {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(CryptoSignature::decodeFromDer)
+                    }.let(CryptoSignature.EC::decodeFromDer)
                     keypair.public.encoded
                     Triple(publicKey, data, sig)
                 }.take(5)) { (key, data, sig) ->
