@@ -52,7 +52,7 @@ data class RSATestSuite(val padding: RSAPadding<*>, val digest: Digest, val keyS
     override fun configure(it: SigningKeyConfiguration) {
         it.rsa {
             this.digests = setOf(this@RSATestSuite.digest)
-            this.paddings = setOf(this@RSATestSuite.padding)
+            this.parameters = setOf(this@RSATestSuite.padding)
             this.bits = this@RSATestSuite.keySize
         }
         if (it is PlatformSigningKeyConfigurationBase<*>) {
@@ -62,7 +62,7 @@ data class RSATestSuite(val padding: RSAPadding<*>, val digest: Digest, val keyS
     override fun configure(it: SignerConfiguration) {
         it.rsa {
             this.digest = this@RSATestSuite.digest
-            this.padding = this@RSATestSuite.padding
+            this.parameters = this@RSATestSuite.padding
         }
     }
 }
@@ -105,7 +105,7 @@ val EphemeralSignerCommonTests  by testSuite {
                 val signature = try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
+                            digests = setOf(digest); parameters = setOf(padding); bits = keySize
                         }
                     }.getOrThrow()
                     signer.sign(SignatureInput(data).let {
@@ -219,7 +219,7 @@ val EphemeralSignerCommonTests  by testSuite {
                 try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
+                            digests = setOf(digest); parameters = setOf(padding); bits = keySize
                         }
                     }.getOrThrow()
                     signer.sign(SignatureInput(data).let {

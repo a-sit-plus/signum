@@ -6,32 +6,34 @@ import at.asitplus.awesn1.crypto.RsaPkcs1PaddingParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_SALT_LENGTH
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_TRAILER_FIELD
-import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.RSA_SSA_PSS_OID
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA
 import at.asitplus.signum.internals.orLazy
 import at.asitplus.signum.internals.orLazyNullable
 import kotlinx.serialization.KSerializer
 
-private infix fun RSAPadding<*>.sameSignaturePaddingAs(other: RSAPadding<*>): Boolean =
+private infix fun RSA.Parameters<*>.sameSignatureParametersAs(other: RSA.Parameters<*>): Boolean =
     when {
         this === other -> true
-        this is RSAPadding.PSS && other is RSAPadding.PSS ->
-            mgfAlgorithm == other.mgfAlgorithm &&
+        this is RSA.Parameters.PssPadded && other is RSA.Parameters.PssPadded ->
+            digest == other.digest &&
+                    mgfAlgorithm == other.mgfAlgorithm &&
                     saltLength == other.saltLength &&
                     trailerField == other.trailerField
 
         else -> this == other
     }
 
-private fun RSAPadding<*>.signaturePaddingHashCode(): Int =
+private fun RSA.Parameters<*>.signatureParametersHashCode(): Int =
     when (this) {
-        is RSAPadding.PSS -> {
-            var result = mgfAlgorithm.hashCode()
+        is RSA.Parameters.PssPadded -> {
+            var result = digest.hashCode()
+            result = 31 * result + mgfAlgorithm.hashCode()
             result = 31 * result + saltLength.hashCode()
             result = 31 * result + trailerField
             result
@@ -39,122 +41,6 @@ private fun RSAPadding<*>.signaturePaddingHashCode(): Int =
 
         else -> hashCode()
     }
-
-sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
-    object PKCS1 :
-        RSAPadding<RsaPkcs1PaddingParams>() //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
-        , DerDecodable<RsaPkcs1PaddingParams, PKCS1> {
-        override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
-        override fun decodeFromTlv(
-            serializer: KSerializer<RsaPkcs1PaddingParams>,
-            src: Asn1Element,
-            der: Der
-        ): PKCS1 {
-            der.decodeFromTlv(serializer, src)
-            return this
-        }
-
-    }
-
-    class PSS private constructor(
-        private val providedParams: PssParams?, private val rsaSsaPssParams: RsaSsaPssParams?
-    ) : RSAPadding<RsaSsaPssParams>(), Identifiable {
-        constructor(
-            hashAlgorithm: Digest = Digest.SHA1,
-            mgfAlgorithm: MGF = MGF.PKCS1_MGF1,
-            saltLength: UInt = DEFAULT_SALT_LENGTH.toUInt(),
-            trailerField: Int = DEFAULT_TRAILER_FIELD
-        ) : this(PssParams(hashAlgorithm, mgfAlgorithm, saltLength, trailerField), null)
-
-        constructor(asn1Representation: RsaSsaPssParams) : this(null, asn1Representation)
-
-        override val asn1Representation: RsaSsaPssParams by rsaSsaPssParams orLazy {
-            requireNotNull(providedParams)
-            RsaSsaPssParams(
-                ExplicitlyTagged(X509AlgorithmIdentifier(providedParams.hashAlgorithm.oid, Asn1Null)),
-                ExplicitlyTagged(
-                    X509AlgorithmIdentifier(
-                        providedParams.mgfAlgorithm.oid,
-                        Asn1.Sequence { +providedParams.hashAlgorithm.oid; +Asn1Null })
-                ),
-                ExplicitlyTagged(Asn1Integer(providedParams.saltLength)),
-                ExplicitlyTagged(Asn1Integer(providedParams.trailerField))
-            )
-
-        }
-
-        val hashAlgorithm: Digest by providedParams?.hashAlgorithm orLazy {
-            Digest.entries.first { it.oid == rsaSsaPssParams!!.effectiveHashAlgorithm.oid }
-        }
-
-        val mgfAlgorithm: MGF by providedParams?.mgfAlgorithm orLazy { MGF.entries.first { it.oid == rsaSsaPssParams!!.effectiveMaskGenAlgorithm.oid } }
-
-        val saltLength: UInt by providedParams?.saltLength orLazy {
-            rsaSsaPssParams!!.effectiveSaltLength.let {
-                require(it > 0)
-                it.toUInt()
-            }
-        }
-        val trailerField: Int by providedParams?.trailerField orLazy { rsaSsaPssParams!!.effectiveTrailerField }
-
-        override val oid: ObjectIdentifier
-            get() = RSA_SSA_PSS_OID
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is PSS) return false
-            return hashAlgorithm == other.hashAlgorithm &&
-                    mgfAlgorithm == other.mgfAlgorithm &&
-                    saltLength == other.saltLength &&
-                    trailerField == other.trailerField
-        }
-
-        override fun hashCode(): Int {
-            var result = hashAlgorithm.hashCode()
-            result = 31 * result + mgfAlgorithm.hashCode()
-            result = 31 * result + saltLength.hashCode()
-            result = 31 * result + trailerField
-            return result
-        }
-
-
-        private data class PssParams(
-            val hashAlgorithm: Digest,
-            val mgfAlgorithm: MGF,
-            val saltLength: UInt,
-            val trailerField: Int,
-        )
-
-        enum class MGF(override val oid: ObjectIdentifier) : Identifiable {
-            PKCS1_MGF1(ObjectIdentifier("1.2.840.113549.1.1.8"))
-        }
-
-        companion object : DerDecodable<RsaSsaPssParams, PSS> {
-            val DEFAULT_SAH256 = PSS(hashAlgorithm = Digest.SHA256)
-            val DEFAULT_SAH384 = PSS(hashAlgorithm = Digest.SHA384)
-            val DEFAULT_SAH512 = PSS(hashAlgorithm = Digest.SHA512)
-            override fun decodeFromTlv(
-                serializer: KSerializer<RsaSsaPssParams>,
-                src: Asn1Element,
-                der: Der
-            ) = PSS(der.decodeFromTlv(serializer, src))
-        }
-    }
-
-    companion object : DerDecodable<RsaParams, RSAPadding<RsaParams>> {
-        override fun decodeFromTlv(
-            serializer: KSerializer<RsaParams>,
-            src: Asn1Element,
-            der: Der
-        ): RSAPadding<RsaParams> =
-            when (val decoded = der.decodeFromTlv(serializer, src)) {
-                is RsaPkcs1PaddingParams -> PKCS1
-                is RsaSsaPssParams -> PSS(decoded)
-            } as RSAPadding<RsaParams>
-
-        val entries = setOf(PKCS1, PSS.DEFAULT_SAH512, PSS.DEFAULT_SAH256, PSS.DEFAULT_SAH384)
-    }
-}
 
 //for now, we just replicate the pattern, but since everything is sealed, we don't actually parse
 sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
@@ -263,54 +149,47 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
     }
 
     class RSA(
-        providedParams: Pair<Digest, RSAPadding<*>>?,
+        providedParams: Parameters<*>?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
 
-        /**PKCS! 1.5 specifies digest*/
         constructor(
-            /** The digest to apply to the data. */
-            digest: Digest
-        ) : this(digest to RSAPadding.PKCS1, null)
-
-        constructor(
-            /** The padding to apply to the data. */
-            padding: RSAPadding.PSS
-        ) : this(padding.hashAlgorithm to padding, null)
+            /** The RSA signature parameters to apply to the data. */
+            parameters: Parameters<*>
+        ) : this(parameters, null)
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
 
         override val kind: Kind get() = Kind.RSA
 
         /** The digest to apply to the data. */
-        val digest: Digest by providedParams?.first orLazy {
+        val digest: Digest by providedParams?.digest orLazy {
             when (providedAsn1!!.oid) {
                 KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
                 KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
                 KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
                 KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-                KnownOIDs.rsaPSS -> RSAPadding.PSS(providedAsn1.rsaSsaPssParams!!).hashAlgorithm
+                KnownOIDs.rsaPSS -> Parameters.PssPadded(providedAsn1.rsaSsaPssParams!!).digest
                 else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
             }
         }
 
-        /** The padding to apply to the data. */
-        val padding: RSAPadding<*> by providedParams?.second orLazy {
+        /** The RSA signature parameters to apply to the data. */
+        val parameters: Parameters<*> by providedParams orLazy {
             when (providedAsn1!!.oid) {
-                KnownOIDs.sha1WithRSAEncryption,
-                KnownOIDs.sha256WithRSAEncryption,
-                KnownOIDs.sha384WithRSAEncryption,
-                KnownOIDs.sha512WithRSAEncryption -> RSAPadding.PKCS1
-
-                KnownOIDs.rsaPSS -> RSAPadding.PSS(providedAsn1.rsaSsaPssParams!!)
+                KnownOIDs.sha1WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA1)
+                KnownOIDs.sha256WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA256)
+                KnownOIDs.sha384WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA384)
+                KnownOIDs.sha512WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA512)
+                KnownOIDs.rsaPSS -> Parameters.PssPadded(providedAsn1.rsaSsaPssParams!!)
                 else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
             }
         }
 
         override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
-            when (val currentPadding = padding) {
-                RSAPadding.PKCS1 -> X509AlgorithmIdentifier(
-                    when (digest) {
+            when (val currentParameters = parameters) {
+                is Parameters.Pkcs1Padded -> X509AlgorithmIdentifier(
+                    when (currentParameters.digest) {
                         Digest.SHA1 -> KnownOIDs.sha1WithRSAEncryption
                         Digest.SHA256 -> KnownOIDs.sha256WithRSAEncryption
                         Digest.SHA384 -> KnownOIDs.sha384WithRSAEncryption
@@ -319,9 +198,9 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                     Asn1Null
                 )
 
-                is RSAPadding.PSS -> X509AlgorithmIdentifier(
+                is Parameters.PssPadded -> X509AlgorithmIdentifier(
                     KnownOIDs.rsaPSS,
-                    DER.encodeToTlv(RsaSsaPssParams.serializer(), currentPadding.asn1Representation)
+                    DER.encodeToTlv(RsaSsaPssParams.serializer(), currentParameters.asn1Representation)
                 )
             }
         }
@@ -348,12 +227,10 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         }
 
         private fun hasSamePropertiesAs(other: RSA): Boolean =
-            digest == other.digest && padding.sameSignaturePaddingAs(other.padding)
+            parameters sameSignatureParametersAs other.parameters
 
         override fun hashCode(): Int {
-            var result = digest.hashCode()
-            result = 31 * result + padding.signaturePaddingHashCode()
-            return result
+            return parameters.signatureParametersHashCode()
         }
 
         companion object : Enumeration<RSA>, DerDecodable<X509AlgorithmIdentifier, RSA> {
@@ -374,8 +251,129 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                 src: Asn1Element,
                 der: Der
             ) = RSA(der.decodeFromTlv(serializer, src))
-
         }
+
+
+        sealed class Parameters<T : RsaParams> : DerEncodable<T> {
+            abstract val digest: Digest
+
+            class Pkcs1Padded(override val digest: Digest) :
+                Parameters<RsaPkcs1PaddingParams>() //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
+            {
+                override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
+
+                override fun equals(other: Any?): Boolean {
+                    if (this === other) return true
+                    if (other !is Pkcs1Padded) return false
+                    return digest == other.digest
+                }
+
+                override fun hashCode(): Int =
+                    digest.hashCode()
+
+                companion object {
+                    val SHA1 = Pkcs1Padded(Digest.SHA1)
+                    val SHA256 = Pkcs1Padded(Digest.SHA256)
+                    val SHA384 = Pkcs1Padded(Digest.SHA384)
+                    val SHA512 = Pkcs1Padded(Digest.SHA512)
+
+                    val entries = setOf(SHA1, SHA256, SHA384, SHA512)
+                }
+            }
+
+            class PssPadded private constructor(
+                private val providedParams: PssParams?, private val rsaSsaPssParams: RsaSsaPssParams?
+            ) : Parameters<RsaSsaPssParams>() {
+                constructor(
+                    digest: Digest = Digest.SHA1,
+                    mgfAlgorithm: MGF = MGF.PKCS1_MGF1,
+                    saltLength: UInt = DEFAULT_SALT_LENGTH.toUInt(),
+                    trailerField: Int = DEFAULT_TRAILER_FIELD
+                ) : this(PssParams(digest, mgfAlgorithm, saltLength, trailerField), null)
+
+                constructor(asn1Representation: RsaSsaPssParams) : this(null, asn1Representation)
+
+                override val asn1Representation: RsaSsaPssParams by rsaSsaPssParams orLazy {
+                    requireNotNull(providedParams)
+                    RsaSsaPssParams(
+                        ExplicitlyTagged(X509AlgorithmIdentifier(providedParams.digest.oid, Asn1Null)),
+                        ExplicitlyTagged(
+                            X509AlgorithmIdentifier(
+                                providedParams.mgfAlgorithm.oid,
+                                Asn1.Sequence { +providedParams.digest.oid; +Asn1Null })
+                        ),
+                        ExplicitlyTagged(Asn1Integer(providedParams.saltLength)),
+                        ExplicitlyTagged(Asn1Integer(providedParams.trailerField))
+                    )
+
+                }
+
+                override val digest: Digest by providedParams?.digest orLazy {
+                    Digest.entries.first { it.oid == rsaSsaPssParams!!.effectiveHashAlgorithm.oid }
+                }
+
+                val mgfAlgorithm: MGF by providedParams?.mgfAlgorithm orLazy { MGF.entries.first { it.oid == rsaSsaPssParams!!.effectiveMaskGenAlgorithm.oid } }
+
+                val saltLength: UInt by providedParams?.saltLength orLazy {
+                    rsaSsaPssParams!!.effectiveSaltLength.let {
+                        require(it > 0)
+                        it.toUInt()
+                    }
+                }
+                val trailerField: Int by providedParams?.trailerField orLazy { rsaSsaPssParams!!.effectiveTrailerField }
+
+                override fun equals(other: Any?): Boolean {
+                    if (this === other) return true
+                    if (other !is PssPadded) return false
+                    return digest == other.digest &&
+                            mgfAlgorithm == other.mgfAlgorithm &&
+                            saltLength == other.saltLength &&
+                            trailerField == other.trailerField
+                }
+
+                override fun hashCode(): Int {
+                    var result = digest.hashCode()
+                    result = 31 * result + mgfAlgorithm.hashCode()
+                    result = 31 * result + saltLength.hashCode()
+                    result = 31 * result + trailerField
+                    return result
+                }
+
+
+                private data class PssParams(
+                    val digest: Digest,
+                    val mgfAlgorithm: MGF,
+                    val saltLength: UInt,
+                    val trailerField: Int,
+                )
+
+                enum class MGF(override val oid: ObjectIdentifier) : Identifiable {
+                    PKCS1_MGF1(ObjectIdentifier("1.2.840.113549.1.1.8"))
+                }
+
+                companion object : DerDecodable<RsaSsaPssParams, PssPadded> {
+                    val DEFAULT_SAH256 = PssPadded(digest = Digest.SHA256)
+                    val DEFAULT_SAH384 = PssPadded(digest = Digest.SHA384)
+                    val DEFAULT_SAH512 = PssPadded(digest = Digest.SHA512)
+                    override fun decodeFromTlv(
+                        serializer: KSerializer<RsaSsaPssParams>,
+                        src: Asn1Element,
+                        der: Der
+                    ) = PssPadded(der.decodeFromTlv(serializer, src))
+                }
+            }
+
+            companion object {
+                val entries by lazy {
+                    Pkcs1Padded.entries + setOf(
+                        PssPadded.DEFAULT_SAH512,
+                        PssPadded.DEFAULT_SAH256,
+                        PssPadded.DEFAULT_SAH384
+                    )
+                }
+            }
+        }
+
     }
 
     companion object : Enumeration<SignatureAlgorithm> {
@@ -383,13 +381,13 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
 
-        val RSAwithSHA256andPKCS1Padding = RSA(Digest.SHA256)
-        val RSAwithSHA384andPKCS1Padding = RSA(Digest.SHA384)
-        val RSAwithSHA512andPKCS1Padding = RSA(Digest.SHA512)
+        val RSAwithSHA256andPKCS1Padding = RSA(RSA.Parameters.Pkcs1Padded(Digest.SHA256))
+        val RSAwithSHA384andPKCS1Padding = RSA(RSA.Parameters.Pkcs1Padded(Digest.SHA384))
+        val RSAwithSHA512andPKCS1Padding = RSA(RSA.Parameters.Pkcs1Padded(Digest.SHA512))
 
-        val RSAwithSHA256andPSSPadding = RSA(RSAPadding.PSS.DEFAULT_SAH256)
-        val RSAwithSHA384andPSSPadding = RSA(RSAPadding.PSS.DEFAULT_SAH384)
-        val RSAwithSHA512andPSSPadding = RSA(RSAPadding.PSS.DEFAULT_SAH512)
+        val RSAwithSHA256andPSSPadding = RSA(RSA.Parameters.PssPadded.DEFAULT_SAH256)
+        val RSAwithSHA384andPSSPadding = RSA(RSA.Parameters.PssPadded.DEFAULT_SAH384)
+        val RSAwithSHA512andPSSPadding = RSA(RSA.Parameters.PssPadded.DEFAULT_SAH512)
 
         override val entries: Iterable<SignatureAlgorithm> by lazy {
             ECDSA.entries + RSA.entries

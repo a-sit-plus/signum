@@ -112,6 +112,6 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
             getKPGInstance("RSA", configuration.provider).run {
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
-            }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
+            }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.parameters) }
         }
     }
