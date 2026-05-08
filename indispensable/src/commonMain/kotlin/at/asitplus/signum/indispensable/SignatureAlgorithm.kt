@@ -213,10 +213,29 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is ECDSA) return false
-            return digest == other.digest && requiredCurve == other.requiredCurve
+            val thisIsAsn1Backed = providedAsn1 != null
+            val otherIsAsn1Backed = other.providedAsn1 != null
+
+            if (thisIsAsn1Backed && otherIsAsn1Backed) {
+                return asn1Representation == other.asn1Representation
+            }
+
+            if (!thisIsAsn1Backed && !otherIsAsn1Backed) {
+                return hasSamePropertiesAs(other)
+            }
+
+            if (asn1Representation == other.asn1Representation) return true
+
+            return runCatching {
+                hasSamePropertiesAs(other)
+            }.getOrDefault(false)
         }
 
+        private fun hasSamePropertiesAs(other: ECDSA): Boolean =
+            digest == other.digest && requiredCurve == other.requiredCurve
+
         override fun hashCode(): Int {
+            runCatching { asn1Representation.hashCode() }.getOrNull()?.let { return it }
             var result = digest.hashCode()
             result = 31 * result + (requiredCurve?.hashCode() ?: 0)
             return result
@@ -303,10 +322,29 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is RSA) return false
-            return digest == other.digest && padding.sameSignaturePaddingAs(other.padding)
+            val thisIsAsn1Backed = providedAsn1 != null
+            val otherIsAsn1Backed = other.providedAsn1 != null
+
+            if (thisIsAsn1Backed && otherIsAsn1Backed) {
+                return asn1Representation == other.asn1Representation
+            }
+
+            if (!thisIsAsn1Backed && !otherIsAsn1Backed) {
+                return hasSamePropertiesAs(other)
+            }
+
+            if (asn1Representation == other.asn1Representation) return true
+
+            return runCatching {
+                hasSamePropertiesAs(other)
+            }.getOrDefault(false)
         }
 
+        private fun hasSamePropertiesAs(other: RSA): Boolean =
+            digest == other.digest && padding.sameSignaturePaddingAs(other.padding)
+
         override fun hashCode(): Int {
+            runCatching { asn1Representation.hashCode() }.getOrNull()?.let { return it }
             var result = digest.hashCode()
             result = 31 * result + padding.signaturePaddingHashCode()
             return result
