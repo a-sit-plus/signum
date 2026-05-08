@@ -2,9 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.awesn1.crypto.SignatureValue
-import at.asitplus.awesn1.encoding.decodeFromDer
-import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.signum.HazardousMaterials
@@ -177,47 +174,6 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
         is ECPublicKey -> toCryptoPublicKey()
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
     }
-
-/**
- * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
- */
-val CryptoSignature.jcaSignatureBytes: ByteArray
-    get() = when (this) {
-        is CryptoSignature.EC -> asn1Representation.rawBytes
-        is CryptoSignature.RSA -> rawByteArray
-    }
-
-/**
- * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
- */
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SignatureAlgorithm
-): CryptoSignature =
-    if (algorithm is SignatureAlgorithm.ECDSA)
-        CryptoSignature.EC.parseFromJca(input)
-    else
-        CryptoSignature.RSA.parseFromJca(input)
-
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SpecializedSignatureAlgorithm
-) = parseFromJca(input, algorithm.algorithm)
-
-/**
- * Parses a signature produced by the JCA digestwithECDSA algorithm.
- */
-fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.EC(SignatureValue(input))
-
-/**
- * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
- */
-fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
-    CryptoSignature.EC.fromRawBytes(input)
-
-fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSA(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].

@@ -160,6 +160,8 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
 
+        val padding get() = parameters.type
+
         /**
          * Convenience Ctor to use defaults aside digest
          */

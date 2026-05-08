@@ -239,3 +239,53 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
 
 val CryptoSignature.x509Encoded: Asn1Primitive
     get() = asn1Representation.rawBitString.encodeToTlv()
+
+
+
+/**
+ * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
+ */
+val CryptoSignature.jcaSignatureBytes: ByteArray
+    get() = when (this) {
+        is CryptoSignature.EC -> asn1Representation.rawBytes
+        is CryptoSignature.RSA -> rawByteArray
+    }
+
+/**
+ * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
+ */
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SignatureAlgorithm
+): CryptoSignature =
+    if (algorithm is SignatureAlgorithm.ECDSA)
+        CryptoSignature.EC.parseFromJca(input)
+    else
+        CryptoSignature.RSA.parseFromJca(input)
+
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SpecializedSignatureAlgorithm
+) = parseFromJca(input, algorithm.algorithm)
+
+/**
+ * Parses a signature produced by the JCA digestwithECDSA algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.EC(SignatureValue(input))
+
+/**
+ * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
+    CryptoSignature.EC.fromRawBytes(input)
+
+fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSA(input)
+
+
+val CryptoSignature.iosEncoded
+    get() = when (this) {
+        is CryptoSignature.EC -> this.asn1Representation.rawBytes
+        is CryptoSignature.RSA -> this.rawByteArray
+    }
