@@ -274,7 +274,7 @@ class TbsCertificate private constructor(
  * Very simple implementation of an X.509 Certificate
  */
 class X509Certificate private constructor(
-    providedAsn1Representation: Awesn1X509Certificate?,
+    private val providedAsn1Representation: Awesn1X509Certificate?,
     providedContent: TbsCertificate?,
     providedSignature: CryptoSignature?
 ) : DerPemEncodable<Awesn1X509Certificate> {
@@ -345,13 +345,32 @@ class X509Certificate private constructor(
         if (this === other) return true
         if (other !is X509Certificate) return false
         return tbsCertificate == other.tbsCertificate &&
-                signature == other.signature
+                signatureEquals(other)
     }
 
     override fun hashCode(): Int {
         var result = tbsCertificate.hashCode()
-        result = 31 * result + signature.hashCode()
+        result = 31 * result + asn1Representation.signatureValue.hashCode()
         return result
+    }
+
+    private fun signatureEquals(other: X509Certificate): Boolean {
+        val thisIsAsn1Backed = providedAsn1Representation != null
+        val otherIsAsn1Backed = other.providedAsn1Representation != null
+
+        if (thisIsAsn1Backed && otherIsAsn1Backed) {
+            return asn1Representation.signatureValue == other.asn1Representation.signatureValue
+        }
+
+        if (!thisIsAsn1Backed && !otherIsAsn1Backed) {
+            return signature == other.signature
+        }
+
+        if (asn1Representation.signatureValue == other.asn1Representation.signatureValue) return true
+
+        return catchingUnwrapped {
+            signature == other.signature
+        }.getOrDefault(false)
     }
 
     companion object : DerPemDecodable<Awesn1X509Certificate, X509Certificate> {
