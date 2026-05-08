@@ -110,7 +110,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
             }.let { pair ->
-                AndroidEphemeralKey.RSA(pair, alg.digests, alg.paddings)
+                AndroidEphemeralKey.RSA(pair, alg.digests, alg.parameters)
             }
         }
     }

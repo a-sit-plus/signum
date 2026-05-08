@@ -176,7 +176,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 requiredCurve = publicKey.curve),
             alias)
         is CryptoPublicKey.RSA -> {
-            val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS
+            val padding = if (config.rsa.v.parametersSpecified) config.rsa.v.parameters else RSAPadding.PSS
             JKSSigner.RSA(
                 config, privateKey as RSAPrivateKey, publicKey,
                 if (padding is RSAPadding.PSS) SignatureAlgorithm.RSA(padding = padding)

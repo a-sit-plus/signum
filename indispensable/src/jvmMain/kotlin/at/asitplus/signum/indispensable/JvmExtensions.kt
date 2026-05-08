@@ -4,11 +4,11 @@ import java.security.Signature
 
 
 internal actual fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature =
-    when (this.padding) {
-        RSAPadding.PKCS1 ->
+    when (this.parameters) {
+        is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
 
-        is RSAPadding.PSS -> sigGetInstance("RSASSA-PSS", provider).also {
+        is SignatureAlgorithm.RSA.Parameters.PssPadded -> sigGetInstance("RSASSA-PSS", provider).also {
             it.setParameter(this.digest.jcaPSSParams)
         }
     }

@@ -64,6 +64,8 @@ val SignatureCodecTest  by matrixSuite {
     compact("RSA") - {
 
         val digest = ("SHA256")
+        val signatureAlgorithm =
+            if (Random.nextBoolean()) SignatureAlgorithm.RSAwithSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
 
         // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
@@ -75,10 +77,12 @@ val SignatureCodecTest  by matrixSuite {
                 sign()
             }
 
+
+
             CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
-                SignatureAlgorithm.RSA(Digest.valueOf(digest))
+                signatureAlgorithm
             ).jcaSignatureBytes shouldBe sig
 
             // create certificate with bouncycastle
@@ -95,8 +99,7 @@ val SignatureCodecTest  by matrixSuite {
                 /* subject = */ issuer,
                 /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keys.public.encoded)
             )
-            val signatureAlgorithm =
-                if (Random.nextBoolean()) SignatureAlgorithm.RSAwithSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
+
             val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keys.private)
             val certificateHolder = builder.build(contentSigner)
             certificateHolder.signature
@@ -106,7 +109,7 @@ val SignatureCodecTest  by matrixSuite {
             CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
             CryptoSignature.parseFromJca(
                 certificateHolder.signature,
-                SignatureAlgorithm.RSA(Digest.valueOf(digest))
+                signatureAlgorithm
             ).encodeToDer() shouldBe bcSig
 
         }

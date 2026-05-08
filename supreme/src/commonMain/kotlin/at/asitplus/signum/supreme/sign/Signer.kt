@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
@@ -48,11 +47,9 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
             val F4 = BigInteger(65537)
         }
 
-        /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.SHA256]. */
-        open var digests: Set<Digest> = setOf(Digest.SHA256)
 
-        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
-        open var paddings: Set<RSAPadding<*>> = setOf(RSAPadding.PSS.DEFAULT_SAH256)
+        /** The parameters supported by the key. If not specified, defaults to [RSA-PSS with SHA256][SignatureAlgorithm.RSA.Parameters.PssPadded.DEFAULT_SAH256]. */
+        open var parameters: Set<SignatureAlgorithm.RSA.Parameters<*>> = setOf(SignatureAlgorithm.RSA.Parameters.PssPadded.DEFAULT_SAH256)
 
         /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
         var bits: Int = 3072

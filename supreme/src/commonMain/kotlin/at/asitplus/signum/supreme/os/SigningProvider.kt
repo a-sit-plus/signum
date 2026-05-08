@@ -5,7 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
@@ -133,28 +133,16 @@ open class ECSignerConfiguration internal constructor(): DSL.Data() {
 }
 open class RSASignerConfiguration internal constructor(): DSL.Data() {
     /**
-     * Explicitly specify the digest to sign over.
-     * Omit to default to a reasonable default choice.
+     * Explicitly specify the parameters to use.
+     * Omit to default to the only supported parameters
      *
-     * If a key stored in hardware supports multiple digests, you need to explicitly specify the digest to use.
-     * (By default, hardware keys are configured to only support a single digest.)
+     * If the key stored in hardware supports multiple modes, you need to explicitly specify the parameters to use.
+     * (By default, hardware keys are configured to only support a single padding+digest.)
      *
-     * @see SigningKeyConfiguration.RSAConfiguration.digests
+     * @see SigningKeyConfiguration.RSAConfiguration.parameters
      */
-    lateinit var digest: Digest
-    internal val digestSpecified get() = this::digest.isInitialized
-
-    /**
-     * Explicitly specify the padding to use.
-     * Omit to default to the only supported padding.
-     *
-     * If the key stored in hardware supports multiple padding modes, you need to explicitly specify the digest to use.
-     * (By default, hardware keys are configured to only support a single digest.)
-     *
-     * @see SigningKeyConfiguration.RSAConfiguration.paddings
-     */
-    lateinit var padding: RSAPadding<*>
-    internal val paddingSpecified get() = this::padding.isInitialized
+    lateinit var parameters: SignatureAlgorithm.RSA.Parameters<*>
+    internal val parametersSpecified get() = this::parameters.isInitialized
 
 
 }
