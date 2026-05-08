@@ -175,10 +175,10 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 requiredCurve = publicKey.curve),
             alias)
         is CryptoPublicKey.RSA -> {
-            val params =
-                if (config.rsa.v.parametersSpecified) config.rsa.v.parameters else SignatureAlgorithm.RSAwithSHA256andPSSPadding.parameters
+            val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else SignatureAlgorithm.RSA.Padding.PSS
+            val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
             JKSSigner.RSA(
-                config, privateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(params), alias
+                config, privateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(padding, digest), alias
             )
         }
     }

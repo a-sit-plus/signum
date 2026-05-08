@@ -160,6 +160,11 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
 
+        /**
+         * Convenience Ctor to use defaults aside digest
+         */
+        constructor(padding: Padding, digest: Digest) : this(Parameters(padding, digest))
+
         override val kind: Kind get() = Kind.RSA
 
         /** The digest to apply to the data. */
@@ -233,6 +238,12 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             return parameters.signatureParametersHashCode()
         }
 
+
+        enum class Padding {
+            PKCS1,
+            PSS
+        }
+
         companion object : Enumeration<RSA>, DerDecodable<X509AlgorithmIdentifier, RSA> {
             override val entries: Set<RSA> by lazy {
                 setOf(
@@ -255,13 +266,15 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
 
         sealed class Parameters<T : RsaParams> : DerEncodable<T> {
+
+            abstract val type: Padding
             abstract val digest: Digest
 
             class Pkcs1Padded(override val digest: Digest) :
                 Parameters<RsaPkcs1PaddingParams>() //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
             {
                 override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
-
+                override val type: Padding get() = Padding.PKCS1
                 override fun equals(other: Any?): Boolean {
                     if (this === other) return true
                     if (other !is Pkcs1Padded) return false
@@ -308,6 +321,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
                 }
 
+                override val type: Padding get() = Padding.PSS
                 override val digest: Digest by providedParams?.digest orLazy {
                     Digest.entries.first { it.oid == rsaSsaPssParams!!.effectiveHashAlgorithm.oid }
                 }
@@ -364,6 +378,12 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             }
 
             companion object {
+
+                operator fun invoke(padding: Padding, digest: Digest) = when (padding) {
+                    Padding.PSS -> PssPadded(digest = digest)
+                    Padding.PKCS1 -> Pkcs1Padded(digest = digest)
+                }
+
                 val entries by lazy {
                     Pkcs1Padded.entries + setOf(
                         PssPadded.DEFAULT_SAH512,
