@@ -130,7 +130,7 @@ sealed interface CoseAlgorithm : Enumerable {
 
         // RSASSA-PKCS1-v1_5 using SHA-1
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
+        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1))
 
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy {

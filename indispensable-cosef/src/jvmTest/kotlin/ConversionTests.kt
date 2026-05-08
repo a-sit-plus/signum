@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
-import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -33,17 +32,19 @@ val ConversionTests by testSuite {
             }
         }
     }
-    "COSE -> X509 -> COSE" - {
+    "COSE -> SigAlg -> COSE" - {
         withData(CoseAlgorithm.Signature.entries) - {
-            it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
+            it.algorithm.asn1Representation.let { x509 ->
                 if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
                     "Curve information is lost" {
-                        val algorithm = x509.toCoseAlgorithm().getOrThrow()
+                        val algorithm = SignatureAlgorithm(x509).toCoseAlgorithm().getOrThrow()
                         algorithm shouldNotBe it
                         algorithm.toString().takeLast(3) shouldBe it.toString().takeLast(3)
                         algorithm.toString().take(2) shouldBe it.toString().take(2)
                     }
-                } else "is stable" { x509.toCoseAlgorithm() shouldSucceedWith it }
+                } else "is stable" {
+                    SignatureAlgorithm(x509).toCoseAlgorithm() shouldSucceedWith it
+                }
             }
         }
     }

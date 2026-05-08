@@ -90,7 +90,7 @@ internal sealed interface JVMEphemeralKey {
         override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 
-    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
+    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding<*>>)
         : EphemeralKeyBase.RSA<RSAPrivateKey, EphemeralSigner.RSA>(EphemeralSigner::RSA,
         pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
         digests = digests, paddings = paddings)

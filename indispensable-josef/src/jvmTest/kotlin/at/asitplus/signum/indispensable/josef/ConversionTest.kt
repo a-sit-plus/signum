@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
@@ -30,8 +30,8 @@ val ConversionTest by testSuite {
     }
     "JWS -> X509 -> JWS is stable" - {
         withData(JwsAlgorithm.Signature.entries) {
-            it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
-                x509.toJwsAlgorithm() shouldSucceedWith it
+            it.algorithm.asn1Representation.let { x509 ->
+                SignatureAlgorithm(x509).toJwsAlgorithm() shouldSucceedWith it
             }
         }
     }

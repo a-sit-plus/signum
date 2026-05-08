@@ -130,7 +130,9 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
         }
 
         companion object : DerDecodable<RsaSsaPssParams, PSS> {
-            val DEFAULT = PSS()
+            val DEFAULT_SAH256 = PSS(hashAlgorithm = Digest.SHA256)
+            val DEFAULT_SAH384 = PSS(hashAlgorithm = Digest.SHA384)
+            val DEFAULT_SAH512 = PSS(hashAlgorithm = Digest.SHA512)
             override fun decodeFromTlv(
                 serializer: KSerializer<RsaSsaPssParams>,
                 src: Asn1Element,
@@ -149,6 +151,8 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
                 is RsaPkcs1PaddingParams -> PKCS1
                 is RsaSsaPssParams -> PSS(decoded)
             } as RSAPadding<RsaParams>
+
+        val entries = setOf(PKCS1, PSS.DEFAULT_SAH512, PSS.DEFAULT_SAH256, PSS.DEFAULT_SAH384)
     }
 }
 
@@ -259,16 +263,20 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
     }
 
     class RSA(
-        private val providedParams: Pair<Digest, RSAPadding<*>>?,
+        providedParams: Pair<Digest, RSAPadding<*>>?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
 
+        /**PKCS! 1.5 specifies digest*/
         constructor(
             /** The digest to apply to the data. */
-            digest: Digest,
+            digest: Digest
+        ) : this(digest to RSAPadding.PKCS1, null)
+
+        constructor(
             /** The padding to apply to the data. */
-            padding: RSAPadding<*>
-        ) : this(digest to padding, null)
+            padding: RSAPadding.PSS
+        ) : this(padding.hashAlgorithm to padding, null)
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
 
@@ -375,13 +383,13 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
 
-        val RSAwithSHA256andPKCS1Padding = RSA(Digest.SHA256, RSAPadding.PKCS1)
-        val RSAwithSHA384andPKCS1Padding = RSA(Digest.SHA384, RSAPadding.PKCS1)
-        val RSAwithSHA512andPKCS1Padding = RSA(Digest.SHA512, RSAPadding.PKCS1)
+        val RSAwithSHA256andPKCS1Padding = RSA(Digest.SHA256)
+        val RSAwithSHA384andPKCS1Padding = RSA(Digest.SHA384)
+        val RSAwithSHA512andPKCS1Padding = RSA(Digest.SHA512)
 
-        val RSAwithSHA256andPSSPadding = RSA(Digest.SHA256, RSAPadding.PSS.DEFAULT)
-        val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS.DEFAULT)
-        val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS.DEFAULT)
+        val RSAwithSHA256andPSSPadding = RSA(RSAPadding.PSS.DEFAULT_SAH256)
+        val RSAwithSHA384andPSSPadding = RSA(RSAPadding.PSS.DEFAULT_SAH384)
+        val RSAwithSHA512andPSSPadding = RSA(RSAPadding.PSS.DEFAULT_SAH512)
 
         override val entries: Iterable<SignatureAlgorithm> by lazy {
             ECDSA.entries + RSA.entries

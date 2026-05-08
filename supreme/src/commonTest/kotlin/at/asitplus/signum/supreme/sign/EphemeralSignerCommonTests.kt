@@ -47,7 +47,7 @@ data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val i
         }
     }
 }
-data class RSATestSuite(val padding: RSAPadding, val digest: Digest, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
+data class RSATestSuite(val padding: RSAPadding<*>, val digest: Digest, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
     override fun toString() = "RSA/$digest/$padding/${keySize}bit${if (isPreHashed) "/pre" else ""}"
     override fun configure(it: SigningKeyConfiguration) {
         it.rsa {
@@ -246,12 +246,12 @@ val EphemeralSignerCommonTests  by testSuite {
 
 
                 val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.decodedSignature.getOrThrow()) should succeed
+                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
 
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
-                    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
+                    signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
                     validFrom = Asn1Time(
                         Clock.System.now()
@@ -269,7 +269,7 @@ val EphemeralSignerCommonTests  by testSuite {
                 )
                 val cert = signer.sign(tbsCrt).getOrThrow()
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()) should succeed
+                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
 
             }
         }
@@ -298,12 +298,12 @@ val EphemeralSignerCommonTests  by testSuite {
 
 
                 val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.decodedSignature.getOrThrow()) should succeed
+                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
 
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
-                    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
+                    signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
                     validFrom = Asn1Time(
                         Clock.System.now()
@@ -321,7 +321,7 @@ val EphemeralSignerCommonTests  by testSuite {
                 )
                 val cert = signer.sign(tbsCrt).getOrThrow()
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()) should succeed
+                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
             }
         }
     }

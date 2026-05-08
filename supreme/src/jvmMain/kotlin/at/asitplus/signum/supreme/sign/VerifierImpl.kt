@@ -62,9 +62,9 @@ internal actual fun verifyECDSAImpl
 
 private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
     when (alg.padding) {
-        RSAPadding.PKCS1 -> getSigInstance(
+        is RSAPadding.PKCS1 -> getSigInstance(
             "${alg.digest.jcaAlgorithmComponent}withRSA", config.provider)
-        RSAPadding.PSS -> getSigInstance("RSASSA-PSS", config.provider).apply {
+        is RSAPadding.PSS -> getSigInstance("RSASSA-PSS", config.provider).apply {
             setParameter(alg.digest.jcaPSSParams)
         }
     }
