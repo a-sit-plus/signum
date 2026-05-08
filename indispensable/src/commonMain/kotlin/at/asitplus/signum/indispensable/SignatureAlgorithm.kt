@@ -235,7 +235,6 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             digest == other.digest && requiredCurve == other.requiredCurve
 
         override fun hashCode(): Int {
-            runCatching { asn1Representation.hashCode() }.getOrNull()?.let { return it }
             var result = digest.hashCode()
             result = 31 * result + (requiredCurve?.hashCode() ?: 0)
             return result
@@ -344,7 +343,6 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             digest == other.digest && padding.sameSignaturePaddingAs(other.padding)
 
         override fun hashCode(): Int {
-            runCatching { asn1Representation.hashCode() }.getOrNull()?.let { return it }
             var result = digest.hashCode()
             result = 31 * result + padding.signaturePaddingHashCode()
             return result
