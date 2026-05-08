@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.matrixConfig
@@ -10,23 +11,20 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.of
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.security.spec.PSSParameterSpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 
-
-private fun RSAPadding.Companion.valueOf(name: String, digest: Digest) = when(name){
-    "PSS" -> when(digest) {
-        Digest.SHA1 -> TODO("**illegal")
-        Digest.SHA256 -> RSAPadding.PSS.DEFAULT_SAH256
-        Digest.SHA384 -> RSAPadding.PSS.DEFAULT_SAH384
-        Digest.SHA512 -> RSAPadding.PSS.DEFAULT_SAH512
-
-    }
+private fun RSAPadding.Companion.valueOf(name: String, digest: Digest) = when (name) {
+    "PSS" -> RSAPadding.PSS(hashAlgorithm =digest)
     "PKCS1" -> RSAPadding.PKCS1
-    else -> {TODO()}
+    else -> {
+        TODO()
+    }
 }
+
 @OptIn(ExperimentalEncodingApi::class)
 val RSAVerifierCommonTests  by matrixSuite {
     @Serializable
@@ -162,10 +160,10 @@ fun main() {
         byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
             data(byDigest, nameFn = { it.b64msg }) { nameMaxLength=32 } - { test ->
                 val verifier =
-                    if(test.padding is RSAPadding.PSS)
-                    SignatureAlgorithm.RSA( test.padding).verifierFor(test.key).getOrThrow()
-                else
-                    SignatureAlgorithm.RSA(test.digest).verifierFor(test.key).getOrThrow()
+                    if (test.padding is RSAPadding.PSS)
+                        SignatureAlgorithm.RSA(test.padding).verifierFor(test.key).getOrThrow()
+                    else
+                        SignatureAlgorithm.RSA(test.digest).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {
@@ -175,12 +173,21 @@ fun main() {
                     }
                 }
                 property(Arb.of(Digest.entries.filter { it != test.digest })) test { dig ->
-                    SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
-                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                    (
+                            if (test.padding is RSAPadding.PSS)
+                                SignatureAlgorithm.RSA(test.padding).verifierFor(test.key)
+                            else
+                                SignatureAlgorithm.RSA(dig).verifierFor(test.key)
+                    ).transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
                 property(Arb.of(RSAPadding.entries.filter { it != test.padding })) test { pad ->
-                    SignatureAlgorithm.RSA(test.digest, pad).verifierFor(test.key)
-                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+
+                    (
+                    if (pad is RSAPadding.PSS)
+                        SignatureAlgorithm.RSA(pad).verifierFor(test.key)
+                    else
+                        SignatureAlgorithm.RSA(test.digest).verifierFor(test.key)
+                    ).transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
             }
         }
