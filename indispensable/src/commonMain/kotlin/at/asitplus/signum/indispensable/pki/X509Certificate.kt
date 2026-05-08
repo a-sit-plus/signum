@@ -78,7 +78,7 @@ private data class TbsCertificateContent(
  * @param version semantic certificate version; DER encodes this as version - 1.
  */
 class TbsCertificate private constructor(
-    providedAsn1Representation: X509TbsCertificate?,
+    private val providedAsn1Representation: X509TbsCertificate?,
     private val providedContent: TbsCertificateContent?,
 ) : DerEncodable<X509TbsCertificate> {
 
@@ -229,16 +229,33 @@ class TbsCertificate private constructor(
     @Transient
     val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
-    private val equalitySource: Any get() = providedContent ?: asn1Representation
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TbsCertificate) return false
-        return equalitySource == other.equalitySource
+        return contentEquals(other)
     }
 
     override fun hashCode(): Int =
-        equalitySource.hashCode()
+        runCatching { content.hashCode() }.getOrElse { 0 }
+
+    private fun contentEquals(other: TbsCertificate): Boolean {
+        val thisIsAsn1Backed = providedAsn1Representation != null
+        val otherIsAsn1Backed = other.providedAsn1Representation != null
+
+        if (thisIsAsn1Backed && otherIsAsn1Backed) {
+            return asn1Representation == other.asn1Representation
+        }
+
+        if (!thisIsAsn1Backed && !otherIsAsn1Backed) {
+            return content == other.content
+        }
+
+        if (asn1Representation == other.asn1Representation) return true
+
+        return catchingUnwrapped {
+            content == other.content
+        }.getOrDefault(false)
+    }
 
     /**
      * Debug String representation. Uses Base64 encoded DER representation
@@ -350,7 +367,7 @@ class X509Certificate private constructor(
 
     override fun hashCode(): Int {
         var result = tbsCertificate.hashCode()
-        result = 31 * result + asn1Representation.signatureValue.hashCode()
+        result = 31 * result + runCatching { signature.hashCode()}.getOrElse { 0 }
         return result
     }
 
