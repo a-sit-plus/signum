@@ -132,17 +132,32 @@ open class ECSignerConfiguration internal constructor(): DSL.Data() {
     internal var digestSpecified = false
 }
 open class RSASignerConfiguration internal constructor(): DSL.Data() {
+
+    //TODO: this is more convenient, but does not allow customization of PSS except for digest. would we allow to set parameters like in my previous commit,
+    //it would be exact, but nobody supports them anyways, so…
     /**
-     * Explicitly specify the parameters to use.
-     * Omit to default to the only supported parameters
+     * Explicitly specify the digest to sign over.
+     * Omit to default to a reasonable default choice.
      *
-     * If the key stored in hardware supports multiple modes, you need to explicitly specify the parameters to use.
-     * (By default, hardware keys are configured to only support a single padding+digest.)
+     * If a key stored in hardware supports multiple digests, you need to explicitly specify the digest to use.
+     * (By default, hardware keys are configured to only support a single digest.)
      *
-     * @see SigningKeyConfiguration.RSAConfiguration.parameters
+     * @see SigningKeyConfiguration.RSAConfiguration.digests
      */
-    lateinit var parameters: SignatureAlgorithm.RSA.Parameters<*>
-    internal val parametersSpecified get() = this::parameters.isInitialized
+    lateinit var digest: Digest
+    internal val digestSpecified get() = this::digest.isInitialized
+
+    /**
+     * Explicitly specify the padding to use.
+     * Omit to default to the only supported padding.
+     *
+     * If the key stored in hardware supports multiple padding modes, you need to explicitly specify the padding to use.
+     * (By default, hardware keys are configured to only support a single padding.)
+     *
+     * @see SigningKeyConfiguration.RSAConfiguration.paddings
+     */
+    lateinit var padding: SignatureAlgorithm.RSA.Padding
+    internal val paddingSpecified get() = this::padding.isInitialized
 
 
 }

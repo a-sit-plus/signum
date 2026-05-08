@@ -48,8 +48,11 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
         }
 
 
-        /** The parameters supported by the key. If not specified, defaults to [RSA-PSS with SHA256][SignatureAlgorithm.RSA.Parameters.PssPadded.DEFAULT_SAH256]. */
-        open var parameters: Set<SignatureAlgorithm.RSA.Parameters<*>> = setOf(SignatureAlgorithm.RSA.Parameters.PssPadded.DEFAULT_SAH256)
+        /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.SHA256]. */
+        open var digests: Set<Digest> = setOf(Digest.SHA256)
+
+        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][SignatureAlgorithm.RSA.Padding.PSS]. */
+        open var paddings: Set<SignatureAlgorithm.RSA.Padding> = setOf(SignatureAlgorithm.RSA.Padding.PSS)
 
         /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
         var bits: Int = 3072

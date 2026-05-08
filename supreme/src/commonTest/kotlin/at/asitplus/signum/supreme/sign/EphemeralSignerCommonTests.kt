@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
@@ -43,11 +44,12 @@ data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val i
         }
     }
 }
-data class RSATestSuite(val parameters: SignatureAlgorithm.RSA.Parameters<*>, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
-    override fun toString() = "RSA/$parameters/${keySize}bit${if (isPreHashed) "/pre" else ""}"
+data class RSATestSuite(val padding: RSAPadding, val digest: Digest, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
+    override fun toString() = "RSA/$digest/$padding/${keySize}bit${if (isPreHashed) "/pre" else ""}"
     override fun configure(it: SigningKeyConfiguration) {
         it.rsa {
-            this.parameters = setOf(this@RSATestSuite.parameters)
+            this.digests = setOf(this@RSATestSuite.digest)
+            this.paddings = setOf(this@RSATestSuite.padding)
             this.bits = this@RSATestSuite.keySize
         }
         if (it is PlatformSigningKeyConfigurationBase<*>) {
@@ -56,7 +58,8 @@ data class RSATestSuite(val parameters: SignatureAlgorithm.RSA.Parameters<*>, va
     }
     override fun configure(it: SignerConfiguration) {
         it.rsa {
-            this.parameters = this@RSATestSuite.parameters
+            this.digest = this@RSATestSuite.digest
+            this.padding = this@RSATestSuite.padding
         }
     }
 }
@@ -71,18 +74,18 @@ object TestSuites {
         }
     }
     val RSA get() = sequence {
-        listOf(true,false).forEach { pssPadding ->
+        RSAPadding.entries.forEach { padding ->
             Digest.entries.forEach { digest ->
                 when {
-                    digest == Digest.SHA512 && pssPadding
+                    digest == Digest.SHA512 && padding == RSAPadding.PSS
                         -> listOf(2048, 3072, 4096)
-                    digest == Digest.SHA384 || digest == Digest.SHA512 || pssPadding
+                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
                         -> listOf(1024,2048,3072,4096)
                     else
                         -> listOf(512, 1024, 2048, 3072, 4096)
                 }.forEach { keySize ->
-                    yield(RSATestSuite(if(pssPadding) SignatureAlgorithm.RSA.Parameters.PssPadded(digest) else SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(digest), keySize, false))
-                    yield(RSATestSuite(if(pssPadding) SignatureAlgorithm.RSA.Parameters.PssPadded(digest) else SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(digest), keySize, true))
+                    yield(RSATestSuite(padding, digest, keySize, false))
+                    yield(RSATestSuite(padding, digest, keySize, true))
                 }
             }
         }
@@ -93,23 +96,23 @@ object TestSuites {
 val EphemeralSignerCommonTests  by matrixSuite {
     "Functional" - {
         "RSA" - {
-            data(TestSuites.RSA) test { (parameters, keySize, preHashed) ->
+            data(TestSuites.RSA) test { (padding, digest, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
                 val signature = try {
                     signer = Signer.Ephemeral {
                         rsa {
-                             this.parameters = setOf(parameters); bits = keySize
+                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
                         }
                     }.getOrThrow()
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(parameters.digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
                     return@withData
                 }
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
-                    it.parameters shouldBe parameters
+                    it.parameters shouldBe SignatureAlgorithm.RSA.Parameters(padding, digest)
                 }
 
                 val secondSig = signer.exportPrivateKey()
@@ -205,18 +208,18 @@ val EphemeralSignerCommonTests  by matrixSuite {
 
     "Cert signing" - {
         "RSA" - {
-            data(TestSuites.RSA) test { (parameters, keySize, preHashed) ->
+            data(TestSuites.RSA) test { (padding, digest, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
 
                 try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            this.parameters = setOf(parameters); bits = keySize
+                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
                         }
                     }.getOrThrow()
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(parameters.digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
                     return@test
@@ -234,7 +237,7 @@ val EphemeralSignerCommonTests  by matrixSuite {
                         )
                     )
                 )
-                if(parameters.digest == Digest.SHA1 && parameters is SignatureAlgorithm.RSA.Parameters.PssPadded) return@test
+                if(digest == Digest.SHA1 && padding== RSAPadding.PSS) return@test
                 val signedCSR = signer.sign(csr).getOrThrow()
 
 
