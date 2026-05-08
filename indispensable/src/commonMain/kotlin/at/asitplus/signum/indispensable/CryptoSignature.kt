@@ -4,7 +4,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.catchingUnwrapped
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.ensureSize
@@ -225,24 +225,17 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
         }
     }
 
-    companion object : DerDecodable<SignatureValue, CryptoSignature> {
-        override fun decodeFromTlv(
-            serializer: KSerializer<SignatureValue>,
-            src: Asn1Element,
-            der: Der
-        ): CryptoSignature = CryptoSignature(
-            der.decodeFromTlv(
-                serializer,
-                /*we should cater to JCA, and allow base EC signatures*/
-                if (src is Asn1Sequence) Asn1BitString(der.encodeToByteArray(src)).encodeToTlv() else src
-            )
-        )
+    companion object {
+        operator fun invoke(algorithmObjectIdentifier: ObjectIdentifier, asn1Representation: SignatureValue) =
+            CryptoSignature(SignatureAlgorithm.kindByOID(algorithmObjectIdentifier), asn1Representation)
 
-        operator fun invoke(asn1Representation: SignatureValue) = catchingUnwrapped { EC(asn1Representation) }
-            .getOrElse { RSA(asn1Representation) }
+        operator fun invoke(kind: SignatureAlgorithm.Kind, asn1Representation: SignatureValue) =
+            when (kind) {
+                SignatureAlgorithm.Kind.EC -> EC(asn1Representation)
+                SignatureAlgorithm.Kind.RSA -> RSA(asn1Representation)
+            }
     }
 }
-
 
 val CryptoSignature.x509Encoded: Asn1Primitive
     get() = asn1Representation.rawBitString.encodeToTlv()

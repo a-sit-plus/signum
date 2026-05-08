@@ -22,8 +22,8 @@ private infix fun RSAPadding<*>.sameSignaturePaddingAs(other: RSAPadding<*>): Bo
         this === other -> true
         this is RSAPadding.PSS && other is RSAPadding.PSS ->
             mgfAlgorithm == other.mgfAlgorithm &&
-                saltLength == other.saltLength &&
-                trailerField == other.trailerField
+                    saltLength == other.saltLength &&
+                    trailerField == other.trailerField
 
         else -> this == other
     }
@@ -104,9 +104,9 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
             if (this === other) return true
             if (other !is PSS) return false
             return hashAlgorithm == other.hashAlgorithm &&
-                mgfAlgorithm == other.mgfAlgorithm &&
-                saltLength == other.saltLength &&
-                trailerField == other.trailerField
+                    mgfAlgorithm == other.mgfAlgorithm &&
+                    saltLength == other.saltLength &&
+                    trailerField == other.trailerField
         }
 
         override fun hashCode(): Int {
@@ -155,6 +155,14 @@ sealed class RSAPadding<T : RsaParams> : DerEncodable<T> {
 //for now, we just replicate the pattern, but since everything is sealed, we don't actually parse
 sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
 
+    //TODO: extensible
+    enum class Kind {
+        EC, RSA
+    }
+
+
+    val kind: Kind
+
     class ECDSA(
         private val providedParams: Pair<Digest?, ECCurve?>?,
         private val providedAsn1: X509AlgorithmIdentifier?,
@@ -169,6 +177,8 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+
+        override val kind: Kind get() = Kind.EC
 
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         val digest: Digest? by providedParams.orLazyNullable(
@@ -243,6 +253,8 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         ) : this(digest to padding, null)
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+
+        override val kind: Kind get() = Kind.RSA
 
         /** The digest to apply to the data. */
         val digest: Digest by providedParams?.first orLazy {
@@ -337,6 +349,15 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
         override val entries: Iterable<SignatureAlgorithm> by lazy {
             ECDSA.entries + RSA.entries
+        }
+
+        //TODO: extensible
+        fun kindByOID(oid: ObjectIdentifier): Kind = when (oid) {
+            KnownOIDs.ecdsaWithSHA256, KnownOIDs.ecdsaWithSHA384, KnownOIDs.ecdsaWithSHA512 -> Kind.EC
+            KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption, KnownOIDs.sha512WithRSAEncryption, KnownOIDs.rsaPSS -> Kind.RSA
+            else -> throw IllegalArgumentException("Unknown OID $oid")
+
+
         }
 
         operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =

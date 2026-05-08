@@ -180,7 +180,7 @@ class CertificationRequest private constructor(
     }
 
     val signature: CryptoSignature by providedContent?.signature orLazy {
-        CryptoSignature(asn1Representation.signatureValue)
+        CryptoSignature(asn1Representation.signatureAlgorithm.oid,            asn1Representation.signatureValue)
     }
     // PEM disabled during awesn1 migration.
 

@@ -276,7 +276,7 @@ class TbsCertificate private constructor(
 class X509Certificate private constructor(
     providedAsn1Representation: Awesn1X509Certificate?,
     providedContent: TbsCertificate?,
-    val signature: CryptoSignature
+    providedSignature: CryptoSignature?
 ) : DerPemEncodable<Awesn1X509Certificate> {
 
     override val pemLabel: String get() = canonicalPemLabel
@@ -290,7 +290,7 @@ class X509Certificate private constructor(
     constructor(asn1Representation: Awesn1X509Certificate) : this(
         asn1Representation,
         null,
-        CryptoSignature(asn1Representation.signatureValue)
+        null
     )
 
     override val asn1Representation: Awesn1X509Certificate by providedAsn1Representation orLazy {
@@ -302,6 +302,10 @@ class X509Certificate private constructor(
         )
     }
 
+    val signature: CryptoSignature by providedSignature orLazy {
+        CryptoSignature(asn1Representation.signatureAlgorithm.oid, asn1Representation.signatureValue)
+    }
+
     val tbsCertificate: TbsCertificate by providedContent orLazy {
         TbsCertificate(asn1Representation.tbsCertificate)
     }
@@ -309,7 +313,7 @@ class X509Certificate private constructor(
 
     val signatureAlgorithm: SignatureAlgorithm get() = tbsCertificate.signatureAlgorithm
 
-    // PEM disabled during awesn1 migration.
+    // TODO: init must check if outer and inner sigalg match!
 
     /**
      * Debug String representation. Uses Base64 encoded DER representation
