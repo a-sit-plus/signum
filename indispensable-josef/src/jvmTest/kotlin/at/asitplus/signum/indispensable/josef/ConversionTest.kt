@@ -1,12 +1,9 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 //somehow including kmmresult-test makes this fail
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
@@ -28,8 +25,8 @@ val ConversionTest by matrixSuite {
     }
     "JWS -> X509 -> JWS is stable" - {
         data(JwsAlgorithm.Signature.entries) test {
-            it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
-                x509.toJwsAlgorithm() shouldSucceedWith it
+            it.algorithm.asn1Representation.let { x509 ->
+                SignatureAlgorithm(x509).toJwsAlgorithm() shouldSucceedWith it
             }
         }
     }

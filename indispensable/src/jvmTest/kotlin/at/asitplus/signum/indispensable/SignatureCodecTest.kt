@@ -78,7 +78,7 @@ val SignatureCodecTest  by matrixSuite {
             CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
-                SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
+                SignatureAlgorithm.RSA(Digest.valueOf(digest))
             ).jcaSignatureBytes shouldBe sig
 
             // create certificate with bouncycastle
@@ -106,7 +106,7 @@ val SignatureCodecTest  by matrixSuite {
             CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
             CryptoSignature.parseFromJca(
                 certificateHolder.signature,
-                SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
+                SignatureAlgorithm.RSA(Digest.valueOf(digest))
             ).encodeToDer() shouldBe bcSig
 
         }

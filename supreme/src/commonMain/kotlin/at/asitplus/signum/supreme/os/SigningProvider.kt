@@ -153,7 +153,7 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
      *
      * @see SigningKeyConfiguration.RSAConfiguration.paddings
      */
-    lateinit var padding: RSAPadding
+    lateinit var padding: RSAPadding<*>
     internal val paddingSpecified get() = this::padding.isInitialized
 
 

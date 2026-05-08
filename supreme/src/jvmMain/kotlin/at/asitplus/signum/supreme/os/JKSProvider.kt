@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Asn1Time
 import at.asitplus.signum.indispensable.getJCASignatureInstance
@@ -21,6 +20,8 @@ import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
@@ -130,9 +131,10 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
 
             val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
                 is SigningKeyConfiguration.RSAConfiguration ->
-                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), X509SignatureAlgorithm.RS256)
+                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()),
+                        SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
                 is SigningKeyConfiguration.ECConfiguration ->
-                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), X509SignatureAlgorithm.ES256)
+                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), SignatureAlgorithm.ECDSAwithSHA256)
             }
             val keyPair = getKPGInstance(jcaAlg, config.provider).run {
                 initialize(jcaSpec)
@@ -153,7 +155,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initSign(keyPair.private)
                 update(tbsCert.encodeToDer())
                 sign()
-            }.let { X509Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
+            }.let { X509Certificate(tbsCert, CryptoSignature.parseFromJca(it, certAlg)) }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                             arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()
@@ -173,11 +175,15 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                 requiredCurve = publicKey.curve),
             alias)
-        is CryptoPublicKey.RSA -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
-            SignatureAlgorithm.RSA(
-                digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
-                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),
-            alias)
+        is CryptoPublicKey.RSA -> {
+            val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS
+            JKSSigner.RSA(
+                config, privateKey as RSAPrivateKey, publicKey,
+                if (padding is RSAPadding.PSS) SignatureAlgorithm.RSA(padding = padding)
+                else SignatureAlgorithm.RSA(digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256),
+                alias
+            )
+        }
     }
 
     override suspend fun getSignerForKey(

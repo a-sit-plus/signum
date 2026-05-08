@@ -84,7 +84,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
             /** The one exception, which is not a valid JWS algorithm identifier */
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
+            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(Digest.SHA1))
             companion object : Enumeration<RSA> {
                 override val entries: Collection<RSA> by lazy {
                     setOf(

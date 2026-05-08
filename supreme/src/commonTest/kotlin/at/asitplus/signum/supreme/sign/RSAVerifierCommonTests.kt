@@ -14,6 +14,19 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
+
+
+private fun RSAPadding.Companion.valueOf(name: String, digest: Digest) = when(name){
+    "PSS" -> when(digest) {
+        Digest.SHA1 -> TODO("**illegal")
+        Digest.SHA256 -> RSAPadding.PSS.DEFAULT_SAH256
+        Digest.SHA384 -> RSAPadding.PSS.DEFAULT_SAH384
+        Digest.SHA512 -> RSAPadding.PSS.DEFAULT_SAH512
+
+    }
+    "PKCS1" -> RSAPadding.PKCS1
+    else -> {TODO()}
+}
 @OptIn(ExperimentalEncodingApi::class)
 val RSAVerifierCommonTests  by matrixSuite {
     @Serializable
@@ -23,7 +36,7 @@ val RSAVerifierCommonTests  by matrixSuite {
 
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.valueOf(test.dig)
-        val padding = RSAPadding.valueOf(test.pad)
+        val padding = RSAPadding.valueOf(test.pad, digest)
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.RSA
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
@@ -148,7 +161,11 @@ fun main() {
     tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
         byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
             data(byDigest, nameFn = { it.b64msg }) { nameMaxLength=32 } - { test ->
-                val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
+                val verifier =
+                    if(test.padding is RSAPadding.PSS)
+                    SignatureAlgorithm.RSA( test.padding).verifierFor(test.key).getOrThrow()
+                else
+                    SignatureAlgorithm.RSA(test.digest).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {

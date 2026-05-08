@@ -24,7 +24,7 @@ open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningK
     }
     override val ec = _algSpecific.option(::ECConfiguration)
     class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
-        init { digests = Digest.entries.toSet(); paddings = RSAPadding.entries.toSet() }
+        init { digests = Digest.entries.toSet(); paddings = RSAPadding.entries}
     }
     override val rsa = _algSpecific.option(::RSAConfiguration)
 }
@@ -107,7 +107,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     abstract class RSA<PrivateKeyT, SignerT: Signer.RSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.RSA, SignatureAlgorithm.RSA)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.RSA,
-        val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
+        val digests: Set<Digest>, val paddings: Set<RSAPadding<*>>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
@@ -132,12 +132,12 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     alg.padding
                 }
                 false -> when {
-                    paddings.contains(RSAPadding.PSS) -> RSAPadding.PSS
+                    paddings.firstOrNull { it is RSAPadding.PSS }!=null -> RSAPadding.PSS
                     paddings.contains(RSAPadding.PKCS1) -> RSAPadding.PKCS1
                     else -> paddings.first()
                 }
             }
-            return@catching signerFactory(config, privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
+            return@catching signerFactory(config, privateKey, publicKey, if(padding is RSAPadding.PSS) SignatureAlgorithm.RSA(padding) else SignatureAlgorithm.RSA(digest))
         }
     }
 }
