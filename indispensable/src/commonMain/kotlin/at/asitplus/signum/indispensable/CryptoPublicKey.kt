@@ -53,11 +53,11 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
     fun encodeToTlv(): Asn1Sequence =
         DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), asn1Representation) as Asn1Sequence
 
-    override val pemLabel: String get() = Companion.canonicalPemLabel
+    override val pemLabel: String get() = canonicalPemLabel
 
     companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
-        override val canonicalPemLabel: String = "PUBLIC KEY"
-        override val validPemLabels: Set<String> = setOf(canonicalPemLabel, "RSA PUBLIC KEY")
+        override val canonicalPemLabel: String get() = SubjectPublicKeyInfo.canonicalPemLabel
+        override val validPemLabels: Set<String> get() = SubjectPublicKeyInfo.validPemLabels
 
         /**
          * Parses a DID representation of a public key and

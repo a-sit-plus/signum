@@ -1,22 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
-import at.asitplus.awesn1.Asn1BitString
-import at.asitplus.awesn1.Asn1Decodable
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Encodable
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.Asn1Primitive
-import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.awesn1.Identifiable
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.PemBlock
-import at.asitplus.awesn1.decodeRethrowing
-import at.asitplus.awesn1.ecPublicKey
-import at.asitplus.awesn1.rsaEncryption
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaOtherPrimeInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
@@ -24,11 +9,8 @@ import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.toAsn1Integer
-import at.asitplus.awesn1.toBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
@@ -53,8 +35,10 @@ data class RsaPrivateKeyContent(
     init {
         val n = publicKey.n.toBigInteger()
         val e = publicKey.e.toBigInteger()
-        val primeInfo1 = CryptoPrivateKey.RSA.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
-        val primeInfo2 = CryptoPrivateKey.RSA.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
+        val primeInfo1 =
+            CryptoPrivateKey.RSA.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
+        val primeInfo2 =
+            CryptoPrivateKey.RSA.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
 
         var product = BigInteger.ONE
         (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
@@ -171,7 +155,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         }
 
         val asPKCS1: DerPemEncodable<Pkcs1RsaPrivateKeyInfo> = object : DerPemEncodable<Pkcs1RsaPrivateKeyInfo> {
-            override val pemLabel: String get() = RSA_PRIVATE_KEY_PEM_LABEL
+            override val pemLabel: String get() = Pkcs1RsaPrivateKeyInfo.canonicalPemLabel
             override val asn1Representation: Pkcs1RsaPrivateKeyInfo get() = pkcs1Representation
         }
 
@@ -218,8 +202,9 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         }
 
         companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, RSA> {
-            override val canonicalPemLabel: String = PRIVATE_KEY_PEM_LABEL
-            override val validPemLabels: Set<String> = setOf(PRIVATE_KEY_PEM_LABEL, RSA_PRIVATE_KEY_PEM_LABEL)
+            override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
+            override val validPemLabels: Set<String> =
+                setOf(canonicalPemLabel, Pkcs1RsaPrivateKeyInfo.canonicalPemLabel)
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
 
             override fun decodeFromTlv(
@@ -238,7 +223,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                 der: Der,
             ): RSA =
                 when (src.pemLabel) {
-                    RSA_PRIVATE_KEY_PEM_LABEL -> FromPKCS1.decodeFromDer(src.payload, der)
+                    Pkcs1RsaPrivateKeyInfo.canonicalPemLabel -> FromPKCS1.decodeFromDer(src.payload, der)
                     else -> decodeFromDer(serializer, src.payload, der)
                 }
         }
@@ -288,7 +273,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         }
 
         val asSEC1: DerPemEncodable<Sec1EcPrivateKeyInfo> = object : DerPemEncodable<Sec1EcPrivateKeyInfo> {
-            override val pemLabel: String get() = EC_PRIVATE_KEY_PEM_LABEL
+            override val pemLabel: String get() = Sec1EcPrivateKeyInfo.canonicalPemLabel
             override val asn1Representation: Sec1EcPrivateKeyInfo get() = sec1Representation
         }
 
@@ -438,8 +423,11 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         }
 
         companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, EC> {
-            override val canonicalPemLabel: String = PRIVATE_KEY_PEM_LABEL
-            override val validPemLabels: Set<String> = setOf(PRIVATE_KEY_PEM_LABEL, EC_PRIVATE_KEY_PEM_LABEL)
+            override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
+            override val validPemLabels: Set<String> = setOf(
+                canonicalPemLabel,
+                Sec1EcPrivateKeyInfo.canonicalPemLabel
+            )
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             override fun decodeFromTlv(
@@ -458,7 +446,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                 der: Der,
             ): EC =
                 when (src.pemLabel) {
-                    EC_PRIVATE_KEY_PEM_LABEL -> FromSEC1.decodeFromDer(src.payload, der)
+                    Sec1EcPrivateKeyInfo.canonicalPemLabel -> FromSEC1.decodeFromDer(src.payload, der)
                     else -> decodeFromDer(serializer, src.payload, der)
                 }
 
@@ -467,7 +455,13 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                 return when {
                     curve != null -> WithPublicKey(representation)
                     representation.decodeEcPrivateKey().parameters != null -> WithPublicKey(representation)
-                    else -> WithoutPublicKey(EcSec1Source(representation.decodeEcPrivateKey(), null, representation.attributes))
+                    else -> WithoutPublicKey(
+                        EcSec1Source(
+                            representation.decodeEcPrivateKey(),
+                            null,
+                            representation.attributes
+                        )
+                    )
                 }
             }
 
@@ -508,14 +502,8 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
     }
 
     companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
-        const val PRIVATE_KEY_PEM_LABEL: String = "PRIVATE KEY"
-        const val RSA_PRIVATE_KEY_PEM_LABEL: String = "RSA PRIVATE KEY"
-        const val EC_PRIVATE_KEY_PEM_LABEL: String = "EC PRIVATE KEY"
-
-        override val canonicalPemLabel: String = PRIVATE_KEY_PEM_LABEL
-        override val validPemLabels: Set<String> =
-            setOf(PRIVATE_KEY_PEM_LABEL, RSA_PRIVATE_KEY_PEM_LABEL, EC_PRIVATE_KEY_PEM_LABEL)
-
+        override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
+        override val validPemLabels: Set<String> get() = Pkcs8PrivateKeyInfo.validPemLabels
         override fun decodeFromTlv(
             serializer: KSerializer<Pkcs8PrivateKeyInfo>,
             src: Asn1Element,
@@ -534,10 +522,10 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             serializer: KSerializer<Pkcs8PrivateKeyInfo>,
             src: PemBlock,
             der: Der,
-        ): CryptoPrivateKey =
+        ): CryptoPrivateKey = /*label is already guaranteed to be in valid labels, so else is fine*/
             when (src.pemLabel) {
-                RSA_PRIVATE_KEY_PEM_LABEL -> RSA.FromPKCS1.decodeFromDer(src.payload, der)
-                EC_PRIVATE_KEY_PEM_LABEL -> EC.FromSEC1.decodeFromDer(src.payload, der)
+                Pkcs1RsaPrivateKeyInfo.canonicalPemLabel -> RSA.FromPKCS1.decodeFromDer(src.payload, der)
+                Sec1EcPrivateKeyInfo.canonicalPemLabel -> EC.FromSEC1.decodeFromDer(src.payload, der)
                 else -> decodeFromDer(serializer, src.payload, der)
             }
 
@@ -547,29 +535,6 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             } else {
                 CryptoPrivateKey.RSA.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey<*>
             }
-        }
-    }
-}
-
-/** Representation of an encrypted private key structure as per RFC 5208. */
-class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encryptedData: ByteArray) :
-    Asn1Encodable<Asn1Sequence> {
-
-    @Throws(Asn1Exception::class)
-    override fun encodeToTlv(): Asn1Sequence = runRethrowing {
-        Asn1.Sequence {
-            +encryptionAlgorithm
-            +Asn1.OctetString(encryptedData)
-        }
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, EncryptedPrivateKey> {
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = src.decodeRethrowing {
-            EncryptedPrivateKey(
-                ObjectIdentifier.decodeFromTlv(next().asPrimitive()),
-                next().asPrimitive().asOctetString().content,
-            )
         }
     }
 }
@@ -584,7 +549,11 @@ private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?
         prime2exponent = exponent2.toBigInteger(),
         crtCoefficient = coefficient.toBigInteger(),
         otherPrimeInfos = otherPrimeInfos?.map {
-            CryptoPrivateKey.RSA.PrimeInfo(it.prime.toBigInteger(), it.exponent.toBigInteger(), it.coefficient.toBigInteger())
+            CryptoPrivateKey.RSA.PrimeInfo(
+                it.prime.toBigInteger(),
+                it.exponent.toBigInteger(),
+                it.coefficient.toBigInteger()
+            )
         },
         attributes = attributes,
     )
