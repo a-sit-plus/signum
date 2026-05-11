@@ -391,8 +391,8 @@ class X509Certificate private constructor(
     }
 
     companion object : DerPemDecodable<Awesn1X509Certificate, X509Certificate> {
-        override val canonicalPemLabel: String = "CERTIFICATE"
-        override val validPemLabels: Set<String> = setOf(canonicalPemLabel, "TRUSTED CERTIFICATE")
+        override val canonicalPemLabel: String get() = Awesn1X509Certificate.canonicalPemLabel
+        override val validPemLabels: Set<String> get() = Awesn1X509Certificate.validPemLabels
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
