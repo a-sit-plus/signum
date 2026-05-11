@@ -237,10 +237,6 @@ sealed interface CryptoSignature : DerEncodable<SignatureValue> {
     }
 }
 
-val CryptoSignature.x509Encoded: Asn1Primitive
-    get() = asn1Representation.rawBitString.encodeToTlv()
-
-
 
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
