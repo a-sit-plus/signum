@@ -5,10 +5,9 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
-import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
@@ -29,7 +28,7 @@ val PemTest by testSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val cert = X509Certificate.decodeFromPem(pemEC)
+        val cert = Certificate.decodeFromPem(pemEC)
         cert.encodeToPem() shouldBe pemEC
         val pemRSA = """
             -----BEGIN CERTIFICATE-----
@@ -65,7 +64,7 @@ val PemTest by testSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val certRSA = X509Certificate.decodeFromPem(pemRSA)
+        val certRSA = Certificate.decodeFromPem(pemRSA)
         certRSA.encodeToPem() shouldBe pemRSA
     }
 

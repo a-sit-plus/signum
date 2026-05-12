@@ -5,14 +5,14 @@ import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1PrimitiveOctetString
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.crypto.pki.Attribute
+import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
-import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
-import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 
 private data class TbsCertificationRequestContent(
     val subjectName: List<RelativeDistinguishedName>,
@@ -82,9 +82,7 @@ class TbsCertificationRequest private constructor(
 
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
     private val providedContent: TbsCertificationRequestContent by providedContent orLazy {
-        TbsCertificationRequestContent(
-            asn1Representation
-        )
+        TbsCertificationRequestContent(asn1Representation)
     }
 
     val subjectName: List<RelativeDistinguishedName> get() = providedContent.subjectName
@@ -107,7 +105,7 @@ class TbsCertificationRequest private constructor(
     }
 
 
-    /*TODO EXTENSIBILITY temp FUSCH good enough for regression tests*/
+    /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TbsCertificationRequest) return false
@@ -117,7 +115,7 @@ class TbsCertificationRequest private constructor(
     }
 
 
-    /*TODO EXTENSIBILITY temp FUSCH good enough for regression tests*/
+    /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun hashCode(): Int {
         var result = subjectName.hashCode()
         result = 31 * result + publicKey.hashCode()
@@ -169,7 +167,10 @@ class CertificationRequest private constructor(
         signature: CryptoSignature,
     ) : this(CertificationRequestContent(tbsCsr, signatureAlgorithm, signature), null)
 
-    constructor(asn1Representation: Pkcs10CertificationRequest) : this(null /*TODO EXTENSIBILITY CertificationRequestContent(asn1Representation) */, asn1Representation)
+    constructor(asn1Representation: Pkcs10CertificationRequest) : this(
+        null /*TODO EXTENSIBILITY CertificationRequestContent(asn1Representation) */,
+        asn1Representation
+    )
 
 
     override val asn1Representation: Pkcs10CertificationRequest by providedAsn1Representation orLazy {
@@ -193,7 +194,7 @@ class CertificationRequest private constructor(
     val signature: CryptoSignature get() = providedContent.signature
 
 
-    /*TODO EXTENSIBILITY temp FUSCH good enough for regression tests*/
+    /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is CertificationRequest) return false
@@ -202,7 +203,7 @@ class CertificationRequest private constructor(
                 signature == other.signature
     }
 
-    /*TODO EXTENSIBILITY temp FUSCH good enough for regression tests*/
+    /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun hashCode(): Int {
         var result = tbsCsr.hashCode()
         result = 31 * result + signatureAlgorithm.hashCode()

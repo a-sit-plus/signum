@@ -16,10 +16,11 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
@@ -167,7 +168,7 @@ object AndroidKeyStoreProvider:
                     setAlgorithmParameterSpec(
                         RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
                     setDigests(*algSpec.digests.map(Digest::jcaName).toTypedArray())
-                    setSignaturePaddings(*algSpec.parameters.map {
+                    setSignaturePaddings(*algSpec.paddings.map {
                         when (it) {
                             RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                             RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
@@ -232,9 +233,9 @@ object AndroidKeyStoreProvider:
         val publicKey: CryptoPublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-            catching { chain.map { X509Certificate.decodeFromDer(it.encoded) } }.let { r ->
+            catching { chain.map { Certificate.decodeFromDer(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
-                    publicKey = it.leaf.decodedPublicKey.getOrThrow()
+                    publicKey = it.leaf.publicKey
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null
                 } else r.exceptionOrNull()!!.let {
                     if ((it is Asn1StructuralException) &&
@@ -262,13 +263,13 @@ object AndroidKeyStoreProvider:
             is CryptoPublicKey.RSA -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
-                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.parametersSpecified, { rsaConfig.parameters }) {
+                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
                     when (it) {
                         RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                         RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
                     }
                 }
-                SignatureAlgorithm.RSA(digest, padding)
+                SignatureAlgorithm.RSA(padding, digest)
             }
         }
 
