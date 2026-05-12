@@ -15,6 +15,7 @@ bouncycastle= "1.83"
 testballoon = "0.8.4-K2.3.20"
 testballoonAddons = "0.7.1"
 serialization = "1.11.0"
+propigator = "0.0.1"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -23,11 +24,12 @@ kotlinx-metadata-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-metada
 jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
+propigator = { module = "at.asitplus.propigator:json", version.ref = "propigator"}
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
 asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
 classgraph = { group = "io.github.classgraph", name = "classgraph", version.ref = "classgraph" }
 
-#for build logic conventions plugin, as it needs the artefact, not the plugin ID
+#for build logic conventions plugin, as it needs the artifact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 
 [plugins]

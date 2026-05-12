@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.KeyStorageStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -12,6 +13,7 @@ import kotlin.time.Instant
  * Content of a Key Attestation in JWT format, according to
  * [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#keyattestation-jwt)
  */
+@Deprecated("Replaced", replaceWith = ReplaceWith("KeyAttestationJwtPayload"))
 @Serializable
 data class KeyAttestationJwt(
     @SerialName("iss")
@@ -119,7 +121,7 @@ data class KeyAttestationJwt(
         if (notBefore != other.notBefore) return false
         if (issuedAt != other.issuedAt) return false
         if (expiration != other.expiration) return false
-        if(eudiWalletInfo != other.eudiWalletInfo) return false
+        if (eudiWalletInfo != other.eudiWalletInfo) return false
         if (attestedKeys != other.attestedKeys) return false
         if (keyStorage != other.keyStorage) return false
         if (userAuthentication != other.userAuthentication) return false
@@ -156,20 +158,3 @@ data class KeyAttestationJwt(
         }
     }
 }
-
-@Serializable
-data class KeyStorageStatus(
-    /**
-     * Status list reference as specified by OID4VCI Appendix D.1. The value represents either the revocation state
-     * of the WSCD/keystore type or, for per-KA indexing, the individual Wallet Unit's WSCD/keystore instance.
-     */
-    @SerialName("status")
-    val status: JsonObject,
-
-    /**
-     * NumericDate specifying how long the Wallet Provider maintains revocation status at the referenced index.
-     */
-    @SerialName("exp")
-    @Serializable(with = InstantLongSerializer::class)
-    val expiration: Instant,
-)

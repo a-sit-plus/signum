@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.KeyAttestationPayload
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlinx.serialization.SerialName
@@ -217,7 +218,7 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
+     * third party. May be parsed as a [JwsCompact], with [JwtClaims] as the payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactStringSerializer::class)
@@ -225,7 +226,7 @@ data class JwsHeader(
 
     /**
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * Should be a [JwsCompact], with [JsonWebToken] as the payload
+     * Should be a [JwsCompact], with [JwtClaims] as the payload
      */
     @SerialName(SerialNames.KEY_ATTESTATION)
     @Serializable(with = JwsCompactStringSerializer::class)
@@ -425,11 +426,11 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.decodedPublicKey?.getOrNull()
     }
 
-    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
+    val keyAttestationParsed: JwsCompactTyped<KeyAttestationPayload>? by lazy {
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken>? by lazy {
+    val verifierAttestationParsed: JwsCompactTyped<JwtClaims>? by lazy {
         attestationJwt?.typed()
     }
 
