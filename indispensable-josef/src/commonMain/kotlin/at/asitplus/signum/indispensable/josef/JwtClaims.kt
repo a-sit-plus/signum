@@ -207,6 +207,11 @@ data class JwtClaims(
      * The values of the constants are the official [SerialName]s.
      */
     object UnregisteredClaims {
+        object DraftIetfOauthStatusList {
+            const val STATUS = "status"
+            const val STATUS_LIST = "status_list"
+            const val TIME_TO_LIVE = "ttl"
+        }
         object DraftIetfOauthAttestation {
             const val CHALLENGE = "challenge"
         }
