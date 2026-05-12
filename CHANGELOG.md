@@ -9,6 +9,13 @@
     * Parse `JwsHeader.attestationJwt` and `JwsHeader.keyAttestation` as `JwsCompact` instead of raw strings
     * Deprecate `JwsSigned` in favor of `JwsCompact`
     * Typed payloads remain supported via `JwsTyped`
+* Rework JWT-Payload handling
+  * Renamed `JsonWebToken` to `JwsClaims` which will only contain default attributes in the future
+    * IANA and EUDI claims are defined as constants to be implemented using Propigator
+  * JWT Payloads which build on top of the new base class:
+    * Add `KeyAttestationPayload` class which replaces `KeyAttestationJwt`
+    * Add `WalletAttestationPayload` class which extends `JwtClaims` as defined in EUDI TS3 / OID4VCI
+    * Add `ClientAttestationPayload`/`ClientAttestationPopPayload` as defined in draft-ietf-oauth-attestation-based-client-auth-08
 
 ## 3.22.0 / (Supreme unaffected)
 * Update `KeyAttestationJwt` to [EUDI Wallet TS3](https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md) from 2026-03-15
