@@ -1,4 +1,4 @@
 package at.asitplus.signum.indispensable.josef
 
-class KeyAttestationJwt {
+class KeyStorageStatus {
 }
