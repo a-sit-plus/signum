@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
 @Suppress("unused")
-@Deprecated("Renamed to better reflect content", ReplaceWith("JsonWebTokenBody"))
+@Deprecated("Renamed to better reflect content", ReplaceWith("JwtClaims"))
 typealias JsonWebToken = JwtClaims
 
 /**
@@ -209,6 +209,11 @@ data class JwtClaims(
         object OID4VCI {
             const val WALLET_NAME = "wallet_name"
             const val WALLET_LINK = "wallet_link"
+            const val ATTESTED_KEYS = "attested_keys"
+            const val KEY_STORAGE = "key_storage"
+            const val USER_AUTHENTICATION = "user_authentication"
+            const val CERTIFICATION = "certification"
+
         }
         object EudiTs3WuaClaims {
             const val WALLET_VERSION = "wallet_version"

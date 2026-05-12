@@ -425,7 +425,7 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.decodedPublicKey?.getOrNull()
     }
 
-    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
+    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwtPayload>? by lazy {
         keyAttestation?.typed()
     }
 
