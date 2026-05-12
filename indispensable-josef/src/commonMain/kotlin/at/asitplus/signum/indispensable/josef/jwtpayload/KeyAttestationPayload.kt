@@ -18,13 +18,11 @@ data class KeyAttestationPayload(
 
     val jwtClaims: JwtClaims by jsonSlice()
     val keyAttestationClaims: KeyAttestationClaims by jsonSlice()
-    val nonce: String? by nullableJsonProperty<String>(
-        JwtClaims.IanaRegistered.ClaimNames.OpenIdConnectCore.NONCE,
-        NullWriteMode.REMOVE_KEY
-    )
+
 
     override fun validate() {
         jwtClaims
+        jwtClaims.issuedAt!!
         keyAttestationClaims
     }
 

@@ -33,14 +33,19 @@ data class KeyAttestationClaims(
 
     /**
      * Optional. A String that contains a URL that links to the certification of the key storage component.
+     * EUDI TS3 REQUIRED
      */
     @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.CERTIFICATION)
-    val certification: String? = null,
+    val certification: String,
 
     /**
-     * EUDI TS3 WUA 1.5: status list reference for the attested key storage and the time until which the Wallet
+     * EUDI TS3 WUA 1.5: REQUIRED.
+     * status list reference for the attested key storage and the time until which the Wallet
      * Provider commits to maintaining the referenced status.
      */
     @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.KEY_STORAGE_STATUS)
-    val keyStorageStatus: KeyStorageStatus? = null,
+    val keyStorageStatus: KeyStorageStatus,
+
+    @SerialName(JwtClaims.IanaRegistered.ClaimNames.OpenIdConnectCore.NONCE)
+    val nonce: String? = null,
 )
