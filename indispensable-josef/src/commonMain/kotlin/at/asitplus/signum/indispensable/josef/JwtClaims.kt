@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.ConfirmationClaim
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -11,7 +12,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
 @Suppress("unused")
-@Deprecated("Renamed to better reflect content", ReplaceWith("JwtClaims"))
+@Deprecated("Renamed to better reflect content", ReplaceWith("jwtpayload"))
 typealias JsonWebToken = JwtClaims
 
 /**

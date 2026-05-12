@@ -1,16 +1,18 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.WalletAttestationJwtPayload
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 
 val WalletAttestationJwtTest by testSuite {
 
     // https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
-    "Wallet Instance Attestation"  {
+    "Wallet Instance Attestation" {
         val input = """
             {
               "sub": "https://client.example.com",
@@ -41,16 +43,16 @@ val WalletAttestationJwtTest by testSuite {
             }
         """.trimIndent()
 
-        val parsed: JwtClaims = Json.decodeFromString(input)
+        val parsed: WalletAttestationJwtPayload = joseCompliantSerializer.decodeFromString(input)
 
-        parsed.issuer.shouldBeNull()
-        parsed.walletName shouldBe "Wallet Solution X by Wonderland State Department"
-        parsed.walletVersion shouldBe "1.2.3"
-        parsed.walletLink shouldBe "https://example.com/wallet/detail_info.html"
-        parsed.walletSolutionCertificationInformation shouldBe "https://example.com/wallet/certification.html"
-        parsed.clientStatus.shouldNotBeNull()
-        parsed.confirmationClaim.shouldNotBeNull()
+        parsed.jwtClaims.issuer.shouldBeNull()
+        parsed.walletAttestationClaims.walletName shouldBe "Wallet Solution X by Wonderland State Department"
+        parsed.walletAttestationClaims.walletVersion shouldBe "1.2.3"
+        parsed.walletAttestationClaims.walletLink shouldBe "https://example.com/wallet/detail_info.html"
+        parsed.walletAttestationClaims.walletSolutionCertificationInformation shouldBe "https://example.com/wallet/certification.html"
+        parsed.walletAttestationClaims.clientStatus.shouldNotBeNull()
+        parsed.walletAttestationClaims.confirmationClaim.shouldNotBeNull()
 
-        Json.decodeFromString<JwtClaims>(Json.encodeToString(parsed)) shouldBe parsed
+        Json.decodeFromString<WalletAttestationJwtPayload>(Json.encodeToString(parsed)) shouldBe parsed
     }
 }
