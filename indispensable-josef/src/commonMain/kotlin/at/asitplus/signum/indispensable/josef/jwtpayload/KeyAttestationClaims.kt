@@ -12,7 +12,7 @@ data class KeyAttestationClaims(
     /**
      * Array of attested keys from the same key storage component using the syntax of JWK as defined in RFC7517.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.ATTESTED_KEYS)
+    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.ATTESTED_KEYS)
     val attestedKeys: Collection<JsonWebKey>,
 
     /**
@@ -20,7 +20,7 @@ data class KeyAttestationClaims(
      * component and its keys attested in the attested_keys parameter. This specification defines initial values in
      * Appendix D.2.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.KEY_STORAGE)
+    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.KEY_STORAGE)
     val keyStorage: Collection<String>? = null,
 
     /**
@@ -28,19 +28,19 @@ data class KeyAttestationClaims(
      * methods allowed to access the private keys from the [attestedKeys] parameter.
      * This specification defines initial values in Appendix D.2.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.USER_AUTHENTICATION)
+    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.USER_AUTHENTICATION)
     val userAuthentication: Collection<String>? = null,
 
     /**
      * Optional. A String that contains a URL that links to the certification of the key storage component.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.CERTIFICATION)
+    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.CERTIFICATION)
     val certification: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: status list reference for the attested key storage and the time until which the Wallet
      * Provider commits to maintaining the referenced status.
      */
-    @SerialName("key_storage_status")
+    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.KEY_STORAGE_STATUS)
     val keyStorageStatus: KeyStorageStatus? = null,
 )

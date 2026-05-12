@@ -207,19 +207,17 @@ data class JwtClaims(
      * The values of the constants are the official [SerialName]s.
      */
     object UnregisteredClaims {
-        object OID4VCI {
+        object EudiTs3Claims {
+            const val WALLET_VERSION = "wallet_version"
+            const val WALLET_SOLUTION_CERTIFICATION_INFORMATION = "wallet_solution_certification_information"
+            const val CLIENT_STATUS = "client_status"
             const val WALLET_NAME = "wallet_name"
             const val WALLET_LINK = "wallet_link"
             const val ATTESTED_KEYS = "attested_keys"
             const val KEY_STORAGE = "key_storage"
+            const val KEY_STORAGE_STATUS = "key_storage_status"
             const val USER_AUTHENTICATION = "user_authentication"
             const val CERTIFICATION = "certification"
-
-        }
-        object EudiTs3WuaClaims {
-            const val WALLET_VERSION = "wallet_version"
-            const val WALLET_SOLUTION_CERTIFICATION_INFORMATION = "wallet_solution_certification_information"
-            const val CLIENT_STATUS = "client_status"
         }
     }
     /**

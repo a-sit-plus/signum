@@ -23,31 +23,31 @@ data class WalletAttestationClaims(
     /**
      * OID4VCI: OPTIONAL. String containing a human-readable name of the Wallet.
      */
-    @SerialName(UnregisteredClaims.OID4VCI.WALLET_NAME)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.WALLET_NAME)
     val walletName: String? = null,
 
     /**
      * OID4VCI: OPTIONAL. String containing a URL to get further information about the Wallet and the Wallet Provider.
      */
-    @SerialName(UnregisteredClaims.OID4VCI.WALLET_LINK)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.WALLET_LINK)
     val walletLink: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: version of the Wallet Solution.
      */
-    @SerialName(UnregisteredClaims.EudiTs3WuaClaims.WALLET_VERSION)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.WALLET_VERSION)
     val walletVersion: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: information about the certification achieved by the Wallet Solution.
      */
-    @SerialName(UnregisteredClaims.EudiTs3WuaClaims.WALLET_SOLUTION_CERTIFICATION_INFORMATION)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.WALLET_SOLUTION_CERTIFICATION_INFORMATION)
     val walletSolutionCertificationInformation: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: status list reference for the Wallet Instance and the time until which the Wallet Provider
      * commits to maintaining the referenced status.
      */
-    @SerialName(UnregisteredClaims.EudiTs3WuaClaims.CLIENT_STATUS)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.CLIENT_STATUS)
     val clientStatus: ClientStatus? = null,
 )
