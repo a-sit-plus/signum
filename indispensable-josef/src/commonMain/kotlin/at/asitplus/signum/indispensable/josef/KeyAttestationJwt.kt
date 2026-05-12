@@ -1,17 +1,85 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
+import at.asitplus.propigator.common.NullWriteMode
+import at.asitplus.propigator.common.ObjectBackedValidated
+import at.asitplus.propigator.json.JsonBackingCodec
+import at.asitplus.propigator.json.JsonObjectBacked
+import at.asitplus.propigator.json.JsonObjectBackedSerializer
+import at.asitplus.propigator.json.jsonProperty
+import at.asitplus.propigator.json.jsonSlice
+import at.asitplus.propigator.json.nullableJsonProperty
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
+
+@Serializable(with = KeyAttestationJwtPayload.Serializer::class)
+data class KeyAttestationJwtPayload(
+    private val raw: JsonObject,
+    private val json: Json = joseCompliantSerializer,
+) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
+
+    val jsonWebToken: JwtClaims by jsonSlice()
+    val keyAttestationClaims: KeyAttestationClaims by jsonSlice()
+    val nonce: String? by nullableJsonProperty<String>(JwtClaims.IanaRegistered.ClaimNames.OpenIdConnectCore.NONCE, NullWriteMode.REMOVE_KEY)
+
+    override fun validate() {
+        jsonWebToken
+        jsonWebToken.issuedAt != null
+        keyAttestationClaims
+    }
+
+    object Serializer : KSerializer<KeyAttestationJwtPayload> by JsonObjectBackedSerializer(::KeyAttestationJwtPayload)
+}
+
+@Serializable
+data class KeyAttestationClaims(
+    /**
+     * Array of attested keys from the same key storage component using the syntax of JWK as defined in RFC7517.
+     */
+    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.ATTESTED_KEYS)
+    val attestedKeys: Collection<JsonWebKey>,
+
+    /**
+     * Optional. Array of case-sensitive strings that assert the attack potential resistance of the key storage
+     * component and its keys attested in the attested_keys parameter. This specification defines initial values in
+     * Appendix D.2.
+     */
+    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.KEY_STORAGE)
+    val keyStorage: Collection<String>? = null,
+
+    /**
+     * Optional. Array of case-sensitive strings that assert the attack potential resistance of the user authentication
+     * methods allowed to access the private keys from the [attestedKeys] parameter.
+     * This specification defines initial values in Appendix D.2.
+     */
+    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.USER_AUTHENTICATION)
+    val userAuthentication: Collection<String>? = null,
+
+    /**
+     * Optional. A String that contains a URL that links to the certification of the key storage component.
+     */
+    @SerialName(JwtClaims.UnregisteredClaims.OID4VCI.CERTIFICATION)
+    val certification: String? = null,
+
+    /**
+     * EUDI TS3 WUA 1.5: status list reference for the attested key storage and the time until which the Wallet
+     * Provider commits to maintaining the referenced status.
+     */
+    @SerialName("key_storage_status")
+    val keyStorageStatus: KeyStorageStatus? = null,
+)
 
 /**
  * Content of a Key Attestation in JWT format, according to
  * [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#keyattestation-jwt)
  */
+@Deprecated("Replaced", replaceWith = ReplaceWith("KeyAttestationJwtPayload"))
 @Serializable
 data class KeyAttestationJwt(
     @SerialName("iss")
