@@ -6,7 +6,7 @@ import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
@@ -176,10 +176,10 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
     }
 
 /**
- * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
+ * Converts this [Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
+suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
@@ -188,14 +188,14 @@ suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X50
 /**
  * blocking implementation of [toJcaCertificate]
  */
-fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
     runBlocking { toJcaCertificate() }
 
 /**
- * Converts this [java.security.cert.X509Certificate] to an [X509Certificate]
+ * Converts this [java.security.cert.X509Certificate] to an [Certificate]
  */
 fun java.security.cert.X509Certificate.toKmpCertificate() =
-    catching { X509Certificate.decodeFromDer(encoded) }
+    catching { Certificate.decodeFromDer(encoded) }
 
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())

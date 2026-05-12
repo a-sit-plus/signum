@@ -5,10 +5,9 @@ import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.IosPublicKeySerializer
 import at.asitplus.signum.indispensable.io.X509CertificateBase64UrlSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonClassDiscriminator
 
@@ -25,7 +24,7 @@ sealed interface Attestation {
 data class SelfAttestation (
     @Serializable(with=X509CertificateBase64UrlSerializer::class)
     @SerialName("x5c")
-    val certificate: X509Certificate) : Attestation
+    val certificate: Certificate) : Attestation
 
 @Serializable
 @SerialName("android-key")

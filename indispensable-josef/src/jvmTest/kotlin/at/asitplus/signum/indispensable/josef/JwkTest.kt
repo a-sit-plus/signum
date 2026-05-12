@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -29,9 +29,6 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val JwkTest  by matrixSuite {
     "EC" - {
@@ -141,7 +138,7 @@ val JwkTest  by matrixSuite {
     }
 
     "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
-        val key = randomCertificate().decodedPublicKey.getOrThrow().toJsonWebKey()
+        val key = randomCertificate().publicKey.toJsonWebKey()
         key.keyId shouldBe null
         val cpk = key.toCryptoPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null
@@ -152,7 +149,7 @@ val JwkTest  by matrixSuite {
     }
 }
 
-private fun randomCertificate() = X509Certificate(
+private fun randomCertificate() = Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
@@ -160,8 +157,8 @@ private fun randomCertificate() = X509Certificate(
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
         signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256,
         subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
-        validFrom = Asn1Time(Clock.System.now()),
-        validUntil = Asn1Time(Clock.System.now()),
+        validFrom = (Clock.System.now()),
+        validUntil = (Clock.System.now()),
     ),
     CryptoSignature.EC.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),

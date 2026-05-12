@@ -3,20 +3,15 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.signum.indispensable.encodeToPem
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.withClue
-import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldBeIn
-import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.io.UnsafeIoApi
 import java.io.File
-import kotlin.time.Duration.Companion.minutes
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldThrowAny
 
 @OptIn(UnsafeIoApi::class)
@@ -27,7 +22,7 @@ val X509SignatureAlgorithmTest by matrixSuite {
     compact("OK certs with DSA signature algorithms, should parse") - {
         data(certsUnsupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = X509Certificate.decodeFromTlv(src)
+            val decoded = Certificate.decodeFromTlv(src)
 
             shouldThrowAny {
 
@@ -44,7 +39,7 @@ val X509SignatureAlgorithmTest by matrixSuite {
     compact("OK certs with supported signature algorithms") - {
         data(certsSupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = X509Certificate.decodeFromTlv(src)
+            val decoded = Certificate.decodeFromTlv(src)
             decoded.signatureAlgorithm shouldBeIn SignatureAlgorithm.entries.toList()
             shouldNotThrow<Throwable> { decoded.signature.toString() }
         }

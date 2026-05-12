@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
@@ -110,7 +110,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
             }.let { pair ->
-                AndroidEphemeralKey.RSA(pair, alg.digests, alg.parameters)
+                AndroidEphemeralKey.RSA(pair, alg.digests, alg.paddings)
             }
         }
     }

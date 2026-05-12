@@ -5,6 +5,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
+import at.asitplus.signum.indispensable.pki.Certificate
+import de.infix.testBalloon.framework.core.testSuite
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -27,7 +29,7 @@ val PemTest  by matrixSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val cert = X509Certificate.decodeFromPem(pemEC)
+        val cert = Certificate.decodeFromPem(pemEC)
         cert.encodeToPem() shouldBe pemEC
         val pemRSA = """
             -----BEGIN CERTIFICATE-----
@@ -63,7 +65,7 @@ val PemTest  by matrixSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val certRSA = X509Certificate.decodeFromPem(pemRSA)
+        val certRSA = Certificate.decodeFromPem(pemRSA)
         certRSA.encodeToPem() shouldBe pemRSA
     }
 
