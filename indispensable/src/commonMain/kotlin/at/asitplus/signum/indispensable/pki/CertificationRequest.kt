@@ -169,7 +169,7 @@ class CertificationRequest private constructor(
         signature: CryptoSignature,
     ) : this(CertificationRequestContent(tbsCsr, signatureAlgorithm, signature), null)
 
-    constructor(asn1Representation: Pkcs10CertificationRequest) : this(null, asn1Representation)
+    constructor(asn1Representation: Pkcs10CertificationRequest) : this(null /*TODO EXTENSIBILITY CertificationRequestContent(asn1Representation) */, asn1Representation)
 
 
     override val asn1Representation: Pkcs10CertificationRequest by providedAsn1Representation orLazy {
