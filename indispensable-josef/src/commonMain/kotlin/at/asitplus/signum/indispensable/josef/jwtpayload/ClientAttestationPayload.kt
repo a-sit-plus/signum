@@ -27,12 +27,12 @@ data class ClientAttestationPayload(
      * independent of that issuer without the risk of an adversary impersonating the Verifier by replaying a captured
      * attestation.
      */
-    val confirmation: ConfirmationClaim by jsonProperty(JwtClaims.IanaRegistered.ClaimNames.RFC7800.CNF)
+    val confirmationClaim: ConfirmationClaim by jsonProperty(JwtClaims.IanaRegistered.ClaimNames.RFC7800.CNF)
     override fun validate() {
         jwtClaims
         jwtClaims.subject!!
         jwtClaims.expiration!!
-        confirmation
+        confirmationClaim
     }
 
     object Serializer : KSerializer<ClientAttestationPayload> by JsonObjectBackedSerializer(::ClientAttestationPayload)
