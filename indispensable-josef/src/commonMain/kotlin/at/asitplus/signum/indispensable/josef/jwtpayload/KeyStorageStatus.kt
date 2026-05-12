@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.josef
+package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import kotlinx.serialization.SerialName

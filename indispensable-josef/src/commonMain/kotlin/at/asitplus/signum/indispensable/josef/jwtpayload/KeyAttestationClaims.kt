@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.signum.indispensable.josef.JsonWebKey
 import at.asitplus.signum.indispensable.josef.JwtClaims
-import at.asitplus.signum.indispensable.josef.KeyStorageStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

@@ -22,6 +22,7 @@ data class ClientAttestationPopPayload(
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
     val jwtClaims: JwtClaims by jsonSlice()
     val challenge: String? by nullableJsonProperty(JwtClaims.UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE)
+
     override fun validate() {
         jwtClaims
         jwtClaims.audience!!
