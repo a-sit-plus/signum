@@ -56,5 +56,5 @@ data class WalletAttestationClaims(
      * attestation.
      */
     @SerialName(IanaRegistered.ClaimNames.RFC7800.CNF)
-    val confirmation: ConfirmationClaim
+    val confirmationClaim: ConfirmationClaim
 )
