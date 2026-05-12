@@ -60,7 +60,7 @@ data class JwtClaims(
     val audience: String? = null,
 
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("nonce")
+    @SerialName(IanaRegistered.ClaimNames.OpenIdConnectCore.NONCE)
     val nonce: String? = null,
 
     /**
@@ -128,7 +128,7 @@ data class JwtClaims(
      * of the request to which the JWT is attached.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("htm")
+    @SerialName(IanaRegistered.ClaimNames.RFC9449.HTM)
     val httpMethod: String? = null,
 
     /**
@@ -136,7 +136,7 @@ data class JwtClaims(
      * request to which the JWT is attached, without query and fragment parts.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("htu")
+    @SerialName(IanaRegistered.ClaimNames.RFC9449.HTU)
     val httpTargetUrl: String? = null,
 
     /**
@@ -145,35 +145,35 @@ data class JwtClaims(
      * associated access token's value.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("ath")
+    @SerialName(IanaRegistered.ClaimNames.RFC9449.ATH)
     val accessTokenHash: String? = null,
 
     /**
      * OID4VCI: OPTIONAL. String containing a human-readable name of the Wallet.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("wallet_name")
+    @SerialName(UnregisteredClaims.OID4VCI.WALLET_NAME)
     val walletName: String? = null,
 
     /**
      * OID4VCI: OPTIONAL. String containing a URL to get further information about the Wallet and the Wallet Provider.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("wallet_link")
+    @SerialName(UnregisteredClaims.OID4VCI.WALLET_LINK)
     val walletLink: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: version of the Wallet Solution.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("wallet_version")
+    @SerialName(UnregisteredClaims.EudiTs3WuaClaims.WALLET_VERSION)
     val walletVersion: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: information about the certification achieved by the Wallet Solution.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("wallet_solution_certification_information")
+    @SerialName(UnregisteredClaims.EudiTs3WuaClaims.WALLET_SOLUTION_CERTIFICATION_INFORMATION)
     val walletSolutionCertificationInformation: String? = null,
 
     /**
@@ -181,7 +181,7 @@ data class JwtClaims(
      * commits to maintaining the referenced status.
      */
     @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
-    @SerialName("client_status")
+    @SerialName(UnregisteredClaims.EudiTs3WuaClaims.CLIENT_STATUS)
     val clientStatus: ClientStatus? = null,
 
     /**
@@ -200,7 +200,24 @@ data class JwtClaims(
     val status: JsonObject? = null,
 ) {
     /**
-     * Names taken from [IANA](https://www.iana.org/assignments/jwt/jwt.xhtml) to be used in conjunction with
+     * Claims to be used in conjunction with
+     * [Propigator](https://github.com/a-sit-plus/propigator)
+     * to define type-safe extensions to [JwtClaims].
+     * The values of the constants are the official [SerialName]s.
+     */
+    object UnregisteredClaims {
+        object OID4VCI {
+            const val WALLET_NAME = "wallet_name"
+            const val WALLET_LINK = "wallet_link"
+        }
+        object EudiTs3WuaClaims {
+            const val WALLET_VERSION = "wallet_version"
+            const val WALLET_SOLUTION_CERTIFICATION_INFORMATION = "wallet_solution_certification_information"
+            const val CLIENT_STATUS = "client_status"
+        }
+    }
+    /**
+     * Claims taken from [IANA](https://www.iana.org/assignments/jwt/jwt.xhtml) to be used in conjunction with
      * [Propigator](https://github.com/a-sit-plus/propigator)
      * to define type-safe extensions to [JwtClaims].
      * The values of the constants are the official [SerialName]s.
@@ -1304,7 +1321,7 @@ data class ClientStatus(
     /**
      * NumericDate specifying how long the Wallet Provider maintains revocation status at the referenced index.
      */
-    @SerialName("exp")
+    @SerialName(JwtClaims.IanaRegistered.ClaimNames.RFC7519.EXP)
     @Serializable(with = InstantLongSerializer::class)
     val expiration: Instant,
 )
