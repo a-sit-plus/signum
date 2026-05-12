@@ -25,9 +25,9 @@ data class AlternativeNames
 @Throws(Throwable::class)
 private constructor(private val extensions: List<Asn1Element>) {
 
-    val dnsNames: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.dNSName)
-    val rfc822Names: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.rfc822Name)
-    val uris: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.uniformResourceIdentifier)
+    val dnsNames: List<String> = parseStringSANs(SubjectAltNameImplicitTags.dNSName)
+    val rfc822Names: List<String> = parseStringSANs(SubjectAltNameImplicitTags.rfc822Name)
+    val uris: List<String> = parseStringSANs(SubjectAltNameImplicitTags.uniformResourceIdentifier)
 
     val ipAddresses: List<ByteArray> = extensions.filter { it.tag == SubjectAltNameImplicitTags.iPAddress }.apply {
         forEach {
@@ -111,17 +111,17 @@ private constructor(private val extensions: List<Asn1Element>) {
 
     companion object {
         @Throws(Asn1Exception::class)
-        fun List<X509CertificateExtension>.findSubjectAltNames() = runRethrowing {
+        fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {
             find(KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
         }
 
         @Throws(Asn1Exception::class)
-        fun List<X509CertificateExtension>.findIssuerAltNames() = runRethrowing {
+        fun List<CertificateExtension>.findIssuerAltNames() = runRethrowing {
             find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
         }
 
         /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/
-        private fun List<X509CertificateExtension>.find(oid: ObjectIdentifier): List<Asn1Element>? {
+        private fun List<CertificateExtension>.find(oid: ObjectIdentifier): List<Asn1Element>? {
             val matches = filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null

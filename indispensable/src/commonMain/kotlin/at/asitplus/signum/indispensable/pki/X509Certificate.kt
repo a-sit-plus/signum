@@ -37,7 +37,7 @@ private data class TbsCertificateContent(
     val subjectPublicKeyInfo: SubjectPublicKeyInfo,
     val issuerUniqueID: Asn1BitString?,
     val subjectUniqueID: Asn1BitString?,
-    val extensions: List<X509CertificateExtension>,
+    val extensions: List<CertificateExtension>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -94,7 +94,7 @@ class TbsCertificate private constructor(
         rawPublicKey: Asn1Sequence,
         issuerUniqueID: Asn1BitString? = null,
         subjectUniqueID: Asn1BitString? = null,
-        extensions: List<X509CertificateExtension> = emptyList(),
+        extensions: List<CertificateExtension> = emptyList(),
     ) : this(
         null,
         TbsCertificateContent(
@@ -126,7 +126,7 @@ class TbsCertificate private constructor(
         publicKey: CryptoPublicKey,
         issuerUniqueID: Asn1BitString? = null,
         subjectUniqueID: Asn1BitString? = null,
-        extensions: List<X509CertificateExtension> = emptyList(),
+        extensions: List<CertificateExtension> = emptyList(),
     ) : this(
         null,
         TbsCertificateContent(
@@ -160,7 +160,7 @@ class TbsCertificate private constructor(
             subjectPublicKeyInfo = content.subjectPublicKeyInfo,
             issuerUniqueID = content.issuerUniqueID,
             subjectUniqueID = content.subjectUniqueID,
-            extensions = content.extensions.map(X509CertificateExtension::toAwesn1Extension),
+            extensions = content.extensions.map(CertificateExtension::toAwesn1Extension),
         )
     }
 
@@ -205,7 +205,7 @@ class TbsCertificate private constructor(
 
     val subjectUniqueID: Asn1BitString? get() = content.subjectUniqueID
 
-    val extensions: List<X509CertificateExtension> get() = content.extensions
+    val extensions: List<CertificateExtension> get() = content.extensions
 
     val decodedPublicKey: KmmResult<CryptoPublicKey> by lazy {
         catching { CryptoPublicKey.fromSubjectPublicKeyInfo(subjectPublicKeyInfo) }
@@ -423,21 +423,21 @@ typealias CertificateChain = List<X509Certificate>
 val CertificateChain.leaf: X509Certificate get() = first()
 val CertificateChain.root: X509Certificate get() = last()
 
-private fun validateExtensions(extensions: List<X509CertificateExtension>) {
+private fun validateExtensions(extensions: List<CertificateExtension>) {
     if (extensions.distinctBy { it.oid }.size != extensions.size) {
         throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
 }
 
-private fun X509CertificateExtension.toAwesn1Extension(): Awesn1X509CertificateExtension =
+private fun CertificateExtension.toAwesn1Extension(): Awesn1X509CertificateExtension =
     Awesn1X509CertificateExtension(
         oid = oid,
         critical = critical.takeIf { it },
         value = value.asOctetString().content,
     )
 
-private fun Awesn1X509CertificateExtension.toSignumExtension(): X509CertificateExtension =
-    X509CertificateExtension(
+private fun Awesn1X509CertificateExtension.toSignumExtension(): CertificateExtension =
+    CertificateExtension(
         oid = oid,
         critical = critical ?: false,
         value = Asn1PrimitiveOctetString(value),

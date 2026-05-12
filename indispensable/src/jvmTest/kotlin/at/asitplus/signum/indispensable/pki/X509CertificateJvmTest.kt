@@ -363,27 +363,27 @@ val X509CertificateJvmTest by testSuite {
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
-        val ext1 = X509CertificateExtension(
+        val ext1 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = true
         )
-        val ext2 = X509CertificateExtension(
+        val ext2 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = true
         )
-        val ext3 = X509CertificateExtension(
+        val ext3 = CertificateExtension(
             KnownOIDs.extKeyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
             critical = true
         )
-        val ext4 = X509CertificateExtension(
+        val ext4 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
             critical = true
         )
-        val ext5 = X509CertificateExtension(
+        val ext5 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = false
