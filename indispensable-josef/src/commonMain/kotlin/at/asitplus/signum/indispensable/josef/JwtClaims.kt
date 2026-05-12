@@ -207,6 +207,9 @@ data class JwtClaims(
      * The values of the constants are the official [SerialName]s.
      */
     object UnregisteredClaims {
+        object DraftIetfOauthAttestation {
+            const val CHALLENGE = "challenge"
+        }
         object EudiTs3Claims {
             const val WALLET_VERSION = "wallet_version"
             const val WALLET_SOLUTION_CERTIFICATION_INFORMATION = "wallet_solution_certification_information"

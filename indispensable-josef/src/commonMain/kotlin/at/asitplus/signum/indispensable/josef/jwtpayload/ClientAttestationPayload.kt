@@ -22,7 +22,6 @@ data class ClientAttestationPayload(
     val confirmation: ConfirmationClaim by jsonProperty(JwtClaims.IanaRegistered.ClaimNames.RFC7800.CNF)
     override fun validate() {
         jwtClaims
-        jwtClaims.issuer!!
         jwtClaims.subject!!
         jwtClaims.expiration!!
         confirmation

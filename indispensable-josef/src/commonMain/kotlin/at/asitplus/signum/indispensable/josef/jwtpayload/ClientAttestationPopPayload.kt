@@ -6,6 +6,7 @@ import at.asitplus.propigator.json.JsonObjectBacked
 import at.asitplus.propigator.json.JsonObjectBackedSerializer
 import at.asitplus.propigator.json.jsonProperty
 import at.asitplus.propigator.json.jsonSlice
+import at.asitplus.propigator.json.nullableJsonProperty
 import at.asitplus.signum.indispensable.josef.JwtClaims
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
@@ -20,14 +21,13 @@ data class ClientAttestationPopPayload(
     private val json: Json = joseCompliantSerializer,
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
     val jwtClaims: JwtClaims by jsonSlice()
-    val confirmation: ConfirmationClaim by jsonProperty(JwtClaims.IanaRegistered.ClaimNames.RFC7800.CNF)
+    val challenge: String? by nullableJsonProperty(JwtClaims.UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE)
     override fun validate() {
         jwtClaims
-        jwtClaims.issuer!!
         jwtClaims.audience!!
         jwtClaims.jwtId!!
         jwtClaims.issuedAt!!
-        confirmation
+        challenge
     }
 
     object Serializer : KSerializer<ClientAttestationPopPayload> by JsonObjectBackedSerializer(::ClientAttestationPopPayload)
