@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.jwtpayload.WalletAttestationJwtPayload
+import at.asitplus.signum.indispensable.josef.jwtpayload.WalletAttestationPayload
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.nulls.shouldBeNull
@@ -43,7 +43,7 @@ val WalletAttestationJwtTest by testSuite {
             }
         """.trimIndent()
 
-        val parsed: WalletAttestationJwtPayload = joseCompliantSerializer.decodeFromString(input)
+        val parsed: WalletAttestationPayload = joseCompliantSerializer.decodeFromString(input)
 
         parsed.jwtClaims.issuer.shouldBeNull()
         parsed.walletAttestationClaims.walletName shouldBe "Wallet Solution X by Wonderland State Department"
@@ -53,6 +53,6 @@ val WalletAttestationJwtTest by testSuite {
         parsed.walletAttestationClaims.clientStatus.shouldNotBeNull()
         parsed.walletAttestationClaims.confirmationClaim.shouldNotBeNull()
 
-        joseCompliantSerializer.decodeFromString<WalletAttestationJwtPayload>(Json.encodeToString(parsed)) shouldBe parsed
+        joseCompliantSerializer.decodeFromString<WalletAttestationPayload>(Json.encodeToString(parsed)) shouldBe parsed
     }
 }

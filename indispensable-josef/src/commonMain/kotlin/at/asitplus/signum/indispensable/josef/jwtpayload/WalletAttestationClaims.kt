@@ -6,7 +6,10 @@ import at.asitplus.signum.indispensable.josef.JwtClaims.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
+/**
+ * Wallet Instance Attestation (WIA) as defined by
+ * [EUDI TS3](https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md)
+ */
 @Serializable
 data class WalletAttestationClaims(
     /**
