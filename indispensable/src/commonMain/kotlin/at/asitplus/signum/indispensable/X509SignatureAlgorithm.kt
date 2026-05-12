@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable
 /*
+
+Makes no Sense to have this as a discrete file any more, because now signaturealsogirhm is optionally asn1-backed
+
 import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration

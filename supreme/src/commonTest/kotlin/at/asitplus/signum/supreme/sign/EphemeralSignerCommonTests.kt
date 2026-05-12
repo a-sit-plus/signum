@@ -256,7 +256,7 @@ val EphemeralSignerCommonTests  by matrixSuite {
                     subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
-                        X509CertificateExtension(
+                        CertificateExtension(
                             KnownOIDs.pkcs_12_OID,
                             critical = true,
                             Asn1OctetString(byteArrayOf())
@@ -308,7 +308,7 @@ val EphemeralSignerCommonTests  by matrixSuite {
                     subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
-                        X509CertificateExtension(
+                        CertificateExtension(
                             KnownOIDs.pkcs_12_OID,
                             critical = true,
                             Asn1PrimitiveOctetString(byteArrayOf())

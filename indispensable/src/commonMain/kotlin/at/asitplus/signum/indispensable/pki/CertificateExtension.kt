@@ -9,7 +9,7 @@ import at.asitplus.awesn1.encoding.decodeToBoolean
  * X.509 Certificate Extension
  */
 @ConsistentCopyVisibility
-data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
+data class CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
     val critical: Boolean, //TODO replace this mess with the two properties a nullable Boolean, such that:
@@ -43,10 +43,10 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         +value
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
+    companion object : Asn1Decodable<Asn1Sequence, CertificateExtension> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
+        override fun doDecode(src: Asn1Sequence): CertificateExtension = src.decodeRethrowing {
 
             val id = next().asPrimitive().readOid()
             val crit = peek()!!
@@ -58,7 +58,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
             }
 
             val value = next()
-            X509CertificateExtension(id, value, critical, cursed)
+            CertificateExtension(id, value, critical, cursed)
         }
 
     }
@@ -68,7 +68,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         if (other == null) return false
         if (this::class != other::class) return false
 
-        other as X509CertificateExtension
+        other as CertificateExtension
 
         if (oid != other.oid) return false
         if (critical != other.critical) return false
