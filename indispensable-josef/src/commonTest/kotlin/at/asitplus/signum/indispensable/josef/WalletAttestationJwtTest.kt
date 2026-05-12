@@ -41,7 +41,7 @@ val WalletAttestationJwtTest by matrixSuite {
             }
         """.trimIndent()
 
-        val parsed: WalletAttestationJwtPayload = joseCompliantSerializer.decodeFromString(input)
+        val parsed: WalletAttestationPayload = joseCompliantSerializer.decodeFromString(input)
 
         parsed.jwtClaims.issuer.shouldBeNull()
         parsed.walletAttestationClaims.walletName shouldBe "Wallet Solution X by Wonderland State Department"
@@ -51,6 +51,6 @@ val WalletAttestationJwtTest by matrixSuite {
         parsed.walletAttestationClaims.clientStatus.shouldNotBeNull()
         parsed.walletAttestationClaims.confirmationClaim.shouldNotBeNull()
 
-        joseCompliantSerializer.decodeFromString<WalletAttestationJwtPayload>(Json.encodeToString(parsed)) shouldBe parsed
+        joseCompliantSerializer.decodeFromString<WalletAttestationPayload>(Json.encodeToString(parsed)) shouldBe parsed
     }
 }

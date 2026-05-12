@@ -10,8 +10,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-@Serializable(with = KeyAttestationJwtPayload.Serializer::class)
-data class KeyAttestationJwtPayload(
+@Serializable(with = KeyAttestationPayload.Serializer::class)
+data class KeyAttestationPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
@@ -28,6 +28,6 @@ data class KeyAttestationJwtPayload(
         keyAttestationClaims
     }
 
-    object Serializer : KSerializer<KeyAttestationJwtPayload> by JsonObjectBackedSerializer(::KeyAttestationJwtPayload)
+    object Serializer : KSerializer<KeyAttestationPayload> by JsonObjectBackedSerializer(::KeyAttestationPayload)
 }
 

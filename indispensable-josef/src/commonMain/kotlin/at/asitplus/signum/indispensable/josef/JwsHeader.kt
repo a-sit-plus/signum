@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.jwtpayload.KeyAttestationJwtPayload
+import at.asitplus.signum.indispensable.josef.jwtpayload.KeyAttestationPayload
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlinx.serialization.SerialName
@@ -426,7 +426,7 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.decodedPublicKey?.getOrNull()
     }
 
-    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwtPayload>? by lazy {
+    val keyAttestationParsed: JwsCompactTyped<KeyAttestationPayload>? by lazy {
         keyAttestation?.typed()
     }
 
