@@ -8,13 +8,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 /**
  * Structure to declare posession of a particular proof-of-possesion key,
- * to be included in [JsonWebToken.confirmationClaim]
+ * to be included in [JwtClaims.confirmationClaim]
  *
  * See [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800)
  */

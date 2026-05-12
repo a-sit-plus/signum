@@ -4,7 +4,6 @@ import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 val WalletAttestationJwtTest by matrixSuite {
@@ -41,7 +40,7 @@ val WalletAttestationJwtTest by matrixSuite {
             }
         """.trimIndent()
 
-        val parsed: JsonWebToken = Json.decodeFromString(input)
+        val parsed: JwtClaims = Json.decodeFromString(input)
 
         parsed.issuer.shouldBeNull()
         parsed.walletName shouldBe "Wallet Solution X by Wonderland State Department"
@@ -51,6 +50,6 @@ val WalletAttestationJwtTest by matrixSuite {
         parsed.clientStatus.shouldNotBeNull()
         parsed.confirmationClaim.shouldNotBeNull()
 
-        Json.decodeFromString<JsonWebToken>(Json.encodeToString(parsed)) shouldBe parsed
+        Json.decodeFromString<JwtClaims>(Json.encodeToString(parsed)) shouldBe parsed
     }
 }
