@@ -53,6 +53,6 @@ val WalletAttestationJwtTest by testSuite {
         parsed.walletAttestationClaims.clientStatus.shouldNotBeNull()
         parsed.walletAttestationClaims.confirmationClaim.shouldNotBeNull()
 
-        Json.decodeFromString<WalletAttestationJwtPayload>(Json.encodeToString(parsed)) shouldBe parsed
+        joseCompliantSerializer.decodeFromString<WalletAttestationJwtPayload>(Json.encodeToString(parsed)) shouldBe parsed
     }
 }
