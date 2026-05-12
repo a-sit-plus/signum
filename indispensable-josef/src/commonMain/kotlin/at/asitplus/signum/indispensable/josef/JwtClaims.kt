@@ -15,8 +15,7 @@ import kotlin.time.Instant
 typealias JsonWebToken = JwtClaims
 
 /**
- * Content of a JWT (JsonWebToken), with many optional keys,
- * since no claim is strongly required.
+ * Base-Claims defined in RFC7519
  *
  * See [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)
  */
@@ -29,7 +28,7 @@ data class JwtClaims(
      * The "iss" value is a case-sensitive string containing a StringOrURI
      * value.  Use of this claim is OPTIONAL.
      */
-    @SerialName("iss")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.ISS)
     val issuer: String? = null,
 
     /**
@@ -41,7 +40,7 @@ data class JwtClaims(
      * "sub" value is a case-sensitive string containing a StringOrURI
      * value.  Use of this claim is OPTIONAL.
      */
-    @SerialName("sub")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.SUB)
     val subject: String? = null,
 
     /**
@@ -57,9 +56,10 @@ data class JwtClaims(
      * interpretation of audience values is generally application specific.
      * Use of this claim is OPTIONAL.
      */
-    @SerialName("aud")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.AUD)
     val audience: String? = null,
 
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("nonce")
     val nonce: String? = null,
 
@@ -72,7 +72,7 @@ data class JwtClaims(
      * account for clock skew.  Its value MUST be a number containing a
      * NumericDate value.  Use of this claim is OPTIONAL.
      */
-    @SerialName("nbf")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.NBF)
     @Serializable(with = InstantLongSerializer::class)
     val notBefore: Instant? = null,
 
@@ -82,7 +82,7 @@ data class JwtClaims(
      * value MUST be a number containing a NumericDate value.  Use of this
      * claim is OPTIONAL.
      */
-    @SerialName("iat")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.IAT)
     @Serializable(with = InstantLongSerializer::class)
     val issuedAt: Instant? = null,
 
@@ -95,7 +95,7 @@ data class JwtClaims(
      * a few minutes, to account for clock skew.  Its value MUST be a number
      * containing a NumericDate value.  Use of this claim is OPTIONAL.
      */
-    @SerialName("exp")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.EXP)
     @Serializable(with = InstantLongSerializer::class)
     val expiration: Instant? = null,
 
@@ -108,7 +108,7 @@ data class JwtClaims(
      * produced by different issuers as well.  The "jti" claim can be used
      * to prevent the JWT from being replayed.  The "jti" value is a case-sensitive string.  Use of this claim is OPTIONAL.
      */
-    @SerialName("jti")
+    @SerialName(IanaRegistered.ClaimNames.RFC7519.JTI)
     val jwtId: String? = null,
 
     /**
@@ -119,13 +119,15 @@ data class JwtClaims(
      * independent of that issuer without the risk of an adversary impersonating the Verifier by replaying a captured
      * attestation.
      */
-    @SerialName("cnf")
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
+    @SerialName(IanaRegistered.ClaimNames.RFC7800.CNF)
     val confirmationClaim: ConfirmationClaim? = null,
 
     /**
      * RFC 9449: The value of the HTTP method (Section 9.1 of [RFC9110](https://datatracker.ietf.org/doc/html/rfc9110))
      * of the request to which the JWT is attached.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("htm")
     val httpMethod: String? = null,
 
@@ -133,6 +135,7 @@ data class JwtClaims(
      * RFC 9449: The HTTP target URI (Section 7.1 of [RFC9110](https://datatracker.ietf.org/doc/html/rfc9110)) of the
      * request to which the JWT is attached, without query and fragment parts.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("htu")
     val httpTargetUrl: String? = null,
 
@@ -141,30 +144,35 @@ data class JwtClaims(
      * 2 of [RFC7515](https://datatracker.ietf.org/doc/html/rfc7515)) the SHA-256 hash of the ASCII encoding of the
      * associated access token's value.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("ath")
     val accessTokenHash: String? = null,
 
     /**
      * OID4VCI: OPTIONAL. String containing a human-readable name of the Wallet.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("wallet_name")
     val walletName: String? = null,
 
     /**
      * OID4VCI: OPTIONAL. String containing a URL to get further information about the Wallet and the Wallet Provider.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("wallet_link")
     val walletLink: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: version of the Wallet Solution.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("wallet_version")
     val walletVersion: String? = null,
 
     /**
      * EUDI TS3 WUA 1.5: information about the certification achieved by the Wallet Solution.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("wallet_solution_certification_information")
     val walletSolutionCertificationInformation: String? = null,
 
@@ -172,6 +180,7 @@ data class JwtClaims(
      * EUDI TS3 WUA 1.5: status list reference for the Wallet Instance and the time until which the Wallet Provider
      * commits to maintaining the referenced status.
      */
+    @Deprecated("Will be removed in the future. Please use specialized JWT-Claims class instead!", level = DeprecationLevel.WARNING)
     @SerialName("client_status")
     val clientStatus: ClientStatus? = null,
 
@@ -190,62 +199,6 @@ data class JwtClaims(
     @SerialName("status")
     val status: JsonObject? = null,
 ) {
-
-
-    @Suppress("DEPRECATION")
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as JwtClaims
-
-        if (issuer != other.issuer) return false
-        if (subject != other.subject) return false
-        if (audience != other.audience) return false
-        if (nonce != other.nonce) return false
-        if (notBefore != other.notBefore) return false
-        if (issuedAt != other.issuedAt) return false
-        if (expiration != other.expiration) return false
-        if (jwtId != other.jwtId) return false
-        if (confirmationClaim != other.confirmationClaim) return false
-        if (httpMethod != other.httpMethod) return false
-        if (httpTargetUrl != other.httpTargetUrl) return false
-        if (accessTokenHash != other.accessTokenHash) return false
-        if (walletName != other.walletName) return false
-        if (walletLink != other.walletLink) return false
-        if (walletVersion != other.walletVersion) return false
-        if (walletSolutionCertificationInformation != other.walletSolutionCertificationInformation) return false
-        if (clientStatus != other.clientStatus) return false
-        if (eudiWalletInfo != other.eudiWalletInfo) return false
-        if (status != other.status) return false
-
-        return true
-    }
-
-    @Suppress("DEPRECATION")
-    override fun hashCode(): Int {
-        var result = issuer?.hashCode() ?: 0
-        result = 31 * result + (subject?.hashCode() ?: 0)
-        result = 31 * result + (audience?.hashCode() ?: 0)
-        result = 31 * result + (nonce?.hashCode() ?: 0)
-        result = 31 * result + (notBefore?.hashCode() ?: 0)
-        result = 31 * result + (issuedAt?.hashCode() ?: 0)
-        result = 31 * result + (expiration?.hashCode() ?: 0)
-        result = 31 * result + (jwtId?.hashCode() ?: 0)
-        result = 31 * result + (confirmationClaim?.hashCode() ?: 0)
-        result = 31 * result + (httpMethod?.hashCode() ?: 0)
-        result = 31 * result + (httpTargetUrl?.hashCode() ?: 0)
-        result = 31 * result + (accessTokenHash?.hashCode() ?: 0)
-        result = 31 * result + (walletName?.hashCode() ?: 0)
-        result = 31 * result + (walletLink?.hashCode() ?: 0)
-        result = 31 * result + (walletVersion?.hashCode() ?: 0)
-        result = 31 * result + (walletSolutionCertificationInformation?.hashCode() ?: 0)
-        result = 31 * result + (clientStatus?.hashCode() ?: 0)
-        result = 31 * result + (eudiWalletInfo?.hashCode() ?: 0)
-        result = 31 * result + (status?.hashCode() ?: 0)
-        return result
-    }
-
     /**
      * Names taken from [IANA](https://www.iana.org/assignments/jwt/jwt.xhtml) to be used in conjunction with
      * [Propigator](https://github.com/a-sit-plus/propigator)
