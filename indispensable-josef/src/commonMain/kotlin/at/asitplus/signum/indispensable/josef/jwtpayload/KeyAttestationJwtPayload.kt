@@ -25,7 +25,6 @@ data class KeyAttestationJwtPayload(
 
     override fun validate() {
         jwtClaims
-        jwtClaims.issuedAt != null
         keyAttestationClaims
     }
 
