@@ -254,7 +254,7 @@ interface SigningProviderI<out SignerT: Signer.WithAlias,
         out KeyConfigT: PlatformSigningKeyConfigurationBase<*>> {
     suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null): KmmResult<SignerT>
     suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null): KmmResult<SignerT>
-    suspend fun deleteSigningKey(alias: String): KmmResult<Unit>
+    suspend fun deleteSigningKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null): KmmResult<Unit>
 
     companion object {
         fun Platform(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase> = null) =
