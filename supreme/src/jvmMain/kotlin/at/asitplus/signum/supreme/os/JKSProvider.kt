@@ -192,7 +192,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         }
     }
 
-    override suspend fun deleteSigningKey(alias: String) = catching {
+    override suspend fun deleteSigningKey(alias: String, configure: DSLConfigureFn<JKSSignerConfiguration> ) = catching {
         access.forWriting().use { ctx ->
             if (ctx.ks.containsAlias(alias)) {
                 ctx.ks.deleteEntry(alias)

@@ -113,7 +113,7 @@ fun DeferScope.cfDictionaryOf(vararg pairs: Pair<*,*>): CFDictionaryRef {
     val dict = CFDictionaryCreateMutable(null, pairs.size.toLong(),
         kCFTypeDictionaryKeyCallBacks.ptr, kCFTypeDictionaryValueCallBacks.ptr)!!
     defer { CFRelease(dict) } // free it after the memscope finishes
-    pairs.forEach { (k,v) -> dict[k] = v }
+    pairs.distinctBy { (k,_) -> k }.forEach { (k,v) -> dict[k] = v }
     return dict
 }
 
