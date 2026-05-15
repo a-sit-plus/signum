@@ -3,9 +3,6 @@ package at.asitplus.signum.supreme.dsl
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 import io.kotest.matchers.shouldBe
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 /* All options classes need to inherit from DSL.Data; it is also annotated with a DSL marker */
 private open class GenericOptions internal constructor(): DSL.Data() {

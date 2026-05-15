@@ -14,6 +14,8 @@ import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.internals.orLazy
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.KSerializer
 
 /**
@@ -179,12 +181,16 @@ sealed interface AttributeTypeAndValue : Identifiable {
         fun register(): Descriptor = Registry.register(this)
     }
 
+    @OptIn(ExperimentalAtomicApi::class)
     object Registry {
         private val descriptors = hashMapOf<ObjectIdentifier, Descriptor>()
-        private var defaultsRegistered = false
+        private val registryLocked = AtomicBoolean(false)
+        private val defaultsRegistered = AtomicBoolean(false)
 
         fun register(descriptor: Descriptor): Descriptor {
-            descriptors[descriptor.oid] = descriptor
+            withRegistryLock {
+                registerLocked(descriptor)
+            }
             return descriptor
         }
 
@@ -196,21 +202,23 @@ sealed interface AttributeTypeAndValue : Identifiable {
 
         fun descriptorFor(oid: ObjectIdentifier): Descriptor? {
             ensureDefaultsRegistered()
-            return descriptors[oid]
+            return withRegistryLock { descriptors[oid] }
         }
 
         fun descriptorForName(name: String): Descriptor? {
             ensureDefaultsRegistered()
             val normalizedName = name.uppercase()
-            return descriptors.values.firstOrNull {
-                it.canonicalName.uppercase() == normalizedName || it.aliases.any { alias -> alias.uppercase() == normalizedName }
+            return withRegistryLock {
+                descriptors.values.firstOrNull {
+                    it.canonicalName.uppercase() == normalizedName ||
+                            it.aliases.any { alias -> alias.uppercase() == normalizedName }
+                }
             }
         }
 
         private fun ensureDefaultsRegistered() {
-            if (defaultsRegistered) return
-            defaultsRegistered = true
-            listOf(
+            if (defaultsRegistered.load()) return
+            val defaultDescriptors = listOf(
                 CommonName,
                 Country,
                 Locality,
@@ -228,7 +236,27 @@ sealed interface AttributeTypeAndValue : Identifiable {
                 EmailAddress,
                 UserId,
                 SerialNumber,
-            ).forEach { register(it) }
+            )
+            withRegistryLock {
+                if (defaultsRegistered.load()) return
+                defaultDescriptors.forEach { registerLocked(it) }
+                defaultsRegistered.store(true)
+            }
+        }
+
+        private fun registerLocked(descriptor: Descriptor) {
+            descriptors[descriptor.oid] = descriptor
+        }
+
+        private inline fun <T> withRegistryLock(block: () -> T): T {
+            while (!registryLocked.compareAndSet(false, true)) {
+                // Spin: registry writes are startup-only and tiny.
+            }
+            try {
+                return block()
+            } finally {
+                registryLocked.store(false)
+            }
         }
     }
 

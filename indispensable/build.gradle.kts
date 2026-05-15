@@ -30,6 +30,10 @@ kotlin {
             api(libs.securerandom)
         }
 
+        commonTest.dependencies {
+            implementation(coroutines())
+        }
+
         jvmTest.dependencies {
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }

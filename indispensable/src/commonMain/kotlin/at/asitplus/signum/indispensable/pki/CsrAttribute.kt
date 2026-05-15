@@ -43,7 +43,7 @@ sealed interface CsrAttribute : Identifiable {
 abstract class BaseCsrAttribute(
     override val oid: ObjectIdentifier,
 ) : CsrAttribute {
-    override fun toString(): String = "CsrAttribute(oid=$oid)"
+    override fun toString(): String = "BaseCsrAttribute(oid=$oid)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -83,7 +83,7 @@ class X509CsrAttribute private constructor(
         return result
     }
 
-    override fun toString(): String = "CsrAttribute(oid=$oid, value=$value)"
+    override fun toString(): String = "X509CsrAttribute(oid=$oid, value=$value)"
 }
 
 internal fun CsrAttribute.requireX509(): CsrAttribute.X509Representable =

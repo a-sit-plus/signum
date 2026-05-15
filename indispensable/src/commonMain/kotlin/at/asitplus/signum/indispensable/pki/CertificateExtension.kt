@@ -59,7 +59,7 @@ abstract class BaseCertificateExtension(
     override fun hashCode(): Int = oid.hashCode()
 }
 
-//we'll need a registry here, too; similar to ATV registry, because we'll want type safety
+//we'll need a registry here, too; similar to ATV registry, because we'll want type safety. We also need to pull in Srdjan's deidacted extensions and align them with this new KxS-powered reperesentation
 open class X509CertificateExtension private constructor(
     providedAsn1Representation: Awesn1X509CertificateExtension?,
     oid: ObjectIdentifier,

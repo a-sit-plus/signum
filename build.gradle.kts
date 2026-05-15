@@ -46,6 +46,7 @@ subprojects {
 }
 
 allprojects {
+    repositories {mavenLocal()}
     apply(plugin = "org.jetbrains.dokka")
     group = rootProject.group
 }
