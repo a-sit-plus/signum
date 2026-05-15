@@ -35,7 +35,7 @@ class RelativeDistinguishedName private constructor(
     ) : this(null, asn1Representation, performValidation)
 
     override val asn1Representation: X500RelativeDistinguishedName by providedAsn1Representation orLazy {
-        X500RelativeDistinguishedName(attrsAndValues.map { it.asn1Representation }.toSet())
+        X500RelativeDistinguishedName(attrsAndValues.map { it.requireX509().asn1Representation }.toSet())
     }
 
     val attrsAndValues: Set<AttributeTypeAndValue> by providedAttrsAndValues orLazy {
@@ -45,7 +45,10 @@ class RelativeDistinguishedName private constructor(
     val isValid: Boolean by lazy { attrsAndValues.all { it.isValid != false } }
 
     init {
-        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
+        if (performValidation) {
+            providedAttrsAndValues?.validate()
+            if (!isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
+        }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -123,245 +126,419 @@ class RelativeDistinguishedName private constructor(
     }
 }
 
-open class AttributeTypeAndValue private constructor(
-    providedAsn1Representation: X500AttributeTypeAndValue?,
-    providedContent: Pair<ObjectIdentifier, Asn1Element>?,
-    validateValue: Boolean,
-) : Identifiable, DerEncodable<X500AttributeTypeAndValue> {
+private fun Set<AttributeTypeAndValue>.validate() {
+    if (isEmpty()) throw Asn1Exception("RelativeDistinguishedName must contain at least one AttributeTypeAndValue")
 
-    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid to value, false)
+    groupBy { it.oid }.forEach { (oid, attrs) ->
+        if (attrs.size > 1) {
+            throw Asn1Exception("RelativeDistinguishedName contains multiple values for attribute OID $oid")
+        }
+    }
+}
+
+sealed interface AttributeTypeAndValue : Identifiable {
+    val displayName: String?
+    val isValid: Boolean?
+
+    /**
+     * Converts the current AttributeTypeAndValue instance into a string representation
+     * that conforms to the RFC 2253 standard for Distinguished Names (DNs).
+     *
+     * @return A string representation of the attribute's type and value in RFC 2253 format.
+     * @throws Asn1Exception if the attribute has no X.509 representation (i.e. if it does not implement [X509Representable]),
+     * as the RFC only defines string canonicalization for X.509
+     */
+    fun toRfc2253String(): String = requireX509().toRfc2253String()
+
+    interface X509Representable : AttributeTypeAndValue, DerEncodable<X500AttributeTypeAndValue> {
+        val value: Asn1Element
+
+        override fun toRfc2253String(): String {
+            val attrValue = (value as? Asn1Primitive)?.let { prim ->
+                catchingUnwrapped {
+                    var decodedValue = Asn1String.decodeFromTlv(prim).value
+                    val wasQuoted = decodedValue.startsWith("\"") && decodedValue.endsWith("\"")
+                    decodedValue = decodedValue.removeSurrounding("\"")
+                    val wasBackslashFirst = decodedValue.startsWith("\\")
+                    val unescaped = decodedValue.replace("""\\(.)""".toRegex(), "$1")
+                    canonicalizeRfc2253String(unescaped, wasQuoted, wasBackslashFirst)
+                }.getOrElse { "#" + prim.toDerHexString() }
+            } ?: ("#" + value.derEncoded.toHexString())
+
+            return "${Registry.nameFor(oid)?.lowercase() ?: oid}=$attrValue"
+        }
+    }
+
+    interface Descriptor : Identifiable {
+        val canonicalName: String
+        val aliases: Set<String>
+
+        fun fromString(value: String): AttributeTypeAndValue
+        fun fromAsn1Representation(src: X500AttributeTypeAndValue): X509Representable
+
+        fun register(): Descriptor = Registry.register(this)
+    }
+
+    object Registry {
+        private val descriptors = hashMapOf<ObjectIdentifier, Descriptor>()
+        private var defaultsRegistered = false
+
+        fun register(descriptor: Descriptor): Descriptor {
+            descriptors[descriptor.oid] = descriptor
+            return descriptor
+        }
+
+        fun oidFor(name: String): ObjectIdentifier? =
+            descriptorForName(name)?.oid
+
+        fun nameFor(oid: ObjectIdentifier): String? =
+            descriptorFor(oid)?.canonicalName
+
+        fun descriptorFor(oid: ObjectIdentifier): Descriptor? {
+            ensureDefaultsRegistered()
+            return descriptors[oid]
+        }
+
+        fun descriptorForName(name: String): Descriptor? {
+            ensureDefaultsRegistered()
+            val normalizedName = name.uppercase()
+            return descriptors.values.firstOrNull {
+                it.canonicalName.uppercase() == normalizedName || it.aliases.any { alias -> alias.uppercase() == normalizedName }
+            }
+        }
+
+        private fun ensureDefaultsRegistered() {
+            if (defaultsRegistered) return
+            defaultsRegistered = true
+            listOf(
+                CommonName,
+                Country,
+                Locality,
+                StateOrProvince,
+                Organization,
+                OrganizationalUnit,
+                Title,
+                Street,
+                DomainComponent,
+                DistinguishedNameQualifier,
+                Surname,
+                GivenName,
+                Initials,
+                Generation,
+                EmailAddress,
+                UserId,
+                SerialNumber,
+            ).forEach { register(it) }
+        }
+    }
+
+    class CommonName : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.3")
+           
+            override val canonicalName = "CN"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = CommonName(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = CommonName(src)
+        }
+    }
+
+    class Country : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.6")
+           
+            override val canonicalName = "C"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Country(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Country(src)
+        }
+    }
+
+    class Locality : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.7")
+           
+            override val canonicalName = "L"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Locality(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Locality(src)
+        }
+    }
+
+    class StateOrProvince : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid,Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.8")
+           
+            override val canonicalName = "ST"
+            override val aliases = setOf("S")
+            init { register() }
+            override fun fromString(value: String) = StateOrProvince(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = StateOrProvince(src)
+        }
+    }
+
+    class Organization : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid,Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.10")
+           
+            override val canonicalName = "O"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Organization(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Organization(src)
+        }
+    }
+
+    class OrganizationalUnit : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid,Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.11")
+           
+            override val canonicalName = "OU"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = OrganizationalUnit(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = OrganizationalUnit(src)
+        }
+    }
+
+    class Title : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.12")
+           
+            override val canonicalName = "T"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Title(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Title(src)
+        }
+    }
+
+    class Street : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.9")
+           
+            override val canonicalName = "STREET"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Street(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Street(src)
+        }
+    }
+
+    class DomainComponent : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.IA5(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("0.9.2342.19200300.100.1.25")
+           
+            override val canonicalName = "DC"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = DomainComponent(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = DomainComponent(src)
+        }
+    }
+
+    class DistinguishedNameQualifier : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.46")
+           
+            override val canonicalName = "DNQUALIFIER"
+            override val aliases = setOf("DNQ")
+            init { register() }
+            override fun fromString(value: String) = DistinguishedNameQualifier(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = DistinguishedNameQualifier(src)
+        }
+    }
+
+    class Surname : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid,Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.4")
+           
+            override val canonicalName = "SURNAME"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Surname(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Surname(src)
+        }
+    }
+
+    class GivenName : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.42")
+           
+            override val canonicalName = "GIVENNAME"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = GivenName(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = GivenName(src)
+        }
+    }
+
+    class Initials : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid,Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.43")
+           
+            override val canonicalName = "INITIALS"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Initials(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Initials(src)
+        }
+    }
+
+    class Generation : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.44")
+           
+            override val canonicalName = "GENERATION"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = Generation(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = Generation(src)
+        }
+    }
+
+    class EmailAddress : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.IA5(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("1.2.840.113549.1.9.1")
+           
+            override val canonicalName = "EMAILADDRESS"
+            override val aliases = setOf("EMAIL")
+            init { register() }
+            override fun fromString(value: String) = EmailAddress(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = EmailAddress(src)
+        }
+    }
+
+    class UserId : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid,Asn1String.UTF8(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("0.9.2342.19200300.100.1.1")
+           
+            override val canonicalName = "UID"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = UserId(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = UserId(src)
+        }
+    }
+
+    class SerialNumber : BaseX509AttributeTypeAndValue {
+        constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
+        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
+        companion object : Descriptor {
+            override val oid = ObjectIdentifier("2.5.4.5")
+           
+            override val canonicalName = "SERIALNUMBER"
+            override val aliases = emptySet<String>()
+            init { register() }
+            override fun fromString(value: String) = SerialNumber(value)
+            override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = SerialNumber(src)
+        }
+    }
+
+    companion object : DerDecodable<X500AttributeTypeAndValue, X509Representable> {
+
+        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): X509Representable =
+            fromAsn1Representation(X500AttributeTypeAndValue(oid, value))
+
+        operator fun invoke(asn1Representation: X500AttributeTypeAndValue): X509Representable =
+            fromAsn1Representation(asn1Representation)
+
+        override fun decodeFromTlv(
+            serializer: KSerializer<X500AttributeTypeAndValue>,
+            src: Asn1Element,
+            der: Der,
+        ): X509Representable =
+            fromAsn1Representation(der.decodeFromTlv(serializer, src))
+
+        fun fromString(type: String, value: String): AttributeTypeAndValue? =
+            Registry.descriptorForName(type)?.fromString(value.trim())
+
+        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): X509Representable =
+            Registry.descriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
+                ?: BaseX509AttributeTypeAndValue(asn1Representation)
+    }
+}
+
+
+
+abstract class BaseAttributeTypeAndValue(
+    override val oid: ObjectIdentifier,
+) : AttributeTypeAndValue {
+    override val displayName: String? get() = AttributeTypeAndValue.Registry.nameFor(oid)
+    override val isValid: Boolean? = null
+
+    override fun toString() = "AttributeTypeAndValue(oid=$oid)"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AttributeTypeAndValue) return false
+        return oid == other.oid
+    }
+
+    override fun hashCode(): Int = oid.hashCode()
+}
+
+open class BaseX509AttributeTypeAndValue protected constructor(
+    providedAsn1Representation: X500AttributeTypeAndValue?,
+    oid: ObjectIdentifier,
+    override val value: Asn1Element,
+    validateValue: Boolean,
+) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue.X509Representable {
+
+    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid, value, false)
 
     @Throws(Asn1Exception::class)
-    constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid to value.encodeToTlv(), true)
+    constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid, value.encodeToTlv(), true)
 
-    constructor(asn1Representation: X500AttributeTypeAndValue) : this(asn1Representation, null, false)
+    internal constructor(asn1Representation: X500AttributeTypeAndValue) :
+            this(asn1Representation, asn1Representation.oid, asn1Representation.value, false)
 
     override val asn1Representation: X500AttributeTypeAndValue by providedAsn1Representation orLazy {
-        val (oid, value) = requireNotNull(providedContent)
         X500AttributeTypeAndValue(oid, value)
     }
 
-    override val oid: ObjectIdentifier by providedContent?.first orLazy {
-        asn1Representation.oid
-    }
-
-    val value: Asn1Element by providedContent?.second orLazy {
-        asn1Representation.value
-    }
-
-    val displayName: String? get() = AttributeTypeOidMap.nameFor(oid)
-
-    /**
-     * `true`: validation succeeded, `false`: validation failed, `null`: no validation implemented.
-     */
-    val isValid: Boolean? by lazy {
+    override val isValid: Boolean? by lazy {
         catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
     }
 
     init {
         if (validateValue && isValid == false) {
-            throw Asn1Exception("Invalid AttributeTypeAndValue: ${providedContent?.first} ${displayName?.let { "($it)" }} for value ${providedContent?.second}!")
-        }
-    }
-
-    class CommonName : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.COMMON_NAME)!! }
-    }
-
-    class Country : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.COUNTRY)!! }
-    }
-
-    class Locality : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.LOCALITY)!! }
-    }
-
-    class StateOrProvince : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.STATE_OR_PROVINCE)!! }
-    }
-
-    class Organization : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.ORGANIZATION)!! }
-    }
-
-    class OrganizationalUnit : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.ORGANIZATIONAL_UNIT)!! }
-    }
-
-    class Title : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.TITLE)!! }
-    }
-
-    class Street : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.STREET)!! }
-    }
-
-    class DomainComponent : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.DOMAIN_COMPONENT)!! }
-    }
-
-    class DistinguishedNameQualifier : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.DISTINGUISHED_NAME_QUALIFIER)!! }
-    }
-
-    class Surname : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.SURNAME)!! }
-    }
-
-    class GivenName : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.GIVEN_NAME)!! }
-    }
-
-    class Initials : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.INITIALS)!! }
-    }
-
-    class Generation : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.GENERATION)!! }
-    }
-
-    class EmailAddress : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.EMAIL_ADDRESS)!! }
-    }
-
-    class UserId : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.USER_ID)!! }
-    }
-
-    class SerialNumber : AttributeTypeAndValue {
-        constructor(value: Asn1Element) : super(OID, value)
-        constructor(value: Asn1String) : super(OID, value)
-        constructor(str: String) : this(Asn1String.UTF8(str))
-        internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-        companion object { val OID = AttributeTypeOidMap.oidFor(AttributeTypeOidMap.SERIAL_NUMBER)!! }
-    }
-
-    fun toRfc2253String(): String {
-        val attrValue = (value as? Asn1Primitive)?.let { prim ->
-            runCatching {
-                var decodedValue = Asn1String.decodeFromTlv(prim).value
-                val wasQuoted = decodedValue.startsWith("\"") && decodedValue.endsWith("\"")
-                decodedValue = decodedValue.removeSurrounding("\"")
-                val wasBackslashFirst = decodedValue.startsWith("\\")
-                val unescaped = decodedValue.replace("""\\(.)""".toRegex(), "$1")
-                canonicalizeString(unescaped, wasQuoted, wasBackslashFirst)
-            }.getOrElse { "#" + prim.content.toHexString() }
-        } ?: ("#" + value.derEncoded.toHexString())
-
-        return "${AttributeTypeOidMap.nameFor(oid)?.lowercase() ?: oid}=$attrValue"
-    }
-
-    private fun canonicalizeString(input: String, wasQuoted: Boolean, wasBackSlashFirst: Boolean): String {
-        if (input.isEmpty()) return ""
-        if (wasQuoted) return input.trim().replace(Regex("\\s+"), " ")
-        val escapees = ",+<>;\"\\="
-        return buildString {
-            var previousWasSpace = false
-            var startIndex = 0
-
-            if (input.startsWith("#")) {
-                val hexPart = input.drop(1)
-                val isHex = hexPart.length % 2 == 0 && hexPart.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
-                if (isHex && !wasBackSlashFirst) {
-                    append('#')
-                    startIndex = 1
-                } else {
-                    append('\\').append('#')
-                    startIndex = 1
-                }
-            }
-
-            input.drop(startIndex).forEachIndexed { index, c ->
-                when {
-                    c == ' ' && index == 0 -> {
-                        append("\\ ")
-                        previousWasSpace = true
-                    }
-
-                    c == ' ' && index == input.lastIndex - startIndex -> append("\\ ")
-
-                    c.isWhitespace() -> {
-                        if (!previousWasSpace) {
-                            append(' ')
-                            previousWasSpace = true
-                        }
-                    }
-
-                    c in escapees -> {
-                        append('\\').append(c)
-                        previousWasSpace = false
-                    }
-
-                    else -> {
-                        append(c)
-                        previousWasSpace = false
-                    }
-                }
-            }
+            throw Asn1Exception("Invalid AttributeTypeAndValue: ${displayName?.let { "($it)" }}!")
         }
     }
 
@@ -369,7 +546,7 @@ open class AttributeTypeAndValue private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is AttributeTypeAndValue) return false
+        if (other !is BaseX509AttributeTypeAndValue) return false
         return oid == other.oid && value == other.value
     }
 
@@ -378,116 +555,58 @@ open class AttributeTypeAndValue private constructor(
         result = 31 * result + value.hashCode()
         return result
     }
+}
 
-    companion object : DerDecodable<X500AttributeTypeAndValue, AttributeTypeAndValue> {
+private fun canonicalizeRfc2253String(input: String, wasQuoted: Boolean, wasBackSlashFirst: Boolean): String {
+    if (input.isEmpty()) return ""
+    if (wasQuoted) return input.trim().replace(Regex("\\s+"), " ")
+    val escapees = ",+<>;\"\\="
+    return buildString {
+        var previousWasSpace = false
+        var startIndex = 0
 
-        override fun decodeFromTlv(
-            serializer: KSerializer<X500AttributeTypeAndValue>,
-            src: Asn1Element,
-            der: Der,
-        ): AttributeTypeAndValue =
-            fromAsn1Representation(der.decodeFromTlv(serializer, src))
-
-        fun fromString(type: String, value: String): AttributeTypeAndValue? {
-            val asn1String = Asn1String.UTF8(value.trim())
-            return when (type.uppercase()) {
-                AttributeTypeOidMap.COMMON_NAME -> CommonName(asn1String)
-                AttributeTypeOidMap.COUNTRY -> Country(asn1String)
-                AttributeTypeOidMap.LOCALITY -> Locality(asn1String)
-                AttributeTypeOidMap.STATE_OR_PROVINCE_ALIAS, AttributeTypeOidMap.STATE_OR_PROVINCE ->
-                    StateOrProvince(asn1String)
-
-                AttributeTypeOidMap.ORGANIZATION -> Organization(asn1String)
-                AttributeTypeOidMap.ORGANIZATIONAL_UNIT -> OrganizationalUnit(asn1String)
-                AttributeTypeOidMap.TITLE -> Title(asn1String)
-                AttributeTypeOidMap.STREET -> Street(asn1String)
-                AttributeTypeOidMap.DOMAIN_COMPONENT -> DomainComponent(asn1String)
-                AttributeTypeOidMap.DISTINGUISHED_NAME_QUALIFIER_ALIAS,
-                AttributeTypeOidMap.DISTINGUISHED_NAME_QUALIFIER -> DistinguishedNameQualifier(asn1String)
-
-                AttributeTypeOidMap.SURNAME -> Surname(asn1String)
-                AttributeTypeOidMap.GIVEN_NAME -> GivenName(asn1String)
-                AttributeTypeOidMap.INITIALS -> Initials(asn1String)
-                AttributeTypeOidMap.GENERATION -> Generation(asn1String)
-                AttributeTypeOidMap.EMAIL_ALIAS, AttributeTypeOidMap.EMAIL_ADDRESS -> EmailAddress(asn1String)
-                AttributeTypeOidMap.USER_ID -> UserId(asn1String)
-                AttributeTypeOidMap.SERIAL_NUMBER -> SerialNumber(asn1String)
-                else -> null
+        if (input.startsWith("#")) {
+            val hexPart = input.drop(1)
+            val isHex = hexPart.length % 2 == 0 && hexPart.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+            if (isHex && !wasBackSlashFirst) {
+                append('#')
+                startIndex = 1
+            } else {
+                append('\\').append('#')
+                startIndex = 1
             }
         }
 
-        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
-            when (asn1Representation.oid) {
-                CommonName.OID -> CommonName(asn1Representation)
-                Country.OID -> Country(asn1Representation)
-                Locality.OID -> Locality(asn1Representation)
-                StateOrProvince.OID -> StateOrProvince(asn1Representation)
-                Organization.OID -> Organization(asn1Representation)
-                OrganizationalUnit.OID -> OrganizationalUnit(asn1Representation)
-                Title.OID -> Title(asn1Representation)
-                Street.OID -> Street(asn1Representation)
-                DomainComponent.OID -> DomainComponent(asn1Representation)
-                DistinguishedNameQualifier.OID -> DistinguishedNameQualifier(asn1Representation)
-                Surname.OID -> Surname(asn1Representation)
-                GivenName.OID -> GivenName(asn1Representation)
-                Initials.OID -> Initials(asn1Representation)
-                Generation.OID -> Generation(asn1Representation)
-                EmailAddress.OID -> EmailAddress(asn1Representation)
-                UserId.OID -> UserId(asn1Representation)
-                SerialNumber.OID -> SerialNumber(asn1Representation)
-                else -> AttributeTypeAndValue(asn1Representation)
+        input.drop(startIndex).forEachIndexed { index, c ->
+            when {
+                c == ' ' && index == 0 -> {
+                    append("\\ ")
+                    previousWasSpace = true
+                }
+
+                c == ' ' && index == input.lastIndex - startIndex -> append("\\ ")
+
+                c.isWhitespace() -> {
+                    if (!previousWasSpace) {
+                        append(' ')
+                        previousWasSpace = true
+                    }
+                }
+
+                c in escapees -> {
+                    append('\\').append(c)
+                    previousWasSpace = false
+                }
+
+                else -> {
+                    append(c)
+                    previousWasSpace = false
+                }
             }
+        }
     }
 }
 
-object AttributeTypeOidMap {
-    const val COMMON_NAME = "CN"
-    const val COUNTRY = "C"
-    const val LOCALITY = "L"
-    const val STATE_OR_PROVINCE_ALIAS = "S"
-    const val STATE_OR_PROVINCE = "ST"
-    const val ORGANIZATION = "O"
-    const val ORGANIZATIONAL_UNIT = "OU"
-    const val TITLE = "T"
-    const val STREET = "STREET"
-    const val DOMAIN_COMPONENT = "DC"
-    const val DISTINGUISHED_NAME_QUALIFIER = "DNQUALIFIER"
-    const val DISTINGUISHED_NAME_QUALIFIER_ALIAS = "DNQ"
-    const val SURNAME = "SURNAME"
-    const val GIVEN_NAME = "GIVENNAME"
-    const val INITIALS = "INITIALS"
-    const val GENERATION = "GENERATION"
-    const val EMAIL_ALIAS = "EMAIL"
-    const val EMAIL_ADDRESS = "EMAILADDRESS"
-    const val USER_ID = "UID"
-    const val SERIAL_NUMBER = "SERIALNUMBER"
-
-    private val nameToOid: Map<String, ObjectIdentifier> = mapOf(
-        COMMON_NAME to ObjectIdentifier("2.5.4.3"),
-        COUNTRY to ObjectIdentifier("2.5.4.6"),
-        LOCALITY to ObjectIdentifier("2.5.4.7"),
-        STATE_OR_PROVINCE to ObjectIdentifier("2.5.4.8"),
-        ORGANIZATION to ObjectIdentifier("2.5.4.10"),
-        ORGANIZATIONAL_UNIT to ObjectIdentifier("2.5.4.11"),
-        TITLE to ObjectIdentifier("2.5.4.12"),
-        STREET to ObjectIdentifier("2.5.4.9"),
-        DOMAIN_COMPONENT to ObjectIdentifier("0.9.2342.19200300.100.1.25"),
-        DISTINGUISHED_NAME_QUALIFIER to ObjectIdentifier("2.5.4.46"),
-        SURNAME to ObjectIdentifier("2.5.4.4"),
-        GIVEN_NAME to ObjectIdentifier("2.5.4.42"),
-        INITIALS to ObjectIdentifier("2.5.4.43"),
-        GENERATION to ObjectIdentifier("2.5.4.44"),
-        EMAIL_ADDRESS to ObjectIdentifier("1.2.840.113549.1.9.1"),
-        USER_ID to ObjectIdentifier("0.9.2342.19200300.100.1.1"),
-        SERIAL_NUMBER to ObjectIdentifier("2.5.4.5"),
-    )
-
-    private val oidToName: Map<ObjectIdentifier, String> =
-        nameToOid.entries.associate { (name, oid) -> oid to name }
-
-    fun oidFor(name: String): ObjectIdentifier? =
-        nameToOid[name.uppercase()]
-
-    fun nameFor(oid: ObjectIdentifier): String? =
-        oidToName[oid]
-}
+private fun AttributeTypeAndValue.requireX509(): AttributeTypeAndValue.X509Representable =
+    this as? AttributeTypeAndValue.X509Representable
+        ?: throw Asn1Exception("Attribute $oid has no X.509/DER representation")

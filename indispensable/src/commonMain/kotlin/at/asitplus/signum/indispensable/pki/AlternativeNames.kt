@@ -120,16 +120,11 @@ private constructor(private val extensions: List<Asn1Element>) {
             find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
         }
 
-        /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/
         private fun List<CertificateExtension>.find(oid: ObjectIdentifier): List<Asn1Element>? {
-            val matches = filter { it.oid == oid }
+            val matches = filterIsInstance<CertificateExtension.X509Representable>().filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else when (val value = matches.first().value) {
-                is Asn1EncapsulatingOctetString -> value.children.firstOrNull()
-                is Asn1OctetString -> Asn1Element.parse(value.content)
-                else -> throw Asn1StructuralException("Extension $oid value is not an OCTET STRING")
-            }.let { it as Asn1Sequence }.children
+            else Asn1Element.parse(matches.first().derEncodedValue).let { it as Asn1Sequence }.children
         }
     }
 }

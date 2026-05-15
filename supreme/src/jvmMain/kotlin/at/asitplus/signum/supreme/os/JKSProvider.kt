@@ -139,7 +139,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initialize(jcaSpec)
                 generateKeyPair()
             }
-            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(alias))))
+            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(alias)))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextBytes(ByteArray(32)),

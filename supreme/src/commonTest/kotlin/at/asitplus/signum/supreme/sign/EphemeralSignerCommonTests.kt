@@ -256,7 +256,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 }
 
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("client")))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         CsrAttribute(
@@ -278,10 +278,10 @@ val EphemeralSignerCommonTests by matrixSuite {
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
                     signatureAlgorithm = signer.signatureAlgorithm,
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Foo")))),
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 356.days,
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("client")))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         CertificateExtension(
@@ -307,7 +307,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("client")))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         CsrAttribute(
@@ -328,10 +328,10 @@ val EphemeralSignerCommonTests by matrixSuite {
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
                     signatureAlgorithm = signer.signatureAlgorithm,
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Foo")))),
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 356.days,
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("client")))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         CertificateExtension(
