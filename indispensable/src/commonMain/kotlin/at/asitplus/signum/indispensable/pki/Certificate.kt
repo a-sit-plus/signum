@@ -21,7 +21,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 import kotlin.time.Instant
-import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 private data class TbsCertificateContent(
     val serialNumber: ByteArray,
@@ -46,8 +45,7 @@ private data class TbsCertificateContent(
         publicKey = CryptoPublicKey(asn1Representation.subjectPublicKeyInfo),
         issuerUniqueID = asn1Representation.issuerUniqueID?.toBitSet()?.toByteArray(),
         subjectUniqueID = asn1Representation.subjectUniqueID?.toBitSet()?.toByteArray(),
-        extensions = asn1Representation.extensions?.map(Awesn1X509CertificateExtension::toSignumExtension)
-            .orEmpty(),
+        extensions = asn1Representation.extensions?.map { CertificateExtension(it) }.orEmpty(),
     )
 
     override fun equals(other: Any?): Boolean {
@@ -139,7 +137,7 @@ class TbsCertificate private constructor(
             subjectPublicKeyInfo = providedContent.publicKey.asn1Representation,
             issuerUniqueID = providedContent.issuerUniqueID?.let { Asn1BitString(BitSet(it)) },
             subjectUniqueID = providedContent.subjectUniqueID?.let { Asn1BitString(BitSet(it)) },
-            extensions = providedContent.extensions.map(CertificateExtension::toAwesn1Extension),
+            extensions = providedContent.extensions.map { it.requireX509().asn1Representation },
         )
     }
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
@@ -360,20 +358,6 @@ private fun validateExtensions(extensions: List<CertificateExtension>) {
         throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
 }
-
-private fun CertificateExtension.toAwesn1Extension(): Awesn1X509CertificateExtension =
-    Awesn1X509CertificateExtension(
-        oid = oid,
-        critical = critical.takeIf { it },
-        value = value.asOctetString().content,
-    )
-
-private fun Awesn1X509CertificateExtension.toSignumExtension(): CertificateExtension =
-    CertificateExtension(
-        oid = oid,
-        critical = critical ?: false,
-        value = Asn1PrimitiveOctetString(value),
-    )
 
 private
 /** De-/serializes Base64 strings to/from [ByteArray] */

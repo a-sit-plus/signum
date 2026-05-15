@@ -1,86 +1,113 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.encoding.Asn1
-import at.asitplus.awesn1.encoding.Asn1.Bool
-import at.asitplus.awesn1.encoding.decodeToBoolean
+import at.asitplus.awesn1.serialization.Der
+import at.asitplus.signum.indispensable.DerDecodable
+import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.internals.orLazy
+import kotlinx.serialization.KSerializer
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 /**
  * X.509 Certificate Extension
  */
-@ConsistentCopyVisibility
-data class CertificateExtension @Throws(Asn1Exception::class) private constructor(
-    override val oid: ObjectIdentifier,
-    val value: Asn1Element,
-    val critical: Boolean, //TODO replace this mess with the two properties a nullable Boolean, such that:
-    val isCursed: Boolean, //true = true, false= cursed, null = false. never expose nullable, but only non-cursed true/False
-    //maybe even go as far and store a single byte because there will be implementations that mess this up and encode true as 0x01
-    //but supporting this mess should come with a switch
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
+sealed interface CertificateExtension : Identifiable {
 
-    init {
-        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(
-            Asn1Element.Tag.OCTET_STRING,
-            value.tag
-        )
+    val critical: Boolean
+    sealed interface X509Representable : CertificateExtension, DerEncodable<Awesn1X509CertificateExtension> {
+        val derEncodedValue: ByteArray
     }
 
-    constructor(
-        oid: ObjectIdentifier,
-        critical: Boolean = false,
-        value: Asn1EncapsulatingOctetString
-    ) : this(oid, value, critical, isCursed = false)
+    companion object : DerDecodable<Awesn1X509CertificateExtension, X509Representable> {
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            critical: Boolean = false,
+            value: ByteArray,
+        ): X509Representable = X509CertificateExtension(oid, critical, value)
 
-    constructor(
-        oid: ObjectIdentifier,
-        critical: Boolean = false,
-        value: Asn1PrimitiveOctetString
-    ) : this(oid, value, critical, isCursed = false)
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            critical: Boolean = false,
+            value: Asn1OctetString,
+        ): X509Representable = X509CertificateExtension(oid, critical, value)
 
-    override fun encodeToTlv() = Asn1.Sequence {
-        +oid
-        if (critical) +Bool(true) else if (isCursed) +Bool(false)
-        +value
-    }
 
-    companion object : Asn1Decodable<Asn1Sequence, CertificateExtension> {
+        operator fun invoke(asn1Representation: Awesn1X509CertificateExtension): X509Representable =
+            X509CertificateExtension(asn1Representation)
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CertificateExtension = src.decodeRethrowing {
+        override fun decodeFromTlv(
+            serializer: KSerializer<Awesn1X509CertificateExtension>,
+            src: Asn1Element,
+            der: Der,
+        ): X509Representable =
+            X509CertificateExtension(der.decodeFromTlv(serializer, src))
+    }
+}
 
-            val id = next().asPrimitive().readOid()
-            val crit = peek()!!
-            var critical = false
-            var cursed = false
-            if (crit.tag == Asn1Element.Tag.BOOL) {
-                    critical = next().asPrimitive().decodeToBoolean()
-                    if (!critical) cursed = true
-            }
+abstract class BaseCertificateExtension(
+    override val oid: ObjectIdentifier,
+) : CertificateExtension {
+    override fun toString(): String = "CertificateExtension(oid=$oid)"
 
-            val value = next()
-            CertificateExtension(id, value, critical, cursed)
-        }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is CertificateExtension) return false
+        return oid == other.oid
+    }
 
+    override fun hashCode(): Int = oid.hashCode()
+}
+
+//we'll need a registry here, too; similar to ATV registry, because we'll want type safety
+open class X509CertificateExtension private constructor(
+    providedAsn1Representation: Awesn1X509CertificateExtension?,
+    oid: ObjectIdentifier,
+    override val critical: Boolean,
+    override val derEncodedValue: ByteArray,
+) : BaseCertificateExtension(oid), CertificateExtension.X509Representable {
+
+
+    constructor(
+        oid: ObjectIdentifier,
+        critical: Boolean = false,
+        value: ByteArray,
+    ) : this(null, oid, critical, value)
+
+    constructor(
+        oid: ObjectIdentifier,
+        critical: Boolean = false,
+        value: Asn1OctetString,
+    ) : this(oid, critical, value.content)
+
+    constructor(asn1Representation: Awesn1X509CertificateExtension) : this(
+        asn1Representation,
+        asn1Representation.oid,
+        asn1Representation.critical,
+        asn1Representation.value,
+    )
+
+    override val asn1Representation: Awesn1X509CertificateExtension by providedAsn1Representation orLazy {
+        Awesn1X509CertificateExtension(oid, critical, derEncodedValue)
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null) return false
-        if (this::class != other::class) return false
-
-        other as CertificateExtension
-
-        if (oid != other.oid) return false
-        if (critical != other.critical) return false
-        if (value != other.value) return false
-
-        return true
+        if (other !is X509CertificateExtension) return false
+        return oid == other.oid && critical == other.critical && derEncodedValue.contentEquals(other.derEncodedValue)
     }
 
     override fun hashCode(): Int {
         var result = oid.hashCode()
         result = 31 * result + critical.hashCode()
-        result = 31 * result + value.hashCode()
+        result = 31 * result + derEncodedValue.contentHashCode()
         return result
     }
+
+    override fun toString(): String =
+        "CertificateExtension(oid=$oid, critical=$critical, value=${derEncodedValue.contentToString()})"
 }
+
+internal fun CertificateExtension.requireX509(): CertificateExtension.X509Representable =
+    this as? CertificateExtension.X509Representable
+        ?: throw Asn1Exception("Certificate extension $oid has no X.509/DER representation")

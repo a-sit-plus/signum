@@ -161,11 +161,11 @@ val JwkTest  by testSuite {
 private fun randomCertificate() = Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
-        issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
+        issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Test")))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
         signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256,
-        subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
+        subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Test")))),
         validFrom = (Clock.System.now()),
         validUntil = (Clock.System.now()),
     ),

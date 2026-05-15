@@ -2,17 +2,16 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1PrimitiveOctetString
 import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.awesn1.crypto.pki.Attribute
+import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
-import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 private data class TbsCertificationRequestContent(
     val subjectName: List<RelativeDistinguishedName>,
@@ -22,7 +21,7 @@ private data class TbsCertificationRequestContent(
     constructor(asn1Representation: Pkcs10CertificationRequestInfo) : this(
         subjectName = asn1Representation.subjectName.map { RelativeDistinguishedName(it, performValidation = false) },
         publicKey = CryptoPublicKey(asn1Representation.publicKey),
-        attributes = asn1Representation.attributes.map(::CsrAttribute)
+        attributes = asn1Representation.attributes.map { CsrAttribute(it) }
     )
 }
 
@@ -76,7 +75,7 @@ class TbsCertificationRequest private constructor(
             version = 1,
             subjectName = providedContent.subjectName.map { it.asn1Representation },
             publicKey = providedContent.publicKey.asn1Representation,
-            attributes = providedContent.attributes.map { it.asn1Representation },
+            attributes = providedContent.attributes.map { it.requireX509().asn1Representation },
         )
     }
 
@@ -89,14 +88,14 @@ class TbsCertificationRequest private constructor(
     val publicKey: CryptoPublicKey get() = providedContent.publicKey
     val attributes: List<CsrAttribute> get() = providedContent.attributes
 
-    val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Attribute.EXTENSION_REQUEST_OID } }
+    val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID } }
 
     val extensions: List<CertificateExtension> by lazy {
-        attributes.filter { it.oid == Attribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
+        attributes.filter { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
             when (extensionAttributes.size) {
                 0 -> emptyList()
-                1 -> extensionAttributes.single().value.single().asSequence().map {
-                    DER.decodeFromTlv(X509CertificateExtension.serializer(), it).toSignumExtension()
+                1 -> extensionAttributes.single().requireX509().value.single().asSequence().map {
+                    CertificateExtension(DER.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
                 }
 
                 else -> throw Asn1StructuralException("Multiple extensionRequest attributes found")
@@ -231,7 +230,7 @@ class CertificationRequest private constructor(
 
 private fun validateAttributes(attributes: List<CsrAttribute>, allowExtensions: Boolean = false) {
     require(attributes.distinctBy { it.oid }.size == attributes.size) { "Multiple attributes with same OID found" }
-    if (!allowExtensions) require(attributes.none { it.oid == Attribute.EXTENSION_REQUEST_OID }) {
+    if (!allowExtensions) require(attributes.none { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }) {
         "Certificate extension passed as part of regular attributes"
     }
 }
@@ -246,21 +245,9 @@ private fun mergeAttributesWithExtensions(
     return mutableListOf<CsrAttribute>().apply {
         attributes?.let { addAll(it) }
         extensions?.let {
-            add(CsrAttribute(Attribute.CertificateExtension(it.map(CertificateExtension::toAwesn1Extension))))
+            add(CsrAttribute(Pkcs10CsrAttribute.X509CertificateExtension(it.map { extension ->
+                extension.requireX509().asn1Representation
+            })))
         }
     }
 }
-
-private fun CertificateExtension.toAwesn1Extension(): X509CertificateExtension =
-    X509CertificateExtension(
-        oid = oid,
-        critical = critical.takeIf { it },
-        value = value.asOctetString().content,
-    )
-
-private fun X509CertificateExtension.toSignumExtension(): CertificateExtension =
-    CertificateExtension(
-        oid = oid,
-        critical = critical ?: false,
-        value = Asn1PrimitiveOctetString(value),
-    )
