@@ -84,7 +84,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
             /** The one exception, which is not a valid JWS algorithm identifier */
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
+            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(Digest.SHA1)))
             companion object : Enumeration<RSA> {
                 override val entries: Collection<RSA> by lazy {
                     setOf(
@@ -184,15 +184,15 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
             else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
         }
 
-        is SignatureAlgorithm.RSA -> when (this.padding) {
-            RSAPadding.PKCS1 -> when (this.digest) {
+        is SignatureAlgorithm.RSA -> when (this.parameters) {
+            is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (this.digest) {
                 Digest.SHA1 -> JwsAlgorithm.Signature.NON_JWS_SHA1_WITH_RSA
                 Digest.SHA256 -> JwsAlgorithm.Signature.RS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.RS384
                 Digest.SHA512 -> JwsAlgorithm.Signature.RS512
             }
 
-            RSAPadding.PSS -> when (this.digest) {
+            is SignatureAlgorithm.RSA.Parameters.PssPadded -> when (this.digest) {
                 Digest.SHA256 -> JwsAlgorithm.Signature.PS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.PS384
                 Digest.SHA512 -> JwsAlgorithm.Signature.PS512

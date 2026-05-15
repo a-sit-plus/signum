@@ -3,7 +3,8 @@ package at.asitplus.signum.supreme.asymmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
+import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.testballoon.minus
@@ -56,11 +57,11 @@ class RsaTestData(
                 encoder: Encoder,
                 value: CryptoPrivateKey
             ) {
-                encoder.encodeString(value.encodeToPEM().getOrThrow())
+                encoder.encodeString(value.encodeToPem())
             }
 
             override fun deserialize(decoder: Decoder) =
-                CryptoPrivateKey.decodeFromPem(decoder.decodeString()).getOrThrow()
+                CryptoPrivateKey.decodeFromPem(decoder.decodeString())
         }
 
         object PaddingSerializer : KSerializer<RSAPadding> {

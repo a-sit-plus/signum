@@ -1,7 +1,9 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 
@@ -23,9 +25,9 @@ data class AlternativeNames
 @Throws(Throwable::class)
 private constructor(private val extensions: List<Asn1Element>) {
 
-    val dnsNames: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.dNSName)
-    val rfc822Names: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.rfc822Name)
-    val uris: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.uniformResourceIdentifier)
+    val dnsNames: List<String> = parseStringSANs(SubjectAltNameImplicitTags.dNSName)
+    val rfc822Names: List<String> = parseStringSANs(SubjectAltNameImplicitTags.rfc822Name)
+    val uris: List<String> = parseStringSANs(SubjectAltNameImplicitTags.uniformResourceIdentifier)
 
     val ipAddresses: List<ByteArray> = extensions.filter { it.tag == SubjectAltNameImplicitTags.iPAddress }.apply {
         forEach {
@@ -40,7 +42,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             forEach {
                 if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${it.toDerHexString()}")
             }
-        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.decodeFromTlv(it as Asn1Set) } }
+        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.fromTlv(it as Asn1Set) } }
 
     val otherNames: List<Asn1Sequence> =
         extensions.filter { it.tag == SubjectAltNameImplicitTags.otherName }.apply {
@@ -109,21 +111,20 @@ private constructor(private val extensions: List<Asn1Element>) {
 
     companion object {
         @Throws(Asn1Exception::class)
-        fun List<X509CertificateExtension>.findSubjectAltNames() = runRethrowing {
+        fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {
             find(KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
         }
 
         @Throws(Asn1Exception::class)
-        fun List<X509CertificateExtension>.findIssuerAltNames() = runRethrowing {
+        fun List<CertificateExtension>.findIssuerAltNames() = runRethrowing {
             find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
         }
 
-        /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/
-        private fun List<X509CertificateExtension>.find(oid: ObjectIdentifier): List<Asn1Element>? {
-            val matches = filter { it.oid == oid }
+        private fun List<CertificateExtension>.find(oid: ObjectIdentifier): List<Asn1Element>? {
+            val matches = filterIsInstance<CertificateExtension.X509Representable>().filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else ((matches.first().value as Asn1EncapsulatingOctetString).children.firstOrNull() as Asn1Sequence?)?.children
+            else Asn1Element.parse(matches.first().derEncodedValue).let { it as Asn1Sequence }.children
         }
     }
 }

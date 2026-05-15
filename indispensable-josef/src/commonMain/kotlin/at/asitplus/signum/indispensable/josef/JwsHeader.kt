@@ -422,7 +422,7 @@ data class JwsHeader(
     val publicKey: CryptoPublicKey? by lazy {
         jsonWebKey?.toCryptoPublicKey()?.getOrNull()
             ?: keyId?.let { catching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
-            ?: certificateChain?.leaf?.decodedPublicKey?.getOrNull()
+            ?: certificateChain?.leaf?.publicKey
     }
 
     val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {

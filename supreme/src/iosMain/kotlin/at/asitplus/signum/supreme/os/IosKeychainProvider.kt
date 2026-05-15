@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*

@@ -1,134 +1,99 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.internals.ensureSize
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.SignatureValue
+import at.asitplus.awesn1.encoding.asAsn1BitString
+import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
+import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.internals.orLazy
-import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encodeToByteArray
 
+private data class EcSignatureContent(
+    val r: BigInteger,
+    val s: BigInteger,
+) {
+    init {
+        require(r.isPositive) { "r must be positive" }
+        require(s.isPositive) { "s must be positive" }
+    }
+}
 
 /**
- * Interface which holds Asn1 Encoding of a signature of a specified algorithm
- * Allows simple ASN1 - Raw transformation of signature values
+ * Algorithm-agnostic signature value. X.509 algorithm context lives in [X509Signature].
  */
+sealed interface CryptoSignature : DerEncodable<SignatureValue> {
 
-@Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
-sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
+    override val asn1Representation: SignatureValue
 
+    /**
+     * Well-defined signatures that can be encoded into raw bytes.
+     */
+    sealed interface RawByteEncodable : CryptoSignature {
+        val rawByteArray: ByteArray
+    }
 
-        /**
-         * Well-defined CryptoSignatures, which can also be encoded to raw bytes, in addition to the DER encoding
-         * specified in the X.509 profile.
-         * RSA Signatures and EC Signatures with a known curve fall into this category.
-         *
-         * **This is the opposite of a [NotRawByteEncodable] signature**
-         */
-        sealed interface RawByteEncodable : CryptoSignature {
-            /**
-             * Removes ASN1 Structure and returns the signature value(s) as ByteArray
-             */
-            val rawByteArray: ByteArray
-        }
-
-        /**
-         * **This is the opposite of a [RawByteEncodable] signature**
-         *
-         * This inverse "non-trait" is required to group [CryptoSignature] subtypes which cannot be encoded into raw byte arrays,
-         * since not all properties required to do so are known. For example, EC signatures parsed from an
-         * [X509Certificate] do not specify a curve. For signatures obtained this way, it is impossible to know
-         * how the components should be padded before encoding it into raw bytes.
-         *
-         * The reason this interface exists, is that it allows for grouping all such signatures in the same manner
-         * as the [RawByteEncodable] ones, to allow for exhaustive `when` clauses
-         *
-         */
-        sealed interface NotRawByteEncodable : CryptoSignature
+    /**
+     * Signatures that cannot be encoded into raw bytes without additional algorithm context.
+     */
+    sealed interface NotRawByteEncodable : CryptoSignature
 
     val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
 
 
-    object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
-        override val descriptor: SerialDescriptor
-            get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
-
-        override fun deserialize(decoder: Decoder): CryptoSignature {
-            return CryptoSignature.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64Strict))
-        }
-
-        override fun serialize(encoder: Encoder, value: CryptoSignature) {
-            encoder.encodeString(value.encodeToDer().encodeToString(Base64Strict))
-        }
-    }
-
-
     sealed class EC
     @Throws(IllegalArgumentException::class) private constructor(
-        /** r - ECDSA signature component */
-        val r: BigInteger,
-        /** s - ECDSA signature component */
-        val s: BigInteger
+        providedContent: EcSignatureContent?,
+        private val providedAsn1Representation: SignatureValue?,
     ) : CryptoSignature {
 
-        init {
-            require(r.isPositive) { "r must be positive" }
-            require(s.isPositive) { "s must be positive" }
+        private val content: EcSignatureContent by providedContent orLazy {
+            providedAsn1Representation!!.decodeRS().let { (r, s) ->
+                EcSignatureContent(r.toBigInteger(), s.toBigInteger())
+            }
         }
 
-        override fun encodeToTlv() = Asn1.Sequence { +r.encodeToAsn1Primitive(); +s.encodeToAsn1Primitive() }
+        val r: BigInteger get() = content.r
 
-        /**
-         * Two signatures are considered equal if `r` and `s` are equal.
-         * This is true even if they are of definite length, and the lengths differ.
-         *
-         * We chose this approach to allow definite and indefinite length encodings of the same signature
-         * to be equal, while preserving the transitivity contract of `equals`.
-         */
+        val s: BigInteger get() = content.s
+
+        override val asn1Representation: SignatureValue by providedAsn1Representation orLazy {
+            SignatureValue.fromRS(
+                r.toAsn1Integer() as Asn1Integer.Positive,
+                s.toAsn1Integer() as Asn1Integer.Positive,
+            )
+        }
+
         override fun equals(other: Any?): Boolean {
             if (other !is EC) return false
-            return ((this.s == other.s) && (this.r == other.r))
+            return s == other.s && r == other.r
         }
 
         override fun toString() = humanReadableString
 
-        /** @see equals */
-        override fun hashCode() = 31 * this.s.hashCode() + this.r.hashCode()
+        override fun hashCode() = 31 * s.hashCode() + r.hashCode()
 
-        class IndefiniteLength internal constructor(
-            r: BigInteger, s: BigInteger
-        ) : EC(r, s), NotRawByteEncodable {
+        class IndefiniteLength private constructor(
+            providedContent: EcSignatureContent?,
+            providedAsn1Representation: SignatureValue?,
+        ) : EC(providedContent, providedAsn1Representation), NotRawByteEncodable {
 
-            /**
-             * specifies the curve's scalar byte length for this signature, allowing it to be converted to raw bytes
-             */
+            internal constructor(r: BigInteger, s: BigInteger) : this(EcSignatureContent(r, s), null)
+
+            internal constructor(asn1Representation: SignatureValue) : this(null, asn1Representation)
+
             fun withScalarByteLength(l: UInt) =
-                EC.DefiniteLength(l, r, s)
+                DefiniteLength(l, r, s)
 
-            /**
-             * specifies the curve context for this signature, allowing it to be converted to raw bytes
-             */
             fun withCurve(c: ECCurve) =
                 withScalarByteLength(c.scalarLength.bytes)
 
-            /**
-             * tries to guess the curve from the bit length of the indefinite-length r/s values
-             * this will work well in the vast majority of cases, but may fail in pathological edge cases
-             * (when r/s have a very large number of leading zeroes)
-             */
-            fun guessCurve(): EC.DefiniteLength {
+            fun guessCurve(): DefiniteLength {
                 val minLength = max(BitLength.of(r), BitLength.of(s))
                 val idx = curvesByScalarLength.binarySearchBy(minLength) { it.scalarLength }
 
@@ -137,138 +102,186 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                         idx >= 0 -> curvesByScalarLength[idx]
                         idx >= -curvesByScalarLength.size -> curvesByScalarLength[-1 - idx]
                         else -> throw IllegalArgumentException("No curve with bit length >= $minLength is supported")
-                    }
+                    },
                 )
             }
 
-            companion object {
+            companion object : DerDecodable<SignatureValue, IndefiniteLength> {
+                override fun decodeFromTlv(
+                    serializer: KSerializer<SignatureValue>,
+                    src: Asn1Element,
+                    der: Der
+                ): IndefiniteLength = EC.decodeFromTlv(serializer, src, der)
+
                 private val curvesByScalarLength by lazy { ECCurve.entries.sortedBy { it.scalarLength } }
             }
         }
 
         class DefiniteLength @Throws(IllegalArgumentException::class) internal constructor(
-            /**
-             * scalar byte length of the underlying curve;
-             * we do not know _which_ curve with this particular byte length
-             * since raw signatures do not carry this information
-             */
             val scalarByteLength: UInt,
-            r: BigInteger, s: BigInteger
-        ) : EC(r, s), RawByteEncodable {
+            r: BigInteger,
+            s: BigInteger,
+        ) : EC(EcSignatureContent(r, s), null), RawByteEncodable {
             init {
                 val max = scalarByteLength.toInt() * 8
 
                 require(r.bitLength() <= max) {
-                    "r is ${r.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"
+                    "r is ${r.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes ($max bits)"
                 }
 
                 require(s.bitLength() <= max) {
-                    "s is ${s.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"
+                    "s is ${s.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes ($max bits)"
                 }
             }
 
-            /**
-             * Concatenates [r] and [s], padding each one to the next largest coordinate length
-             * of an [ECCurve], for use in e.g. JWS signatures.
-             */
             override val rawByteArray by lazy {
                 r.toByteArray().ensureSize(scalarByteLength) +
                         s.toByteArray().ensureSize(scalarByteLength)
             }
         }
 
-        companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength> {
+        companion object : DerDecodable<SignatureValue, IndefiniteLength> {
 
+            operator fun invoke(asn1Representation: SignatureValue) =
+                IndefiniteLength(asn1Representation)
+
+            //TODO: do we still want this?
             fun fromRS(r: BigInteger, s: BigInteger) =
-                EC.IndefiniteLength(r, s)
+                IndefiniteLength(r, s)
 
-            /** load CryptoSignature from raw byte array (r and s concatenated) */
             @Throws(IllegalArgumentException::class)
-            fun fromRawBytes(input: ByteArray): EC.DefiniteLength {
+            fun fromRawBytes(input: ByteArray): DefiniteLength {
                 require(input.size.rem(2) == 0) { "Raw signature has odd number of bytes" }
                 val sz = input.size.div(2)
-                return EC.DefiniteLength(
+                return DefiniteLength(
                     sz.toUInt(),
                     r = BigInteger.fromByteArray(input.copyOfRange(0, sz), Sign.POSITIVE),
-                    s = BigInteger.fromByteArray(input.copyOfRange(sz, 2 * sz), Sign.POSITIVE)
+                    s = BigInteger.fromByteArray(input.copyOfRange(sz, 2 * sz), Sign.POSITIVE),
                 )
             }
 
-            /** load from raw byte array (r and s concatenated), asserting that the size fits this particular curve */
             @Throws(IllegalArgumentException::class)
-            fun fromRawBytes(curve: ECCurve, input: ByteArray): EC.DefiniteLength {
+            fun fromRawBytes(curve: ECCurve, input: ByteArray): DefiniteLength {
                 val sz = curve.scalarLength.bytes.toInt()
                 require(input.size == sz * 2)
                 return fromRawBytes(input)
             }
 
-            override fun doDecode(src: Asn1Element) = src.asSequence().decodeRethrowing {
-                val r = (next() as Asn1Primitive).decodeToBigInteger()
-                val s = (next() as Asn1Primitive).decodeToBigInteger()
-                if (hasNext()) throw Asn1Exception("Illegal Signature Format")
-                fromRS(r, s)
-            }
-
-
             @Deprecated(
                 "use fromRawBytes",
                 ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"),
-                DeprecationLevel.ERROR
+                DeprecationLevel.ERROR,
             )
             operator fun invoke(input: ByteArray): DefiniteLength = fromRawBytes(input)
+            override fun decodeFromTlv(
+                serializer: KSerializer<SignatureValue>,
+                src: Asn1Element,
+                der: Der
+            ): IndefiniteLength =
+                IndefiniteLength(
+                    der.decodeFromTlv(
+                        serializer,   /*we should cater to JCA, and allow base EC signatures*/
+                        if (src is Asn1Sequence) Asn1BitString(der.encodeToByteArray(src)).encodeToTlv() else src
+                    )
+                )
 
         }
-
     }
 
-    class RSA private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature, RawByteEncodable {
+    class RSA private constructor(
+        providedRawBytes: ByteArray?,
+        providedAsn1Representation: SignatureValue?,
+    ) : CryptoSignature, RawByteEncodable {
         constructor(rawBytes: ByteArray) : this(rawBytes, null)
-        constructor(x509Element: Asn1Primitive) : this(null, x509Element)
+        constructor(x509Element: Asn1Primitive) : this(null, SignatureValue(x509Element.asAsn1BitString()))
+        constructor(signatureValue: SignatureValue) : this(null, signatureValue)
 
-        /** the signature encoded as an ASN.1 BIT STRING */
-        val signature: Asn1Primitive by x509Element orLazy {
-            Asn1BitString(rawByteArray).encodeToTlv()
+        override val asn1Representation: SignatureValue by providedAsn1Representation orLazy {
+            SignatureValue(rawByteArray)
         }
 
-        override fun encodeToTlv() = signature
 
-        /** the raw bytes of the signature value */
-        override val rawByteArray by rawBytes orLazy {
-            signature.asAsn1BitString().rawBytes
+        override val rawByteArray: ByteArray by providedRawBytes orLazy {
+            asn1Representation.rawBytes
         }
 
-        override fun hashCode(): Int = signature.hashCode()
+        override fun hashCode(): Int = rawByteArray.contentHashCode()
 
         override fun toString() = humanReadableString
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (other == null || this::class != other::class) return false
-
-            other as RSA
-
-            return signature == other.signature
+            if (other !is RSA) return false
+            return rawByteArray.contentEquals(other.rawByteArray)
         }
 
-        companion object : Asn1Decodable<Asn1Element, RSA> {
-            @Throws(Asn1Exception::class)
-            override fun doDecode(src: Asn1Element): RSA {
-                src as Asn1Primitive
-                return RSA(src)
-            }
+        companion object : DerDecodable<SignatureValue, RSA> {
+            override fun decodeFromTlv(
+                serializer: KSerializer<SignatureValue>,
+                src: Asn1Element,
+                der: Der
+            ) = RSA(/*cannot really be sanity-checked*/der.decodeFromTlv(serializer, src))
+
         }
     }
 
-    companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
-            when (src.tag) {
-                Asn1Element.Tag.BIT_STRING -> RSA.decodeFromTlv(src)
-                Asn1Element.Tag.SEQUENCE -> EC.decodeFromTlv(src)
+    companion object {
+        operator fun invoke(algorithmObjectIdentifier: ObjectIdentifier, asn1Representation: SignatureValue) =
+            CryptoSignature(SignatureAlgorithm.kindByOID(algorithmObjectIdentifier), asn1Representation)
 
-                else -> throw Asn1Exception("Unknown Signature Format")
+        operator fun invoke(kind: SignatureAlgorithm.Kind, asn1Representation: SignatureValue) =
+            when (kind) {
+                SignatureAlgorithm.Kind.EC -> EC(asn1Representation)
+                SignatureAlgorithm.Kind.RSA -> RSA(asn1Representation)
             }
-        }
-
     }
 }
+
+
+/**
+ * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
+ */
+val CryptoSignature.jcaSignatureBytes: ByteArray
+    get() = when (this) {
+        is CryptoSignature.EC -> asn1Representation.rawBytes
+        is CryptoSignature.RSA -> rawByteArray
+    }
+
+/**
+ * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
+ */
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SignatureAlgorithm
+): CryptoSignature =
+    if (algorithm is SignatureAlgorithm.ECDSA)
+        CryptoSignature.EC.parseFromJca(input)
+    else
+        CryptoSignature.RSA.parseFromJca(input)
+
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SpecializedSignatureAlgorithm
+) = parseFromJca(input, algorithm.algorithm)
+
+/**
+ * Parses a signature produced by the JCA digestwithECDSA algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.EC(SignatureValue(input))
+
+/**
+ * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
+    CryptoSignature.EC.fromRawBytes(input)
+
+fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSA(input)
+
+
+val CryptoSignature.iosEncoded
+    get() = when (this) {
+        is CryptoSignature.EC -> this.asn1Representation.rawBytes
+        is CryptoSignature.RSA -> this.rawByteArray
+    }

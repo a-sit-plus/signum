@@ -1,11 +1,15 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.encoding.decodeFromDer
+import at.asitplus.awesn1.encoding.encodeToDer
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
 import at.asitplus.testballoon.invoke
@@ -62,6 +66,8 @@ val KeyTest  by testSuite {
 
                 withClue("Basic Conversions") {
                     own.encodeToDer() shouldBe pubKey.encoded
+                    DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
+                    CryptoPublicKey.fromSubjectPublicKeyInfo(own.asn1Representation) shouldBe own
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
                     CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
@@ -135,6 +141,8 @@ val KeyTest  by testSuite {
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1
                 own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
+                DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
+                CryptoPublicKey.fromSubjectPublicKeyInfo(own.asn1Representation) shouldBe own
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
                 own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
             }

@@ -5,10 +5,10 @@ import java.security.Signature
 
 internal actual fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature =
     when (this.padding) {
-        RSAPadding.PKCS1 ->
+        SignatureAlgorithm.RSA.Padding.PKCS1 ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
 
-        RSAPadding.PSS ->
+        SignatureAlgorithm.RSA.Padding.PSS ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA/PSS", provider)
     }
 

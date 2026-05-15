@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
@@ -61,10 +60,10 @@ internal actual fun verifyECDSAImpl
 }
 
 private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
-    when (alg.padding) {
-        RSAPadding.PKCS1 -> getSigInstance(
+    when (alg.parameters) {
+        is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> getSigInstance(
             "${alg.digest.jcaAlgorithmComponent}withRSA", config.provider)
-        RSAPadding.PSS -> getSigInstance("RSASSA-PSS", config.provider).apply {
+        is SignatureAlgorithm.RSA.Parameters.PssPadded -> getSigInstance("RSASSA-PSS", config.provider).apply {
             setParameter(alg.digest.jcaPSSParams)
         }
     }

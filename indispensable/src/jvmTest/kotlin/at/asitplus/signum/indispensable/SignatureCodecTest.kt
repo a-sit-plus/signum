@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.pki.getContentSigner
-import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
@@ -24,12 +23,9 @@ import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val SignatureCodecTest  by testSuite {
+val SignatureCodecTest by testSuite {
 
     "EC" - {
         val curve = "secp256r1"
@@ -67,8 +63,11 @@ val SignatureCodecTest  by testSuite {
         Security.addProvider(BouncyCastleProvider())
 
         val digest = ("SHA256")
+        val signatureAlgorithm =
+            if (Random.nextBoolean()) SignatureAlgorithm.RSAwithSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
 
-        val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.generateKeyPair() }
+        // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
+        val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
         withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
@@ -77,10 +76,12 @@ val SignatureCodecTest  by testSuite {
                 sign()
             }
 
+
+
             CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
-                SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
+                signatureAlgorithm
             ).jcaSignatureBytes shouldBe sig
 
             // create certificate with bouncycastle
@@ -97,7 +98,7 @@ val SignatureCodecTest  by testSuite {
                 /* subject = */ issuer,
                 /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keys.public.encoded)
             )
-            val signatureAlgorithm = X509SignatureAlgorithm.RS256
+
             val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keys.private)
             val certificateHolder = builder.build(contentSigner)
             certificateHolder.signature
@@ -107,10 +108,9 @@ val SignatureCodecTest  by testSuite {
             CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
             CryptoSignature.parseFromJca(
                 certificateHolder.signature,
-                SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
+                signatureAlgorithm
             ).encodeToDer() shouldBe bcSig
 
         }
     }
 }
-

@@ -5,7 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
@@ -132,6 +132,9 @@ open class ECSignerConfiguration internal constructor(): DSL.Data() {
     internal var digestSpecified = false
 }
 open class RSASignerConfiguration internal constructor(): DSL.Data() {
+
+    //TODO: this is more convenient, but does not allow customization of PSS except for digest. would we allow to set parameters like in my previous commit,
+    //it would be exact, but nobody supports them anyways, so…
     /**
      * Explicitly specify the digest to sign over.
      * Omit to default to a reasonable default choice.
@@ -148,12 +151,12 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
      * Explicitly specify the padding to use.
      * Omit to default to the only supported padding.
      *
-     * If the key stored in hardware supports multiple padding modes, you need to explicitly specify the digest to use.
-     * (By default, hardware keys are configured to only support a single digest.)
+     * If the key stored in hardware supports multiple padding modes, you need to explicitly specify the padding to use.
+     * (By default, hardware keys are configured to only support a single padding.)
      *
      * @see SigningKeyConfiguration.RSAConfiguration.paddings
      */
-    lateinit var padding: RSAPadding
+    lateinit var padding: SignatureAlgorithm.RSA.Padding
     internal val paddingSpecified get() = this::padding.isInitialized
 
 

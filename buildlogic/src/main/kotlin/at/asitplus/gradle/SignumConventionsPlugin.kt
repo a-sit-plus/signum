@@ -1,0 +1,403 @@
+package at.asitplus.gradle
+
+import at.asitplus.gradle.at.asitplus.gradle.addTestExtensions
+import com.android.build.api.dsl.androidLibrary
+import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.testing.Test
+import org.gradle.internal.os.OperatingSystem
+import org.gradle.kotlin.dsl.*
+import org.gradle.plugins.signing.SigningExtension
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.extraProperties
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import java.io.File
+import java.util.*
+
+/**
+ * Gradle convention plugin for Signum. Handles:
+ * * plugin application
+ * * setting artefact coordinates and version
+ * * maven publish
+ * * hacks to make swift interop ACTUALLY work
+ * * android wiring
+ * * large test heap
+ * * setting up all targets
+ * * silencing warnings on non-apple system about unbuildable targets
+ */
+class SignumConventionsPlugin : Plugin<Project> {
+    override fun apply(target: Project) = with(target) {
+        target.keepAndroidJvmTarget = true // keep androidJvmMain wiring even if no AGP is applied
+        logger.info("Signum Conventions Plugin applied to project: ${'$'}{target.path}")
+        pluginManager.apply("org.jetbrains.kotlin.multiplatform")
+        pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
+        if (target.hasAndroidSdk()) pluginManager.apply("com.android.kotlin.multiplatform.library")
+        pluginManager.apply("signing")
+        pluginManager.apply("at.asitplus.gradle.conventions")
+        pluginManager.apply("de.infix.testBalloon")
+    }
+}
+
+class SignumConventionsExtension(private val project: Project) {
+    init {
+        val indispensableVersion: String by project.extra
+        project.version = indispensableVersion
+        //if we do this properly, cinterop (swift-klib) blows up, so we hack!
+        project.afterEvaluate {
+            //work around IDEA BUG not finding any test deps on non-JVM!
+            (project.kotlinExtension as KotlinMultiplatformExtension). compilerOptions {
+                freeCompilerArgs.add("-Xcontext-parameters")
+            }
+            (project.kotlinExtension as KotlinMultiplatformExtension).sourceSets.filter { it.name.endsWith("Test") }
+                .forEach {
+                    it.dependencies { addTestExtensions() } }
+            tasks.withType<Test>().configureEach {
+                maxHeapSize = "10G"
+            }
+        }
+        project.silence()
+
+        project.extensions.getByType<KotlinMultiplatformExtension>().apply {
+            compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+            sourceSets.whenObjectAdded {
+                languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+            }
+        }
+
+        project.extensions.findByType<KotlinMultiplatformAndroidComponentsExtension>()?.apply {
+            onVariants { v ->
+                // Configure the instrumented-test APK only
+                v.androidTest?.manifestPlaceholders?.put("testLargeHeap", "true")
+            }
+        }
+    }
+
+    var supreme: Boolean = false
+        get() {
+            return field
+        }
+        set(value) {
+            if (!value) {
+                val indispensableVersion: String by project.extra
+                project.version = indispensableVersion
+            } else {
+                val supremeVersion: String by project.extra
+                project.version = supremeVersion
+            }
+            field = value
+
+        }
+
+    fun mavenPublish(name: String, description: String) = project.afterEvaluate {
+        val javadocJar = setupDokka(
+            baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
+        )
+        extensions.getByType<PublishingExtension>().apply {
+
+            publications {
+                withType<MavenPublication> {
+                    if (this.name != "relocation") artifact(javadocJar)
+                    pom {
+                        this.name.set(name)
+                        this.description.set(description)
+                        url.set("https://github.com/a-sit-plus/signum")
+                        licenses {
+                            license {
+                                this.name.set("The Apache License, Version 2.0")
+                                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                            }
+                        }
+                        developers {
+                            developer {
+                                id.set("JesusMcCloud")
+                                this.name.set("Bernd Prünster")
+                                email.set("bernd.pruenster@a-sit.at")
+                            }
+                            developer {
+                                id.set("iaik-jheher")
+                                this.name.set("Jakob Heher")
+                                email.set("jakob.heher@tugraz.at")
+                            }
+                            developer {
+                                id.set("nodh")
+                                this.name.set("Christian Kollmann")
+                                email.set("christian.kollmann@a-sit.at")
+                            }
+                            developer {
+                                id.set("n0900")
+                                this.name.set("Simon Müller")
+                                email.set("simon.mueller@a-sit.at")
+                            }
+                        }
+                        scm {
+                            connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
+                            developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
+                            url.set("https://github.com/a-sit-plus/signum")
+                        }
+                    }
+                }
+            }
+            repositories {
+                mavenLocal {
+                    extensions.getByType<SigningExtension>().apply {
+                        isRequired = false
+                    }
+                }
+                maven {
+                    url = uri(layout.projectDirectory.dir("..").dir("repo"))
+                    this.name = "local"
+                    if (System.getenv("SIGN_LOCAL_REPO_ARTEFACTS")?.ifBlank { "false" } != "true") {
+                        Logger.lifecycle("  > NOT signing locally published maven artefacts!")
+                        extensions.getByType<SigningExtension>().apply {
+                            isRequired = false
+                        }
+                    } else
+                        Logger.lifecycle("  > Signing locally published maven artefacts!")
+                }
+            }
+        }
+
+        extensions.getByType<SigningExtension>().apply {
+            val signingKeyId: String? by project
+            val signingKey: String? by project
+            val signingPassword: String? by project
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            sign(extensions.getByType<PublishingExtension>().publications)
+        }
+    }
+
+
+    fun android(namespace: String, minSdkOverride: Int? = null) {
+        if (!project.hasAndroidSdk()) {
+            project.logger.lifecycle(">> Android SDK not setup. Disabling Android targets!")
+            return
+        }
+        project.extensions.getByType<KotlinMultiplatformExtension>().apply {
+            androidLibrary {
+                this.namespace = namespace
+                minSdkOverride?.let {
+                    project.logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to $minSdkOverride for project ${project.name}" + "\u001b[0m")
+                    minSdk = it
+                }
+                withDeviceTestBuilder {
+                    sourceSetTreeName = "test"
+                }.configure {
+                    instrumentationRunnerArguments["timeout_msec"] = "2400000"
+                    managedDevices {
+                        localDevices {
+                            create("pixelAVD").apply {
+                                device = "Pixel 9 Pro" //more ram for more tests
+                                apiLevel = 35
+                                systemImageSource = "aosp-atd"
+                            }
+                        }
+                    }
+                }
+                packaging {
+                    listOf(
+                        "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                        "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                        "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                        "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                        "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                        "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                        "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                        "/META-INF/{AL2.0,LGPL2.1}",
+                        "win32-x86-64/attach_hotspot_windows.dll",
+                        "win32-x86/attach_hotspot_windows.dll",
+                        "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                        "META-INF/licenses/*",
+                        //noinspection WrongGradleMethod
+                    ).forEach { resources.excludes.add(it) }
+                }
+            }
+        }
+    }
+}
+
+
+fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
+    SignumConventionsExtension(this).init()
+}
+
+
+private fun Project.silence() {
+    val kmp = extensions.getByType<KotlinMultiplatformExtension>()
+    val tbr = mutableSetOf<KotlinTarget>()
+    kmp.targets.whenObjectAdded {
+        val buildableTargets = kmp.getBuildableTargets()
+        if (!buildableTargets.contains(this)) {
+            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
+            tbr += this
+            logger.warn(">>>> Target $this is not buildable on the current host <<<<")
+        }
+    }
+    afterEvaluate {
+        kmp.targets.removeAll(tbr)
+    }
+
+}
+
+private fun KotlinMultiplatformExtension.getBuildableTargets() =
+    targets.filter { target ->
+        when {
+            // Non-native targets are always buildable
+            target.platformType != org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.native -> true
+            else -> runCatching {
+                val konanTarget = (target as? KotlinNativeTarget)
+                konanTarget?.publishable == true
+            }.getOrElse { false }
+        }
+    }
+
+val Project.disableAppleTargets
+    get() = ("true" == (System.getenv("disableAppleTargets")
+        ?.also { Logger.lifecycle("  > Property disableAppleTargets set to $it from environment") }
+        ?: runCatching {
+            (project.extraProperties["disableAppleTargets"] as String).also {
+                Logger.lifecycle("  > Property disableAppleTargets set to $it from extra properties")
+            }
+        }.getOrNull()))
+
+val Project.disableNdkTargets
+    get() = ("true" == (System.getenv("disableNdkTargets")
+        ?.also { Logger.lifecycle("  > Property disableNdkTargets set to $it from environment") }
+        ?: runCatching {
+            (project.extraProperties["disableNdkTargets"] as String).also {
+                Logger.lifecycle("  > Property disableNdkTargets set to $it from extra properties")
+            }
+        }.getOrNull()))
+
+fun KotlinMultiplatformExtension.indispensableTargets() {
+
+    jvm()
+
+    if (!project.disableAppleTargets) {
+        macosArm64()
+        tvosArm64()
+        tvosSimulatorArm64()
+        iosArm64()
+        iosSimulatorArm64()
+        watchosSimulatorArm64()
+        watchosArm32()
+        watchosArm64()
+        tvosSimulatorArm64()
+        tvosArm64()
+    }
+
+    if (project.hasAndroidSdk()) {
+        if (project.hasAndroidNdk() && !project.disableNdkTargets) {
+            androidNativeX64()
+            androidNativeX86()
+            androidNativeArm32()
+            androidNativeArm64()
+        } else {
+            Logger.lifecycle("  > Skipping Android native targets (NDK missing or disableNdkTargets=true)")
+        }
+    }
+
+    listOf(
+        js().apply { browser { testTask { enabled = false } } },
+        @OptIn(ExperimentalWasmDsl::class)
+        wasmJs().apply { browser { testTask { enabled = false } } },
+        // wasmWasi()
+    ).forEach {
+        it.nodejs()
+    }
+
+    linuxX64()
+    linuxArm64()
+    mingwX64()
+
+}
+
+
+fun Project.hasAndroidSdk() = resolveAndroidSdk(this)?.let { it -> isValidAndroidSdk(it) } == true
+
+fun Project.hasAndroidNdk() = resolveAndroidNdk(this)?.let { it -> isValidAndroidNdk(it) } == true
+
+private fun resolveAndroidSdk(project: Project): File? {
+    // Highest precedence: ANDROID_SDK_ROOT (preferred), then ANDROID_HOME (legacy)
+    val env = System.getenv()
+    val fromEnv = listOf("ANDROID_SDK_ROOT", "ANDROID_HOME")
+        .asSequence()
+        .mapNotNull { env[it]?.takeIf { it.isNotBlank() } }
+        .map(::File)
+        .firstOrNull { it.exists() }
+
+    if (fromEnv != null) return fromEnv
+
+    // Fallback: local.properties (common on dev machines)
+    val localProps = File(project.rootDir, "local.properties")
+    if (localProps.exists()) {
+        Properties().apply {
+            localProps.inputStream().use(::load)
+            (getProperty("sdk.dir") ?: getProperty("android.sdk.path"))?.let {
+                val f = File(it)
+                if (f.exists()) return f
+            }
+        }
+    }
+    return null
+}
+
+private fun resolveAndroidNdk(project: Project): File? {
+    val env = System.getenv()
+    val fromEnv = listOf("ANDROID_NDK_ROOT", "ANDROID_NDK_HOME", "ANDROID_NDK", "NDK_HOME")
+        .asSequence()
+        .mapNotNull { env[it]?.takeIf { it.isNotBlank() } }
+        .map(::File)
+        .firstOrNull { it.exists() }
+    if (fromEnv != null) return fromEnv
+
+    val localProps = File(project.rootDir, "local.properties")
+    if (localProps.exists()) {
+        Properties().apply {
+            localProps.inputStream().use(::load)
+            (getProperty("ndk.dir") ?: getProperty("ndkDirectory"))?.let {
+                val f = File(it)
+                if (f.exists()) return f
+            }
+        }
+    }
+
+    val sdk = resolveAndroidSdk(project) ?: return null
+    val bundled = listOf(File(sdk, "ndk-bundle"), File(sdk, "ndk"))
+        .firstOrNull { it.exists() }
+
+    // $SDK/ndk is a folder containing versioned subfolders; pick the "latest" directory.
+    if (bundled?.name == "ndk") {
+        val candidates = bundled.listFiles()?.filter { it.isDirectory } ?: emptyList()
+        return candidates.maxWithOrNull { a, b ->
+            val ta = a.name.toVersionTuple()
+            val tb = b.name.toVersionTuple()
+            val n = maxOf(ta.size, tb.size)
+            (0 until n).asSequence()
+                .map { i -> (ta.getOrNull(i) ?: 0).compareTo(tb.getOrNull(i) ?: 0) }
+                .firstOrNull { it != 0 } ?: 0
+        } ?: bundled
+    }
+
+    return bundled
+}
+
+private fun String.toVersionTuple(): List<Int> =
+    split('.', '-', '_').mapNotNull { it.toIntOrNull() }.ifEmpty { listOf(0) }
+
+private fun isValidAndroidNdk(ndk: File): Boolean {
+    val prebuilt = File(ndk, "toolchains/llvm/prebuilt")
+    return prebuilt.isDirectory && (prebuilt.listFiles()?.any { it.isDirectory } == true)
+}
+
+
+private fun isValidAndroidSdk(sdk: File): Boolean {
+    val platformsOk = File(sdk, "platforms").listFiles()?.any { it.isDirectory } == true
+    val buildToolsOk = File(sdk, "build-tools").listFiles()?.any { it.isDirectory } == true
+    return platformsOk && buildToolsOk
+}

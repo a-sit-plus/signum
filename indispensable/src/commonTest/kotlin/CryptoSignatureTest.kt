@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
+import at.asitplus.awesn1.encoding.toTwosComplementByteArray
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger

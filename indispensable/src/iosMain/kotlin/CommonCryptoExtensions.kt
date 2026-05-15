@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
@@ -96,11 +97,6 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
     get() =
         this.algorithm.secKeyAlgorithmPreHashed
 
-val CryptoSignature.iosEncoded
-    get() = when (this) {
-        is CryptoSignature.EC -> this.encodeToDer()
-        is CryptoSignature.RSA -> this.rawByteArray
-    }
 
 fun CryptoPublicKey.toSecKey() = catching {
     memScoped {

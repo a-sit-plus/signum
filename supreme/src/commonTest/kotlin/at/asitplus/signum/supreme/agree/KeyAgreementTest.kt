@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.agree
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -27,7 +28,7 @@ val KeyAgreementTest by testSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
         val other =
-            CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow() as KeyAgreementPrivateValue.ECDH
+            CryptoPrivateKey.decodeFromPem(pkcs8) as KeyAgreementPrivateValue.ECDH
 
         val symmetric1 = self.keyAgreement(other.publicValue).getOrThrow()
         val symmetric2 = other.keyAgreement(self.publicValue).getOrThrow()
