@@ -24,7 +24,7 @@ kotlin {
                 implementation(project(":internals"))
                 api(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around
-                implementation(libs.propigator)
+                api(libs.propigator)
             }
         }
 
