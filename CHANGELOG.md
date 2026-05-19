@@ -1,7 +1,7 @@
 # Changelog
 
 
-## NEXT
+## 3.23.0 / (Supreme unaffected)
 * Rework JWS support around explicit compact, flattened, and general representations
     * Add sealed `JWS` support with dedicated `JwsCompact`, `JwsFlattened`, `JwsGeneral`
     * Add conversions between compact, flattened, and general JWS representations
