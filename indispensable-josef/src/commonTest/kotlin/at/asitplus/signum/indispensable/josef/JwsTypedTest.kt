@@ -39,7 +39,7 @@ val JwsTypedTest by matrixSuite {
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedCompact.toString() shouldBe typedCompact.jws.toString()
 
-        typedCompact.jws.typed<JsonObject, JwsCompact>() shouldBe typedCompact
+        typedCompact.jws.typed<JwsCompact, JsonObject>() shouldBe typedCompact
         JwsTyped<JsonObject>(typedCompact.toString()) shouldBe typedCompact
     }
 
@@ -90,7 +90,7 @@ val JwsTypedTest by matrixSuite {
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
-        typedFlattened.jws.typed<JsonObject, JwsFlattened>() shouldBe typedFlattened
+        typedFlattened.jws.typed<JwsFlattened, JsonObject>() shouldBe typedFlattened
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
@@ -122,6 +122,6 @@ val JwsTypedTest by matrixSuite {
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toJwsFlattenedTyped() shouldBe listOf(first, second)
 
-        typedGeneral.jws.typed<JsonObject, JwsGeneral>() shouldBe typedGeneral
+        typedGeneral.jws.typed<JwsGeneral, JsonObject>() shouldBe typedGeneral
     }
 }

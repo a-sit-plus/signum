@@ -8,11 +8,12 @@ typealias JwsCompactTyped<P> = JwsTyped<JwsCompact, P>
 typealias JwsFlattenedTyped<P> = JwsTyped<JwsFlattened, P>
 typealias JwsGeneralTyped<P> = JwsTyped<JwsGeneral, P>
 
+
 fun <P> JwsCompactTyped<P>.toJwsFlattenedTyped() = JwsFlattenedTyped(this.jws.toJwsFlattened(), this.payload)
 fun <P> JwsFlattenedTyped<P>.toJwsCompactTyped() = JwsCompactTyped(this.jws.toJwsCompact(), this.payload)
 fun <P> JwsGeneralTyped<P>.toJwsFlattenedTyped() = this.jws.toJwsFlattened().map { JwsFlattenedTyped(it, this.payload) }
 
-inline fun <reified P, J : JWS> J.typed(): JwsTyped<J, P> =
+inline fun <J : JWS, reified P> J.typed(): JwsTyped<J, P> =
     JwsTyped(this, getPayload<P>().getOrThrow())
 
 /**
