@@ -62,6 +62,28 @@ val JwsTypedTest by matrixSuite {
         reparsedCompact shouldBe typedCompact
     }
 
+    "typed serializer template roundtrips compact JWS with typed payload" {
+        val serializer = JwsTypedSerializerTemplate(
+            JwsCompactStringSerializer,
+            JsonObject.serializer(),
+        )
+        val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
+            protectedHeader = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                keyId = "kid-serializer",
+            ),
+            payload = payload,
+        ) {
+            byteArrayOf(5, 6, 7, 8)
+        }
+
+        val serialized = joseCompliantSerializer.encodeToString(serializer, typedCompact)
+        val reparsed = joseCompliantSerializer.decodeFromString(serializer, serialized)
+
+        reparsed shouldBe typedCompact
+        reparsed.payload shouldBe payload
+    }
+
     "flattened typed wrappers can be created from header fragments and existing flattened JWS" {
         val protectedHeader = JwsHeader.Part(
             algorithm = JwsAlgorithm.Signature.RS256,
