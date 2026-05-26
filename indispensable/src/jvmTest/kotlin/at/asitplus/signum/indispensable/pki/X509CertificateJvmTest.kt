@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
@@ -209,7 +210,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.asn1Representation.version shouldBe 3
+        x509Certificate.tbsCertificate.asn1Representation.version shouldBe X509TbsCertificate.Version.V3
         ((x509Certificate.tbsCertificate.issuerName.first().attrsAndValues.first() as AttributeTypeAndValue.X509Representable).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         ((x509Certificate.tbsCertificate.subjectName.first().attrsAndValues.first() as AttributeTypeAndValue.X509Representable).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()

@@ -5,6 +5,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaOtherPrimeInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.Version
 import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.asAsn1BitString
@@ -130,6 +131,19 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             attributes: Set<Asn1Element>? = null,
         ) : this(null, RsaPkcs1Source(pkcs1Representation, attributes), null)
 
+        init {
+            providedPkcs1Source?.let {
+                when (it.pkcs1Representation.version) {
+                    Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(it.pkcs1Representation.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
+                    Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(it.pkcs1Representation.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
+                }
+            }
+
+            providedPkcs8Representation?.let {
+                require(it.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${it.version}" }
+            }
+        }
+
         override val oid: ObjectIdentifier get() = Companion.oid
 
         private val content: RsaPrivateKeyContent by providedContent orLazy {
@@ -244,6 +258,17 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         private val providedSec1Source: EcSec1Source?,
         private val providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
     ) : CryptoPrivateKey {
+
+
+        init {
+            providedSec1Source?.let {
+                require(it.sec1Representation.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${it.sec1Representation.version}" }
+            }
+
+            providedPkcs8Representation?.let {
+                require(it.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${it.version}" }
+            }
+        }
 
         override val oid: ObjectIdentifier get() = Companion.oid
 
@@ -510,7 +535,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             der: Der,
         ): CryptoPrivateKey {
             val decoded = der.decodeFromTlv(serializer, src)
-            require(decoded.version == 1) { "PKCS#8 Private Key VERSION must be 1" }
+            require(decoded.version == Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
             return when (decoded.algorithmOid) {
                 RSA.oid -> RSA(decoded)
                 EC.oid -> EC.decodeFromTlv(Pkcs8PrivateKeyInfo.serializer(), src, der)
@@ -560,7 +585,7 @@ private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?
 
 private fun RsaPrivateKeyContent.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo =
     Pkcs1RsaPrivateKeyInfo(
-        rawVersion = Asn1Integer(if (otherPrimeInfos != null) 1 else 0),
+        version = if (otherPrimeInfos != null) Pkcs1RsaPrivateKeyInfo.Version.MULTI else Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME,
         modulus = publicKey.n,
         publicExponent = publicKey.e,
         privateExponent = positive(privateKey),
@@ -576,7 +601,7 @@ private fun Sec1EcPrivateKeyInfo.toSignumContent(
     curveFromPkcs8: ECCurve?,
     attributes: Set<Asn1Element>?,
 ): EcPrivateKeyContent {
-    require(version == 1) { "EC public key version must be 1" }
+    require(version == Sec1EcPrivateKeyInfo.Version.V1) { "EC public key version must be 1" }
     val curve = parameters?.let(ECCurve::withOid) ?: curveFromPkcs8
     val privateValue = BigInteger.fromByteArray(privateKey, Sign.POSITIVE)
     return if (curve != null) {
@@ -605,7 +630,7 @@ private fun Sec1EcPrivateKeyInfo.toSignumContent(
 
 private fun EcPrivateKeyContent.toSec1Representation(): Sec1EcPrivateKeyInfo =
     Sec1EcPrivateKeyInfo(
-        version = 1,
+        version = Sec1EcPrivateKeyInfo.Version.V1,
         privateKey = privateKey.toByteArray().ensureSize(curveOrderLengthInBytes.toUInt()),
         parameters = publicKey?.curve?.oid?.takeIf { encodeCurve },
         publicKey = when {

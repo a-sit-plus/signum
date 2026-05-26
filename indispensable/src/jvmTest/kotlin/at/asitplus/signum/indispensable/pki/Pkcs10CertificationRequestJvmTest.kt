@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.encoding.encodeToAsn1Primitive
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.*
@@ -296,7 +297,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         csr.signatureAlgorithm shouldBe signatureAlgorithm
-        csr.tbsCsr.asn1Representation.version shouldBe 1
+        csr.tbsCsr.asn1Representation.version shouldBe Pkcs10CertificationRequestInfo.Version.V1
         ((csr.tbsCsr.subjectName.first().attrsAndValues.first() as AttributeTypeAndValue.X509Representable).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()

@@ -10,7 +10,6 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA
 import at.asitplus.signum.internals.orLazy
@@ -50,11 +49,11 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         EC, RSA
     }
 
-
     val kind: Kind
 
-    class ECDSA(
-        private val providedParams: Pair<Digest?, ECCurve?>?,
+    private data class EcdsaParams(val digest: Digest?, val curve: ECCurve?)
+    class ECDSA private constructor(
+        private val providedParams: EcdsaParams?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
 
@@ -63,7 +62,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             digest: Digest?,
             /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
             requiredCurve: ECCurve?
-        ) : this(digest to requiredCurve, null)
+        ) : this(EcdsaParams(digest , requiredCurve), null)
 
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
@@ -72,7 +71,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         val digest: Digest? by providedParams.orLazyNullable(
-            provided = { first },
+            provided = { digest },
             fallback = {
                 when (providedAsn1!!.oid) {
                     KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
@@ -85,18 +84,19 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         val requiredCurve: ECCurve? by providedParams.orLazyNullable(
-            provided = { second },
+            provided = { curve },
             fallback = { null },
         )
 
         override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
             X509AlgorithmIdentifier(
-                when (digest) {
+                oid = when (digest) {
                     Digest.SHA256 -> KnownOIDs.ecdsaWithSHA256
                     Digest.SHA384 -> KnownOIDs.ecdsaWithSHA384
                     Digest.SHA512 -> KnownOIDs.ecdsaWithSHA512
                     else -> throw IllegalArgumentException("Unsupported digest: $digest")
-                }
+                },
+                parameters = emptyList()
             )
         }
 
@@ -202,12 +202,12 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                         Digest.SHA384 -> KnownOIDs.sha384WithRSAEncryption
                         Digest.SHA512 -> KnownOIDs.sha512WithRSAEncryption
                     },
-                    Asn1Null
+                    listOf(Asn1Null)
                 )
 
                 is Parameters.PssPadded -> X509AlgorithmIdentifier(
                     KnownOIDs.rsaPSS,
-                    DER.encodeToTlv(RsaSsaPssParams.serializer(), currentParameters.asn1Representation)
+                    listOf(DER.encodeToTlv(RsaSsaPssParams.serializer(), currentParameters.asn1Representation))
                 )
             }
         }
@@ -311,14 +311,13 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                 override val asn1Representation: RsaSsaPssParams by rsaSsaPssParams orLazy {
                     requireNotNull(providedParams)
                     RsaSsaPssParams(
-                        ExplicitlyTagged(X509AlgorithmIdentifier(providedParams.digest.oid, Asn1Null)),
-                        ExplicitlyTagged(
-                            X509AlgorithmIdentifier(
-                                providedParams.mgfAlgorithm.oid,
-                                Asn1.Sequence { +providedParams.digest.oid; +Asn1Null })
+                        hashAlgorithm = X509AlgorithmIdentifier(providedParams.digest.oid, listOf(Asn1Null)),
+                        maskGenAlgorithm = X509AlgorithmIdentifier(
+                            providedParams.mgfAlgorithm.oid,
+                            listOf(Asn1.Sequence { +providedParams.digest.oid; +Asn1Null })
                         ),
-                        ExplicitlyTagged(Asn1Integer(providedParams.saltLength)),
-                        ExplicitlyTagged(Asn1Integer(providedParams.trailerField))
+                        saltLength = providedParams.saltLength.also { require(it <= Int.MAX_VALUE.toUInt()) }.toInt(),
+                        trailerField = providedParams.trailerField
                     )
 
                 }

@@ -127,7 +127,6 @@ class TbsCertificate private constructor(
     override val asn1Representation: X509TbsCertificate by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         X509TbsCertificate(
-            version = 3,
             serialNumber = Asn1Primitive(Asn1Element.Tag.INT, providedContent.serialNumber).decodeToAsn1Integer(),
             signatureAlgorithm = providedContent.signatureAlgorithm.asn1Representation,
             issuerName = providedContent.issuerName.map { it.asn1Representation },
@@ -231,9 +230,9 @@ class TbsCertificate private constructor(
  * Very simple implementation of an X.509 Certificate
  */
 class Certificate private constructor(
-    private val providedAsn1Representation: X509Certificate?,
-    providedContent: TbsCertificate?,
-    providedSignature: CryptoSignature?
+    private val providedAsn1Representation: X509Certificate?, /*TODO EXTENSIBILITY THIS SHOULD NOT BE A VAL but we need it for temp PFUSCH equals*/
+    providedContent: TbsCertificate?, /*TODO EXTENSIBILITY private val*/
+    providedSignature: CryptoSignature? /*TODO EXTENSIBILITY private val*/
 ) : DerPemEncodable<X509Certificate> {
 
     override val pemLabel: String get() = canonicalPemLabel
@@ -265,6 +264,7 @@ class Certificate private constructor(
         CryptoSignature(asn1Representation.signatureAlgorithm.oid, asn1Representation.signatureValue)
     }
 
+    /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
     val tbsCertificate: TbsCertificate by providedContent orLazy {
         TbsCertificate(asn1Representation.tbsCertificate)
     }

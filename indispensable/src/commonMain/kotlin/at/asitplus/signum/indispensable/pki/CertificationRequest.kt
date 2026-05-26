@@ -72,7 +72,6 @@ class TbsCertificationRequest private constructor(
     override val asn1Representation: Pkcs10CertificationRequestInfo by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         Pkcs10CertificationRequestInfo(
-            version = 1,
             subjectName = providedContent.subjectName.map { it.asn1Representation },
             publicKey = providedContent.publicKey.asn1Representation,
             attributes = providedContent.attributes.map { it.requireX509().asn1Representation },
@@ -245,7 +244,7 @@ private fun mergeAttributesWithExtensions(
     return mutableListOf<CsrAttribute>().apply {
         attributes?.let { addAll(it) }
         extensions?.let {
-            add(CsrAttribute(Pkcs10CsrAttribute.X509CertificateExtension(it.map { extension ->
+            add(CsrAttribute(Pkcs10CsrAttribute.ExtensionRequest(it.map { extension ->
                 extension.requireX509().asn1Representation
             })))
         }

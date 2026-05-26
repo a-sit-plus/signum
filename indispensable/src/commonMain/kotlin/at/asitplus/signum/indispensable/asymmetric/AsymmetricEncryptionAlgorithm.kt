@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
-
+//TODO map to algorithmidentifier structure as per rfc8017
 sealed interface RSAPadding : Enumerable {
     @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
     object PKCS1 : RSAPadding {

@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SignatureValue
+import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromTlv
@@ -27,7 +28,7 @@ private data class EcSignatureContent(
 /**
  * Algorithm-agnostic signature value. X.509 algorithm context lives in [X509Signature].
  */
-sealed interface CryptoSignature : DerEncodable<SignatureValue> {
+sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
     override val asn1Representation: SignatureValue
 
