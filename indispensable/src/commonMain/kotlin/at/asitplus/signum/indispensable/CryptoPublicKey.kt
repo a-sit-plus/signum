@@ -57,7 +57,7 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
 
     companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
         override val canonicalPemLabel: String get() = SubjectPublicKeyInfo.canonicalPemLabel
-        override val validPemLabels: Set<String> get() = SubjectPublicKeyInfo.validPemLabels
+        override val alternativePemLabels: Set<String> get() = SubjectPublicKeyInfo.alternativePemLabels
 
         /**
          * Parses a DID representation of a public key and

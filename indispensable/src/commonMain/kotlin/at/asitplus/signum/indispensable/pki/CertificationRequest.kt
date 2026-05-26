@@ -215,7 +215,7 @@ class CertificationRequest private constructor(
     companion object : DerPemDecodable<Pkcs10CertificationRequest, CertificationRequest> {
 
         override val canonicalPemLabel: String get() = Pkcs10CertificationRequest.canonicalPemLabel
-        override val validPemLabels: Set<String> get() = Pkcs10CertificationRequest.validPemLabels
+        override val alternativePemLabels: Set<String> get() = Pkcs10CertificationRequest.alternativePemLabels
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(

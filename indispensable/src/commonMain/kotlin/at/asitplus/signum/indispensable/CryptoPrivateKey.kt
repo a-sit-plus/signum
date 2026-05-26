@@ -217,8 +217,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
 
         companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, RSA> {
             override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
-            override val validPemLabels: Set<String> =
-                setOf(canonicalPemLabel, Pkcs1RsaPrivateKeyInfo.canonicalPemLabel)
+            override val alternativePemLabels: Set<String> = setOf(Pkcs1RsaPrivateKeyInfo.canonicalPemLabel)
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
 
             override fun decodeFromTlv(
@@ -449,10 +448,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
 
         companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, EC> {
             override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
-            override val validPemLabels: Set<String> = setOf(
-                canonicalPemLabel,
-                Sec1EcPrivateKeyInfo.canonicalPemLabel
-            )
+            override val alternativePemLabels: Set<String> = setOf(Sec1EcPrivateKeyInfo.canonicalPemLabel)
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             override fun decodeFromTlv(
@@ -528,7 +524,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
 
     companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
         override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
-        override val validPemLabels: Set<String> get() = Pkcs8PrivateKeyInfo.validPemLabels
+        override val alternativePemLabels: Set<String> get() = Pkcs8PrivateKeyInfo.alternativePemLabels
         override fun decodeFromTlv(
             serializer: KSerializer<Pkcs8PrivateKeyInfo>,
             src: Asn1Element,
