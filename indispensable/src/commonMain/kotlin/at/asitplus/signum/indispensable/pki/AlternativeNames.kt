@@ -213,9 +213,11 @@ private fun AlternativeNamesContent.toEntries(): List<Asn1Element> =
         addAll(dnsNames.map { it.asGeneralName(GeneralNameTags.dnsName) })
         addAll(x400Addresses)
         addAll(directoryNames.map { rdns ->
-            Asn1.Sequence {
-                rdns.forEach { +it.encodeToTlv() }
-            } withImplicitTag GeneralNameTags.directoryName
+            Asn1.ExplicitlyTagged(GeneralNameTags.directoryName.tagValue) {
+                +Asn1.Sequence {
+                    rdns.forEach { +it.encodeToTlv() }
+                }
+            }
         })
         addAll(ediPartyNames)
         addAll(uris.map { it.asGeneralName(GeneralNameTags.uniformResourceIdentifier) })
@@ -241,7 +243,7 @@ private fun List<Asn1Element>.toAlternativeNamesContent(): AlternativeNamesConte
             }
         },
         directoryNames = filter { it.tag == GeneralNameTags.directoryName }.map {
-            it.requireSequence("directoryName").children.map { rdn -> RelativeDistinguishedName.fromTlv(rdn as Asn1Set) }
+            it.requireDirectoryName().map { rdn -> RelativeDistinguishedName.fromTlv(rdn as Asn1Set) }
         },
         registeredIDs = filter { it.tag == GeneralNameTags.registeredID }.map {
             ObjectIdentifier.decodeFromAsn1ContentBytes(it.requirePrimitive("registeredID").content)
@@ -285,6 +287,15 @@ private fun Asn1Element.requirePrimitive(name: String): Asn1Primitive =
 private fun Asn1Element.requireSequence(name: String): Asn1Sequence =
     this as? Asn1Sequence
         ?: throw Asn1StructuralException("Invalid $name Alternative Name found: ${toDerHexString()}")
+
+private fun Asn1Element.requireDirectoryName(): List<Asn1Element> {
+    val children = asStructure().children
+    return if (children.size == 1 && children.single().tag == Asn1Element.Tag.SEQUENCE) {
+        children.single().asSequence().children
+    } else {
+        children
+    }
+}
 
 /**
  * Enumeration of implicit tags used to indicate different `SubjectAltName`s.
