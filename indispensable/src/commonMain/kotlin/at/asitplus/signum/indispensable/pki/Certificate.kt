@@ -340,11 +340,11 @@ class Certificate private constructor(
          * Tries to decode [src] into an [Certificate], by parsing the bytes directly as ASN.1 structure,
          * or by decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray, der: Der = DER): Certificate? = catchingUnwrapped {
+        fun decodeFromByteArray(src: ByteArray, limit: Long = src.size.toLong(), der: Der = DER): Certificate? = catchingUnwrapped {
             Certificate(der.decodeFromDer<X509Certificate>(src))
         }.getOrNull() ?: catchingUnwrapped {
             Certificate(der.decodeFromDer<X509Certificate>(src.decodeToByteArray(Base64())))
-        }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString(), der)
+        }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString(), limit, der)
     }
 }
 

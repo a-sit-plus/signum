@@ -16,7 +16,7 @@ fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromDerSaf
     src: ByteArray,
     assertTag: Asn1Element.Tag? = null
 ): KmmResult<T> =
-    runCatching { decodeFromDer(src, assertTag) }.wrap()
+    runCatching { decodeFromDer(src, src.size.toLong(), assertTag) }.wrap()
 
 fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromTlvSafe(
     src: A,

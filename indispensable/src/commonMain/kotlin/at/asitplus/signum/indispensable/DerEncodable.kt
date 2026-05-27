@@ -1,12 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.PemBlock
-import at.asitplus.awesn1.PemLabelSpec
-import at.asitplus.awesn1.WithPemLabel
-import at.asitplus.awesn1.decodeFromPem
-import at.asitplus.awesn1.validate
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.io.encodeToDer
 import at.asitplus.awesn1.io.parse
@@ -46,8 +40,9 @@ interface DerPemDecodable<Serializable, out T : DerEncodable<Serializable>> :
     fun decodeFromPemBlockPayload(
         serializer: KSerializer<Serializable>,
         src: PemBlock,
+        limit: Long = src.payload.size.toLong(),
         der: Der = DER,
-    ): T = decodeFromDer(serializer, src.payload, der)
+    ): T = decodeFromDer(serializer, src.payload, limit, der)
 }
 
 fun <Serializable> DerPemEncodable<Serializable>.encodeToPemBlock(
@@ -74,32 +69,42 @@ inline fun <reified Serializable> DerPemEncodable<Serializable>.encodeToPem(
 fun <Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPemBlock(
     serializer: KSerializer<Serializable>,
     src: PemBlock,
+    limit: Long = src.payload.size.toLong(),
     der: Der = DER,
 ): T {
     validate(src)
     require(!src.headers.any()) { "Unexpected PEM headers are present in the data" }
-    return decodeFromPemBlockPayload(serializer, src, der)
+    return decodeFromPemBlockPayload(serializer, src, limit, der)
 }
 
 inline fun <reified Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPemBlock(
     src: PemBlock,
+    limit: Long = src.payload.size.toLong(),
     der: Der = DER,
 ): T = decodeFromPemBlock(
     der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
     src,
+    limit,
     der,
 )
 
 fun <Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPem(
     serializer: KSerializer<Serializable>,
     src: String,
+    limit: Long? = null,
     der: Der = DER,
-): T = decodeFromPemBlock(serializer, PemBlock.decodeFromPem(src), der)
+): T = PemBlock.decodeFromPem(src).let { pemBlock ->
+    decodeFromPemBlock(serializer, pemBlock, limit ?: pemBlock.payload.size.toLong(), der)
+}
 
 inline fun <reified Serializable, T : DerEncodable<Serializable>> DerPemDecodable<Serializable, T>.decodeFromPem(
     src: String,
+    limit: Long? = null,
     der: Der = DER,
-): T = decodeFromPemBlock<Serializable, T>(PemBlock.decodeFromPem(src), der)
+): T = PemBlock.decodeFromPem(src).let { pemBlock ->
+    decodeFromPemBlock<Serializable, T>(pemBlock, limit ?: pemBlock.payload.size.toLong(), der)
+
+}
 
 /**
  * Encodes the implementing object into an [Asn1Element] through [der] serialization
@@ -173,8 +178,9 @@ inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<S
 fun <Serializable, T : DerEncodable<Serializable>> DerDecodable<Serializable, T>.decodeFromDer(
     serializer: KSerializer<Serializable>,
     bytes: ByteArray,
+    limit: Long = bytes.size.toLong(),
     der: Der = DER
-): T = decodeFromTlv(serializer, Asn1Element.parse(bytes), der)
+): T = decodeFromTlv(serializer, Asn1Element.parse(bytes, limit), der)
 
 inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<Serializable, T>.decodeFromDer(
     bytes: ByteArray,
@@ -188,14 +194,16 @@ inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<S
 fun <Serializable, T : DerEncodable<Serializable>> DerDecodable<Serializable, T>.decodeFromDer(
     serializer: KSerializer<Serializable>,
     source: Source,
+    limit: Long = Long.MAX_VALUE,
     der: Der = DER
-): T = decodeFromTlv(serializer, Asn1Element.parse(source), der)
+): T = decodeFromTlv(serializer, Asn1Element.parse(source, limit), der)
 
 inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<Serializable, T>.decodeFromDer(
     source: Source,
+    limit: Long = Long.MAX_VALUE,
     der: Der = DER
 ): T = decodeFromTlv(
     der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
-    Asn1Element.parse(source),
+    Asn1Element.parse(source, limit),
     der
 )

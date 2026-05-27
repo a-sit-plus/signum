@@ -8,7 +8,7 @@ import at.asitplus.awesn1.Asn1Set
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.pki.GeneralNameImplicitTags
+import at.asitplus.awesn1.crypto.pki.GeneralNameTags
 import at.asitplus.awesn1.crypto.pki.X509GeneralNames
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.parse
@@ -209,19 +209,19 @@ private class X509AlternativeNames private constructor(
 private fun AlternativeNamesContent.toEntries(): List<Asn1Element> =
     buildList {
         addAll(otherNames)
-        addAll(rfc822Names.map { it.asGeneralName(GeneralNameImplicitTags.rfc822Name) })
-        addAll(dnsNames.map { it.asGeneralName(GeneralNameImplicitTags.dnsName) })
+        addAll(rfc822Names.map { it.asGeneralName(GeneralNameTags.rfc822Name) })
+        addAll(dnsNames.map { it.asGeneralName(GeneralNameTags.dnsName) })
         addAll(x400Addresses)
         addAll(directoryNames.map { rdns ->
             Asn1.Sequence {
                 rdns.forEach { +it.encodeToTlv() }
-            } withImplicitTag GeneralNameImplicitTags.directoryName
+            } withImplicitTag GeneralNameTags.directoryName
         })
         addAll(ediPartyNames)
-        addAll(uris.map { it.asGeneralName(GeneralNameImplicitTags.uniformResourceIdentifier) })
-        addAll(ipAddresses.map { Asn1Primitive(GeneralNameImplicitTags.ipAddress, it) })
+        addAll(uris.map { it.asGeneralName(GeneralNameTags.uniformResourceIdentifier) })
+        addAll(ipAddresses.map { Asn1Primitive(GeneralNameTags.ipAddress, it) })
         addAll(registeredIDs.map {
-            Asn1Primitive(GeneralNameImplicitTags.registeredID, it.encodeToTlv().content)
+            Asn1Primitive(GeneralNameTags.registeredID, it.encodeToTlv().content)
         })
     }
 
@@ -230,47 +230,47 @@ private fun String.asGeneralName(tag: Asn1Element.Tag): Asn1Primitive =
 
 private fun List<Asn1Element>.toAlternativeNamesContent(): AlternativeNamesContent =
     AlternativeNamesContent(
-        dnsNames = parseStringSANs(GeneralNameImplicitTags.dnsName),
-        rfc822Names = parseStringSANs(GeneralNameImplicitTags.rfc822Name),
-        uris = parseStringSANs(GeneralNameImplicitTags.uniformResourceIdentifier),
-        ipAddresses = filter { it.tag == GeneralNameImplicitTags.ipAddress }.map {
+        dnsNames = parseStringSANs(GeneralNameTags.dnsName),
+        rfc822Names = parseStringSANs(GeneralNameTags.rfc822Name),
+        uris = parseStringSANs(GeneralNameTags.uniformResourceIdentifier),
+        ipAddresses = filter { it.tag == GeneralNameTags.ipAddress }.map {
             it.requirePrimitive("iPAddress").content.also { content ->
                 if (content.size != 4 && content.size != 16) {
                     throw Asn1StructuralException("Invalid iPAddress Alternative Name found: ${it.toDerHexString()}")
                 }
             }
         },
-        directoryNames = filter { it.tag == GeneralNameImplicitTags.directoryName }.map {
+        directoryNames = filter { it.tag == GeneralNameTags.directoryName }.map {
             it.requireSequence("directoryName").children.map { rdn -> RelativeDistinguishedName.fromTlv(rdn as Asn1Set) }
         },
-        registeredIDs = filter { it.tag == GeneralNameImplicitTags.registeredID }.map {
+        registeredIDs = filter { it.tag == GeneralNameTags.registeredID }.map {
             ObjectIdentifier.decodeFromAsn1ContentBytes(it.requirePrimitive("registeredID").content)
         },
-        otherNames = filter { it.tag == GeneralNameImplicitTags.otherName }.map {
+        otherNames = filter { it.tag == GeneralNameTags.otherName }.map {
             it.requireSequence("otherName").also { otherName ->
                 if (otherName.children.size != 2) {
                     throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${it.toDerHexString()}")
                 }
-                if (otherName.children.last().tag != GeneralNameImplicitTags.otherName) {
+                if (otherName.children.last().tag != GeneralNameTags.otherName) {
                     throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
                 }
                 ObjectIdentifier.decodeFromAsn1ContentBytes(otherName.children.first().requirePrimitive("otherName").content)
             }
         },
-        ediPartyNames = filter { it.tag == GeneralNameImplicitTags.ediPartyName }.map {
+        ediPartyNames = filter { it.tag == GeneralNameTags.ediPartyName }.map {
             it.requireSequence("ediPartyName").also { partyName ->
                 if (partyName.children.size > 2) {
                     throw Asn1StructuralException("Invalid partyName Alternative Name found (>2 children): ${it.toDerHexString()}")
                 }
                 if (partyName.children.find { child ->
-                        child.tag != GeneralNameImplicitTags.otherName && child.tag != GeneralNameImplicitTags.rfc822Name
+                        child.tag != GeneralNameTags.otherName && child.tag != GeneralNameTags.rfc822Name
                     } != null
                 ) {
                     throw Asn1StructuralException("Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}")
                 }
             }
         },
-        x400Addresses = filter { it.tag == GeneralNameImplicitTags.x400Address }.map {
+        x400Addresses = filter { it.tag == GeneralNameTags.x400Address }.map {
             it.requireSequence("x400Address")
         },
     )
@@ -289,15 +289,15 @@ private fun Asn1Element.requireSequence(name: String): Asn1Sequence =
 /**
  * Enumeration of implicit tags used to indicate different `SubjectAltName`s.
  */
-@Deprecated("Use awesn1 GeneralNameImplicitTags instead")
+@Deprecated("Use awesn1 GeneralNameTags instead")
 object SubjectAltNameImplicitTags {
-    val otherName = GeneralNameImplicitTags.otherName
-    val rfc822Name = GeneralNameImplicitTags.rfc822Name
-    val dNSName = GeneralNameImplicitTags.dnsName
-    val x400Address = GeneralNameImplicitTags.x400Address
-    val directoryName = GeneralNameImplicitTags.directoryName
-    val ediPartyName = GeneralNameImplicitTags.ediPartyName
-    val uniformResourceIdentifier = GeneralNameImplicitTags.uniformResourceIdentifier
-    val iPAddress = GeneralNameImplicitTags.ipAddress
-    val registeredID = GeneralNameImplicitTags.registeredID
+    val otherName = GeneralNameTags.otherName
+    val rfc822Name = GeneralNameTags.rfc822Name
+    val dNSName = GeneralNameTags.dnsName
+    val x400Address = GeneralNameTags.x400Address
+    val directoryName = GeneralNameTags.directoryName
+    val ediPartyName = GeneralNameTags.ediPartyName
+    val uniformResourceIdentifier = GeneralNameTags.uniformResourceIdentifier
+    val iPAddress = GeneralNameTags.ipAddress
+    val registeredID = GeneralNameTags.registeredID
 }

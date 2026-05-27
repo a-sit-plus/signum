@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
-import at.asitplus.io.*
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
@@ -9,13 +8,14 @@ import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catching
+import at.asitplus.io.*
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
 import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 
 private data class RsaPublicKeyContent(
     val n: Asn1Integer.Positive,
@@ -105,11 +105,12 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
             serializer: KSerializer<SubjectPublicKeyInfo>,
             src: Asn1Element,
             der: Der,
-        ): CryptoPublicKey  = CryptoPublicKey(der.decodeFromTlv(serializer, src))
+        ): CryptoPublicKey = CryptoPublicKey(der.decodeFromTlv(serializer, src))
 
         override fun decodeFromPemBlockPayload(
             serializer: KSerializer<SubjectPublicKeyInfo>,
             src: PemBlock,
+            limit: Long,
             der: Der,
         ): CryptoPublicKey =
             when (src.pemLabel) {
@@ -120,15 +121,16 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
                     RSA(it.modulus as Asn1Integer.Positive, it.publicExponent as Asn1Integer.Positive)
                 }
 
-                else -> decodeFromDer(serializer, src.payload, der)
+                else -> decodeFromDer(serializer, src.payload, limit, der)
             }
 
 
-        operator fun invoke(asn1Representation: SubjectPublicKeyInfo): CryptoPublicKey =  when (val oid = asn1Representation.algorithmOid) {
-            EC.oid -> EC(asn1Representation)
-            RSA.oid -> RSA(asn1Representation)
-            else -> throw Asn1Exception("Unsupported Key Type: $oid")
-        }
+        operator fun invoke(asn1Representation: SubjectPublicKeyInfo): CryptoPublicKey =
+            when (val oid = asn1Representation.algorithmOid) {
+                EC.oid -> EC(asn1Representation)
+                RSA.oid -> RSA(asn1Representation)
+                else -> throw Asn1Exception("Unsupported Key Type: $oid")
+            }
 
         @Throws(Asn1Exception::class)
         fun decodeFromTlv(src: Asn1Element): CryptoPublicKey =

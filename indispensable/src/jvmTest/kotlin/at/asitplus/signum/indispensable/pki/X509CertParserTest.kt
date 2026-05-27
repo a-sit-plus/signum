@@ -44,7 +44,7 @@ val X509CertParserTest  by matrixSuite {
 
         val garbage = Random.nextBytes(Random.nextInt(0..128))
         val input = (derBytes + garbage).wrapInUnsafeSource()
-        input.readAsn1Element().let { (parsed, _) ->
+        input.readAsn1Element(Long.MAX_VALUE).let { (parsed, _) ->
             parsed.derEncoded shouldBe derBytes
         }
     }
@@ -67,7 +67,7 @@ val X509CertParserTest  by matrixSuite {
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (certBytes + garbage).wrapInUnsafeSource()
-                input.readAsn1Element().let { (parsed, _) ->
+                input.readAsn1Element(Long.MAX_VALUE).let { (parsed, _) ->
                     parsed.derEncoded shouldBe certBytes
                 }
             }
@@ -125,7 +125,7 @@ val X509CertParserTest  by matrixSuite {
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val bytes = (crt.encoded + garbage).wrapInUnsafeSource()
-                bytes.readAsn1Element().let { (parsed, _) ->
+                bytes.readAsn1Element(Long.MAX_VALUE).let { (parsed, _) ->
                     parsed.derEncoded shouldBe own
                 }
             }
@@ -148,7 +148,7 @@ val X509CertParserTest  by matrixSuite {
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val bytes = (it.second + garbage).wrapInUnsafeSource()
-                bytes.readAsn1Element().let { (parsed, _) ->
+                bytes.readAsn1Element(Long.MAX_VALUE).let { (parsed, _) ->
                     parsed.derEncoded shouldBe it.second
                 }
             }
@@ -191,7 +191,7 @@ val X509CertParserTest  by matrixSuite {
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
-                input.readAsn1Element().let { (parsed, _) ->
+                input.readAsn1Element(Long.MAX_VALUE).let { (parsed, _) ->
                     parsed.derEncoded shouldBe jcaCert.encoded
                 }
             }

@@ -233,11 +233,12 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             override fun decodeFromPemBlockPayload(
                 serializer: KSerializer<Pkcs8PrivateKeyInfo>,
                 src: PemBlock,
+                limit: Long,
                 der: Der,
             ): RSA =
                 when (src.pemLabel) {
                     Pkcs1RsaPrivateKeyInfo.canonicalPemLabel -> FromPKCS1.decodeFromDer(src.payload, der)
-                    else -> decodeFromDer(serializer, src.payload, der)
+                    else -> decodeFromDer(serializer, src.payload, limit, der)
                 }
         }
 
@@ -464,11 +465,12 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             override fun decodeFromPemBlockPayload(
                 serializer: KSerializer<Pkcs8PrivateKeyInfo>,
                 src: PemBlock,
+                limit: Long,
                 der: Der,
             ): EC =
                 when (src.pemLabel) {
                     Sec1EcPrivateKeyInfo.canonicalPemLabel -> FromSEC1.decodeFromDer(src.payload, der)
-                    else -> decodeFromDer(serializer, src.payload, der)
+                    else -> decodeFromDer(serializer, src.payload, limit, der)
                 }
 
             private fun fromPkcs8Representation(representation: Pkcs8PrivateKeyInfo): EC {
@@ -542,12 +544,13 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         override fun decodeFromPemBlockPayload(
             serializer: KSerializer<Pkcs8PrivateKeyInfo>,
             src: PemBlock,
+            limit: Long,
             der: Der,
         ): CryptoPrivateKey = /*label is already guaranteed to be in valid labels, so else is fine*/
             when (src.pemLabel) {
                 Pkcs1RsaPrivateKeyInfo.canonicalPemLabel -> RSA.FromPKCS1.decodeFromDer(src.payload, der)
                 Sec1EcPrivateKeyInfo.canonicalPemLabel -> EC.FromSEC1.decodeFromDer(src.payload, der)
-                else -> decodeFromDer(serializer, src.payload, der)
+                else -> decodeFromDer(serializer, src.payload, limit, der)
             }
 
         fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
