@@ -4,10 +4,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -56,15 +53,15 @@ private class SecondOverrideRegisteredTestAttribute : BaseX509AttributeTypeAndVa
     }
 }
 
-val DistinguishedNameTest by testSuite {
-    "DistinguishedName test equals and hashCode" - {
+val DistinguishedNameTest by matrixSuite {
+    compact("DistinguishedName test equals and hashCode") - {
         val oids = listOf(
             KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,
             KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
             KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
-        withData(oids) - { first ->
-            withData(oids, compact= true) { second ->
+        data(oids) - { first ->
+            data(oids) test { second ->
                 if (first != second) {
                     val firstString = first.toString()
                     val secondString = second.toString()

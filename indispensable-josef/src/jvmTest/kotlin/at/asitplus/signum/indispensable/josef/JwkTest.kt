@@ -30,7 +30,7 @@ import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
 
-val JwkTest  by matrixSuite {
+val JwkTest  by matrixSuite(matrixConfig { execution=ExecutionMode.Sequential }) {
     "EC" - {
         listOf(256, 384, 521).asData() - { bits ->
             val keys = List<ECPublicKey>(10) {

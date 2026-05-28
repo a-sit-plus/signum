@@ -3,7 +3,9 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.matrix.ExecutionMode
+import at.asitplus.testballoon.matrix.matrixConfig
+import at.asitplus.testballoon.matrix.matrixSuite
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
 import de.infix.testBalloon.framework.core.invocation
@@ -29,8 +31,8 @@ private class JavaThreadRegistryDescriptor(
     override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = JavaThreadRegisteredAttribute(src)
 }
 
-val RdnRegistryJavaThreadConcurrencyTest by testSuite(
-    testConfig = DefaultConfiguration.invocation(TestConfig.Invocation.Sequential),
+val RdnRegistryJavaThreadConcurrencyTest by matrixSuite (
+    matrixConfig { execution= ExecutionMode.Sequential }
 ) {
     "AttributeTypeAndValue registry tolerates Java thread reads while registering" {
         val failures = Collections.synchronizedList(mutableListOf<Throwable>())

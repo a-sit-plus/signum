@@ -3,11 +3,9 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.TestConfig
-import de.infix.testBalloon.framework.core.TestSession.Companion.DefaultConfiguration
-import de.infix.testBalloon.framework.core.invocation
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.ExecutionMode
+import at.asitplus.testballoon.matrix.matrixConfig
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -29,8 +27,7 @@ private class ConcurrentRegistryDescriptor(
     override fun fromAsn1Representation(src: X500AttributeTypeAndValue) = ConcurrentRegisteredAttribute(src)
 }
 
-val RdnRegistryConcurrencyTest by testSuite(
-    testConfig = DefaultConfiguration.invocation(TestConfig.Invocation.Sequential),
+val RdnRegistryConcurrencyTest by matrixSuite (matrixConfig { execution= ExecutionMode.Sequential }
 ) {
     "AttributeTypeAndValue registry tolerates coroutine reads while registering" {
         val descriptors = List(128) { index ->

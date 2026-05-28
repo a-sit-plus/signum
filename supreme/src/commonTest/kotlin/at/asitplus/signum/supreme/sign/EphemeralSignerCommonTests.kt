@@ -124,7 +124,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                         if (preHashed) it.convertTo(digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
-                    return@withData
+                    return@test
                 }
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
                     it.parameters shouldBe SignatureAlgorithm.RSA.Parameters(padding, digest)

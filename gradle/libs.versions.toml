@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.4.0-RC"
+kotlin = "2.4.0"
 agp = "8.12.3"
 core = "1.5.0"
 kotlinxIoCore = "0.9.0"
