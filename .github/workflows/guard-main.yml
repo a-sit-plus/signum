@@ -7,6 +7,6 @@ on:
       - 'main'
 jobs:
   check-target:
-    uses: a-sit-plus/internal-workflows/.github/workflows/guard-main.yml@main
+    uses: a-sit-plus/internal-workflows/.github/workflows/guard-main.yml@v3
 permissions:
   pull-requests: write
