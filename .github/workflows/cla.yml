@@ -3,5 +3,5 @@ on: [pull_request_target]
 
 jobs:
   verify-cla:
-    uses: a-sit-plus/internal-workflows/.github/workflows/cla.yml@main
+    uses: a-sit-plus/internal-workflows/.github/workflows/cla.yml@v3
     
