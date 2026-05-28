@@ -1,23 +1,38 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
 
 typealias JwsCompactTyped<P> = JwsTyped<JwsCompact, P>
 typealias JwsFlattenedTyped<P> = JwsTyped<JwsFlattened, P>
 typealias JwsGeneralTyped<P> = JwsTyped<JwsGeneral, P>
 
+/**
+ * Convenience Serializer Template which only serializes [JwsTyped.jws]
+ */
+class JwsTypedSerializerTemplate<J : JWS, P>(
+    jwsSerializer: KSerializer<J>,
+    private val payloadSerializer: KSerializer<P>,
+) : TransformingSerializerTemplate<JwsTyped<J, P>, J>(
+    parent = jwsSerializer,
+    encodeAs = { it.jws },
+    decodeAs = { jws -> JwsTyped(jws, jws.getPayload(payloadSerializer).getOrThrow()) }
+)
+
 fun <P> JwsCompactTyped<P>.toJwsFlattenedTyped() = JwsFlattenedTyped(this.jws.toJwsFlattened(), this.payload)
 fun <P> JwsFlattenedTyped<P>.toJwsCompactTyped() = JwsCompactTyped(this.jws.toJwsCompact(), this.payload)
 fun <P> JwsGeneralTyped<P>.toJwsFlattenedTyped() = this.jws.toJwsFlattened().map { JwsFlattenedTyped(it, this.payload) }
 
-inline fun <reified P, J : JWS> J.typed(): JwsTyped<J, P> =
+inline fun <J : JWS, reified P> J.typed(): JwsTyped<J, P> =
     JwsTyped(this, getPayload<P>().getOrThrow())
 
 /**
  * Wrapper for [at.asitplus.signum.indispensable.josef.JWS]. Useful when [payload] type is known as part of the contract.
  * All communication over the wire should use [jws] only!
+ * Serialization is not recommended but does work. See [JwsTypedSerializerTemplate]
  *
  * While the constructor can be used the different [invoke]s are recommended.
  * For convenience also see the typealiases
