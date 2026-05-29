@@ -27,6 +27,7 @@ import at.asitplus.signum.supreme.agree.keyAgreement
 import at.asitplus.signum.supreme.kdf.expandStep
 import at.asitplus.signum.supreme.kdf.extractStep
 import at.asitplus.signum.supreme.symmetric.Decryptor
+import at.asitplus.signum.supreme.symmetric.Encryptor
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -279,17 +280,19 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                 override val Nk get() = alg.keySize
                 override val Nn get() = alg.nonceSize
                 override val Nt get() = alg.authTagSize
+
+                override fun Seal(key: ByteArray, nonce: ByteArray, aad: ByteArray?, pt: ByteArray): ByteArray {
+                    val box = runBlocking { Encryptor(alg, key, null, nonce, aad).encrypt(pt) }
+                    //val box = runBlocking { alg.keyFrom(key).getOrThrow().encrypt(pt, aad).getOrThrow() }
+                    return box.encryptedData + box.authTag
+                }
+
                 override fun Open(key: ByteArray, nonce: ByteArray, aad: ByteArray?, ct: ByteArray): ByteArray {
                     require(ct.size >= Nt.bytes.toInt())
                     val ciphertext = ct.copyOfRange(0, ct.size - Nt.bytes.toInt())
                     val tag = ct.copyOfRange(ct.size - Nt.bytes.toInt(), ct.size)
                     val box = alg.sealedBox.withNonce(nonce).from(ciphertext, tag).getOrThrow()
                     return runBlocking { box.decrypt(alg.keyFrom(key).getOrThrow(), aad ?: byteArrayOf()).getOrThrow() }
-                }
-
-                override fun Seal(key: ByteArray, nonce: ByteArray, aad: ByteArray?, pt: ByteArray): ByteArray {
-                    val box = runBlocking { alg.keyFrom(key).getOrThrow().encrypt(pt, aad).getOrThrow() }
-                    return box.encryptedData + box.authTag
                 }
             }
             val AES_128_GCM: AEAD = SignumAEADProxy(0x0001, SymmetricEncryptionAlgorithm.AES_128.GCM)
@@ -298,9 +301,9 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
             val EXPORT_ONLY = object : AEAD {
                 override val aead_id get() = 0xFFFF
                 private val NOPE: Nothing get() = throw UnsupportedOperationException("EXPORT_ONLY AEAD may only be used for secret export")
-                override val Nt get() = NOPE
-                override val Nk get() = NOPE
-                override val Nn get() = NOPE
+                override val Nt get() = 0.bytes
+                override val Nk get() = 0.bytes
+                override val Nn get() = 0.bytes
                 override fun Open(key: ByteArray, nonce: ByteArray, aad: ByteArray?, ct: ByteArray) = NOPE
                 override fun Seal(key: ByteArray, nonce: ByteArray, aad: ByteArray?, pt: ByteArray) = NOPE
             }
@@ -456,7 +459,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
             /* key, base_nonce, 0, exporter_secret */
         }
 
-        private fun ComputeNonce() = this.base_nonce xor this.seq
+        fun ComputeNonce() = this.base_nonce xor this.seq
         private fun IncrementSeq() {
             this.seq.indices.reversed().forEach { i ->
                 val v = seq[i].toUByte()

@@ -8,6 +8,7 @@ import at.asitplus.signum.supreme.asymmetric.HPKETestSuite.Export
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.fail
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -42,7 +43,6 @@ private val WELL_KNOWN_AEADS = sequenceOf(
 class HPKETestSuite(jsonObject: JsonObject) {
     companion object {
         fun shouldSkip(jsonObject: JsonObject): Boolean {
-            if (jsonObject.requireInt("mode") != 0) return true
             if (jsonObject.requireInt("kem_id") in sequenceOf(0x0020, 0x0021)) return true
             return false
         }
@@ -112,31 +112,45 @@ val HPKETests by testSuite {
             val (shared_secret, enc) = test.kem.AuthEncap(
                 test.kem.DeserializePublicKey(test.pkRm),
                 test.kem.DeserializePrivateKey(test.skSm!!),
-                test.ikmR
+                test.ikmE
             )
 
-            shared_secret shouldBe test.shared_secret
-            enc shouldBe test.enc
+            withClue("shared_secret[encap]") { shared_secret shouldBe test.shared_secret }
+            withClue("enc") { enc shouldBe test.enc }
             val shared_secret_2 = test.kem.AuthDecap(
                 enc,
                 test.kem.DeserializePrivateKey(test.skRm),
                 test.kem.DeserializePublicKey(test.pkSm!!)
             )
-            shared_secret_2 shouldBe test.shared_secret
+            withClue("shared_secret[decap]") { shared_secret_2 shouldBe test.shared_secret }
+        } else {
+            val (shared_secret, enc) = test.kem.Encap(
+                test.kem.DeserializePublicKey(test.pkRm),
+                test.ikmE
+            )
+            withClue("shared_secret[encap]") { shared_secret shouldBe test.shared_secret }
+            withClue("enc") { enc shouldBe test.enc }
+            val shared_secret_2 = test.kem.Decap(
+                enc,
+                test.kem.DeserializePrivateKey(test.skRm)
+            )
+            withClue("shared_secret[decap]") { shared_secret_2 shouldBe test.shared_secret }
         }
-        val contextS = hpke.Context(test.mode, test.shared_secret, test.info, test.psk ?: byteArrayOf(), test.psk_id ?: byteArrayOf()).S()
-        val contextR = hpke.Context(test.mode, test.shared_secret, test.info, test.psk ?: byteArrayOf(), test.psk_id ?: byteArrayOf()).R()
+        val contextS = hpke.Context(test.mode, test.shared_secret, test.info, test.psk ?: byteArrayOf(), test.psk_id ?: byteArrayOf())
+        val contextR = hpke.Context(test.mode, test.shared_secret, test.info, test.psk ?: byteArrayOf(), test.psk_id ?: byteArrayOf())
 
         test.encryptions.forEach { encryption ->
-            val ct = contextS.Seal(encryption.aad, encryption.pt)
-            ct shouldBe encryption.ct
-            val pt = contextR.Open(encryption.aad, ct)
-            pt shouldBe encryption.pt
+            withClue("nonce[sender]") { contextS.ComputeNonce() shouldBe encryption.nonce }
+            withClue("nonce[receiver]") { contextR.ComputeNonce() shouldBe encryption.nonce }
+            val ct = contextS.S().Seal(encryption.aad, encryption.pt)
+            withClue("ciphertext[wrap]") { ct shouldBe encryption.ct }
+            val pt = contextR.R().Open(encryption.aad, ct)
+            withClue("plaintext[open]") { pt shouldBe encryption.pt }
         }
 
         test.exports.forEach { export ->
-            contextS.Export(export.exporter_context, export.L) shouldBe export.exported_value
-            contextR.Export(export.exporter_context, export.L) shouldBe export.exported_value
+            withClue("export[sender]") { contextS.Export(export.exporter_context, export.L) shouldBe export.exported_value }
+            withClue("export[receiver]") { contextR.Export(export.exporter_context, export.L) shouldBe export.exported_value }
         }
     }
 }
