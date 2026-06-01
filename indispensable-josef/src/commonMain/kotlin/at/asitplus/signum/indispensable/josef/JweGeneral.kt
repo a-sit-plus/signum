@@ -115,7 +115,7 @@ data class JweGeneral internal constructor(
             sharedUnprotectedHeader: JweHeader.Part? = null,
             recipientUnprotectedHeaders: List<JweHeader.Part?> = listOf(null),
             additionalAuthenticatedData: ByteArray? = null,
-            encryptor: (
+            encryptor: suspend (
                 protectedHeaderPart: JweHeader.Part?,
                 unprotectedHeaderPart: JweHeader.Part?,
                 payload: P,
