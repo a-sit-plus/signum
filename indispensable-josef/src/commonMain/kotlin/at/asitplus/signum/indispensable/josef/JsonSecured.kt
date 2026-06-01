@@ -37,9 +37,7 @@ sealed interface JsonSecured {
 
         override fun deserialize(decoder: Decoder): JsonSecured {
             require(decoder is JsonDecoder) { "JsonSecured deserialization requires a JsonDecoder" }
-            val jsonElement = decoder.decodeJsonElement()
-
-            return when (jsonElement) {
+            return when (val jsonElement = decoder.decodeJsonElement()) {
                 is JsonPrimitive -> {
                     if (!jsonElement.isString) {
                         throw SerializationException(
@@ -81,5 +79,16 @@ sealed interface JsonSecured {
                 )
             }
         }
+    }
+}
+
+suspend inline fun <reified P> JsonSecured.getPayload(noinline decryptor: decryptorFun? = null) {
+    when (this) {
+        is JwsCompact -> this.typed<P, JwsCompact>()
+        is JwsFlattened -> this.typed<P, JwsFlattened>()
+        is JwsGeneral -> this.typed<P, JwsGeneral>()
+        is JweCompact -> this.decrypted<JweCompact, P>(decryptor ?: throw Exception("Missing decryptor"))
+        is JweFlattened -> this.decrypted<JweFlattened, P>(decryptor ?: throw Exception("Missing decryptor"))
+        is JweGeneral -> this.decrypted<JweGeneral, P>(decryptor ?: throw Exception("Missing decryptor"))
     }
 }
