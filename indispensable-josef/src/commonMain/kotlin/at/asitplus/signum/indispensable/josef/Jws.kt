@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * If [plainPayload] data structure is defined as part of the contact consider [JwsTyped]
  */
 @Serializable(with = JWS.JwsSerializer::class)
-sealed class JWS {
+sealed class JWS : JsonSecured {
     /**
      * Raw payload bytes.
      *
@@ -44,7 +44,6 @@ sealed class JWS {
     /**
      * Find correct serializer at compile time
      */
-    @Suppress("unused")
     inline fun <reified P> getPayload(serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
         getPayload(serialFormat.serializersModule.serializer(), serialFormat)
 
@@ -86,8 +85,8 @@ sealed class JWS {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
             element(SerialNames.COMPACT, JwsCompactStringSerializer.descriptor)
-            element(SerialNames.FLATTENED, JwsFlattened.serializer().descriptor)
-            element(SerialNames.GENERAL, JwsGeneral.serializer().descriptor)
+            element(SerialNames.FLATTENED, JwsFlattened.Companion.serializer().descriptor)
+            element(SerialNames.GENERAL, JwsGeneral.Companion.serializer().descriptor)
         }
 
         override fun serialize(
@@ -97,8 +96,8 @@ sealed class JWS {
             require(encoder is JsonEncoder) { "JWS serialization requires a JsonDecoder" }
             when (value) {
                 is JwsCompact -> encoder.encodeSerializableValue(JwsCompactStringSerializer, value)
-                is JwsFlattened -> encoder.encodeSerializableValue(JwsFlattened.serializer(), value)
-                is JwsGeneral -> encoder.encodeSerializableValue(JwsGeneral.serializer(), value)
+                is JwsFlattened -> encoder.encodeSerializableValue(JwsFlattened.Companion.serializer(), value)
+                is JwsGeneral -> encoder.encodeSerializableValue(JwsGeneral.Companion.serializer(), value)
             }
         }
 
@@ -120,10 +119,10 @@ sealed class JWS {
                             )
 
                         hasGeneralSignatures ->
-                            decoder.json.decodeFromJsonElement(JwsGeneral.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JwsGeneral.Companion.serializer(), jsonElement)
 
                         hasFlattenedSignature ->
-                            decoder.json.decodeFromJsonElement(JwsFlattened.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JwsFlattened.Companion.serializer(), jsonElement)
 
                         else ->
                             throw SerializationException(
