@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.contentHashCodeIfArray
  *
  * @see [JweEncrypted]
  */
+@Deprecated("Use TBA instead")
 data class JweDecrypted<T: Any>(
     val header: JweHeader,
     val payload: T,
