@@ -10,9 +10,11 @@ import com.nimbusds.jose.JWEObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.AESDecrypter
 import com.nimbusds.jose.crypto.AESEncrypter
+import com.nimbusds.jose.util.Base64URL
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 
 val JweJvmTest by testSuite {
 
@@ -58,4 +60,70 @@ val JweJvmTest by testSuite {
 
         reparsedByNimbus.payload.toBytes() shouldBe payload
     }
+
+    "compact JWE built from typed JwtClaims can be decrypted by Nimbus" {
+        val jwtClaims = JwtClaims(
+            issuer = "https://issuer.example",
+            subject = "alice",
+            audience = "test-suite",
+            jwtId = "jwt-1",
+        )
+        val secretKey = KeyGenerator.getInstance("AES").apply { init(128) }.generateKey()
+        val header = JweHeader(
+            algorithm = JweAlgorithm.A128KW,
+            encryption = JweEncryption.A128GCM,
+            keyId = "kid-invoke",
+            type = "application/example+jwe",
+            contentType = "JWT",
+        )
+        var observedProtectedHeader: JweHeader.Part? = null
+        var observedPayload: JwtClaims? = null
+
+        val compact = JweCompact(
+            protectedHeader = header,
+            payload = jwtClaims,
+        ) { protectedHeaderPart, plainPayload ->
+            observedProtectedHeader = protectedHeaderPart
+            observedPayload = plainPayload
+            encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
+        }
+
+        observedProtectedHeader shouldBe header.toPart()
+        observedPayload shouldBe jwtClaims
+        compact.jweHeader shouldBe header
+
+        val parsedByNimbus = JWEObject.parse(compact.toString())
+        parsedByNimbus.decrypt(AESDecrypter(secretKey))
+
+        parsedByNimbus.header.toBase64URL().decode() shouldBe compact.plainProtectedHeader
+        parsedByNimbus.payload.toBytes() shouldBe jwtClaims.toPlaintext()
+    }
 }
+
+private fun encryptWithNimbus(
+    protectedHeader: JweHeader.Part,
+    payload: JwtClaims,
+    secretKey: SecretKey,
+): JWE.EncryptionOutput {
+    val nimbusJwe = JWEObject(
+        protectedHeader.toNimbusHeader(),
+        Payload(payload.toPlaintext()),
+    )
+
+    nimbusJwe.encrypt(AESEncrypter(secretKey))
+
+    return nimbusJwe.toEncryptionOutput()
+}
+
+private fun JweHeader.Part.toNimbusHeader(): JWEHeader =
+    JWEHeader.parse(Base64URL.encode(JweProtectedHeaderSerializer.encodeToByteArray(this)))
+
+private fun JWEObject.toEncryptionOutput(): JWE.EncryptionOutput = JWE.EncryptionOutput(
+    iv = iv.decode(),
+    cipherText = cipherText.decode(),
+    encryptedKey = encryptedKey.decode(),
+    authenticationTag = authTag.decode(),
+)
+
+private fun JwtClaims.toPlaintext(): ByteArray =
+    joseCompliantSerializer.encodeToString(JwtClaims.serializer(), this).encodeToByteArray()
