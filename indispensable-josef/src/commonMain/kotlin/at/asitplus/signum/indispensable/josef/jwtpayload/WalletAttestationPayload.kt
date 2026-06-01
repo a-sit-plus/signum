@@ -14,7 +14,7 @@ import kotlinx.serialization.json.JsonObject
 data class WalletAttestationPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
-) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
+) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
 
     val jwtClaims: JwtClaims by jsonSlice()
     val walletAttestationClaims: WalletAttestationClaims by jsonSlice()

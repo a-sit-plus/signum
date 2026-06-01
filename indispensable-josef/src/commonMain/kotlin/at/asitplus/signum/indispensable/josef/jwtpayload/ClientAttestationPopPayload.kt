@@ -19,7 +19,7 @@ import kotlinx.serialization.json.JsonObject
 data class ClientAttestationPopPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
-) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
+) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
     val jwtClaims: JwtClaims by jsonSlice()
     val challenge: String? by nullableJsonProperty(JwtClaims.UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE)
 

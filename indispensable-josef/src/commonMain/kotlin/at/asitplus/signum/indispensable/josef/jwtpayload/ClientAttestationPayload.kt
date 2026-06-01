@@ -17,7 +17,7 @@ import kotlinx.serialization.json.JsonObject
 data class ClientAttestationPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
-) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated {
+) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
     val jwtClaims: JwtClaims by jsonSlice()
     /**
      * OID4VP: This claim contains the confirmation method as defined in RFC7800. It MUST contain a JWK as defined in
