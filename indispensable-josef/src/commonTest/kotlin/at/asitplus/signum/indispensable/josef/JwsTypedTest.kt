@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.typed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonObject
