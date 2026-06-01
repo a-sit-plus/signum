@@ -96,7 +96,6 @@ data class JweCompact internal constructor(
         suspend operator fun <P> invoke(
             protectedHeader: JweHeader,
             payload: P,
-            additionalAuthenticatedData: ByteArray? = null,
             encryptor: suspend (JweHeader.Part, P) -> EncryptionOutput,
         ): JweCompact {
             val plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
