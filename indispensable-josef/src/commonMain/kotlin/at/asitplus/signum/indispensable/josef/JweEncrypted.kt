@@ -15,7 +15,7 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
  *
  * @see [JweDecrypted]
  */
-@Deprecated("Use TBA instead")
+@Deprecated("Use JweCompact instead", replaceWith = ReplaceWith("JweCompact"))
 data class JweEncrypted(
     val header: JweHeader,
     val headerAsParsed: ByteArray,
