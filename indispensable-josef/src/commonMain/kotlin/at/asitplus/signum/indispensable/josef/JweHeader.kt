@@ -8,6 +8,9 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.time.Instant
 
 /**
@@ -263,6 +266,122 @@ data class JweHeader(
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val certificateSha256Thumbprint: ByteArray? = null,
 ) {
+    /**
+     * Typed representation of one JWE header fragment.
+     *
+     * A [Part] may be incomplete. Only the merged protected, shared unprotected, and per-recipient unprotected
+     * fragments must form a valid [JweHeader].
+     */
+    @Serializable
+    data class Part(
+        @SerialName(SerialNames.ALGORITHM)
+        val algorithm: JweAlgorithm? = null,
+        @SerialName(SerialNames.ENCRYPTION)
+        val encryption: JweEncryption? = null,
+        @SerialName(SerialNames.KEY_ID)
+        val keyId: String? = null,
+        @SerialName(SerialNames.TYPE)
+        val type: String? = null,
+        @SerialName(SerialNames.CONTENT_TYPE)
+        val contentType: String? = null,
+        @SerialName(SerialNames.NOT_BEFORE)
+        @Serializable(with = InstantLongSerializer::class)
+        val notBefore: Instant? = null,
+        @SerialName(SerialNames.ISSUED_AT)
+        @Serializable(with = InstantLongSerializer::class)
+        val issuedAt: Instant? = null,
+        @SerialName(SerialNames.EXPIRATION)
+        @Serializable(with = InstantLongSerializer::class)
+        val expiration: Instant? = null,
+        @SerialName(SerialNames.JWT_ID)
+        val jwtId: String? = null,
+        @SerialName(SerialNames.JSON_WEB_KEY)
+        val jsonWebKey: JsonWebKey? = null,
+        @SerialName(SerialNames.JSON_WEB_KEY_URL)
+        val jsonWebKeyUrl: String? = null,
+        @SerialName(SerialNames.EPHEMERAL_KEY_PAIR)
+        val ephemeralKeyPair: JsonWebKey? = null,
+        @SerialName(SerialNames.AGREEMENT_PARTY_U_INFO)
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val agreementPartyUInfo: ByteArray? = null,
+        @SerialName(SerialNames.AGREEMENT_PARTY_V_INFO)
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val agreementPartyVInfo: ByteArray? = null,
+        @SerialName(SerialNames.INITIALIZATION_VECTOR)
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val initializationVector: ByteArray? = null,
+        @SerialName(SerialNames.AUTHENTICATION_TAG)
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val authenticationTag: ByteArray? = null,
+        @SerialName(SerialNames.CERTIFICATE_URL)
+        val certificateUrl: String? = null,
+        @SerialName(SerialNames.CERTIFICATE_CHAIN)
+        @Serializable(with = CertificateChainBase64Serializer::class)
+        val certificateChain: CertificateChain? = null,
+        @SerialName(SerialNames.CERTIFICATE_SHA1_THUMBPRINT)
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val certificateSha1Thumbprint: ByteArray? = null,
+        @SerialName(SerialNames.CERTIFICATE_SHA256_THUMBPRINT)
+        @Serializable(with = ByteArrayBase64UrlSerializer::class)
+        val certificateSha256Thumbprint: ByteArray? = null,
+    ) {
+        fun toJsonObject(): JsonObject =
+            joseCompliantSerializer.encodeToJsonElement(serializer(), this).jsonObject
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as Part
+
+            if (algorithm != other.algorithm) return false
+            if (encryption != other.encryption) return false
+            if (keyId != other.keyId) return false
+            if (type != other.type) return false
+            if (contentType != other.contentType) return false
+            if (notBefore != other.notBefore) return false
+            if (issuedAt != other.issuedAt) return false
+            if (expiration != other.expiration) return false
+            if (jwtId != other.jwtId) return false
+            if (jsonWebKey != other.jsonWebKey) return false
+            if (jsonWebKeyUrl != other.jsonWebKeyUrl) return false
+            if (ephemeralKeyPair != other.ephemeralKeyPair) return false
+            if (!agreementPartyUInfo.contentEquals(other.agreementPartyUInfo)) return false
+            if (!agreementPartyVInfo.contentEquals(other.agreementPartyVInfo)) return false
+            if (!initializationVector.contentEquals(other.initializationVector)) return false
+            if (!authenticationTag.contentEquals(other.authenticationTag)) return false
+            if (certificateUrl != other.certificateUrl) return false
+            if (certificateChain != other.certificateChain) return false
+            if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
+            if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = algorithm?.hashCode() ?: 0
+            result = 31 * result + (encryption?.hashCode() ?: 0)
+            result = 31 * result + (keyId?.hashCode() ?: 0)
+            result = 31 * result + (type?.hashCode() ?: 0)
+            result = 31 * result + (contentType?.hashCode() ?: 0)
+            result = 31 * result + (notBefore?.hashCode() ?: 0)
+            result = 31 * result + (issuedAt?.hashCode() ?: 0)
+            result = 31 * result + (expiration?.hashCode() ?: 0)
+            result = 31 * result + (jwtId?.hashCode() ?: 0)
+            result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
+            result = 31 * result + (jsonWebKeyUrl?.hashCode() ?: 0)
+            result = 31 * result + (ephemeralKeyPair?.hashCode() ?: 0)
+            result = 31 * result + (agreementPartyUInfo?.contentHashCode() ?: 0)
+            result = 31 * result + (agreementPartyVInfo?.contentHashCode() ?: 0)
+            result = 31 * result + (initializationVector?.contentHashCode() ?: 0)
+            result = 31 * result + (authenticationTag?.contentHashCode() ?: 0)
+            result = 31 * result + (certificateUrl?.hashCode() ?: 0)
+            result = 31 * result + (certificateChain?.hashCode() ?: 0)
+            result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
+            result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
+            return result
+        }
+    }
 
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
@@ -328,11 +447,98 @@ data class JweHeader(
         jsonWebKey ?: keyId?.let { JsonWebKey.fromDid(it).getOrNull() }
     }
 
-    companion object {
+    object SerialNames {
+        const val ALGORITHM = "alg"
+        const val ENCRYPTION = "enc"
+        const val KEY_ID = "kid"
+        const val TYPE = "typ"
+        const val CONTENT_TYPE = "cty"
+        const val NOT_BEFORE = "nbf"
+        const val ISSUED_AT = "iat"
+        const val EXPIRATION = "exp"
+        const val JWT_ID = "jti"
+        const val JSON_WEB_KEY = "jwk"
+        const val JSON_WEB_KEY_URL = "jku"
+        const val EPHEMERAL_KEY_PAIR = "epk"
+        const val AGREEMENT_PARTY_U_INFO = "apu"
+        const val AGREEMENT_PARTY_V_INFO = "apv"
+        const val INITIALIZATION_VECTOR = "iv"
+        const val AUTHENTICATION_TAG = "tag"
+        const val CERTIFICATE_URL = "x5u"
+        const val CERTIFICATE_CHAIN = "x5c"
+        const val CERTIFICATE_SHA1_THUMBPRINT = "x5t"
+        const val CERTIFICATE_SHA256_THUMBPRINT = "x5t#S256"
+    }
 
+    companion object {
         @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<JweHeader>(it)
         }
+
+        /**
+         * Merges JWE header fragments into the effective [JweHeader] for one recipient.
+         */
+        fun fromParts(
+            protectedHeader: Part? = null,
+            sharedUnprotectedHeader: Part? = null,
+            recipientUnprotectedHeader: Part? = null,
+        ): JweHeader = fromJsonObjects(
+            protectedHeader = protectedHeader?.toJsonObject(),
+            sharedUnprotectedHeader = sharedUnprotectedHeader?.toJsonObject(),
+            recipientUnprotectedHeader = recipientUnprotectedHeader?.toJsonObject(),
+        )
+
+        /**
+         * Decodes the protected fragment and merges it with optional unprotected fragments.
+         */
+        fun fromParts(
+            protectedHeader: ByteArray? = null,
+            sharedUnprotectedHeader: Part? = null,
+            recipientUnprotectedHeader: Part? = null,
+        ): JweHeader = fromJsonObjects(
+            protectedHeader = protectedHeader?.let(JweProtectedHeaderSerializer::decodeToJsonObject),
+            sharedUnprotectedHeader = sharedUnprotectedHeader?.toJsonObject(),
+            recipientUnprotectedHeader = recipientUnprotectedHeader?.toJsonObject(),
+        )
+
+        internal fun fromJsonObjects(
+            protectedHeader: JsonObject? = null,
+            sharedUnprotectedHeader: JsonObject? = null,
+            recipientUnprotectedHeader: JsonObject? = null,
+        ): JweHeader = joseCompliantSerializer.decodeFromJsonElement<JweHeader>(
+            protectedHeader
+                .strictUnion(sharedUnprotectedHeader)
+                .strictUnion(recipientUnprotectedHeader)
+        ).also {
+            requireNotNull(it.algorithm) { "JWE JOSE Header must contain 'alg'" }
+            requireNotNull(it.encryption) { "JWE JOSE Header must contain 'enc'" }
+        }
     }
 }
+
+/**
+ * Converts the effective header into a single [JweHeader.Part].
+ */
+fun JweHeader.toPart(): JweHeader.Part = JweHeader.Part(
+    algorithm = algorithm,
+    encryption = encryption,
+    keyId = keyId,
+    type = type,
+    contentType = contentType,
+    notBefore = notBefore,
+    issuedAt = issuedAt,
+    expiration = expiration,
+    jwtId = jwtId,
+    jsonWebKey = jsonWebKey,
+    jsonWebKeyUrl = jsonWebKeyUrl,
+    ephemeralKeyPair = ephemeralKeyPair,
+    agreementPartyUInfo = agreementPartyUInfo,
+    agreementPartyVInfo = agreementPartyVInfo,
+    initializationVector = initializationVector,
+    authenticationTag = authenticationTag,
+    certificateUrl = certificateUrl,
+    certificateChain = certificateChain,
+    certificateSha1Thumbprint = certificateSha1Thumbprint,
+    certificateSha256Thumbprint = certificateSha256Thumbprint,
+)
