@@ -192,8 +192,80 @@ sealed interface CoseAlgorithm : Enumerable {
         }
     }
 
+    sealed class HPKE(
+        override val coseValue: Int, val kem_id: Int, val kdf_id: Int, val aead_id: Int)
+        : CoseAlgorithm, Enumerable
+    {
+        companion object : Enumeration<HPKE> {
+            override val entries: Collection<HPKE> by lazy {
+                setOf(HPKE_0, HPKE_1, HPKE_2, HPKE_3, HPKE_4, HPKE_5, HPKE_6, HPKE_7)
+            }
+        }
+    }
+
+    /** COSE HPKE Integrated Encryption using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-128-GCM AEAD */
+    data object HPKE_0 : HPKE(35, 0x10, 0x1, 0x1)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(P-384, HKDF-SHA384) KEM, HKDF-SHA384 KDF, and AES-256-GCM AEAD */
+    data object HPKE_1 : HPKE(37, 0x11, 0x2, 0x2)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(P-521, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_2 : HPKE(39, 0x12, 0x3, 0x2)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-128-GCM AEAD */
+    data object HPKE_3 : HPKE(41, 0x20, 0x1, 0x1)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_4 : HPKE(42, 0x20, 0x1, 0x3)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_5 : HPKE(43, 0x21, 0x3, 0x2)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_6 : HPKE(44, 0x21, 0x3, 0x3)
+
+    /** COSE HPKE Integrated Encryption using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-256-GCM AEAD */
+    data object HPKE_7 : HPKE(45, 0x10, 0x1, 0x2)
+
+    sealed class HPKE_KE(
+        override val coseValue: Int, val kem_id: Int, val kdf_id: Int, val aead_id: Int)
+        : CoseAlgorithm, Enumerable
+    {
+        companion object : Enumeration<HPKE_KE> {
+            override val entries: Collection<HPKE_KE> by lazy {
+                setOf(HPKE_0_KE, HPKE_1_KE, HPKE_2_KE, HPKE_3_KE, HPKE_4_KE, HPKE_5_KE, HPKE_6_KE, HPKE_7_KE)
+            }
+        }
+    }
+
+    /** COSE HPKE Key Encryption using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-128-GCM AEAD */
+    data object HPKE_0_KE : HPKE_KE(46, 0x10, 0x1, 0x1)
+
+    /** COSE HPKE Key Encryption using DHKEM(P-384, HKDF-SHA384) KEM, HKDF-SHA384 KDF, and AES-256-GCM AEAD */
+    data object HPKE_1_KE : HPKE_KE(47, 0x11, 0x2, 0x2)
+
+    /** COSE HPKE Key Encryption using DHKEM(P-521, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_2_KE : HPKE_KE(48, 0x12, 0x3, 0x2)
+
+    /** COSE HPKE Key Encryption using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-128-GCM AEAD */
+    data object HPKE_3_KE : HPKE_KE(49, 0x20, 0x1, 0x1)
+
+    /** COSE HPKE Key Encryption using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_4_KE : HPKE_KE(50, 0x20, 0x1, 0x3)
+
+    /** COSE HPKE Key Encryption using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_5_KE : HPKE_KE(51, 0x21, 0x3, 0x2)
+
+    /** COSE HPKE Key Encryption using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_6_KE : HPKE_KE(52, 0x21, 0x3, 0x3)
+
+    /** COSE HPKE Key Encryption using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-256-GCM AEAD */
+    data object HPKE_7_KE : HPKE_KE(53, 0x10, 0x1, 0x2)
+
     companion object : Enumeration<CoseAlgorithm> {
-        override val entries: Collection<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
+        override val entries: Collection<CoseAlgorithm> by lazy {
+            DataIntegrity.entries + SymmetricEncryption.entries + HPKE.entries + HPKE_KE.entries
+        }
     }
 
 }
