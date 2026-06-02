@@ -452,7 +452,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         init { /** RFC9180 VerifyPSKInputs */
             require (psk.isEmpty() == psk_id.isEmpty()) { "Inconsistent PSK inputs"}
             when (mode) {
-                Mode.mode_base, Mode.AUTH -> require (psk.isEmpty()) { "PSK provided when not needed"}
+                Mode.BASE, Mode.AUTH -> require (psk.isEmpty()) { "PSK provided when not needed"}
                 /** In the PSK and AuthPSK  modes, the PSK MUST have at least 32 bytes of entropy */
                 Mode.PSK, Mode.AUTH_PSK -> require (psk.size >= 32) { "The PSK MUST have at least 32 bytes of entropy"}
             }
@@ -504,12 +504,12 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
 
     fun SetupBaseS(pkR: PublicKey, info: ByteArray): SenderSetupResult {
         val (shared_secret, enc) = kem.Encap(pkR)
-        return SenderSetupResult(enc, Context(Mode.mode_base, shared_secret, info, byteArrayOf(), byteArrayOf()).S())
+        return SenderSetupResult(enc, Context(Mode.BASE, shared_secret, info, byteArrayOf(), byteArrayOf()).S())
     }
 
     fun SetupBaseR(enc: ByteArray, skR: SecretKey, info: ByteArray): Context.R {
         val shared_secret = kem.Decap(enc, skR)
-        return Context(Mode.mode_base, shared_secret, info, byteArrayOf(), byteArrayOf()).R()
+        return Context(Mode.BASE, shared_secret, info, byteArrayOf(), byteArrayOf()).R()
     }
 
     fun SetupPSKS(pkR: PublicKey, info: ByteArray, psk: ByteArray, psk_id: ByteArray): SenderSetupResult {
