@@ -25,6 +25,75 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, E
     @Serializable(with = JweAlgorithmSerializer::class)
     object ECDH_ES : JweAlgorithm("ECDH-ES")
 
+    sealed class HPKE(
+        identifier: String, val kem_id: Int, val kdf_id: Int, val aead_id: Int)
+        : JweAlgorithm(identifier), Enumerable
+    {
+        companion object : Enumeration<HPKE> {
+            override val entries: Iterable<HPKE> by lazy {
+                listOf(HPKE_0, HPKE_1, HPKE_2, HPKE_3, HPKE_4, HPKE_5, HPKE_6, HPKE_7)
+            }
+        }
+    }
+    sealed class HPKE_KE(
+        identifier: String, val kem_id: Int, val kdf_id: Int, val aead_id: Int)
+        : JweAlgorithm(identifier), Enumerable
+    {
+        companion object : Enumeration<HPKE_KE> {
+            override val entries: Iterable<HPKE_KE> by lazy {
+                listOf(HPKE_0_KE, HPKE_1_KE, HPKE_2_KE, HPKE_3_KE, HPKE_4_KE, HPKE_5_KE, HPKE_6_KE, HPKE_7_KE)
+            }
+        }
+    }
+
+    /** Integrated Encryption with HPKE using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF and AES-128-GCM AEAD */
+    data object HPKE_0 : HPKE("HPKE-0", 0x10, 0x1, 0x1)
+
+    /** Integrated Encryption with HPKE using DHKEM(P-384, HKDF-SHA384) KEM, HKDF-SHA384 KDF, and AES-256-GCM AEAD */
+    data object HPKE_1 : HPKE("HPKE-1", 0x11, 0x2, 0x2)
+
+    /** Integrated Encryption with HPKE using DHKEM(P-521, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_2 : HPKE("HPKE-2", 0x12, 0x3, 0x2)
+
+    /** Integrated Encryption with HPKE using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-128-GCM AEAD */
+    data object HPKE_3 : HPKE("HPKE-3", 0x20, 0x1, 0x1)
+
+    /** Integrated Encryption with HPKE using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_4 : HPKE("HPKE-4", 0x20, 0x1, 0x3)
+
+    /** Integrated Encryption with HPKE using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_5 : HPKE("HPKE-5", 0x21, 0x3, 0x2)
+
+    /** Integrated Encryption with HPKE using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_6 : HPKE("HPKE-6", 0x21, 0x3, 0x3)
+
+    /** Integrated Encryption with HPKE using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-256-GCM AEAD */
+    data object HPKE_7 : HPKE("HPKE-7", 0x10, 0x1, 0x2)
+
+    /** Key Encryption with HPKE using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF and AES-128-GCM AEAD */
+    data object HPKE_0_KE : HPKE_KE("HPKE-0-KE", 0x10, 0x1, 0x1)
+
+    /** Key Encryption with HPKE using DHKEM(P-384, HKDF-SHA384) KEM, HKDF-SHA384 KDF, and AES-256-GCM AEAD */
+    data object HPKE_1_KE : HPKE_KE("HPKE-1-KE", 0x11, 0x2, 0x2)
+
+    /** Key Encryption with HPKE using DHKEM(P-521, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_2_KE : HPKE_KE("HPKE-2-KE" ,0x12, 0x3, 0x2)
+
+    /** Key Encryption with HPKE using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-128-GCM AEAD */
+    data object HPKE_3_KE : HPKE_KE("HPKE-3-KE", 0x20, 0x1, 0x1)
+
+    /** Key Encryption with HPKE using DHKEM(X25519, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_4_KE : HPKE_KE("HPKE-4-KE", 0x20, 0x1, 0x3)
+
+    /** Key Encryption with HPKE using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and AES-256-GCM AEAD */
+    data object HPKE_5_KE : HPKE_KE("HPKE-5-KE", 0x21, 0x3, 0x2)
+
+    /** Key Encryption with HPKE using DHKEM(X448, HKDF-SHA512) KEM, HKDF-SHA512 KDF, and ChaCha20Poly1305 AEAD */
+    data object HPKE_6_KE : HPKE_KE("HPKE-6-KE", 0x21, 0x3, 0x3)
+
+    /** Key Encryption with HPKE using DHKEM(P-256, HKDF-SHA256) KEM, HKDF-SHA256 KDF, and AES-256-GCM AEAD */
+    data object HPKE_7_KE : HPKE_KE("HPKE-7-KE", 0x10, 0x1, 0x2)
+
     sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*,*>)
         : JweAlgorithm(identifier), SpecializedSymmetricEncryptionAlgorithm {
 
@@ -80,7 +149,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, E
                 RSA_OAEP_256,
                 RSA_OAEP_384,
                 RSA_OAEP_512,
-            )
+            ) + HPKE.entries + HPKE_KE.entries
         }
     }
 
