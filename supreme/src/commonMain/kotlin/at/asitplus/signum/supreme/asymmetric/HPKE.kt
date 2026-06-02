@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
@@ -26,10 +25,8 @@ import at.asitplus.signum.supreme.agree.Ephemeral
 import at.asitplus.signum.supreme.agree.keyAgreement
 import at.asitplus.signum.supreme.kdf.expandStep
 import at.asitplus.signum.supreme.kdf.extractStep
-import at.asitplus.signum.supreme.symmetric.Decryptor
 import at.asitplus.signum.supreme.symmetric.Encryptor
 import at.asitplus.signum.supreme.symmetric.decrypt
-import at.asitplus.signum.supreme.symmetric.encrypt
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.coroutines.runBlocking
@@ -67,7 +64,8 @@ private fun concat(vararg datas: ByteArray): ByteArray {
 
 private interface SuiteKDFContext {
     val kdf: HPKE.KDF
-    val suite_id: ByteArray
+    /** RFC 9180 suite_id */
+    val suiteId: ByteArray
 }
 
 /** RFC 9180 HPKE */
@@ -80,28 +78,28 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         val pk: PublicKey)
 
     data class EncapResult(
-        /** symmetric key */
-        val shared_secret: ByteArray,
-        /** encapsulated key */
-        val enc: ByteArray)
+        /** symmetric key (RFC 9180: shared_secret) */
+        val sharedSecret: ByteArray,
+        /** encapsulated key (RFC 9180: enc) */
+        val encapsulatedSecret: ByteArray)
 
     data class SenderSetupResult(
-        /** encapsulated key */
-        val enc: ByteArray,
+        /** encapsulated key (RFC 9180: enc) */
+        val encapsulatedSecret: ByteArray,
         /** sending context */
         val context: HPKE<*,*>.Context.S
     )
 
     data class SealOneShotResult(
-        /** encapsulated key*/
-        val enc: ByteArray,
-        /** ciphertext */
-        val ct: ByteArray
+        /** encapsulated key (RFC 9180: enc) */
+        val encapsulatedSecret: ByteArray,
+        /** ciphertext (RFC 9180: ct) */
+        val ciphertext: ByteArray
     )
 
     data class ExportOneShotSenderResult(
-        /** encapsulated key */
-        val enc: ByteArray,
+        /** encapsulated key (RFC 9180: enc) */
+        val encapsulatedSecret: ByteArray,
         /** exported shared secret */
         val exported: ByteArray
     )
@@ -110,7 +108,9 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
     class MessageLimitReachedError: Throwable()
 
     interface KDF {
-        val kdf_id: Int
+        /** RFC 9180 kdf_id */
+        val kdfId: Int
+
         /**
          * The output size of the [Extract] function in bytes.
          */
@@ -129,7 +129,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
 
         companion object {
             /** bridges from HPKE KDF definition to signum's HKDF definition */
-            private data class SignumHKDFProxy(override val kdf_id: Int, private val hkdf: HKDF) : HPKE.KDF {
+            private data class SignumHKDFProxy(override val kdfId: Int, private val hkdf: HKDF) : HPKE.KDF {
                 override val Nh: BitLength
                     get() = BitLength.fromBytes(hkdf.outputLength)
 
@@ -143,13 +143,14 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
             }
 
             /** well-known KDFs as referenced in RFC9180 section 7.2 */
-            val HKDF_SHA256: HPKE.KDF = SignumHKDFProxy(kdf_id = 0x0001, hkdf = HKDF.SHA256)
-            val HKDF_SHA384: HPKE.KDF = SignumHKDFProxy(kdf_id = 0x0002, hkdf = HKDF.SHA384)
-            val HKDF_SHA512: HPKE.KDF = SignumHKDFProxy(kdf_id = 0x0003, hkdf = HKDF.SHA512)
+            val HKDF_SHA256: HPKE.KDF = SignumHKDFProxy(kdfId = 0x0001, hkdf = HKDF.SHA256)
+            val HKDF_SHA384: HPKE.KDF = SignumHKDFProxy(kdfId = 0x0002, hkdf = HKDF.SHA384)
+            val HKDF_SHA512: HPKE.KDF = SignumHKDFProxy(kdfId = 0x0003, hkdf = HKDF.SHA512)
         }
     }
     interface KEM<PublicKey, SecretKey> {
-        val kem_id: Int
+        /** RFC 9180 kem_id */
+        val kemId: Int
         /**
          * The length in bytes of a KEM shared secret produced by this KEM.
          */
@@ -239,7 +240,8 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         }
     }
     interface AEAD {
-        val aead_id: Int
+        /** RFC 9180 aead_id */
+        val aeadId: Int
         /**
          * The length in bytes of a key for this algorithm.
          */
@@ -271,7 +273,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
 
             /** well-known AEADs as specified in RFC9180 section 7.3 */
             private data class SignumAEADProxy(
-                override val aead_id: Int,
+                override val aeadId: Int,
                 private val alg: SymmetricEncryptionAlgorithm<
                         AuthCapability.Authenticated.Integrated,
                         NonceTrait.Required,
@@ -299,7 +301,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
             val AES_256_GCM: AEAD = SignumAEADProxy(0x0002, SymmetricEncryptionAlgorithm.AES_256.GCM)
             val CHACHA20POLY1305: AEAD = SignumAEADProxy(0x0003, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
             val EXPORT_ONLY = object : AEAD {
-                override val aead_id get() = 0xFFFF
+                override val aeadId get() = 0xFFFF
                 private val NOPE: Nothing get() = throw UnsupportedOperationException("EXPORT_ONLY AEAD may only be used for secret export")
                 override val Nt get() = 0.bytes
                 override val Nk get() = 0.bytes
@@ -312,24 +314,24 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
 
     companion object {
         private fun SuiteKDFContext.LabeledExtract(salt: ByteArray?, label: ByteArray, ikm: ByteArray): ByteArray {
-            val labeled_ikm = concat("HPKE-v1".encodeToByteArray(), suite_id, label, ikm)
+            val labeled_ikm = concat("HPKE-v1".encodeToByteArray(), suiteId, label, ikm)
             return kdf.Extract(salt, labeled_ikm)
         }
 
         private fun SuiteKDFContext.LabeledExpand(prk: ByteArray, label: ByteArray, info: ByteArray, L: BitLength): ByteArray {
             val labeled_info = concat(i2ospForLen2(L.bytes.toInt()), "HPKE-v1".encodeToByteArray(),
-                suite_id, label,info)
+                suiteId, label,info)
             return kdf.Expand(prk, labeled_info, L)
         }
     }
 
-    data class DHKEM(override val kem_id: Int, override val kdf: HPKE.KDF, private val dhGroup: ECCurve) :
+    data class DHKEM(override val kemId: Int, override val kdf: HPKE.KDF, private val dhGroup: ECCurve) :
         KEM<KeyAgreementPublicValue.ECDH, KeyAgreementPrivateValue.ECDH>,
         KEM.WithAuthEncapDecap<KeyAgreementPublicValue.ECDH, KeyAgreementPrivateValue.ECDH>,
         KEM.WithSerializablePrivateKey<KeyAgreementPublicValue.ECDH, KeyAgreementPrivateValue.ECDH>,
         SuiteKDFContext
     {
-        override val suite_id = concat("KEM".encodeToByteArray(), i2ospForLen2(kem_id))
+        override val suiteId = concat("KEM".encodeToByteArray(), i2ospForLen2(kemId))
         private fun DH(sk: KeyAgreementPrivateValue.ECDH, pk: KeyAgreementPublicValue.ECDH) =
             runBlocking { sk.keyAgreement(pk).getOrThrow() }
 
@@ -419,17 +421,24 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         }
     }
 
-    override val suite_id = concat(
-        "HPKE".encodeToByteArray(), i2ospForLen2(kem.kem_id),
-        i2ospForLen2(kdf.kdf_id), i2ospForLen2(aead.aead_id))
+    override val suiteId = concat(
+        "HPKE".encodeToByteArray(), i2ospForLen2(kem.kemId),
+        i2ospForLen2(kdf.kdfId), i2ospForLen2(aead.aeadId))
 
-    enum class Mode(val mode_id: Byte) {
-        mode_base(0x00),
-        mode_psk(0x01),
-        mode_auth(0x02),
-        mode_auth_psk(0x03);
+    enum class Mode(
+        /** RFC 9180: mode_id */
+        val modeId: Byte)
+    {
+        /** Unauthenticated sender, no pre-shared secret (RFC 9180: mode_base) */
+        BASE(0x00),
+        /** Authentication using a pre-shared secret (RFC 9180: mode_psk) */
+        PSK(0x01),
+        /** Sender authentication using a KEM keypair (RFC 9180: mode_auth) */
+        AUTH(0x02),
+        /** Authentication using both pre-shared secret and KEM keypair (RFC 9180: mode_auth_psk) */
+        AUTH_PSK(0x03);
 
-        val mode get() = byteArrayOf(mode_id)
+        val mode get() = byteArrayOf(modeId)
     }
 
     private interface ContextSharedInterface {
@@ -443,9 +452,9 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         init { /** RFC9180 VerifyPSKInputs */
             require (psk.isEmpty() == psk_id.isEmpty()) { "Inconsistent PSK inputs"}
             when (mode) {
-                Mode.mode_base, Mode.mode_auth -> require (psk.isEmpty()) { "PSK provided when not needed"}
+                Mode.mode_base, Mode.AUTH -> require (psk.isEmpty()) { "PSK provided when not needed"}
                 /** In the PSK and AuthPSK  modes, the PSK MUST have at least 32 bytes of entropy */
-                Mode.mode_psk, Mode.mode_auth_psk -> require (psk.size >= 32) { "The PSK MUST have at least 32 bytes of entropy"}
+                Mode.PSK, Mode.AUTH_PSK -> require (psk.size >= 32) { "The PSK MUST have at least 32 bytes of entropy"}
             }
         }
         init {
@@ -505,36 +514,36 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
 
     fun SetupPSKS(pkR: PublicKey, info: ByteArray, psk: ByteArray, psk_id: ByteArray): SenderSetupResult {
         val (shared_secret, enc) = kem.Encap(pkR)
-        return SenderSetupResult(enc, Context(Mode.mode_psk, shared_secret, info, psk, psk_id).S())
+        return SenderSetupResult(enc, Context(Mode.PSK, shared_secret, info, psk, psk_id).S())
     }
 
     fun SetupPSKR(enc: ByteArray, skR: SecretKey, info: ByteArray, psk: ByteArray, psk_id: ByteArray): Context.R {
         val shared_secret = kem.Decap(enc, skR)
-        return Context(Mode.mode_psk, shared_secret, info, psk, psk_id).R()
+        return Context(Mode.PSK, shared_secret, info, psk, psk_id).R()
     }
 
     fun SetupAuthS(pkR: PublicKey, info: ByteArray, skS: SecretKey): SenderSetupResult {
         require(kem is KEM.WithAuthEncapDecap) { "Authenticated encapsulation is not supported by $kem" }
         val (shared_secret, enc) = kem.AuthEncap(pkR, skS)
-        return SenderSetupResult(enc, Context(Mode.mode_auth, shared_secret, info, byteArrayOf(), byteArrayOf()).S())
+        return SenderSetupResult(enc, Context(Mode.AUTH, shared_secret, info, byteArrayOf(), byteArrayOf()).S())
     }
 
     fun SetupAuthR(enc: ByteArray, skR: SecretKey, info: ByteArray, pkS: PublicKey): Context.R {
         require(kem is KEM.WithAuthEncapDecap) { "Authenticated encapsulation is not supported by $kem" }
         val shared_secret = kem.AuthDecap(enc, skR, pkS)
-        return Context(Mode.mode_auth, shared_secret, info, byteArrayOf(), byteArrayOf()).R()
+        return Context(Mode.AUTH, shared_secret, info, byteArrayOf(), byteArrayOf()).R()
     }
 
     fun SetupAuthPSKS(pkR: PublicKey, info: ByteArray, psk: ByteArray, psk_id: ByteArray, skS: SecretKey): SenderSetupResult {
         require(kem is KEM.WithAuthEncapDecap) { "Authenticated encapsulation is not supported by $kem" }
         val (shared_secret, enc) = kem.AuthEncap(pkR, skS)
-        return SenderSetupResult(enc, Context(Mode.mode_auth_psk, shared_secret, info, psk, psk_id).S())
+        return SenderSetupResult(enc, Context(Mode.AUTH_PSK, shared_secret, info, psk, psk_id).S())
     }
 
     fun SetupAuthPSKR(enc: ByteArray, skR: SecretKey, info: ByteArray, psk: ByteArray, psk_id: ByteArray, pkS: PublicKey): Context.R {
         require(kem is KEM.WithAuthEncapDecap) { "Authenticated encapsulation is not supported by $kem" }
         val shared_secret = kem.AuthDecap(enc, skR, pkS)
-        return Context(Mode.mode_auth_psk, shared_secret, info, psk, psk_id).R()
+        return Context(Mode.AUTH_PSK, shared_secret, info, psk, psk_id).R()
     }
 
     fun SealBase(pkR: PublicKey, info: ByteArray, aad: ByteArray, pt: ByteArray): SealOneShotResult {

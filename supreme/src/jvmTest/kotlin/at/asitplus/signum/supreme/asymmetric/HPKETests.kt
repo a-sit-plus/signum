@@ -1,10 +1,7 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
-import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.supreme.asymmetric.HPKE.Mode
-import at.asitplus.signum.supreme.asymmetric.HPKETestSuite.Export
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.fail
@@ -48,19 +45,19 @@ class HPKETestSuite(jsonObject: JsonObject) {
         }
     }
     val mode = jsonObject.requireInt("mode").let { i ->
-        HPKE.Mode.entries.firstOrNull { it.mode_id.toInt() == i }
+        HPKE.Mode.entries.firstOrNull { it.modeId.toInt() == i }
             ?: fail("Unknown HPKE mode $i")
     }
     val kem = jsonObject.requireInt("kem_id").let { i ->
-        WELL_KNOWN_KEMS.firstOrNull { it.kem_id == i }
+        WELL_KNOWN_KEMS.firstOrNull { it.kemId == i }
             ?: fail("Unknown KEM $i")
     }
     val kdf = jsonObject.requireInt("kdf_id").let { i ->
-        WELL_KNOWN_KDFS.firstOrNull { it.kdf_id == i }
+        WELL_KNOWN_KDFS.firstOrNull { it.kdfId == i }
             ?: fail("Unknown KDF $i")
     }
     val aead = jsonObject.requireInt("aead_id").let { i ->
-        WELL_KNOWN_AEADS.firstOrNull { it.aead_id == i }
+        WELL_KNOWN_AEADS.firstOrNull { it.aeadId == i }
             ?: fail("Unknown AEAD $i")
     }
     val info = jsonObject.requireHexBytes("info")
@@ -104,11 +101,11 @@ val HPKETests by testSuite {
 
     withData(
         nameFn={
-            "mode=${it.mode.name} kem=${it.kem.kem_id} kdf=${it.kdf.kdf_id} aead=${it.aead.aead_id}"
+            "mode=${it.mode.name} kem=${it.kem.kemId} kdf=${it.kdf.kdfId} aead=${it.aead.aeadId}"
         }, tests)
     { test ->
         val hpke = HPKE(test.kem, test.kdf, test.aead)
-        if (test.mode == Mode.mode_auth || test.mode == Mode.mode_auth_psk) {
+        if (test.mode == Mode.AUTH || test.mode == Mode.AUTH_PSK) {
             val (shared_secret, enc) = test.kem.AuthEncap(
                 test.kem.DeserializePublicKey(test.pkRm),
                 test.kem.DeserializePrivateKey(test.skSm!!),
