@@ -26,8 +26,8 @@
     * kotlinx.serialization 1.11.0
 * Matrix testing
 * Rework JWT-Payload handling
-  * Renamed `JsonWebToken` to `JwsClaims` which will only contain default attributes in the future
-    * IANA and EUDI claims are defined as constants to be implemented using Propigator
+  * Renamed `JsonWebToken` to `JwsBaseClaims` which will only contain default attributes in the future
+    * IANA and EUDI claim names are defined as constants in `JwtClaimNames` to be implemented using Propigator
   * JWT Payloads which build on top of the new base class:
     * Add `KeyAttestationPayload` class which replaces `KeyAttestationJwt`
     * Add `WalletAttestationPayload` class which extends `JwtClaims` as defined in EUDI TS3 / OID4VCI
