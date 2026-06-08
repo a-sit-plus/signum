@@ -1,12 +1,11 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.signum.indispensable.josef.JwtClaims
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Structure to declare posession of a particular proof-of-possesion key,
- * to be included in [at.asitplus.signum.indispensable.josef.JwtClaims.confirmationClaim]
+ * Structure to declare posession of a particular proof-of-possesion key
  *
  * See [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800)
  */
@@ -17,7 +16,7 @@ data class ConfirmationClaim(
      * [jsonWebKey] member is a [at.asitplus.signum.indispensable.josef.JsonWebKey] representing the corresponding
      * asymmetric public key.
      */
-    @SerialName(JwtClaims.IanaRegistered.ConfirmationMethods.RFC7800.JWK)
+    @SerialName(IanaRegistered.ConfirmationMethods.RFC7800.JWK)
     val jsonWebKey: at.asitplus.signum.indispensable.josef.JsonWebKey? = null,
 
     /**
@@ -26,7 +25,7 @@ data class ConfirmationClaim(
      * the recipient using the JWE Compact Serialization containing the
      * symmetric key.
      */
-    @SerialName(JwtClaims.IanaRegistered.ConfirmationMethods.RFC7800.JWE)
+    @SerialName(IanaRegistered.ConfirmationMethods.RFC7800.JWE)
     @Serializable(at.asitplus.signum.indispensable.josef.JweEncryptedSerializer::class)
     val encryptedSymmetricKey: at.asitplus.signum.indispensable.josef.JweEncrypted? = null,
 
@@ -35,7 +34,7 @@ data class ConfirmationClaim(
      * Key ID instead of communicating the actual key, provided the
      * recipient is able to obtain the identified key using the Key ID.
      */
-    @SerialName(JwtClaims.IanaRegistered.ConfirmationMethods.RFC7800.KID)
+    @SerialName(IanaRegistered.ConfirmationMethods.RFC7800.KID)
     val keyId: String? = null,
 
     /**
@@ -47,7 +46,7 @@ data class ConfirmationClaim(
      * referenced JWK Set document, a [keyId] member MUST also be included
      * with the referenced key's JWK also containing the same [keyId] value.
      */
-    @SerialName(JwtClaims.IanaRegistered.ConfirmationMethods.RFC7800.JKU)
+    @SerialName(IanaRegistered.ConfirmationMethods.RFC7800.JKU)
     val jsonWebKeySetUrl: String? = null,
 
     /**
@@ -57,6 +56,6 @@ data class ConfirmationClaim(
      *
      * See also [at.asitplus.signum.indispensable.josef.JsonWebKey.jwkThumbprint]
      */
-    @SerialName(JwtClaims.IanaRegistered.ConfirmationMethods.RFC9449.JKT)
+    @SerialName(IanaRegistered.ConfirmationMethods.RFC9449.JKT)
     val jsonWebKeyThumbprint: String? = null,
 )

@@ -6,8 +6,9 @@ import at.asitplus.propigator.json.JsonObjectBacked
 import at.asitplus.propigator.json.JsonObjectBackedSerializer
 import at.asitplus.propigator.json.jsonProperty
 import at.asitplus.propigator.json.jsonSlice
-import at.asitplus.signum.indispensable.josef.JwtClaims
+import at.asitplus.signum.indispensable.josef.JwtBaseClaims
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -18,7 +19,7 @@ data class ClientAttestationPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
-    val jwtClaims: JwtClaims by jsonSlice()
+    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
     /**
      * OID4VP: This claim contains the confirmation method as defined in RFC7800. It MUST contain a JWK as defined in
      * Section 3.2 of RFC7800. This claim determines the public key for which the corresponding private key the
@@ -27,11 +28,11 @@ data class ClientAttestationPayload(
      * independent of that issuer without the risk of an adversary impersonating the Verifier by replaying a captured
      * attestation.
      */
-    val confirmationClaim: ConfirmationClaim by jsonProperty(JwtClaims.IanaRegistered.ClaimNames.RFC7800.CNF)
+    val confirmationClaim: ConfirmationClaim by jsonProperty(IanaRegistered.ClaimNames.RFC7800.CNF)
     override fun validate() {
-        jwtClaims
-        jwtClaims.subject!!
-        jwtClaims.expiration!!
+        jwtBaseClaims
+        jwtBaseClaims.subject!!
+        jwtBaseClaims.expiration!!
         confirmationClaim
     }
 

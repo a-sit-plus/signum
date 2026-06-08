@@ -1,8 +1,7 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.signum.indispensable.josef.ClientStatus
-import at.asitplus.signum.indispensable.josef.JwtClaims.IanaRegistered
-import at.asitplus.signum.indispensable.josef.JwtClaims.UnregisteredClaims
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

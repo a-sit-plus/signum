@@ -8,11 +8,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
+
 @Serializable
-data class KeyStorageStatus(
+data class ClientStatus(
     /**
-     * Status list reference as specified by OID4VCI Appendix D.1. The value represents either the revocation state
-     * of the WSCD/keystore type or, for per-KA indexing, the individual Wallet Unit's WSCD/keystore instance.
+     * Status list reference as specified by OID4VCI Appendix E. The value represents the revocation state of the
+     * Wallet Instance.
      */
     @SerialName(UnregisteredClaims.DraftIetfOauthStatusList.STATUS)
     val status: JsonObject,

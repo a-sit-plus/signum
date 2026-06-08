@@ -1,14 +1,10 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.propigator.common.ObjectBackedValidated
-import at.asitplus.propigator.json.JsonBackingCodec
-import at.asitplus.propigator.json.JsonObjectBacked
-import at.asitplus.propigator.json.JsonObjectBackedSerializer
-import at.asitplus.propigator.json.jsonProperty
-import at.asitplus.propigator.json.jsonSlice
-import at.asitplus.propigator.json.nullableJsonProperty
-import at.asitplus.signum.indispensable.josef.JwtClaims
+import at.asitplus.propigator.json.*
+import at.asitplus.signum.indispensable.josef.JwtBaseClaims
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -20,16 +16,17 @@ data class ClientAttestationPopPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
-    val jwtClaims: JwtClaims by jsonSlice()
-    val challenge: String? by nullableJsonProperty(JwtClaims.UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE)
+    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
+    val challenge: String? by nullableJsonProperty(UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE)
 
     override fun validate() {
-        jwtClaims
-        jwtClaims.audience!!
-        jwtClaims.jwtId!!
-        jwtClaims.issuedAt!!
+        jwtBaseClaims
+        jwtBaseClaims.audience!!
+        jwtBaseClaims.jwtId!!
+        jwtBaseClaims.issuedAt!!
         challenge
     }
 
-    object Serializer : KSerializer<ClientAttestationPopPayload> by JsonObjectBackedSerializer(::ClientAttestationPopPayload)
+    object Serializer :
+        KSerializer<ClientAttestationPopPayload> by JsonObjectBackedSerializer(::ClientAttestationPopPayload)
 }

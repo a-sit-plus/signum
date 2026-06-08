@@ -1,7 +1,8 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.signum.indispensable.josef.JsonWebKey
-import at.asitplus.signum.indispensable.josef.JwtClaims
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,7 +12,7 @@ data class KeyAttestationClaims(
     /**
      * Array of attested keys from the same key storage component using the syntax of JWK as defined in RFC7517.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.ATTESTED_KEYS)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.ATTESTED_KEYS)
     val attestedKeys: Collection<JsonWebKey>,
 
     /**
@@ -19,7 +20,7 @@ data class KeyAttestationClaims(
      * component and its keys attested in the attested_keys parameter. This specification defines initial values in
      * Appendix D.2.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.KEY_STORAGE)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.KEY_STORAGE)
     val keyStorage: Collection<String>? = null,
 
     /**
@@ -27,14 +28,14 @@ data class KeyAttestationClaims(
      * methods allowed to access the private keys from the [attestedKeys] parameter.
      * This specification defines initial values in Appendix D.2.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.USER_AUTHENTICATION)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.USER_AUTHENTICATION)
     val userAuthentication: Collection<String>? = null,
 
     /**
      * Optional. A String that contains a URL that links to the certification of the key storage component.
      * EUDI TS3 REQUIRED
      */
-    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.CERTIFICATION)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.CERTIFICATION)
     val certification: String,
 
     /**
@@ -42,9 +43,9 @@ data class KeyAttestationClaims(
      * status list reference for the attested key storage and the time until which the Wallet
      * Provider commits to maintaining the referenced status.
      */
-    @SerialName(JwtClaims.UnregisteredClaims.EudiTs3Claims.KEY_STORAGE_STATUS)
+    @SerialName(UnregisteredClaims.EudiTs3Claims.KEY_STORAGE_STATUS)
     val keyStorageStatus: KeyStorageStatus,
 
-    @SerialName(JwtClaims.IanaRegistered.ClaimNames.OpenIdConnectCore.NONCE)
+    @SerialName(IanaRegistered.ClaimNames.OpenIdConnectCore.NONCE)
     val nonce: String? = null,
 )

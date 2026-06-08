@@ -1,9 +1,11 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.propigator.common.NullWriteMode
 import at.asitplus.propigator.common.ObjectBackedValidated
-import at.asitplus.propigator.json.*
-import at.asitplus.signum.indispensable.josef.JwtClaims
+import at.asitplus.propigator.json.JsonBackingCodec
+import at.asitplus.propigator.json.JsonObjectBacked
+import at.asitplus.propigator.json.JsonObjectBackedSerializer
+import at.asitplus.propigator.json.jsonSlice
+import at.asitplus.signum.indispensable.josef.JwtBaseClaims
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -16,13 +18,13 @@ data class KeyAttestationPayload(
     private val json: Json = joseCompliantSerializer,
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
 
-    val jwtClaims: JwtClaims by jsonSlice()
+    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
     val keyAttestationClaims: KeyAttestationClaims by jsonSlice()
 
 
     override fun validate() {
-        jwtClaims
-        jwtClaims.issuedAt!!
+        jwtBaseClaims
+        jwtBaseClaims.issuedAt!!
         keyAttestationClaims
     }
 

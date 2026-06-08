@@ -218,7 +218,7 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompact], with [JwtClaims] as the payload.
+     * third party. May be parsed as a [JwsCompact], with [JwtBaseClaims] as the payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactStringSerializer::class)
@@ -226,7 +226,7 @@ data class JwsHeader(
 
     /**
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * Should be a [JwsCompact], with [JwtClaims] as the payload
+     * Should be a [JwsCompact], with [JwtBaseClaims] as the payload
      */
     @SerialName(SerialNames.KEY_ATTESTATION)
     @Serializable(with = JwsCompactStringSerializer::class)
@@ -430,7 +430,7 @@ data class JwsHeader(
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JwtClaims>? by lazy {
+    val verifierAttestationParsed: JwsCompactTyped<JwtBaseClaims>? by lazy {
         attestationJwt?.typed()
     }
 
