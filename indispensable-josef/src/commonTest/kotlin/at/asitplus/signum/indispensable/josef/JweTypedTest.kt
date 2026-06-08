@@ -8,7 +8,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 
-private val jweTypedPayload = JwtClaims(
+private val jweTypedPayload = JwtBaseClaims(
     issuer = "https://issuer.example",
     subject = "alice",
     audience = "test-suite",
@@ -20,7 +20,7 @@ val JweTypedTest by testSuite {
         val jwe = sampleFlattenedJwe()
         var observedJwe: JWE? = null
 
-        val decoded = JweTyped.getPayload<JwtClaims>(
+        val decoded = JweTyped.getPayload<JwtBaseClaims>(
             decryptor = {
                 observedJwe = it
                 jweTypedPayload.toPlaintext()
@@ -50,7 +50,7 @@ val JweTypedTest by testSuite {
         }
         var observedJwe: JWE? = null
 
-        val typed: JweCompactTyped<JwtClaims> = compact.decrypted {
+        val typed: JweCompactTyped<JwtBaseClaims> = compact.decrypted {
             observedJwe = it
             jweTypedPayload.toPlaintext()
         }
@@ -62,7 +62,7 @@ val JweTypedTest by testSuite {
     }
 
     "decrypted compact JWE can carry a compact JWS payload" {
-        val jwtClaims = JwtClaims(
+        val jwtBaseClaims = JwtBaseClaims(
             issuer = "https://issuer.example",
             subject = "alice",
             audience = "test-suite",
@@ -74,7 +74,7 @@ val JweTypedTest by testSuite {
                 type = "JWT",
                 keyId = "nested-jws",
             ),
-            payload = jwtClaims,
+            payload = jwtBaseClaims,
         ) {
             byteArrayOf(6, 7, 8, 9)
         }.jws
@@ -103,17 +103,17 @@ val JweTypedTest by testSuite {
 
         typed.jwe shouldBe encryptedJwt
         compactPayload shouldBe signedJwt
-        compactPayload.getPayload<JwtClaims>().getOrThrow() shouldBe jwtClaims
+        compactPayload.getPayload<JwtBaseClaims>().getOrThrow() shouldBe jwtBaseClaims
     }
 
     "getPayload returns a failure when decryption or deserialization fails" {
         val jwe = sampleFlattenedJwe()
 
-        val decryptionFailure = JweTyped.getPayload<JwtClaims>(
+        val decryptionFailure = JweTyped.getPayload<JwtBaseClaims>(
             decryptor = { throw IllegalStateException("ciphertext rejected") },
             jwe = jwe,
         )
-        val deserializationFailure = JweTyped.getPayload<JwtClaims>(
+        val deserializationFailure = JweTyped.getPayload<JwtBaseClaims>(
             decryptor = { "not-json".encodeToByteArray() },
             jwe = jwe,
         )
@@ -136,5 +136,5 @@ private fun sampleFlattenedJwe(): JweFlattened = JweFlattened(
     authenticationTag = byteArrayOf(5),
 )
 
-private fun JwtClaims.toPlaintext(): ByteArray =
-    joseCompliantSerializer.encodeToString(JwtClaims.serializer(), this).encodeToByteArray()
+private fun JwtBaseClaims.toPlaintext(): ByteArray =
+    joseCompliantSerializer.encodeToString(JwtBaseClaims.serializer(), this).encodeToByteArray()

@@ -16,7 +16,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Parent class of Json formats that either use [JWS] or [JWE]
- * If payload is [JwtClaims] and either [JwsCompact] and/or [JweCompact] is used then this is a JsonWebToken.
+ * If payload is [JwtBaseClaims] and either [JwsCompact] and/or [JweCompact] is used then this is a JsonWebToken.
  */
 @Serializable(with = JsonSecured.Serializer::class)
 sealed interface JsonSecured {

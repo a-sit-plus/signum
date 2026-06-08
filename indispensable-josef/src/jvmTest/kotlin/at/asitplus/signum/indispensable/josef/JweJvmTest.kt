@@ -61,8 +61,8 @@ val JweJvmTest by testSuite {
         reparsedByNimbus.payload.toBytes() shouldBe payload
     }
 
-    "compact JWE built from typed JwtClaims can be decrypted by Nimbus" {
-        val jwtClaims = JwtClaims(
+    "JWE invoke builders with typed JwtClaims can be decrypted by Nimbus" {
+        val jwtBaseClaims = JwtBaseClaims(
             issuer = "https://issuer.example",
             subject = "alice",
             audience = "test-suite",
@@ -76,43 +76,69 @@ val JweJvmTest by testSuite {
             type = "application/example+jwe",
             contentType = "JWT",
         )
-        var observedProtectedHeader: JweHeader.Part? = null
-        var observedPayload: JwtClaims? = null
+        val protectedHeader = header.toPart()
 
         val compact = JweCompact(
             protectedHeader = header,
-            payload = jwtClaims,
+            payload = jwtBaseClaims,
         ) { protectedHeaderPart, plainPayload ->
-            observedProtectedHeader = protectedHeaderPart
-            observedPayload = plainPayload
+            protectedHeaderPart shouldBe protectedHeader
+            plainPayload shouldBe jwtBaseClaims
             encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
         }
 
-        observedProtectedHeader shouldBe header.toPart()
-        observedPayload shouldBe jwtClaims
         compact.jweHeader shouldBe header
+        compact.decryptWithNimbus(secretKey) shouldBe jwtBaseClaims.toPlaintext()
 
-        val parsedByNimbus = JWEObject.parse(compact.toString())
-        parsedByNimbus.decrypt(AESDecrypter(secretKey))
+        val flattened = JweFlattened(
+            protectedHeader = protectedHeader,
+            payload = jwtBaseClaims,
+        ) { protectedHeaderPart, unprotectedHeaderPart, plainPayload ->
+            protectedHeaderPart shouldBe protectedHeader
+            unprotectedHeaderPart shouldBe null
+            plainPayload shouldBe jwtBaseClaims
+            encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
+        }
 
-        parsedByNimbus.header.toBase64URL().decode() shouldBe compact.plainProtectedHeader
-        parsedByNimbus.payload.toBytes() shouldBe jwtClaims.toPlaintext()
+        flattened.jweHeader shouldBe header
+        flattened.toJweCompact().decryptWithNimbus(secretKey) shouldBe jwtBaseClaims.toPlaintext()
+
+        val general = JweGeneral(
+            protectedHeader = protectedHeader,
+            payload = jwtBaseClaims,
+        ) { protectedHeaderPart, unprotectedHeaderPart, plainPayload ->
+            protectedHeaderPart shouldBe protectedHeader
+            unprotectedHeaderPart shouldBe null
+            plainPayload shouldBe jwtBaseClaims
+            encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
+        }
+
+        general.jweHeaders.single() shouldBe header
+        general.toJweFlattened().single().toJweCompact().decryptWithNimbus(secretKey) shouldBe jwtBaseClaims.toPlaintext()
     }
 }
 
 private fun encryptWithNimbus(
-    protectedHeader: JweHeader.Part,
-    payload: JwtClaims,
+    protectedHeader: JweHeader.Part?,
+    payload: JwtBaseClaims,
     secretKey: SecretKey,
 ): JWE.EncryptionOutput {
     val nimbusJwe = JWEObject(
-        protectedHeader.toNimbusHeader(),
+        requireNotNull(protectedHeader).toNimbusHeader(),
         Payload(payload.toPlaintext()),
     )
 
     nimbusJwe.encrypt(AESEncrypter(secretKey))
 
     return nimbusJwe.toEncryptionOutput()
+}
+
+private fun JweCompact.decryptWithNimbus(secretKey: SecretKey): ByteArray {
+    val nimbusJwe = JWEObject.parse(toString())
+    nimbusJwe.decrypt(AESDecrypter(secretKey))
+
+    nimbusJwe.header.toBase64URL().decode() shouldBe plainProtectedHeader
+    return nimbusJwe.payload.toBytes()
 }
 
 private fun JweHeader.Part.toNimbusHeader(): JWEHeader =
@@ -125,5 +151,5 @@ private fun JWEObject.toEncryptionOutput(): JWE.EncryptionOutput = JWE.Encryptio
     authenticationTag = authTag.decode(),
 )
 
-private fun JwtClaims.toPlaintext(): ByteArray =
-    joseCompliantSerializer.encodeToString(JwtClaims.serializer(), this).encodeToByteArray()
+private fun JwtBaseClaims.toPlaintext(): ByteArray =
+    joseCompliantSerializer.encodeToString(JwtBaseClaims.serializer(), this).encodeToByteArray()
