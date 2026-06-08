@@ -7,16 +7,29 @@ import at.asitplus.propigator.json.JsonObjectBackedSerializer
 import at.asitplus.propigator.json.jsonSlice
 import at.asitplus.signum.indispensable.josef.JwtBaseClaims
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 
 @Serializable(with = KeyAttestationPayload.Serializer::class)
 data class KeyAttestationPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
 ) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
+
+    constructor(
+        jwtBase: JwtBaseClaims,
+        keyAttestationClaims: KeyAttestationClaims,
+        misc: JsonObject,
+    ) : this(
+        joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
+            .strictUnion(joseCompliantSerializer.encodeToJsonElement(keyAttestationClaims).jsonObject)
+            .strictUnion(misc)
+    )
 
     val jwtBaseClaims: JwtBaseClaims by jsonSlice()
     val keyAttestationClaims: KeyAttestationClaims by jsonSlice()
