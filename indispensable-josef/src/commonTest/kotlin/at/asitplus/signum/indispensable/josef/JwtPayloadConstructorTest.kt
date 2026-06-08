@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.propigator.json.jsonProperty
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.jwtpayload.ClientAttestationPayload
 import at.asitplus.signum.indispensable.josef.jwtpayload.ClientAttestationPopPayload
@@ -48,6 +49,16 @@ val JwtPayloadConstructorTest by testSuite {
         payload.jwtBaseClaims.shouldContainJwtBaseClaims()
         payload.keyAttestationClaims shouldBe keyAttestationClaims
         payload.encodedJsonObject()["custom_claim"] shouldBe JsonPrimitive("custom-value")
+    }
+
+    "key attestation payload can be extended with misc-backed claims" {
+        val payload = KeyAttestationPayload(
+            jwtBaseClaims,
+            keyAttestationClaims,
+            JsonObject(mapOf("foo" to JsonPrimitive("foo-value"))),
+        )
+
+        payload.foo() shouldBe "foo-value"
     }
 
     "wallet attestation constructor combines base, wallet attestation, and misc claims" {
@@ -156,6 +167,10 @@ private val walletAttestationClaims = WalletAttestationClaims(
 
 private inline fun <reified T> T.encodedJsonObject(): JsonObject =
     joseCompliantSerializer.encodeToJsonElement(this).jsonObject
+
+private val KeyAttestationPayload.fooClaim: String by jsonProperty("foo")
+
+private fun KeyAttestationPayload.foo(): String = fooClaim
 
 private fun JwtBaseClaims.shouldContainJwtBaseClaims() {
     issuer shouldBe jwtBaseClaims.issuer
