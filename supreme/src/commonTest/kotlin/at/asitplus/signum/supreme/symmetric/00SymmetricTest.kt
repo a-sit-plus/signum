@@ -247,7 +247,7 @@ val SymmetricTest by matrixSuite {
                     InsecureRandom.nextBytes(257),
                     InsecureRandom.nextBytes(1257),
                     InsecureRandom.nextBytes(21257)
-                ), nameFn = { _, it -> "${it.size} Bytes" }) test { plaintext ->
+                ), nameFn = { _, it -> "${it.size} Bytes" }) - { plaintext ->
 
                 val key = runBlocking { it.randomKey(InsecureRandom) }
 
@@ -342,11 +342,11 @@ val SymmetricTest by matrixSuite {
                     InsecureRandom.nextBytes(257),
                     InsecureRandom.nextBytes(1257),
                     InsecureRandom.nextBytes(21257)
-                ), nameFn = { _, it -> "${it.size} Bytes" }) test { plaintext ->
+                ), nameFn = { _, it -> "${it.size} Bytes" }) - { plaintext ->
                 val key = runBlocking { alg.randomKey(InsecureRandom) }
                 data(
                     listOf(alg.randomNonce(), alg.randomNonce(), null),
-                    nameFn = { _, it -> "IV: " + it?.toHexString()?.substring(0..8) }) test { iv ->
+                    nameFn = { _, it -> "IV: " + it?.toHexString()?.substring(0..8) }) - { iv ->
 
                     data(
                         listOf(InsecureRandom.nextBytes(32), null),

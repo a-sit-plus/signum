@@ -19,7 +19,7 @@ val MACTest  by matrixSuite {
         }
         data(sequence {
             yield(I("<base case>",
-                key="0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                key="0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
                 data="4869205468657265",
                 SHA224="896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22",
                 SHA256="b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7",

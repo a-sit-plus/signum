@@ -655,7 +655,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
           3358330f3bb84443fcb54fcd53a1d097fccbe310489b74ee143fc2
           938959a83a1f7dd4a6fd395b"""
                 )
-            ), nameFn = { _, it -> it.suiteName }) test { suiteInfo ->
+            ), nameFn = { _, it -> it.suiteName }) - { suiteInfo ->
             val suite = suiteInfo.suiteRef(suiteInfo.dstB)
 
             class TestInfo private constructor(
@@ -685,7 +685,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                             0,
                             min(it.msg.length, 10)
                         )
-                    }${if (it.msg.length > 10) "…" else ""}\"" }) test { test ->
+                    }${if (it.msg.length > 10) "…" else ""}\"" }) - { test ->
                 test("hash_to_curve") {
                     val result = suite(test.msg.encodeToByteArray()).normalize()
                     result.curve shouldBe suiteInfo.curve
