@@ -15,7 +15,7 @@ val DistinguishedNameTest by matrixSuite {
             KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
             KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
-        data(oids) test { first ->
+        data(oids) - { first ->
             data(oids) test { second ->
                 if (first != second) {
                     val cn1 = AttributeTypeAndValue.CommonName(first.encodeToTlv())

@@ -11,7 +11,7 @@ import kotlin.time.Duration.Companion.minutes
 
 val KdfTest by matrixSuite {
    
-    compact("Invoke Overrides") -  {
+    compact("Invoke Overrides") {} -  {
         //withData is not working in all targets
         data(List(10000) { it+1 }) test {
             PBKDF2.HMAC_SHA1.WithIterations(it) shouldBe PBKDF2.HMAC_SHA1(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA1 }

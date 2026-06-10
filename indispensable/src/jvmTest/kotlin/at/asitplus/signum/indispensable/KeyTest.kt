@@ -31,7 +31,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
     Security.addProvider(BouncyCastleProvider())
 
     compact("EC") - {
-        data(listOf(256, 384, 521)) test { bits ->
+        data(listOf(256, 384, 521)) - { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
@@ -90,7 +90,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
     }
 
     compact("RSA") - {
-        data(listOf(512, 1024, 2048, 3072, 4096)) test { bits ->
+        data(listOf(512, 1024, 2048, 3072, 4096)) - { bits ->
             val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
@@ -139,7 +139,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
     }
 
     compact("EC and RSA") - {
-        data(listOf(512, 1024, 2048, 3072, 4096)) test { rsaBits ->
+        data(listOf(512, 1024, 2048, 3072, 4096)) - { rsaBits ->
             data(listOf(256, 384, 521)) test { ecBits ->
                 val keyPairEC1 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
