@@ -8,13 +8,7 @@ import at.asitplus.signum.internals.view
 import at.asitplus.signum.supreme.b
 import com.lambdaworks.crypto.SCrypt
 import io.kotest.assertions.withClue
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.Exhaustive
@@ -29,7 +23,7 @@ import de.infix.testBalloon.framework.core.testScope
 private val rnd = java.util.Random()
 
 @OptIn(ExperimentalStdlibApi::class)
-val ScryptTest  by testSuite {
+val ScryptTest  by matrixSuite {
     "Little-Endian Bytearray converters" {
         ByteArray(8).also {
             uintArrayOf(0x31b2a3f4u, 0x72ff9813u).toLEByteArray(it.view)
@@ -39,11 +33,11 @@ val ScryptTest  by testSuite {
             ubyteArrayOf(0x28u, 0xf3u, 0x79u, 0xc2u, 0x97u, 0xffu, 0xfbu, 0xfeu).asByteArray().view.toUIntArrayLE(it)
         } shouldBe uintArrayOf(0xc279f328u, 0xfefbff97u)
     }
-    "Integerify" - {
-        checkAllSuites(Exhaustive.ints(1..30)) { Npow ->
+    compact("Integerify") - {
+        property(Exhaustive.ints(1..30)) - { Npow ->
             val N = 1 shl Npow
             val r = 8
-            checkAll(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
+            property(Arb.byteArray(Arb.constant(128 * r), Arb.byte()), iterations = 64) test { input ->
                 withClue("input=${input.toHexString(HexFormat.UpperCase).let { it.substring(it.length - 128) }}") {
                     scrypt(
                         cost = N,
@@ -144,17 +138,17 @@ val ScryptTest  by testSuite {
         }
     }
 
-    "Against JVM reference" - {
-        checkAllSuites(iterations = 3, Arb.nonNegativeInt(6)) {
+    compact("Against JVM reference") - {
+        property(Arb.nonNegativeInt(6), iterations = 3) - {
             val p = 2.0.pow(it + 1).toInt()
-            checkAllSuites(iterations = 3, Arb.nonNegativeInt(7)) {
+            property(Arb.nonNegativeInt(7), iterations = 3) - {
                 val N = 2.0.pow(it+1).toInt()
-                checkAllSuites(iterations = 4, Arb.nonNegativeInt(4)) {
+                property(Arb.nonNegativeInt(4), iterations = 4) - {
                     val r = it + 1
                     val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
-                    checkAllSuites(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
-                        checkAllSuites(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
-                            checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
+                    property(Arb.byteArray(Arb.positiveInt(16), Arb.byte()), iterations = 6) - { salt ->
+                        property(Arb.byteArray(Arb.positiveInt(32), Arb.byte()), iterations = 6) - { ikm ->
+                            property(Arb.nonNegativeInt(256), iterations = 6) test { len ->
                                 SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
                                     salt,
                                     ikm,

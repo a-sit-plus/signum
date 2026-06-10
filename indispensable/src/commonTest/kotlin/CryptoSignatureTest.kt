@@ -1,8 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
@@ -12,7 +11,7 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val CryptoSignatureTest  by testSuite {
+val CryptoSignatureTest  by matrixSuite {
 
 
     val values = (1..Byte.MAX_VALUE).toMutableSet()

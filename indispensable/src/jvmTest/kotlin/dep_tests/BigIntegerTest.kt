@@ -1,12 +1,10 @@
 package dep_tests
 
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlin.random.Random
@@ -14,7 +12,7 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val BigIntegerTest by testSuite {
+val BigIntegerTest by matrixSuite {
     "BigInteger" - {
         "equals & hashCode" {
             val v1 = BigInteger(42)

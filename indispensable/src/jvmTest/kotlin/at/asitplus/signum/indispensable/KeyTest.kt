@@ -7,12 +7,10 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.testballoon.matrix.ExecutionMode
+import at.asitplus.testballoon.matrix.matrixConfig
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -27,29 +25,23 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val KeyTest  by testSuite {
+val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
     Security.addProvider(BouncyCastleProvider())
 
-    "EC" - {
-        withDataSuites(listOf(256, 384, 521)) { bits ->
+    compact("EC") - {
+        data(listOf(256, 384, 521)) test { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
                 ecKp.private as ECPrivateKey to ecKp.public as ECPublicKey
             }
-            withData(
-                nameFn = {
-                    "(x: ${it.second.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
-                            " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
-                },
-                keys
-            ) { (privKey, pubKey) ->
+            data(keys, nameFn = { _, it ->
+                "(x: ${it.second.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
+                        " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
+            }) test { (privKey, pubKey) ->
 
                 val own = pubKey.toCryptoPublicKey().getOrThrow()
 
@@ -97,26 +89,23 @@ val KeyTest  by testSuite {
         }
     }
 
-    "RSA" - {
-        withDataSuites(512, 1024, 2048, 3072, 4096) { bits ->
+    compact("RSA") - {
+        data(listOf(512, 1024, 2048, 3072, 4096)) test { bits ->
             val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
                 rsaKP.private as RSAPrivateKey to rsaKP.public as RSAPublicKey
             }
-            withData(
-                nameFn = {
-                    "(n: ${
-                        it.second.modulus.toByteArray().encodeToString(Base64Strict)
-                    } e: ${it.second.publicExponent.toInt()})"
-                },
-                keys
-            ) { (privKey, pubKey) ->
+            data(keys, nameFn = { _, it ->
+                "(n: ${
+                    it.second.modulus.toByteArray().encodeToString(Base64Strict)
+                } e: ${it.second.publicExponent.toInt()})"
+            }) test { (privKey, pubKey) ->
 
                 val own = CryptoPublicKey.RSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
-                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
@@ -149,9 +138,9 @@ val KeyTest  by testSuite {
         }
     }
 
-    "EC and RSA" - {
-        withDataSuites(512, 1024, 2048, 3072, 4096) { rsaBits ->
-            withData(256, 384, 521) { ecBits ->
+    compact("EC and RSA") - {
+        data(listOf(512, 1024, 2048, 3072, 4096)) test { rsaBits ->
+            data(listOf(256, 384, 521)) test { ecBits ->
                 val keyPairEC1 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairRSA1 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()

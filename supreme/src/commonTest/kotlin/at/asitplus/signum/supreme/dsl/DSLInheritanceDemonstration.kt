@@ -1,12 +1,6 @@
 package at.asitplus.signum.supreme.dsl
 
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
@@ -38,7 +32,7 @@ private class SpecificOptions internal constructor(): GenericOptions() {
     override val subValue = childOrDefault(::SpecificSubOptions)
 }
 
-val DSLInheritanceDemonstration  by testSuite {
+val DSLInheritanceDemonstration  by matrixSuite {
     "\uD83D\uDE0A" {
         /* if we have the necessary type information, we know that it's a specific DSL subclass... */
         doWithConfiguration {

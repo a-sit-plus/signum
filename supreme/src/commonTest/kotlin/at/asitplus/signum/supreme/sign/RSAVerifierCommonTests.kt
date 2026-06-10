@@ -6,10 +6,7 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
@@ -21,7 +18,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 @OptIn(ExperimentalEncodingApi::class)
-val RSAVerifierCommonTests  by testSuite {
+val RSAVerifierCommonTests  by matrixSuite {
     @Serializable
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
@@ -149,9 +146,9 @@ fun main() {
         .groupBy(RawTestInfo::pad)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo)}}
 
-    withData(tests) - { byPadding ->
-        withData(byPadding) - { byDigest ->
-            withData(nameFn = TestInfo::b64msg, byDigest) - { test ->
+    data(tests.entries, nameFn = { _, it -> it.key }) - { (_, byDigestByName) ->
+        data(byDigestByName.entries, nameFn = { _, it -> it.key }) - { (_, byDigest) ->
+            data(byDigest, nameFn = { _, it -> it.b64msg }) - { test ->
                 val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
@@ -161,11 +158,11 @@ fun main() {
                         verifier.verify(it.msg, it.sig) shouldNot succeed
                     }
                 }
-                checkAll(Arb.of(Digest.entries.filter { it != test.digest })) { dig ->
+                property(Arb.of(Digest.entries.filter { it != test.digest })) test { dig ->
                     SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
-                checkAll(Arb.of(RSAPadding.entries.filter{ it != test.padding })) { pad ->
+                property(Arb.of(RSAPadding.entries.filter{ it != test.padding })) test { pad ->
                     SignatureAlgorithm.RSA(test.digest, pad).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }

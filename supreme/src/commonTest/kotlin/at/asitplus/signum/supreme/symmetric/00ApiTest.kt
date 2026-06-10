@@ -4,14 +4,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -21,10 +14,10 @@ import de.infix.testBalloon.framework.core.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val ApiTest  by testSuite {
+val ApiTest  by matrixSuite {
 
     "Utterly Untyped v2" - {
-        withData(
+        data(
             sequenceOf(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
                 SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
@@ -37,7 +30,7 @@ val ApiTest  by testSuite {
                 val encrypted = key.encrypt(plain).getOrThrow()
                 Triple(key, plain, encrypted)
             } }
-        ) { (key, plain, encrypted) ->
+        ) test { (key, plain, encrypted) ->
             encrypted.decrypt(key).let {
                 it should succeed
                 it.getOrThrow() shouldBe plain
@@ -46,13 +39,7 @@ val ApiTest  by testSuite {
     }
 
     "Utterly Untyped" - {
-        withData(
-            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
-            SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
-            SymmetricEncryptionAlgorithm.AES_128.GCM,
-            SymmetricEncryptionAlgorithm.AES_128.ECB,
-            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        ) { algorithm ->
+        data(listOf(SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512, SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN, SymmetricEncryptionAlgorithm.AES_128.GCM, SymmetricEncryptionAlgorithm.AES_128.ECB, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)) test { algorithm ->
 
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey(InsecureRandom)
@@ -205,11 +192,7 @@ val ApiTest  by testSuite {
     }
 
     "Authenticated" - {
-        withData(
-            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
-            SymmetricEncryptionAlgorithm.AES_128.GCM,
-            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        ) {
+        data(listOf(SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512, SymmetricEncryptionAlgorithm.AES_128.GCM, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)) test {
 
             val algorithm = it
 

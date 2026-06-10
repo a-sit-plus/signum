@@ -3,12 +3,8 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
 import io.kotest.assertions.withClue
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -20,7 +16,7 @@ import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERTaggedObject
 
-val TagEncodingTest by testSuite {
+val TagEncodingTest by matrixSuite {
 
     "fails" {
         val it = 2204309167L
@@ -32,14 +28,14 @@ val TagEncodingTest by testSuite {
         long shouldBe it
     }
 
-    "length encoding" - {
-        checkAll(Arb.positiveInt()) {
+    compact("length encoding") - {
+        property(Arb.positiveInt()) test {
            Buffer().apply { encodeLength(it.toLong()) }.snapshot().toByteArray() shouldBe it.encodeLength()
         }
     }
 
     "Manual" - {
-        withData(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL) {
+        data(listOf(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL)) test {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
             val tag = Asn1Element.Tag(it, constructed = it % 2uL == 0uL)
             tag.tagValue shouldBe it
@@ -47,14 +43,14 @@ val TagEncodingTest by testSuite {
         }
 
     }
-    "Automated" - {
-        checkAll(iterations = 100000, Arb.uLong()) {
+    compact("Automated") - {
+        property(Arb.uLong(), iterations = 100000) test {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
             Asn1Element.Tag(it, constructed = it % 2uL == 0uL).tagValue shouldBe it
         }
     }
-    "Against BC" - {
-        checkAll(iterations = 1000000, Arb.int(min = 0)) {
+    compact("Against BC") - {
+        property(Arb.int(min = 0), iterations = 1000000) test {
             val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
 
@@ -76,7 +72,7 @@ val TagEncodingTest by testSuite {
 
 
     "Manual against BC" - {
-        withData(207692171, 1337) {
+        data(listOf(207692171, 1337)) test {
             val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
 
@@ -97,8 +93,8 @@ val TagEncodingTest by testSuite {
     }
 
 
-    "Ints" - {
-        checkAll(iterations = 100000, Arb.uInt()) {
+    compact("Ints") - {
+        property(Arb.uInt(), iterations = 100000) test {
             it.toAsn1VarInt().apply {
                 decodeAsn1VarULong().first.toUInt() shouldBe it
                 decodeAsn1VarULong().first shouldBe it.toULong()

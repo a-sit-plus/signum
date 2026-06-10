@@ -5,10 +5,7 @@ import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.security.KeyPairGenerator
@@ -19,22 +16,22 @@ import kotlin.random.Random
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
-val ConversionTests by testSuite {
+val ConversionTests by matrixSuite {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
-            withData(CoseAlgorithm.DataIntegrity.entries) {
+            data(CoseAlgorithm.DataIntegrity.entries) test {
                 it.algorithm.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {
-            withData(CoseAlgorithm.DataIntegrity.entries) {
+            data(CoseAlgorithm.DataIntegrity.entries) test {
                 it.toCoseAlgorithm() shouldSucceedWith it
             }
         }
     }
     "COSE -> X509 -> COSE" - {
-        withData(CoseAlgorithm.Signature.entries) - {
+        data(CoseAlgorithm.Signature.entries) - {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
                     "Curve information is lost" {

@@ -1,22 +1,11 @@
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
-import at.asitplus.signum.indispensable.cosef.CoseKey
-import at.asitplus.signum.indispensable.cosef.CoseKeyOperation
-import at.asitplus.signum.indispensable.cosef.CoseKeyParams
+import at.asitplus.signum.indispensable.cosef.*
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey
-import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -28,20 +17,16 @@ import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
-import java.security.SecureRandom
 import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
     if (v) CryptoPublicKey.EC.fromCompressed(curve, xBytes, yCompressed)
     else CryptoPublicKey.EC.fromUncompressed(curve, xBytes, yBytes)
 
-val CoseKeySerializationTest by testSuite {
+val CoseKeySerializationTest by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
     "Deserializing" - {
@@ -113,25 +98,22 @@ val CoseKeySerializationTest by testSuite {
 
 
         "EC" - {
-            withDataSuites(256, 384, 521) { bits ->
+            data(listOf(256, 384, 521)) - { bits ->
                 val keys = List<ECPublicKey>(25600 / bits) {
                     val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                         initialize(bits)
                     }.genKeyPair()
                     ecKp.public as ECPublicKey
                 }
-                withData(
-                    nameFn = {
-                        "(x: ${
-                            it.w.affineX.toByteArray()
-                                .encodeToString(Base64Strict)
-                        } y: ${
-                            it.w.affineY.toByteArray()
-                                .encodeToString(Base64Strict)
-                        })"
-                    },
-                    keys
-                ) { pubKey ->
+                data(keys, nameFn = { _, it ->
+                    "(x: ${
+                        it.w.affineX.toByteArray()
+                            .encodeToString(Base64Strict)
+                    } y: ${
+                        it.w.affineY.toByteArray()
+                            .encodeToString(Base64Strict)
+                    })"
+                }) test { pubKey ->
 
                     withClue("Uncompressed")
                     {
@@ -176,22 +158,19 @@ val CoseKeySerializationTest by testSuite {
         }
 
         "RSA" - {
-            withDataSuites(512, 1024, 2048, 3072, 4096) { bits ->
+            data(listOf(512, 1024, 2048, 3072, 4096)) - { bits ->
                 val keys = List<RSAPublicKey>(13000 / bits) {
                     val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                         initialize(bits)
                     }.genKeyPair()
                     rsaKP.public as RSAPublicKey
                 }
-                withData(
-                    nameFn = {
-                        "(n: ${
-                            it.modulus.toByteArray()
-                                .encodeToString(Base64Strict)
-                        } e: ${it.publicExponent.toInt()})"
-                    },
-                    keys
-                ) { pubKey ->
+                data(keys, nameFn = { _, it ->
+                    "(n: ${
+                        it.modulus.toByteArray()
+                            .encodeToString(Base64Strict)
+                    } e: ${it.publicExponent.toInt()})"
+                }) test { pubKey ->
                     val coseKey: CoseKey =
                         pubKey.toCryptoPublicKey().getOrThrow()
                             .toCoseKey(CoseAlgorithm.Signature.RS256)
@@ -205,11 +184,7 @@ val CoseKeySerializationTest by testSuite {
         }
 
         "Symmetric - HMAC" - {
-            withData(
-                HMAC.SHA256,
-                HMAC.SHA384,
-                HMAC.SHA512
-            ) { algorithm ->
+            data(listOf(HMAC.SHA256, HMAC.SHA384, HMAC.SHA512)) test { algorithm ->
                 val keySizeBits = when (algorithm) {
                     HMAC.SHA256 -> 256
                     HMAC.SHA384 -> 384
@@ -218,7 +193,8 @@ val CoseKeySerializationTest by testSuite {
                 }
                 val rawKey = Random.nextBytes(keySizeBits / 8)
 
-                val coseKey: CoseKey = CoseKey.forMacKey(algorithm, rawKey, null, CoseKeyOperation.MAC_CREATE, CoseKeyOperation.MAC_VERIFY )
+                val coseKey: CoseKey =
+                    CoseKey.forMacKey(algorithm, rawKey, null, CoseKeyOperation.MAC_CREATE, CoseKeyOperation.MAC_VERIFY)
                 val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
 
                 val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)

@@ -2,8 +2,7 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.supreme.asymmetric.HPKE.Mode
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.fail
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -94,16 +93,12 @@ class HPKETestSuite(jsonObject: JsonObject) {
         val exported_value = jsonObject.requireHexBytes("exported_value")
     }
 }
-val HPKETests by testSuite {
+val HPKETests by matrixSuite {
     val tests = javaClass.getResourceAsStream("/hpke/test-vectors.json").use {
         Json.decodeFromStream<JsonArray>(it!!)
     }.asSequence().map { it as JsonObject }.filterNot(HPKETestSuite::shouldSkip).map(::HPKETestSuite)
 
-    withData(
-        nameFn={
-            "mode=${it.mode.name} kem=${it.kem.kemId} kdf=${it.kdf.kdfId} aead=${it.aead.aeadId}"
-        }, tests)
-    { test ->
+    data(tests, nameFn = { _, it -> "mode=${it.mode.name} kem=${it.kem.kemId} kdf=${it.kdf.kdfId} aead=${it.aead.aeadId}" }) test { test ->
         val hpke = HPKE(test.kem, test.kdf, test.aead)
         if (test.mode == Mode.AUTH || test.mode == Mode.AUTH_PSK) {
             val (shared_secret, enc) = test.kem.AuthEncap(

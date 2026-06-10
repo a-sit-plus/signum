@@ -3,14 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -20,28 +13,20 @@ import java.security.Security
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
-val VerifierTests by testSuite {
+val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    withDataSuites(
-        mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
+    data(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
             "BC -> PlatformVerifier" to { a, k ->
                 a.verifierFor(k) { provider = "BC" }.getOrThrow()
                     .also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
             },
             "BC -> KotlinVerifier" to ::KotlinECDSAVerifier
-        )
-    ) { factory ->
-        withDataSuites(ECCurve.entries)  { curve ->
-            withDataSuites(
-                nameFn = SignatureInputFormat::jcaAlgorithmComponent,
-                listOf<Digest?>(null) + Digest.entries
-            ) { digest ->
-                withData(nameFn = { (key, _, _) -> key.publicPoint.toString() }, generateSequence {
+        ).entries, nameFn = { _, it -> it.key }) - { (_, factory) ->
+        data(ECCurve.entries) - { curve ->
+            data(listOf<Digest?>(null) + Digest.entries, nameFn = { _, it -> it.jcaAlgorithmComponent }) - { digest ->
+                data(generateSequence {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
@@ -54,7 +39,7 @@ val VerifierTests by testSuite {
                     }.let(CryptoSignature::decodeFromDer)
                     keypair.public.encoded
                     Triple(publicKey, data, sig)
-                }.take(5)) { (key, data, sig) ->
+                }.take(5), nameFn = { _, (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
                     val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)
                     verifier.verify(byteArrayOf(), sig) shouldNot succeed
                     if (digest != null) {

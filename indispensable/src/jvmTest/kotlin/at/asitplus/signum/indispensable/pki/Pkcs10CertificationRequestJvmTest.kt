@@ -5,8 +5,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -34,7 +33,7 @@ internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     }
 
 @OptIn(ExperimentalStdlibApi::class)
-val Pkcs10CertificationRequestJvmTest by testSuite {
+val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     val keyGen = KeyPairGenerator.getInstance("EC").also {

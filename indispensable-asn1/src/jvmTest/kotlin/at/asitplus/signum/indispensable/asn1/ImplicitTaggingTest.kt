@@ -3,26 +3,20 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.without
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.testballoon.checkAllSuites
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.matrix.CompactConcurrency
+import at.asitplus.testballoon.matrix.matrixConfig
+import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
-val ImplicitTaggingTest by testSuite {
+val ImplicitTaggingTest by matrixSuite(matrixConfig { defaultCompactConcurrency = CompactConcurrency.Shared(64) }) {
 
-    "Plain" - {
-        checkAllSuites(Arb.uLong()) { tagNum ->
+    compact("Plain") - {
+        property(Arb.uLong()) - { tagNum ->
             val universalConstructed = Asn1Element.Tag(tagNum, constructed = true)
 
             "universalConstructed" {
@@ -39,7 +33,7 @@ val ImplicitTaggingTest by testSuite {
                 universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
             }
 
-            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
+            data(TagClass.entries, nameFn = { _, it -> "$tagNum $it" }) test { tagClass ->
                 val classy = universalConstructed withClass tagClass
                 classy.tagClass shouldBe tagClass
                 (universalConstructed without CONSTRUCTED).isConstructed shouldBe false
@@ -62,8 +56,8 @@ val ImplicitTaggingTest by testSuite {
         }
     }
 
-    "Primitive" - {
-        checkAllSuites(Arb.uLong()) { tagNum ->
+    compact("Primitive") - {
+        property(Arb.uLong()) - { tagNum ->
             val primitive = Asn1Primitive(tagNum, byteArrayOf())
 
             "setup" {
@@ -89,7 +83,7 @@ val ImplicitTaggingTest by testSuite {
             }
 
 
-            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
+            data(TagClass.entries, nameFn = { _, it -> "$tagNum $it" }) test { tagClass ->
 
                 val newTagValue = tagNum / 2uL;
                 val newTagObject = Asn1Element.Tag(newTagValue, constructed = true) //test CONSTRUCTED override
@@ -117,8 +111,8 @@ val ImplicitTaggingTest by testSuite {
     }
 
 
-    "Constructed" - {
-        checkAllSuites(Arb.uLong()) { tagNum ->
+    compact("Constructed") - {
+        property(Arb.uLong()) - { tagNum ->
             val set = Asn1Set(listOf())
 
             "setup" {
@@ -132,7 +126,7 @@ val ImplicitTaggingTest by testSuite {
                 (set withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
             }
 
-            withDataSuites(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
+            data(TagClass.entries, nameFn = { _, it -> "$tagNum $it" }) - { tagClass ->
                 val newTagValue = tagNum / 2uL
 
                 "setup" {
@@ -156,7 +150,7 @@ val ImplicitTaggingTest by testSuite {
                     primitive.tag.tagValue shouldBe newTagValue
                 }
 
-                withData(true, false) { constructed ->
+                data(listOf(true, false)) test { constructed ->
                     val newTag = Asn1Element.Tag(newTagValue, constructed = constructed)
                     val taggedElement = set withImplicitTag (newTag withClass tagClass)
                     val classySet = taggedElement.tag
@@ -168,13 +162,8 @@ val ImplicitTaggingTest by testSuite {
                         it.tag.tagValue shouldBe newTagValue
                         it.tag.tagClass shouldBe tagClass
                     }
-
                 }
-
-
             }
         }
     }
-
-
 }

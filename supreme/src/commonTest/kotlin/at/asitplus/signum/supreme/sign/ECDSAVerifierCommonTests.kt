@@ -1,14 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import kotlinx.serialization.Serializable
@@ -20,17 +14,20 @@ import kotlin.random.Random
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
-val ECDSAVerifierCommonTests  by testSuite {
-    @Serializable data class RawTestInfo(
-        val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
+val ECDSAVerifierCommonTests by matrixSuite {
+    @Serializable
+    data class RawTestInfo(
+        val crv: String, val dig: String, val key: String, val msg: String, val sig: String
+    )
+
     class TestInfo(test: RawTestInfo) {
-        val curve = when(test.crv) {
+        val curve = when (test.crv) {
             "secp256r1" -> ECCurve.SECP_256_R_1
             "secp384r1" -> ECCurve.SECP_384_R_1
             "secp521r1" -> ECCurve.SECP_521_R_1
             else -> throw IllegalStateException("nope")
         }
-        val digest = when(test.dig) {
+        val digest = when (test.dig) {
             "None" -> null
             else -> Digest.valueOf(test.dig)
         }
@@ -382,22 +379,23 @@ val ECDSAVerifierCommonTests  by testSuite {
     """.trimIndent()
     val tests = testData.lines().map { Json.decodeFromString<RawTestInfo>(it) }
         .groupBy(RawTestInfo::crv)
-        .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo) } }
-
-    withDataSuites(tests) { byCurve ->
-        withDataSuites(byCurve) { byDigest ->
-            withData(nameFn = TestInfo::b64msg, byDigest) { test ->
-                val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key).getOrThrow()
-                verifier.verify(test.msg, test.sig) should succeed
-                Random.of(byDigest).let {
-                    if (it !== test) {
-                        verifier.verify(it.msg, test.sig) shouldNot succeed
-                        verifier.verify(it.msg, it.sig) shouldNot succeed
+        .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_, v) -> v.map(::TestInfo) } }
+    compact("generated test vectors") - {
+        data(tests.entries, nameFn = { _, it -> it.key }) - { (_, byDigestByName) ->
+            data(byDigestByName.entries, nameFn = { _, it -> it.key }) - { (_, byDigest) ->
+                data(byDigest, nameFn = { _, it -> it.b64msg }) test { test ->
+                    val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key).getOrThrow()
+                    verifier.verify(test.msg, test.sig) should succeed
+                    Random.of(byDigest).let {
+                        if (it !== test) {
+                            verifier.verify(it.msg, test.sig) shouldNot succeed
+                            verifier.verify(it.msg, it.sig) shouldNot succeed
+                        }
                     }
-                }
-                Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
-                    SignatureAlgorithm.ECDSA(dig, null).verifierFor(test.key)
-                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                    Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
+                        SignatureAlgorithm.ECDSA(dig, null).verifierFor(test.key)
+                            .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                    }
                 }
             }
         }

@@ -8,14 +8,7 @@ import at.asitplus.signum.indispensable.symmetric.nonce
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
-import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -26,18 +19,16 @@ import de.infix.testBalloon.framework.core.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val SymmetricAgainstReference  by testSuite {
-    "AES GCM+CBC and ChaCha20-Poly1305" - {
+val SymmetricAgainstReference  by matrixSuite {
+    compact("AES GCM+CBC and ChaCha20-Poly1305") - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 
-        withData(nameFn = {
-            it.jsonObject.keys.first()
+        data(reference.toList(), nameFn = { _, it -> it.jsonObject.keys.first()
             val obj = it.jsonObject
             val alg = obj.keys.first()
 
             val key = obj[alg]!!.jsonObject["key"]!!.jsonPrimitive.content
-            "$alg, key: $key"
-        }, reference.toList()) {
+            "$alg, key: $key" }) test {
             val obj = it.jsonObject
             val alg = obj.keys.first()
 
@@ -133,10 +124,8 @@ val SymmetricAgainstReference  by testSuite {
     "ECB" - {
         val reference: JsonArray = Json.decodeFromString(ecb)
 
-        withData(nameFn = {
-            val key = it.jsonObject["key"]!!.jsonPrimitive.content
-            "key: $key"
-        }, reference.toList()) {
+        data(reference.toList(), nameFn = { _, it -> val key = it.jsonObject["key"]!!.jsonPrimitive.content
+            "key: $key" }) test {
             val obj = it.jsonObject
 
             val key = obj["key"]!!.jsonPrimitive.content.hexToByteArray()
@@ -179,10 +168,8 @@ val SymmetricAgainstReference  by testSuite {
     "WRAP" - {
         val reference: JsonArray = Json.decodeFromString(wrap)
 
-        withData(nameFn = {
-            val key = it.jsonObject["key"]!!.jsonPrimitive.content
-            "key: $key"
-        }, reference.toList()) {
+        data(reference.toList(), nameFn = { _, it -> val key = it.jsonObject["key"]!!.jsonPrimitive.content
+            "key: $key" }) test {
             val obj = it.jsonObject
 
             val key = obj["key"]!!.jsonPrimitive.content.hexToByteArray()

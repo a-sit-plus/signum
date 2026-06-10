@@ -6,9 +6,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.internals.ensureSize
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
@@ -24,7 +22,7 @@ private fun ByteArray.trimLeadingZeros() =
         else -> this.copyOfRange(i, this.size)
     }
 
-val JsonWebKeyJvmTest by testSuite {
+val JsonWebKeyJvmTest by matrixSuite {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     val keyGenEC = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }

@@ -3,24 +3,17 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.asn1.memDump
 import at.asitplus.signum.indispensable.asn1.toBitSet
 import at.asitplus.signum.indispensable.asn1.toBitString
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
-import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.booleanArray
 import io.kotest.property.arbitrary.int
-import at.asitplus.testballoon.checkAllSuites
 import java.util.*
 import at.asitplus.signum.indispensable.asn1.BitSet as KmpBitSet
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
-val BitSetTest by testSuite {
+val BitSetTest by matrixSuite {
 
     //outer container required for checkall
     "Custom BitSet Implementation" - {
@@ -131,104 +124,106 @@ val BitSetTest by testSuite {
             jvm.memDump() shouldBe ""
             kmm.memDump() shouldBe ""
         }
-
-        checkAllSuites(
-            iterations = 32,
-            Arb.booleanArray(
-                Arb.int(1..128),
-                Arb.boolean()
-            )
-        ) { input ->
-            withData(
-                input.size,
-                input.size / 2,
-                input.size / 3,
-                input.size / 4,
-                input.size / 8,
-                input.size / 10,
-                1,
-                0,
-                input.size * 2,
-                input.size * 4
-            ) { size: Int ->
-                val jvm = BitSet(size).also {
-                    input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
-                }
-                val kmm = withClue("size: $size") {
-                    KmpBitSet(size.toLong()).also {
-                        input.indices.shuffled().forEach { i -> it[i.toLong()] = input[i] }
-                    }
-                }
-
-                withClue("\nKMM: ${kmm.toBitString()}\nJVM: ${jvm.toBitString()}") {
-                    kmm.length() shouldBe jvm.length()
-                }
-
-                input.forEachIndexed { i, b ->
-                    withClue("jvm[$i]") { jvm[i] shouldBe b }
-                    withClue("kmm[$i]") { kmm[i.toLong()] shouldBe b }
-                }
-
-                withClue("first bit set") { kmm.nextSetBit(0).toInt() shouldBe jvm.nextSetBit(0) }
-
-                val i = input.size - 1
-                withClue(
-                    "first bit set in second half\n" +
-                            "KMM: ${kmm.toBitString()}\n" +
-                            "JVM: ${jvm.toBitString()}"
-                ) {
-                    kmm.nextSetBit(i.toLong() / 2L).toInt() shouldBe jvm.nextSetBit(i / 2)
-                }
-                withClue(
-                    "first bit set in last three quarters\n" +
-                            "KMM: ${kmm.toBitString()}\n" +
-                            "JVM: ${jvm.toBitString()}"
-                ) {
-                    kmm.nextSetBit(i.toLong() / 4L).toInt() shouldBe jvm.nextSetBit(i / 4)
-                }
-                withClue(
-                    "first bit set in last 4/5 of bit set\n" +
-                            "KMM: ${kmm.toBitString()}\n" +
-                            "JVM: ${jvm.toBitString()}"
-                ) {
-                    kmm.nextSetBit(4L * i.toLong() / 5L).toInt() shouldBe jvm.nextSetBit(4 * i / 5)
-                }
-                kmm.toByteArray() shouldBe jvm.toByteArray()
-
-
-                BitSet.valueOf(kmm.toByteArray()).toByteArray() shouldBe jvm.toByteArray()
-                kmm.toByteArray().toBitSet().toByteArray() shouldBe jvm.toByteArray()
-                jvm.toByteArray().toBitSet().toByteArray() shouldBe jvm.toByteArray()
-                kmm.toByteArray().toBitSet().toByteArray() shouldBe kmm.toByteArray()
-
-                jvm.toByteArray().toBitSet().toByteArray() shouldBe kmm.toByteArray()
-                BitSet.valueOf(jvm.toByteArray()).toByteArray() shouldBe kmm.toByteArray()
-                BitSet.valueOf(kmm.toByteArray()).toByteArray() shouldBe kmm.toByteArray()
-                BitSet.valueOf(jvm.toByteArray()).toByteArray() shouldBe jvm.toByteArray()
-
-            }
-        }
-
-        "toString() Tests" - {
-            checkAllSuites(
-                iterations = 32,
+        compact("automated") - {
+            property(
                 Arb.booleanArray(
                     Arb.int(1..128),
                     Arb.boolean()
-                )
-            ) { input ->
-                withData(
-                    input.size,
-                    input.size / 2,
-                    input.size / 3,
-                    input.size / 4,
-                    input.size / 8,
-                    input.size / 10,
-                    1,
-                    0,
-                    input.size * 2,
-                    input.size * 4
-                ) { size ->
+                ), iterations = 32
+            ) - { input ->
+                data(
+                    listOf(
+                        input.size,
+                        input.size / 2,
+                        input.size / 3,
+                        input.size / 4,
+                        input.size / 8,
+                        input.size / 10,
+                        1,
+                        0,
+                        input.size * 2,
+                        input.size * 4
+                    )
+                ) test { size: Int ->
+                    val jvm = BitSet(size).also {
+                        input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
+                    }
+                    val kmm = withClue("size: $size") {
+                        KmpBitSet(size.toLong()).also {
+                            input.indices.shuffled().forEach { i -> it[i.toLong()] = input[i] }
+                        }
+                    }
+
+                    withClue("\nKMM: ${kmm.toBitString()}\nJVM: ${jvm.toBitString()}") {
+                        kmm.length() shouldBe jvm.length()
+                    }
+
+                    input.forEachIndexed { i, b ->
+                        withClue("jvm[$i]") { jvm[i] shouldBe b }
+                        withClue("kmm[$i]") { kmm[i.toLong()] shouldBe b }
+                    }
+
+                    withClue("first bit set") { kmm.nextSetBit(0).toInt() shouldBe jvm.nextSetBit(0) }
+
+                    val i = input.size - 1
+                    withClue(
+                        "first bit set in second half\n" +
+                                "KMM: ${kmm.toBitString()}\n" +
+                                "JVM: ${jvm.toBitString()}"
+                    ) {
+                        kmm.nextSetBit(i.toLong() / 2L).toInt() shouldBe jvm.nextSetBit(i / 2)
+                    }
+                    withClue(
+                        "first bit set in last three quarters\n" +
+                                "KMM: ${kmm.toBitString()}\n" +
+                                "JVM: ${jvm.toBitString()}"
+                    ) {
+                        kmm.nextSetBit(i.toLong() / 4L).toInt() shouldBe jvm.nextSetBit(i / 4)
+                    }
+                    withClue(
+                        "first bit set in last 4/5 of bit set\n" +
+                                "KMM: ${kmm.toBitString()}\n" +
+                                "JVM: ${jvm.toBitString()}"
+                    ) {
+                        kmm.nextSetBit(4L * i.toLong() / 5L).toInt() shouldBe jvm.nextSetBit(4 * i / 5)
+                    }
+                    kmm.toByteArray() shouldBe jvm.toByteArray()
+
+
+                    BitSet.valueOf(kmm.toByteArray()).toByteArray() shouldBe jvm.toByteArray()
+                    kmm.toByteArray().toBitSet().toByteArray() shouldBe jvm.toByteArray()
+                    jvm.toByteArray().toBitSet().toByteArray() shouldBe jvm.toByteArray()
+                    kmm.toByteArray().toBitSet().toByteArray() shouldBe kmm.toByteArray()
+
+                    jvm.toByteArray().toBitSet().toByteArray() shouldBe kmm.toByteArray()
+                    BitSet.valueOf(jvm.toByteArray()).toByteArray() shouldBe kmm.toByteArray()
+                    BitSet.valueOf(kmm.toByteArray()).toByteArray() shouldBe kmm.toByteArray()
+                    BitSet.valueOf(jvm.toByteArray()).toByteArray() shouldBe jvm.toByteArray()
+
+                }
+            }
+        }
+        compact("toString() Tests") - {
+            property(
+                Arb.booleanArray(
+                    Arb.int(1..128),
+                    Arb.boolean()
+                ), iterations = 32
+            ) - { input ->
+                data(
+                    listOf(
+                        input.size,
+                        input.size / 2,
+                        input.size / 3,
+                        input.size / 4,
+                        input.size / 8,
+                        input.size / 10,
+                        1,
+                        0,
+                        input.size * 2,
+                        input.size * 4
+                    )
+                ) test { size ->
                     val jvm = BitSet(size).also {
                         input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
                     }
@@ -256,6 +251,7 @@ val BitSetTest by testSuite {
             }
         }
     }
+
 }
 
 fun BitSet.toBitString(): String = toByteArray().toBitString()

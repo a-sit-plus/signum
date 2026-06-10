@@ -6,9 +6,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -20,9 +18,9 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
-val RsaEncryptionTest  by testSuite {
-    "From OpenSSL" - {
-        withData(nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }, testData) {
+val RsaEncryptionTest  by matrixSuite {
+    compact("From OpenSSL") - {
+        data(testData, nameFn = { _, it -> it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }) test {
             it.key as CryptoPrivateKey.RSA
             AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
                 .getOrThrow() shouldBe it.plain

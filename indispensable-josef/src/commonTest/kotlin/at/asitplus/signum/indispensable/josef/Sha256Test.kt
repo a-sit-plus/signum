@@ -2,8 +2,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.sha256
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
@@ -11,7 +10,7 @@ import de.infix.testBalloon.framework.core.testScope
 
 
 /** Origin: https://www.di-mgt.com.au/sha_testvectors.html */
-val Sha256Test by testSuite {
+val Sha256Test by matrixSuite {
 
     "Testvectors" {
         val emptyStringHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

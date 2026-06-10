@@ -3,11 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -25,7 +21,7 @@ private fun UByteArray.stripLeadingZeros() =
 
 private fun ByteArray.stripLeadingZeros() = asUByteArray().stripLeadingZeros()
 
-val Asn1IntegerTest by testSuite {
+val Asn1IntegerTest by matrixSuite {
     "Encoding: Negative" {
         val result =
             Asn1Integer(-20).encodeToAsn1Primitive()
@@ -78,22 +74,22 @@ val Asn1IntegerTest by testSuite {
                 VarUInt(ubyteArrayOf(0x05u, 0xFCu)).shr(3).words shouldBe ubyteArrayOf(0xBFu)
             }
         }
-        "Random values" - {
-            checkAll(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) - {
+        compact("Random values") - {
+            property(Arb.byteArray(Arb.int(100, 200), Arb.byte()), iterations = 100) - {
                 val bigint = JavaBigInteger(1, it)
                 val varuint = VarUInt(it)
                 "Left Bitshift" - {
-                    checkAll(iterations = 50, Arb.nonNegativeInt(max = 128)) { i ->
+                    property(Arb.nonNegativeInt(max = 128), iterations = 50) test { i ->
                         varuint.shl(i).words shouldBe bigint.shiftLeft(i).toByteArray().stripLeadingZeros()
                     }
                 }
                 "Right Bitshift" - {
-                    checkAll(iterations = 50, Arb.nonNegativeInt()) { i ->
+                    property(Arb.nonNegativeInt(), iterations = 50) test { i ->
                         varuint.shr(i).words shouldBe bigint.shiftRight(i).toByteArray().stripLeadingZeros()
                     }
                 }
                 "Binary Operators" - {
-                    checkAll(iterations = 10, Arb.byteArray(Arb.int(100, 200), Arb.byte())) { it2 ->
+                    property(Arb.byteArray(Arb.int(100, 200), Arb.byte()), iterations = 10) test { it2 ->
                         val bigint2 = JavaBigInteger(1, it2)
                         val varuint2 = VarUInt(it2)
                         varuint.xor(varuint2).words shouldBe bigint.xor(bigint2).toByteArray().stripLeadingZeros()
@@ -106,28 +102,25 @@ val Asn1IntegerTest by testSuite {
     }
     "Java BigInteger from and to Asn1Integer" - {
         "Specific values" - {
-            withData(
-                nameFn = { it.first }, listOf(
+            data(listOf(
                     Triple("Zero", JavaBigInteger.ZERO, Asn1Integer(0)),
                     Triple("Zero from Long", JavaBigInteger.valueOf(0L), Asn1Integer(0uL)),
                     Triple("One", JavaBigInteger.ONE, Asn1Integer(1)),
                     Triple("Negative One", JavaBigInteger.ONE.unaryMinus(), Asn1Integer(-1))
-                )
-            )
-            { (_, bigint, asn1int) ->
+                ), nameFn = { _, it -> it.first }) test { (_, bigint, asn1int) ->
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
         }
-        "Generic values" - {
-            checkAll(iterations = 2500, Arb.positiveLong()) {
+        compact("Generic values") - {
+            property(Arb.positiveLong(), iterations = 2500) test {
                 val bigint = JavaBigInteger.valueOf(it)
                 val asn1int = Asn1Integer(it)
                 asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
-            checkAll(iterations = 2500, Arb.nonPositiveLong()) {
+            property(Arb.nonPositiveLong(), iterations = 2500) test {
                 val bigint = JavaBigInteger.valueOf(it)
                 val asn1int = Asn1Integer(it)
                 if (it < 0)
@@ -135,7 +128,7 @@ val Asn1IntegerTest by testSuite {
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
-            checkAll(iterations = 500, Arb.byteArray(Arb.int(1500..2500), Arb.byte())) {
+            property(Arb.byteArray(Arb.int(1500..2500), Arb.byte()), iterations = 500) test {
                 val bigint = JavaBigInteger(-1, it)
                 val asn1int = Asn1Integer.fromByteArray(it, Asn1Integer.Sign.NEGATIVE)
                 if (!asn1int.isZero())
@@ -143,7 +136,7 @@ val Asn1IntegerTest by testSuite {
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
-            checkAll(iterations = 1000, Arb.byteArray(Arb.int(1500..2500), Arb.byte())) {
+            property(Arb.byteArray(Arb.int(1500..2500), Arb.byte()), iterations = 1000) test {
                 val bigint = JavaBigInteger(1, it)
                 val asn1int = Asn1Integer.fromUnsignedByteArray(it)
                 asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
@@ -151,14 +144,14 @@ val Asn1IntegerTest by testSuite {
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
         }
-        "Equality" - {
+        compact("Equality") - {
             val arb = Arb.byteArray(Arb.int(1500..2500), Arb.byte())
             val randoms = List<ByteArray>(10) { arb.next() }
 
-            withData({ "$it" }, data = randoms) - { outer: ByteArray ->
+            data(randoms, nameFn = { _, it -> "$it" }) - { outer: ByteArray ->
                 val i1 = Asn1Integer.fromUnsignedByteArray(outer)
                 i1 shouldBe Asn1Integer.fromUnsignedByteArray(outer)
-                withData(data = randoms.filterNot { it contentEquals outer }) { inner: ByteArray ->
+                data(randoms.filterNot { it contentEquals outer }) test { inner: ByteArray ->
                     i1 shouldNotBe Asn1Integer.fromUnsignedByteArray(inner)
                 }
             }

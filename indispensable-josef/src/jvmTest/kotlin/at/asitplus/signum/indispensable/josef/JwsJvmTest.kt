@@ -5,17 +5,15 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.signature
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withFixtureGenerator
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSObjectJSON
 import com.nimbusds.jose.crypto.ECDSAVerifier
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import java.security.interfaces.ECPublicKey
 
-val JwsJvmTest by testSuite {
+val JwsJvmTest by matrixSuite {
 
     class Context {
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
@@ -36,7 +34,7 @@ val JwsJvmTest by testSuite {
         }
     }
 
-    withFixtureGenerator(::Context) - {
+    fixture(::Context) - {
 
         "compact JWS can be encoded and verified by Nimbus" { it ->
             val compact = JwsCompact.invoke(
