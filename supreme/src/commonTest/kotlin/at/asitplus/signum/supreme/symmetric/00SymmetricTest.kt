@@ -133,7 +133,7 @@ val SymmetricTest by matrixSuite {
                     Random.nextBytes(33),
                     Random.nextBytes(256),
                     null
-                ), nameFn = { _, it -> "${it?.size} Bytes" }) test { iv ->
+                ), nameFn = { "${it?.size} Bytes" }) test { iv ->
 
                 val key = alg.randomKey(InsecureRandom)
                 if (iv != null) key.andPredefinedNonce(iv) shouldNot succeed
@@ -185,7 +185,7 @@ val SymmetricTest by matrixSuite {
                     Random.nextBytes(18),
                     Random.nextBytes(33), //cannot use 16, 24, or 32
                     Random.nextBytes(256)
-                ), nameFn = { _, it -> "${it.size} Bytes" }) test { keyBytes ->
+                ), nameFn = { "${it.size} Bytes" }) test { keyBytes ->
 
                 when (alg.hasDedicatedMac()) {
                     true -> alg.keyFrom(keyBytes, keyBytes) //never do this in production!
@@ -247,13 +247,13 @@ val SymmetricTest by matrixSuite {
                     InsecureRandom.nextBytes(257),
                     InsecureRandom.nextBytes(1257),
                     InsecureRandom.nextBytes(21257)
-                ), nameFn = { _, it -> "${it.size} Bytes" }) - { plaintext ->
+                ), nameFn = { "${it.size} Bytes" }) - { plaintext ->
 
                 val key = runBlocking { it.randomKey(InsecureRandom) }
 
                 data(
                     listOf(it.randomNonce(), it.randomNonce(), null),
-                    nameFn = { _, it -> "IV: " + it?.toHexString()?.substring(0..8) }) test { iv ->
+                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) }) test { iv ->
 
                     val ciphertext =
                         if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
@@ -342,15 +342,15 @@ val SymmetricTest by matrixSuite {
                     InsecureRandom.nextBytes(257),
                     InsecureRandom.nextBytes(1257),
                     InsecureRandom.nextBytes(21257)
-                ), nameFn = { _, it -> "${it.size} Bytes" }) - { plaintext ->
+                ), nameFn = { "${it.size} Bytes" }) - { plaintext ->
                 val key = runBlocking { alg.randomKey(InsecureRandom) }
                 data(
                     listOf(alg.randomNonce(), alg.randomNonce(), null),
-                    nameFn = { _, it -> "IV: " + it?.toHexString()?.substring(0..8) }) - { iv ->
+                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) }) - { iv ->
 
                     data(
                         listOf(InsecureRandom.nextBytes(32), null),
-                        nameFn = { _, it -> "AAD: " + it?.toHexString() }) test { aad ->
+                        nameFn = { "AAD: " + it?.toHexString() }) test { aad ->
                         key.encrypt(plaintext, aad)
                         val ciphertext =
                             if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
@@ -417,7 +417,7 @@ val SymmetricTest by matrixSuite {
                             (iv ?: byteArrayOf()) +
                             (aad ?: byteArrayOf()) +
                             ciphertext
-                }), nameFn = { _, it -> it.first }) - { (_, macInputFun) ->
+                }), nameFn = { it.first }) - { (_, macInputFun) ->
             data(
                 listOf(
                     SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(
@@ -476,13 +476,13 @@ val SymmetricTest by matrixSuite {
                         InsecureRandom.nextBytes(257),
                         InsecureRandom.nextBytes(1257),
                         InsecureRandom.nextBytes(21257)
-                    ), nameFn = { _, it -> "${it.size} Bytes" }) - { plaintext ->
+                    ), nameFn = { "${it.size} Bytes" }) - { plaintext ->
 
                     val secretKey = runBlocking { it.randomKey(InsecureRandom).encryptionKey.getOrThrow() }
 
                     data(
                         listOf(16, 32, 64, 128, secretKey.size),
-                        nameFn = { _, it -> "MAC KEY $it" }) - { macKeyLen ->
+                        nameFn = { "MAC KEY $it" }) - { macKeyLen ->
 
                         val key = runBlocking { it.randomKey(macKeyLen.bytes, InsecureRandom) }
 
@@ -491,10 +491,10 @@ val SymmetricTest by matrixSuite {
                                 InsecureRandom.nextBytes((it.nonceSize.bytes).toInt()),
                                 InsecureRandom.nextBytes((it.nonceSize.bytes).toInt()),
                                 null
-                            ), nameFn = { _, it -> "IV: " + it?.toHexString()?.substring(0..8) }) - { iv ->
+                            ), nameFn = { "IV: " + it?.toHexString()?.substring(0..8) }) - { iv ->
                             data(
                                 listOf(InsecureRandom.nextBytes(32), null),
-                                nameFn = { _, it -> "AAD: " + it?.toHexString()?.substring(0..8) }) test { aad ->
+                                nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) }) test { aad ->
                                 val ciphertext =
                                     if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
                                         .getOrThrow()
@@ -634,7 +634,7 @@ val SymmetricTest by matrixSuite {
                     Random.nextBytes(48),
                     Random.nextBytes(24),
                     Random.nextBytes(72)
-                ), nameFn = { _, it -> "data: ${it.size} bytes" }) test { data ->
+                ), nameFn = { "data: ${it.size} bytes" }) test { data ->
 
                 val secretKey = alg.randomKey(InsecureRandom)
 
@@ -732,7 +732,7 @@ val SymmetricTest by matrixSuite {
                     Random.nextBytes(256),
                     Random.nextBytes(1024),
                     Random.nextBytes(4096)
-                ), nameFn = { _, it -> "data: ${it.size} bytes" }) test { plaintext ->
+                ), nameFn = { "data: ${it.size} bytes" }) test { plaintext ->
                 alg.randomKey(InsecureRandom).also { key ->
                     when (alg.hasDedicatedMac()) {
                         true -> {

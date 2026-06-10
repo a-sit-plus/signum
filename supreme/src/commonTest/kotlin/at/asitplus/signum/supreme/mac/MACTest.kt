@@ -80,7 +80,7 @@ val MACTest  by matrixSuite {
                         "a678cc31e799176d3860e6110c46523e",
                 SHA512="e37b6a775dc87dbaa4dfa9f96e5e3ffddebd71f8867289865df5a32d20cdc944" +
                         "b6022cac3c4982b10d5eeb55c3e4de15134676fb6de0446065c97440fa8c6a58"))
-        }, nameFn = { _, it -> it.comment }) test { info ->
+        }, nameFn = { it.comment }) test { info ->
             check(info.ref224.size == 28)
             check(info.ref256.size == 32)
             check(info.ref384.size == 48)

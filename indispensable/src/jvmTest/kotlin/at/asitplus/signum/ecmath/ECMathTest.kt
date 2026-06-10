@@ -42,7 +42,7 @@ val ECMathTest  by matrixSuite {
         data(ECCurve.entries) - { curve ->
             data(generateSequence {
                     Triple(curve.randomPoint(), curve.randomPoint(), curve.randomPoint())
-                }.take(50), nameFn = { _, (a, b, c) -> "(a=$a, b=$b, c=$c)" }) test { (a, b, c) ->
+                }.take(50), nameFn = { (a, b, c) -> "(a=$a, b=$b, c=$c)" }) test { (a, b, c) ->
                 a + b shouldBe b + a
                 (a + b) + c shouldBe a + (b + c)
                 a + (-a) shouldBe curve.IDENTITY
@@ -56,7 +56,7 @@ val ECMathTest  by matrixSuite {
         data(ECCurve.entries) - { curve ->
             data(generateSequence {
                     Quadruple(curve.randomScalar(), curve.randomScalar(), curve.randomPoint(), curve.randomPoint())
-                }.take(10), nameFn = { _, (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" }) test { (a, b, x, y) ->
+                }.take(10), nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" }) test { (a, b, x, y) ->
                 0 * x shouldBe curve.IDENTITY
                 a * (x + y) shouldBe (a * x) + (a * y)
                 (a * b) * x shouldBe a * (b * x)
@@ -697,7 +697,7 @@ val ECMathTest  by matrixSuite {
                     x = 00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66
                     y = 00E7C6D6958765C43FFBA375A04BD382E426670ABBB6A864BB97E85042E8D8C199D368118D66A10BD9BF3AAF46FEC052F89ECAC38F795D8D3DBF77416B89602E99AF
                 """.trimIndent()))
-        }, nameFn = { _, (curve, _) -> curve.name }) - { (curve, testInfo) ->
+        }, nameFn = { (curve, _) -> curve.name }) - { (curve, testInfo) ->
             val pattern = Regex("k = ([0-9]+)\\s+x = ([0-9A-F]+)\\s+y = ([0-9A-F]+)")
             data(pattern.findAll(testInfo).map {
                     Triple(
@@ -705,7 +705,7 @@ val ECMathTest  by matrixSuite {
                         BigInteger.parseString(it.groupValues[2], 16),
                         BigInteger.parseString(it.groupValues[3], 16)
                     )
-                }, nameFn = { _, (k, _, _) -> "k = $k" }) test { (k, x, y) ->
+                }, nameFn = { (k, _, _) -> "k = $k" }) test { (k, x, y) ->
                 val ourResult = curve.generator.times(k).normalize()
                 ourResult.x.residue shouldBe x
                 ourResult.y.residue shouldBe y
@@ -733,7 +733,7 @@ val ECMathTest  by matrixSuite {
         data(ECCurve.entries) - { curve ->
             data(generateSequence {
                     Quadruple(curve.randomScalar(),curve.randomScalar(),curve.randomPoint(),curve.randomPoint())
-                }.take(10), nameFn = { _, (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" }) test { (a, b, x, y) ->
+                }.take(10), nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" }) test { (a, b, x, y) ->
                 straussShamir(a.residue,x,b.residue,y).tryNormalize() shouldBe ((a*x)+(b*y)).tryNormalize()
             }
         }

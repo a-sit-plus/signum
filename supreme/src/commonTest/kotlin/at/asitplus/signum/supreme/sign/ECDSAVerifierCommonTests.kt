@@ -381,9 +381,9 @@ val ECDSAVerifierCommonTests by matrixSuite {
         .groupBy(RawTestInfo::crv)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_, v) -> v.map(::TestInfo) } }
     compact("generated test vectors") - {
-        data(tests.entries, nameFn = { _, it -> it.key }) - { (_, byDigestByName) ->
-            data(byDigestByName.entries, nameFn = { _, it -> it.key }) - { (_, byDigest) ->
-                data(byDigest, nameFn = { _, it -> it.b64msg }) test { test ->
+        tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
+            byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
+                data(byDigest, nameFn = { it.b64msg }) test { test ->
                     val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key).getOrThrow()
                     verifier.verify(test.msg, test.sig) should succeed
                     Random.of(byDigest).let {

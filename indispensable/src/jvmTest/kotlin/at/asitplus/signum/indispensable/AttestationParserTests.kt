@@ -63,7 +63,7 @@ val CustomParserTests by matrixSuite {
     }
 
     compact("Attestation proof parsing") - {
-        data(chain.values) test {
+        data(chain, nameFn = { (name, _) -> name }) test { (_, it) ->
             val chain = it.getValue("attestationProof").jsonArray.map {
                 Base64.getMimeDecoder().decode(it.jsonPrimitive.content.replace("\n", ""))
             }

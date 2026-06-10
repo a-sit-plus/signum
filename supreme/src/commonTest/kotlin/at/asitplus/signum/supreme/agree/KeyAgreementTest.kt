@@ -37,7 +37,7 @@ val KeyAgreementTest by matrixSuite {
         repeat(100) {
             val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
 
-            data(listOf(ECCurve.SECP_384_R_1 to false, ECCurve.SECP_521_R_1 to false, ECCurve.SECP_256_R_1 to true)) test { (crv, success) ->
+            listOf(ECCurve.SECP_384_R_1 to false, ECCurve.SECP_521_R_1 to false, ECCurve.SECP_256_R_1 to true).asData() test { (crv, success) ->
                 val other = KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
                 other.keyAgreement(base.publicValue).isSuccess shouldBe success
                 base.keyAgreement(other.publicValue).isSuccess shouldBe success

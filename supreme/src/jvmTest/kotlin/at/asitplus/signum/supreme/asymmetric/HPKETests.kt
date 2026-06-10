@@ -98,7 +98,7 @@ val HPKETests by matrixSuite {
         Json.decodeFromStream<JsonArray>(it!!)
     }.asSequence().map { it as JsonObject }.filterNot(HPKETestSuite::shouldSkip).map(::HPKETestSuite)
 
-    data(tests, nameFn = { _, it -> "mode=${it.mode.name} kem=${it.kem.kemId} kdf=${it.kdf.kdfId} aead=${it.aead.aeadId}" }) test { test ->
+    data(tests, nameFn = { "mode=${it.mode.name} kem=${it.kem.kemId} kdf=${it.kdf.kdfId} aead=${it.aead.aeadId}" }) test { test ->
         val hpke = HPKE(test.kem, test.kdf, test.aead)
         if (test.mode == Mode.AUTH || test.mode == Mode.AUTH_PSK) {
             val (shared_secret, enc) = test.kem.AuthEncap(

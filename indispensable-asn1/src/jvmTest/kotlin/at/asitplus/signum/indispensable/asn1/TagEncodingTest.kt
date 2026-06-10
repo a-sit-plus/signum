@@ -35,7 +35,7 @@ val TagEncodingTest by matrixSuite {
     }
 
     "Manual" - {
-        data(listOf(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL)) test {
+        listOf(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL).asData() test {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
             val tag = Asn1Element.Tag(it, constructed = it % 2uL == 0uL)
             tag.tagValue shouldBe it
@@ -72,7 +72,7 @@ val TagEncodingTest by matrixSuite {
 
 
     "Manual against BC" - {
-        data(listOf(207692171, 1337)) test {
+        listOf(207692171, 1337).asData() test {
             val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
 

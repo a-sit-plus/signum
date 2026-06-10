@@ -39,7 +39,7 @@ val ApiTest  by matrixSuite {
     }
 
     "Utterly Untyped" - {
-        data(listOf(SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512, SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN, SymmetricEncryptionAlgorithm.AES_128.GCM, SymmetricEncryptionAlgorithm.AES_128.ECB, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)) test { algorithm ->
+        listOf(SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512, SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN, SymmetricEncryptionAlgorithm.AES_128.GCM, SymmetricEncryptionAlgorithm.AES_128.ECB, SymmetricEncryptionAlgorithm.ChaCha20Poly1305).asData() test { algorithm ->
 
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey(InsecureRandom)
@@ -192,7 +192,7 @@ val ApiTest  by matrixSuite {
     }
 
     "Authenticated" - {
-        data(listOf(SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512, SymmetricEncryptionAlgorithm.AES_128.GCM, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)) test {
+        listOf(SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512, SymmetricEncryptionAlgorithm.AES_128.GCM, SymmetricEncryptionAlgorithm.ChaCha20Poly1305).asData() test {
 
             val algorithm = it
 

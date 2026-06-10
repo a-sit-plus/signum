@@ -13,7 +13,7 @@ import kotlin.random.Random
 @OptIn(HazardousMaterials::class)
 val SymmetricEncryptionTest by matrixSuite {
 
-    data(SymmetricEncryptionAlgorithm.entries, nameFn = { _, it -> "Key generation: $it" }) test { alg ->
+    data(SymmetricEncryptionAlgorithm.entries, nameFn = { "Key generation: $it" }) test { alg ->
         val key = alg.randomKey(random = object : CryptoRand() {
             override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
         })

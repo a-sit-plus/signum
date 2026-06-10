@@ -31,14 +31,14 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
     Security.addProvider(BouncyCastleProvider())
 
     compact("EC") - {
-        data(listOf(256, 384, 521)) - { bits ->
+        listOf(256, 384, 521).asData() - { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
                 ecKp.private as ECPrivateKey to ecKp.public as ECPublicKey
             }
-            data(keys, nameFn = { _, it ->
+            data(keys, nameFn = {
                 "(x: ${it.second.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
                         " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
             }) test { (privKey, pubKey) ->
@@ -90,14 +90,14 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
     }
 
     compact("RSA") - {
-        data(listOf(512, 1024, 2048, 3072, 4096)) - { bits ->
+        listOf(512, 1024, 2048, 3072, 4096).asData() - { bits ->
             val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
                 rsaKP.private as RSAPrivateKey to rsaKP.public as RSAPublicKey
             }
-            data(keys, nameFn = { _, it ->
+            data(keys, nameFn = {
                 "(n: ${
                     it.second.modulus.toByteArray().encodeToString(Base64Strict)
                 } e: ${it.second.publicExponent.toInt()})"
@@ -139,8 +139,8 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
     }
 
     compact("EC and RSA") - {
-        data(listOf(512, 1024, 2048, 3072, 4096)) - { rsaBits ->
-            data(listOf(256, 384, 521)) test { ecBits ->
+        listOf(512, 1024, 2048, 3072, 4096).asData() - { rsaBits ->
+            listOf(256, 384, 521).asData() test { ecBits ->
                 val keyPairEC1 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairRSA1 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()

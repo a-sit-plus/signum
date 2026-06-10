@@ -23,7 +23,7 @@ val SymmetricAgainstReference  by matrixSuite {
     compact("AES GCM+CBC and ChaCha20-Poly1305") - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 
-        data(reference.toList(), nameFn = { _, it -> it.jsonObject.keys.first()
+        data(reference.toList(), nameFn = { it.jsonObject.keys.first()
             val obj = it.jsonObject
             val alg = obj.keys.first()
 
@@ -124,7 +124,7 @@ val SymmetricAgainstReference  by matrixSuite {
     "ECB" - {
         val reference: JsonArray = Json.decodeFromString(ecb)
 
-        data(reference.toList(), nameFn = { _, it -> val key = it.jsonObject["key"]!!.jsonPrimitive.content
+        data(reference.toList(), nameFn = { val key = it.jsonObject["key"]!!.jsonPrimitive.content
             "key: $key" }) test {
             val obj = it.jsonObject
 
@@ -168,7 +168,7 @@ val SymmetricAgainstReference  by matrixSuite {
     "WRAP" - {
         val reference: JsonArray = Json.decodeFromString(wrap)
 
-        data(reference.toList(), nameFn = { _, it -> val key = it.jsonObject["key"]!!.jsonPrimitive.content
+        data(reference.toList(), nameFn = { val key = it.jsonObject["key"]!!.jsonPrimitive.content
             "key: $key" }) test {
             val obj = it.jsonObject
 

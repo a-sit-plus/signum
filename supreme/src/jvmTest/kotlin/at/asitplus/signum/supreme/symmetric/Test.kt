@@ -29,24 +29,17 @@ val JvmSymmetricTest by matrixSuite {
 
     "Against JCA" - {
         "AES" - {
-            data(
-                listOf(
+            listOf(
                     SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
                     SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
                     SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN, //JVM knows no AES-CBC-HMAC
                     SymmetricEncryptionAlgorithm.AES_128.GCM,
                     SymmetricEncryptionAlgorithm.AES_192.GCM,
                     SymmetricEncryptionAlgorithm.AES_256.GCM
-                )
-            ) - { alg ->
-                data(
-                    listOf(alg.randomNonce(), alg.randomNonce()),
-                    nameFn = { _, it -> "iv: ${it.size} bytes" }) - { iv ->
-                    data(
-                        listOf(alg.randomNonce(), alg.randomNonce(), Random.nextBytes(19), null),
-                        nameFn = { _, it -> "aad: ${it?.size} bytes" }) - { aad ->
-                        data(
-                            listOf(
+                ).asData() - { alg ->
+                listOf(alg.randomNonce(), alg.randomNonce()).asData(nameFn = { "iv: ${it.size} bytes" }) - { iv ->
+                    listOf(alg.randomNonce(), alg.randomNonce(), Random.nextBytes(19), null).asData(nameFn = { "aad: ${it?.size} bytes" }) - { aad ->
+                        listOf(
                                 alg.randomNonce(),
                                 alg.randomNonce(),
                                 Random.nextBytes(19),
@@ -56,7 +49,7 @@ val JvmSymmetricTest by matrixSuite {
                                 Random.nextBytes(16),
                                 Random.nextBytes(32),
                                 Random.nextBytes(256)
-                            ), nameFn = { _, it -> "data: ${it.size} bytes" }) test { data ->
+                            ).asData(nameFn = { "data: ${it.size} bytes" }) test { data ->
 
 
                             val jcaCipher =
@@ -148,8 +141,7 @@ val JvmSymmetricTest by matrixSuite {
                 }
             }
             "ECB + WRAP" - {
-                data(
-                    listOf(
+                listOf(
                         SymmetricEncryptionAlgorithm.AES_128.ECB,
                         SymmetricEncryptionAlgorithm.AES_192.ECB,
                         SymmetricEncryptionAlgorithm.AES_256.ECB,
@@ -159,11 +151,9 @@ val JvmSymmetricTest by matrixSuite {
                         SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
                         SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
                         SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394
-                    )
-                ) - { alg ->
+                    ).asData() - { alg ->
 
-                    data(
-                        listOf(
+                    listOf(
                             Random.nextBytes(19),
                             Random.nextBytes(1),
                             Random.nextBytes(1234),
@@ -178,7 +168,7 @@ val JvmSymmetricTest by matrixSuite {
                             Random.nextBytes(48),
                             Random.nextBytes(24),
                             Random.nextBytes(72)
-                        ), nameFn = { _, it -> "data: ${it.size} bytes" }) - { data ->
+                        ).asData(nameFn = { "data: ${it.size} bytes" }) - { data ->
 
                         val secretKey = runBlocking { alg.randomKey(random = InsecureRandom) }
 
@@ -294,12 +284,9 @@ val JvmSymmetricTest by matrixSuite {
 
     "ChaCha20-Poly1305" - {
         val alg = SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        data(
-            listOf(alg.randomNonce(), alg.randomNonce(), null),
-            nameFn = { _, it -> "iv: ${it?.size} bytes" }) - { nonce ->
-            data(listOf(Random.nextBytes(19), null)) - { aad ->
-                data(
-                    listOf(
+        listOf(alg.randomNonce(), alg.randomNonce(), null).asData(nameFn = { "iv: ${it?.size} bytes" }) - { nonce ->
+            listOf(Random.nextBytes(19), null).asData() - { aad ->
+                listOf(
                         Random.nextBytes(19),
                         Random.nextBytes(1),
                         Random.nextBytes(0),
@@ -308,7 +295,7 @@ val JvmSymmetricTest by matrixSuite {
                         Random.nextBytes(16),
                         Random.nextBytes(32),
                         Random.nextBytes(256)
-                    ), nameFn = { _, it -> "Random ${it.size} bytes" }) test { data ->
+                    ).asData(nameFn = { "Random ${it.size} bytes" }) test { data ->
                     val secretKey = alg.randomKey(random = InsecureRandom)
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 

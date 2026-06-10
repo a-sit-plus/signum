@@ -131,7 +131,7 @@ val KDFTest  by matrixSuite {
                                 "          673a081d70cce7acfc48"
                     )
                 )
-            }, nameFn = { _, it -> it.Comment }) test { t ->
+            }, nameFn = { it.Comment }) test { t ->
                 val hkdf = HKDF(t.Hash)
                 val prk = hkdf.extractStep(t.salt, t.IKM).getOrThrow()
                 prk shouldBe t.PRK
@@ -191,7 +191,7 @@ val KDFTest  by matrixSuite {
                                 "            cc 37 d7 f0 34 25 e0 c3"
                     )
                 )
-            }, nameFn = { _, it -> "RFC6070: \"${it.d}\"" }) test { (P, S, c, ref) ->
+            }, nameFn = { "RFC6070: \"${it.d}\"" }) test { (P, S, c, ref) ->
                 PBKDF2.HMAC_SHA1(c)
                     .deriveKey(ikm = a(P), salt = a(S), derivedKeyLength = b(ref).size.bytes).getOrThrow() shouldBe b(
                     ref

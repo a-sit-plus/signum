@@ -131,20 +131,18 @@ val BitSetTest by matrixSuite {
                     Arb.boolean()
                 ), iterations = 32
             ) - { input ->
-                data(
-                    listOf(
-                        input.size,
-                        input.size / 2,
-                        input.size / 3,
-                        input.size / 4,
-                        input.size / 8,
-                        input.size / 10,
-                        1,
-                        0,
-                        input.size * 2,
-                        input.size * 4
-                    )
-                ) test { size: Int ->
+                listOf(
+                    input.size,
+                    input.size / 2,
+                    input.size / 3,
+                    input.size / 4,
+                    input.size / 8,
+                    input.size / 10,
+                    1,
+                    0,
+                    input.size * 2,
+                    input.size * 4
+                ).asData() test { size: Int ->
                     val jvm = BitSet(size).also {
                         input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
                     }
@@ -210,20 +208,19 @@ val BitSetTest by matrixSuite {
                     Arb.boolean()
                 ), iterations = 32
             ) - { input ->
-                data(
-                    listOf(
-                        input.size,
-                        input.size / 2,
-                        input.size / 3,
-                        input.size / 4,
-                        input.size / 8,
-                        input.size / 10,
-                        1,
-                        0,
-                        input.size * 2,
-                        input.size * 4
-                    )
-                ) test { size ->
+                listOf(
+                    input.size,
+                    input.size / 2,
+                    input.size / 3,
+                    input.size / 4,
+                    input.size / 8,
+                    input.size / 10,
+                    1,
+                    0,
+                    input.size * 2,
+                    input.size * 4
+
+                ).asData() test { size ->
                     val jvm = BitSet(size).also {
                         input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
                     }

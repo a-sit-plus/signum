@@ -39,7 +39,7 @@ val SignatureCodecTest  by matrixSuite {
                 it.initialize(ECGenParameterSpec(curve))
             }.generateKeyPair()
         }
-        data(preGen, nameFn = { _, it -> it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
             val sig = Signature.getInstance("${digest}withECDSA").run {
                 initSign(keys.private)
                 update(data)
@@ -66,7 +66,7 @@ val SignatureCodecTest  by matrixSuite {
         val digest = ("SHA256")
 
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.generateKeyPair() }
-        data(preGen, nameFn = { _, it -> it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
                 initSign(keys.private)

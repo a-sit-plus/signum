@@ -35,14 +35,14 @@ import de.infix.testBalloon.framework.core.testScope
 
 val JwkTest  by matrixSuite {
     "EC" - {
-        data(listOf(256, 384, 521)) - { bits ->
+        listOf(256, 384, 521).asData() - { bits ->
             val keys = List<ECPublicKey>(10) {
                 val ecKp = KeyPairGenerator.getInstance("EC").apply {
                     initialize(bits)
                 }.genKeyPair()
                 ecKp.public as ECPublicKey
             }
-            data(keys, nameFn = { _, it -> "(x: ${
+            data(keys, nameFn = { "(x: ${
                         it.w.affineX.toByteArray().encodeToString(Base64Strict)
                     } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})" }) test { pubKey ->
 

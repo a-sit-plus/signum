@@ -44,7 +44,7 @@ val Asn1AddonsTest by matrixSuite {
                         Triple("Zero from ULong", BigInteger.fromULong(0uL), Asn1Integer(0uL)),
                         Triple("One", BigInteger.ONE, Asn1Integer(1)),
                         Triple("Negative One", BigInteger.ONE.unaryMinus(), Asn1Integer(-1))
-                    ), nameFn = { _, it -> it.first }) test { (_, bigint, asn1int) ->
+                    ), nameFn = { it.first }) test { (_, bigint, asn1int) ->
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }

@@ -51,7 +51,7 @@ val X509CertParserTest  by matrixSuite {
     }
 
     "Real Certificates" - {
-        data(listOf("digicert-root.pem", "github-com.pem", "cert-times.pem")) test { crt ->
+        listOf("digicert-root.pem", "github-com.pem", "cert-times.pem").asData() test { crt ->
             val certBytes = java.util.Base64.getMimeDecoder()
                 .decode(javaClass.classLoader.getResourceAsStream(crt).reader().readText())
             val jcaCert = CertificateFactory.getInstance("X.509")
@@ -110,7 +110,7 @@ val X509CertParserTest  by matrixSuite {
 
         println("Got ${certs.size} discrete certs and ${pemEncodeCerts.size} from trust store (${uniqueCerts.size} unique ones)")
 
-        data(uniqueCerts.sortedBy { it.subjectX500Principal.name }, nameFn = { _, cert ->
+        data(uniqueCerts.sortedBy { it.subjectX500Principal.name }, nameFn = { cert ->
             cert.subjectX500Principal.name.let { name ->
                 if (name.isBlank() || name.isEmpty())
                         cert.serialNumber.toString(16)
@@ -140,7 +140,7 @@ val X509CertParserTest  by matrixSuite {
         val (ok, faulty) = readGoogleCerts()
 
         "OK certs should parse" - {
-            data(ok, nameFn = { _, it -> it.first }) test {
+            data(ok, nameFn = { it.first }) test {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
                 val decoded = X509Certificate.decodeFromTlv(src)
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
@@ -158,7 +158,7 @@ val X509CertParserTest  by matrixSuite {
             }
         }
         "Faulty certs should glitch out" - {
-            data(faulty, nameFn = { _, it -> it.first }) test { crt ->
+            data(faulty, nameFn = { it.first }) test { crt ->
                 runCatching {
                     shouldThrow<Throwable> {
                         X509Certificate.decodeFromTlv(Asn1Element.parse(crt.second) as Asn1Sequence)
@@ -180,7 +180,7 @@ val X509CertParserTest  by matrixSuite {
             }
         }
 
-        data(certs.entries, nameFn = { _, it -> it.key }) - { (_, certChain) ->
+        certs.asData(nameFn = { (name, _) -> name }) - { (_, certChain) ->
             data(certChain) test { encoded ->
                 val encodedSrc = encoded.decodeToByteArray(Base64 {})
 

@@ -33,7 +33,7 @@ val ImplicitTaggingTest by matrixSuite(matrixConfig { defaultCompactConcurrency 
                 universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
             }
 
-            data(TagClass.entries, nameFn = { _, it -> "$tagNum $it" }) test { tagClass ->
+            data(TagClass.entries, nameFn = { "$tagNum $it" }) test { tagClass ->
                 val classy = universalConstructed withClass tagClass
                 classy.tagClass shouldBe tagClass
                 (universalConstructed without CONSTRUCTED).isConstructed shouldBe false
@@ -83,7 +83,7 @@ val ImplicitTaggingTest by matrixSuite(matrixConfig { defaultCompactConcurrency 
             }
 
 
-            data(TagClass.entries, nameFn = { _, it -> "$tagNum $it" }) test { tagClass ->
+            data(TagClass.entries, nameFn = { "$tagNum $it" }) test { tagClass ->
 
                 val newTagValue = tagNum / 2uL;
                 val newTagObject = Asn1Element.Tag(newTagValue, constructed = true) //test CONSTRUCTED override
@@ -126,7 +126,7 @@ val ImplicitTaggingTest by matrixSuite(matrixConfig { defaultCompactConcurrency 
                 (set withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
             }
 
-            data(TagClass.entries, nameFn = { _, it -> "$tagNum $it" }) - { tagClass ->
+            data(TagClass.entries, nameFn = { "$tagNum $it" }) - { tagClass ->
                 val newTagValue = tagNum / 2uL
 
                 "setup" {
@@ -150,7 +150,7 @@ val ImplicitTaggingTest by matrixSuite(matrixConfig { defaultCompactConcurrency 
                     primitive.tag.tagValue shouldBe newTagValue
                 }
 
-                data(listOf(true, false)) test { constructed ->
+                listOf(true, false).asData() test { constructed ->
                     val newTag = Asn1Element.Tag(newTagValue, constructed = constructed)
                     val taggedElement = set withImplicitTag (newTag withClass tagClass)
                     val classySet = taggedElement.tag

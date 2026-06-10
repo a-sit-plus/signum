@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
 val RsaEncryptionTest  by matrixSuite {
     compact("From OpenSSL") - {
-        data(testData, nameFn = { _, it -> it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }) test {
+        data(testData, nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }) test {
             it.key as CryptoPrivateKey.RSA
             AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
                 .getOrThrow() shouldBe it.plain

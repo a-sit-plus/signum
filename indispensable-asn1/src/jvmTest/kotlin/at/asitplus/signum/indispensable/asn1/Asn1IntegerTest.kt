@@ -102,12 +102,12 @@ val Asn1IntegerTest by matrixSuite {
     }
     "Java BigInteger from and to Asn1Integer" - {
         "Specific values" - {
-            data(listOf(
+            listOf(
                     Triple("Zero", JavaBigInteger.ZERO, Asn1Integer(0)),
                     Triple("Zero from Long", JavaBigInteger.valueOf(0L), Asn1Integer(0uL)),
                     Triple("One", JavaBigInteger.ONE, Asn1Integer(1)),
                     Triple("Negative One", JavaBigInteger.ONE.unaryMinus(), Asn1Integer(-1))
-                ), nameFn = { _, it -> it.first }) test { (_, bigint, asn1int) ->
+                ).asData(nameFn = { it.first }) test { (_, bigint, asn1int) ->
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
@@ -148,7 +148,7 @@ val Asn1IntegerTest by matrixSuite {
             val arb = Arb.byteArray(Arb.int(1500..2500), Arb.byte())
             val randoms = List<ByteArray>(10) { arb.next() }
 
-            data(randoms, nameFn = { _, it -> "$it" }) - { outer: ByteArray ->
+            data(randoms, nameFn = { "$it" }) - { outer: ByteArray ->
                 val i1 = Asn1Integer.fromUnsignedByteArray(outer)
                 i1 shouldBe Asn1Integer.fromUnsignedByteArray(outer)
                 data(randoms.filterNot { it contentEquals outer }) test { inner: ByteArray ->

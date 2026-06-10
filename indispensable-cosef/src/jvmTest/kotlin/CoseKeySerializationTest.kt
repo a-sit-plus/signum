@@ -98,14 +98,14 @@ val CoseKeySerializationTest by matrixSuite {
 
 
         "EC" - {
-            data(listOf(256, 384, 521)) - { bits ->
+            listOf(256, 384, 521).asData() - { bits ->
                 val keys = List<ECPublicKey>(25600 / bits) {
                     val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                         initialize(bits)
                     }.genKeyPair()
                     ecKp.public as ECPublicKey
                 }
-                data(keys, nameFn = { _, it ->
+                data(keys, nameFn = {
                     "(x: ${
                         it.w.affineX.toByteArray()
                             .encodeToString(Base64Strict)
@@ -158,14 +158,14 @@ val CoseKeySerializationTest by matrixSuite {
         }
 
         "RSA" - {
-            data(listOf(512, 1024, 2048, 3072, 4096)) - { bits ->
+            listOf(512, 1024, 2048, 3072, 4096).asData() - { bits ->
                 val keys = List<RSAPublicKey>(13000 / bits) {
                     val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                         initialize(bits)
                     }.genKeyPair()
                     rsaKP.public as RSAPublicKey
                 }
-                data(keys, nameFn = { _, it ->
+                data(keys, nameFn = {
                     "(n: ${
                         it.modulus.toByteArray()
                             .encodeToString(Base64Strict)
@@ -184,7 +184,7 @@ val CoseKeySerializationTest by matrixSuite {
         }
 
         "Symmetric - HMAC" - {
-            data(listOf(HMAC.SHA256, HMAC.SHA384, HMAC.SHA512)) test { algorithm ->
+            listOf(HMAC.SHA256, HMAC.SHA384, HMAC.SHA512).asData() test { algorithm ->
                 val keySizeBits = when (algorithm) {
                     HMAC.SHA256 -> 256
                     HMAC.SHA384 -> 384

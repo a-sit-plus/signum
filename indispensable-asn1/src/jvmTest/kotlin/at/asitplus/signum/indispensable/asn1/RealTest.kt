@@ -66,7 +66,7 @@ val RealTest by matrixSuite {
 
         }
 
-        data(listOf(0.0 to byteArrayOf(9, 0), Double.NEGATIVE_INFINITY to byteArrayOf(9, 1, 0x41), Double.POSITIVE_INFINITY to byteArrayOf(9, 1, 0x40))) test { (double, bytes) ->
+        listOf(0.0 to byteArrayOf(9, 0), Double.NEGATIVE_INFINITY to byteArrayOf(9, 1, 0x41), Double.POSITIVE_INFINITY to byteArrayOf(9, 1, 0x40)).asData() test { (double, bytes) ->
             val own = Asn1Real(double)
             own.encodeToDer() shouldBe bytes
             Asn1Real.decodeFromDer(bytes) shouldBe own

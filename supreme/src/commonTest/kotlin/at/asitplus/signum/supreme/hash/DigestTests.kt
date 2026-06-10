@@ -11,7 +11,7 @@ import de.infix.testBalloon.framework.core.testScope
 
 val DigestTests by matrixSuite {
     data class TestSpec(val data: String, val reps: Int, val note: String, val ref: (Digest)->String)
-    data(listOf(
+    listOf(
         TestSpec("abc",1,"'abc', the bit string (0x)616263 of length 24 bits") { when(it) {
             Digest.SHA1 -> "a9993e364706816aba3e25717850c26c9cd0d89d"
             Digest.SHA256 -> "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
@@ -49,7 +49,7 @@ val DigestTests by matrixSuite {
             Digest.SHA384 -> "5441235cc0235341ed806a64fb354742b5e5c02a3c5cb71b5f63fb793458d8fdae599c8cd8884943c04f11b31b89f023"
             Digest.SHA512 -> "b47c933421ea2db149ad6e10fce6c7f93d0752380180ffd7f4629a712134831d77be6091b819ed352c2967a2e2d4fa5050723c9630691f1a05a7281dbe6c1086"
         }}
-    ), nameFn = { _, it -> it.note }) - { test ->
+    ).asData(nameFn = { it.note }) - { test ->
         data(Digest.entries) test { digest ->
             val rawData = test.data.encodeToByteArray()
             @OptIn(ExperimentalStdlibApi::class)

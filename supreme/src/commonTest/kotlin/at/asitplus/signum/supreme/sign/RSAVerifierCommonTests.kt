@@ -146,9 +146,9 @@ fun main() {
         .groupBy(RawTestInfo::pad)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo)}}
 
-    data(tests.entries, nameFn = { _, it -> it.key }) - { (_, byDigestByName) ->
-        data(byDigestByName.entries, nameFn = { _, it -> it.key }) - { (_, byDigest) ->
-            data(byDigest, nameFn = { _, it -> it.b64msg }) - { test ->
+    tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
+        byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
+            data(byDigest, nameFn = { it.b64msg }) - { test ->
                 val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed

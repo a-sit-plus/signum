@@ -16,10 +16,8 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import io.kotest.property.checkAll as kotestCheckAll
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
 val OidTest by matrixSuite {
@@ -45,7 +43,7 @@ val OidTest by matrixSuite {
         }
 
         compact("Full Root Arc") - {
-            data(List(127) { it }, nameFn = { _, it -> "Byte $it" }) test {
+            data(List(127) { it }, nameFn = { "Byte $it" }) test {
                 val oid = ObjectIdentifier.decodeFromAsn1ContentBytes(byteArrayOf(it.toUByte().toByte()))
                 val fromBC = ASN1ObjectIdentifier.fromContents(byteArrayOf(it.toByte()))
                 oid.encodeToDer() shouldBe fromBC.encoded
@@ -67,7 +65,7 @@ val OidTest by matrixSuite {
             repeat(39) { stringRepesentations += "0.$it" }
             repeat(39) { stringRepesentations += "1.$it" }
             repeat(47) { stringRepesentations += "2.$it" }
-            data(stringRepesentations, nameFn = { _, it -> "String $it" }) test {
+            data(stringRepesentations, nameFn = { "String $it" }) test {
                 val oid = ObjectIdentifier(it)
                 val fromBC = ASN1ObjectIdentifier(it)
                 oid.encodeToDer() shouldBe fromBC.encoded
@@ -87,7 +85,7 @@ val OidTest by matrixSuite {
 
         }
         compact("Failing Root Arc") - {
-            data(List(128) { it + 128 }, nameFn = { _, it -> "Byte $it" }) test {
+            data(List(128) { it + 128 }, nameFn = { "Byte $it" }) test {
                 shouldThrow<Asn1Exception> {
                     ObjectIdentifier.decodeFromAsn1ContentBytes(byteArrayOf(it.toUByte().toByte()))
                 }
@@ -99,7 +97,7 @@ val OidTest by matrixSuite {
             repeat(255 - 48) { stringRepesentations += "2.${it + 48}" }
             repeat(255 - 3) { stringRepesentations += "${3 + it}.${it % 40}" }
 
-            data(stringRepesentations, nameFn = { _, it -> "String $it" }) test {
+            data(stringRepesentations, nameFn = { "String $it" }) test {
                 shouldThrow<Asn1Exception> {
                     ObjectIdentifier(it)
                 }
@@ -174,7 +172,7 @@ val OidTest by matrixSuite {
         }
 
 
-        compact("Benchmarking UUID") {concurrency= CompactConcurrency.Shared(1) } - {
+        compact("Benchmarking UUID") { concurrency = CompactConcurrency.Shared(1) } - {
             val inputs = List<Uuid>(1000000) { Uuid.random() }
 
             val optimized = mutableListOf<Duration>()
@@ -259,7 +257,7 @@ val OidTest by matrixSuite {
             }
 
             compact("random") - {
-                data(List(1000) { Uuid.random() }, nameFn = { _, it -> it.toString() }) test {
+                data(List(1000) { Uuid.random() }, nameFn = { it.toString() }) test {
                     val bigint = it.toBigInteger()
                     bigint shouldBe BigInteger.parseString(it.toHexString(), 16)
                     Uuid.fromBigintOrNull(bigint) shouldBe it

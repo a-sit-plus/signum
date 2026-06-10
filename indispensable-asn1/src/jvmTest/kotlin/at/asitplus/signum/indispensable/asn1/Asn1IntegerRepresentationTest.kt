@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
 val Asn1IntegerRepresentationTest by matrixSuite {
 
     "Manual" - {
-        data(listOf("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024")) test {
+        listOf("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024").asData() test {
             val bigInt = BigInteger.parseString(it)
             val ref = bigInt.toString()
             val own = VarUInt(ref)
@@ -56,7 +56,7 @@ val Asn1IntegerRepresentationTest by matrixSuite {
     }
 
     compact("UUIDs") - {
-        data(List<Uuid>(100) { Uuid.random() }, nameFn = { _, it -> it.toHexString() }) test {
+        data(List<Uuid>(100) { Uuid.random() }, nameFn = { it.toHexString() }) test {
             val bigint = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE).toJavaBigInteger()
             val own = Asn1Integer.fromUnsignedByteArray(it.toByteArray()).toJavaBigInteger()
             own shouldBe bigint
@@ -66,7 +66,7 @@ val Asn1IntegerRepresentationTest by matrixSuite {
     "TwosComplement" - {
 
         "manual" - {
-            data(listOf("-24519924295662886907187464938912882392492723242957571281", "-1457686090107523769986476796769829633039407019130", "-18440417236681064435", "-1")) test {
+            listOf("-24519924295662886907187464938912882392492723242957571281", "-1457686090107523769986476796769829633039407019130", "-18440417236681064435", "-1").asData() test {
                 val neg = BigInteger.parseString(it)
                 val ownNeg = Asn1Integer.fromDecimalString(neg.toString())
                 withClue(neg.toString()) {

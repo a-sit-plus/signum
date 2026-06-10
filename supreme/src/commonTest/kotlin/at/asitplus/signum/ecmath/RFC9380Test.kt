@@ -655,7 +655,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
           3358330f3bb84443fcb54fcd53a1d097fccbe310489b74ee143fc2
           938959a83a1f7dd4a6fd395b"""
                 )
-            ), nameFn = { _, it -> it.suiteName }) - { suiteInfo ->
+            ), nameFn = { it.suiteName }) - { suiteInfo ->
             val suite = suiteInfo.suiteRef(suiteInfo.dstB)
 
             class TestInfo private constructor(
@@ -680,7 +680,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                                 ""
                             ).ifEmpty { null })
             }
-            data(testcasePattern.findAll(suiteInfo.tests).map(::TestInfo), nameFn = { _, it -> "Input: \"${
+            data(testcasePattern.findAll(suiteInfo.tests).map(::TestInfo), nameFn = { "Input: \"${
                         it.msg.substring(
                             0,
                             min(it.msg.length, 10)

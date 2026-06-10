@@ -17,15 +17,15 @@ import kotlin.random.Random
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    data(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
+    mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
             "BC -> PlatformVerifier" to { a, k ->
                 a.verifierFor(k) { provider = "BC" }.getOrThrow()
                     .also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
             },
             "BC -> KotlinVerifier" to ::KotlinECDSAVerifier
-        ).entries, nameFn = { _, it -> it.key }) - { (_, factory) ->
+        ).asData(nameFn = { it.first }) - { (_, factory) ->
         data(ECCurve.entries) - { curve ->
-            data(listOf<Digest?>(null) + Digest.entries, nameFn = { _, it -> it.jcaAlgorithmComponent }) - { digest ->
+            data(listOf<Digest?>(null) + Digest.entries, nameFn = { it.jcaAlgorithmComponent }) - { digest ->
                 data(generateSequence {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
@@ -39,7 +39,7 @@ val VerifierTests by matrixSuite {
                     }.let(CryptoSignature::decodeFromDer)
                     keypair.public.encoded
                     Triple(publicKey, data, sig)
-                }.take(5), nameFn = { _, (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
+                }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
                     val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)
                     verifier.verify(byteArrayOf(), sig) shouldNot succeed
                     if (digest != null) {
