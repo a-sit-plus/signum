@@ -8,10 +8,8 @@ import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegis
 import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
+
 
 @Serializable(with = ClientAttestationPayload.Serializer::class)
 data class ClientAttestationPayload(
@@ -22,18 +20,11 @@ data class ClientAttestationPayload(
     constructor(
         jwtBase: JwtBaseClaims,
         confirmationClaim: ConfirmationClaim,
-        misc: JsonObject,
+        misc: Map<String, JsonElement>,
     ) : this(
         joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
-            .strictUnion(
-                JsonObject(
-                    mapOf(
-                        IanaRegistered.ClaimNames.RFC7800.CNF to joseCompliantSerializer
-                            .encodeToJsonElement(confirmationClaim)
-                    )
-                )
-            )
-            .strictUnion(misc)
+            .strictUnion(IanaRegistered.ClaimNames.RFC7800.encodeCNF(confirmationClaim))
+            .strictUnion(JsonObject(misc))
     )
 
 
@@ -58,3 +49,8 @@ data class ClientAttestationPayload(
 
     object Serializer : KSerializer<ClientAttestationPayload> by JsonObjectBackedSerializer(::ClientAttestationPayload)
 }
+
+
+private fun IanaRegistered.ClaimNames.RFC7800.encodeCNF(cnf: ConfirmationClaim): JsonObject = JsonObject(
+    mapOf(this.CNF to joseCompliantSerializer.encodeToJsonElement(cnf))
+)

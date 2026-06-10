@@ -9,8 +9,8 @@ import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 
@@ -27,17 +27,11 @@ data class ClientAttestationPopPayload(
     constructor(
         jwtBase: JwtBaseClaims,
         challenge: String,
-        misc: JsonObject,
+        misc: Map<String, JsonElement>,
     ) : this(
         joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
-            .strictUnion(
-                JsonObject(
-                    mapOf(
-                        UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE to JsonPrimitive(challenge)
-                    )
-                )
-            )
-            .strictUnion(misc)
+            .strictUnion(UnregisteredClaims.DraftIetfOauthAttestation.encodeChallenge(challenge))
+            .strictUnion(JsonObject(misc))
     )
 
     val jwtBaseClaims: JwtBaseClaims by jsonSlice()
@@ -54,3 +48,7 @@ data class ClientAttestationPopPayload(
     object Serializer :
         KSerializer<ClientAttestationPopPayload> by JsonObjectBackedSerializer(::ClientAttestationPopPayload)
 }
+
+private fun UnregisteredClaims.DraftIetfOauthAttestation.encodeChallenge(challenge: String): JsonObject = JsonObject(
+    mapOf(this.CHALLENGE to joseCompliantSerializer.encodeToJsonElement(challenge))
+)

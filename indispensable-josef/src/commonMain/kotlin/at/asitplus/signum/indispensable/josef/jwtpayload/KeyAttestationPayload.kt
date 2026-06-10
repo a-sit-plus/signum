@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
@@ -24,11 +25,11 @@ data class KeyAttestationPayload(
     constructor(
         jwtBase: JwtBaseClaims,
         keyAttestationClaims: KeyAttestationClaims,
-        misc: JsonObject,
+        misc: Map<String, JsonElement>,
     ) : this(
         joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
             .strictUnion(joseCompliantSerializer.encodeToJsonElement(keyAttestationClaims).jsonObject)
-            .strictUnion(misc)
+            .strictUnion(JsonObject(misc))
     )
 
     val jwtBaseClaims: JwtBaseClaims by jsonSlice()
@@ -43,4 +44,3 @@ data class KeyAttestationPayload(
 
     object Serializer : KSerializer<KeyAttestationPayload> by JsonObjectBackedSerializer(::KeyAttestationPayload)
 }
-
