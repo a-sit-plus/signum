@@ -3,12 +3,8 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.azString
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -19,21 +15,21 @@ import io.kotest.property.arbitrary.int
 import kotlin.math.min
 import kotlin.random.Random
 
-val RFC9380Test by testSuite {
+val RFC9380Test by matrixSuite {
     "Assumption: all implemented curves have AB > 0" - {
-        withData(ECCurve.entries) { crv ->
+        data(ECCurve.entries) test { crv ->
             /* map_to_curve_simple_swu in RFC9380.kt depends on this */
             crv.a shouldNotBe BigInteger.ZERO
             crv.b shouldNotBe BigInteger.ZERO
         }
     }
     "Assumption: all implemented curves have q = 3 (mod 4)" - {
-        withData(ECCurve.entries) { crv ->
+        data(ECCurve.entries) test { crv ->
             /* the sqrt and sqrt_ratio implementations in RFC9380.kt depend on this */
             crv.modulus.mod(BigInteger(4)) shouldBe BigInteger(3)
         }
     }
-    "RFC 9380 Appendix J. Test Vectors" - {
+    compact("RFC 9380 Appendix J. Test Vectors") - {
         data class SuiteTestInfo(
             val suiteName: String, val suiteRef: (ByteArray) -> RFC9380.HashToEllipticCurve,
             val curve: ECCurve, val dst: String, val tests: String
@@ -53,8 +49,7 @@ val RFC9380Test by testSuite {
                     "Q1?\\.y\\s+=)?\\s+([0-9a-f\\s]+)"
         )
         val whitespacePattern = Regex("\\s")
-        withDataSuites(
-            nameFn = SuiteTestInfo::suiteName, sequenceOf(
+        data(sequenceOf(
                 SuiteTestInfo(
                     suiteName = "P256_XMD:SHA-256_SSWU_RO_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_RO_`,
                     curve = ECCurve.SECP_256_R_1, dst = "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_",
@@ -660,9 +655,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
           3358330f3bb84443fcb54fcd53a1d097fccbe310489b74ee143fc2
           938959a83a1f7dd4a6fd395b"""
                 )
-            )
-        )
-        { suiteInfo ->
+            ), nameFn = { it.suiteName }) - { suiteInfo ->
             val suite = suiteInfo.suiteRef(suiteInfo.dstB)
 
             class TestInfo private constructor(
@@ -687,18 +680,12 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                                 ""
                             ).ifEmpty { null })
             }
-            withDataSuites(
-                nameFn = {
-                    "Input: \"${
+            data(testcasePattern.findAll(suiteInfo.tests).map(::TestInfo), nameFn = { "Input: \"${
                         it.msg.substring(
                             0,
                             min(it.msg.length, 10)
                         )
-                    }${if (it.msg.length > 10) "…" else ""}\""
-                },
-                testcasePattern.findAll(suiteInfo.tests).map(::TestInfo)
-            )
-            { test ->
+                    }${if (it.msg.length > 10) "…" else ""}\"" }) - { test ->
                 test("hash_to_curve") {
                     val result = suite(test.msg.encodeToByteArray()).normalize()
                     result.curve shouldBe suiteInfo.curve
@@ -735,10 +722,10 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
             }
         }
     }
-    "HashToScalar" - {
-        withData(ECCurve.entries) - { curve ->
+    compact("HashToScalar") - {
+        data(ECCurve.entries) - { curve ->
             val hash_to_scalar = curve.hashToScalar(Random.azString(32).encodeToByteArray())
-            checkAll(iterations = 5000, Arb.byteArray(Arb.int(25, 125), Arb.byte())) { input ->
+            property(Arb.byteArray(Arb.int(25, 125), Arb.byte()), iterations = 5000) test { input ->
                 val base = hash_to_scalar(input)
                 base.modulus shouldBe curve.order
                 val splitPos = Random.nextInt(1, input.size - 2)

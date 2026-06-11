@@ -1,12 +1,9 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -16,7 +13,7 @@ import kotlinx.io.snapshot
 import kotlin.math.ceil
 import kotlin.random.Random
 
-val UVarIntTest by testSuite {
+val UVarIntTest by matrixSuite {
 
     //TODO: buffer based tests with capped number of bytes test
     "UInts with trailing bytes" - {
@@ -28,8 +25,8 @@ val UVarIntTest by testSuite {
             repeat(3){buf.readByte() shouldBe 0.toByte()}
             buf.exhausted().shouldBeTrue()
         }
-        "automated" - {
-            checkAll(Arb.uInt()) { int ->
+        compact("automated") - {
+            property(Arb.uInt()) test { int ->
                 val rnd = Random.nextBytes(8)
                 val src = int.toAsn1VarInt().asList() + rnd.asList()
                 src.decodeAsn1VarUInt().first shouldBe int
@@ -50,8 +47,8 @@ val UVarIntTest by testSuite {
             repeat(3){buf.readByte() shouldBe 0.toByte()}
             buf.exhausted().shouldBeTrue()
         }
-        "automated" - {
-            checkAll(Arb.uLong()) { long ->
+        compact("automated") - {
+            property(Arb.uLong()) test { long ->
                 val rnd = Random.nextBytes(8)
                 val src = long.toAsn1VarInt().asList() + rnd.asList()
                 src.decodeAsn1VarULong().first shouldBe long
@@ -66,8 +63,8 @@ val UVarIntTest by testSuite {
     }
 
     "BigInts" - {
-        "long-capped" - {
-            checkAll(Arb.uLong()) { long ->
+        compact("long-capped") - {
+            property(Arb.uLong()) test { long ->
                 val uLongVarInt = long.toAsn1VarInt()
                 val bigInteger = BigInteger.fromULong(long)
                 val bigIntVarInt = bigInteger.toAsn1VarInt()
@@ -89,8 +86,8 @@ val UVarIntTest by testSuite {
             }
         }
 
-        "larger" - {
-            checkAll(Arb.byteArray(Arb.positiveInt(1024), Arb.byte())) {
+        compact("larger") - {
+            property(Arb.byteArray(Arb.positiveInt(1024), Arb.byte())) test {
                 val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val bigIntVarint = bigInt.toAsn1VarInt()
                 val rnd = Random.nextBytes(33)

@@ -5,12 +5,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import io.kotest.assertions.withClue
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
@@ -18,17 +15,14 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.io.UnsafeIoApi
 import java.io.File
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(UnsafeIoApi::class)
-val X509SignatureAlgorithmTest  by testSuite {
+val X509SignatureAlgorithmTest by matrixSuite {
 
     val (certsUnsupported, certsSupported) = readCerts()
 
-    "OK certs with DSA signature algorithms, should parse" - {
-        withData(nameFn = { it.first }, certsUnsupported) {
+    compact("OK certs with DSA signature algorithms, should parse") - {
+        data(certsUnsupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
 
@@ -36,7 +30,7 @@ val X509SignatureAlgorithmTest  by testSuite {
             decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
-             decoded.decodedSignature.isSuccess shouldBe false
+            decoded.decodedSignature.isSuccess shouldBe false
 
             withClue(decoded.encodeToPEM().getOrNull()) {
                 decoded.encodeToDer() shouldBe it.second
@@ -44,15 +38,14 @@ val X509SignatureAlgorithmTest  by testSuite {
         }
     }
 
-    "OK certs with supported signature algorithms" - {
-        withData(nameFn = { it.first }, certsSupported) {
+    compact("OK certs with supported signature algorithms") - {
+        data(certsSupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
             decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.entries
             shouldNotThrow<Throwable> { decoded.decodedSignature }
         }
     }
-
 
 
 }

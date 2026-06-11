@@ -6,16 +6,13 @@ import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
 import com.nimbusds.jose.*
 import com.nimbusds.jose.crypto.AESEncrypter
 import com.nimbusds.jose.crypto.ECDHEncrypter
 import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator
 import com.nimbusds.jose.util.Base64URL
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -33,7 +30,7 @@ private object InsecureRandom : CryptoRand() {
 }
 
 @OptIn(HazardousMaterials::class)
-val JweEncryptedTest by testSuite {
+val JweEncryptedTest by matrixSuite {
 
     "Minimal JWE can be parsed and verified" {
         val input = InsecureRandom.nextBytes(32)
@@ -100,7 +97,7 @@ val JweEncryptedTest by testSuite {
     }
 
     "JWE symmetric encryption" - {
-        withData(JweAlgorithm.Symmetric.entries) { alg ->
+        data(JweAlgorithm.Symmetric.entries) test { alg ->
             val plain = Random.nextBytes(32)
             val key = alg.randomKey(random = object : CryptoRand() {
                 override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)

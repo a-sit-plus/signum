@@ -1,10 +1,9 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
-val PrettyPrintTest by testSuite {
+val PrettyPrintTest by matrixSuite {
     "pretty print"  {
         val structure = Asn1CustomStructure(
             children = emptyList(),

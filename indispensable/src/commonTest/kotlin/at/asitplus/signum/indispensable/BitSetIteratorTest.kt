@@ -2,15 +2,13 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.BitSet
 
-import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.testScope
-import de.infix.testBalloon.framework.core.testSuite
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
 
-val BitSetIteratorTest  by testSuite {
+val BitSetIteratorTest  by matrixSuite {
    
     "simple test" {
         var remaining = 1

@@ -1,13 +1,9 @@
 package at.asitplus.signum
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.testballoon.checkAll
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.common.Platform
 import io.kotest.common.platform
 import io.kotest.matchers.shouldBe
@@ -15,7 +11,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 
-val Asn1AddonsTest by testSuite {
+val Asn1AddonsTest by matrixSuite {
    
     "BigInteger Encoding: Negative" {
         val result =
@@ -43,28 +39,25 @@ val Asn1AddonsTest by testSuite {
     if (!listOf(Platform.JS, Platform.WasmJs).contains(platform)) {
         "BigInteger from and to Asn1Integer conversion" - {
             "Specific values" - {
-                withData(
-                    nameFn = { it.first }, sequenceOf(
+                data(sequenceOf(
                         Triple("Zero", BigInteger.ZERO, Asn1Integer(0)),
                         Triple("Zero from ULong", BigInteger.fromULong(0uL), Asn1Integer(0uL)),
                         Triple("One", BigInteger.ONE, Asn1Integer(1)),
                         Triple("Negative One", BigInteger.ONE.unaryMinus(), Asn1Integer(-1))
-                    )
-                )
-                { (_, bigint, asn1int) ->
+                    ), nameFn = { it.first }) test { (_, bigint, asn1int) ->
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
             }
-            "Generic values" - {
-                checkAll(iterations = 2500, Arb.uLong()) {
+            compact("Generic values") - {
+                property(Arb.uLong(), iterations = 2500) test {
                     val bigint = BigInteger.fromULong(it)
                     val asn1int = Asn1Integer(it)
                     asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
-                checkAll(iterations = 2500, Arb.nonPositiveLong()) {
+                property(Arb.nonPositiveLong(), iterations = 2500) test {
                     val bigint = BigInteger.fromLong(it)
                     val asn1int = Asn1Integer(it)
                     if (it < 0)
@@ -72,7 +65,7 @@ val Asn1AddonsTest by testSuite {
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
-                checkAll(iterations = 500, Arb.byteArray(Arb.int(1500..2500), Arb.byte())) {
+                property(Arb.byteArray(Arb.int(1500..2500), Arb.byte()), iterations = 500) test {
                     val bigint = BigInteger.fromByteArray(it, Sign.NEGATIVE)
                     val asn1int = Asn1Integer.fromByteArray(it, Asn1Integer.Sign.NEGATIVE)
                     if (!asn1int.isZero())
@@ -80,7 +73,7 @@ val Asn1AddonsTest by testSuite {
                     bigint.toAsn1Integer() shouldBe asn1int
                     asn1int.toBigInteger() shouldBe bigint
                 }
-                checkAll(iterations = 1000, Arb.byteArray(Arb.int(1500..2500), Arb.byte())) {
+                property(Arb.byteArray(Arb.int(1500..2500), Arb.byte()), iterations = 1000) test {
                     val bigint = BigInteger.fromByteArray(it, Sign.POSITIVE)
                     val asn1int = Asn1Integer.fromUnsignedByteArray(it)
                     asn1int.shouldBeTypeOf<Asn1Integer.Positive>()

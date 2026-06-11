@@ -3,11 +3,8 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToDouble
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
@@ -20,12 +17,12 @@ import de.infix.testBalloon.framework.core.testScope
 
 
 @OptIn(ExperimentalStdlibApi::class)
-val RealTest by testSuite {
+val RealTest by matrixSuite {
 
     val input =
         data.lines().map { it.split("; ").let { it.first().toDouble() to it.last().hexToByteArray(HexFormat.Default) } }
-    "Encoding from Ref" - {
-        withData(data = input) { (double, bytes) ->
+    compact("Encoding from Ref") - {
+        data(input) test { (double, bytes) ->
             val own = Asn1Real(double)
             own.encodeToDer() shouldBe bytes
             Asn1Real.decodeFromDer(bytes) shouldBe own
@@ -48,7 +45,7 @@ val RealTest by testSuite {
     }
 
     "Special values" - {
-         {
+         "manual" {
             val number = "1.1897314953572317650857593266280070162123456789009876543456789098765432123456789876543212345678987654323456789876532345678765432345678876543234567"
             val bigDecimal = BigDecimal.parseString(number)
             bigDecimal.precision shouldBeGreaterThan 64L
@@ -69,11 +66,7 @@ val RealTest by testSuite {
 
         }
 
-        withData(
-            0.0 to byteArrayOf(9, 0),
-            Double.NEGATIVE_INFINITY to byteArrayOf(9, 1, 0x41),
-            Double.POSITIVE_INFINITY to byteArrayOf(9, 1, 0x40),
-        ) { (double, bytes) ->
+        listOf(0.0 to byteArrayOf(9, 0), Double.NEGATIVE_INFINITY to byteArrayOf(9, 1, 0x41), Double.POSITIVE_INFINITY to byteArrayOf(9, 1, 0x40)).asData() test { (double, bytes) ->
             val own = Asn1Real(double)
             own.encodeToDer() shouldBe bytes
             Asn1Real.decodeFromDer(bytes) shouldBe own

@@ -2,13 +2,12 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
-val JwsHeaderPartsTest by testSuite {
+val JwsHeaderPartsTest by matrixSuite {
     "full JWS header can be converted to a typed header part" {
         val header = JwsHeader(
             keyId = "did:example:signer",

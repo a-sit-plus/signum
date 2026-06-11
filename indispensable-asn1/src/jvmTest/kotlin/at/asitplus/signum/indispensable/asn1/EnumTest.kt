@@ -3,10 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnum
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnumOrdinal
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
@@ -16,16 +13,16 @@ enum class TestEnum {
     ONE, TWO, THREE
 }
 
-val EnumTest by testSuite {
+val EnumTest by matrixSuite {
 
     "Values beyond valid Kotlin enum ordinals should work" - {
-        withData(Long.MIN_VALUE, Long.MAX_VALUE, -1L, Int.MAX_VALUE.toLong()+1L, Int.MIN_VALUE.toLong()-1L) {
+        listOf(Long.MIN_VALUE, Long.MAX_VALUE, -1L, Int.MAX_VALUE.toLong()+1L, Int.MIN_VALUE.toLong()-1L).asData() test {
             Asn1.Enumerated(it).decodeToEnumOrdinal() shouldBe it
         }
     }
 
     "encoding should produce correct ordinals" - {
-        withData(data = TestEnum.entries) {
+        data(TestEnum.entries) test {
             val automagically = Asn1.Enumerated(it)
             automagically shouldBe Asn1.Enumerated(it.ordinal)
             //check correct tag

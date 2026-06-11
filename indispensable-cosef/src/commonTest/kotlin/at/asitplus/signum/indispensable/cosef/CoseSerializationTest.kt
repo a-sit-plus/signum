@@ -5,8 +5,7 @@ import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.matthewnelson.encoding.base16.Base16
@@ -25,7 +24,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
-val CoseSerializationTest by testSuite {
+val CoseSerializationTest by matrixSuite {
 
     "CoseSigned can not be constructed with ByteStringWrapper" {
         val payload = ByteStringWrapper("StringType")

@@ -11,10 +11,7 @@ import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.should
@@ -96,10 +93,10 @@ object TestSuites {
 }
 
 @OptIn(SecretExposure::class)
-val EphemeralSignerCommonTests  by testSuite {
+val EphemeralSignerCommonTests  by matrixSuite {
     "Functional" - {
         "RSA" - {
-            withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
+            data(TestSuites.RSA) test { (padding, digest, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
                 val signature = try {
@@ -112,7 +109,7 @@ val EphemeralSignerCommonTests  by testSuite {
                         if (preHashed) it.convertTo(digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
-                    return@withData
+                    return@test
                 }
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
                     it.digest shouldBe digest
@@ -129,7 +126,7 @@ val EphemeralSignerCommonTests  by testSuite {
             }
         }
         "ECDSA" - {
-            withData(TestSuites.ECDSA) { (crv, digest, preHashed) ->
+            data(TestSuites.ECDSA) test { (crv, digest, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
@@ -212,7 +209,7 @@ val EphemeralSignerCommonTests  by testSuite {
 
     "Cert signing" - {
         "RSA" - {
-            withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
+            data(TestSuites.RSA) test { (padding, digest, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
 
@@ -226,7 +223,7 @@ val EphemeralSignerCommonTests  by testSuite {
                         if (preHashed) it.convertTo(digest).getOrThrow() else it
                     }).signature
                 } catch (x: UnsupportedOperationException) {
-                    return@withData
+                    return@test
                 }
 
                 val csr = TbsCertificationRequest(
@@ -241,7 +238,7 @@ val EphemeralSignerCommonTests  by testSuite {
                         )
                     )
                 )
-                if(digest == Digest.SHA1 && padding== RSAPadding.PSS) return@withData
+                if(digest == Digest.SHA1 && padding== RSAPadding.PSS) return@test
                 val signedCSR = signer.sign(csr).getOrThrow()
 
 
@@ -275,7 +272,7 @@ val EphemeralSignerCommonTests  by testSuite {
         }
 
         "ECDSA" - {
-            withData(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) { (crv, digest, _) ->
+            data(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) test { (crv, digest, _) ->
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {

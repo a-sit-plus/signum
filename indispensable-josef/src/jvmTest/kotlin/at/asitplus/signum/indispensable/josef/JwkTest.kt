@@ -15,11 +15,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -37,23 +33,18 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val JwkTest  by testSuite {
+val JwkTest  by matrixSuite {
     "EC" - {
-        withDataSuites(256, 384, 521) { bits ->
+        listOf(256, 384, 521).asData() - { bits ->
             val keys = List<ECPublicKey>(10) {
                 val ecKp = KeyPairGenerator.getInstance("EC").apply {
                     initialize(bits)
                 }.genKeyPair()
                 ecKp.public as ECPublicKey
             }
-            withData(
-                nameFn = {
-                    "(x: ${
+            data(keys, nameFn = { "(x: ${
                         it.w.affineX.toByteArray().encodeToString(Base64Strict)
-                    } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})"
-                },
-                keys
-            ) { pubKey ->
+                    } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})" }) test { pubKey ->
 
                 val cryptoPubKey = pubKey.toCryptoPublicKey().getOrThrow().also { it.jwkId = it.didEncoded }
                 val own = cryptoPubKey.toJsonWebKey()
@@ -109,7 +100,7 @@ val JwkTest  by testSuite {
     }
 
     "Serialize and deserialize Algos" - {
-        withData(JsonWebAlgorithm.entries) { jwa ->
+        data(JsonWebAlgorithm.entries) test { jwa ->
             val jwk = JsonWebKey(
                 curve = ECCurve.SECP_256_R_1,
                 type = JwkType.EC,

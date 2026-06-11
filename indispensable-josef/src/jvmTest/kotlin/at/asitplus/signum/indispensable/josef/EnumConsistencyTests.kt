@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.TestSuite
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -17,7 +15,7 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
+inline fun<reified T: Any> MatrixSuiteScope.enumConsistencyTest() {
     T::class.simpleName!! {
         val listed = T::class.companionObject!!.let { companion ->
             @Suppress("UNCHECKED_CAST")
@@ -45,6 +43,6 @@ inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
     }
 }
 
-val EnumConsistencyTests by testSuite {
+val EnumConsistencyTests by matrixSuite {
     enumConsistencyTest<JwsAlgorithm>()
 }

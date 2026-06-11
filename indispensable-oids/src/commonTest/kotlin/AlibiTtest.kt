@@ -1,7 +1,7 @@
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
-val alibi by testSuite {
+val alibi by matrixSuite {
     test("Tests are working") {
         true shouldBe true
     }

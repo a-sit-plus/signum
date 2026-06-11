@@ -10,11 +10,7 @@ import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -29,38 +25,31 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
-val JvmSymmetricTest by testSuite {
+val JvmSymmetricTest by matrixSuite {
 
     "Against JCA" - {
         "AES" - {
-            withDataSuites(
-                SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
-                SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
-                SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
-
-                //JVM knows no AES-CBC-HMAC
-                SymmetricEncryptionAlgorithm.AES_128.GCM,
-                SymmetricEncryptionAlgorithm.AES_192.GCM,
-                SymmetricEncryptionAlgorithm.AES_256.GCM,
-
-                ) { alg ->
-                withDataSuites(
-                    nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
-                ) { iv ->
-                    withDataSuites(
-                        nameFn = { "aad: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
-                        Random.nextBytes(19), null
-                    ) { aad ->
-                        withData(
-                            nameFn = { "data: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
-                            Random.nextBytes(19),
-                            Random.nextBytes(1),
-                            Random.nextBytes(1234),
-                            Random.nextBytes(54),
-                            Random.nextBytes(16),
-                            Random.nextBytes(32),
-                            Random.nextBytes(256),
-                        ) { data ->
+            listOf(
+                    SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+                    SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+                    SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN, //JVM knows no AES-CBC-HMAC
+                    SymmetricEncryptionAlgorithm.AES_128.GCM,
+                    SymmetricEncryptionAlgorithm.AES_192.GCM,
+                    SymmetricEncryptionAlgorithm.AES_256.GCM
+                ).asData() - { alg ->
+                listOf(alg.randomNonce(), alg.randomNonce()).asData(nameFn = { "iv: ${it.size} bytes" }) - { iv ->
+                    listOf(alg.randomNonce(), alg.randomNonce(), Random.nextBytes(19), null).asData(nameFn = { "aad: ${it?.size} bytes" }) - { aad ->
+                        listOf(
+                                alg.randomNonce(),
+                                alg.randomNonce(),
+                                Random.nextBytes(19),
+                                Random.nextBytes(1),
+                                Random.nextBytes(1234),
+                                Random.nextBytes(54),
+                                Random.nextBytes(16),
+                                Random.nextBytes(32),
+                                Random.nextBytes(256)
+                            ).asData(nameFn = { "data: ${it.size} bytes" }) test { data ->
 
 
                             val jcaCipher =
@@ -152,37 +141,34 @@ val JvmSymmetricTest by testSuite {
                 }
             }
             "ECB + WRAP" - {
-                withDataSuites(
+                listOf(
+                        SymmetricEncryptionAlgorithm.AES_128.ECB,
+                        SymmetricEncryptionAlgorithm.AES_192.ECB,
+                        SymmetricEncryptionAlgorithm.AES_256.ECB,
+                        SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING,
+                        SymmetricEncryptionAlgorithm.AES_192.ECB_NOPADDING,
+                        SymmetricEncryptionAlgorithm.AES_256.ECB_NOPADDING,
+                        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
+                        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
+                        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394
+                    ).asData() - { alg ->
 
-                    SymmetricEncryptionAlgorithm.AES_128.ECB,
-                    SymmetricEncryptionAlgorithm.AES_192.ECB,
-                    SymmetricEncryptionAlgorithm.AES_256.ECB,
-                    SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING,
-                    SymmetricEncryptionAlgorithm.AES_192.ECB_NOPADDING,
-                    SymmetricEncryptionAlgorithm.AES_256.ECB_NOPADDING,
-                    SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
-                    SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
-                    SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
-
-                    ) { alg ->
-
-                    withData(
-                        nameFn = { "data: ${it.size} bytes" },
-                        Random.nextBytes(19),
-                        Random.nextBytes(1),
-                        Random.nextBytes(1234),
-                        Random.nextBytes(54),
-                        Random.nextBytes(16),
-                        Random.nextBytes(32),
-                        Random.nextBytes(256),
-                        Random.nextBytes(512),
-                        Random.nextBytes(1024),
-                        Random.nextBytes(8),
-                        Random.nextBytes(16),
-                        Random.nextBytes(48),
-                        Random.nextBytes(24),
-                        Random.nextBytes(72),
-                    ) - { data ->
+                    listOf(
+                            Random.nextBytes(19),
+                            Random.nextBytes(1),
+                            Random.nextBytes(1234),
+                            Random.nextBytes(54),
+                            Random.nextBytes(16),
+                            Random.nextBytes(32),
+                            Random.nextBytes(256),
+                            Random.nextBytes(512),
+                            Random.nextBytes(1024),
+                            Random.nextBytes(8),
+                            Random.nextBytes(16),
+                            Random.nextBytes(48),
+                            Random.nextBytes(24),
+                            Random.nextBytes(72)
+                        ).asData(nameFn = { "data: ${it.size} bytes" }) - { data ->
 
                         val secretKey = runBlocking { alg.randomKey(random = InsecureRandom) }
 
@@ -298,21 +284,18 @@ val JvmSymmetricTest by testSuite {
 
     "ChaCha20-Poly1305" - {
         val alg = SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        withDataSuites(
-            nameFn = { "iv: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(), null
-        ) { nonce ->
-            withDataSuites(Random.nextBytes(19), null) { aad ->
-                withData(
-                    nameFn = { "Random ${it.size} bytes" },
-                    Random.nextBytes(19),
-                    Random.nextBytes(1),
-                    Random.nextBytes(0),
-                    Random.nextBytes(1234),
-                    Random.nextBytes(54),
-                    Random.nextBytes(16),
-                    Random.nextBytes(32),
-                    Random.nextBytes(256),
-                ) { data ->
+        listOf(alg.randomNonce(), alg.randomNonce(), null).asData(nameFn = { "iv: ${it?.size} bytes" }) - { nonce ->
+            listOf(Random.nextBytes(19), null).asData() - { aad ->
+                listOf(
+                        Random.nextBytes(19),
+                        Random.nextBytes(1),
+                        Random.nextBytes(0),
+                        Random.nextBytes(1234),
+                        Random.nextBytes(54),
+                        Random.nextBytes(16),
+                        Random.nextBytes(32),
+                        Random.nextBytes(256)
+                    ).asData(nameFn = { "Random ${it.size} bytes" }) test { data ->
                     val secretKey = alg.randomKey(random = InsecureRandom)
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
