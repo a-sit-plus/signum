@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
+import at.asitplus.signum.indispensable.josef.io.requireAbsentIfEmpty
+import at.asitplus.signum.indispensable.josef.io.takeUnlessEmpty
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -44,7 +46,7 @@ data class RecipientElement internal constructor(
             unprotectedHeader: JweHeader.Part? = null,
             encryptedKey: ByteArray? = null,
         ): RecipientElement = RecipientElement(
-            unprotectedHeader = unprotectedHeader?.takeUnless { it.toJsonObject().isEmpty() },
+            unprotectedHeader = unprotectedHeader.takeUnlessEmpty(),
             encryptedKey = encryptedKey.takeUnlessEmpty(),
         )
     }

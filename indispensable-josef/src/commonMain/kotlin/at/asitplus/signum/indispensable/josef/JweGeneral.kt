@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
+import at.asitplus.signum.indispensable.josef.io.requireAbsentIfEmpty
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -36,7 +37,7 @@ data class JweGeneral internal constructor(
 
     init {
         require(recipientElements.isNotEmpty()) { "At least one recipient is required" }
-        JweProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+        requireAbsentIfEmpty(plainProtectedHeader, SerialNames.PROTECTED)
         requireAbsentIfEmpty(sharedUnprotectedHeader, SerialNames.UNPROTECTED)
         requireAbsentIfEmpty(additionalAuthenticatedData, SerialNames.AAD)
         requireAbsentIfEmpty(initializationVector, SerialNames.INITIALIZATION_VECTOR)
@@ -60,7 +61,14 @@ data class JweGeneral internal constructor(
      * Returns a new [JweGeneral] with one additional recipient over the same encrypted content.
      */
     fun appendRecipient(jweFlattened: JweFlattened): JweGeneral {
-        require(hasSameSharedContentAs(jweFlattened)) {
+        require(
+            plainProtectedHeader.contentEquals(jweFlattened.plainProtectedHeader) &&
+                    sharedUnprotectedHeader == jweFlattened.sharedUnprotectedHeader &&
+                    additionalAuthenticatedData.contentEquals(jweFlattened.additionalAuthenticatedData) &&
+                    initializationVector.contentEquals(jweFlattened.initializationVector) &&
+                    ciphertext.contentEquals(jweFlattened.ciphertext) &&
+                    authenticationTag.contentEquals(jweFlattened.authenticationTag)
+        ) {
             "Additional encrypted JWE content must match existing content"
         }
 
@@ -102,35 +110,6 @@ data class JweGeneral internal constructor(
 
     companion object {
         operator fun invoke(jweFlattened: List<JweFlattened>): JweGeneral = jweFlattened.toJweGeneral()
-
-        /**
-         * Creates a general JWE from header fragments and immediately encrypts [payload] for each recipient.
-         *
-         * Only [protectedHeader] is integrity-protected by JWE authenticated data. [encryptor] receives the protected
-         * fragment separately from the merged shared and current recipient unprotected fragments.
-         */
-        suspend operator fun <P> invoke(
-            protectedHeader: JweHeader.Part?,
-            payload: P,
-            sharedUnprotectedHeader: JweHeader.Part? = null,
-            recipientUnprotectedHeaders: List<JweHeader.Part?> = listOf(null),
-            additionalAuthenticatedData: ByteArray? = null,
-            encryptor: suspend (
-                protectedHeaderPart: JweHeader.Part?,
-                unprotectedHeaderPart: JweHeader.Part?,
-                payload: P,
-            ) -> EncryptionOutput,
-        ): JweGeneral =
-            recipientUnprotectedHeaders.map { recipientUnprotectedHeader ->
-                JweFlattened(
-                    protectedHeader = protectedHeader,
-                    payload = payload,
-                    sharedUnprotectedHeader = sharedUnprotectedHeader,
-                    recipientUnprotectedHeader = recipientUnprotectedHeader,
-                    additionalAuthenticatedData = additionalAuthenticatedData,
-                    encryptor = encryptor,
-                )
-            }.toJweGeneral()
     }
 }
 
@@ -153,11 +132,3 @@ fun JweGeneral.toJweFlattened(): List<JweFlattened> =
             authenticationTag = authenticationTag,
         )
     }
-
-private fun JweGeneral.hasSameSharedContentAs(other: JweFlattened): Boolean =
-    plainProtectedHeader.contentEquals(other.plainProtectedHeader) &&
-            sharedUnprotectedHeader == other.sharedUnprotectedHeader &&
-            additionalAuthenticatedData.contentEquals(other.additionalAuthenticatedData) &&
-            initializationVector.contentEquals(other.initializationVector) &&
-            ciphertext.contentEquals(other.ciphertext) &&
-            authenticationTag.contentEquals(other.authenticationTag)

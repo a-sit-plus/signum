@@ -4,6 +4,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
+import at.asitplus.signum.indispensable.josef.JweHeader.Part
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import kotlinx.serialization.SerialName
@@ -381,6 +382,40 @@ data class JweHeader(
             result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
             return result
         }
+
+        companion object {
+            private infix fun <P> P?.xor(other: P?): P? = if (this != null && other != null) {
+                throw Exception("Collision")
+            } else this ?: other
+
+            fun strictUnion(first: Part?, second: Part?): Part? {
+                if (first == null) return second
+                if (second == null) return first
+
+                return Part(
+                    algorithm = first.algorithm xor second.algorithm,
+                    encryption = first.encryption xor second.encryption,
+                    keyId = first.keyId xor second.keyId,
+                    type = first.type xor second.type,
+                    contentType = first.contentType xor second.contentType,
+                    notBefore = first.notBefore xor second.notBefore,
+                    issuedAt = first.issuedAt xor second.issuedAt,
+                    expiration = first.expiration xor second.expiration,
+                    jwtId = first.jwtId xor second.jwtId,
+                    jsonWebKey = first.jsonWebKey xor second.jsonWebKey,
+                    jsonWebKeyUrl = first.jsonWebKeyUrl xor second.jsonWebKeyUrl,
+                    ephemeralKeyPair = first.ephemeralKeyPair xor second.ephemeralKeyPair,
+                    agreementPartyUInfo = first.agreementPartyUInfo xor second.agreementPartyUInfo,
+                    agreementPartyVInfo = first.agreementPartyVInfo xor second.agreementPartyVInfo,
+                    initializationVector = first.initializationVector xor second.initializationVector,
+                    authenticationTag = first.authenticationTag xor second.authenticationTag,
+                    certificateUrl = first.certificateUrl xor second.certificateUrl,
+                    certificateChain = first.certificateChain xor second.certificateChain,
+                    certificateSha1Thumbprint = first.certificateSha1Thumbprint xor second.certificateSha1Thumbprint,
+                    certificateSha256Thumbprint = first.certificateSha256Thumbprint xor second.certificateSha256Thumbprint,
+                )
+            }
+        }
     }
 
     @Deprecated("To be removed in next release")
@@ -483,11 +518,10 @@ data class JweHeader(
             protectedHeader: Part? = null,
             sharedUnprotectedHeader: Part? = null,
             recipientUnprotectedHeader: Part? = null,
-        ): JweHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.toJsonObject(),
-            sharedUnprotectedHeader = sharedUnprotectedHeader?.toJsonObject(),
-            recipientUnprotectedHeader = recipientUnprotectedHeader?.toJsonObject(),
-        )
+        ): JweHeader = Part.strictUnion(
+            Part.strictUnion(protectedHeader, sharedUnprotectedHeader),
+            recipientUnprotectedHeader,
+        ).toJweHeader()
 
         /**
          * Decodes the protected fragment and merges it with optional unprotected fragments.
@@ -496,29 +530,42 @@ data class JweHeader(
             protectedHeader: ByteArray? = null,
             sharedUnprotectedHeader: Part? = null,
             recipientUnprotectedHeader: Part? = null,
-        ): JweHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.let(JweProtectedHeaderSerializer::decodeToJsonObject),
-            sharedUnprotectedHeader = sharedUnprotectedHeader?.toJsonObject(),
-            recipientUnprotectedHeader = recipientUnprotectedHeader?.toJsonObject(),
+        ): JweHeader = fromParts(
+            protectedHeader = protectedHeader?.let(JweProtectedHeaderSerializer::decodeFromByteArray),
+            sharedUnprotectedHeader = sharedUnprotectedHeader,
+            recipientUnprotectedHeader = recipientUnprotectedHeader,
         )
 
-        internal fun fromJsonObjects(
-            protectedHeader: JsonObject? = null,
-            sharedUnprotectedHeader: JsonObject? = null,
-            recipientUnprotectedHeader: JsonObject? = null,
-        ): JweHeader = joseCompliantSerializer.decodeFromJsonElement<JweHeader>(
-            protectedHeader
-                .strictUnion(sharedUnprotectedHeader)
-                .strictUnion(recipientUnprotectedHeader)
-        ).also {
-            requireNotNull(it.algorithm) { "JWE JOSE Header must contain 'alg'" }
-            requireNotNull(it.encryption) { "JWE JOSE Header must contain 'enc'" }
+        private fun Part?.toJweHeader(): JweHeader {
+            val part = this ?: Part()
+            return JweHeader(
+                algorithm = part.algorithm,
+                encryption = part.encryption,
+                keyId = part.keyId,
+                type = part.type,
+                contentType = part.contentType,
+                notBefore = part.notBefore,
+                issuedAt = part.issuedAt,
+                expiration = part.expiration,
+                jwtId = part.jwtId,
+                jsonWebKey = part.jsonWebKey,
+                jsonWebKeyUrl = part.jsonWebKeyUrl,
+                ephemeralKeyPair = part.ephemeralKeyPair,
+                agreementPartyUInfo = part.agreementPartyUInfo,
+                agreementPartyVInfo = part.agreementPartyVInfo,
+                initializationVector = part.initializationVector,
+                authenticationTag = part.authenticationTag,
+                certificateUrl = part.certificateUrl,
+                certificateChain = part.certificateChain,
+                certificateSha1Thumbprint = part.certificateSha1Thumbprint,
+                certificateSha256Thumbprint = part.certificateSha256Thumbprint,
+            )
         }
     }
 }
 
 /**
- * Converts the effective header into a single [JweHeader.Part].
+ * Converts the effective header into a single [Part].
  */
 fun JweHeader.toPart(): JweHeader.Part = JweHeader.Part(
     algorithm = algorithm,

@@ -46,44 +46,19 @@ sealed class JWE : JsonSecured {
         /**
          * Builds the RFC 7516 Additional Authenticated Data input from the protected header and optional JWE AAD.
          */
-        fun getAdditionalAuthenticatedData(protectedHeader: ByteArray?, additionalAuthenticatedData: ByteArray?) =
-            if (additionalAuthenticatedData == null) {
-                getEncodedProtectedHeader(protectedHeader).encodeToByteArray()
+        fun getAdditionalAuthenticatedData(
+            protectedHeader: ByteArray?,
+            additionalAuthenticatedData: ByteArray?
+        ): ByteArray {
+            val encodedProtectedHeader = getEncodedProtectedHeader(protectedHeader)
+            return if (additionalAuthenticatedData == null) {
+                encodedProtectedHeader.encodeToByteArray()
             } else {
-                "${getEncodedProtectedHeader(protectedHeader)}.${
-                    additionalAuthenticatedData.encodeToString(Base64UrlStrict)
-                }".encodeToByteArray()
+                "$encodedProtectedHeader.${additionalAuthenticatedData.encodeToString(Base64UrlStrict)}".encodeToByteArray()
             }
-    }
-
-    data class EncryptionOutput(
-        val iv: ByteArray? = null,
-        val cipherText: ByteArray,
-        val encryptedKey: ByteArray? = null,
-        val authenticationTag: ByteArray? = null,
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null || this::class != other::class) return false
-
-            other as EncryptionOutput
-
-            if (!iv.contentEquals(other.iv)) return false
-            if (!cipherText.contentEquals(other.cipherText)) return false
-            if (!encryptedKey.contentEquals(other.encryptedKey)) return false
-            if (!authenticationTag.contentEquals(other.authenticationTag)) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = iv?.contentHashCode() ?: 0
-            result = 31 * result + cipherText.contentHashCode()
-            result = 31 * result + (encryptedKey?.contentHashCode() ?: 0)
-            result = 31 * result + (authenticationTag?.contentHashCode() ?: 0)
-            return result
         }
     }
+
 
     object JweSerializer : KSerializer<JWE> {
         @OptIn(InternalSerializationApi::class)
@@ -104,9 +79,8 @@ sealed class JWE : JsonSecured {
 
         override fun deserialize(decoder: Decoder): JWE {
             require(decoder is JsonDecoder) { "JWE deserialization requires a JsonDecoder" }
-            val jsonElement = decoder.decodeJsonElement()
 
-            return when (jsonElement) {
+            return when (val jsonElement = decoder.decodeJsonElement()) {
                 is JsonPrimitive -> decoder.json.decodeFromJsonElement(JweCompactStringSerializer, jsonElement)
                 is JsonObject -> {
                     val hasRecipients = SerialNames.RECIPIENTS in jsonElement
@@ -140,19 +114,5 @@ sealed class JWE : JsonSecured {
                 )
             }
         }
-    }
-}
-
-internal fun ByteArray?.takeUnlessEmpty(): ByteArray? = this?.takeUnless { it.isEmpty() }
-
-internal fun requireAbsentIfEmpty(value: ByteArray?, memberName: String) {
-    require(value == null || value.isNotEmpty()) {
-        "JWE '$memberName' member must be absent when it would otherwise be empty"
-    }
-}
-
-internal fun requireAbsentIfEmpty(header: JweHeader.Part?, memberName: String) {
-    require(header == null || header.toJsonObject().isNotEmpty()) {
-        "JWE '$memberName' member must be absent when it would otherwise be empty"
     }
 }

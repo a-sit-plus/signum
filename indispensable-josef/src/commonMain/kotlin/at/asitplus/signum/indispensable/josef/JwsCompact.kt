@@ -72,7 +72,7 @@ data class JwsCompact internal constructor(
     companion object {
 
         /**
-         * Build a [at.asitplus.signum.indispensable.josef.jws.JwsCompact] received as string
+         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          * and immediately resolve the payload
          */
         inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching {
@@ -82,7 +82,7 @@ data class JwsCompact internal constructor(
         }
 
         /**
-         * Build a [at.asitplus.signum.indispensable.josef.jws.JwsCompact] received as string
+         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          */
         operator fun invoke(
             base64UrlString: String,
@@ -119,9 +119,9 @@ data class JwsCompact internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
+            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader.toPart())
             return JwsCompact(
-                plainProtectedHeader = plainProtectedHeader,
+                plainProtectedHeader = plainProtectedHeader!!,
                 plainPayload = payload,
                 plainSignature = signer(getSignatureInput(plainProtectedHeader, payload)),
             )

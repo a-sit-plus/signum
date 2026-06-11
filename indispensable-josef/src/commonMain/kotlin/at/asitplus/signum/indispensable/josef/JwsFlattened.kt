@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
+import at.asitplus.signum.indispensable.josef.io.requireAbsentIfEmpty
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -39,7 +40,7 @@ data class JwsFlattened internal constructor(
 ) : JWS() {
 
     init {
-        JwsProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+        requireAbsentIfEmpty(plainProtectedHeader, SerialNames.PROTECTED)
     }
 
     @Transient

@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.io.takeUnlessEmpty
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
@@ -69,13 +70,12 @@ data class JweCompact internal constructor(
          */
         operator fun invoke(base64UrlString: String): JweCompact {
             require(!base64UrlString.contains("=")) { "Trailing = are not supported. See RFC 7516" }
-            val partCount = base64UrlString.count { it == '.' } + 1
-            if (partCount != 5) {
+            val parts = base64UrlString.split('.')
+            if (parts.size != 5) {
                 throw SerializationException(
-                    "Invalid JWE compact serialization: expected 5 parts, got $partCount"
+                    "Invalid JWE compact serialization: expected 5 parts, got ${parts.size}"
                 )
             }
-            val parts = base64UrlString.split('.', limit = 5)
 
             return try {
                 JweCompact(
@@ -94,14 +94,14 @@ data class JweCompact internal constructor(
          * Build a compact JWE from components.
          */
         suspend operator fun <P> invoke(
-            protectedHeader: JweHeader,
-            payload: P,
-            encryptor: suspend (JweHeader.Part, P) -> EncryptionOutput,
+            encryptionInput: JweEncryptor.EncryptionInput<P>,
+            encryptor: JweEncryptor<P>,
         ): JweCompact {
-            val plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
-            val encryptionOutput = encryptor(protectedHeader.toPart(), payload)
+            require(encryptionInput.recipientUnprotectedHeader == null && encryptionInput.sharedUnprotectedHeader == null)
+            val plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(encryptionInput.protectedHeader)
+            val encryptionOutput = encryptor(encryptionInput)
             return JweCompact(
-                plainProtectedHeader = plainProtectedHeader,
+                plainProtectedHeader = plainProtectedHeader?: throw IllegalArgumentException("Protected header is REQUIRED for JWE compact serialization"),
                 encryptedKey = encryptionOutput.encryptedKey.takeUnlessEmpty(),
                 initializationVector = encryptionOutput.iv.takeUnlessEmpty(),
                 ciphertext = encryptionOutput.cipherText,

@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
+import at.asitplus.signum.indispensable.josef.io.requireAbsentIfEmpty
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -45,7 +46,7 @@ data class SignatureElement internal constructor(
     val unprotectedHeader: JwsHeader.Part? = null
 ) {
     init {
-        JwsProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+        requireAbsentIfEmpty(plainProtectedHeader, JWS.SerialNames.PROTECTED)
     }
     @Transient
     val jwsHeader: JwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)

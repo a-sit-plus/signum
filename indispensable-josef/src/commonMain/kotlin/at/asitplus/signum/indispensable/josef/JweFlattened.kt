@@ -2,10 +2,10 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.io.requireAbsentIfEmpty
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlinx.serialization.json.JsonObject
 
 /**
  * Flattened JSON JWE serialization.
@@ -41,7 +41,7 @@ data class JweFlattened internal constructor(
 ) : JWE() {
 
     init {
-        JweProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+        requireAbsentIfEmpty(plainProtectedHeader, SerialNames.PROTECTED)
         requireAbsentIfEmpty(sharedUnprotectedHeader, SerialNames.UNPROTECTED)
         requireAbsentIfEmpty(recipientUnprotectedHeader, SerialNames.HEADER)
         requireAbsentIfEmpty(encryptedKey, SerialNames.ENCRYPTED_KEY)
@@ -93,62 +93,23 @@ data class JweFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWE from protected and unprotected header fragments plus encrypted components.
-         */
-        operator fun invoke(
-            protectedHeader: JweHeader.Part?,
-            sharedUnprotectedHeader: JweHeader.Part? = null,
-            recipientUnprotectedHeader: JweHeader.Part? = null,
-            encryptedKey: ByteArray? = null,
-            additionalAuthenticatedData: ByteArray? = null,
-            initializationVector: ByteArray? = null,
-            ciphertext: ByteArray,
-            authenticationTag: ByteArray? = null,
-        ): JweFlattened {
-            val plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)
-            return JweFlattened(
-                plainProtectedHeader = plainProtectedHeader,
-                sharedUnprotectedHeader = sharedUnprotectedHeader?.takeUnless { it.toJsonObject().isEmpty() },
-                recipientUnprotectedHeader = recipientUnprotectedHeader?.takeUnless { it.toJsonObject().isEmpty() },
-                encryptedKey = encryptedKey.takeUnlessEmpty(),
-                additionalAuthenticatedData = additionalAuthenticatedData.takeUnlessEmpty(),
-                initializationVector = initializationVector.takeUnlessEmpty(),
-                ciphertext = ciphertext,
-                authenticationTag = authenticationTag.takeUnlessEmpty(),
-            )
-        }
-
-        /**
          * Creates a flattened JWE from header fragments and immediately encrypts [payload].
          *
          * Only [protectedHeader] is integrity-protected by JWE authenticated data. [encryptor] receives the protected
          * fragment separately from the merged shared and recipient unprotected fragments.
          */
         suspend operator fun <P> invoke(
-            protectedHeader: JweHeader.Part?,
-            sharedUnprotectedHeader: JweHeader.Part? = null,
-            recipientUnprotectedHeader: JweHeader.Part? = null,
-            payload: P,
-            additionalAuthenticatedData: ByteArray? = null,
-            encryptor: suspend (
-                protectedHeaderPart: JweHeader.Part?,
-                unprotectedHeaderPart: JweHeader.Part?,
-                payload: P,
-            ) -> EncryptionOutput,
+            encryptionInput: JweEncryptor.EncryptionInput<P>,
+            encryptor: JweEncryptor<P>
         ): JweFlattened {
-            JweHeader.fromParts(protectedHeader, sharedUnprotectedHeader, recipientUnprotectedHeader)
-
-            val encryptionOutput = encryptor(
-                protectedHeader.normalized(),
-                mergeUnprotectedHeaders(sharedUnprotectedHeader, recipientUnprotectedHeader),
-                payload,
-            )
+            val encryptionOutput = encryptor(encryptionInput)
             return JweFlattened(
-                protectedHeader = protectedHeader,
-                sharedUnprotectedHeader = sharedUnprotectedHeader,
-                recipientUnprotectedHeader = recipientUnprotectedHeader,
+                plainProtectedHeader = joseCompliantSerializer.encodeToString(encryptionInput.protectedHeader)
+                    .encodeToByteArray(),
+                sharedUnprotectedHeader = encryptionInput.sharedUnprotectedHeader,
+                recipientUnprotectedHeader = encryptionInput.recipientUnprotectedHeader,
                 encryptedKey = encryptionOutput.encryptedKey,
-                additionalAuthenticatedData = additionalAuthenticatedData,
+                additionalAuthenticatedData = encryptionInput.additionalAuthenticatedData,
                 initializationVector = encryptionOutput.iv,
                 ciphertext = encryptionOutput.cipherText,
                 authenticationTag = encryptionOutput.authenticationTag,
@@ -187,7 +148,14 @@ fun List<JweFlattened>.toJweGeneral(): JweGeneral {
     require(isNotEmpty()) { "General JWE requires at least one recipient" }
     val first = this[0]
     val recipients = map {
-        require(first.hasSameSharedContentAs(it)) {
+        require(
+            first.plainProtectedHeader.contentEquals(it.plainProtectedHeader) &&
+                    first.sharedUnprotectedHeader == it.sharedUnprotectedHeader &&
+                    first.additionalAuthenticatedData.contentEquals(it.additionalAuthenticatedData) &&
+                    first.initializationVector.contentEquals(it.initializationVector) &&
+                    first.ciphertext.contentEquals(it.ciphertext) &&
+                    first.authenticationTag.contentEquals(it.authenticationTag)
+        ) {
             "Additional encrypted JWE content must match existing content"
         }
         RecipientElement(
@@ -205,27 +173,3 @@ fun List<JweFlattened>.toJweGeneral(): JweGeneral {
         authenticationTag = first.authenticationTag,
     )
 }
-
-internal fun JweFlattened.hasSameSharedContentAs(other: JweFlattened): Boolean =
-    plainProtectedHeader.contentEquals(other.plainProtectedHeader) &&
-            sharedUnprotectedHeader == other.sharedUnprotectedHeader &&
-            additionalAuthenticatedData.contentEquals(other.additionalAuthenticatedData) &&
-            initializationVector.contentEquals(other.initializationVector) &&
-            ciphertext.contentEquals(other.ciphertext) &&
-            authenticationTag.contentEquals(other.authenticationTag)
-
-internal fun mergeUnprotectedHeaders(
-    sharedUnprotectedHeader: JweHeader.Part?,
-    recipientUnprotectedHeader: JweHeader.Part?,
-): JweHeader.Part? {
-    val merged = sharedUnprotectedHeader.normalizedJsonObject()
-        .strictUnion(recipientUnprotectedHeader.normalizedJsonObject())
-    return merged.takeIf { it.isNotEmpty() }
-        ?.let { joseCompliantSerializer.decodeFromJsonElement(JweHeader.Part.serializer(), it) }
-}
-
-internal fun JweHeader.Part?.normalized(): JweHeader.Part? =
-    this?.takeUnless { it.toJsonObject().isEmpty() }
-
-private fun JweHeader.Part?.normalizedJsonObject(): JsonObject? =
-    normalized()?.toJsonObject()
