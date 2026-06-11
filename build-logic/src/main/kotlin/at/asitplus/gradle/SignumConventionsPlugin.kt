@@ -40,6 +40,7 @@ class SignumConventionsPlugin : Plugin<Project> {
         if (target.hasAndroidSdk()) pluginManager.apply("com.android.kotlin.multiplatform.library")
         pluginManager.apply("signing")
         pluginManager.apply("at.asitplus.gradle.conventions")
+        pluginManager.apply("at.asitplus.gradle.modulator")
         pluginManager.apply("de.infix.testBalloon")
     }
 }
