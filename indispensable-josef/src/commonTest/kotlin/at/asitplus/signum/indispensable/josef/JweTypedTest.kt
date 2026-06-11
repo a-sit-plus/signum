@@ -1,8 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -21,7 +20,7 @@ private val jweTypedAdditionalAuthenticatedData = JweTypedAdditionalAuthenticate
     sequence = 7,
 )
 
-val JweTypedTest by testSuite {
+val JweTypedTest by matrixSuite {
     "getPayload decrypts the supplied JWE and decodes the typed plaintext" {
         val jwe = sampleFlattenedJwe()
         var observedJwe: JWE? = null

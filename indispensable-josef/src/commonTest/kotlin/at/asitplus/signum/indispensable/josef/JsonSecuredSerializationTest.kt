@@ -1,9 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.TestCompartment
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -12,7 +10,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-val JsonSecuredSerializationTest by testSuite(compartment = { TestCompartment.Sequential }) {
+val JsonSecuredSerializationTest by matrixSuite {
     "JsonSecured serializer preserves concrete JWS forms" {
         val compactValue = JwsCompact(jwsCompactSerialization)
         val flattenedValue = jwsFlattenedSample()

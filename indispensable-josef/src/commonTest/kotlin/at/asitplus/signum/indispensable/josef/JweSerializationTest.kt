@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.TestCompartment
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
@@ -64,7 +62,7 @@ private val flattenedVectorJson = """
 private val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), generalVectorJson)
 private val flattenedVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), flattenedVectorJson)
 
-val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential }) {
+val JweSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
     "compact JWE keeps RFC 7516 vector stable and round-trips through flattened" {
         val compact = JweCompact(compactVector)
 
