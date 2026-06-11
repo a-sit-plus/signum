@@ -87,8 +87,6 @@ suspend inline fun <reified P> JsonSecured.getPayload(noinline decryptor: decryp
         is JwsCompact -> this.typed<P, JwsCompact>()
         is JwsFlattened -> this.typed<P, JwsFlattened>()
         is JwsGeneral -> this.typed<P, JwsGeneral>()
-        is JweCompact -> this.decrypted<JweCompact, P>(decryptor ?: throw Exception("Missing decryptor"))
-        is JweFlattened -> this.decrypted<JweFlattened, P>(decryptor ?: throw Exception("Missing decryptor"))
-        is JweGeneral -> this.decrypted<JweGeneral, P>(decryptor ?: throw Exception("Missing decryptor"))
+        is JWE -> JweTyped.getPayload<P>(decryptor ?: throw Exception("Missing decryptor"), this).getOrThrow()
     }
 }

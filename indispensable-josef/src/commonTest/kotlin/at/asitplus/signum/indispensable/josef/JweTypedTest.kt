@@ -7,12 +7,18 @@ import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.Serializable
 
 private val jweTypedPayload = JwtBaseClaims(
     issuer = "https://issuer.example",
     subject = "alice",
     audience = "test-suite",
     jwtId = "jwt-1",
+)
+
+private val jweTypedAdditionalAuthenticatedData = JweTypedAdditionalAuthenticatedData(
+    transactionId = "txn-1",
+    sequence = 7,
 )
 
 val JweTypedTest by testSuite {
@@ -56,15 +62,35 @@ val JweTypedTest by testSuite {
         }
         var observedJwe: JWE? = null
 
-        val typed: JweCompactTyped<JwtBaseClaims> = compact.decrypted {
+        val typed: JweCompactTyped<JwtBaseClaims, Unit> = compact.decrypted {
             observedJwe = it
             jweTypedPayload.toPlaintext()
         }
 
         typed.jwe shouldBe compact
         typed.payload shouldBe jweTypedPayload
+        typed.additionalAuthenticatedData shouldBe null
         typed.toString() shouldBe compact.toString()
         observedJwe shouldBe compact
+    }
+
+    "decrypted flattened JWE decodes typed additional authenticated data" {
+        val additionalAuthenticatedData = joseCompliantSerializer.encodeToString(
+            JweTypedAdditionalAuthenticatedData.serializer(),
+            jweTypedAdditionalAuthenticatedData,
+        ).encodeToByteArray()
+        val flattened = sampleFlattenedJwe(additionalAuthenticatedData = additionalAuthenticatedData)
+        var observedJwe: JWE? = null
+
+        val typed: JweFlattenedTyped<JwtBaseClaims, JweTypedAdditionalAuthenticatedData> = flattened.decrypted {
+            observedJwe = it
+            jweTypedPayload.toPlaintext()
+        }
+
+        typed.jwe shouldBe flattened
+        typed.payload shouldBe jweTypedPayload
+        typed.additionalAuthenticatedData shouldBe jweTypedAdditionalAuthenticatedData
+        observedJwe shouldBe flattened
     }
 
     "decrypted compact JWE can carry a compact JWS payload" {
@@ -110,10 +136,11 @@ val JweTypedTest by testSuite {
         val decryptedPlaintext = joseCompliantSerializer.encodeToString(JWS.serializer(), signedJwt)
             .encodeToByteArray()
 
-        val typed: JweCompactTyped<JWS> = encryptedJwt.decrypted { decryptedPlaintext }
+        val typed: JweCompactTyped<JWS, Unit> = encryptedJwt.decrypted { decryptedPlaintext }
         val compactPayload = typed.payload.shouldBeInstanceOf<JwsCompact>()
 
         typed.jwe shouldBe encryptedJwt
+        typed.additionalAuthenticatedData shouldBe null
         compactPayload shouldBe signedJwt
         compactPayload.getPayload<JwtBaseClaims>().getOrThrow() shouldBe jwtBaseClaims
     }
@@ -137,7 +164,15 @@ val JweTypedTest by testSuite {
     }
 }
 
-private fun sampleFlattenedJwe(): JweFlattened = JweFlattened(
+@Serializable
+private data class JweTypedAdditionalAuthenticatedData(
+    val transactionId: String,
+    val sequence: Int,
+)
+
+private fun sampleFlattenedJwe(
+    additionalAuthenticatedData: ByteArray? = null,
+): JweFlattened = JweFlattened(
     plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(
         JweHeader.Part(
             algorithm = JweAlgorithm.A128KW,
@@ -145,6 +180,7 @@ private fun sampleFlattenedJwe(): JweFlattened = JweFlattened(
         )
     )!!,
     encryptedKey = byteArrayOf(2),
+    additionalAuthenticatedData = additionalAuthenticatedData,
     initializationVector = byteArrayOf(3),
     ciphertext = byteArrayOf(4),
     authenticationTag = byteArrayOf(5),
