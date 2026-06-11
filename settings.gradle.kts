@@ -36,6 +36,8 @@ include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
 include(":supreme")
+include(":cosef-supreme")
+include(":josef-supreme")
 gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?: include(":internals-test")
 rootProject.name = "Signum"
 include("cinterop")

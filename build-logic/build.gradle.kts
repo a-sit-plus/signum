@@ -21,6 +21,7 @@ dependencies {
     implementation("org.jetbrains.kotlin.multiplatform:org.jetbrains.kotlin.multiplatform.gradle.plugin:$kotlinVer")
     implementation(libs.agp)
     implementation(libs.asp)
+    implementation(libs.modulator)
 }
 
 repositories {

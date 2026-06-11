@@ -15,6 +15,7 @@ bouncycastle= "1.83"
 testballoon = "1.0.0-K2.3.20"
 #testballoonAddons = "0.15.0"
 serialization = "1.11.0"
+modulator = "0.1.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -26,6 +27,7 @@ multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
 asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
 classgraph = { group = "io.github.classgraph", name = "classgraph", version.ref = "classgraph" }
+modulator = { group = "at.asitplus.gradle.modulator", name = "at.asitplus.gradle.modulator.gradle.plugin", version.ref = "modulator" }
 
 #for build logic conventions plugin, as it needs the artefact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
