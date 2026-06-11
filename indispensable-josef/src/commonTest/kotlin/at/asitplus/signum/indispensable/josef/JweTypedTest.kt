@@ -26,13 +26,10 @@ val JweTypedTest by testSuite {
         val jwe = sampleFlattenedJwe()
         var observedJwe: JWE? = null
 
-        val decoded = JweTyped.getPayload<JwtBaseClaims>(
-            decryptor = {
-                observedJwe = it
-                jweTypedPayload.toPlaintext()
-            },
-            jwe = jwe,
-        )
+        val decoded = jwe.getPayload<JwtBaseClaims> {
+            observedJwe = it
+            jweTypedPayload.toPlaintext()
+        }
 
         decoded.getOrThrow() shouldBe jweTypedPayload
         observedJwe shouldBe jwe
@@ -148,14 +145,12 @@ val JweTypedTest by testSuite {
     "getPayload returns a failure when decryption or deserialization fails" {
         val jwe = sampleFlattenedJwe()
 
-        val decryptionFailure = JweTyped.getPayload<JwtBaseClaims>(
-            decryptor = { throw IllegalStateException("ciphertext rejected") },
-            jwe = jwe,
-        )
-        val deserializationFailure = JweTyped.getPayload<JwtBaseClaims>(
-            decryptor = { "not-json".encodeToByteArray() },
-            jwe = jwe,
-        )
+        val decryptionFailure = jwe.getPayload<JwtBaseClaims> {
+            throw IllegalStateException("ciphertext rejected")
+        }
+        val deserializationFailure = jwe.getPayload<JwtBaseClaims> {
+            "not-json".encodeToByteArray()
+        }
 
         runCatching { decryptionFailure.getOrThrow() }
             .shouldBeFailure().message.shouldContain("ciphertext rejected")
