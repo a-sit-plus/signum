@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonPrimitive
 /**
  * Wrapper for all JWE formats.
  */
-@Serializable(with = JWE.JweSerializer::class)
+@Serializable(with = JweSerializer::class)
 sealed class JWE : JsonSecured {
 
     suspend inline fun <reified P> getPayload(
@@ -75,63 +75,6 @@ sealed class JWE : JsonSecured {
                 encodedProtectedHeader.encodeToByteArray()
             } else {
                 "$encodedProtectedHeader.${additionalAuthenticatedData.encodeToString(Base64UrlStrict)}".encodeToByteArray()
-            }
-        }
-    }
-
-
-    object JweSerializer : KSerializer<JWE> {
-        @OptIn(InternalSerializationApi::class)
-        override val descriptor: SerialDescriptor = buildSerialDescriptor("JWE", PolymorphicKind.SEALED) {
-            element(SerialNames.COMPACT, JweCompactStringSerializer.descriptor)
-            element(SerialNames.FLATTENED, JweFlattened.Companion.serializer().descriptor)
-            element(SerialNames.GENERAL, JweGeneral.Companion.serializer().descriptor)
-        }
-
-        override fun serialize(encoder: Encoder, value: JWE) {
-            require(encoder is JsonEncoder) { "JWE serialization requires a JsonEncoder" }
-            when (value) {
-                is JweCompact -> encoder.encodeSerializableValue(JweCompactStringSerializer, value)
-                is JweFlattened -> encoder.encodeSerializableValue(JweFlattened.Companion.serializer(), value)
-                is JweGeneral -> encoder.encodeSerializableValue(JweGeneral.Companion.serializer(), value)
-            }
-        }
-
-        override fun deserialize(decoder: Decoder): JWE {
-            require(decoder is JsonDecoder) { "JWE deserialization requires a JsonDecoder" }
-
-            return when (val jsonElement = decoder.decodeJsonElement()) {
-                is JsonPrimitive -> decoder.json.decodeFromJsonElement(JweCompactStringSerializer, jsonElement)
-                is JsonObject -> {
-                    val hasRecipients = SerialNames.RECIPIENTS in jsonElement
-                    val hasFlattenedRecipientHeader = SerialNames.HEADER in jsonElement
-                    val hasFlattenedEncryptedKey = SerialNames.ENCRYPTED_KEY in jsonElement
-                    val hasCiphertext = SerialNames.CIPHERTEXT in jsonElement
-
-                    when {
-                        hasRecipients && (hasFlattenedRecipientHeader || hasFlattenedEncryptedKey) ->
-                            throw SerializationException(
-                                "Invalid JWE JSON serialization: object must not contain '${SerialNames.RECIPIENTS}' " +
-                                        "with top-level '${SerialNames.HEADER}' or '${SerialNames.ENCRYPTED_KEY}'"
-                            )
-
-                        hasRecipients ->
-                            decoder.json.decodeFromJsonElement(JweGeneral.Companion.serializer(), jsonElement)
-
-                        hasCiphertext ->
-                            decoder.json.decodeFromJsonElement(JweFlattened.Companion.serializer(), jsonElement)
-
-                        else ->
-                            throw SerializationException(
-                                "Invalid JWE JSON serialization: object must contain " +
-                                        "'${SerialNames.CIPHERTEXT}' or '${SerialNames.RECIPIENTS}'"
-                            )
-                    }
-                }
-
-                else -> throw SerializationException(
-                    "Invalid JWE JSON serialization: expected a compact string or JSON object"
-                )
             }
         }
     }
