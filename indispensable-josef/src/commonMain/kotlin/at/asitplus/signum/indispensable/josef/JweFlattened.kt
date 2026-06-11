@@ -93,14 +93,14 @@ data class JweFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWE from header fragments and immediately encrypts [payload].
+         * Creates a flattened JWE from header fragments and immediately encrypts [JweEncryptor.EncryptionInput.payload].
          *
          * Only [protectedHeader] is integrity-protected by JWE authenticated data. [encryptor] receives the protected
          * fragment separately from the merged shared and recipient unprotected fragments.
          */
-        suspend operator fun <P> invoke(
-            encryptionInput: JweEncryptor.EncryptionInput<P>,
-            encryptor: JweEncryptor<P>
+        suspend operator fun invoke(
+            encryptionInput: JweEncryptor.EncryptionInput,
+            encryptor: JweEncryptor
         ): JweFlattened {
             val encryptionOutput = encryptor(encryptionInput)
             return JweFlattened(

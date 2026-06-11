@@ -186,7 +186,11 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
 
         paddedProtectedHeaderResult.shouldBeRejectedPaddedBase64Url()
         paddedCiphertextResult.shouldBeRejectedPaddedBase64Url()
-        emptyProtectedHeaderResult.shouldBeRejectedEmptyProtectedHeader()
+        emptyProtectedHeaderResult.getOrThrow().let {
+            it.protectedHeader shouldBe JweHeader.Part()
+            it.jweHeader.algorithm shouldBe JweAlgorithm.A128KW
+            it.jweHeader.encryption shouldBe JweEncryption.A128GCM
+        }
         emptyHeaderResult.shouldBeRejectedEmptyJweMember(JWE.SerialNames.HEADER)
         emptyEncryptedKeyResult.shouldBeRejectedEmptyJweMember(JWE.SerialNames.ENCRYPTED_KEY)
     }
@@ -199,7 +203,7 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         }
 
         duplicateResult.isSuccess shouldBe false
-        duplicateResult.shouldBeFailure().message.shouldContain("Duplicate keys")
+        duplicateResult.shouldBeFailure().message shouldBe "Collision"
     }
 
     "general conversions reject empty and mismatched flattened inputs" {
@@ -277,11 +281,16 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         var observedPayload: String? = null
 
         val compact = JweCompact(
-            protectedHeader = header,
-            payload = "plain",
-        ) { protectedHeader, payload ->
-            observedProtectedHeader = protectedHeader
-            observedPayload = payload
+            encryptionInput = JweEncryptor.EncryptionInput(
+                protectedHeader = header.toPart(),
+                sharedUnprotectedHeader = null,
+                recipientUnprotectedHeader = null,
+                payload = "plain".encodeToByteArray(),
+                additionalAuthenticatedData = null,
+            ),
+        ) {
+            observedProtectedHeader = it.protectedHeader
+            observedPayload = it.payload.decodeToString()
             JweEncryptor.EncryptionOutput(
                 iv = byteArrayOf(1),
                 cipherText = byteArrayOf(2),
@@ -299,7 +308,7 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         compact.authenticationTag shouldBe byteArrayOf(4)
     }
 
-    "flattened JWE builder passes protected and merged unprotected headers to encryptor" {
+    "flattened JWE builder passes protected and unprotected headers to encryptor" {
         val protectedHeader = JweHeader.Part(encryption = JweEncryption.A128GCM)
         val sharedUnprotectedHeader = JweHeader.Part(jsonWebKeyUrl = "https://example.test/keys.jwks")
         val recipientUnprotectedHeader = JweHeader.Part(
@@ -307,19 +316,23 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
             keyId = "recipient",
         )
         var observedProtectedHeader: JweHeader.Part? = null
-        var observedUnprotectedHeader: JweHeader.Part? = null
+        var observedSharedUnprotectedHeader: JweHeader.Part? = null
+        var observedRecipientUnprotectedHeader: JweHeader.Part? = null
 
         val flattened = JweFlattened(
-            protectedHeader = protectedHeader,
-            payload = "plain",
-            sharedUnprotectedHeader = sharedUnprotectedHeader,
-            recipientUnprotectedHeader = recipientUnprotectedHeader,
-            additionalAuthenticatedData = byteArrayOf(9),
-        ) { protectedHeaderPart, unprotectedHeaderPart, payload ->
-            observedProtectedHeader = protectedHeaderPart
-            observedUnprotectedHeader = unprotectedHeaderPart
-            payload shouldBe "plain"
-            JWE.EncryptionOutput(
+            encryptionInput = JweEncryptor.EncryptionInput(
+                protectedHeader = protectedHeader,
+                sharedUnprotectedHeader = sharedUnprotectedHeader,
+                recipientUnprotectedHeader = recipientUnprotectedHeader,
+                payload = "plain".encodeToByteArray(),
+                additionalAuthenticatedData = byteArrayOf(9),
+            ),
+        ) {
+            observedProtectedHeader = it.protectedHeader
+            observedSharedUnprotectedHeader = it.sharedUnprotectedHeader
+            observedRecipientUnprotectedHeader = it.recipientUnprotectedHeader
+            it.payload.decodeToString() shouldBe "plain"
+            JweEncryptor.EncryptionOutput(
                 iv = byteArrayOf(1),
                 cipherText = byteArrayOf(2),
                 encryptedKey = byteArrayOf(3),
@@ -328,11 +341,8 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         }
 
         observedProtectedHeader shouldBe protectedHeader
-        observedUnprotectedHeader shouldBe JweHeader.Part(
-            algorithm = JweAlgorithm.A128KW,
-            keyId = "recipient",
-            jsonWebKeyUrl = "https://example.test/keys.jwks",
-        )
+        observedSharedUnprotectedHeader shouldBe sharedUnprotectedHeader
+        observedRecipientUnprotectedHeader shouldBe recipientUnprotectedHeader
         flattened.jweHeader shouldBe JweHeader.fromParts(
             protectedHeader,
             sharedUnprotectedHeader,
@@ -345,44 +355,42 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         flattened.authenticationTag shouldBe byteArrayOf(4)
     }
 
-    "general JWE builder passes recipient-specific merged unprotected headers to encryptor" {
+    "general JWE builder passes recipient-specific unprotected headers to encryptor" {
         val protectedHeader = JweHeader.Part(encryption = JweEncryption.A128GCM)
         val sharedUnprotectedHeader = JweHeader.Part(jsonWebKeyUrl = "https://example.test/keys.jwks")
         val recipientUnprotectedHeaders = listOf(
             JweHeader.Part(algorithm = JweAlgorithm.A128KW, keyId = "first"),
             JweHeader.Part(algorithm = JweAlgorithm.A192KW, keyId = "second"),
         )
+        val observedSharedUnprotectedHeaders = mutableListOf<JweHeader.Part?>()
         val observedUnprotectedHeaders = mutableListOf<JweHeader.Part?>()
 
-        val general = JweGeneral(
-            protectedHeader = protectedHeader,
-            payload = "plain",
-            sharedUnprotectedHeader = sharedUnprotectedHeader,
-            recipientUnprotectedHeaders = recipientUnprotectedHeaders,
-        ) { protectedHeaderPart, unprotectedHeaderPart, payload ->
-            protectedHeaderPart shouldBe protectedHeader
-            payload shouldBe "plain"
-            observedUnprotectedHeaders += unprotectedHeaderPart
-            JWE.EncryptionOutput(
-                iv = byteArrayOf(1),
-                cipherText = byteArrayOf(2),
-                encryptedKey = byteArrayOf(unprotectedHeaderPart!!.keyId!!.length.toByte()),
-                authenticationTag = byteArrayOf(4),
-            )
+        val flattenedRecipients = recipientUnprotectedHeaders.map { recipientUnprotectedHeader ->
+            JweFlattened(
+                encryptionInput = JweEncryptor.EncryptionInput(
+                    protectedHeader = protectedHeader,
+                    sharedUnprotectedHeader = sharedUnprotectedHeader,
+                    recipientUnprotectedHeader = recipientUnprotectedHeader,
+                    payload = "plain".encodeToByteArray(),
+                    additionalAuthenticatedData = null,
+                ),
+            ) {
+                it.protectedHeader shouldBe protectedHeader
+                it.payload.decodeToString() shouldBe "plain"
+                observedSharedUnprotectedHeaders += it.sharedUnprotectedHeader
+                observedUnprotectedHeaders += it.recipientUnprotectedHeader
+                JweEncryptor.EncryptionOutput(
+                    iv = byteArrayOf(1),
+                    cipherText = byteArrayOf(2),
+                    encryptedKey = byteArrayOf(it.recipientUnprotectedHeader!!.keyId!!.length.toByte()),
+                    authenticationTag = byteArrayOf(4),
+                )
+            }
         }
+        val general = flattenedRecipients.toJweGeneral()
 
-        observedUnprotectedHeaders shouldBe listOf(
-            JweHeader.Part(
-                algorithm = JweAlgorithm.A128KW,
-                keyId = "first",
-                jsonWebKeyUrl = "https://example.test/keys.jwks",
-            ),
-            JweHeader.Part(
-                algorithm = JweAlgorithm.A192KW,
-                keyId = "second",
-                jsonWebKeyUrl = "https://example.test/keys.jwks",
-            ),
-        )
+        observedSharedUnprotectedHeaders shouldBe listOf(sharedUnprotectedHeader, sharedUnprotectedHeader)
+        observedUnprotectedHeaders shouldBe recipientUnprotectedHeaders
         general.recipientElements.map { it.encryptedKey } shouldBe listOf(
             byteArrayOf("first".length.toByte()),
             byteArrayOf("second".length.toByte()),
@@ -435,12 +443,12 @@ private fun flattenedJson(
 }
 
 private fun flattenedSample(
-    plainProtectedHeader: ByteArray = JweProtectedHeaderSerializer.encodeToByteArray(
+    plainProtectedHeader: ByteArray = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(
         JweHeader.Part(
             algorithm = JweAlgorithm.A128KW,
             encryption = JweEncryption.A128GCM,
         )
-    ),
+    )!!,
     sharedUnprotectedHeader: JweHeader.Part? = null,
     recipientUnprotectedHeader: JweHeader.Part? = null,
     encryptedKey: ByteArray? = byteArrayOf(2),
@@ -472,14 +480,9 @@ private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
     failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
 }
 
-private fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
-    isSuccess shouldBe false
-    shouldBeFailure().message.orEmpty().shouldContain("protected header must be absent")
-}
-
 private fun Result<*>.shouldBeRejectedEmptyJweMember(memberName: String) {
     isSuccess shouldBe false
-    shouldBeFailure().message.orEmpty().shouldContain("'$memberName' member must be absent")
+    shouldBeFailure().message.orEmpty().shouldContain("$memberName member must be absent")
 }
 
 private fun JsonElement.shouldNotContainKey(key: String) {

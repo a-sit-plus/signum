@@ -79,39 +79,41 @@ val JweJvmTest by testSuite {
         val protectedHeader = header.toPart()
 
         val compact = JweCompact(
-            protectedHeader = header,
-            payload = jwtBaseClaims,
-        ) { protectedHeaderPart, plainPayload ->
-            protectedHeaderPart shouldBe protectedHeader
-            plainPayload shouldBe jwtBaseClaims
-            encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
+            encryptionInput = JweEncryptor.EncryptionInput(
+                protectedHeader = protectedHeader,
+                sharedUnprotectedHeader = null,
+                recipientUnprotectedHeader = null,
+                payload = jwtBaseClaims.toPlaintext(),
+                additionalAuthenticatedData = null,
+            ),
+        ) {
+            it.protectedHeader shouldBe protectedHeader
+            it.payload shouldBe jwtBaseClaims.toPlaintext()
+            encryptWithNimbus(it.protectedHeader, it.payload, secretKey)
         }
 
         compact.jweHeader shouldBe header
         compact.decryptWithNimbus(secretKey) shouldBe jwtBaseClaims.toPlaintext()
 
         val flattened = JweFlattened(
-            protectedHeader = protectedHeader,
-            payload = jwtBaseClaims,
-        ) { protectedHeaderPart, unprotectedHeaderPart, plainPayload ->
-            protectedHeaderPart shouldBe protectedHeader
-            unprotectedHeaderPart shouldBe null
-            plainPayload shouldBe jwtBaseClaims
-            encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
+            encryptionInput = JweEncryptor.EncryptionInput(
+                protectedHeader = protectedHeader,
+                sharedUnprotectedHeader = null,
+                recipientUnprotectedHeader = null,
+                payload = jwtBaseClaims.toPlaintext(),
+                additionalAuthenticatedData = null,
+            ),
+        ) {
+            it.protectedHeader shouldBe protectedHeader
+            it.recipientUnprotectedHeader shouldBe null
+            it.payload shouldBe jwtBaseClaims.toPlaintext()
+            encryptWithNimbus(it.protectedHeader, it.payload, secretKey)
         }
 
         flattened.jweHeader shouldBe header
         flattened.toJweCompact().decryptWithNimbus(secretKey) shouldBe jwtBaseClaims.toPlaintext()
 
-        val general = JweGeneral(
-            protectedHeader = protectedHeader,
-            payload = jwtBaseClaims,
-        ) { protectedHeaderPart, unprotectedHeaderPart, plainPayload ->
-            protectedHeaderPart shouldBe protectedHeader
-            unprotectedHeaderPart shouldBe null
-            plainPayload shouldBe jwtBaseClaims
-            encryptWithNimbus(protectedHeaderPart, plainPayload, secretKey)
-        }
+        val general = JweGeneral(listOf(flattened))
 
         general.jweHeaders.single() shouldBe header
         general.toJweFlattened().single().toJweCompact().decryptWithNimbus(secretKey) shouldBe jwtBaseClaims.toPlaintext()
@@ -120,12 +122,12 @@ val JweJvmTest by testSuite {
 
 private fun encryptWithNimbus(
     protectedHeader: JweHeader.Part?,
-    payload: JwtBaseClaims,
+    payload: ByteArray,
     secretKey: SecretKey,
-): JWE.EncryptionOutput {
+): JweEncryptor.EncryptionOutput {
     val nimbusJwe = JWEObject(
         requireNotNull(protectedHeader).toNimbusHeader(),
-        Payload(payload.toPlaintext()),
+        Payload(payload),
     )
 
     nimbusJwe.encrypt(AESEncrypter(secretKey))
@@ -142,9 +144,9 @@ private fun JweCompact.decryptWithNimbus(secretKey: SecretKey): ByteArray {
 }
 
 private fun JweHeader.Part.toNimbusHeader(): JWEHeader =
-    JWEHeader.parse(Base64URL.encode(JweProtectedHeaderSerializer.encodeToByteArray(this)))
+    JWEHeader.parse(Base64URL.encode(JweProtectedHeaderSerializer.encodeToByteArrayOrNull(this)!!))
 
-private fun JWEObject.toEncryptionOutput(): JWE.EncryptionOutput = JWE.EncryptionOutput(
+private fun JWEObject.toEncryptionOutput(): JweEncryptor.EncryptionOutput = JweEncryptor.EncryptionOutput(
     iv = iv.decode(),
     cipherText = cipherText.decode(),
     encryptedKey = encryptedKey.decode(),

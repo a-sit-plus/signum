@@ -1,36 +1,36 @@
 package at.asitplus.signum.indispensable.josef
 
 
-fun interface JweEncryptor<P> {
-    suspend operator fun invoke(encryptionInput: EncryptionInput<P>): EncryptionOutput
+fun interface JweEncryptor {
+    suspend operator fun invoke(encryptionInput: EncryptionInput): EncryptionOutput
 
-    data class EncryptionInput<P>(
-        val protectedHeader: JweHeader.Part,
+    data class EncryptionInput(
+        val protectedHeader: JweHeader.Part?,
         val sharedUnprotectedHeader: JweHeader.Part?,
         val recipientUnprotectedHeader: JweHeader.Part?,
-        val payload: P,
+        val payload: ByteArray,
         val additionalAuthenticatedData: ByteArray?
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as EncryptionInput<*>
+            other as EncryptionInput
 
             if (protectedHeader != other.protectedHeader) return false
             if (sharedUnprotectedHeader != other.sharedUnprotectedHeader) return false
             if (recipientUnprotectedHeader != other.recipientUnprotectedHeader) return false
-            if (payload != other.payload) return false
+            if (!payload.contentEquals(other.payload)) return false
             if (!additionalAuthenticatedData.contentEquals(other.additionalAuthenticatedData)) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = protectedHeader.hashCode()
+            var result = protectedHeader?.hashCode() ?: 0
             result = 31 * result + (sharedUnprotectedHeader?.hashCode() ?: 0)
             result = 31 * result + (recipientUnprotectedHeader?.hashCode() ?: 0)
-            result = 31 * result + (payload?.hashCode() ?: 0)
+            result = 31 * result + payload.contentHashCode()
             result = 31 * result + (additionalAuthenticatedData?.contentHashCode() ?: 0)
             return result
         }

@@ -62,7 +62,7 @@ val JwsHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
+        exception.shouldBeFailure().message shouldBe "Collision"
     }
 
     "encoded protected header bytes can be merged with unprotected fields" {
@@ -98,7 +98,7 @@ val JwsHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
+        exception.shouldBeFailure().message shouldBe "Collision"
     }
 
     "flattened JWS accepts typed header parts" {
@@ -154,7 +154,7 @@ val JwsHeaderPartsTest by matrixSuite {
             .encodeToByteArray()
 
         encoded shouldBe expected
-        JwsProtectedHeaderSerializer.decodeFromByteArray(encoded) shouldBe protectedHeader
+        JwsProtectedHeaderSerializer.decodeFromByteArray(encoded!!) shouldBe protectedHeader
     }
 }
 

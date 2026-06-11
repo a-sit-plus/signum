@@ -33,7 +33,7 @@ val JwsSignedRegressionTest by matrixSuite {
             byteArrayOf(1, 2, 3, 4)
         }
 
-        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(header.toPart())!!
 
         compact.plainProtectedHeader shouldBe expectedProtectedHeader
         capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)

@@ -93,9 +93,9 @@ data class JweCompact internal constructor(
         /**
          * Build a compact JWE from components.
          */
-        suspend operator fun <P> invoke(
-            encryptionInput: JweEncryptor.EncryptionInput<P>,
-            encryptor: JweEncryptor<P>,
+        suspend operator fun invoke(
+            encryptionInput: JweEncryptor.EncryptionInput,
+            encryptor: JweEncryptor,
         ): JweCompact {
             require(encryptionInput.recipientUnprotectedHeader == null && encryptionInput.sharedUnprotectedHeader == null)
             val plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(encryptionInput.protectedHeader)

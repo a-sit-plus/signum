@@ -33,15 +33,21 @@ val JweTypedTest by testSuite {
     }
 
     "decrypted builds a typed wrapper and delegates string form to the encrypted JWE" {
+        val compactHeader = JweHeader(
+            algorithm = JweAlgorithm.A128KW,
+            encryption = JweEncryption.A128GCM,
+            keyId = "typed-compact",
+        )
         val compact = JweCompact(
-            protectedHeader = JweHeader(
-                algorithm = JweAlgorithm.A128KW,
-                encryption = JweEncryption.A128GCM,
-                keyId = "typed-compact",
+            encryptionInput = JweEncryptor.EncryptionInput(
+                protectedHeader = compactHeader.toPart(),
+                sharedUnprotectedHeader = null,
+                recipientUnprotectedHeader = null,
+                payload = jweTypedPayload.toPlaintext(),
+                additionalAuthenticatedData = null,
             ),
-            payload = jweTypedPayload,
-        ) { _, _ ->
-            JWE.EncryptionOutput(
+        ) {
+            JweEncryptor.EncryptionOutput(
                 iv = byteArrayOf(1),
                 cipherText = byteArrayOf(2),
                 encryptedKey = byteArrayOf(3),
@@ -78,17 +84,23 @@ val JweTypedTest by testSuite {
         ) {
             byteArrayOf(6, 7, 8, 9)
         }.jws
+        val encryptedJwtHeader = JweHeader(
+            algorithm = JweAlgorithm.A128KW,
+            encryption = JweEncryption.A128GCM,
+            contentType = "JWT",
+            keyId = "nested-jwe",
+        )
         val encryptedJwt = JweCompact(
-            protectedHeader = JweHeader(
-                algorithm = JweAlgorithm.A128KW,
-                encryption = JweEncryption.A128GCM,
-                contentType = "JWT",
-                keyId = "nested-jwe",
+            encryptionInput = JweEncryptor.EncryptionInput(
+                protectedHeader = encryptedJwtHeader.toPart(),
+                sharedUnprotectedHeader = null,
+                recipientUnprotectedHeader = null,
+                payload = joseCompliantSerializer.encodeToString(JWS.serializer(), signedJwt).encodeToByteArray(),
+                additionalAuthenticatedData = null,
             ),
-            payload = signedJwt,
-        ) { _, payload ->
-            payload shouldBe signedJwt
-            JWE.EncryptionOutput(
+        ) {
+            joseCompliantSerializer.decodeFromString<JWS>(it.payload.decodeToString()) shouldBe signedJwt
+            JweEncryptor.EncryptionOutput(
                 iv = byteArrayOf(1),
                 cipherText = byteArrayOf(2),
                 encryptedKey = byteArrayOf(3),
@@ -126,10 +138,12 @@ val JweTypedTest by testSuite {
 }
 
 private fun sampleFlattenedJwe(): JweFlattened = JweFlattened(
-    protectedHeader = JweHeader.Part(
-        algorithm = JweAlgorithm.A128KW,
-        encryption = JweEncryption.A128GCM,
-    ),
+    plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(
+        JweHeader.Part(
+            algorithm = JweAlgorithm.A128KW,
+            encryption = JweEncryption.A128GCM,
+        )
+    )!!,
     encryptedKey = byteArrayOf(2),
     initializationVector = byteArrayOf(3),
     ciphertext = byteArrayOf(4),

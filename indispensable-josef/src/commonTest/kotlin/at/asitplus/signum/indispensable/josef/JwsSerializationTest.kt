@@ -69,7 +69,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
             certificateUrl = "https://example.com/cert.pem",
         )
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
+        val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)!!
         var capturedSignatureInput: ByteArray? = null
 
         val flattened = JwsFlattened.invoke(
@@ -262,7 +262,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         paddedSignatureResult.shouldBeRejectedPaddedBase64Url()
     }
 
-    "flattened and general JSON JWS reject explicitly empty protected headers" {
+    "flattened and general JSON JWS allow explicitly empty protected headers" {
         val flattenedResult = runCatching {
             joseCompliantSerializer.decodeFromString<JwsFlattened>(
                 flattenedJson(
@@ -280,8 +280,16 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
             )
         }
 
-        flattenedResult.shouldBeRejectedEmptyProtectedHeader()
-        generalResult.shouldBeRejectedEmptyProtectedHeader()
+        flattenedResult.getOrThrow().let {
+            it.protectedHeader shouldBe JwsHeader.Part()
+            it.jwsHeader.algorithm shouldBe JwsAlgorithm.Signature.RS256
+            it.jwsHeader.keyId shouldBe "kid-1"
+        }
+        generalResult.getOrThrow().let {
+            it.protectedHeaders.single() shouldBe JwsHeader.Part()
+            it.jwsHeaders.single().algorithm shouldBe JwsAlgorithm.Signature.RS256
+            it.jwsHeaders.single().keyId shouldBe "kid-1"
+        }
     }
 
     "general to flattened to compact preserves each single-signature view" {
@@ -386,9 +394,9 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     }
 
     "signature and general equality include unprotected headers" {
-        val protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(
+        val protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(
             JwsHeader.Part(algorithm = JwsAlgorithm.Signature.RS256)
-        )
+        )!!
         val signatureA = SignatureElement(
             plainSignature = byteArrayOf(1),
             plainProtectedHeader = protectedHeader,
@@ -502,7 +510,7 @@ private fun flattenedSample(
     plainSignature: ByteArray,
     unprotectedHeader: JwsHeader.Part? = null,
 ): JwsFlattened = JwsFlattened(
-    plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
+    plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)!!,
     unprotectedHeader = unprotectedHeader,
     plainPayload = payload,
     plainSignature = plainSignature,
@@ -519,11 +527,6 @@ private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
     failure.message.orEmpty().shouldContain("Decoding failed")
     failure.cause shouldNotBe null
     failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
-}
-
-private fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
-    isSuccess shouldBe false
-    shouldBeFailure().message.orEmpty().shouldContain("must be absent when it would otherwise be empty")
 }
 
 private fun JsonElement.shouldNotContainKey(key: String) {
