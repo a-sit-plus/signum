@@ -2,10 +2,8 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
 import io.kotest.assertions.throwables.shouldThrow
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 import de.infix.testBalloon.framework.core.TestConfig
@@ -16,7 +14,7 @@ import de.infix.testBalloon.framework.core.testScope
 //this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR
 private fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
-val Asn1ParserTest by testSuite {
+val Asn1ParserTest by matrixSuite {
 
     "Multiple Elements" - {
         val seq = Asn1.Sequence {

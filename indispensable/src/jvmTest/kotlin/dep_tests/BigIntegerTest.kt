@@ -1,20 +1,15 @@
 package dep_tests
 
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
-val BigIntegerTest by testSuite {
+val BigIntegerTest by matrixSuite {
     "BigInteger" - {
         "equals & hashCode" {
             val v1 = BigInteger(42)
@@ -52,8 +47,8 @@ val BigIntegerTest by testSuite {
             v3 shouldBe v1
             v3.hashCode() shouldBe v1.hashCode()
         }
-        repeat(5000) {
-            "additive inverse" {
+        "additive inverse" {
+            repeat(5000) {
                 val modulus = BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE)
                 val creator = ModularBigInteger.creatorForModulo(modulus)
                 val first = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
@@ -69,8 +64,8 @@ val BigIntegerTest by testSuite {
                 -(-second) shouldBe second
             }
         }
-        repeat(500) {
-            "multiplicative inverse" {
+        "multiplicative inverse" {
+            repeat(500) {
                 val modulus = generateSequence {
                     BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE)
                 }.filter { it.toJavaBigInteger().isProbablePrime(128) }.first()

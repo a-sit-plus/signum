@@ -7,11 +7,7 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -33,22 +29,20 @@ private fun ECCurve.randomPoint(): ECPoint =
             this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean())
     }}.firstNotNullOf { it.getOrNull() }
 
-val ECMathTest  by testSuite {
+val ECMathTest  by matrixSuite {
     "Assumption: All implemented curves are prime order Weierstrass curves with a = -3" - {
-        withData(ECCurve.entries) { curve ->
+        data(ECCurve.entries) test { curve ->
             // if new curves are ever added that violate this assumption,
             //   the algorithms in ECMath must be revisited!
             // the current algorithm only works on this particular class of curve
             curve.a shouldBe curve.coordinateCreator.fromInt(-3)
         }
     }
-    "Addition: group axioms" - {
-        withDataSuites(ECCurve.entries) { curve ->
-            withData(nameFn = { (a, b, c) -> "(a=$a, b=$b, c=$c)" },
-                generateSequence {
+    compact("Addition: group axioms") - {
+        data(ECCurve.entries) - { curve ->
+            data(generateSequence {
                     Triple(curve.randomPoint(), curve.randomPoint(), curve.randomPoint())
-                }.take(50)
-            ) { (a, b, c) ->
+                }.take(50), nameFn = { (a, b, c) -> "(a=$a, b=$b, c=$c)" }) test { (a, b, c) ->
                 a + b shouldBe b + a
                 (a + b) + c shouldBe a + (b + c)
                 a + (-a) shouldBe curve.IDENTITY
@@ -58,13 +52,11 @@ val ECMathTest  by testSuite {
             }
         }
     }
-    "Multiplication: axioms" - {
-        withDataSuites(ECCurve.entries) { curve ->
-            withData(nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" },
-                generateSequence {
+    compact("Multiplication: axioms") - {
+        data(ECCurve.entries) - { curve ->
+            data(generateSequence {
                     Quadruple(curve.randomScalar(), curve.randomScalar(), curve.randomPoint(), curve.randomPoint())
-                }.take(10)
-            ) { (a, b, x, y) ->
+                }.take(10), nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" }) test { (a, b, x, y) ->
                 0 * x shouldBe curve.IDENTITY
                 a * (x + y) shouldBe (a * x) + (a * y)
                 (a * b) * x shouldBe a * (b * x)
@@ -73,9 +65,8 @@ val ECMathTest  by testSuite {
         }
     }
     /* from http://point-at-infinity.org/ecc/nisttv */
-    "Multiplication: PaI test suite" - {
-        withDataSuites(nameFn = { (curve, _) -> curve.name },
-            sequence {
+    compact("Multiplication: PaI test suite") - {
+        data(sequence {
                 yield(Pair(ECCurve.SECP_256_R_1, """
                     k = 1
                     x = 6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
@@ -706,27 +697,25 @@ val ECMathTest  by testSuite {
                     x = 00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66
                     y = 00E7C6D6958765C43FFBA375A04BD382E426670ABBB6A864BB97E85042E8D8C199D368118D66A10BD9BF3AAF46FEC052F89ECAC38F795D8D3DBF77416B89602E99AF
                 """.trimIndent()))
-        }) { (curve, testInfo) ->
+        }, nameFn = { (curve, _) -> curve.name }) - { (curve, testInfo) ->
             val pattern = Regex("k = ([0-9]+)\\s+x = ([0-9A-F]+)\\s+y = ([0-9A-F]+)")
-            withData(nameFn = { (k, _, _) -> "k = $k" },
-                pattern.findAll(testInfo).map {
+            data(pattern.findAll(testInfo).map {
                     Triple(
                         BigInteger.parseString(it.groupValues[1], 10),
                         BigInteger.parseString(it.groupValues[2], 16),
                         BigInteger.parseString(it.groupValues[3], 16)
                     )
-                }
-            ) { (k, x, y) ->
+                }, nameFn = { (k, _, _) -> "k = $k" }) test { (k, x, y) ->
                 val ourResult = curve.generator.times(k).normalize()
                 ourResult.x.residue shouldBe x
                 ourResult.y.residue shouldBe y
             }
         }
     }
-    "Multiplication: BouncyCastle ECDSA key pairs" - {
+    compact("Multiplication: BouncyCastle ECDSA key pairs") - {
         Security.addProvider(BouncyCastleProvider())
-        withDataSuites(ECCurve.entries) { curve ->
-            withData(generateSequence {
+        data(ECCurve.entries) - { curve ->
+            data(generateSequence {
                 val keyPair = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(ECNamedCurveTable.getParameterSpec(curve.oid.toString()))
                 }.genKeyPair()
@@ -735,26 +724,23 @@ val ECMathTest  by testSuite {
                     ECPoint.fromUncompressed(curve, it.affineX.toByteArray(), it.affineY.toByteArray())
                 }
                 Pair(s, w)
-            }.take(10)) { (s, w) ->
+            }.take(10)) test { (s, w) ->
                 (s * curve.generator) shouldBe w
             }
         }
     }
-    "Multiplication: Strauss-Shamir trick" - {
-        withDataSuites(ECCurve.entries) { curve ->
-            withData(nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" },
-                generateSequence {
+    compact("Multiplication: Strauss-Shamir trick") - {
+        data(ECCurve.entries) - { curve ->
+            data(generateSequence {
                     Quadruple(curve.randomScalar(),curve.randomScalar(),curve.randomPoint(),curve.randomPoint())
-                }.take(10)
-            ) { (a, b, x, y) ->
+                }.take(10), nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" }) test { (a, b, x, y) ->
                 straussShamir(a.residue,x,b.residue,y).tryNormalize() shouldBe ((a*x)+(b*y)).tryNormalize()
             }
         }
     }
-    "Multiplication: Montgomery ladder" - {
-        withDataSuites(ECCurve.entries) { curve ->
-            withData(generateSequence { Pair(curve.randomScalar(), curve.randomPoint())}.take(10))
-            { (k,P) ->
+    compact("Multiplication: Montgomery ladder") - {
+        data(ECCurve.entries) - { curve ->
+            data(generateSequence { Pair(curve.randomScalar(), curve.randomPoint())}.take(10)) test { (k,P) ->
                 montgomeryMul(k.residue,P) shouldBe (k*P)
             }
         }

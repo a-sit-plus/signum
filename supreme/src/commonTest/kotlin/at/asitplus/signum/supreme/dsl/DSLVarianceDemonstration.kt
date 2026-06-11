@@ -1,13 +1,7 @@
 package at.asitplus.signum.supreme.dsl
 
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.testScope
@@ -38,7 +32,7 @@ private class Settings: DSL.Data() {
     }
 }
 
-val DSLVarianceDemonstration  by testSuite {
+val DSLVarianceDemonstration  by matrixSuite {
     "\uD83D\uDE0A" {
 
         doWithConfiguration {

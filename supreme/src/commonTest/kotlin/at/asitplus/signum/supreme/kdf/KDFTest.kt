@@ -7,16 +7,13 @@ import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.core.testScope
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.TestConfig
 
-val KDFTest  by testSuite {
+val KDFTest  by matrixSuite {
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(
@@ -33,7 +30,7 @@ val KDFTest  by testSuite {
                     check(L == this.OKM.size)
                 }
             }
-            withData(nameFn = TestInfo::Comment, sequence {
+            data(sequence {
                 yield(
                     TestInfo(
                         "Basic test case with SHA-256",
@@ -134,7 +131,7 @@ val KDFTest  by testSuite {
                                 "          673a081d70cce7acfc48"
                     )
                 )
-            }) { t ->
+            }, nameFn = { it.Comment }) test { t ->
                 val hkdf = HKDF(t.Hash)
                 val prk = hkdf.extractStep(t.salt, t.IKM).getOrThrow()
                 prk shouldBe t.PRK
@@ -145,7 +142,7 @@ val KDFTest  by testSuite {
     }
     "RFC2898 PBKDF2" - {
         "PBKDF2-HMAC-SHA-1" - {
-            withData(nameFn = { "RFC6070: \"${it.d}\"" }, sequence {
+            data(sequence {
                 yield(
                     Quadruple(
                         "password", "salt", 1, "" +
@@ -194,7 +191,7 @@ val KDFTest  by testSuite {
                                 "            cc 37 d7 f0 34 25 e0 c3"
                     )
                 )
-            }) { (P, S, c, ref) ->
+            }, nameFn = { "RFC6070: \"${it.d}\"" }) test { (P, S, c, ref) ->
                 PBKDF2.HMAC_SHA1(c)
                     .deriveKey(ikm = a(P), salt = a(S), derivedKeyLength = b(ref).size.bytes).getOrThrow() shouldBe b(
                     ref

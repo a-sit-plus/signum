@@ -4,23 +4,20 @@ package at.asitplus.signum.supreme.mac
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.supreme.b
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val MACTest  by testSuite {
+val MACTest  by matrixSuite {
     "RFC4231" - {
         class I(val comment: String, key: String, data: String,
                 SHA224: String, SHA256: String, SHA384: String, SHA512: String) {
             val k = b(key); val d = b(data); val ref224 = b(SHA224);
             val ref256 = b(SHA256); val ref384 = b(SHA384); val ref512 = b(SHA512)
         }
-        withData(nameFn=I::comment, sequence {
+        data(sequence {
             yield(I("<base case>",
                 key="0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
                 data="4869205468657265",
@@ -83,7 +80,7 @@ val MACTest  by testSuite {
                         "a678cc31e799176d3860e6110c46523e",
                 SHA512="e37b6a775dc87dbaa4dfa9f96e5e3ffddebd71f8867289865df5a32d20cdc944" +
                         "b6022cac3c4982b10d5eeb55c3e4de15134676fb6de0446065c97440fa8c6a58"))
-        }) { info ->
+        }, nameFn = { it.comment }) test { info ->
             check(info.ref224.size == 28)
             check(info.ref256.size == 32)
             check(info.ref384.size == 48)

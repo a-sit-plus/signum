@@ -2,15 +2,13 @@ package io.kotest.provided.at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrow
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val AdversarialData by testSuite {
+val AdversarialData by matrixSuite {
     "Overlong length" - {
         "OCTET STRING" {
             val nineBytesLength =

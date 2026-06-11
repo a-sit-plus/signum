@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.minus
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
@@ -15,9 +13,9 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ByteArraySerializer
 
-val CoseEqualsTest by testSuite {
-    "equals with byte array" -  {
-        checkAll(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) { bytes ->
+val CoseEqualsTest by matrixSuite {
+    compact("equals with byte array") -  {
+        property(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) test { bytes ->
             val bytesSigned1 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
@@ -74,8 +72,8 @@ val CoseEqualsTest by testSuite {
         }
     }
 
-    "equals with data class" - {
-        checkAll(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) { bytes ->
+    compact("equals with data class") - {
+        property(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) test { bytes ->
             val payload = DataClass(content = bytes.encodeToString(Base16Strict))
             val bytesSigned1 = CoseSigned.create(
                 protectedHeader = CoseHeader(),

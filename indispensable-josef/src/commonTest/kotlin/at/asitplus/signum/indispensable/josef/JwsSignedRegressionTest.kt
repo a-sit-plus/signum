@@ -4,8 +4,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
@@ -13,7 +12,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-val JwsSignedRegressionTest by testSuite {
+val JwsSignedRegressionTest by matrixSuite {
     "JwsCompact.invoke signs the protected-header bytes derived from JwsHeader.toPart" {
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,

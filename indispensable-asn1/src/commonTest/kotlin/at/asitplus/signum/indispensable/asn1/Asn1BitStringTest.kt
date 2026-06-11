@@ -1,14 +1,13 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val Asn1BitStringTest by testSuite {
+val Asn1BitStringTest by matrixSuite {
 
     val bitSet1 = BitSet.fromBitString("011011100101110111")
     val bitSet2 = BitSet.fromBitString("011011100101110111")

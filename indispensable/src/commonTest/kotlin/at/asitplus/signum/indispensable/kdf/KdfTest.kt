@@ -2,20 +2,18 @@ package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 
-import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestConfig
 import de.infix.testBalloon.framework.core.testScope
-import de.infix.testBalloon.framework.core.testSuite
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlin.time.Duration.Companion.minutes
 
-val KdfTest by testSuite {
+val KdfTest by matrixSuite {
    
-    "Invoke Overrides"  {
+    compact("Invoke Overrides") {} -  {
         //withData is not working in all targets
-        (List(10000) { it+1 }).forEach {
+        data(List(10000) { it+1 }) test {
             PBKDF2.HMAC_SHA1.WithIterations(it) shouldBe PBKDF2.HMAC_SHA1(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA1 }
             PBKDF2.HMAC_SHA256.WithIterations(it) shouldBe PBKDF2.HMAC_SHA256(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA256 }
             PBKDF2.HMAC_SHA384.WithIterations(it) shouldBe PBKDF2.HMAC_SHA384(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA384 }

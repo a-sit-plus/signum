@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
@@ -15,28 +13,28 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 
-val ConversionTest by testSuite {
+val ConversionTest by matrixSuite {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
-            withData(JwsAlgorithm.entries) {
+            data(JwsAlgorithm.entries) test {
                 it.algorithm.toJwsAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized SignatureAlgorithm" - {
-            withData(JwsAlgorithm.entries) {
+            data(JwsAlgorithm.entries) test {
                 it.toJwsAlgorithm() shouldSucceedWith it
             }
         }
     }
     "JWS -> X509 -> JWS is stable" - {
-        withData(JwsAlgorithm.Signature.entries) {
+        data(JwsAlgorithm.Signature.entries) test {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 x509.toJwsAlgorithm() shouldSucceedWith it
             }
         }
     }
     "JWE (symmetric) -> EncryptionAlgorithm -> JWE is stable" - {
-        withData(JweAlgorithm.Symmetric.entries) {
+        data(JweAlgorithm.Symmetric.entries) test {
             it.algorithm.toJweKwAlgorithm() shouldSucceedWith it
         }
     }

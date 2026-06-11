@@ -1,10 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.pki.getContentSigner
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DLSequence
@@ -29,19 +26,20 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val SignatureCodecTest  by testSuite {
+val SignatureCodecTest  by matrixSuite {
 
-    "EC" - {
+    Security.addProvider(BouncyCastleProvider())
+    compact("EC") - {
         val curve = "secp256r1"
         val digest = "SHA256"
         val data = Random.nextBytes(256)
 
         val preGen = List<KeyPair>(500) {
-            KeyPairGenerator.getInstance("EC").also {
+            KeyPairGenerator.getInstance("EC", "SunEC" /*to enforce X.509-ompliant generation*/).also {
                 it.initialize(ECGenParameterSpec(curve))
             }.generateKeyPair()
         }
-        withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
             val sig = Signature.getInstance("${digest}withECDSA").run {
                 initSign(keys.private)
                 update(data)
@@ -63,13 +61,12 @@ val SignatureCodecTest  by testSuite {
         }
     }
 
-    "RSA" - {
-        Security.addProvider(BouncyCastleProvider())
+    compact("RSA") - {
 
         val digest = ("SHA256")
 
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.generateKeyPair() }
-        withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
                 initSign(keys.private)

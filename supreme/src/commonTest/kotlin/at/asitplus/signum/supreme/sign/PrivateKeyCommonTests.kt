@@ -5,14 +5,12 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
 @OptIn(SecretExposure::class)
-val PrivateKeyCommonTests  by testSuite {
+val PrivateKeyCommonTests  by matrixSuite {
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----

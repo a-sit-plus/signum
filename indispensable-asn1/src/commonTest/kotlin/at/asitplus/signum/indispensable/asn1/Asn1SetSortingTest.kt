@@ -1,10 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.testballoon.checkAll
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -12,7 +9,7 @@ import io.kotest.property.arbitrary.arbitrary
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
-val Asn1SetSortingTest by testSuite {
+val Asn1SetSortingTest by matrixSuite {
     "SET sorts children lexicographically by DER bytes" {
         val larger = Asn1Primitive(Asn1Element.Tag.OCTET_STRING, byteArrayOf(0x01))
         val smaller = Asn1Primitive(Asn1Element.Tag.OCTET_STRING, byteArrayOf(0x00))
@@ -33,9 +30,9 @@ val Asn1SetSortingTest by testSuite {
         setOf.derEncoded.toHexString() shouldBe "3106040100040101"
     }
 
-    "Property checks" - {
+    compact("Property checks"){concurrency= CompactConcurrency.Shared(64) } - {
         "SET sorts OCTET STRING payloads like independent DER ordering baseline" - {
-            checkAll(iterations = 750, randomOctetStringPayloadLists()) { payloads ->
+            property(randomOctetStringPayloadLists(), iterations = 750) test { payloads ->
                 val asn1Set = Asn1Set(payloads.map { payload ->
                     Asn1Primitive(Asn1Element.Tag.OCTET_STRING, payload)
                 })
@@ -51,7 +48,7 @@ val Asn1SetSortingTest by testSuite {
         }
 
         "SET OF sorts OCTET STRING payloads like independent DER ordering baseline" - {
-            checkAll(iterations = 750, randomOctetStringPayloadLists()) { payloads ->
+            property(randomOctetStringPayloadLists(), iterations = 750) test { payloads ->
                 val asn1Set = Asn1SetOf(payloads.map { payload ->
                     Asn1Primitive(Asn1Element.Tag.OCTET_STRING, payload)
                 })
@@ -67,7 +64,7 @@ val Asn1SetSortingTest by testSuite {
         }
 
         "SET encoding is permutation-invariant for identical OCTET STRING multiset" - {
-            checkAll(iterations = 400, randomOctetStringPayloadLists()) { payloads ->
+            property(randomOctetStringPayloadLists(), iterations = 400) test { payloads ->
                 val forward = Asn1Set(payloads.map { Asn1Primitive(Asn1Element.Tag.OCTET_STRING, it) })
                 val reversed = Asn1Set(payloads.asReversed().map { Asn1Primitive(Asn1Element.Tag.OCTET_STRING, it) })
 
@@ -76,7 +73,7 @@ val Asn1SetSortingTest by testSuite {
         }
 
         "SET of random mixed nested elements is strictly DER-sorted" - {
-            checkAll(iterations = 500, randomAsn1ElementLists(maxDepth = 3)) { generated ->
+            property(randomAsn1ElementLists(maxDepth = 3), iterations = 500) test { generated ->
                 val deduplicated = generated.distinctBy { it.derEncoded.toHexString() }
                 val set = Asn1Set(deduplicated)
                 val sortedChildrenDer = set.children.map { it.derEncoded }

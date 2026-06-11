@@ -3,17 +3,14 @@ package at.asitplus.signum.supreme.agree
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val KeyAgreementTest by testSuite {
+val KeyAgreementTest by matrixSuite {
 
     "000 Key Agreement Simple Equality Test" {
         val self = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
@@ -40,11 +37,7 @@ val KeyAgreementTest by testSuite {
         repeat(100) {
             val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
 
-            withData(
-                ECCurve.SECP_384_R_1 to false,
-                ECCurve.SECP_521_R_1 to false,
-                ECCurve.SECP_256_R_1 to true
-            ) { (crv, success) ->
+            listOf(ECCurve.SECP_384_R_1 to false, ECCurve.SECP_521_R_1 to false, ECCurve.SECP_256_R_1 to true).asData() test { (crv, success) ->
                 val other = KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
                 other.keyAgreement(base.publicValue).isSuccess shouldBe success
                 base.keyAgreement(other.publicValue).isSuccess shouldBe success
