@@ -1,6 +1,10 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -21,6 +25,22 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 @Serializable(with = JWE.JweSerializer::class)
 sealed class JWE : JsonSecured {
+
+    suspend inline fun <reified P> getPayload(
+        noinline decryptor: decryptorFun,
+    ): KmmResult<P> = catching {
+        joseCompliantSerializer.decodeFromString<P>(decryptor(this).decodeToString())
+    }
+
+    inline fun <reified A> getAdditionalAuthenticatedData(): KmmResult<A?> = catching {
+        when (this) {
+            is JweCompact -> null
+            is JweGeneral -> additionalAuthenticatedData
+            is JweFlattened -> additionalAuthenticatedData
+        }?.decodeToString()?.let {
+            joseCompliantSerializer.decodeFromString<A>(it)
+        }
+    }
 
     object SerialNames {
         const val PROTECTED = "protected"

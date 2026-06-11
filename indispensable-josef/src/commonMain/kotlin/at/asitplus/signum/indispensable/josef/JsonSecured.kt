@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.KmmResult
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -82,11 +83,8 @@ sealed interface JsonSecured {
     }
 }
 
-suspend inline fun <reified P> JsonSecured.getPayload(noinline decryptor: decryptorFun? = null) {
+suspend inline fun <reified P> JsonSecured.getPayload(noinline decryptor: decryptorFun? = null): KmmResult<P> =
     when (this) {
-        is JwsCompact -> this.typed<P, JwsCompact>()
-        is JwsFlattened -> this.typed<P, JwsFlattened>()
-        is JwsGeneral -> this.typed<P, JwsGeneral>()
-        is JWE -> JweTyped.getPayload<P>(decryptor ?: throw Exception("Missing decryptor"), this).getOrThrow()
+        is JWS -> getPayload<P>()
+        is JWE -> decryptor?.let { getPayload<P>(it) } ?: KmmResult(Exception("No Decryptor provided"))
     }
-}
