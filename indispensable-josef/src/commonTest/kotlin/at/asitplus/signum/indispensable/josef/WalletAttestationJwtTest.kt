@@ -1,7 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.testballoon.matrix.*
-import io.kotest.matchers.nulls.shouldNotBeNull
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jwtpayload.WalletAttestationPayload
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe

@@ -11,8 +11,7 @@ import at.asitplus.signum.indispensable.josef.jwtpayload.KeyAttestationPayload
 import at.asitplus.signum.indispensable.josef.jwtpayload.KeyStorageStatus
 import at.asitplus.signum.indispensable.josef.jwtpayload.WalletAttestationClaims
 import at.asitplus.signum.indispensable.josef.jwtpayload.WalletAttestationPayload
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -22,7 +21,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlin.time.Instant
 
-val JwtPayloadConstructorTest by testSuite {
+val JwtPayloadConstructorTest by matrixSuite {
     "client attestation constructor combines base, confirmation, and misc claims" {
         val payload = ClientAttestationPayload(jwtBaseClaims, confirmationClaim, miscClaims)
         val encoded = payload.encodedJsonObject()
