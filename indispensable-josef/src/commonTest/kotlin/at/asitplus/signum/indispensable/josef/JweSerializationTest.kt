@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestCompartment
 import de.infix.testBalloon.framework.core.testSuite
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -220,12 +221,12 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
     }
 
     "compact conversion rejects JSON-only JWE members" {
-        val protectedHeader = JweProtectedHeaderSerializer.encodeToByteArray(
+        val protectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(
             JweHeader.Part(
                 algorithm = JweAlgorithm.A128KW,
                 encryption = JweEncryption.A128GCM,
             )
-        )
+        ).shouldNotBeNull()
         val withSharedHeader = flattenedSample(
             plainProtectedHeader = protectedHeader,
             sharedUnprotectedHeader = JweHeader.Part(keyId = "shared"),
@@ -249,12 +250,12 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
 
     "general JSON JWE allows empty recipient object when headers are shared" {
         val general = JweGeneral(
-            plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArray(
+            plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(
                 JweHeader.Part(
                     algorithm = JweAlgorithm.A128KW,
                     encryption = JweEncryption.A128GCM,
                 )
-            ),
+            ).shouldNotBeNull(),
             recipientElements = listOf(RecipientElement()),
             ciphertext = byteArrayOf(1),
         )
@@ -281,7 +282,7 @@ val JweSerializerTest by testSuite(compartment = { TestCompartment.Sequential })
         ) { protectedHeader, payload ->
             observedProtectedHeader = protectedHeader
             observedPayload = payload
-            JWE.EncryptionOutput(
+            JweEncryptor.EncryptionOutput(
                 iv = byteArrayOf(1),
                 cipherText = byteArrayOf(2),
                 encryptedKey = byteArrayOf(3),

@@ -80,7 +80,7 @@ private val jwsCompactSerialization = listOf(
 ).joinToString(".")
 
 private fun jwsFlattenedSample() = JwsFlattened(
-    plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(
+    plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(
         JwsHeader.Part(algorithm = JwsAlgorithm.Signature.RS256)
     ),
     unprotectedHeader = null,
@@ -89,7 +89,7 @@ private fun jwsFlattenedSample() = JwsFlattened(
 )
 
 private fun jweFlattenedSample() = JweFlattened(
-    plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArray(
+    plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArrayOrNull(
         JweHeader.Part(
             algorithm = JweAlgorithm.A128KW,
             encryption = JweEncryption.A128GCM,

@@ -6,11 +6,11 @@ import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.JweHeader.Part
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.io.xor
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlin.time.Instant
 
@@ -384,10 +384,6 @@ data class JweHeader(
         }
 
         companion object {
-            private infix fun <P> P?.xor(other: P?): P? = if (this != null && other != null) {
-                throw Exception("Collision")
-            } else this ?: other
-
             fun strictUnion(first: Part?, second: Part?): Part? {
                 if (first == null) return second
                 if (second == null) return first
@@ -567,7 +563,7 @@ data class JweHeader(
 /**
  * Converts the effective header into a single [Part].
  */
-fun JweHeader.toPart(): JweHeader.Part = JweHeader.Part(
+fun JweHeader.toPart(): Part = Part(
     algorithm = algorithm,
     encryption = encryption,
     keyId = keyId,
