@@ -4,15 +4,13 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withFixtureGenerator
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
-val JsonWebKeyTest by testSuite {
+val JsonWebKeyTest by matrixSuite {
 
     class Context {
         val curve: ECCurve = ECCurve.SECP_256_R_1
@@ -24,46 +22,46 @@ val JsonWebKeyTest by testSuite {
         val rsaKey: JsonWebKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
     }
 
-    withFixtureGenerator(::Context) - {
+    fixture(::Context) - {
 
 
-        ("Thumbprint for minimal EC Key") { it ->
+        "Thumbprint for minimal EC Key" { it ->
             val newKey = JsonWebKey(type = JwkType.EC, curve = it.curve, x = it.x, y = it.y)
 
             newKey.jwkThumbprint shouldBe it.ecKey.jwkThumbprint
         }
 
-        ("Thumbprint for EC Key with additional properties") { it ->
+        "Thumbprint for EC Key with additional properties" { it ->
             val newKey = JsonWebKey(type = JwkType.EC, curve = it.curve, x = it.x, y = it.y, publicKeyUse = "foo")
 
             newKey.jwkThumbprint shouldBe it.ecKey.jwkThumbprint
         }
 
-        ("Thumbprint for EC Key with keyId") { it ->
+        "Thumbprint for EC Key with keyId" { it ->
             val newKey = JsonWebKey(type = JwkType.EC, curve = it.curve, x = it.x, y = it.y, keyId = "foo")
 
             newKey.jwkThumbprint shouldBe it.ecKey.jwkThumbprint
         }
 
-        ("Thumbprint for minimal RSA Key") { it ->
+        "Thumbprint for minimal RSA Key" { it ->
             val newKey = JsonWebKey(type = JwkType.RSA, n = it.n, e = it.e)
 
             newKey.jwkThumbprint shouldBe it.rsaKey.jwkThumbprint
         }
 
-        ("Thumbprint for RSA Key with additional properties") { it ->
+        "Thumbprint for RSA Key with additional properties" { it ->
             val newKey = JsonWebKey(type = JwkType.RSA, n = it.n, e = it.e, algorithm = JwsAlgorithm.Signature.RS256)
 
             newKey.jwkThumbprint shouldBe it.rsaKey.jwkThumbprint
         }
 
-        ("Thumbprint for RSA Key with keyId") { it ->
+        "Thumbprint for RSA Key with keyId" { it ->
             val newKey = JsonWebKey(type = JwkType.RSA, n = it.n, e = it.e, keyId = "foo")
 
             newKey.jwkThumbprint shouldBe it.rsaKey.jwkThumbprint
         }
 
-        ("Thumbprint for fixed Key from RFC 7638") {
+        "Thumbprint for fixed Key from RFC 7638" {
             val parsedN = ("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2" +
                     "aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCi" +
                     "FV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65Y" +
@@ -76,7 +74,7 @@ val JsonWebKeyTest by testSuite {
             key.jwkThumbprint shouldBe "urn:ietf:params:oauth:jwk-thumbprint:sha256:NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"
         }
 
-        ("RSA Key should properly encode n and e (RFC 7518 sample)") {
+        "RSA Key should properly encode n and e (RFC 7518 sample)" {
             val key = CryptoPublicKey.RSA(
                 n = Asn1Integer.fromUnsignedByteArray(("80".repeat(256)).hexToByteArray()), // high bit is set
                 e = Asn1Integer(65537u) // explicit example from RFC7518 6.3.1.2

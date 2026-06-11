@@ -8,10 +8,7 @@ import at.asitplus.signum.supreme.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.json.JsonElement
@@ -20,13 +17,13 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val JwsSignedTest  by testSuite {
+val JwsSignedTest  by matrixSuite {
 
-    "JWS can be parsed and verified" - {
+    compact("JWS can be parsed and verified") - {
         val testvec = javaClass.classLoader.getResourceAsStream("JwsTestVectors.txt")?.reader()?.readLines()
             ?: throw Exception("TestVectors not found")
 
-        withData(testvec) { input ->
+        data(testvec) test { input ->
             val parsed = JwsSigned.deserialize<JsonElement>(JsonElement.serializer(), input).getOrThrow()
 
             val publicKey = parsed.header.publicKey.shouldNotBeNull()

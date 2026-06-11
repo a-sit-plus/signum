@@ -1,8 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -20,7 +18,7 @@ import java.util.*
 
 private val certificateFactory = CertificateFactory.getInstance("X.509")
 
-val CustomParserTests by testSuite {
+val CustomParserTests by matrixSuite {
     val chain: Map<String, JsonObject> by lazy {
         val json = Json { ignoreUnknownKeys = true }
         val classLoader = Thread.currentThread().contextClassLoader
@@ -64,17 +62,19 @@ val CustomParserTests by testSuite {
         chain.forEach { (_, json) -> json.isNotEmpty() shouldBe true }
     }
 
-    withData(chain) {
-        val chain = it.getValue("attestationProof").jsonArray.map {
-            Base64.getMimeDecoder().decode(it.jsonPrimitive.content.replace("\n", ""))
-        }
-        val attestationCertChain =
-            chain.map { certificateFactory.generateCertificate(ByteArrayInputStream(it)) as X509Certificate }
+    compact("Attestation proof parsing") - {
+        data(chain, nameFn = { (name, _) -> name }) test { (_, it) ->
+            val chain = it.getValue("attestationProof").jsonArray.map {
+                Base64.getMimeDecoder().decode(it.jsonPrimitive.content.replace("\n", ""))
+            }
+            val attestationCertChain =
+                chain.map { certificateFactory.generateCertificate(ByteArrayInputStream(it)) as X509Certificate }
 
-        attestationCertChain.forEachIndexed { index, certificate ->
+            attestationCertChain.forEachIndexed { index, certificate ->
 
-            withClue(index.toString()) {
-                certificate.toKmpCertificate().getOrThrow().encodeToDer() shouldBe certificate.encoded
+                withClue(index.toString()) {
+                    certificate.toKmpCertificate().getOrThrow().encodeToDer() shouldBe certificate.encoded
+                }
             }
         }
     }

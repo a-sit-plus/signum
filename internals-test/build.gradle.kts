@@ -23,6 +23,7 @@ kotlin {
                 implementation(project(":indispensable-asn1"))
                 implementation(libs.kotlinx.io.core)
                 implementation("de.infix.testBalloon:testBalloon-framework-core:${libs.versions.testballoon.get()}")
+                implementation(tbAddons("matrix"))
             }
         }
         jvmMain.dependencies {

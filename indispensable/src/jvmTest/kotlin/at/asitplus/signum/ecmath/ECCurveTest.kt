@@ -2,8 +2,7 @@ package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
 import com.ionspin.kotlin.bignum.integer.toBigInteger
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
@@ -13,7 +12,7 @@ import de.infix.testBalloon.framework.core.testScope
  * Verifies the hard coded field modulus versus its functional definition
  * See https://www.secg.org/sec2-v2.pdf chapter 2
  */
-val ECCurveTest  by testSuite {
+val ECCurveTest  by matrixSuite {
     "SECP256 modulus correct" {
         ECCurve.SECP_256_R_1.modulus shouldBe
                 (2.toBigInteger().shl(223)

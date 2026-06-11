@@ -5,10 +5,7 @@ import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
@@ -22,7 +19,7 @@ import java.nio.file.Path
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
-val JKSProviderTest  by testSuite {
+val JKSProviderTest  by matrixSuite {
     "Ephemeral" {
         val ks = JKSProvider.Ephemeral().getOrThrow()
         val alias = "Elfenbeinschloss"
@@ -104,7 +101,7 @@ val JKSProviderTest  by testSuite {
         }
     }
     "Certificate encoding" - {
-        withData(TestSuites.ALL, compact = true) { test ->
+        data(TestSuites.ALL) test { test ->
             val alias = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(RandomSource.default()).value
             val ks = JKSProvider().getOrThrow()
             val signer = ks.createSigningKey(alias) {
@@ -118,7 +115,7 @@ val JKSProviderTest  by testSuite {
             val signature = try {
                 signer.sign(data).signature
             } catch (x: UnsupportedOperationException) {
-                return@withData
+                return@test
             }
             CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
             when (signer.signatureAlgorithm) {

@@ -2,8 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.typed
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -16,7 +15,7 @@ val payload = JsonObject(
     )
 )
 
-val JwsTypedTest by testSuite {
+val JwsTypedTest by matrixSuite {
     "compact typed wrappers can be built from payloads and reopened from compact JWS" {
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,

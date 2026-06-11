@@ -6,10 +6,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.json.Json
@@ -17,7 +14,7 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-val ECPointTest  by testSuite {
+val ECPointTest  by matrixSuite {
     "Equals & hashCode" {
         val p1 = ECCurve.SECP_256_R_1.generator
         p1 shouldBe p1
@@ -53,7 +50,7 @@ val ECPointTest  by testSuite {
         p3.hashCode() shouldNotBe ECCurve.SECP_384_R_1.IDENTITY.hashCode()
     }
     "Illegal points are rejected" - {
-        withData(ECCurve.entries) { curve ->
+        data(ECCurve.entries) test { curve ->
 
             val g = curve.generator
             shouldNotThrowAny { ECPoint.fromXY(curve, g.x, g.y) }
