@@ -46,7 +46,7 @@ private object KeychainTags {
     private val tags by lazy {
         val bundleId = NSBundle.mainBundle.bundleIdentifier
             ?: throw UnsupportedCryptoException("Keychain access is unsupported outside of a Bundle. If you must, specify tagOverride, but here be dragons")
-        Pair("$PREFIX_PRIVATE_KEY$bundleId", "$PREFIX_PUBLIC_KEY-$bundleId")
+        Pair("$PREFIX_PRIVATE_KEY$bundleId", "$PREFIX_PUBLIC_KEY$bundleId")
     }
     val PRIVATE_KEYS get() = tags.first
     val PUBLIC_KEYS get() = tags.second
@@ -432,7 +432,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecPrivateKeyAttrs mapsTo createCFDictionary {
                     kSecAttrApplicationLabel mapsTo alias
                     kSecAttrIsPermanent mapsTo true
-                    kSecAttrApplicationTag mapsTo (config.tagOverride?.let { KeychainTags.PREFIX_PRIVATE_KEY+it } ?:KeychainTags.PRIVATE_KEYS)
+                    kSecAttrApplicationTag mapsTo (config.tagOverride?.let { KeychainTags.PREFIX_PRIVATE_KEY + it }
+                        ?: KeychainTags.PRIVATE_KEYS)
+                    mapAccessGroup(group)
+
                     when (val hwProtection = config.hardware.v.protection.v) {
                         null -> {
                             kSecAttrAccessible mapsTo availability
@@ -456,7 +459,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecPublicKeyAttrs mapsTo createCFDictionary {
                     kSecAttrApplicationLabel mapsTo alias
                     kSecAttrIsPermanent mapsTo true
-                    kSecAttrApplicationTag mapsTo KeychainTags.PUBLIC_KEYS
+                    kSecAttrApplicationTag mapsTo (config.tagOverride?.let { KeychainTags.PREFIX_PUBLIC_KEY + it } ?:
+                    KeychainTags.PUBLIC_KEYS)
                     mapAccessGroup(group)
                 }
             }
@@ -473,7 +477,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             if ((status == errSecSuccess) && (pubkey.value != null) && (privkey.value != null)) {
                 return@memScoped corecall {
                     SecKeyCopyExternalRepresentation(pubkey.value, error)
-                }.takeFromCF<NSData>().toByteArray().also{
+                }.takeFromCF<NSData>().toByteArray().also {
                     CFRelease(pubkey.value)
                     CFRelease(privkey.value)
                 }
@@ -538,7 +542,11 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
         Napier.v { "key $alias metadata stored (has attestation? ${attestation != null})" }
 
-        val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v)
+        val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v).apply {
+            accessGroup = accessGroup ?: config.accessGroup
+            tagOverride = tagOverride ?: config.tagOverride
+        }
+
         return@catching when (publicKey) {
             is CryptoPublicKey.EC ->
                 IosSigner.ECDSA(alias, publicKey, metadata, signerConfiguration)
