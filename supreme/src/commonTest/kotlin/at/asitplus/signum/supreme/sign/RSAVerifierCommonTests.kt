@@ -1,12 +1,9 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.matrixConfig
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
@@ -21,7 +18,9 @@ import kotlin.random.Random
 val RSAVerifierCommonTests  by matrixSuite {
     @Serializable
     data class RawTestInfo(
-        val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
+        val dig: String, val pad: String, val key: String, val msg: String, val sig: String
+    )
+
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.valueOf(test.dig)
         val padding = RSAPadding.valueOf(test.pad)
@@ -144,14 +143,14 @@ fun main() {
     """.trimIndent()
     val tests = testData.lines().map { Json.decodeFromString<RawTestInfo>(it) }
         .groupBy(RawTestInfo::pad)
-        .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo)}}
+        .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_, v) -> v.map(::TestInfo) } }
 
     tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
         byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
-            data(byDigest, nameFn = { it.b64msg }) - { test ->
+            data(byDigest, nameFn = { it.b64msg }) { nameMaxLength=32 } - { test ->
                 val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
-                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
+                verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {
                     if (it !== test) {
                         verifier.verify(it.msg, test.sig) shouldNot succeed
@@ -162,7 +161,7 @@ fun main() {
                     SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
-                property(Arb.of(RSAPadding.entries.filter{ it != test.padding })) test { pad ->
+                property(Arb.of(RSAPadding.entries.filter { it != test.padding })) test { pad ->
                     SignatureAlgorithm.RSA(test.digest, pad).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
