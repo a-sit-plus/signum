@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
@@ -276,7 +277,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val tbsCrt = TbsCertificate(
-                    serialNumber = Random.nextBytes(16),
+                    serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
                     signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Foo")))),
                     validFrom = Clock.System.now(),
@@ -326,7 +327,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val tbsCrt = TbsCertificate(
-                    serialNumber = Random.nextBytes(16),
+                    serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
                     signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Foo")))),
                     validFrom = Clock.System.now(),

@@ -11,6 +11,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
+import org.kotlincrypto.random.CryptoRand
+import kotlin.random.Random
 
 val Asn1AddonsTest by matrixSuite {
    
@@ -84,4 +86,11 @@ val Asn1AddonsTest by matrixSuite {
             }
         }
     }
+}
+
+
+
+object InsecureRandom: CryptoRand() {
+    override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+    fun nextBytes(size: Int) = Random.nextBytes(size)
 }

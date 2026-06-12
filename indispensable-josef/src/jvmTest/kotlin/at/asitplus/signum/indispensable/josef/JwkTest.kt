@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Asn1Time
+import at.asitplus.awesn1.nextPositiveAsn1Integer
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -152,8 +153,7 @@ val JwkTest  by matrixSuite {
 
 private fun randomCertificate() = Certificate(
     TbsCertificate(
-        // minimal-DER content of a random positive integer; raw random bytes are not a valid minimal DER INTEGER
-        serialNumber = Asn1Integer.fromUnsignedByteArray(Random.nextBytes(16)).encodeToTlv().content,
+        serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Test")))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),

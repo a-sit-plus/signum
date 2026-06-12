@@ -3,11 +3,11 @@ package at.asitplus.awesn1
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.decode
 import at.asitplus.catchingUnwrapped
-import at.asitplus.awesn1.runRethrowing
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
+import org.kotlincrypto.random.CryptoRand
 
 private fun Asn1Integer.Sign.toBigIntegerSign() = when (this) {
     Asn1Integer.Sign.POSITIVE -> Sign.POSITIVE
@@ -58,3 +58,96 @@ inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = A
 @Throws(Asn1Exception::class)
 fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigInteger =
     runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/**
+ * Generates a random ASN.1 integer that adheres to DER minimal encoding constraints
+ * using a specified number of bytes.
+ *
+ * @param nBytes The number of two's complement bytes to use for representing the random integer. Must be positive. Excludes tag and length bytes needed for ASN.1 encoding
+ * @return An [Asn1Integer] generated from the specified number of bytes, encoded in two's complement format.
+ *         Ensures compliance with DER minimum integer encoding constraints.
+ * @throws IllegalArgumentException if [nBytes] is not greater than zero.
+ */
+fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
+    require(nBytes > 0) { "nBytes must be positive" }
+
+    val buf = ByteArray(nBytes)
+
+    do {
+        nextBytes(buf)
+    } while (!isDerMinimalIntegerEncoding(buf))
+
+    return Asn1Integer.fromTwosComplement(buf)
+}
+
+/**
+ * Generates a random positive ASN.1 integer that adheres to DER minimal encoding constraints
+ * using a specified number of bytes.
+ *
+ * @param nBytes The number of two's complement bytes to use for representing the random integer. Must be positive. Excludes tag and length bytes needed for ASN.1 encoding
+ * @return An [Asn1Integer.Positive] generated from the specified number of bytes, encoded in two's complement format.
+ *         Ensures compliance with DER minimum integer encoding constraints.
+ * @throws IllegalArgumentException if [nBytes] is not greater than zero.
+ */
+fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
+    require(nBytes > 0) { "nBytes must be positive" }
+
+    val buf = ByteArray(nBytes)
+
+    do {
+        nextBytes(buf)
+
+        // Force positive sign bit.
+        buf[0] = (buf[0].toInt() and 0x7f).toByte()
+    } while (
+        buf.isAllZero || !isDerMinimalIntegerEncoding(buf)
+    )
+
+    return Asn1Integer.fromTwosComplement(buf) as Asn1Integer.Positive
+}
+
+/**
+ * Generates a random negative ASN.1 integer that adheres to DER minimal encoding constraints
+ * using a specified number of bytes.
+ *
+ * @param nBytes The number of two's complement bytes to use for representing the random integer. Must be positive. Excludes tag and length bytes needed for ASN.1 encoding
+ * @return An [Asn1Integer.Positive] generated from the specified number of bytes, encoded in two's complement format.
+ *         Ensures compliance with DER minimum integer encoding constraints.
+ * @throws IllegalArgumentException if [nBytes] is not greater than zero.
+ */
+fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
+    require(nBytes > 0) { "nBytes must be positive" }
+
+    val buf = ByteArray(nBytes)
+
+    do {
+        nextBytes(buf)
+
+        // Force negative sign bit.
+        buf[0] = (buf[0].toInt() or 0x80).toByte()
+    } while (!isDerMinimalIntegerEncoding(buf))
+
+    return Asn1Integer.fromTwosComplement(buf) as Asn1Integer.Negative
+}
+
+private val ByteArray.isAllZero: Boolean
+    get() =
+        all { it == 0.toByte() }
+
+//faster than the throwing version in awesn1 (that is internal anyway)
+private fun isDerMinimalIntegerEncoding(bytes: ByteArray): Boolean {
+    require(bytes.isNotEmpty())
+
+    if (bytes.size == 1) return true
+
+    val first = bytes[0].toUByte().toInt()
+    val second = bytes[1].toUByte().toInt()
+
+    val redundantPositivePrefix =
+        first == 0x00 && (second and 0x80) == 0
+
+    val redundantNegativePrefix =
+        first == 0xff && (second and 0x80) == 0x80
+
+    return !redundantPositivePrefix && !redundantNegativePrefix
+}

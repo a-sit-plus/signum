@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Asn1Time
+import at.asitplus.awesn1.nextPositiveAsn1Integer
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
@@ -142,7 +143,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(alias)))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
-                serialNumber = CryptoRand.Default.nextBytes(ByteArray(32)),
+                serialNumber = CryptoRand.Default.nextPositiveAsn1Integer(20),
                 signatureAlgorithm = certAlg,
                 issuerName = cn,
                 subjectName = cn,

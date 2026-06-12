@@ -4,6 +4,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.decodeToAsn1Integer
+import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
@@ -23,7 +24,7 @@ import kotlinx.serialization.builtins.serializer
 import kotlin.time.Instant
 
 private data class TbsCertificateContent(
-    val serialNumber: ByteArray,
+    val serialNumber: Asn1Integer,
     val signatureAlgorithm: SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Instant,
@@ -36,7 +37,7 @@ private data class TbsCertificateContent(
 ) {
 
     constructor(asn1Representation: X509TbsCertificate) : this(
-        serialNumber = asn1Representation.serialNumber.encodeToTlv().content,
+        serialNumber = asn1Representation.serialNumber,
         signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
         issuerName = asn1Representation.issuerName.map(::RelativeDistinguishedName),
         validFrom = asn1Representation.validity.validFrom.instant,
@@ -51,7 +52,7 @@ private data class TbsCertificateContent(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TbsCertificateContent) return false
-        return serialNumber.contentEquals(other.serialNumber) &&
+        return serialNumber == other.serialNumber &&
                 signatureAlgorithm == other.signatureAlgorithm &&
                 issuerName == other.issuerName &&
                 validFrom == other.validFrom &&
@@ -64,7 +65,7 @@ private data class TbsCertificateContent(
     }
 
     override fun hashCode(): Int {
-        var result = serialNumber.contentHashCode()
+        var result = serialNumber.hashCode()
         result = 31 * result + signatureAlgorithm.hashCode()
         result = 31 * result + issuerName.hashCode()
         result = 31 * result + validFrom.hashCode()
@@ -92,7 +93,7 @@ class TbsCertificate private constructor(
 
     @Throws(Asn1Exception::class)
     constructor(
-        serialNumber: ByteArray,
+        serialNumber: Asn1Integer.Positive,
         signatureAlgorithm: SignatureAlgorithm,
         issuerName: List<RelativeDistinguishedName>,
         validFrom: Instant,
@@ -116,6 +117,10 @@ class TbsCertificate private constructor(
             extensions = extensions,
         ), null
     ) {
+        serialNumber.encodeToAsn1ContentBytes().size.let { size ->
+            runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
+        }
+        runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero"  } }
         validateExtensions(extensions)
     }
 
@@ -127,7 +132,7 @@ class TbsCertificate private constructor(
     override val asn1Representation: X509TbsCertificate by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         X509TbsCertificate(
-            serialNumber = Asn1Primitive(Asn1Element.Tag.INT, providedContent.serialNumber).decodeToAsn1Integer(),
+            serialNumber = providedContent.serialNumber,
             signatureAlgorithm = providedContent.signatureAlgorithm.asn1Representation,
             issuerName = providedContent.issuerName.map { it.asn1Representation },
             validFrom = Asn1Time(providedContent.validFrom),
@@ -139,12 +144,13 @@ class TbsCertificate private constructor(
             extensions = providedContent.extensions.map { it.requireX509().asn1Representation },
         )
     }
+
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
     private val providedContent: TbsCertificateContent by providedContent orLazy {
         TbsCertificateContent(asn1Representation)
     }
 
-    val serialNumber: ByteArray get() = providedContent.serialNumber
+    val serialNumber: Asn1Integer get() = providedContent.serialNumber
 
     val signatureAlgorithm: SignatureAlgorithm get() = providedContent.signatureAlgorithm
 
@@ -340,11 +346,12 @@ class Certificate private constructor(
          * Tries to decode [src] into an [Certificate], by parsing the bytes directly as ASN.1 structure,
          * or by decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray, limit: Long = src.size.toLong(), der: Der = DER): Certificate? = catchingUnwrapped {
-            Certificate(der.decodeFromDer<X509Certificate>(src))
-        }.getOrNull() ?: catchingUnwrapped {
-            Certificate(der.decodeFromDer<X509Certificate>(src.decodeToByteArray(Base64())))
-        }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString(), limit, der)
+        fun decodeFromByteArray(src: ByteArray, limit: Long = src.size.toLong(), der: Der = DER): Certificate? =
+            catchingUnwrapped {
+                Certificate(der.decodeFromDer<X509Certificate>(src))
+            }.getOrNull() ?: catchingUnwrapped {
+                Certificate(der.decodeFromDer<X509Certificate>(src.decodeToByteArray(Base64())))
+            }.getOrNull() ?: Certificate.decodeFromPem(src.decodeToString(), limit, der)
     }
 }
 
@@ -359,13 +366,3 @@ private fun validateExtensions(extensions: List<CertificateExtension>) {
     }
 }
 
-private
-/** De-/serializes Base64 strings to/from [ByteArray] */
-object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, String>(
-    parent = String.serializer(),
-    encodeAs = { if (it == null) "" else byteArrayOf(it.numPaddingBits, *it.rawBytes).encodeToString(Base64Strict) },
-    decodeAs = {
-        if (it == "") null
-        else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
-    },
-)
