@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Asn1Time
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -30,7 +31,7 @@ import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
 
-val JwkTest  by matrixSuite(matrixConfig { execution=ExecutionMode.Sequential }) {
+val JwkTest  by matrixSuite(matrixConfig { execution=ExecutionMode.Concurrent() }) {
     "EC" - {
         listOf(256, 384, 521).asData() - { bits ->
             val keys = List<ECPublicKey>(10) {
@@ -151,7 +152,8 @@ val JwkTest  by matrixSuite(matrixConfig { execution=ExecutionMode.Sequential })
 
 private fun randomCertificate() = Certificate(
     TbsCertificate(
-        serialNumber = Random.nextBytes(16),
+        // minimal-DER content of a random positive integer; raw random bytes are not a valid minimal DER INTEGER
+        serialNumber = Asn1Integer.fromUnsignedByteArray(Random.nextBytes(16)).encodeToTlv().content,
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(("Test")))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
