@@ -48,7 +48,7 @@ data class ClientAttestationPayload(
     object Serializer : KSerializer<ClientAttestationPayload> by JsonObjectBackedSerializer(::ClientAttestationPayload)
 }
 
-
+@Deprecated("Will move into VCK next release")
 private fun IanaRegistered.ClaimNames.RFC7800.encodeCNF(cnf: ConfirmationClaim): JsonObject = JsonObject(
     mapOf(this.CNF to joseCompliantSerializer.encodeToJsonElement(cnf))
 )

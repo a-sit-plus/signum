@@ -50,6 +50,7 @@ data class ClientAttestationPopPayload(
         KSerializer<ClientAttestationPopPayload> by JsonObjectBackedSerializer(::ClientAttestationPopPayload)
 }
 
+@Deprecated("Will move into VCK next release")
 private fun UnregisteredClaims.DraftIetfOauthAttestation.encodeChallenge(challenge: String): JsonObject = JsonObject(
     mapOf(this.CHALLENGE to joseCompliantSerializer.encodeToJsonElement(challenge))
 )
