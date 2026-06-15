@@ -28,7 +28,8 @@
 * Rework JWT-Payload handling
   * Renamed `JsonWebToken` to `JwsBaseClaims` which will only contain default attributes in the future
     * IANA and EUDI claim names are defined as constants in `JwtClaimNames` to be implemented using Propigator
-  * JWT Payloads which build on top of the new base class:
+  * JWT Payloads build on top of the new base class:
+    * Add `JwtPayload` open class as base class for all valid Json Web Token Payloads 
     * Add `KeyAttestationPayload` class which replaces `KeyAttestationJwt`
     * Add `WalletAttestationPayload` class which extends `JwtClaims` as defined in EUDI TS3 / OID4VCI
     * Add `ClientAttestationPayload`/`ClientAttestationPopPayload` as defined in draft-ietf-oauth-attestation-based-client-auth-08
