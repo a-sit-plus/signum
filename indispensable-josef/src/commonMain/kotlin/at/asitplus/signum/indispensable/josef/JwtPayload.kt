@@ -8,7 +8,21 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 /**
- * Base class for all valid JWT-Payloads
+ * Base class for all valid JWT-Payloads.
+ * DO NOT ADD ADDITIONAL PARAMETERS OUTSIDE OF [JsonObjectBacked]
+ *
+ * Usage Example:
+ *
+ * ```
+ * data class FooPayload(
+ *     private val raw: JsonObject,
+ *     private val json: Json = joseCompliantSerializer,
+ * ) : JwtPayload(raw, json) {
+ *   val foo: Foo? by nullableJsonProperty("foo")
+ *   val barSlice: Bar by jsonSlice()
+ * }
+ * ```
+ *
  */
 open class JwtPayload(
     raw: JsonObject,
