@@ -6,8 +6,8 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.jwtpayload.ClientStatus
 import at.asitplus.signum.indispensable.josef.jwtpayload.ConfirmationClaim
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers

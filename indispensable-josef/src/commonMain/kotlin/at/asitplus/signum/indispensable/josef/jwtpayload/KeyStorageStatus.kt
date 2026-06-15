@@ -1,13 +1,14 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
+@Deprecated("Will move into VCK next release")
 @Serializable
 data class KeyStorageStatus(
     /**

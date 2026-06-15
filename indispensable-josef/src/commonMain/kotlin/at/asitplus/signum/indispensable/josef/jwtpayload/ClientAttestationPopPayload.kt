@@ -3,8 +3,9 @@ package at.asitplus.signum.indispensable.josef.jwtpayload
 import at.asitplus.propigator.common.ObjectBackedValidated
 import at.asitplus.propigator.json.*
 import at.asitplus.signum.indispensable.josef.JwtBaseClaims
+import at.asitplus.signum.indispensable.josef.JwtPayload
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.UnregisteredClaims
 import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.jsonObject
 
 
 @Serializable(with = ClientAttestationPopPayload.Serializer::class)
+@Deprecated("Will move into VCK next release")
 data class ClientAttestationPopPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,

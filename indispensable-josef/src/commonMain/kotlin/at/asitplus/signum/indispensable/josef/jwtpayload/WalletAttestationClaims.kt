@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * Wallet Instance Attestation (WIA) as defined by
  * [EUDI TS3](https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md)
  */
+@Deprecated("Will move into VCK next release")
 @Serializable
 data class WalletAttestationClaims(
 

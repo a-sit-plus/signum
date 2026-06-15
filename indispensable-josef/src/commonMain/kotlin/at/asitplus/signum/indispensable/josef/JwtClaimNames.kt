@@ -1,14 +1,11 @@
-package at.asitplus.signum.indispensable.josef.jwtpayload
-
-import at.asitplus.signum.indispensable.josef.JwtBaseClaims
-import kotlinx.serialization.SerialName
+package at.asitplus.signum.indispensable.josef
 
 object JwtClaimNames {
     /**
      * Claims to be used in conjunction with
      * [Propigator](https://github.com/a-sit-plus/propigator)
      * to define type-safe extensions to [JwtBaseClaims].
-     * The values of the constants are the official [SerialName]s.
+     * The values of the constants are the official [kotlinx.serialization.SerialName]s.
      */
     object UnregisteredClaims {
         object DraftIetfOauthStatusList {
@@ -36,7 +33,7 @@ object JwtClaimNames {
      * Claims taken from [IANA](https://www.iana.org/assignments/jwt/jwt.xhtml) to be used in conjunction with
      * [Propigator](https://github.com/a-sit-plus/propigator)
      * to define type-safe extensions to [JwtBaseClaims].
-     * The values of the constants are the official [SerialName]s.
+     * The values of the constants are the official [kotlinx.serialization.SerialName]s.
      */
     @Suppress("UNUSED")
     object IanaRegistered {

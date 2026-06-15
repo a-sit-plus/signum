@@ -1,12 +1,13 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.signum.indispensable.josef.JsonWebKey
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.UnregisteredClaims
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.UnregisteredClaims
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
+@Deprecated("Will move into VCK next release")
 @Serializable
 data class KeyAttestationClaims(
     /**

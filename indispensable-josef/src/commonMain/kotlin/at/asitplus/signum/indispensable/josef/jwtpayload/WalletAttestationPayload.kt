@@ -1,11 +1,10 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
 import at.asitplus.propigator.common.ObjectBackedValidated
-import at.asitplus.propigator.json.JsonBackingCodec
-import at.asitplus.propigator.json.JsonObjectBacked
 import at.asitplus.propigator.json.JsonObjectBackedSerializer
 import at.asitplus.propigator.json.jsonSlice
 import at.asitplus.signum.indispensable.josef.JwtBaseClaims
+import at.asitplus.signum.indispensable.josef.JwtPayload
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
@@ -13,6 +12,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 
+@Deprecated("Will move into VCK next release")
 @Serializable(with = WalletAttestationPayload.Serializer::class)
 data class WalletAttestationPayload(
     private val raw: JsonObject,

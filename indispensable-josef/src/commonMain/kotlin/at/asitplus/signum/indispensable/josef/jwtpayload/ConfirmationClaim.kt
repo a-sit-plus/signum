@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.signum.indispensable.josef.jwtpayload.JwtClaimNames.IanaRegistered
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  *
  * See [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800)
  */
+@Deprecated("Will move into VCK next release")
 @Serializable
 data class ConfirmationClaim(
     /**
