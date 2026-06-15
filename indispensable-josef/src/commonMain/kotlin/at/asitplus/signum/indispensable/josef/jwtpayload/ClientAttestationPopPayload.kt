@@ -19,7 +19,7 @@ import kotlinx.serialization.json.jsonObject
 data class ClientAttestationPopPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
-) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
+) : JwtPayload(raw, json), ObjectBackedValidated {
 
     /**
      * Challenge is currently modeled as string

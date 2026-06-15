@@ -15,7 +15,7 @@ import kotlinx.serialization.json.*
 data class ClientAttestationPayload(
     private val raw: JsonObject,
     private val json: Json = joseCompliantSerializer,
-) : JsonObjectBacked(raw, JsonBackingCodec(json)), ObjectBackedValidated, JwtPayload {
+) : JwtPayload(raw, json), ObjectBackedValidated {
 
     constructor(
         jwtBase: JwtBaseClaims,
