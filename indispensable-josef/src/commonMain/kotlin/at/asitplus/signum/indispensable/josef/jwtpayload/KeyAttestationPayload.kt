@@ -32,7 +32,6 @@ data class KeyAttestationPayload(
             .strictUnion(JsonObject(misc))
     )
 
-    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
     val keyAttestationClaims: KeyAttestationClaims by jsonSlice()
 
 

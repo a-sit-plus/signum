@@ -27,9 +27,6 @@ data class ClientAttestationPayload(
             .strictUnion(JsonObject(misc))
     )
 
-
-    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
-
     /**
      * OID4VP: This claim contains the confirmation method as defined in RFC7800. It MUST contain a JWK as defined in
      * Section 3.2 of RFC7800. This claim determines the public key for which the corresponding private key the

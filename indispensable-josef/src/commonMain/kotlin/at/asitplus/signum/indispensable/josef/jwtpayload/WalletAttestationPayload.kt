@@ -29,7 +29,6 @@ data class WalletAttestationPayload(
             .strictUnion(JsonObject(misc))
     )
 
-    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
     val walletAttestationClaims: WalletAttestationClaims by jsonSlice()
 
     override fun validate() {

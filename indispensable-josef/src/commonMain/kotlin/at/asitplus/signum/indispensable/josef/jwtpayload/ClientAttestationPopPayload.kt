@@ -34,7 +34,6 @@ data class ClientAttestationPopPayload(
             .strictUnion(JsonObject(misc))
     )
 
-    val jwtBaseClaims: JwtBaseClaims by jsonSlice()
     val challenge: String? by nullableJsonProperty(UnregisteredClaims.DraftIetfOauthAttestation.CHALLENGE)
 
     override fun validate() {
