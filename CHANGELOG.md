@@ -2,6 +2,11 @@
 
 
 ## NEXT
+* iOS: enable sharing keychain keys between an app and its extensions ([#436](https://github.com/a-sit-plus/signum/issues/436))
+    * New keys use a bundle-id-free keychain tag, so app and extensions resolve the same key
+    * Add `accessGroup` option to the iOS signing-key and signer configurations (`kSecAttrAccessGroup`) for shared keychain access groups
+    * Existing (legacy, bundle-id-tagged) keys keep working via a backwards-compatible fallback lookup; recreate a key in a shared `accessGroup` to share it across extensions
+    * `deleteSigningKey(alias)` is unchanged and now removes both new- and legacy-tagged items
 * Rework JWS support around explicit compact, flattened, and general representations
     * Add sealed `JWS` support with dedicated `JwsCompact`, `JwsFlattened`, `JwsGeneral`
     * Add conversions between compact, flattened, and general JWS representations
