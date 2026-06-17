@@ -186,7 +186,7 @@ sealed class IosSigner(final override val alias: String,
                             kSecUseAuthenticationUI mapsTo kSecUseAuthenticationUIFail
                         }
                     }
-                    when( val lastStatus = SecItemCopyMatching(query, newPrivateKey.ptr.reinterpret())) {
+                    when (val lastStatus = SecItemCopyMatching(query, newPrivateKey.ptr.reinterpret())) {
                         errSecSuccess -> { require(newPrivateKey.value != null); return@memScoped }
                         errSecItemNotFound -> {/*fall through*/}
                         else -> throw CFCryptoOperationFailed(
