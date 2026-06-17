@@ -166,7 +166,6 @@ sealed class IosSigner(final override val alias: String,
             // try the new bundle-id-free tag first, then fall back to the legacy bundle-id-scoped tag
             val newPrivateKey = AutofreeVariable<SecKeyRef>()
             memScoped {
-                var lastStatus = errSecItemNotFound
                 privateKeyLookups.forEach { lookup ->
                     val query = createCFDictionary {
                         kSecClass mapsTo kSecClassKey
@@ -187,18 +186,19 @@ sealed class IosSigner(final override val alias: String,
                             kSecUseAuthenticationUI mapsTo kSecUseAuthenticationUIFail
                         }
                     }
-                    lastStatus = SecItemCopyMatching(query, newPrivateKey.ptr.reinterpret())
-                    if ((lastStatus == errSecSuccess) && (newPrivateKey.value != null)) {
-                        return@memScoped
+                    when( val lastStatus = SecItemCopyMatching(query, newPrivateKey.ptr.reinterpret())) {
+                        errSecSuccess -> if(newPrivateKey.value != null) return@memScoped
+                        errSecItemNotFound -> {/*fall through*/}
+                        else -> throw CFCryptoOperationFailed(
+                            thing = "retrieve private key",
+                            osStatus = lastStatus
+                        )
                     }
-                    if (lastStatus != errSecNotFound)  throw CFCryptoOperationFailed(
-                        thing = "retrieve private key",
-                        osStatus = lastStatus
-                    )
                 }
+                //fall through to error handling
                 throw CFCryptoOperationFailed(
                     thing = "retrieve private key",
-                    osStatus = lastStatus
+                    osStatus = errSecItemNotFound
                 )
             }
             if (!SecKeyIsAlgorithmSupported(newPrivateKey.value, kSecKeyOperationTypeSign, signatureAlgorithm.secKeyAlgorithmPreHashed)) {
