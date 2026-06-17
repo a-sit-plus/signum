@@ -62,20 +62,12 @@ private object KeychainTags {
     val LEGACY_PUBLIC_KEYS get() = legacyBundleId?.let { "$PUBLIC_KEYS-$it" }
 }
 
-/** A single keychain lookup attempt: which [tag] to match, scoped to which [accessGroup] (if any). */
-private data class KeychainLookup(val tag: String, val accessGroup: String?)
-
 /**
- * Lookups to try, in order: first the new bundle-id-free tag (scoped to the configured [group]),
- * then the legacy bundle-id-scoped tag run *unscoped* (legacy keys live in the app's default
- * access group, so scoping them to a shared [group] would never match).
+ * Lookups to try, in order: first the new bundle-id-free tag
+ * then the legacy bundle-id-scoped tag run
  */
-private fun publicKeyLookups(group: String?) = listOfNotNull(
-    KeychainLookup(KeychainTags.PUBLIC_KEYS, group),
-    KeychainTags.LEGACY_PUBLIC_KEYS?.let { KeychainLookup(it, null) })
-private fun privateKeyLookups(group: String?) = listOfNotNull(
-    KeychainLookup(KeychainTags.PRIVATE_KEYS, group),
-    KeychainTags.LEGACY_PRIVATE_KEYS?.let { KeychainLookup(it, null) })
+private val publicKeyLookups = listOfNotNull(KeychainTags.PUBLIC_KEYS, KeychainTags.LEGACY_PUBLIC_KEYS)
+private val privateKeyLookups = listOfNotNull(KeychainTags.PRIVATE_KEYS, KeychainTags.LEGACY_PRIVATE_KEYS)
 
 class IosSecureEnclaveConfiguration internal constructor() : PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
     /** Set to true to allow this key to be backed up. */
@@ -88,12 +80,6 @@ class IosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfi
     override val hardware = childOrDefault(::IosSecureEnclaveConfiguration) {
         backing = DISCOURAGED
     }
-    /**
-     * Optionally set [kSecAttrAccessGroup](https://developer.apple.com/documentation/security/ksecattraccessgroup)
-     * to store the key in a shared keychain access group, so it can be accessed by app extensions
-     * (or other apps) sharing that group.
-     */
-    var accessGroup: String? = null
 }
 
 /**
@@ -117,13 +103,7 @@ private inline fun <reified E> resolveOption(what: String, valid: Set<E>, spec: 
         }
     }
 
-class IosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase() {
-    /**
-     * Optionally set [kSecAttrAccessGroup](https://developer.apple.com/documentation/security/ksecattraccessgroup)
-     * to look up the key in a shared keychain access group.
-     */
-    var accessGroup: String? = null
-}
+class IosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase()
 
 private object LAContextStorage {
     data class SuccessfulAuthentication(
@@ -187,13 +167,12 @@ sealed class IosSigner(final override val alias: String,
             val newPrivateKey = AutofreeVariable<SecKeyRef>()
             memScoped {
                 var lastStatus = errSecItemNotFound
-                privateKeyLookups(signerConfig.accessGroup).forEach { lookup ->
+                privateKeyLookups.forEach { lookup ->
                     val query = createCFDictionary {
                         kSecClass mapsTo kSecClassKey
                         kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
                         kSecAttrApplicationLabel mapsTo alias
                         kSecAttrApplicationTag mapsTo lookup.tag
-                        lookup.accessGroup?.let { kSecAttrAccessGroup mapsTo it }
                         when (this@IosSigner) {
                             is ECDSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                             is RSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
@@ -359,13 +338,10 @@ internal data class IosKeyMetadata(
 
 @OptIn(ExperimentalForeignApi::class)
 object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfiguration, IosSigningKeyConfiguration> {
-    private fun CFDictionaryInitScope.mapAccessGroup(accessGroup: String?) {
-        accessGroup?.let { kSecAttrAccessGroup mapsTo it }
-    }
 
-    private fun MemScope.getPublicKey(alias: String, group: String?): OwnedCFValue<SecKeyRef>? {
+    private fun MemScope.getPublicKey(alias: String): OwnedCFValue<SecKeyRef>? {
         // try the new bundle-id-free tag first, then fall back to the legacy bundle-id-scoped tag
-        publicKeyLookups(group).forEach { lookup ->
+        publicKeyLookups.forEach { lookup ->
             val it = alloc<SecKeyRefVar>()
             val query = createCFDictionary {
                 kSecClass mapsTo kSecClassKey
@@ -373,7 +349,6 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecAttrApplicationLabel mapsTo alias
                 kSecAttrApplicationTag mapsTo lookup.tag
                 kSecReturnRef mapsTo true
-                mapAccessGroup(lookup.accessGroup)
             }
             when (val status = SecItemCopyMatching(query, it.ptr.reinterpret())) {
                 errSecSuccess -> return it.value?.manage()
@@ -384,14 +359,13 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         return null
     }
     /** Stores metadata on the freshly created public key, which always carries the new tag. */
-    private fun storeKeyMetadata(alias: String, group: String?, metadata: IosKeyMetadata) = memScoped {
+    private fun storeKeyMetadata(alias: String, metadata: IosKeyMetadata) = memScoped {
         val status = SecItemUpdate(
             createCFDictionary {
                 kSecClass mapsTo kSecClassKey
                 kSecAttrKeyClass mapsTo kSecAttrKeyClassPublic
                 kSecAttrApplicationLabel mapsTo alias
                 kSecAttrApplicationTag mapsTo KeychainTags.PUBLIC_KEYS
-                mapAccessGroup(group)
             },
             cfDictionaryOf(
                 kSecAttrLabel to Json.encodeToString(metadata)
@@ -400,10 +374,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             throw CFCryptoOperationFailed(thing = "store key metadata", osStatus = status)
         }
     }
-    private fun getKeyMetadata(alias: String, group: String?): IosKeyMetadata = memScoped {
+    private fun getKeyMetadata(alias: String): IosKeyMetadata = memScoped {
         // try the new bundle-id-free tag first, then fall back to the legacy bundle-id-scoped tag
         var lastStatus = errSecItemNotFound
-        publicKeyLookups(group).forEach { lookup ->
+        publicKeyLookups.forEach { lookup ->
             val dict = alloc<CFDictionaryRefVar>()
             val query = createCFDictionary {
                 kSecClass mapsTo kSecClassKey
@@ -411,7 +385,6 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecAttrApplicationLabel mapsTo alias
                 kSecAttrApplicationTag mapsTo lookup.tag
                 kSecReturnAttributes mapsTo true
-                mapAccessGroup(lookup.accessGroup)
             }
             lastStatus = SecItemCopyMatching(query, dict.ptr.reinterpret())
             if (lastStatus == errSecSuccess)
@@ -426,11 +399,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
     ): KmmResult<IosSigner> = withContext(dispatcher) {
         val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
-        val group = config.accessGroup
         catching {
             memScoped {
                 // also catches legacy bundle-id-tagged keys, so we never shadow an existing key
-                if (getPublicKey(alias, group) != null)
+                if (getPublicKey(alias) != null)
                     throw NoSuchElementException("Key with alias $alias already exists")
             }
             deleteSigningKey(alias).getOrThrow() /* make sure there are no leftover private keys */
@@ -467,7 +439,6 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     kSecAttrApplicationLabel mapsTo alias
                     kSecAttrIsPermanent mapsTo true
                     kSecAttrApplicationTag mapsTo KeychainTags.PRIVATE_KEYS
-                    mapAccessGroup(group)
 
                     when (val hwProtection = config.hardware.v.protection.v) {
                         null -> {
@@ -493,7 +464,6 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     kSecAttrApplicationLabel mapsTo alias
                     kSecAttrIsPermanent mapsTo true
                     kSecAttrApplicationTag mapsTo KeychainTags.PUBLIC_KEYS
-                    mapAccessGroup(group)
                 }
             }
 
@@ -570,13 +540,11 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
                 is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(alg.digests, alg.paddings)
             }
-        ).also { storeKeyMetadata(alias, group, metadata = it) }
+        ).also { storeKeyMetadata(alias, metadata = it) }
 
         Napier.v { "key $alias metadata stored (has attestation? ${attestation != null})" }
 
-        val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v).apply {
-            accessGroup = accessGroup ?: config.accessGroup
-        }
+        val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v)
 
         return@catching when (publicKey) {
             is CryptoPublicKey.EC ->
@@ -598,7 +566,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     ): KmmResult<IosSigner> = withContext(dispatcher) { catching {
         val config = DSL.resolve(::IosSignerConfiguration, configure)
         val publicKeyBytes: ByteArray = memScoped {
-            val publicKey = getPublicKey(alias, config.accessGroup)
+            val publicKey = getPublicKey(alias)
                 ?: throw NoSuchElementException("No key for alias $alias exists")
             return@memScoped corecall {
                 SecKeyCopyExternalRepresentation(publicKey.value, error)
@@ -606,7 +574,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         }
         val publicKey =
             CryptoPublicKey.fromIosEncoded(publicKeyBytes)
-        val metadata = getKeyMetadata(alias, config.accessGroup)
+        val metadata = getKeyMetadata(alias)
         return@catching when (publicKey) {
             is CryptoPublicKey.EC -> IosSigner.ECDSA(alias, publicKey, metadata, config)
             is CryptoPublicKey.RSA -> IosSigner.RSA(alias, publicKey, metadata, config)
@@ -616,9 +584,6 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) { catching {
         memScoped {
             // Deletes both the new bundle-id-free tag and the legacy bundle-id-scoped tag.
-            // Queries are intentionally run *unscoped* (no kSecAttrAccessGroup): an unscoped query
-            // spans the app's default access group as well as any entitled shared group, so it
-            // covers both legacy keys (default group) and new keys (possibly shared group).
             listOf(
                 Triple("public key", kSecAttrKeyClassPublic,
                     listOfNotNull(KeychainTags.PUBLIC_KEYS, KeychainTags.LEGACY_PUBLIC_KEYS)),
