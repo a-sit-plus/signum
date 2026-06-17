@@ -172,7 +172,7 @@ sealed class IosSigner(final override val alias: String,
                         kSecClass mapsTo kSecClassKey
                         kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
                         kSecAttrApplicationLabel mapsTo alias
-                        kSecAttrApplicationTag mapsTo lookup.tag
+                        kSecAttrApplicationTag mapsTo lookup
                         when (this@IosSigner) {
                             is ECDSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                             is RSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
@@ -191,6 +191,10 @@ sealed class IosSigner(final override val alias: String,
                     if ((lastStatus == errSecSuccess) && (newPrivateKey.value != null)) {
                         return@memScoped
                     }
+                    if (lastStatus != errSecNotFound)  throw CFCryptoOperationFailed(
+                        thing = "retrieve private key",
+                        osStatus = lastStatus
+                    )
                 }
                 throw CFCryptoOperationFailed(
                     thing = "retrieve private key",
@@ -347,7 +351,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecClass mapsTo kSecClassKey
                 kSecAttrKeyClass mapsTo kSecAttrKeyClassPublic
                 kSecAttrApplicationLabel mapsTo alias
-                kSecAttrApplicationTag mapsTo lookup.tag
+                kSecAttrApplicationTag mapsTo lookup
                 kSecReturnRef mapsTo true
             }
             when (val status = SecItemCopyMatching(query, it.ptr.reinterpret())) {
@@ -361,12 +365,12 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     /** Stores metadata on the freshly created public key, which always carries the new tag. */
     private fun storeKeyMetadata(alias: String, metadata: IosKeyMetadata) = memScoped {
         val status = SecItemUpdate(
-            createCFDictionary {
-                kSecClass mapsTo kSecClassKey
-                kSecAttrKeyClass mapsTo kSecAttrKeyClassPublic
-                kSecAttrApplicationLabel mapsTo alias
-                kSecAttrApplicationTag mapsTo KeychainTags.PUBLIC_KEYS
-            },
+            cfDictionaryOf(
+                kSecClass to kSecClassKey,
+                kSecAttrKeyClass to kSecAttrKeyClassPublic,
+                kSecAttrApplicationLabel to alias,
+                kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS
+            ),
             cfDictionaryOf(
                 kSecAttrLabel to Json.encodeToString(metadata)
             ))
@@ -383,7 +387,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecClass mapsTo kSecClassKey
                 kSecAttrKeyClass mapsTo kSecAttrKeyClassPublic
                 kSecAttrApplicationLabel mapsTo alias
-                kSecAttrApplicationTag mapsTo lookup.tag
+                kSecAttrApplicationTag mapsTo lookup
                 kSecReturnAttributes mapsTo true
             }
             lastStatus = SecItemCopyMatching(query, dict.ptr.reinterpret())
@@ -460,11 +464,11 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                         }
                     }
                 }
-                kSecPublicKeyAttrs mapsTo createCFDictionary {
-                    kSecAttrApplicationLabel mapsTo alias
-                    kSecAttrIsPermanent mapsTo true
-                    kSecAttrApplicationTag mapsTo KeychainTags.PUBLIC_KEYS
-                }
+                kSecPublicKeyAttrs mapsTo cfDictionaryOf(
+                    kSecAttrApplicationLabel to alias,
+                    kSecAttrIsPermanent to true,
+                    kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS
+                )
             }
 
             val pubkey = alloc<SecKeyRefVar>()
