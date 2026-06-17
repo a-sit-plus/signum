@@ -398,8 +398,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         alias: String,
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
     ): KmmResult<IosSigner> = withContext(dispatcher) {
-        val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
         catching {
+        val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
             memScoped {
                 // also catches legacy bundle-id-tagged keys, so we never shadow an existing key
                 if (getPublicKey(alias) != null)
