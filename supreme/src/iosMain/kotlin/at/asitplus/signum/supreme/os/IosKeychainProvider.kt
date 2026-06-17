@@ -44,8 +44,8 @@ private fun isSecureEnclaveSupportedConfiguration(c: SigningKeyConfiguration.Alg
 
 private object KeychainTags {
     /** Bundle-id-free tags used for all newly created keys; tried first on retrieval and deletion. */
-    private const val NEW_PRIVATE_KEYS = "supreme.privatekey"
-    private const val NEW_PUBLIC_KEYS = "supreme.publickey"
+    const val NEW_PRIVATE_KEYS = "supreme.privatekey"
+    const val NEW_PUBLIC_KEYS = "supreme.publickey"
 
     /**
      * Legacy, bundle-id-scoped tags, kept solely for backwards-compatible fallback lookups.
@@ -369,7 +369,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecClass to kSecClassKey,
                 kSecAttrKeyClass to kSecAttrKeyClassPublic,
                 kSecAttrApplicationLabel to alias,
-                kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS
+                kSecAttrApplicationTag to KeychainTags.NEW_PUBLIC_KEYS
             ),
             cfDictionaryOf(
                 kSecAttrLabel to Json.encodeToString(metadata)
@@ -443,7 +443,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecPrivateKeyAttrs mapsTo createCFDictionary {
                     kSecAttrApplicationLabel mapsTo alias
                     kSecAttrIsPermanent mapsTo true
-                    kSecAttrApplicationTag mapsTo KeychainTags.PRIVATE_KEYS
+                    kSecAttrApplicationTag mapsTo KeychainTags.NEW_PRIVATE_KEYS
 
                     when (val hwProtection = config.hardware.v.protection.v) {
                         null -> {
@@ -468,7 +468,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecPublicKeyAttrs mapsTo cfDictionaryOf(
                     kSecAttrApplicationLabel to alias,
                     kSecAttrIsPermanent to true,
-                    kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS
+                    kSecAttrApplicationTag to KeychainTags.NEW_PUBLIC_KEYS
                 )
             }
 
