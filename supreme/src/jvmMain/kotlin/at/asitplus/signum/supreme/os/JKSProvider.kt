@@ -259,11 +259,11 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
                 try {
                     ks = keystoreGetInstance(type, provider)
                         .apply { load(Channels.newInputStream(channel), password) }
-                } catch (x: Exception) {
+                } catch (x: Throwable) {
                     lock.close()
                     throw x
                 }
-            } catch (x: Exception) {
+            } catch (x: Throwable) {
                 channel.close()
                 throw x
             }
@@ -284,11 +284,11 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
                 try {
                     ks = keystoreGetInstance(type, provider)
                         .apply { load(Channels.newInputStream(channel), password) }
-                } catch (x: Exception) {
+                } catch (x: Throwable) {
                     lock.close()
                     throw x
                 }
-            } catch (x: Exception) {
+            } catch (x: Throwable) {
                 channel.close()
                 throw x
             }

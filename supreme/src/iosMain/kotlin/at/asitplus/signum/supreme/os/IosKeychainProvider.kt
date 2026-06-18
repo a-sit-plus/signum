@@ -565,7 +565,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             }
         } catch (e: Throwable) {
             // get rid of any "partial" keys
-            try { deleteSigningKey(alias) } catch (x: Exception) { e.addSuppressed(x.nonFatalOrThrow()) }
+            try { deleteSigningKey(alias) } catch (x: Throwable) { e.addSuppressed(x.nonFatalOrThrow()) }
             throw e
         }
     }}
