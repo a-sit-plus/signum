@@ -2,14 +2,12 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.supreme.azString
-import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
 
-val IosKeychainProviderTest by testSuite {
+val IosKeychainProviderTest by matrixSuite {
     "Creating a key with an alias that already exists" - {
 
         "fails but leaves the existing key untouched when the new config is broken" {
