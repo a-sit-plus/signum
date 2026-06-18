@@ -464,9 +464,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                                             factors.biometry -> if (factors.biometryWithNewFactors) kSecAccessControlBiometryAny else kSecAccessControlBiometryCurrentSet
                                             else -> kSecAccessControlDevicePasscode
                                         }.let {
-                                            if (useSecureEnclave) it or kSecAccessControlPrivateKeyUsage else it
-                                        }, error
-                                    )
+                                            if (useSecureEnclave) (it or kSecAccessControlPrivateKeyUsage) else it
+                                        }, error)
                                 }.also { defer { CFRelease(it) } }
                             }
                         }
@@ -496,8 +495,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
                     if ((status == -50) &&
                         useSecureEnclave &&
-                        !isSecureEnclaveSupportedConfiguration(config._algSpecific.v)
-                    ) {
+                        !isSecureEnclaveSupportedConfiguration(config._algSpecific.v))
+                    {
                         throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", x)
                     }
                     throw x
@@ -528,8 +527,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     Napier.v { "created attestation key (keyId = $keyId)" }
 
                     val clientData = IosHomebrewAttestation.ClientData(
-                        publicKey = publicKey, challenge = attestationConfig.challenge
-                    )
+                        publicKey = publicKey, challenge = attestationConfig.challenge)
                     val clientDataJSON = clientData.prepareDigestInput()
 
                     val assertionKeyAttestation = swiftasync {
@@ -539,8 +537,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
                     return@let IosHomebrewAttestation(
                         attestation = assertionKeyAttestation,
-                        clientDataJSON = clientDataJSON
-                    )
+                        clientDataJSON = clientDataJSON)
                 }
             } else null
 
