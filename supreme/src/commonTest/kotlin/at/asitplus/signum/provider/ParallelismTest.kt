@@ -1,7 +1,7 @@
 package at.asitplus.signum.provider
 
 import at.asitplus.signum.supreme.os.SigningProviderI
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.matrixSuite
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
@@ -14,7 +14,7 @@ val ParallelismTest by matrixSuite {
                 launch {
                     provider.deleteSigningKey(alias)
                     provider.getSignerForKey(alias)
-                    provider.createSigningKey(alias)
+                    provider.createSigningKey(alias) { ec { } } /*this was failing silently, because no key type was specified*/
                 }
             }
             jobs.joinAll()
