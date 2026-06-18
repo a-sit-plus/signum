@@ -106,9 +106,9 @@ internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsSigning get(
 
 internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsDecrypting get() =
     when (this) {
-        is PlatformSigningKeyConfigurationBase.ECConfiguration -> false
         is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.decrypting
-        else -> true
+        is SigningKeyConfiguration.RSAConfiguration -> true
+        else -> false
     }
 
 internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsKeyAgreement get() =
