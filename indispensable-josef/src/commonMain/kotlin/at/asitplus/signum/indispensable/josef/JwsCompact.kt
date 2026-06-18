@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -101,8 +102,8 @@ data class JwsCompact internal constructor(
                     plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
                 )
-            } catch (e: Exception) {
-                throw SerializationException("Invalid base64url content in JWS compact serialization", e)
+            } catch (e: Throwable) {
+                throw SerializationException("Invalid base64url content in JWS compact serialization", e.nonFatalOrThrow())
             }
         }
 

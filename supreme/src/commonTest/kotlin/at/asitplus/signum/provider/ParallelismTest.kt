@@ -1,12 +1,11 @@
 package at.asitplus.signum.provider
 
 import at.asitplus.signum.supreme.os.SigningProviderI
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.matrix.matrixSuite
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
-val ParallelismTest by testSuite {
+val ParallelismTest by matrixSuite {
     val alias = "TestAlias"
 
     "10k Loop" {
