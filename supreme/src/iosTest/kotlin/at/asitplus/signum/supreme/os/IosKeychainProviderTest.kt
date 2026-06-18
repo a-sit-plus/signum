@@ -2,19 +2,21 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.supreme.azString
-import at.asitplus.testballoon.matrix.matrixSuite
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
 
-val IosKeychainProviderTest by matrixSuite {
+val IosKeychainProviderTest by testSuite {
     "Creating a key with an alias that already exists" - {
 
         "fails but leaves the existing key untouched when the new config is broken" {
             val alias = Random.azString(32)
             try {
                 // an existing key lives under this alias
-                val original = IosKeychainProvider.createSigningKey(alias) { ec { } }.getOrThrow()
+                val original = IosKeychainProvider.createSigningKey(alias).getOrThrow()
 
                 // attempt to create another key with the same alias, using a config that throws
                 val secondAttempt = IosKeychainProvider.createSigningKey(alias) {
@@ -34,9 +36,9 @@ val IosKeychainProviderTest by matrixSuite {
         "fails but leaves the existing key untouched when the new config is valid" {
             val alias = Random.azString(32)
             try {
-                val original = IosKeychainProvider.createSigningKey(alias) { ec { } }.getOrThrow()
+                val original = IosKeychainProvider.createSigningKey(alias).getOrThrow()
 
-                val secondAttempt = IosKeychainProvider.createSigningKey(alias) { ec { } }
+                val secondAttempt = IosKeychainProvider.createSigningKey(alias)
                 secondAttempt.isFailure shouldBe true
 
                 val recovered = IosKeychainProvider.getSignerForKey(alias)

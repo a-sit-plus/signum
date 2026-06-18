@@ -1,7 +1,7 @@
 # Changelog
 
 
-## NEXT
+## Supreme 0.14.0 (Indispensable Unaffected)
 * iOS: enable sharing keychain keys between an app and its extensions ([#436](https://github.com/a-sit-plus/signum/issues/436))
     * New keys use a bundle-id-free keychain tag, so app and extensions resolve the same key
     * Existing (legacy, bundle-id-tagged) keys keep working via a backwards-compatible fallback lookup; recreate a key to share it across extensions
