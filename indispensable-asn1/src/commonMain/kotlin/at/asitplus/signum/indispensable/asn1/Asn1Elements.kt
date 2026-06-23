@@ -771,9 +771,34 @@ sealed class Asn1Structure(
     }
 
 
-    override val contentLength: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }
+    /**
+     * Iteratively (and hence without risking a [StackOverflowError] of its own) ensures that this structure is
+     * not nested more deeply than [ASN1_MAX_RECURSION_DEPTH]. Every recursive operation on a structure (length
+     * computation, encoding, equals/hashCode/toString) calls this up front, turning a would-be stack overflow on
+     * a pathologically deep tree into a clean [Asn1StructuralException]. This mirrors the depth guard the decoder
+     * applies while parsing.
+     */
+    private fun assertDepthWithinLimit() {
+        val stack = ArrayDeque<Pair<Asn1Element, Int>>()
+        stack.addLast(this to 0)
+        while (stack.isNotEmpty()) {
+            val (element, depth) = stack.removeLast()
+            if (depth > ASN1_MAX_RECURSION_DEPTH)
+                throw Asn1StructuralException(
+                    "Max recursion depth ($ASN1_MAX_RECURSION_DEPTH) exceeded. " +
+                            "Increase at.asitplus.signum.indispensable.asn1.encoding.ASN1_MAX_RECURSION_DEPTH if needed"
+                )
+            if (element is Asn1Structure) element.children.forEach { stack.addLast(it to depth + 1) }
+        }
+    }
+
+    override val contentLength: Int by lazy {
+        assertDepthWithinLimit()
+        children.fold(0) { acc, child -> acc + child.overallLength }
+    }
 
     override fun doEncode(sink: Sink) {
+        assertDepthWithinLimit()
         children.let { childElems ->
             sink.write(tag.encodedTag);
             sink.write(encodedLength);
@@ -781,14 +806,17 @@ sealed class Asn1Structure(
         }
     }
 
-    override fun prettyPrintContents(indent: Int): String =
-        children.joinToString(
+    override fun prettyPrintContents(indent: Int): String {
+        assertDepthWithinLimit()
+        return children.joinToString(
             prefix = "\n" + (" " * indent) + "{\n",
             separator = "\n",
             postfix = "\n" + (" " * indent) + "}"
         ) { it.prettyPrint(indent + 2) }
+    }
 
     override fun contentToString(): String {
+        assertDepthWithinLimit()
         val prefix = when {
             shouldBeSorted && isActuallySorted -> "SORTED"
             shouldBeSorted && !isActuallySorted -> "NON-COMPLIANT (UNSORTED)"
@@ -797,7 +825,10 @@ sealed class Asn1Structure(
         return "$prefix, children=$children"
     }
 
-    override fun hashCode() = 31 * super.hashCode() + children.hashCode()
+    override fun hashCode(): Int {
+        assertDepthWithinLimit()
+        return 31 * super.hashCode() + children.hashCode()
+    }
 
     /**
      * the [shouldBeSorted] flag has no bearing on equals!
@@ -807,6 +838,7 @@ sealed class Asn1Structure(
         if (other !is Asn1Structure) return false
         if (!super.equals(other)) return false
 
+        assertDepthWithinLimit()
         if (children != other.children) return false
 
         return true

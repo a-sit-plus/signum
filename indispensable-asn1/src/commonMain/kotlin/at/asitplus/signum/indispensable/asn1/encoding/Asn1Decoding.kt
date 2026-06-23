@@ -87,10 +87,13 @@ fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteA
     source.wrapInUnsafeSource().readAsn1Element()
         .let { Pair(it.first, source.copyOfRange(it.second.toInt(), source.size)) }
 
+var ASN1_MAX_RECURSION_DEPTH=64
+
 @Suppress("NOTHING_TO_INLINE")
-private inline fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = doParseExactly(nBytes.toULong())
+private inline fun Source.doParseExactly(nBytes: Long, recursionDepth: Int): List<Asn1Element> = doParseExactly(nBytes.toULong(), recursionDepth)
 @JvmName("doParseExactlyULong")
-private fun Source.doParseExactly(nBytes: ULong): List<Asn1Element> = mutableListOf<Asn1Element>().also { list ->
+private fun Source.doParseExactly(nBytes: ULong, recursionDepth: Int): List<Asn1Element> = mutableListOf<Asn1Element>().also { list ->
+    if(recursionDepth>ASN1_MAX_RECURSION_DEPTH) throw Asn1StructuralException("Max recursion depth (${ASN1_MAX_RECURSION_DEPTH} overshot. Increase at.asitplus.signum.indispensable.asn1.encoding.ASN1_MAX_RECURSION_DEPTH if needed")
     require(nBytes <= Long.MAX_VALUE.toULong()) { "Max number of bytes to read exceeds ${Long.MAX_VALUE}: $nBytes" }
     var nBytesRead: ULong = 0u
     while (nBytesRead < nBytes) {
@@ -100,7 +103,7 @@ private fun Source.doParseExactly(nBytes: ULong): List<Asn1Element> = mutableLis
         if (nBytesRead + numberOfNextBytesRead > nBytes) break
         skip(peekTagAndLen.second.toLong()) // we only peeked before, so now we need to skip,
         //                                     since we want to recycle the result below
-        val (elem, read) = readAsn1Element(peekTagAndLen.first, peekTagAndLen.second)
+        val (elem, read) = readAsn1Element(peekTagAndLen.first, peekTagAndLen.second, recursionDepth+1)
         list.add(elem)
         nBytesRead += read.toULong()
         require(nBytesRead <= Long.MAX_VALUE.toULong()) { "Length overflow: $nBytesRead" }
@@ -136,30 +139,30 @@ private fun Source.peekTagAndLen() = peek().readTagAndLength()
 @Throws(Asn1Exception::class)
 fun Source.readAsn1Element(): Pair<Asn1Element, Long> = runRethrowing {
     val (readTagAndLength, bytesRead) = readTagAndLength()
-    readAsn1Element(readTagAndLength, bytesRead)
+    readAsn1Element(readTagAndLength, bytesRead,0)
 }
 
 /**
  * RAW decoding of an ASN.1 element after tag and length have already been decoded and consumed from the source
  */
 @Throws(Asn1Exception::class)
-private fun Source.readAsn1Element(tagAndLength: TagAndLength, tagAndLengthBytes: Int): Pair<Asn1Element, Long> =
+private fun Source.readAsn1Element(tagAndLength: TagAndLength, tagAndLengthBytes: Int, recursionDepth: Int): Pair<Asn1Element, Long> =
     runRethrowing {
         val (tag, length) = tagAndLength
 
         //ASN.1 SEQUENCE
-        (if (tag.isSequence()) Asn1Sequence(doParseExactly(length))
+        (if (tag.isSequence()) Asn1Sequence(doParseExactly(length, recursionDepth+1))
 
         //ASN.1 SET
-        else if (tag.isSet()) Asn1Set.fromPresorted(doParseExactly(length))
+        else if (tag.isSet()) Asn1Set.fromPresorted(doParseExactly(length, recursionDepth+1))
 
         //ASN.1 TAGGED (explicitly)
-        else if (tag.isExplicitlyTagged) Asn1ExplicitlyTagged(tag.tagValue, doParseExactly(length))
+        else if (tag.isExplicitlyTagged) Asn1ExplicitlyTagged(tag.tagValue, doParseExactly(length, recursionDepth+1))
 
         //ASN.1 OCTET STRING
         else if (tag == Asn1Element.Tag.OCTET_STRING) catching {
             //try to decode recursively
-            Asn1EncapsulatingOctetString(peek().doParseExactly(length)).also { skip(length) } as Asn1Element
+            Asn1EncapsulatingOctetString(peek().doParseExactly(length, recursionDepth+1)).also { skip(length) } as Asn1Element
         }.getOrElse {
             //recursive decoding failed, so we interpret is as primitive
             require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into an OCTET STRING" }
@@ -167,7 +170,7 @@ private fun Source.readAsn1Element(tagAndLength: TagAndLength, tagAndLengthBytes
         }
 
         //IMPLICIT-ly TAGGED ASN.1 CONSTRUCTED; we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
-        else if (tag.isConstructed) Asn1CustomStructure(doParseExactly(length), tag.tagValue, tag.tagClass)
+        else if (tag.isConstructed) Asn1CustomStructure(doParseExactly(length, recursionDepth+1), tag.tagValue, tag.tagClass)
 
         //IMPLICIT-ly TAGGED ASN.1 PRIMITIVE
         else {
