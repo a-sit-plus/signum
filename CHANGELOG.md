@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.24.0 / Supreme 0.15.0
+* HPKE support
+* Defence-in-depth
+
 
 ## Supreme 0.14.0 (Indispensable Unaffected)
 * iOS: enable sharing keychain keys between an app and its extensions ([#436](https://github.com/a-sit-plus/signum/issues/436))
