@@ -1,5 +1,7 @@
 # Changelog
 
+## NEXT
+
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support
 * Defence-in-depth
