@@ -34,7 +34,7 @@
     {
       "os": "macos-latest",
       "name": "iosRunner",
-      "testCommand": "./gradlew iosSimulatorArm64Test --info"
+      "testCommand": "./gradlew clean iosSimulatorArm64Test --info"
     },
     {
       "os": "macos-latest",
