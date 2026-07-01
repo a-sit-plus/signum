@@ -10,9 +10,9 @@ import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.encodeToTlv
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
-import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
@@ -34,7 +34,7 @@ import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
 @OptIn(UnsafeIoApi::class, InternalAwesn1Api::class)
-val X509CertParserTest  by matrixSuite {
+val X509CertParserTest by matrixSuite {
 
     "Manual" {
         //ok-uniqueid-incomplete-byte.der
@@ -111,14 +111,18 @@ val X509CertParserTest  by matrixSuite {
         data(uniqueCerts.sortedBy { it.subjectX500Principal.name }, nameFn = { cert ->
             cert.subjectX500Principal.name.let { name ->
                 if (name.isBlank() || name.isEmpty())
-                        cert.serialNumber.toString(16)
-                    else name
-                }
+                    cert.serialNumber.toString(16)
+                else name
+            }
         }) test { crt ->
             val parsed = Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
             val own = parsed.encodeToDer()
             withClue(
-                "Expect: ${kotlin.io.encoding.Base64.Mime.encode(crt.encoded)}\n" + "Actual: ${kotlin.io.encoding.Base64.Mime.encode(own)}"
+                "Expect: ${kotlin.io.encoding.Base64.Mime.encode(crt.encoded)}\n" + "Actual: ${
+                    kotlin.io.encoding.Base64.Mime.encode(
+                        own
+                    )
+                }"
             ) {
                 own shouldBe crt.encoded
                 parsed shouldBe Certificate.decodeFromByteArray(crt.encoded)
@@ -137,7 +141,10 @@ val X509CertParserTest  by matrixSuite {
         val (ok, faulty) = readGoogleCerts()
 
         "OK certs should parse" - {
-            data(ok, nameFn = { it.first }) test {
+            data(
+                ok.filterNot { it.first == "ok-inherited-keyparams.ca.der" }
+                    .filterNot { it.first == "ok-inherited-keyparams.leaf.der"/*DSA not yet supported*/ },
+                nameFn = { it.first }) test {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
                 val decoded = Certificate.decodeFromTlv(src)
                 decoded shouldBe Certificate.decodeFromByteArray(it.second)

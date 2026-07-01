@@ -50,7 +50,7 @@ suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: CryptoPrivat
 /**
  * Generates an ephemeral ECDH private value on the provided [curve].
  */
-fun KeyAgreementPrivateValue.ECDH.Companion.Ephemeral(curve: ECCurve = ECCurve.SECP_256_R_1)
+suspend fun KeyAgreementPrivateValue.ECDH.Companion.Ephemeral(curve: ECCurve = ECCurve.SECP_256_R_1)
         : KmmResult<KeyAgreementPrivateValue.ECDH> =
     Signer.Ephemeral {
         ec { this.curve = curve }

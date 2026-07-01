@@ -32,9 +32,8 @@ val KeyAgreementTest by matrixSuite {
 
     "Key Agreement Failure Test" - {
         repeat(100) {
-            val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
-
             listOf(ECCurve.SECP_384_R_1 to false, ECCurve.SECP_521_R_1 to false, ECCurve.SECP_256_R_1 to true).asData() test { (crv, success) ->
+                val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
                 val other = KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
                 other.keyAgreement(base.publicValue).isSuccess shouldBe success
                 base.keyAgreement(other.publicValue).isSuccess shouldBe success

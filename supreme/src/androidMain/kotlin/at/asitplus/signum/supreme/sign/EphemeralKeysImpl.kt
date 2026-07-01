@@ -52,7 +52,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
-        override fun exportPrivateKey() =
+        override suspend fun exportPrivateKey() =
             catching { privateKey as ECPrivateKey }.transform(ECPrivateKey::toCryptoPrivateKey)
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
@@ -70,7 +70,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
 
         @SecretExposure
-        override fun exportPrivateKey() =
+        override suspend fun exportPrivateKey() =
             catching { privateKey as RSAPrivateKey }.transform(RSAPrivateKey::toCryptoPrivateKey)
     }
 }
@@ -82,7 +82,7 @@ internal sealed interface AndroidEphemeralKey {
         digests = digests)
     {
         @SecretExposure
-        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+        override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 
     class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
@@ -91,11 +91,11 @@ internal sealed interface AndroidEphemeralKey {
         digests = digests, paddings = paddings)
     {
         @SecretExposure
-        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+        override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
+internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC).run {

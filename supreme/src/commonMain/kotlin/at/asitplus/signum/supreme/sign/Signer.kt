@@ -94,7 +94,7 @@ interface Signer {
     val mayRequireUserUnlock: Boolean get() = true
 
     @SecretExposure
-    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
+    suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer
@@ -105,7 +105,7 @@ interface Signer {
         override val publicKey: CryptoPublicKey.EC
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
+        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
 
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
@@ -116,7 +116,7 @@ interface Signer {
         override val publicKey: CryptoPublicKey.RSA
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
+        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
@@ -141,7 +141,7 @@ interface Signer {
     suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 
     companion object {
-        fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+        suspend fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
             EphemeralKey(configure).transform(EphemeralKey::signer)
     }
 }

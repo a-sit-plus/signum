@@ -342,7 +342,9 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         override val Nsk get() = dhGroup.scalarLength
 
         override fun GenerateKeyPair(): KeyPair<KeyAgreementPrivateValue.ECDH, KeyAgreementPublicValue.ECDH> {
-            val it = KeyAgreementPrivateValue.ECDH.Ephemeral(curve = dhGroup).getOrThrow()
+            // ECDH.Ephemeral is suspend; bridge it the same way DH() does just above (runBlocking),
+            // rather than rippling `suspend` through the entire sender-side KEM/Seal public API.
+            val it = runBlocking { KeyAgreementPrivateValue.ECDH.Ephemeral(curve = dhGroup) }.getOrThrow()
             return KeyPair(it, it.publicValue)
         }
 

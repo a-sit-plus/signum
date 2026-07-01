@@ -3,33 +3,35 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
-import at.asitplus.awesn1.encoding.decodeToAsn1Integer
 import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateExpiredException
+import at.asitplus.signum.CertificateNotYetValidException
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
+import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Transient
-import kotlinx.serialization.builtins.serializer
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 private data class TbsCertificateContent(
     val serialNumber: Asn1Integer,
     val signatureAlgorithm: SignatureAlgorithm,
-    val issuerName: List<RelativeDistinguishedName>,
+    val issuerName: Name,
     val validFrom: Instant,
     val validUntil: Instant,
-    val subjectName: List<RelativeDistinguishedName>,
+    val subjectName: Name,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: ByteArray?,
     val subjectUniqueID: ByteArray?,
@@ -39,10 +41,10 @@ private data class TbsCertificateContent(
     constructor(asn1Representation: X509TbsCertificate) : this(
         serialNumber = asn1Representation.serialNumber,
         signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
-        issuerName = asn1Representation.issuerName.map(::RelativeDistinguishedName),
+        issuerName = X500Name(asn1Representation.issuerName.map(::RelativeDistinguishedName), false),
         validFrom = asn1Representation.validity.validFrom.instant,
         validUntil = asn1Representation.validity.validUntil.instant,
-        subjectName = asn1Representation.subjectName.map(::RelativeDistinguishedName),
+        subjectName = X500Name(asn1Representation.subjectName.map(::RelativeDistinguishedName), false),
         publicKey = CryptoPublicKey(asn1Representation.subjectPublicKeyInfo),
         issuerUniqueID = asn1Representation.issuerUniqueID?.toBitSet()?.toByteArray(),
         subjectUniqueID = asn1Representation.subjectUniqueID?.toBitSet()?.toByteArray(),
@@ -95,10 +97,10 @@ class TbsCertificate private constructor(
     constructor(
         serialNumber: Asn1Integer.Positive,
         signatureAlgorithm: SignatureAlgorithm,
-        issuerName: List<RelativeDistinguishedName>,
+        issuerName: Name,
         validFrom: Instant,
         validUntil: Instant,
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: Name,
         publicKey: CryptoPublicKey,
         issuerUniqueID: ByteArray? = null,
         subjectUniqueID: ByteArray? = null,
@@ -120,7 +122,7 @@ class TbsCertificate private constructor(
         serialNumber.encodeToAsn1ContentBytes().size.let { size ->
             runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
         }
-        runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero"  } }
+        runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
         validateExtensions(extensions)
     }
 
@@ -134,10 +136,10 @@ class TbsCertificate private constructor(
         X509TbsCertificate(
             serialNumber = providedContent.serialNumber,
             signatureAlgorithm = providedContent.signatureAlgorithm.asn1Representation,
-            issuerName = providedContent.issuerName.map { it.asn1Representation },
-            validFrom = Asn1Time(providedContent.validFrom),
-            validUntil = Asn1Time(providedContent.validUntil),
-            subjectName = providedContent.subjectName.map { it.asn1Representation },
+            issuerName = providedContent.issuerName.requireX509().asn1Representation,
+            validFrom = Asn1Time.SecondsCapped(providedContent.validFrom),
+            validUntil = Asn1Time.SecondsCapped(providedContent.validUntil),
+            subjectName = providedContent.subjectName.requireX509().asn1Representation,
             subjectPublicKeyInfo = providedContent.publicKey.asn1Representation,
             issuerUniqueID = providedContent.issuerUniqueID?.let { Asn1BitString(BitSet(it)) },
             subjectUniqueID = providedContent.subjectUniqueID?.let { Asn1BitString(BitSet(it)) },
@@ -154,13 +156,13 @@ class TbsCertificate private constructor(
 
     val signatureAlgorithm: SignatureAlgorithm get() = providedContent.signatureAlgorithm
 
-    val issuerName: List<RelativeDistinguishedName> get() = providedContent.issuerName
+    val issuerName: Name get() = providedContent.issuerName
 
     val validFrom: Instant get() = providedContent.validFrom
 
     val validUntil: Instant get() = providedContent.validUntil
 
-    val subjectName: List<RelativeDistinguishedName> get() = providedContent.subjectName
+    val subjectName: Name get() = providedContent.subjectName
 
     val issuerUniqueID: ByteArray? get() = providedContent.issuerUniqueID
 
@@ -257,6 +259,7 @@ class Certificate private constructor(
         null
     )
 
+
     override val asn1Representation: X509Certificate by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         X509Certificate(
@@ -282,6 +285,104 @@ class Certificate private constructor(
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
     val signatureAlgorithm: SignatureAlgorithm get() = tbsCertificate.signatureAlgorithm
+
+    /** OIDs of all extensions marked critical. */
+    val criticalExtensionOids: Set<ObjectIdentifier>
+        get() = tbsCertificate.extensions.filter { it.critical }.map { it.oid }.toSet()
+
+    /**
+     * A certificate is self-issued if subject and issuer are the same (not the same as self-signed).
+     */
+    val isSelfIssued: Boolean
+        get() = tbsCertificate.subjectName == tbsCertificate.issuerName
+
+
+    init {
+            require(tbsCertificate.extensions.distinctBy { it.oid }.size == tbsCertificate.extensions.size) { "Multiple extensions with the same OID found" }
+    }
+
+    /** Whether this certificate is expired at [date].
+     *
+     * RFC 5280 only allows second granularities in the validity interval, with
+     * two conflicting interpretations of how to handle the validity check:
+     *
+     * 1. Comparisons are performed at the granularity of the encoded
+     *    representation, i.e. `floor(time)`. Under this interpretation,
+     *    the chain is valid, since the entire millisecond interval `[0, .999...]`
+     *    is truncated to `0`.
+     * 2. Comparisons are instantaneous. Under this interpretation the chain
+     *    is **invalid**, since 5 milliseconds after the `notAfter` is factually
+     *    after the `notAfter`.
+     *
+     * There is no clear "winning" interpretation here, although
+     * CAs in the Web PKI have filed and handled compliance reports based on
+     * interpretation (1). **Hence, we truncate to seconds precision**.
+     *
+     */
+    fun isExpired(date: Instant = Clock.System.now()): Boolean = date.epochSeconds > tbsCertificate.validUntil.epochSeconds
+
+    /** Whether this certificate is not yet valid at [date].
+     *
+     * RFC 5280 only allows second granularities in the validity interval, with
+     * two conflicting interpretations of how to handle the validity check:
+     *
+     * 1. Comparisons are performed at the granularity of the encoded
+     *    representation, i.e. `floor(time)`. Under this interpretation,
+     *    the chain is valid, since the entire millisecond interval `[0, .999...]`
+     *    is truncated to `0`.
+     * 2. Comparisons are instantaneous. Under this interpretation the chain
+     *    is **invalid**, since 5 milliseconds after the `notAfter` is factually
+     *    after the `notAfter`.
+     *
+     * There is no clear "winning" interpretation here, although
+     * CAs in the Web PKI have filed and handled compliance reports based on
+     * interpretation (1). **Hence, we truncate to seconds precision**.
+     *
+     */
+    fun isNotYetValid(date: Instant = Clock.System.now()): Boolean = date.epochSeconds < tbsCertificate.validFrom.epochSeconds
+
+    /** Whether this certificate is valid at [date] (i.e. neither expired nor not-yet-valid).
+     *
+     * RFC 5280 only allows second granularities in the validity interval, with
+     * two conflicting interpretations of how to handle the validity check:
+     *
+     * 1. Comparisons are performed at the granularity of the encoded
+     *    representation, i.e. `floor(time)`. Under this interpretation,
+     *    the chain is valid, since the entire millisecond interval `[0, .999...]`
+     *    is truncated to `0`.
+     * 2. Comparisons are instantaneous. Under this interpretation the chain
+     *    is **invalid**, since 5 milliseconds after the `notAfter` is factually
+     *    after the `notAfter`.
+     *
+     * There is no clear "winning" interpretation here, although
+     * CAs in the Web PKI have filed and handled compliance reports based on
+     * interpretation (1). **Hence, we truncate to seconds precision**.
+     *
+     */
+    fun isValidAt(date: Instant = Clock.System.now()): Boolean = runCatching { checkValidityAt(date) }.isSuccess
+
+    /**
+     * RFC 5280 only allows second granularities in the validity interval, with
+     * two conflicting interpretations of how to handle the validity check:
+     *
+     * 1. Comparisons are performed at the granularity of the encoded
+     *    representation, i.e. `floor(time)`. Under this interpretation,
+     *    the chain is valid, since the entire millisecond interval `[0, .999...]`
+     *    is truncated to `0`.
+     * 2. Comparisons are instantaneous. Under this interpretation the chain
+     *    is **invalid**, since 5 milliseconds after the `notAfter` is factually
+     *    after the `notAfter`.
+     *
+     * There is no clear "winning" interpretation here, although
+     * CAs in the Web PKI have filed and handled compliance reports based on
+     * interpretation (1). **Hence, we truncate to seconds precision**.
+     *
+     */
+    @Throws(CertificateValidityException::class)
+    fun checkValidityAt(date: Instant = Clock.System.now()) {
+        if (isExpired(date)) throw CertificateExpiredException(tbsCertificate.validUntil, checkedAt = date)
+        if (isNotYetValid(date)) throw CertificateNotYetValidException(tbsCertificate.validFrom, checkedAt = date)
+    }
 
     /**
      * Debug String representation. Uses Base64 encoded DER representation
@@ -359,6 +460,13 @@ typealias CertificateChain = List<Certificate>
 
 val CertificateChain.leaf: Certificate get() = first()
 val CertificateChain.root: Certificate get() = last()
+
+/** The chain ordered from trust anchor to leaf (reverse of the conventional leaf-first order). */
+val CertificateChain.validationPath: CertificateChain get() = reversed()
+
+/** Returns the first extension of type [T] (e.g. a typed [CertificateExtension]), or `null`. */
+inline fun <reified T : CertificateExtension> Certificate.findExtension(): T? =
+    tbsCertificate.extensions.firstNotNullOfOrNull { it as? T }
 
 private fun validateExtensions(extensions: List<CertificateExtension>) {
     if (extensions.distinctBy { it.oid }.size != extensions.size) {

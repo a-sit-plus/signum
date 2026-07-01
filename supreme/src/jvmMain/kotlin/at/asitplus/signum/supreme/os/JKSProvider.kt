@@ -6,14 +6,11 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.Asn1Time
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveAsn1Integer
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
@@ -22,6 +19,7 @@ import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
@@ -140,7 +138,8 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initialize(jcaSpec)
                 generateKeyPair()
             }
-            val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(alias)))
+            // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
+            val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextPositiveAsn1Integer(20),

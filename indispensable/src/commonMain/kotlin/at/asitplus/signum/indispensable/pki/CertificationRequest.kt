@@ -9,17 +9,18 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 private data class TbsCertificationRequestContent(
-    val subjectName: List<RelativeDistinguishedName>,
+    val subjectName: Name,
     val publicKey: CryptoPublicKey,
     val attributes: List<CsrAttribute>,
 ) {
     constructor(asn1Representation: Pkcs10CertificationRequestInfo) : this(
-        subjectName = asn1Representation.subjectName.map { RelativeDistinguishedName(it, performValidation = false) },
+        subjectName = X500Name(asn1Representation.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false),
         publicKey = CryptoPublicKey(asn1Representation.publicKey),
         attributes = asn1Representation.attributes.map { CsrAttribute(it) }
     )
@@ -39,7 +40,7 @@ class TbsCertificationRequest private constructor(
 ) : DerEncodable<Pkcs10CertificationRequestInfo> {
 
     constructor(
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: Name,
         publicKey: CryptoPublicKey,
         attributes: List<CsrAttribute> = listOf(),
     ) : this(TbsCertificationRequestContent(subjectName, publicKey, attributes), null) {
@@ -53,7 +54,7 @@ class TbsCertificationRequest private constructor(
      */
     @Throws(IllegalArgumentException::class)
     constructor(
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: Name,
         publicKey: CryptoPublicKey,
         extensions: List<CertificateExtension>? = null,
         attributesWithoutExtensions: List<CsrAttribute>? = null,
@@ -72,7 +73,7 @@ class TbsCertificationRequest private constructor(
     override val asn1Representation: Pkcs10CertificationRequestInfo by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         Pkcs10CertificationRequestInfo(
-            subjectName = providedContent.subjectName.map { it.asn1Representation },
+            subjectName = providedContent.subjectName.requireX509().asn1Representation,
             publicKey = providedContent.publicKey.asn1Representation,
             attributes = providedContent.attributes.map { it.requireX509().asn1Representation },
         )
@@ -83,7 +84,7 @@ class TbsCertificationRequest private constructor(
         TbsCertificationRequestContent(asn1Representation)
     }
 
-    val subjectName: List<RelativeDistinguishedName> get() = providedContent.subjectName
+    val subjectName: Name get() = providedContent.subjectName
     val publicKey: CryptoPublicKey get() = providedContent.publicKey
     val attributes: List<CsrAttribute> get() = providedContent.attributes
 

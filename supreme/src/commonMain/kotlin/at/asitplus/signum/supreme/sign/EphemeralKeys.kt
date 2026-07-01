@@ -13,7 +13,7 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
 
 
-internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
+internal expect suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
 internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
 internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
 
@@ -50,7 +50,7 @@ sealed interface EphemeralKey {
     val publicKey: CryptoPublicKey
 
     @SecretExposure
-    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
+    suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
 
     /** Create a signer that signs using this [EphemeralKey].
      * @see EphemeralSignerConfiguration */
@@ -62,7 +62,7 @@ sealed interface EphemeralKey {
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.ECDSA>
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
+        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
     }
     /** An [EphemeralKey] suitable for RSA operations. */
     interface RSA: EphemeralKey {
@@ -70,10 +70,10 @@ sealed interface EphemeralKey {
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.RSA>
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
+        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
     }
     companion object {
-        operator fun invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+        suspend operator fun invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
             catching { makeEphemeralKey(DSL.resolve(::EphemeralSigningKeyConfiguration, configure)) }
     }
 }

@@ -159,15 +159,17 @@ fun main() {
 
     tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
         byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
-            data(byDigest, nameFn = { it.b64msg }) { nameMaxLength = 32 } - { test ->
-                val verifier =
-                    SignatureAlgorithm.RSA(test.parameters).verifierFor(test.key).getOrThrow()
-                verifier.verify(test.msg, test.sig) should succeed
-                verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
-                Random.of(byDigest).let {
-                    if (it !== test) {
-                        verifier.verify(it.msg, test.sig) shouldNot succeed
-                        verifier.verify(it.msg, it.sig) shouldNot succeed
+            data(byDigest, nameFn = { it.b64msg }) - { test ->
+                "basic verification" {
+                    val verifier =
+                        SignatureAlgorithm.RSA(test.parameters).verifierFor(test.key).getOrThrow()
+                    verifier.verify(test.msg, test.sig) should succeed
+                    verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
+                    Random.of(byDigest).let {
+                        if (it !== test) {
+                            verifier.verify(it.msg, test.sig) shouldNot succeed
+                            verifier.verify(it.msg, it.sig) shouldNot succeed
+                        }
                     }
                 }
                 compact("digest mismatch") { concurrency = CompactConcurrency.Shared(8) } - {

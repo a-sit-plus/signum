@@ -1,10 +1,14 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.Der
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.internals.orLazy
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
@@ -16,6 +20,43 @@ sealed interface CertificateExtension : Identifiable {
     val critical: Boolean
     sealed interface X509Representable : CertificateExtension, DerEncodable<Awesn1X509CertificateExtension> {
         val derEncodedValue: ByteArray
+    }
+
+    /**
+     * Describes a typed [X509Representable] extension and knows how to construct it from its
+     * generic awesn1 representation. Mirrors [AttributeTypeAndValue.Descriptor]; register custom
+     * extension types via [register].
+     */
+    interface Descriptor : Identifiable {
+        fun fromAsn1Representation(src: Awesn1X509CertificateExtension): X509Representable
+        fun register(): Descriptor = Registry.register(this)
+    }
+
+    /**
+     * Maps extension OIDs to their typed [Descriptor]s for the certificate-decode upgrade path.
+     *
+     * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
+     * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
+     * lookup — after that it is immutable and reads are lock-free; later [register] calls throw. This
+     * mirrors the `DefaultDer.register` contract.
+     */
+    @OptIn(ExperimentalAtomicApi::class)
+    object Registry {
+        private val descriptors = mutableMapOf<ObjectIdentifier, Descriptor>()
+        private val sealed = AtomicReference<Map<ObjectIdentifier, Descriptor>?>(null)
+
+        fun register(descriptor: Descriptor): Descriptor {
+            check(sealed.load() == null) {
+                "CertificateExtension registry is sealed; register before the first (de)serialization."
+            }
+            descriptors[descriptor.oid] = descriptor
+            return descriptor
+        }
+
+        fun descriptorFor(oid: ObjectIdentifier): Descriptor? = view()[oid]
+
+        private fun view(): Map<ObjectIdentifier, Descriptor> =
+            sealed.load() ?: descriptors.also { sealed.store(it) }
     }
 
     companion object : DerDecodable<Awesn1X509CertificateExtension, X509Representable> {
@@ -31,9 +72,19 @@ sealed interface CertificateExtension : Identifiable {
             value: Asn1OctetString,
         ): X509Representable = X509CertificateExtension(oid, critical, value)
 
-
         operator fun invoke(asn1Representation: Awesn1X509CertificateExtension): X509Representable =
-            X509CertificateExtension(asn1Representation)
+            fromAsn1Representation(asn1Representation)
+
+        /**
+         * Upgrades the generic awesn1 [src] extension to a registered typed extension (e.g. a
+         * `KeyUsageExtension` from `indispensable-pkix`) when a [Descriptor] is registered for its
+         * OID, falling back to a generic [X509CertificateExtension] otherwise. Decoding failures of
+         * a typed extension also fall back to the generic representation rather than throwing.
+         */
+        fun fromAsn1Representation(src: Awesn1X509CertificateExtension): X509Representable =
+            Registry.descriptorFor(src.oid)?.let { descriptor ->
+                catchingUnwrapped { descriptor.fromAsn1Representation(src) }.getOrNull()
+            } ?: X509CertificateExtension(src)
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
@@ -41,31 +92,16 @@ sealed interface CertificateExtension : Identifiable {
             src: Asn1Element,
             der: Der,
         ): X509Representable =
-            X509CertificateExtension(der.decodeFromTlv(serializer, src))
+            fromAsn1Representation(der.decodeFromTlv(serializer, src))
     }
 }
 
-abstract class BaseCertificateExtension(
-    override val oid: ObjectIdentifier,
-) : CertificateExtension {
-    override fun toString(): String = "CertificateExtension(oid=$oid)"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is CertificateExtension) return false
-        return oid == other.oid
-    }
-
-    override fun hashCode(): Int = oid.hashCode()
-}
-
-//we'll need a registry here, too; similar to ATV registry, because we'll want type safety. We also need to pull in Srdjan's deidacted extensions and align them with this new KxS-powered reperesentation
 open class X509CertificateExtension private constructor(
     providedAsn1Representation: Awesn1X509CertificateExtension?,
-    oid: ObjectIdentifier,
+    override val oid: ObjectIdentifier,
     override val critical: Boolean,
     override val derEncodedValue: ByteArray,
-) : BaseCertificateExtension(oid), CertificateExtension.X509Representable {
+) : CertificateExtension.X509Representable {
 
 
     constructor(
@@ -90,6 +126,12 @@ open class X509CertificateExtension private constructor(
     override val asn1Representation: Awesn1X509CertificateExtension by providedAsn1Representation orLazy {
         Awesn1X509CertificateExtension(oid, critical, derEncodedValue)
     }
+
+    /**
+     * The (parsed) ASN.1 structure carried inside this extension's `extnValue` OCTET STRING,
+     * i.e. the typed inner value typed extensions decode from.
+     */
+    val decodedValue: Asn1Element by lazy { Asn1Element.parse(derEncodedValue) }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

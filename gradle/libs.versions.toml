@@ -11,10 +11,13 @@ kotlinpoet = "2.2.0"
 kotlincryptoRandom = "0.6.0"
 asp = "20260610"
 classgraph = "4.8.184"
-bouncycastle= "1.83"
+bouncycastle= "1.84"
 testballoon = "1.0.0-K2.4.0-Beta2"
 serialization = "1.11.0"
+cidre = "0.4.0"
+urikmp = "0.0.20"
 awesn1 = "0.4.0"
+modulator = "0.1.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -29,9 +32,12 @@ classgraph = { group = "io.github.classgraph", name = "classgraph", version.ref 
 awesn1-crypto = {module = "at.asitplus.awesn1:crypto", version.ref= "awesn1"}
 awesn1-oids = {module = "at.asitplus.awesn1:oids", version.ref= "awesn1"}
 awesn1-io = {module = "at.asitplus.awesn1:kxs-io", version.ref= "awesn1"}
+cidre = { module = "at.asitplus:cidre", version.ref = "cidre"}
+urikmp = {module = "com.eygraber:uri-kmp", version.ref = "urikmp"}
 
 #for build logic conventions plugin, as it needs the artefact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+modulator = { module = "at.asitplus:gradle-modulator", version.ref = "modulator" }
 
 [plugins]
 asp = { id = "at.asitplus.gradle.conventions", version.ref = "asp" }
