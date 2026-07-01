@@ -8,9 +8,6 @@ import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.CertificateExpiredException
-import at.asitplus.signum.CertificateNotYetValidException
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -341,49 +338,6 @@ class Certificate private constructor(
      */
     fun isNotYetValid(date: Instant = Clock.System.now()): Boolean = date.epochSeconds < tbsCertificate.validFrom.epochSeconds
 
-    /** Whether this certificate is valid at [date] (i.e. neither expired nor not-yet-valid).
-     *
-     * RFC 5280 only allows second granularities in the validity interval, with
-     * two conflicting interpretations of how to handle the validity check:
-     *
-     * 1. Comparisons are performed at the granularity of the encoded
-     *    representation, i.e. `floor(time)`. Under this interpretation,
-     *    the chain is valid, since the entire millisecond interval `[0, .999...]`
-     *    is truncated to `0`.
-     * 2. Comparisons are instantaneous. Under this interpretation the chain
-     *    is **invalid**, since 5 milliseconds after the `notAfter` is factually
-     *    after the `notAfter`.
-     *
-     * There is no clear "winning" interpretation here, although
-     * CAs in the Web PKI have filed and handled compliance reports based on
-     * interpretation (1). **Hence, we truncate to seconds precision**.
-     *
-     */
-    fun isValidAt(date: Instant = Clock.System.now()): Boolean = runCatching { checkValidityAt(date) }.isSuccess
-
-    /**
-     * RFC 5280 only allows second granularities in the validity interval, with
-     * two conflicting interpretations of how to handle the validity check:
-     *
-     * 1. Comparisons are performed at the granularity of the encoded
-     *    representation, i.e. `floor(time)`. Under this interpretation,
-     *    the chain is valid, since the entire millisecond interval `[0, .999...]`
-     *    is truncated to `0`.
-     * 2. Comparisons are instantaneous. Under this interpretation the chain
-     *    is **invalid**, since 5 milliseconds after the `notAfter` is factually
-     *    after the `notAfter`.
-     *
-     * There is no clear "winning" interpretation here, although
-     * CAs in the Web PKI have filed and handled compliance reports based on
-     * interpretation (1). **Hence, we truncate to seconds precision**.
-     *
-     */
-    @Throws(CertificateValidityException::class)
-    fun checkValidityAt(date: Instant = Clock.System.now()) {
-        if (isExpired(date)) throw CertificateExpiredException(tbsCertificate.validUntil, checkedAt = date)
-        if (isNotYetValid(date)) throw CertificateNotYetValidException(tbsCertificate.validFrom, checkedAt = date)
-    }
-
     /**
      * Debug String representation. Uses Base64 encoded DER representation
      */
@@ -460,9 +414,6 @@ typealias CertificateChain = List<Certificate>
 
 val CertificateChain.leaf: Certificate get() = first()
 val CertificateChain.root: Certificate get() = last()
-
-/** The chain ordered from trust anchor to leaf (reverse of the conventional leaf-first order). */
-val CertificateChain.validationPath: CertificateChain get() = reversed()
 
 /** Returns the first extension of type [T] (e.g. a typed [CertificateExtension]), or `null`. */
 inline fun <reified T : CertificateExtension> Certificate.findExtension(): T? =

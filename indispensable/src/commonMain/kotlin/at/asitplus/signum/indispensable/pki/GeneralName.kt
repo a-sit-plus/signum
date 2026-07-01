@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Decodable
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Encodable
