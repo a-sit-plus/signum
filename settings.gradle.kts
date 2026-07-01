@@ -28,7 +28,9 @@ develocity {
 
 // Include the local build logic as a composite build
 includeBuild("buildlogic")
-includeBuild("awesn1")
+val awesn1 = file("awesn1")
+if (awesn1.exists() && awesn1.isDirectory() && file(awesn1.path + "/build.gradle.kts").exists())
+    includeBuild("awesn1")
 
 include(":internals")
 include(":indispensable")
