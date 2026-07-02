@@ -476,7 +476,11 @@ data class JwsHeader(
             protectedHeader: ByteArray? = null,
             unprotectedHeader: Part? = null,
         ): JwsHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.let(JwsProtectedHeaderSerializer::decodeToJsonObject),
+            protectedHeader = protectedHeader?.let {
+                joseCompliantSerializer.decodeFromString<JsonObject>(
+                    it.decodeToString()
+                )
+            },
             unprotectedHeader = unprotectedHeader?.toJsonObject(),
         )
 
@@ -515,7 +519,7 @@ fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
     clientId = clientId,
 )
 
-fun Part.toJwsHeader(): JwsHeader = JwsHeader(
+fun JwsHeader.Part.toJwsHeader(): JwsHeader = JwsHeader(
     keyId = keyId,
     type = type,
     algorithm = algorithm!!,

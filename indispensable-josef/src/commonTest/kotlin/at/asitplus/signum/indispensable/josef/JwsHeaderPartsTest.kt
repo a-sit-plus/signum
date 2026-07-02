@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
 val JwsHeaderPartsTest by matrixSuite {
@@ -62,7 +63,7 @@ val JwsHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure().message shouldBe "Collision"
+        exception.shouldBeFailure().message shouldContain "Duplicate keys"
     }
 
     "encoded protected header bytes can be merged with unprotected fields" {
@@ -98,7 +99,7 @@ val JwsHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure().message shouldBe "Collision"
+        exception.shouldBeFailure().message shouldContain "Duplicate keys"
     }
 
     "flattened JWS accepts typed header parts" {

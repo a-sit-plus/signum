@@ -61,7 +61,7 @@ val JweJvmTest by matrixSuite {
     }
 
     "JWE invoke builders with typed JwtClaims can be decrypted by Nimbus" {
-        val jwtBaseClaims = JwtBaseClaims(
+        val jwtBaseClaims = JsonWebToken(
             issuer = "https://issuer.example",
             subject = "alice",
             audience = "test-suite",
@@ -152,5 +152,5 @@ private fun JWEObject.toEncryptionOutput(): JweEncryptor.EncryptionOutput = JweE
     authenticationTag = authTag.decode(),
 )
 
-private fun JwtBaseClaims.toPlaintext(): ByteArray =
-    joseCompliantSerializer.encodeToString(JwtBaseClaims.serializer(), this).encodeToByteArray()
+private fun JsonWebToken.toPlaintext(): ByteArray =
+    joseCompliantSerializer.encodeToString(JsonWebToken.serializer(), this).encodeToByteArray()
