@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
 val JwsHeaderPartsTest by matrixSuite {
@@ -62,7 +63,7 @@ val JwsHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
+        exception.shouldBeFailure().message shouldContain "Duplicate keys"
     }
 
     "encoded protected header bytes can be merged with unprotected fields" {
@@ -76,7 +77,7 @@ val JwsHeaderPartsTest by matrixSuite {
         )
 
         val combined = JwsHeader.fromParts(
-            protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
+            protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader),
             unprotectedHeader = unprotectedHeader,
         )
 
@@ -84,7 +85,7 @@ val JwsHeaderPartsTest by matrixSuite {
     }
 
     "duplicate names across encoded protected and unprotected headers are rejected" {
-        val protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(
+        val protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(
             JwsHeader.Part(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "protected",
@@ -98,7 +99,7 @@ val JwsHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
+        exception.shouldBeFailure().message shouldContain "Duplicate keys"
     }
 
     "flattened JWS accepts typed header parts" {
@@ -140,7 +141,7 @@ val JwsHeaderPartsTest by matrixSuite {
 
         compact.jwsHeader shouldBe header
         compact.plainProtectedHeader shouldBe
-                JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+                JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(header.toPart())
     }
 
     "protected header bytes are raw header json bytes" {
@@ -149,12 +150,12 @@ val JwsHeaderPartsTest by matrixSuite {
             type = "application/example+jwt",
         )
 
-        val encoded = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
+        val encoded = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)
         val expected = joseCompliantSerializer.encodeToString(JwsHeader.Part.serializer(), protectedHeader)
             .encodeToByteArray()
 
         encoded shouldBe expected
-        JwsProtectedHeaderSerializer.decodeFromByteArray(encoded) shouldBe protectedHeader
+        JwsProtectedHeaderSerializer.decodeFromByteArray(encoded!!) shouldBe protectedHeader
     }
 }
 

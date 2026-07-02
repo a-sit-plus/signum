@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.engine.runBlocking
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -30,7 +31,7 @@ val JwsSignedRegressionTest by matrixSuite {
             byteArrayOf(1, 2, 3, 4)
         }
 
-        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(header.toPart())!!
 
         compact.plainProtectedHeader shouldBe expectedProtectedHeader
         capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
@@ -187,7 +188,7 @@ private fun compactRegressionCase(
 ): CompactRegressionCase {
     val header = JwsHeader.fromParts(protectedHeader, null)
     val compact = JwsCompact(
-        plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
+        plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader).shouldNotBeNull(),
         plainPayload = payload,
         plainSignature = plainSignature,
     )

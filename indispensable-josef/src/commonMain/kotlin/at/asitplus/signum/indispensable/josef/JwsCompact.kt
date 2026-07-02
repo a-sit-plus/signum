@@ -75,7 +75,7 @@ data class JwsCompact internal constructor(
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          * and immediately resolve the payload
          */
-        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching{
+        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching {
             val jws = JwsCompact(base64UrlString)
             val payload = jws.getPayload<P>().getOrThrow()
             jws to payload
@@ -108,7 +108,7 @@ data class JwsCompact internal constructor(
         }
 
         /**
-         * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
+         * Build a new [JwsCompact]
          * from components and immediately sign the correct representation.
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
@@ -119,9 +119,9 @@ data class JwsCompact internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
+            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader.toPart())
             return JwsCompact(
-                plainProtectedHeader = plainProtectedHeader,
+                plainProtectedHeader = plainProtectedHeader!!,
                 plainPayload = payload,
                 plainSignature = signer(getSignatureInput(plainProtectedHeader, payload)),
             )

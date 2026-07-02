@@ -10,7 +10,8 @@ import at.asitplus.signum.indispensable.contentHashCodeIfArray
  *
  * @see [JweEncrypted]
  */
-data class JweDecrypted<T: Any>(
+@Deprecated("Use JweTyped instead", replaceWith = ReplaceWith("JweTyped"))
+data class JweDecrypted<T : Any>(
     val header: JweHeader,
     val payload: T,
 ) {

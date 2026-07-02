@@ -217,7 +217,7 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
+     * third party. May be parsed as a [JwsCompact], with [JwtBaseClaims] as the payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactStringSerializer::class)
@@ -476,7 +476,11 @@ data class JwsHeader(
             protectedHeader: ByteArray? = null,
             unprotectedHeader: Part? = null,
         ): JwsHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.let(JwsProtectedHeaderSerializer::decodeToJsonObject),
+            protectedHeader = protectedHeader?.let {
+                joseCompliantSerializer.decodeFromString<JsonObject>(
+                    it.decodeToString()
+                )
+            },
             unprotectedHeader = unprotectedHeader?.toJsonObject(),
         )
 
@@ -499,6 +503,26 @@ fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
     keyId = keyId,
     type = type,
     algorithm = algorithm,
+    contentType = contentType,
+    certificateChain = certificateChain,
+    notBefore = notBefore,
+    issuedAt = issuedAt,
+    expiration = expiration,
+    jsonWebKey = jsonWebKey,
+    jsonWebKeySetUrl = jsonWebKeySetUrl,
+    certificateUrl = certificateUrl,
+    certificateSha1Thumbprint = certificateSha1Thumbprint,
+    certificateSha256Thumbprint = certificateSha256Thumbprint,
+    attestationJwt = attestationJwt,
+    keyAttestation = keyAttestation,
+    vcTypeMetadata = vcTypeMetadata,
+    clientId = clientId,
+)
+
+fun JwsHeader.Part.toJwsHeader(): JwsHeader = JwsHeader(
+    keyId = keyId,
+    type = type,
+    algorithm = algorithm!!,
     contentType = contentType,
     certificateChain = certificateChain,
     notBefore = notBefore,

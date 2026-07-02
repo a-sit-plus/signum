@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.typed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonObject
@@ -23,7 +22,7 @@ val JwsTypedTest by matrixSuite {
             keyId = "kid-compact",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(header.toPart())!!
         var capturedSignatureInput: ByteArray? = null
 
         val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
