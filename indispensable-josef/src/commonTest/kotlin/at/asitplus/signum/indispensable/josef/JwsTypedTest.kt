@@ -39,7 +39,7 @@ val JwsTypedTest by matrixSuite {
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedCompact.toString() shouldBe typedCompact.jws.toString()
 
-        typedCompact.jws.typed<JsonObject, JwsCompact>() shouldBe typedCompact
+        typedCompact.jws.typed<JwsCompact, JsonObject>() shouldBe typedCompact
         JwsTyped<JsonObject>(typedCompact.toString()) shouldBe typedCompact
     }
 
@@ -60,6 +60,28 @@ val JwsTypedTest by matrixSuite {
         typedFlattened.payload shouldBe payload
         typedFlattened.jws shouldBe typedCompact.jws.toJwsFlattened()
         reparsedCompact shouldBe typedCompact
+    }
+
+    "typed serializer template roundtrips compact JWS with typed payload" {
+        val serializer = JwsTypedSerializerTemplate(
+            JwsCompactStringSerializer,
+            JsonObject.serializer(),
+        )
+        val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
+            protectedHeader = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                keyId = "kid-serializer",
+            ),
+            payload = payload,
+        ) {
+            byteArrayOf(5, 6, 7, 8)
+        }
+
+        val serialized = joseCompliantSerializer.encodeToString(serializer, typedCompact)
+        val reparsed = joseCompliantSerializer.decodeFromString(serializer, serialized)
+
+        reparsed shouldBe typedCompact
+        reparsed.payload shouldBe payload
     }
 
     "flattened typed wrappers can be created from header fragments and existing flattened JWS" {
@@ -90,7 +112,7 @@ val JwsTypedTest by matrixSuite {
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
-        typedFlattened.jws.typed<JsonObject, JwsFlattened>() shouldBe typedFlattened
+        typedFlattened.jws.typed<JwsFlattened, JsonObject>() shouldBe typedFlattened
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
@@ -122,6 +144,6 @@ val JwsTypedTest by matrixSuite {
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toJwsFlattenedTyped() shouldBe listOf(first, second)
 
-        typedGeneral.jws.typed<JsonObject, JwsGeneral>() shouldBe typedGeneral
+        typedGeneral.jws.typed<JwsGeneral, JsonObject>() shouldBe typedGeneral
     }
 }
