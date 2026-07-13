@@ -1,11 +1,11 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.propigator.common.ObjectBackedValidated
-import at.asitplus.propigator.json.*
+import at.asitplus.propigator.json.JsonObjectBackedSerializerTemplate
+import at.asitplus.propigator.json.jsonProperty
 import at.asitplus.signum.indispensable.josef.JwtBaseClaims
+import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
 import at.asitplus.signum.indispensable.josef.JwtPayload
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.JwtClaimNames.IanaRegistered
 import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -15,17 +15,18 @@ import kotlinx.serialization.json.*
 @Deprecated("Will move into VCK next release")
 data class ClientAttestationPayload(
     private val raw: JsonObject,
-    private val json: Json = joseCompliantSerializer,
-) : JwtPayload(raw, json), ObjectBackedValidated {
+    private val json: Json = joseCompliantSerializer
+) : JwtPayload(raw, json) {
 
     constructor(
         jwtBase: JwtBaseClaims,
         confirmationClaim: ConfirmationClaim,
-        misc: Map<String, JsonElement>,
+        misc: Map<String, JsonElement>? = null,
+        json: Json = joseCompliantSerializer
     ) : this(
-        joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
-            .strictUnion(IanaRegistered.ClaimNames.RFC7800.encodeCNF(confirmationClaim))
-            .strictUnion(JsonObject(misc))
+        json.encodeToJsonElement(jwtBase).jsonObject
+            .strictUnion(IanaRegistered.ClaimNames.RFC7800.encodeCNF(confirmationClaim, json))
+            .strictUnion(misc?.let { JsonObject(it) })
     )
 
     /**
@@ -45,10 +46,14 @@ data class ClientAttestationPayload(
         confirmationClaim
     }
 
-    object Serializer : KSerializer<ClientAttestationPayload> by JsonObjectBackedSerializer(::ClientAttestationPayload)
+    object Serializer :
+        KSerializer<ClientAttestationPayload> by JsonObjectBackedSerializerTemplate(::ClientAttestationPayload)
 }
 
 @Deprecated("Will move into VCK next release")
-private fun IanaRegistered.ClaimNames.RFC7800.encodeCNF(cnf: ConfirmationClaim): JsonObject = JsonObject(
-    mapOf(this.CNF to joseCompliantSerializer.encodeToJsonElement(cnf))
+private fun IanaRegistered.ClaimNames.RFC7800.encodeCNF(
+    cnf: ConfirmationClaim,
+    json: Json
+): JsonObject = JsonObject(
+    mapOf(this.CNF to json.encodeToJsonElement(cnf))
 )

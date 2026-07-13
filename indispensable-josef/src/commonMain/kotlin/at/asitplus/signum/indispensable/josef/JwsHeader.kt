@@ -218,7 +218,7 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompact], with [JwtBaseClaims] as the payload.
+     * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactStringSerializer::class)

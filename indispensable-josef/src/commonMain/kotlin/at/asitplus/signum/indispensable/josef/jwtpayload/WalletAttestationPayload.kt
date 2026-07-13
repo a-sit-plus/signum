@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.propigator.common.ObjectBackedValidated
-import at.asitplus.propigator.json.JsonObjectBackedSerializer
+import at.asitplus.propigator.json.JsonObjectBackedSerializerTemplate
 import at.asitplus.propigator.json.jsonSlice
 import at.asitplus.signum.indispensable.josef.JwtBaseClaims
 import at.asitplus.signum.indispensable.josef.JwtPayload
@@ -16,17 +15,21 @@ import kotlinx.serialization.json.*
 @Serializable(with = WalletAttestationPayload.Serializer::class)
 data class WalletAttestationPayload(
     private val raw: JsonObject,
-    private val json: Json = joseCompliantSerializer,
-) : JwtPayload(raw, json), ObjectBackedValidated {
+    private val json: Json = joseCompliantSerializer
+) : JwtPayload(raw, json) {
 
+    /**
+     * It is assumed that elements in [misc] are encoded correctly
+     */
     constructor(
         jwtBase: JwtBaseClaims,
         walletAttestationClaims: WalletAttestationClaims,
-        misc: Map<String, JsonElement>,
+        misc: Map<String, JsonElement>? = null,
+        json: Json = joseCompliantSerializer
     ) : this(
-        joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
-            .strictUnion(joseCompliantSerializer.encodeToJsonElement(walletAttestationClaims).jsonObject)
-            .strictUnion(JsonObject(misc))
+        json.encodeToJsonElement(jwtBase).jsonObject
+            .strictUnion(json.encodeToJsonElement(walletAttestationClaims).jsonObject)
+            .strictUnion(misc?.let { JsonObject(it) })
     )
 
     val walletAttestationClaims: WalletAttestationClaims by jsonSlice()
@@ -38,5 +41,6 @@ data class WalletAttestationPayload(
         jwtBaseClaims.expiration!!
     }
 
-    object Serializer : KSerializer<WalletAttestationPayload> by JsonObjectBackedSerializer(::WalletAttestationPayload)
+    object Serializer :
+        KSerializer<WalletAttestationPayload> by JsonObjectBackedSerializerTemplate(::WalletAttestationPayload)
 }

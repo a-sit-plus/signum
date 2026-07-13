@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef.jwtpayload
 
-import at.asitplus.propigator.common.ObjectBackedValidated
-import at.asitplus.propigator.json.JsonObjectBackedSerializer
+import at.asitplus.propigator.json.JsonObjectBackedSerializerTemplate
 import at.asitplus.propigator.json.jsonSlice
 import at.asitplus.signum.indispensable.josef.JwtBaseClaims
 import at.asitplus.signum.indispensable.josef.JwtPayload
@@ -9,27 +8,28 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.strictUnion
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
 
 @Deprecated("Will move into VCK next release")
 @Serializable(with = KeyAttestationPayload.Serializer::class)
 data class KeyAttestationPayload(
     private val raw: JsonObject,
-    private val json: Json = joseCompliantSerializer,
-) : JwtPayload(raw, json), ObjectBackedValidated {
+    private val json: Json = joseCompliantSerializer
+) : JwtPayload(raw, json) {
 
+
+    /**
+     * It is assumed that elements in [misc] are encoded correctly
+     */
     constructor(
         jwtBase: JwtBaseClaims,
         keyAttestationClaims: KeyAttestationClaims,
-        misc: Map<String, JsonElement>,
+        misc: Map<String, JsonElement>? = null,
+        json: Json = joseCompliantSerializer
     ) : this(
-        joseCompliantSerializer.encodeToJsonElement(jwtBase).jsonObject
-            .strictUnion(joseCompliantSerializer.encodeToJsonElement(keyAttestationClaims).jsonObject)
-            .strictUnion(JsonObject(misc))
+        json.encodeToJsonElement(jwtBase).jsonObject
+            .strictUnion(json.encodeToJsonElement(keyAttestationClaims).jsonObject)
+            .strictUnion(misc?.let { JsonObject(it) })
     )
 
     val keyAttestationClaims: KeyAttestationClaims by jsonSlice()
@@ -41,5 +41,6 @@ data class KeyAttestationPayload(
         keyAttestationClaims
     }
 
-    object Serializer : KSerializer<KeyAttestationPayload> by JsonObjectBackedSerializer(::KeyAttestationPayload)
+    object Serializer :
+        KSerializer<KeyAttestationPayload> by JsonObjectBackedSerializerTemplate(::KeyAttestationPayload)
 }
