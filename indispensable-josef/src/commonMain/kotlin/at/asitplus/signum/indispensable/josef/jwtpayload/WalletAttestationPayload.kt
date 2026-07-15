@@ -13,9 +13,9 @@ import kotlinx.serialization.json.*
 
 @Deprecated("Will move into VCK next release")
 @Serializable(with = WalletAttestationPayload.Serializer::class)
-data class WalletAttestationPayload(
-    private val raw: JsonObject,
-    private val json: Json = joseCompliantSerializer
+class WalletAttestationPayload(
+    raw: JsonObject,
+    json: Json = joseCompliantSerializer
 ) : JwtPayload(raw, json) {
 
     /**

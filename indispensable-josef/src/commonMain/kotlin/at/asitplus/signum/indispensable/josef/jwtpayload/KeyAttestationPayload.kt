@@ -12,9 +12,9 @@ import kotlinx.serialization.json.*
 
 @Deprecated("Will move into VCK next release")
 @Serializable(with = KeyAttestationPayload.Serializer::class)
-data class KeyAttestationPayload(
-    private val raw: JsonObject,
-    private val json: Json = joseCompliantSerializer
+class KeyAttestationPayload(
+    raw: JsonObject,
+    json: Json = joseCompliantSerializer
 ) : JwtPayload(raw, json) {
 
 

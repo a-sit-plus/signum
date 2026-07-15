@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
 @Suppress("unused")
-@Deprecated("Renamed to better reflect content", ReplaceWith("jwtpayload"))
+@Deprecated("Renamed to better reflect content", ReplaceWith("JwtBaseClaims"))
 typealias JsonWebToken = JwtBaseClaims
 
 /**

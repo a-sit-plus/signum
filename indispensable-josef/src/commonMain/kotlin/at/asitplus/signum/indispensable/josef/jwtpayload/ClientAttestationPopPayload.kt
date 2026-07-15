@@ -14,9 +14,9 @@ import kotlinx.serialization.json.*
 
 @Serializable(with = ClientAttestationPopPayload.Serializer::class)
 @Deprecated("Will move into VCK next release")
-data class ClientAttestationPopPayload(
-    private val raw: JsonObject,
-    private val json: Json = joseCompliantSerializer,
+class ClientAttestationPopPayload(
+    raw: JsonObject,
+    json: Json = joseCompliantSerializer,
 ) : JwtPayload(raw, json) {
     /**
      * Challenge is currently modeled as string
