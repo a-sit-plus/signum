@@ -25,6 +25,14 @@
     * Bouncy Castle 1.84
     * kotlinx.serialization 1.11.0
 * Matrix testing
+* Rework JWT-Payload handling
+  * Renamed `JsonWebToken` to `JwsBaseClaims` which will only contain default attributes in the future
+    * IANA and EUDI claim names are defined as constants in `JwtClaimNames` to be implemented using Propigator
+  * JWT Payloads build on top of the new base class:
+    * Add `JwtPayload` open class as base class for all valid Json Web Token Payloads 
+    * Add `KeyAttestationPayload` class which replaces `KeyAttestationJwt`. Will move into [VCK](https://github.com/a-sit-plus/vck) next release
+    * Add `WalletAttestationPayload` class which extends `JwtClaims` as defined in EUDI TS3 / OID4VCI. Will move into [VCK](https://github.com/a-sit-plus/vck) next release
+    * Add `ClientAttestationPayload`/`ClientAttestationPopPayload` as defined in draft-ietf-oauth-attestation-based-client-auth-08. Will move into [VCK](https://github.com/a-sit-plus/vck) next release
 
 ## 3.22.0 / (Supreme unaffected)
 * Update `KeyAttestationJwt` to [EUDI Wallet TS3](https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md) from 2026-03-15
