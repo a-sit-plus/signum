@@ -14,7 +14,7 @@ import kotlinx.serialization.json.*
 
 @Serializable(with = ClientAttestationPopPayload.Serializer::class)
 @Deprecated("Will move into VCK next release")
-class ClientAttestationPopPayload(
+class ClientAttestationPopPayload private constructor(
     raw: JsonObject,
     json: Json = joseCompliantSerializer,
 ) : JwtPayload(raw, json) {
