@@ -17,19 +17,19 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
 
     "splitRespectingEscapeAndQuotes should split simple RDN" {
         val input = "CN=John+O=Company"
-        val result = splitRespectingEscapeAndQuotes(input, '+')
+        val result = input.splitRespectingEscapeAndQuotes('+')
         result shouldBe listOf("CN=John", "O=Company")
     }
 
     "splitRespectingEscapeAndQuotes should ignore delimiter inside quotes" {
         val input = """CN="John+Doe"+O=Company"""
-        val result = splitRespectingEscapeAndQuotes(input, '+')
+        val result = input.splitRespectingEscapeAndQuotes('+')
         result shouldBe listOf("""CN="John+Doe"""", "O=Company")
     }
 
     "splitRespectingEscapeAndQuotes should preserve escaped delimiter" {
         val input = """CN=John\+Doe+O=Company"""
-        val result = splitRespectingEscapeAndQuotes(input, '+')
+        val result = input.splitRespectingEscapeAndQuotes('+')
         result shouldBe listOf("""CN=John\+Doe""", "O=Company")
     }
 

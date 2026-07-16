@@ -3,8 +3,10 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
+import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.CryptoSignature.Companion.invoke
