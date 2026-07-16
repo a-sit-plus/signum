@@ -3,15 +3,15 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
-import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoSignature.Companion.invoke
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
+import at.asitplus.signum.indispensable.pki.Certificate.Companion.decodeFromTlv
 import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
@@ -250,7 +250,10 @@ class Certificate private constructor(
 
     constructor(asn1Representation: X509Certificate) : this(
         asn1Representation.also {
-            require(it.signatureAlgorithm == it.tbsCertificate.signatureAlgorithm) { "Inner TBS certificate signature algorithm ${it.tbsCertificate.signatureAlgorithm} != certificate outer signature algorithm ${it.signatureAlgorithm}, that earns the whole certificate with serial ${it.tbsCertificate.serialNumber} a spot on my naughty list!" }
+            require(it.signatureAlgorithm == it.tbsCertificate.signatureAlgorithm) {
+                "Inner TBS certificate signature algorithm ${it.tbsCertificate.signatureAlgorithm} != certificate outer " +
+                        "signature algorithm ${it.signatureAlgorithm}, that earns the whole certificate with serial " +
+                        "${it.tbsCertificate.serialNumber} a spot on my naughty list!" }
         },
         null,
         null
@@ -295,7 +298,7 @@ class Certificate private constructor(
 
 
     init {
-            require(tbsCertificate.extensions.distinctBy { it.oid }.size == tbsCertificate.extensions.size) { "Multiple extensions with the same OID found" }
+        require(tbsCertificate.extensions.distinctBy { it.oid }.size == tbsCertificate.extensions.size) { "Multiple extensions with the same OID found" }
     }
 
     /** Whether this certificate is expired at [date].
@@ -316,7 +319,8 @@ class Certificate private constructor(
      * interpretation (1). **Hence, we truncate to seconds precision**.
      *
      */
-    fun isExpired(date: Instant = Clock.System.now()): Boolean = date.epochSeconds > tbsCertificate.validUntil.epochSeconds
+    fun isExpired(date: Instant = Clock.System.now()): Boolean =
+        date.epochSeconds > tbsCertificate.validUntil.epochSeconds
 
     /** Whether this certificate is not yet valid at [date].
      *
@@ -336,7 +340,8 @@ class Certificate private constructor(
      * interpretation (1). **Hence, we truncate to seconds precision**.
      *
      */
-    fun isNotYetValid(date: Instant = Clock.System.now()): Boolean = date.epochSeconds < tbsCertificate.validFrom.epochSeconds
+    fun isNotYetValid(date: Instant = Clock.System.now()): Boolean =
+        date.epochSeconds < tbsCertificate.validFrom.epochSeconds
 
     /**
      * Debug String representation. Uses Base64 encoded DER representation

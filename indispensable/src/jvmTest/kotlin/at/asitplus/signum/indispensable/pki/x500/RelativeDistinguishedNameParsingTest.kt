@@ -35,19 +35,19 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
 
     "splitFirstUnescaped should split on first unescaped delimiter" {
         val input = "CN=John Doe"
-        val result = splitFirstUnescaped(input, '=')
+        val result = input.splitFirstUnescaped('=')
         result shouldBe listOf("CN", "John Doe")
     }
 
     "splitFirstUnescaped should preserve escaped delimiter" {
         val input = "CN=John\\=Doe"
-        val result = splitFirstUnescaped(input, '=')
+        val result = input.splitFirstUnescaped('=')
         result shouldBe listOf("CN", "John\\=Doe")
     }
 
     "splitFirstUnescaped should return whole string if delimiter missing" {
         val input = "CNJohnDoe"
-        val result = splitFirstUnescaped(input, '=')
+        val result = input.splitFirstUnescaped('=')
         result shouldBe listOf("CNJohnDoe")
     }
 
@@ -87,7 +87,7 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
 
     bcExamples.forEachIndexed { index, dn ->
         "Bouncy Castle example #$index should round-trip through splitRespectingEscapeAndQuotes" {
-            val rdnStrings = splitRespectingEscapeAndQuotes(dn, ',')
+            val rdnStrings = dn.splitRespectingEscapeAndQuotes(',')
 
             // Ensure we split into multiple RDNs if there are commas outside quotes
             rdnStrings.size shouldBeGreaterThan 0
@@ -107,7 +107,7 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
     hexExamples.forEachIndexed { index, input ->
         "Hex escaping example #$index should preserve escapes" {
             val dn = "CN=$input,O=\\ Test,C=GB"
-            val rdnStrings = splitRespectingEscapeAndQuotes(dn, ',')
+            val rdnStrings = dn.splitRespectingEscapeAndQuotes(',')
 
             // 1. Ensure we split correctly
             rdnStrings.size shouldBe 3
