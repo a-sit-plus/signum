@@ -10,6 +10,8 @@ import at.asitplus.awesn1.TagClass
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
+//TODO TODO TODO: Still needs to be ridden of ASN.1 specifics and made more generic! Still stays here for now a s plug for pkix extension module
+
 /** Builds an IMPLICIT context-specific primitive tag for a GeneralName CHOICE alternative. */
 fun contextTag(value: ULong) = Asn1Element.Tag(value, constructed = false, TagClass.CONTEXT_SPECIFIC)
 

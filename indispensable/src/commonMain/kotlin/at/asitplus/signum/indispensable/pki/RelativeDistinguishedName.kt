@@ -19,6 +19,9 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.KSerializer
 
+
+//TODO: this is a plug for pkix extension, needs further review separately
+
 /**
  * X.500 Name (used in X.509 Certificates)
  */
@@ -74,9 +77,6 @@ class RelativeDistinguishedName private constructor(
 
     companion object : DerDecodable<X500RelativeDistinguishedName, RelativeDistinguishedName> {
 
-        fun fromTlv(src: Asn1Element): RelativeDistinguishedName =
-            decodeFromTlv(X500RelativeDistinguishedName.serializer(), src, DER)
-
         override fun decodeFromTlv(
             serializer: KSerializer<X500RelativeDistinguishedName>,
             src: Asn1Element,
@@ -88,8 +88,8 @@ class RelativeDistinguishedName private constructor(
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company").
          */
         fun fromString(rdnStr: String): RelativeDistinguishedName {
-            val atvs = splitRespectingEscapeAndQuotes(rdnStr, '+').map { atvStr ->
-                val parts = splitFirstUnescaped(atvStr, '=')
+            val atvs = rdnStr.splitRespectingEscapeAndQuotes('+').map { atvStr ->
+                val parts = atvStr.splitFirstUnescaped( '=')
                 if (parts.size != 2) throw IllegalArgumentException("Invalid RDN part: $atvStr")
                 AttributeTypeAndValue.fromString(parts[0], parts[1])
                     ?: throw IllegalArgumentException("Unknown RDN part: $atvStr")
@@ -97,18 +97,18 @@ class RelativeDistinguishedName private constructor(
             return RelativeDistinguishedName(atvs.toSet())
         }
 
-        internal fun splitFirstUnescaped(input: String, delimiter: Char): List<String> {
+        internal fun String.splitFirstUnescaped(delimiter: Char): List<String> {
             val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
-            return input.split(regex, limit = 2)
+            return this.split(regex, limit = 2)
         }
 
-        internal fun splitRespectingEscapeAndQuotes(input: String, delimiter: Char): List<String> {
+        internal fun String.splitRespectingEscapeAndQuotes(delimiter: Char): List<String> {
             val parts = mutableListOf<String>()
             val sb = StringBuilder()
             var escaped = false
             var inQuotes = false
 
-            input.forEach { c ->
+            this.forEach { c ->
                 when {
                     escaped -> {
                         sb.append('\\').append(c)
@@ -249,7 +249,7 @@ sealed interface AttributeTypeAndValue : Identifiable {
             val key = type.trim()
             val v = value.trim()
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
-            if (v.length > 1 && v.first() == '#' && isHexString(v.substring(1))) {
+            if (v.length > 1 && v.first() == '#' &&  isHexString(v.substring(1))) {
                 catchingUnwrapped { Asn1Element.parse(v.substring(1).hexToByteArray()) }.getOrNull()?.let { element ->
                     val oid = Registry.descriptorForName(key)?.oid
                         ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
