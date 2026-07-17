@@ -12,6 +12,9 @@ import platform.Security.errSecVerifyFailed
 
 /**
  * Configures iOS-specific properties.
+ *
+ * The iOS Security framework supports RSA-PSS only with MGF1 using the signature digest, a salt length equal to the
+ * digest output length, and trailer field `1`.
  */
 actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data()
 

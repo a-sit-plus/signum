@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
+import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.pki.Certificate
@@ -38,13 +38,24 @@ import javax.crypto.spec.PSource
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val Digest.jcaPSSParams
-    get() = when (this) {
-        Digest.SHA1 -> PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1)
-        Digest.SHA256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
-        Digest.SHA384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
-        Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
-    }
+val SignatureAlgorithm.RSA.Parameters.PssPadded.jcaPSSParams
+    get() = if (mgfAlgorithm !is SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1) throw UnsupportedOperationException(
+        "Only Pkcs1MGF1 is supported"
+    ) else
+        PSSParameterSpec(
+            digest.jcaName,
+            "MGF1",
+            when ((mgfAlgorithm as SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1).digest) {
+                Digest.SHA1 -> MGF1ParameterSpec.SHA1
+                Digest.SHA256 -> MGF1ParameterSpec.SHA256
+                Digest.SHA384 -> MGF1ParameterSpec.SHA384
+                Digest.SHA512 -> MGF1ParameterSpec.SHA512
+                else -> throw UnsupportedOperationException("Only SHA1, SHA256, SHA384, SHA512 are supported") //important for extenisbility
+            },
+            saltLength.toInt(),
+            trailerField
+        )
+
 
 internal fun sigGetInstance(alg: String, provider: String?): Signature =
     when (provider) {

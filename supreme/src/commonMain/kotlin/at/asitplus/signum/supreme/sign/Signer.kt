@@ -110,7 +110,12 @@ interface Signer {
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
 
-    /** A [Signer] that signs using RSA. */
+    /**
+     * A [Signer] that signs using RSA.
+     *
+     * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
+     * and trailer field `1`. Other RSA-PSS parameter combinations fail as unsupported by the platform.
+     */
     interface RSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.RSA
@@ -163,6 +168,12 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>):
 fun SignatureAlgorithm.ECDSA.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
     catching { makePrivateKeySigner(privateKey, this) }
 
+/**
+ * Creates an RSA signer for [privateKey].
+ *
+ * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
+ * and trailer field `1`.
+ */
 fun SignatureAlgorithm.RSA.signerFor(privateKey: CryptoPrivateKey.RSA) =
     catching { makePrivateKeySigner(privateKey, this) }
 

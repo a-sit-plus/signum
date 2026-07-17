@@ -114,6 +114,12 @@ private object LAContextStorage {
 }
 
 typealias IosSignerSigningConfiguration = PlatformSigningProviderSignerSigningConfigurationBase
+/**
+ * A signer backed by an iOS Keychain key.
+ *
+ * RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length, and trailer
+ * field `1`, as required by the iOS Security framework.
+ */
 sealed class IosSigner(final override val alias: String,
                        internal/*cannot be protected, as IosKeyMetadata is internal*/ val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
@@ -342,6 +348,12 @@ internal data class IosKeyMetadata(
     val unlockTimeout inline get() = rawUnlockTimeout ?: Duration.INFINITE
 }
 
+/**
+ * Signing provider backed by the iOS Keychain.
+ *
+ * RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length, and trailer
+ * field `1`, as required by the iOS Security framework.
+ */
 @OptIn(ExperimentalForeignApi::class)
 object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfiguration, IosSigningKeyConfiguration> {
 

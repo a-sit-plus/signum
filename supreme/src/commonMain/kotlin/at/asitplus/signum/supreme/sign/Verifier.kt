@@ -44,6 +44,12 @@ sealed interface Verifier {
         val curve inline get() = publicKey.curve
     }
 
+    /**
+     * An RSA verifier.
+     *
+     * On iOS, platform RSA-PSS verification supports only MGF1 using the signature digest, a salt length equal to the
+     * digest output length, and trailer field `1`.
+     */
     sealed class RSA
     constructor (
         final override val signatureAlgorithm: SignatureAlgorithm.RSA,
@@ -237,6 +243,8 @@ private fun SignatureAlgorithm.ECDSA.verifierForImpl
  * attempts to fall back to a pure-Kotlin implementation.
  *
  * The platform verifier can be further configured by a lambda parameter.
+ * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
+ * and trailer field `1`.
  *
  * @see PlatformVerifierConfiguration
  */

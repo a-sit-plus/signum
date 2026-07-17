@@ -301,8 +301,8 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             ) : Parameters<RsaSsaPssParams>() {
                 constructor(
                     digest: Digest = Digest.SHA1,
-                    mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(),
-                    saltLength: UInt = DEFAULT_SALT_LENGTH.toUInt(),
+                    mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
+                    saltLength: UInt = digest.outputLength.bytes.toUInt(),
                     trailerField: Int = DEFAULT_TRAILER_FIELD
                 ) : this(PssParams(digest, mgfAlgorithm, saltLength, trailerField), null)
 
@@ -330,8 +330,10 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                 val mgfAlgorithm: MaskGenerationFunction by providedParams?.mgfAlgorithm orLazy {
                     val effectiveMaskGenAlgorithm = rsaSsaPssParams!!.effectiveMaskGenAlgorithm
                     if (MaskGenerationFunction.Pkcs1Mgf1.oid == effectiveMaskGenAlgorithm.oid) {
-                        val params = rsaSsaPssParams.effectiveMaskGenAlgorithm.element
-                        MaskGenerationFunction.Pkcs1Mgf1(Digest.entries.first { it.oid == params.first() })
+                        val digestOid = X509AlgorithmIdentifier(
+                            requireNotNull(effectiveMaskGenAlgorithm.parameters) { "MGF1 parameters are missing" }.asSequence()
+                        ).oid
+                        MaskGenerationFunction.Pkcs1Mgf1(Digest.entries.first { it.oid == digestOid })
                     } else throw IllegalArgumentException("Unsupported MGF1 algorithm: $effectiveMaskGenAlgorithm")
                 }
 
@@ -369,7 +371,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                 )
 
                 sealed class MaskGenerationFunction(override val oid: ObjectIdentifier) : Identifiable {
-                    class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
+                    data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
                         companion object : Identifiable {
                             override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                         }

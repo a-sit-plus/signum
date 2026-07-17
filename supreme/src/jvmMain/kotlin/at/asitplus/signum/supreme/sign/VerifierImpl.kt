@@ -64,7 +64,7 @@ private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifier
         is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> getSigInstance(
             "${alg.digest.jcaAlgorithmComponent}withRSA", config.provider)
         is SignatureAlgorithm.RSA.Parameters.PssPadded -> getSigInstance("RSASSA-PSS", config.provider).apply {
-            setParameter(alg.digest.jcaPSSParams)
+            setParameter((alg.parameters as SignatureAlgorithm.RSA.Parameters.PssPadded).jcaPSSParams)
         }
     }
 
