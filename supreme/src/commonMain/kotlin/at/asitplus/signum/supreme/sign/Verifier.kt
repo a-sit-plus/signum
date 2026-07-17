@@ -27,7 +27,7 @@ sealed interface Verifier {
      */
     data object Success
 
-    fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Success>
+    suspend fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Success>
 
     sealed class EC
     @Throws(IllegalArgumentException::class)
@@ -44,6 +44,12 @@ sealed interface Verifier {
         val curve inline get() = publicKey.curve
     }
 
+    /**
+     * An RSA verifier.
+     *
+     * On iOS, platform RSA-PSS verification supports only MGF1 using the signature digest, a salt length equal to the
+     * digest output length, and trailer field `1`.
+     */
     sealed class RSA
     constructor (
         final override val signatureAlgorithm: SignatureAlgorithm.RSA,
@@ -51,7 +57,7 @@ sealed interface Verifier {
     )
     : Verifier
 }
-fun Verifier.verify(data: ByteArray, sig: CryptoSignature) =
+suspend fun Verifier.verify(data: ByteArray, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
 
 expect class PlatformVerifierConfiguration internal constructor(): DSL.Data
@@ -67,7 +73,7 @@ internal expect fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              config: PlatformVerifierConfiguration)
 
-internal expect fun verifyECDSAImpl
+internal expect suspend fun verifyECDSAImpl
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              data: SignatureInput, signature: CryptoSignature.EC,
              config: PlatformVerifierConfiguration)
@@ -81,7 +87,7 @@ class PlatformECDSAVerifier
     init {
         checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier(signatureAlgorithm, publicKey, config)
     }
-    override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
         require (sig is CryptoSignature.EC)
             { "Attempted to validate non-EC signature using EC public key" }
         return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { Verifier.Success }
@@ -94,7 +100,7 @@ internal expect fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
              config: PlatformVerifierConfiguration)
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
-internal expect fun verifyRSAImpl
+internal expect suspend fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration)
@@ -108,7 +114,7 @@ class PlatformRSAVerifier
     init {
         checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier(signatureAlgorithm, publicKey, config)
     }
-    override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
         require (sig is CryptoSignature.RSA)
             { "Attempted to validate non-RSA signature using RSA public key" }
         if (data.format != null)
@@ -120,7 +126,7 @@ class PlatformRSAVerifier
 class KotlinECDSAVerifier
     internal constructor (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC)
     : Verifier.EC(signatureAlgorithm, publicKey), KotlinVerifier {
-    override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
         require (sig is CryptoSignature.EC)
             { "Attempted to validate non-EC signature using EC public key" }
 
@@ -237,10 +243,12 @@ private fun SignatureAlgorithm.ECDSA.verifierForImpl
  * attempts to fall back to a pure-Kotlin implementation.
  *
  * The platform verifier can be further configured by a lambda parameter.
+ * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
+ * and trailer field `1`.
  *
  * @see PlatformVerifierConfiguration
  */
-fun SignatureAlgorithm.RSA.verifierFor
+suspend fun SignatureAlgorithm.RSA.verifierFor
             (publicKey: CryptoPublicKey.RSA, configure: ConfigurePlatformVerifier = null) =
     verifierForImpl(publicKey, configure, allowKotlin = true)
 

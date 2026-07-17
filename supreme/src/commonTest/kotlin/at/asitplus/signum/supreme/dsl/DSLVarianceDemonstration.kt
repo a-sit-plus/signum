@@ -3,9 +3,6 @@ package at.asitplus.signum.supreme.dsl
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
-import de.infix.testBalloon.framework.core.TestConfig
-import de.infix.testBalloon.framework.core.testScope
-import kotlin.time.Duration.Companion.minutes
 
 private enum class Preparation { SHAKEN, STIRRED; }
 /* all options classes need to inherit from DSL.Data */

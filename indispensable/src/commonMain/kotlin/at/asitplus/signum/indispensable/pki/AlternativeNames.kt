@@ -1,144 +1,98 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
-
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.pki.X509GeneralNames
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.issuerAltName_2_5_29_18
+import at.asitplus.awesn1.runRethrowing
+import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.subjectAltName_2_5_29_17
+import at.asitplus.signum.indispensable.DerDecodable
+import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.pki.x500.GeneralName
+import at.asitplus.signum.internals.orLazy
+import kotlinx.serialization.KSerializer
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
- * container class constructed from a certificate's [extensions] (i.e. [TbsCertificate.extensions] filtered by OID).
- * Hence, this class is not intended to be used for constructing SANs or IANs, but used to extract them from a certificate.
+ * container class constructed from a certificate's [TbsCertificate.extensions] (filtered by OID).
  *
- * As this class performs some structural validations upon initialisation, it may throw various kinds of [Throwable]s.
- * These are **not** limited to [Asn1Exception]s, which is why constructor invocation should be wrapped inside
- * a [runRethrowing] block, as done in [findSubjectAltNames] and [findIssuerAltNames].
+ * The contents are exposed as a typed list of [GeneralName]s, which is the single source of truth.
+ * As this class parses [GeneralName]s upon initialisation, it may throw various kinds of [Throwable]s.
+ * These are **not** limited to [Asn1Exception]s, which is why construction should be wrapped inside a
+ * [runRethrowing] block, as done in [findSubjectAltNames] and [findIssuerAltNames].
  *
- * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6)
- * for details on the properties of this container class, as they are named accordingly.
+ * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6).
  */
-@ConsistentCopyVisibility
-data class AlternativeNames
-@Throws(Throwable::class)
-private constructor(private val extensions: List<Asn1Element>) {
+sealed interface AlternativeNames {
 
-    val dnsNames: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.dNSName)
-    val rfc822Names: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.rfc822Name)
-    val uris: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.uniformResourceIdentifier)
+    val generalNames: List<GeneralName>
 
-    val ipAddresses: List<ByteArray> = extensions.filter { it.tag == SubjectAltNameImplicitTags.iPAddress }.apply {
-        forEach {
-            if (it !is Asn1Primitive)
-                throw Asn1StructuralException("Invalid iPAddress Alternative Name found: ${it.toDerHexString()}")
-            else if (it.content.size != 4 && it.content.size != 16) throw Asn1StructuralException("Invalid iPAddress Alternative Name found: ${it.toDerHexString()}")
-        }
-    }.map { (it as Asn1Primitive).content }
+    sealed interface X509Representable : AlternativeNames, DerEncodable<X509GeneralNames>
 
-    val directoryNames: List<List<RelativeDistinguishedName>> =
-        extensions.filter { it.tag == SubjectAltNameImplicitTags.directoryName }.apply {
-            forEach {
-                if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${it.toDerHexString()}")
-            }
-        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.decodeFromTlv(it as Asn1Set) } }
+    companion object : DerDecodable<X509GeneralNames, X509Representable> {
 
-    val otherNames: List<Asn1Sequence> =
-        extensions.filter { it.tag == SubjectAltNameImplicitTags.otherName }.apply {
-            forEach {
-                if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid otherName Alternative Name found: ${it.toDerHexString()}")
-            }
-        }.map {
-            (it as Asn1Sequence).also {
-                if (it.children.size != 2) throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${it.toDerHexString()}")
-                if (it.children.last().tag != SubjectAltNameImplicitTags.otherName) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
-                ObjectIdentifier.decodeFromAsn1ContentBytes((it.children.first() as Asn1Primitive).content) //this throws if something is off
-            }
-        }
-    val ediPartyNames: List<Asn1Sequence> =
-        extensions.filter { it.tag == SubjectAltNameImplicitTags.ediPartyName }.apply {
-            forEach {
-                if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid ediPartyName Alternative Name found: ${it.toDerHexString()}")
-            }
-        }.map {
-            (it as Asn1Sequence).also {
-                if (it.children.size > 2) throw Asn1StructuralException("Invalid partyName Alternative Name found (>2 children): ${it.toDerHexString()}")
-                if (it.children.find { it.tag != SubjectAltNameImplicitTags.otherName && it.tag != SubjectAltNameImplicitTags.rfc822Name } != null) throw Asn1StructuralException(
-                    "Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}"
-                )
-                //TODO: strict string parsing
-            }
-        }
+        operator fun invoke(asn1Representation: X509GeneralNames): X509Representable =
+            X509AlternativeNames(null, asn1Representation)
 
-    val x400Addresses: List<Asn1Sequence> =
-        extensions.filter { it.tag == SubjectAltNameImplicitTags.x400Address }.apply {
-            forEach {
-                if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid x400Address Alternative Name found: ${it.toDerHexString()}")
-            }
-        }.map {
-            (it as Asn1Sequence).also {
-                //TODO: strict structural parsing
-            }
-        }
+        fun fromGeneralNames(generalNames: List<GeneralName>): X509Representable =
+            X509AlternativeNames(generalNames, null)
 
-    val registeredIDs: List<ObjectIdentifier> =
-        extensions.filter { it.tag == SubjectAltNameImplicitTags.registeredID }.apply {
-            forEach {
-                if (it !is Asn1Primitive) throw Asn1StructuralException("Invalid registeredID Alternative Name found: ${it.toDerHexString()}")
-            }
-        }.map { ObjectIdentifier.decodeFromAsn1ContentBytes((it as Asn1Primitive).content) }
-
-    private fun parseStringSANs(implicitTag: Asn1Element.Tag) =
-        extensions.filter { it.tag == implicitTag }.apply {
-            forEach { if (it !is Asn1Primitive) throw Asn1StructuralException("Invalid dnsName Alternative Name found: ${it.toDerHexString()}") }
-        }.map { (it as Asn1Primitive).content.decodeToString() }
-
-    override fun toString(): String {
-        val bld =
-            StringBuilder("\notherNames=").append(otherNames.joinToString { it.prettyPrint() })
-        bld.append("\nrfc822Names=").append(rfc822Names?.joinToString())
-        bld.append("\ndnsNames=").append(dnsNames?.joinToString())
-        bld.append("\nx400addresses=").append(x400Addresses.joinToString { it.prettyPrint() })
-        bld.append("\ndirectoryNames=").append(directoryNames.joinToString())
-        bld.append("\nediPartyNames=").append(ediPartyNames.joinToString { it.prettyPrint() })
-        bld.append("\nuris=").append(uris?.joinToString())
-        @OptIn(ExperimentalStdlibApi::class)
-        bld.append("\nipAddresses=").append(ipAddresses.joinToString { it.toHexString(HexFormat.UpperCase) })
-        bld.append("\nregisteredIDs=").append(registeredIDs.joinToString())
-        return "AlternativeNames(" + bld.toString().prependIndent("  ") + "\n)"
-    }
-
-    companion object {
         @Throws(Asn1Exception::class)
-        fun List<X509CertificateExtension>.findSubjectAltNames() = runRethrowing {
+        override fun decodeFromTlv(
+            serializer: KSerializer<X509GeneralNames>,
+            src: Asn1Element,
+            der: Der,
+        ): X509Representable =
+            X509AlternativeNames(null, der.decodeFromTlv(serializer, src))
+
+        @Throws(Asn1Exception::class)
+        fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {
             find(KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
         }
 
         @Throws(Asn1Exception::class)
-        fun List<X509CertificateExtension>.findIssuerAltNames() = runRethrowing {
+        fun List<CertificateExtension>.findIssuerAltNames() = runRethrowing {
             find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
         }
 
-        /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/
-        private fun List<X509CertificateExtension>.find(oid: ObjectIdentifier): List<Asn1Element>? {
-            val matches = filter { it.oid == oid }
+        private fun List<CertificateExtension>.find(oid: ObjectIdentifier): X509GeneralNames? {
+            val matches = filterIsInstance<CertificateExtension.X509Representable>().filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else ((matches.first().value as Asn1EncapsulatingOctetString).children.firstOrNull() as Asn1Sequence?)?.children
+            else decodeFromTlv(
+                X509GeneralNames.serializer(),
+                Asn1Element.parse(matches.first().derEncodedValue),
+            ).asn1Representation
         }
     }
 }
 
-/**
- * Enumeration of implicit tags used to indicate different `SubjectAltName`s
- */
-object SubjectAltNameImplicitTags {
-    val otherName = Asn1.ImplicitTag(0uL)
-    val rfc822Name = Asn1.ImplicitTag(1uL)
-    val dNSName = Asn1.ImplicitTag(2uL)
-    val x400Address = Asn1.ImplicitTag(3uL)
-    val directoryName = Asn1.ImplicitTag(4uL)
-    val ediPartyName = Asn1.ImplicitTag(5uL)
-    val uniformResourceIdentifier = Asn1.ImplicitTag(6uL)
-    val iPAddress = Asn1.ImplicitTag(7uL)
-    val registeredID = Asn1.ImplicitTag(8uL)
+private class X509AlternativeNames(
+    providedGeneralNames: List<GeneralName>?,
+    providedAsn1Representation: X509GeneralNames?,
+) : AlternativeNames.X509Representable {
+
+    override val asn1Representation: X509GeneralNames by providedAsn1Representation orLazy {
+        X509GeneralNames(generalNames.map { it.encodeToTlv() })
+    }
+
+    override val generalNames: List<GeneralName> by providedGeneralNames orLazy {
+        asn1Representation.entries.map { GeneralName.decodeFromTlv(it) }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AlternativeNames.X509Representable) return false
+        return asn1Representation == other.asn1Representation
+    }
+
+    override fun hashCode(): Int = asn1Representation.hashCode()
+
+    override fun toString(): String =
+        "AlternativeNames(" + "\nGeneralNames=${generalNames.joinToString()}".prependIndent("  ") + "\n)"
 }

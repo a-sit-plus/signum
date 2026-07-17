@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.20"
+kotlin = "2.4.0"
 agp = "8.12.3"
 core = "1.5.0"
 kotlinxIoCore = "0.9.0"
@@ -9,12 +9,15 @@ bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "2.2.0"
 kotlincryptoRandom = "0.6.0"
-asp = "20260610"
+asp = "20260701"
 classgraph = "4.8.184"
-bouncycastle= "1.83"
-testballoon = "1.0.0-K2.3.20"
-#testballoonAddons = "0.15.0"
+bouncycastle= "1.84"
+testballoon = "1.0.0-K2.4.0-Beta2"
 serialization = "1.11.0"
+cidre = "0.4.0"
+urikmp = "0.0.20"
+awesn1 = "0.5.0"
+modulator = "0.1.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -26,9 +29,15 @@ multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
 asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
 classgraph = { group = "io.github.classgraph", name = "classgraph", version.ref = "classgraph" }
+awesn1-crypto = {module = "at.asitplus.awesn1:crypto", version.ref= "awesn1"}
+awesn1-oids = {module = "at.asitplus.awesn1:oids", version.ref= "awesn1"}
+awesn1-io = {module = "at.asitplus.awesn1:kxs-io", version.ref= "awesn1"}
+cidre = { module = "at.asitplus:cidre", version.ref = "cidre"}
+urikmp = {module = "com.eygraber:uri-kmp", version.ref = "urikmp"}
 
 #for build logic conventions plugin, as it needs the artefact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+modulator = { module = "at.asitplus:gradle-modulator", version.ref = "modulator" }
 
 [plugins]
 asp = { id = "at.asitplus.gradle.conventions", version.ref = "asp" }

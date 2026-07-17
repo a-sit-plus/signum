@@ -1,10 +1,13 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
+import at.asitplus.signum.InsecureRandom
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
@@ -46,6 +49,9 @@ import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinInstant
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
+import at.asitplus.signum.indispensable.pki.x500.X500Name as SignumX500Name
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 
 val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
 
@@ -57,7 +63,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
-        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        val decoded = Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
@@ -72,54 +78,48 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                 // create certificate with bouncycastle
                 val notBeforeDate = Date.from(Instant.now())
                 val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
-                val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+                val serialNumber = InsecureRandom.nextPositiveAsn1Integer(10)
                 val commonName = "DefaultCryptoService"
                 val issuer = X500Name("CN=$commonName")
                 val builder = X509v3CertificateBuilder(
                     /* issuer = */ issuer,
-                    /* serial = */ serialNumber,
+                    /* serial = */ serialNumber.toJavaBigInteger(),
                     /* notBefore = */ notBeforeDate,
                     /* notAfter = */ notAfterDate,
                     /* subject = */ issuer,
                     /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
                 )
-                val signatureAlgorithm = X509SignatureAlgorithm.ES256
+                val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
                 val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
                 val certificateHolder = builder.build(contentSigner)
 
                 // create certificate with our structure
                 val tbsCertificate = TbsCertificate(
-                    version = 2,
-                    serialNumber = serialNumber.toByteArray(),
-                    issuerName = listOf(
-                        RelativeDistinguishedName(
-                            AttributeTypeAndValue.CommonName(
-                                Asn1String.UTF8(
-                                    commonName
-                                )
-                            )
-                        )
-                    ),
-                    validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
-                    validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
-                    signatureAlgorithm = signatureAlgorithm,
-                    subjectName = listOf(
-                        RelativeDistinguishedName(
-                            AttributeTypeAndValue.CommonName(
-                                Asn1String.UTF8(
-                                    commonName
-                                )
-                            )
-                        )
-                    ),
-                    publicKey = cryptoPublicKey
-                )
-                val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
-                    initSign(keyPair.private)
-                    update(tbsCertificate.encodeToTlv().derEncoded)
-                }.sign()
-                val test = CryptoSignature.decodeFromDer(signed)
-                val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
+                    serialNumber = serialNumber,
+                issuerName = SignumX500Name(
+                    RelativeDistinguishedName(
+                        AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(commonName))
+                    )
+                ),
+                validFrom = (notBeforeDate.toInstant().toKotlinInstant()),
+                validUntil = (notAfterDate.toInstant().toKotlinInstant()),
+                signatureAlgorithm = signatureAlgorithm,
+                subjectName = SignumX500Name(
+                    RelativeDistinguishedName(
+                        AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(commonName))
+                    )
+                ),
+                publicKey = cryptoPublicKey
+            )
+            val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+                initSign(keyPair.private)
+                update(tbsCertificate.encodeToTlv().derEncoded)
+            }.sign()
+            val test = when (signatureAlgorithm.kind) {
+                SignatureAlgorithm.Kind.EC -> CryptoSignature.EC.decodeFromDer(signed)
+                SignatureAlgorithm.Kind.RSA -> CryptoSignature.RSA.decodeFromDer(signed)
+            }
+                val x509Certificate = Certificate(tbsCertificate, test)
                 val kotlinEncoded = x509Certificate.encodeToDer()
                 val jvmEncoded = certificateHolder.encoded
                 println(
@@ -151,28 +151,30 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
-        val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+        val serialNumber = InsecureRandom.nextPositiveAsn1Integer(10)
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
 
 
         // create certificate with our structure
         val tbsCertificate = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
-            validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
-            validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
+            validFrom = (notBeforeDate.toInstant().toKotlinInstant()),
+            validUntil = (notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
-        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
+        val test = when (signatureAlgorithm.kind) {
+            SignatureAlgorithm.Kind.EC -> CryptoSignature.EC.decodeFromDer(signed)
+            SignatureAlgorithm.Kind.RSA -> CryptoSignature.RSA.decodeFromDer(signed)
+        }
+        val x509Certificate = Certificate(tbsCertificate, test)
 
         repeat(500) {
             launch {
@@ -202,28 +204,28 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
         val x509Certificate =
-            X509Certificate.decodeFromTlv(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
+            Certificate.decodeFromTlv(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
         x509Certificate.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.version shouldBe 2
-        (x509Certificate.tbsCertificate.issuerName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
-        (x509Certificate.tbsCertificate.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
-        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
+        x509Certificate.tbsCertificate.asn1Representation.version shouldBe X509TbsCertificate.Version.V3
+        ((x509Certificate.tbsCertificate.issuerName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue.X509Representable).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
+        ((x509Certificate.tbsCertificate.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue.X509Representable).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
+        x509Certificate.tbsCertificate.serialNumber.toJavaBigInteger() shouldBe serialNumber
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.validFrom.instant shouldBe notBeforeDate.toInstant()
+        x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant()
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
-        x509Certificate.tbsCertificate.validUntil.instant shouldBe notAfterDate.toInstant()
+        x509Certificate.tbsCertificate.validUntil shouldBe notAfterDate.toInstant()
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
-        val parsedPublicKey = x509Certificate.tbsCertificate.decodedPublicKey.getOrThrow()
+        val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
@@ -243,65 +245,58 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
-        val validFromDate = Asn1Time(notBeforeDate.toInstant().toKotlinInstant())
-        val validUntilDate = Asn1Time(notAfterDate.toInstant().toKotlinInstant())
-        val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+        val validFromDate = (notBeforeDate.toInstant().toKotlinInstant())
+        val validUntilDate = (notAfterDate.toInstant().toKotlinInstant())
+        val serialNumber= InsecureRandom.nextPositiveAsn1Integer(10)
         val commonName = "DefaultCryptoService"
 
-        val signatureAlgorithm256 = X509SignatureAlgorithm.ES256
-        val signatureAlgorithm512 = X509SignatureAlgorithm.ES512
+        val signatureAlgorithm256 = SignatureAlgorithm.ECDSAwithSHA256
+        val signatureAlgorithm512 = SignatureAlgorithm.ECDSAwithSHA512
 
         // create certificate with our structure
         val tbsCertificate1 = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate2 = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate3 = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm512,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate4 = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("DefaultCryptoService1")))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(("DefaultCryptoService1"))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate5 = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
-            validFrom = Asn1Time(Date.from(Instant.now().plusSeconds(1)).toInstant().toKotlinInstant()),
-            validUntil = Asn1Time(
-                Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds)).toInstant().toKotlinInstant()
-            ),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
+            validFrom = (Date.from(Instant.now().plusSeconds(1)).toInstant().toKotlinInstant()),
+            validUntil = (Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds)).toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey
         )
 
@@ -334,16 +329,16 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()
         val signature1 =
-            (CryptoSignature.decodeFromDer(signed1) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (CryptoSignature.EC.decodeFromDer(signed1)).withCurve(ECCurve.SECP_256_R_1)
         val signature2 =
-            (CryptoSignature.decodeFromDer(signed2) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+            (CryptoSignature.EC.decodeFromDer(signed2)).withCurve(ECCurve.SECP_256_R_1)
         val signature3 =
-            (CryptoSignature.decodeFromDer(signed3) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
-        val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
-        val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
-        val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)
-        val x509Certificate4 = X509Certificate(tbsCertificate4, signatureAlgorithm256, signature1)
-        val x509Certificate5 = X509Certificate(tbsCertificate5, signatureAlgorithm256, signature1)
+            (CryptoSignature.EC.decodeFromDer(signed3)).withCurve(ECCurve.SECP_521_R_1)
+        val x509Certificate1 = Certificate(tbsCertificate1, signature1)
+        val x509Certificate2 = Certificate(tbsCertificate2, signature2)
+        val x509Certificate3 = Certificate(tbsCertificate3, signature3)
+        val x509Certificate4 = Certificate(tbsCertificate4, signature1)
+        val x509Certificate5 = Certificate(tbsCertificate5, signature1)
 
         x509Certificate1 shouldBe x509Certificate1
         x509Certificate1 shouldNotBe x509Certificate2
@@ -364,27 +359,27 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
-        val ext1 = X509CertificateExtension(
+        val ext1 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = true
         )
-        val ext2 = X509CertificateExtension(
+        val ext2 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = true
         )
-        val ext3 = X509CertificateExtension(
+        val ext3 = CertificateExtension(
             KnownOIDs.extKeyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
             critical = true
         )
-        val ext4 = X509CertificateExtension(
+        val ext4 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
             critical = true
         )
-        val ext5 = X509CertificateExtension(
+        val ext5 = CertificateExtension(
             KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = false
@@ -403,13 +398,12 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         ext1.hashCode() shouldNotBe ext5.hashCode()
 
         val tbsCertificate6 = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            serialNumber = serialNumber,
+            issuerName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey,
             extensions = listOf(ext1)
         )
@@ -422,6 +416,44 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
     }
 
+    "CertificateExtension DER roundtrip" {
+        val extnValue = Asn1PrimitiveOctetString(byteArrayOf(0x01, 0x02, 0x03))
+        val extension = CertificateExtension(
+            oid = KnownOIDs.keyUsage,
+            critical = true,
+            value = extnValue,
+        )
+
+        val encoded = extension.encodeToDer(Awesn1X509CertificateExtension.serializer())
+        val decoded = CertificateExtension.decodeFromDer(
+            Awesn1X509CertificateExtension.serializer(),
+            encoded,
+        )
+
+        decoded shouldBe extension
+        decoded.oid shouldBe KnownOIDs.keyUsage
+        decoded.critical shouldBe true
+        decoded.derEncodedValue shouldBe extnValue.content
+        decoded.encodeToDer(Awesn1X509CertificateExtension.serializer()) shouldBe encoded
+    }
+
+    "CertificateExtension preserves raw false critical" {
+        val encoded = byteArrayOf(
+            0x30, 0x0d,
+            0x06, 0x03, 0x2a, 0x03, 0x04,
+            0x01, 0x01, 0x00,
+            0x04, 0x03, 0x01, 0x02, 0x03,
+        )
+
+        val decoded = CertificateExtension.decodeFromDer(
+            Awesn1X509CertificateExtension.serializer(),
+            encoded,
+        )
+
+        decoded.critical shouldBe false
+        decoded.asn1Representation.rawCritical shouldBe 0x00.toByte()
+        decoded.encodeToDer(Awesn1X509CertificateExtension.serializer()) shouldBe encoded
+    }
 
 }
 

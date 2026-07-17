@@ -3,6 +3,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
@@ -45,7 +46,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA
     ) : EphemeralSigner(privateKey), Signer.ECDSA {
         @SecretExposure
-        override fun exportPrivateKey() =
+        override suspend fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
@@ -58,7 +59,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA
     ) : EphemeralSigner(privateKey), Signer.RSA {
         @SecretExposure
-        override fun exportPrivateKey() =
+        override suspend fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.RSA }
     }
 }
@@ -68,7 +69,7 @@ internal sealed interface IosEphemeralKey {
         : EphemeralKeyBase.EC<OwnedCFValue<SecKeyRef>, EphemeralSigner.EC>(EphemeralSigner::EC, privateKey, publicKey, digests)
     {
         @SecretExposure
-        override fun exportPrivateKey() =
+        override suspend fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
     }
 
@@ -76,12 +77,12 @@ internal sealed interface IosEphemeralKey {
         : EphemeralKeyBase.RSA<OwnedCFValue<SecKeyRef>, EphemeralSigner.RSA>(EphemeralSigner::RSA, privateKey, publicKey, digests, paddings)
     {
         @SecretExposure
-        override fun exportPrivateKey() =
+        override suspend fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.RSA }
     }
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration): EphemeralKey {
+internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration): EphemeralKey {
     memScoped {
         val attr = createCFDictionary {
             when (val alg = configuration._algSpecific.v) {

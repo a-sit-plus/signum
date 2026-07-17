@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.encoding.toUnsignedByteArray
+import at.asitplus.awesn1.encoding.toUnsignedByteArray
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.KDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2

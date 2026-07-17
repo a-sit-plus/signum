@@ -14,20 +14,26 @@ signumConventions {
 }
 
 
-private val Pair<*, String?>.comment: String? get() = this.second
-private val Pair<String, *>.oid: String? get() = this.first
-
 kotlin {
     indispensableTargets()
 
     sourceSets {
         commonMain.dependencies {
-            api(project(":indispensable-asn1"))
-            api(project(":indispensable-oids"))
+            api(kmmresult())
+            api(serialization("json"))
+            api(libs.awesn1.crypto)
+            api(libs.awesn1.oids)
+            api(libs.awesn1.io)
             api(libs.multibase)
             api(libs.bignum)
             implementation(project(":internals"))
             api(libs.securerandom)
+            api(libs.cidre)
+            api(libs.urikmp)
+        }
+
+        commonTest.dependencies {
+            implementation(coroutines())
         }
 
         jvmTest.dependencies {
@@ -50,7 +56,7 @@ exportXCFramework(
     serialization("json"),
     datetime(),
     kmmresult(),
-    project(":indispensable-asn1"),
-    project(":indispensable-oids"),
+    libs.awesn1.crypto,
+    libs.awesn1.oids,
     libs.bignum
 )

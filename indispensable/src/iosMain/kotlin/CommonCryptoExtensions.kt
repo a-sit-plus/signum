@@ -2,15 +2,29 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
 import platform.Security.*
+
+private fun SignatureAlgorithm.RSA.requireSupportedIosPssParameters() {
+    val pss = parameters as? SignatureAlgorithm.RSA.Parameters.PssPadded ?: return
+    val mgf = pss.mgfAlgorithm as? SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1
+    if (!(
+        mgf?.digest == pss.digest &&
+                pss.saltLength.toInt() == pss.digest.outputLength.bytes.toInt() &&
+                pss.trailerField == 1
+    )) {
+        throw UnsupportedCryptoException("iOS supports RSA-PSS only with MGF1 using the signature digest, a salt matching the digest length, and trailer field 1")
+    }
+}
 
 
 val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when (this) {
@@ -26,6 +40,14 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
     }!!
 }
 
+/**
+ * Maps this algorithm to its iOS Security framework equivalent.
+ *
+ * RSA-PSS is supported only when MGF1 uses the signature digest, the salt length equals the digest output length,
+ * and the trailer field is `1`.
+ *
+ * @throws IllegalArgumentException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
+ */
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {
         is SignatureAlgorithm.ECDSA -> {
@@ -39,6 +61,7 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
         }
 
         is SignatureAlgorithm.RSA -> {
+            requireSupportedIosPssParameters()
             when (padding) {
                 RSAPadding.PSS -> when (digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA1
@@ -61,6 +84,14 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithm
     get() =
         this.algorithm.secKeyAlgorithm
 
+/**
+ * Maps this algorithm to its prehashed iOS Security framework equivalent.
+ *
+ * RSA-PSS is supported only when MGF1 uses the signature digest, the salt length equals the digest output length,
+ * and the trailer field is `1`.
+ *
+ * @throws IllegalArgumentException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
+ */
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
     get() = when (this) {
         is SignatureAlgorithm.ECDSA -> {
@@ -74,6 +105,7 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
         }
 
         is SignatureAlgorithm.RSA -> {
+            requireSupportedIosPssParameters()
             when (padding) {
                 RSAPadding.PSS -> when (digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA1
@@ -96,11 +128,6 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
     get() =
         this.algorithm.secKeyAlgorithmPreHashed
 
-val CryptoSignature.iosEncoded
-    get() = when (this) {
-        is CryptoSignature.EC -> this.encodeToDer()
-        is CryptoSignature.RSA -> this.rawByteArray
-    }
 
 fun CryptoPublicKey.toSecKey() = catching {
     memScoped {

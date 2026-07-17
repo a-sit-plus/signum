@@ -1,22 +1,15 @@
-package at.asitplus.signum.indispensable.asn1
+package at.asitplus.awesn1
 
-import at.asitplus.catching
+import at.asitplus.awesn1.encoding.Asn1
+import at.asitplus.awesn1.encoding.decode
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.internals.ensureSize
-import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
-import kotlinx.io.Buffer
-import kotlinx.io.Sink
-import kotlinx.io.Source
-import kotlinx.io.readByteArray
+import org.kotlincrypto.random.CryptoRand
 import kotlin.experimental.and
 import kotlin.experimental.or
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 private fun Asn1Integer.Sign.toBigIntegerSign() = when (this) {
     Asn1Integer.Sign.POSITIVE -> Sign.POSITIVE
@@ -35,83 +28,6 @@ fun Asn1Integer.toBigInteger(): BigInteger =
 /** Converts the [BigInteger] to the corresponding [Asn1Integer]. */
 fun BigInteger.toAsn1Integer(): Asn1Integer =
     Asn1Integer.fromByteArray(this.toByteArray(), this.getSign().toAsn1IntegerSign())
-
-private val UVARINT_MASK_BIGINT = BigInteger.fromUByte(0x7Fu)
-
-/**
- * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come
- */
-@Throws(IllegalArgumentException::class)
-fun BigInteger.toAsn1VarInt(): ByteArray = Buffer().also { it.writeAsn1VarInt(this) }.readByteArray()
-
-/**
- * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come
- *
- * @return the number of bytes written to the sink
- */
-@Throws(IllegalArgumentException::class)
-fun Sink.writeAsn1VarInt(number: BigInteger): Int {
-    if (number == BigInteger.ZERO) { //fast case
-        writeByte(0)
-        return 1
-    }
-    require(!number.isNegative) { "Only non-negative numbers are supported" }
-    val numBytes = (number.bitLength() + 6) / 7 // division rounding up
-    (numBytes - 1).downTo(0).forEach { byteIndex ->
-        writeByte(
-            ((number shr (byteIndex * 7)).byteValue(exactRequired = false) and 0x7F) or
-                    (if (byteIndex > 0) 0x80.toByte() else 0)
-        )
-    }
-    return numBytes
-}
-
-
-/**
- * Decodes an ASN.1 unsigned varint to a [BigInteger], copying all bytes from the source into a [ByteArray].
- *
- * @return the decoded [BigInteger] and the underlying varint-encoded bytes as [ByteArray]
- */
-fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
-    var result = BigInteger.ZERO
-    val accumulator = Buffer()
-    while (!exhausted()) {
-        val curByte = readByte()
-        val current = BigInteger(curByte.toUByte().toInt())
-        accumulator.writeByte(curByte)
-        result = (current and UVARINT_MASK_BIGINT) or (result shl 7)
-        if (current < 0x80u) break
-    }
-
-    return result to accumulator.readByteArray()
-}
-
-/**
- * Decodes an unsigned BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
- */
-fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = Buffer().let { it.decodeAsn1VarBigInt() }
-
-/**
- * Converts this UUID to a BigInteger representation
- */
-@OptIn(ExperimentalUuidApi::class)
-fun Uuid.toBigInteger(): BigInteger = BigInteger.fromByteArray(toByteArray(), Sign.POSITIVE)
-
-/**
- * Tries to convert a BigInteger to a UUID. Only guaranteed to work with BigIntegers that contain the unsigned (positive)
- * integer representation of a UUID, chances are high, though, that it works with random positive BigIntegers between
- * 16 and 14 bytes long.
- *
- * Returns `null` if conversion fails. Never throws.
- */
-@OptIn(ExperimentalUuidApi::class)
-fun Uuid.Companion.fromBigintOrNull(bigInteger: BigInteger): Uuid? =
-    catchingUnwrapped { fromByteArray(bigInteger.toByteArray().ensureSize(16)) }.getOrNull()
 
 /** Creates an INTEGER [Asn1Primitive] from [value] */
 fun Asn1.Int(value: BigInteger) = value.encodeToAsn1Primitive()
@@ -145,4 +61,59 @@ inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = A
 fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigInteger =
     runRethrowing { fromTwosComplementByteArray(bytes) }
 
-internal val DEFAULT_PEM_DECODER: ((ByteArray)->Nothing)? = null
+/**
+ * Generates a random ASN.1 integer that adheres to DER minimal encoding constraints
+ * using a specified number of bytes.
+ *
+ * @param nBytes The number of two's complement bytes to use for representing the random integer. Must be positive. Excludes tag and length bytes needed for ASN.1 encoding
+ * @return An [Asn1Integer] generated from the specified number of bytes, encoded in two's complement format.
+ *         Ensures compliance with DER minimum integer encoding constraints.
+ * @throws IllegalArgumentException if [nBytes] is not greater than zero.
+ */
+fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
+    require(nBytes > 0) { "nBytes must be positive" }
+    return ByteArray(nBytes)
+        .also { nextBytes(it) }
+        .let(BigInteger::fromTwosComplementByteArray)
+        .toAsn1Integer()
+}
+
+/**
+ * Generates a random positive ASN.1 integer that adheres to DER minimal encoding constraints
+ * using a specified number of bytes.
+ *
+ * @param nBytes The number of two's complement bytes to use for representing the random integer. Must be positive. Excludes tag and length bytes needed for ASN.1 encoding
+ * @return An [Asn1Integer.Positive] generated from the specified number of bytes, encoded in two's complement format.
+ *         Ensures compliance with DER minimum integer encoding constraints.
+ * @throws IllegalArgumentException if [nBytes] is not greater than zero.
+ */
+tailrec fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
+    require(nBytes > 0) { "nBytes must be positive" }
+    return ByteArray(nBytes)
+        .also { nextBytes(it) }
+        .also { it[0] = it[0] and 0x7f }
+        .let(BigInteger::fromTwosComplementByteArray)
+        .also {
+            if (it.isZero()) return nextPositiveAsn1Integer(nBytes) /** tail recursion */
+        }
+        .toAsn1Integer()
+        as Asn1Integer.Positive
+}
+
+/**
+ * Generates a random negative ASN.1 integer that adheres to DER minimal encoding constraints
+ * using a specified number of bytes.
+ *
+ * @param nBytes The number of two's complement bytes to use for representing the random integer. Must be positive. Excludes tag and length bytes needed for ASN.1 encoding
+ * @return An [Asn1Integer.Positive] generated from the specified number of bytes, encoded in two's complement format.
+ *         Ensures compliance with DER minimum integer encoding constraints.
+ * @throws IllegalArgumentException if [nBytes] is not greater than zero.
+ */
+fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
+    return ByteArray(nBytes)
+        .also { nextBytes(it) }
+        .also { it[0] = it[0] or 0x80.toByte() }
+        .let(BigInteger::fromTwosComplementByteArray)
+        .toAsn1Integer()
+        as Asn1Integer.Negative
+}

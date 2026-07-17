@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
@@ -39,7 +39,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 }
 
 @JvmSynthetic
-internal actual fun verifyECDSAImpl
+internal actual suspend fun verifyECDSAImpl
     (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
      data: SignatureInput, signature: CryptoSignature.EC,
      config: PlatformVerifierConfiguration)
@@ -77,7 +77,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 }
 
 @JvmSynthetic
-internal actual fun verifyRSAImpl
+internal actual suspend fun verifyRSAImpl
     (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
      data: SignatureInput, signature: CryptoSignature.RSA,
      config: PlatformVerifierConfiguration)

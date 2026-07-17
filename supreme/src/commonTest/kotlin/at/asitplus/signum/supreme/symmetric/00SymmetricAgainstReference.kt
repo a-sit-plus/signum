@@ -14,9 +14,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import de.infix.testBalloon.framework.core.TestConfig
-import de.infix.testBalloon.framework.core.testScope
-import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
 val SymmetricAgainstReference  by matrixSuite {

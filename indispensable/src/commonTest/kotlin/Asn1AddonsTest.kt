@@ -1,6 +1,7 @@
 package at.asitplus.signum
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import at.asitplus.testballoon.matrix.*
@@ -10,6 +11,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
+import org.kotlincrypto.random.CryptoRand
+import kotlin.random.Random
 
 val Asn1AddonsTest by matrixSuite {
    
@@ -83,4 +86,11 @@ val Asn1AddonsTest by matrixSuite {
             }
         }
     }
+}
+
+
+
+object InsecureRandom: CryptoRand() {
+    override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+    fun nextBytes(size: Int) = Random.nextBytes(size)
 }

@@ -36,7 +36,7 @@ val VerifierTests by matrixSuite {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(CryptoSignature::decodeFromDer)
+                    }.let(CryptoSignature.EC::decodeFromDer)
                     keypair.public.encoded
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->

@@ -3,15 +3,14 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1Time
+import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -29,9 +28,6 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val JwkTest  by matrixSuite {
     "EC" - {
@@ -141,7 +137,7 @@ val JwkTest  by matrixSuite {
     }
 
     "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
-        val key = randomCertificate().decodedPublicKey.getOrThrow().toJsonWebKey()
+        val key = randomCertificate().publicKey.toJsonWebKey()
         key.keyId shouldBe null
         val cpk = key.toCryptoPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null
@@ -152,18 +148,17 @@ val JwkTest  by matrixSuite {
     }
 }
 
-private fun randomCertificate() = X509Certificate(
+private fun randomCertificate() = Certificate(
     TbsCertificate(
-        serialNumber = Random.nextBytes(16),
-        issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
+        serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
+        issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
-        signatureAlgorithm = X509SignatureAlgorithm.ES256,
-        subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
-        validFrom = Asn1Time(Clock.System.now()),
-        validUntil = Asn1Time(Clock.System.now()),
+        signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256,
+        subjectName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
+        validFrom = (Clock.System.now()),
+        validUntil = (Clock.System.now()),
     ),
-    X509SignatureAlgorithm.ES256,
     CryptoSignature.EC.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)

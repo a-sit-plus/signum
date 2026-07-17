@@ -101,7 +101,6 @@ kotlin {
         commonTest.dependencies {
             implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
         }
-
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
@@ -153,8 +152,5 @@ exportXCFramework(
     datetime(),
     kmmresult(),
     project(":indispensable"),
-    project(":indispensable-asn1"),
     libs.bignum
 )
-
-

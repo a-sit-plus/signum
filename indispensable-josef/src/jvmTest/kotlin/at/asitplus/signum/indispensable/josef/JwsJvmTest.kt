@@ -9,6 +9,7 @@ import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSObjectJSON
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import at.asitplus.testballoon.matrix.*
+import io.kotest.engine.runBlocking
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import java.security.interfaces.ECPublicKey
@@ -18,13 +19,13 @@ val JwsJvmTest by matrixSuite {
     class Context {
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
 
-        val signer1 = Signer.Ephemeral {
+        val signer1 = runBlocking {   Signer.Ephemeral {
             ec { curve = ECCurve.SECP_256_R_1 }
-        }.getOrThrow()
+        }.getOrThrow()}
 
-        val signer2 = Signer.Ephemeral {
+        val signer2 = runBlocking {  Signer.Ephemeral {
             ec { curve = ECCurve.SECP_256_R_1 }
-        }.getOrThrow()
+        }.getOrThrow()}
 
         val verifier1 = ECDSAVerifier(signer1.publicKey.toJcaPublicKey().getOrThrow() as ECPublicKey)
         val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey().getOrThrow() as ECPublicKey)

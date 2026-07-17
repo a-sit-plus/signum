@@ -1,14 +1,13 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.toAsn1Integer
+import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.asn1.toAsn1Integer
-import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.internals.isAndroid
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -39,13 +38,24 @@ import javax.crypto.spec.PSource
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val Digest.jcaPSSParams
-    get() = when (this) {
-        Digest.SHA1 -> PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1)
-        Digest.SHA256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
-        Digest.SHA384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
-        Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
-    }
+val SignatureAlgorithm.RSA.Parameters.PssPadded.jcaPSSParams
+    get() = if (mgfAlgorithm !is SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1) throw UnsupportedOperationException(
+        "Only Pkcs1MGF1 is supported"
+    ) else
+        PSSParameterSpec(
+            digest.jcaName,
+            "MGF1",
+            when ((mgfAlgorithm as SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1).digest) {
+                Digest.SHA1 -> MGF1ParameterSpec.SHA1
+                Digest.SHA256 -> MGF1ParameterSpec.SHA256
+                Digest.SHA384 -> MGF1ParameterSpec.SHA384
+                Digest.SHA512 -> MGF1ParameterSpec.SHA512
+                else -> throw UnsupportedOperationException("Only SHA1, SHA256, SHA384, SHA512 are supported") //important for extenisbility
+            },
+            saltLength.toInt(),
+            trailerField
+        )
+
 
 internal fun sigGetInstance(alg: String, provider: String?): Signature =
     when (provider) {
@@ -177,51 +187,10 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
     }
 
 /**
- * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
- */
-val CryptoSignature.jcaSignatureBytes: ByteArray
-    get() = when (this) {
-        is CryptoSignature.EC -> encodeToDer()
-        is CryptoSignature.RSA -> rawByteArray
-    }
-
-/**
- * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
- */
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SignatureAlgorithm
-): CryptoSignature =
-    if (algorithm is SignatureAlgorithm.ECDSA)
-        CryptoSignature.EC.parseFromJca(input)
-    else
-        CryptoSignature.RSA.parseFromJca(input)
-
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SpecializedSignatureAlgorithm
-) = parseFromJca(input, algorithm.algorithm)
-
-/**
- * Parses a signature produced by the JCA digestwithECDSA algorithm.
- */
-fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.EC.decodeFromDer(input)
-
-/**
- * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
- */
-fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
-    CryptoSignature.EC.fromRawBytes(input)
-
-fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSA(input)
-
-/**
- * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
+ * Converts this [Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
+suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
@@ -230,14 +199,14 @@ suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X50
 /**
  * blocking implementation of [toJcaCertificate]
  */
-fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
     runBlocking { toJcaCertificate() }
 
 /**
- * Converts this [java.security.cert.X509Certificate] to an [X509Certificate]
+ * Converts this [java.security.cert.X509Certificate] to an [Certificate]
  */
 fun java.security.cert.X509Certificate.toKmpCertificate() =
-    catching { X509Certificate.decodeFromDer(encoded) }
+    catching { Certificate.decodeFromDer(encoded) }
 
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
@@ -255,13 +224,13 @@ fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
     (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
 fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
-    CryptoPrivateKey.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
+    catching { CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*> }
 
 fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
-    CryptoPrivateKey.EC.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+    catching { CryptoPrivateKey.EC.decodeFromDer(encoded) as CryptoPrivateKey.EC.WithPublicKey }
 
 fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
-    CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
+    catching { CryptoPrivateKey.RSA.decodeFromDer(encoded) }
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String

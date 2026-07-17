@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
@@ -48,11 +47,12 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
             val F4 = BigInteger(65537)
         }
 
+
         /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.SHA256]. */
         open var digests: Set<Digest> = setOf(Digest.SHA256)
 
-        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
-        open var paddings: Set<RSAPadding> = setOf(RSAPadding.PSS)
+        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][SignatureAlgorithm.RSA.Padding.PSS]. */
+        open var paddings: Set<SignatureAlgorithm.RSA.Padding> = setOf(SignatureAlgorithm.RSA.Padding.PSS)
 
         /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
         var bits: Int = 3072
@@ -94,7 +94,7 @@ interface Signer {
     val mayRequireUserUnlock: Boolean get() = true
 
     @SecretExposure
-    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
+    suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer
@@ -105,18 +105,23 @@ interface Signer {
         override val publicKey: CryptoPublicKey.EC
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
+        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
 
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
 
-    /** A [Signer] that signs using RSA. */
+    /**
+     * A [Signer] that signs using RSA.
+     *
+     * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
+     * and trailer field `1`. Other RSA-PSS parameter combinations fail as unsupported by the platform.
+     */
     interface RSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.RSA
 
         @SecretExposure
-        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
+        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
@@ -141,7 +146,7 @@ interface Signer {
     suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 
     companion object {
-        fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+        suspend fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
             EphemeralKey(configure).transform(EphemeralKey::signer)
     }
 }
@@ -163,6 +168,12 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>):
 fun SignatureAlgorithm.ECDSA.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
     catching { makePrivateKeySigner(privateKey, this) }
 
+/**
+ * Creates an RSA signer for [privateKey].
+ *
+ * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
+ * and trailer field `1`.
+ */
 fun SignatureAlgorithm.RSA.signerFor(privateKey: CryptoPrivateKey.RSA) =
     catching { makePrivateKeySigner(privateKey, this) }
 

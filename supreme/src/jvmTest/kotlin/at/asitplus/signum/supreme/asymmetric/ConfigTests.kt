@@ -9,9 +9,6 @@ import io.kotest.matchers.shouldBe
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.NoSuchProviderException
 import java.security.Security
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val ConfigTests  by matrixSuite {
     "Asymmetric Provider Config" {

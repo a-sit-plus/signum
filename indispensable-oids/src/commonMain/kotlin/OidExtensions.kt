@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.asn1
+package at.asitplus.awesn1
 
 /**
  * Ensures that known OIDs have their description attached. Call this method if you want human-readable OIDs for debugging.

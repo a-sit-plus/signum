@@ -46,7 +46,8 @@ exportXCFramework(
     datetime(),
     kmmresult(),
     project(":indispensable"),
-    project(":indispensable-asn1"),
+    libs.awesn1.crypto,
+    libs.awesn1.oids,
     libs.bignum
 
 )
