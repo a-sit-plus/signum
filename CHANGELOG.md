@@ -1,6 +1,14 @@
 # Changelog
 
 ## NEXT
+This is a major refactor!
+
+* awesn1 instead of indispensable-asn1
+* publish javadoc redirect to save space
+* make all provider functions suspend
+* Dependency Updates:
+    * Bouncy Castle 1.85
+    * multibase 1.3.0
 
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support

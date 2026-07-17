@@ -7,6 +7,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.testing.Test
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.*
@@ -98,11 +99,15 @@ class SignumConventionsExtension(private val project: Project) {
         val javadocJar = setupDokka(
             baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
         )
+        val javadocRedirectJar = tasks.register<Jar>("javadocRedirectJar") {
+            archiveClassifier.set("javadoc")
+            from(rootProject.rootDir.absolutePath+"/docs/javadoc")
+        }
         extensions.getByType<PublishingExtension>().apply {
 
             publications {
                 withType<MavenPublication> {
-                    if (this.name != "relocation") artifact(javadocJar)
+                    if (this.name != "relocation") artifact(javadocRedirectJar)
                     pom {
                         this.name.set(name)
                         this.description.set(description)
@@ -213,6 +218,7 @@ class SignumConventionsExtension(private val project: Project) {
                         "win32-x86/attach_hotspot_windows.dll",
                         "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
                         "META-INF/licenses/*",
+                        "META-INF/LICENSE.md",
                         //noinspection WrongGradleMethod
                     ).forEach { resources.excludes.add(it) }
                 }
