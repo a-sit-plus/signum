@@ -39,8 +39,10 @@ val ConversionTests by matrixSuite {
                         algorithm.toString().takeLast(3) shouldBe it.toString().takeLast(3)
                         algorithm.toString().take(2) shouldBe it.toString().take(2)
                     }
-                } else "is stable" {
-                    SignatureAlgorithm(x509).toCoseAlgorithm() shouldSucceedWith it
+                } else {
+                    "is stable" {
+                        SignatureAlgorithm(x509).toCoseAlgorithm() shouldSucceedWith it
+                    }
                 }
             }
         }
