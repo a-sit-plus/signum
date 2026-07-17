@@ -9,6 +9,7 @@ import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import org.kotlincrypto.random.CryptoRand
 import kotlin.experimental.and
+import kotlin.experimental.or
 
 private fun Asn1Integer.Sign.toBigIntegerSign() = when (this) {
     Asn1Integer.Sign.POSITIVE -> Sign.POSITIVE
@@ -71,7 +72,10 @@ fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigIntege
  */
 fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
     require(nBytes > 0) { "nBytes must be positive" }
-    return BigInteger.fromTwosComplementByteArray(ByteArray(nBytes).also { nextBytes(it) }).toAsn1Integer()
+    return ByteArray(nBytes)
+        .also { nextBytes(it) }
+        .let(BigInteger::fromTwosComplementByteArray)
+        .toAsn1Integer()
 }
 
 /**
@@ -83,10 +87,17 @@ fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
  *         Ensures compliance with DER minimum integer encoding constraints.
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
-fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
+tailrec fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
     require(nBytes > 0) { "nBytes must be positive" }
-    return BigInteger.fromByteArray(ByteArray(nBytes).also { nextBytes(it).also { it[0] = it[0] and 0x7f } }, Sign.POSITIVE)
-        .toAsn1Integer() as Asn1Integer.Positive
+    return ByteArray(nBytes)
+        .also { nextBytes(it) }
+        .also { it[0] = it[0] and 0x7f }
+        .let(BigInteger::fromTwosComplementByteArray)
+        .also {
+            if (it.isZero()) return nextPositiveAsn1Integer(nBytes) /** tail recursion */
+        }
+        .toAsn1Integer()
+        as Asn1Integer.Positive
 }
 
 /**
@@ -99,6 +110,10 @@ fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
 fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
-    return BigInteger.fromByteArray(ByteArray(nBytes).also {nextBytes(it).also { it[0] = it[0] and 0x7f } }, Sign.NEGATIVE)
-        .toAsn1Integer() as Asn1Integer.Negative
+    return ByteArray(nBytes)
+        .also { nextBytes(it) }
+        .also { it[0] = it[0] or 0x80.toByte() }
+        .let(BigInteger::fromTwosComplementByteArray)
+        .toAsn1Integer()
+        as Asn1Integer.Negative
 }
