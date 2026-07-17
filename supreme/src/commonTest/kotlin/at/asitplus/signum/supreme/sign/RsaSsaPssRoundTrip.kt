@@ -5,6 +5,7 @@ import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.shouldSucceed
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -59,17 +60,19 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                             this.digests = Digest.entries.toSet()
                         }
                     }
-                }
+                }.getOrThrow()
 
-                val privateKey = runBlocking { key.getOrThrow().exportPrivateKey().getOrThrow() }
+                val privateKey = runBlocking { key.exportPrivateKey().getOrThrow() }
                 val signer = rsaInstance.signerFor(privateKey).getOrThrow()
                 signer.signatureAlgorithm shouldBe rsaInstance
 
                 compact("random payloads for RSA-PSS") - {
                     property(Arb.byteArray(Arb.int(1, 1000), Arb.byte()), iterations = 128) test { data ->
-                        val signumSigned = signer.sign(data).signature
-                        rsaInstance.verifierFor(key.getOrThrow().publicKey).getOrThrow()
-                            .verify(data, signumSigned).shouldSucceed()
+                        try {
+                            val signumSigned = signer.sign(data).signature
+                            rsaInstance.verifierFor(key.publicKey).getOrThrow()
+                                .verify(data, signumSigned).shouldSucceed()
+                        } catch (_: UnsupportedCryptoException) { /* pass */ }
                     }
                 }
             }

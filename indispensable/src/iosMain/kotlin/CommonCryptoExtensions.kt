@@ -7,6 +7,7 @@ import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
@@ -16,12 +17,12 @@ import platform.Security.*
 private fun SignatureAlgorithm.RSA.requireSupportedIosPssParameters() {
     val pss = parameters as? SignatureAlgorithm.RSA.Parameters.PssPadded ?: return
     val mgf = pss.mgfAlgorithm as? SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1
-    require(
+    if (!(
         mgf?.digest == pss.digest &&
                 pss.saltLength.toInt() == pss.digest.outputLength.bytes.toInt() &&
                 pss.trailerField == 1
-    ) {
-        "iOS supports RSA-PSS only with MGF1 using the signature digest, a salt matching the digest length, and trailer field 1"
+    )) {
+        throw UnsupportedCryptoException("iOS supports RSA-PSS only with MGF1 using the signature digest, a salt matching the digest length, and trailer field 1")
     }
 }
 
