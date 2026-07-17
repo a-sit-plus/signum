@@ -1,3 +1,0 @@
-RealSchema DEFINITIONS ::= BEGIN
-    RealNumber ::= REAL
-END
