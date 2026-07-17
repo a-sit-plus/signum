@@ -12,12 +12,6 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 import platform.Security.kSecKeyAlgorithmRSASignatureMessagePSSSHA256
 
-val Test  by matrixSuite {
-    "This dummy test" {
-        "is just making sure" shouldNotBe "that iOS tests are indeed running"
-    }
-}
-
 val IosRsaPssParametersTest by matrixSuite {
     "Apple-compatible parameters map to SecKey" {
         SignatureAlgorithm.RSA(
@@ -26,7 +20,7 @@ val IosRsaPssParametersTest by matrixSuite {
     }
 
     "custom MGF digest is rejected" {
-        shouldThrow<IllegalArgumentException> {
+        shouldThrow<UnsupportedCryptoException> {
             SignatureAlgorithm.RSA(
                 SignatureAlgorithm.RSA.Parameters.PssPadded(
                     digest = Digest.SHA256,
