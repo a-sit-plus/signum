@@ -1,3 +1,4 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 package at.asitplus.signum
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SignatureAlgorithm
