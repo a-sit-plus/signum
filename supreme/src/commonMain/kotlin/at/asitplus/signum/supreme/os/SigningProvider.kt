@@ -133,7 +133,7 @@ open class ECSignerConfiguration internal constructor(): DSL.Data() {
 }
 open class RSASignerConfiguration internal constructor(): DSL.Data() {
 
-    //TODO: this is more convenient, but does not allow customization of PSS except for digest. would we allow to set parameters like in my previous commit,
+    //this is more convenient, but does not allow customization of PSS except for digest.
     //it would be exact, but nobody supports them anyways, so…
     /**
      * Explicitly specify the digest to sign over.

@@ -97,11 +97,13 @@ class RelativeDistinguishedName private constructor(
             return RelativeDistinguishedName(atvs.toSet())
         }
 
+        //internal for tests
         internal fun String.splitFirstUnescaped(delimiter: Char): List<String> {
             val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
             return this.split(regex, limit = 2)
         }
 
+        //internal for tests
         internal fun String.splitRespectingEscapeAndQuotes(delimiter: Char): List<String> {
             val parts = mutableListOf<String>()
             val sb = StringBuilder()
@@ -280,7 +282,7 @@ abstract class BaseAttributeTypeAndValue(
     override val displayName: String? get() = AttributeTypeAndValue.Registry.nameFor(oid)
     override val isValid: Boolean? = null
 
-    override fun toString() = "AttributeTypeAndValue(oid=$oid)"
+    override fun toString() = "AttributeTypeAndValue(${displayName?:""} oid=$oid})"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

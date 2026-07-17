@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.io
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.pki.Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
@@ -105,8 +106,7 @@ object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certific
     decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
 )
 
-private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray =
-    DER.encodeToTlv(Awesn1X509Certificate.serializer(), certificate.asn1Representation).derEncoded
+private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = certificate.encodeToDer()
 
 private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
     Certificate(DER.decodeFromDer<Awesn1X509Certificate>(src))

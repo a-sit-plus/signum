@@ -187,8 +187,6 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
 
         constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
 
-        // PEM disabled during awesn1 migration.
-
         override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
             SubjectPublicKeyInfo.rsa(n, e)
         }
@@ -305,8 +303,6 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
 
         override fun asCryptoPublicKey() = this
 
-        // PEM disabled during awesn1 migration.
-
         override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
             SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
         }
@@ -315,9 +311,7 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
             decodePublicPoint(asn1Representation)
         }
 
-        val preferCompressedRepresentation: Boolean by providedContent?.preferCompressedRepresentation orLazy {
-            false
-        }
+        val preferCompressedRepresentation by providedContent?.preferCompressedRepresentation orLazy { false }
 
         val curve get() = publicPoint.curve
         val x get() = publicPoint.x

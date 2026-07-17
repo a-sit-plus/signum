@@ -9,11 +9,9 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.CryptoSignature.Companion.invoke
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
-import at.asitplus.signum.indispensable.pki.Certificate.Companion.decodeFromTlv
 import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
@@ -24,62 +22,6 @@ import kotlinx.serialization.Transient
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-private data class TbsCertificateContent(
-    val serialNumber: Asn1Integer,
-    val signatureAlgorithm: SignatureAlgorithm,
-    val issuerName: Name,
-    val validFrom: Instant,
-    val validUntil: Instant,
-    val subjectName: Name,
-    val publicKey: CryptoPublicKey,
-    val issuerUniqueID: ByteArray?,
-    val subjectUniqueID: ByteArray?,
-    val extensions: List<CertificateExtension>,
-) {
-
-    constructor(asn1Representation: X509TbsCertificate) : this(
-        serialNumber = asn1Representation.serialNumber,
-        signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
-        issuerName = X500Name(asn1Representation.issuerName.map(::RelativeDistinguishedName), false),
-        validFrom = asn1Representation.validity.validFrom.instant,
-        validUntil = asn1Representation.validity.validUntil.instant,
-        subjectName = X500Name(asn1Representation.subjectName.map(::RelativeDistinguishedName), false),
-        publicKey = CryptoPublicKey(asn1Representation.subjectPublicKeyInfo),
-        issuerUniqueID = asn1Representation.issuerUniqueID?.toBitSet()?.toByteArray(),
-        subjectUniqueID = asn1Representation.subjectUniqueID?.toBitSet()?.toByteArray(),
-        extensions = asn1Representation.extensions?.map { CertificateExtension(it) }.orEmpty(),
-    )
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is TbsCertificateContent) return false
-        return serialNumber == other.serialNumber &&
-                signatureAlgorithm == other.signatureAlgorithm &&
-                issuerName == other.issuerName &&
-                validFrom == other.validFrom &&
-                validUntil == other.validUntil &&
-                subjectName == other.subjectName &&
-                publicKey == other.publicKey &&
-                issuerUniqueID.contentEquals(other.issuerUniqueID) &&
-                subjectUniqueID.contentEquals(other.subjectUniqueID) &&
-                extensions == other.extensions
-    }
-
-    override fun hashCode(): Int {
-        var result = serialNumber.hashCode()
-        result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + issuerName.hashCode()
-        result = 31 * result + validFrom.hashCode()
-        result = 31 * result + validUntil.hashCode()
-        result = 31 * result + subjectName.hashCode()
-        result = 31 * result + publicKey.hashCode()
-        result = 31 * result + (issuerUniqueID?.contentHashCode() ?: 0)
-        result = 31 * result + (subjectUniqueID?.contentHashCode() ?: 0)
-        result = 31 * result + extensions.hashCode()
-        return result
-    }
-}
-
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed.
@@ -87,9 +29,67 @@ private data class TbsCertificateContent(
  * @param version semantic certificate version; DER encodes this as version - 1.
  */
 class TbsCertificate private constructor(
-    providedContent: TbsCertificateContent?, /*TODO EXTENSIBILITY private val*/
+    providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     private val providedAsn1Representation: X509TbsCertificate?, /*TODO EXTENSIBILITY THIS SHOULD NOT BE A VAL but we need it for temp PFUSCH equals*/
 ) : DerEncodable<X509TbsCertificate> {
+
+
+
+    private data class ContentContainer(
+        val serialNumber: Asn1Integer,
+        val signatureAlgorithm: SignatureAlgorithm,
+        val issuerName: Name,
+        val validFrom: Instant,
+        val validUntil: Instant,
+        val subjectName: Name,
+        val publicKey: CryptoPublicKey,
+        val issuerUniqueID: ByteArray?,
+        val subjectUniqueID: ByteArray?,
+        val extensions: List<CertificateExtension>,
+    ) {
+
+        constructor(asn1Representation: X509TbsCertificate) : this(
+            serialNumber = asn1Representation.serialNumber,
+            signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
+            issuerName = X500Name(asn1Representation.issuerName.map(::RelativeDistinguishedName), false),
+            validFrom = asn1Representation.validity.validFrom.instant,
+            validUntil = asn1Representation.validity.validUntil.instant,
+            subjectName = X500Name(asn1Representation.subjectName.map(::RelativeDistinguishedName), false),
+            publicKey = CryptoPublicKey(asn1Representation.subjectPublicKeyInfo),
+            issuerUniqueID = asn1Representation.issuerUniqueID?.toBitSet()?.toByteArray(),
+            subjectUniqueID = asn1Representation.subjectUniqueID?.toBitSet()?.toByteArray(),
+            extensions = asn1Representation.extensions?.map { CertificateExtension(it) }.orEmpty(),
+        )
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is ContentContainer) return false
+            return serialNumber == other.serialNumber &&
+                    signatureAlgorithm == other.signatureAlgorithm &&
+                    issuerName == other.issuerName &&
+                    validFrom == other.validFrom &&
+                    validUntil == other.validUntil &&
+                    subjectName == other.subjectName &&
+                    publicKey == other.publicKey &&
+                    issuerUniqueID.contentEquals(other.issuerUniqueID) &&
+                    subjectUniqueID.contentEquals(other.subjectUniqueID) &&
+                    extensions == other.extensions
+        }
+
+        override fun hashCode(): Int {
+            var result = serialNumber.hashCode()
+            result = 31 * result + signatureAlgorithm.hashCode()
+            result = 31 * result + issuerName.hashCode()
+            result = 31 * result + validFrom.hashCode()
+            result = 31 * result + validUntil.hashCode()
+            result = 31 * result + subjectName.hashCode()
+            result = 31 * result + publicKey.hashCode()
+            result = 31 * result + (issuerUniqueID?.contentHashCode() ?: 0)
+            result = 31 * result + (subjectUniqueID?.contentHashCode() ?: 0)
+            result = 31 * result + extensions.hashCode()
+            return result
+        }
+    }
 
 
     @Throws(Asn1Exception::class)
@@ -105,7 +105,7 @@ class TbsCertificate private constructor(
         subjectUniqueID: ByteArray? = null,
         extensions: List<CertificateExtension> = emptyList(),
     ) : this(
-        TbsCertificateContent(
+        ContentContainer(
             serialNumber = serialNumber,
             signatureAlgorithm = signatureAlgorithm,
             issuerName = issuerName,
@@ -147,8 +147,8 @@ class TbsCertificate private constructor(
     }
 
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
-    private val providedContent: TbsCertificateContent by providedContent orLazy {
-        TbsCertificateContent(asn1Representation)
+    private val providedContent: ContentContainer by providedContent orLazy {
+        ContentContainer(asn1Representation)
     }
 
     val serialNumber: Asn1Integer get() = providedContent.serialNumber

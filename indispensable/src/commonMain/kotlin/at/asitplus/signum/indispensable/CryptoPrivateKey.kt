@@ -22,52 +22,8 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.KSerializer
 
-data class RsaPrivateKeyContent(
-    val publicKey: CryptoPublicKey.RSA,
-    val privateKey: BigInteger,
-    val prime1: BigInteger,
-    val prime2: BigInteger,
-    val prime1exponent: BigInteger,
-    val prime2exponent: BigInteger,
-    val crtCoefficient: BigInteger,
-    val otherPrimeInfos: List<CryptoPrivateKey.RSA.PrimeInfo>?,
-    val attributes: Set<Asn1Element>?,
-) {
-    init {
-        val n = publicKey.n.toBigInteger()
-        val e = publicKey.e.toBigInteger()
-        val primeInfo1 =
-            CryptoPrivateKey.RSA.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
-        val primeInfo2 =
-            CryptoPrivateKey.RSA.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
-
-        var product = BigInteger.ONE
-        (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
-            .forEachIndexed { i, info ->
-                val pminusone = info.prime - BigInteger.ONE
-                require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE) {
-                    "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i"
-                }
-                product *= info.prime
-                require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
-                require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
-            }
-        require(product == n) { "p1 * p2 * ... * pk != n" }
-    }
-}
-
 data class RsaPkcs1Source(
     val pkcs1Representation: Pkcs1RsaPrivateKeyInfo,
-    val attributes: Set<Asn1Element>?,
-)
-
-data class EcPrivateKeyContent(
-    val privateKey: BigInteger,
-    val publicKey: CryptoPublicKey.EC?,
-    val publicKeyBytes: Asn1BitString?,
-    val encodeCurve: Boolean,
-    val encodePublicKey: Boolean,
-    val curveOrderLengthInBytes: Int,
     val attributes: Set<Asn1Element>?,
 )
 
@@ -93,10 +49,44 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
     override val pemLabel: String get() = Companion.canonicalPemLabel
 
     class RSA private constructor(
-        private val providedContent: RsaPrivateKeyContent?,
+        private val providedContent: ContentContainer?,
         private val providedPkcs1Source: RsaPkcs1Source?,
         private val providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
     ) : CryptoPrivateKey, WithPublicKey<CryptoPublicKey.RSA> {
+
+        data class ContentContainer(
+            val publicKey: CryptoPublicKey.RSA,
+            val privateKey: BigInteger,
+            val prime1: BigInteger,
+            val prime2: BigInteger,
+            val prime1exponent: BigInteger,
+            val prime2exponent: BigInteger,
+            val crtCoefficient: BigInteger,
+            val otherPrimeInfos: List<CryptoPrivateKey.RSA.PrimeInfo>?,
+            val attributes: Set<Asn1Element>?,
+        ) {
+            init {
+                val n = publicKey.n.toBigInteger()
+                val e = publicKey.e.toBigInteger()
+                val primeInfo1 =
+                    CryptoPrivateKey.RSA.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
+                val primeInfo2 =
+                    CryptoPrivateKey.RSA.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
+
+                var product = BigInteger.ONE
+                (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
+                    .forEachIndexed { i, info ->
+                        val pminusone = info.prime - BigInteger.ONE
+                        require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE) {
+                            "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i"
+                        }
+                        product *= info.prime
+                        require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
+                        require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
+                    }
+                require(product == n) { "p1 * p2 * ... * pk != n" }
+            }
+        }
 
         constructor(
             publicKey: CryptoPublicKey.RSA,
@@ -109,7 +99,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             otherPrimeInfos: List<PrimeInfo>?,
             attributes: Set<Asn1Element>? = null,
         ) : this(
-            RsaPrivateKeyContent(
+            ContentContainer(
                 publicKey = publicKey,
                 privateKey = privateKey,
                 prime1 = prime1,
@@ -146,7 +136,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
 
         override val oid: ObjectIdentifier get() = Companion.oid
 
-        private val content: RsaPrivateKeyContent by providedContent orLazy {
+        private val content: ContentContainer by providedContent orLazy {
             val source = providedPkcs1Source ?: RsaPkcs1Source(
                 requireNotNull(providedPkcs8Representation).decodeRsaPrivateKey(),
                 providedPkcs8Representation.attributes,
@@ -254,11 +244,20 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
     }
 
     sealed class EC private constructor(
-        private val providedContent: EcPrivateKeyContent?,
+        private val providedContent: ContentContainer?,
         private val providedSec1Source: EcSec1Source?,
         private val providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
     ) : CryptoPrivateKey {
 
+        data class ContentContainer(
+            val privateKey: BigInteger,
+            val publicKey: CryptoPublicKey.EC?,
+            val publicKeyBytes: Asn1BitString?,
+            val encodeCurve: Boolean,
+            val encodePublicKey: Boolean,
+            val curveOrderLengthInBytes: Int,
+            val attributes: Set<Asn1Element>?,
+        )
 
         init {
             providedSec1Source?.let {
@@ -272,7 +271,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
 
         override val oid: ObjectIdentifier get() = Companion.oid
 
-        protected val content: EcPrivateKeyContent by providedContent orLazy {
+        protected val content: ContentContainer by providedContent orLazy {
             val source = providedSec1Source ?: requireNotNull(providedPkcs8Representation).let {
                 EcSec1Source(it.decodeEcPrivateKey(), it.algorithmParameters?.let(::decodeEcCurve), it.attributes)
             }
@@ -312,7 +311,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         override fun hashCode() = privateKey.hashCode()
 
         class WithPublicKey private constructor(
-            providedContent: EcPrivateKeyContent?,
+            providedContent: ContentContainer?,
             providedSec1Source: EcSec1Source?,
             providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
         ) : EC(providedContent, providedSec1Source, providedPkcs8Representation),
@@ -326,7 +325,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                 encodePublicKey: Boolean,
                 attributes: Set<Asn1Element>? = null,
             ) : this(
-                EcPrivateKeyContent(
+                ContentContainer(
                     privateKey = privateKey,
                     publicKey = publicKey,
                     publicKeyBytes = null,
@@ -382,7 +381,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         }
 
         class WithoutPublicKey private constructor(
-            providedContent: EcPrivateKeyContent?,
+            providedContent: ContentContainer?,
             providedSec1Source: EcSec1Source?,
         ) : EC(providedContent, providedSec1Source, null) {
 
@@ -392,7 +391,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                 attributes: Set<Asn1Element>? = null,
                 curveOrderLengthInBytes: Int,
             ) : this(
-                EcPrivateKeyContent(
+                ContentContainer(
                     privateKey = privateKey,
                     publicKey = null,
                     publicKeyBytes = publicKeyBytes,
@@ -563,8 +562,8 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
     }
 }
 
-private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?): RsaPrivateKeyContent =
-    RsaPrivateKeyContent(
+private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?): CryptoPrivateKey.RSA.ContentContainer =
+    CryptoPrivateKey.RSA.ContentContainer(
         publicKey = CryptoPublicKey.RSA(modulus, publicExponent),
         privateKey = privateExponent.toBigInteger(),
         prime1 = prime1.toBigInteger(),
@@ -582,7 +581,7 @@ private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?
         attributes = attributes,
     )
 
-private fun RsaPrivateKeyContent.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo =
+private fun CryptoPrivateKey.RSA.ContentContainer.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo =
     Pkcs1RsaPrivateKeyInfo(
         version = if (otherPrimeInfos != null) Pkcs1RsaPrivateKeyInfo.Version.MULTI else Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME,
         modulus = publicKey.n,
@@ -599,12 +598,12 @@ private fun RsaPrivateKeyContent.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo
 private fun Sec1EcPrivateKeyInfo.toSignumContent(
     curveFromPkcs8: ECCurve?,
     attributes: Set<Asn1Element>?,
-): EcPrivateKeyContent {
+): CryptoPrivateKey.EC.ContentContainer {
     require(version == Sec1EcPrivateKeyInfo.Version.V1) { "EC public key version must be 1" }
     val curve = parameters?.let(ECCurve::withOid) ?: curveFromPkcs8
     val privateValue = BigInteger.fromByteArray(privateKey, Sign.POSITIVE)
     return if (curve != null) {
-        EcPrivateKeyContent(
+        CryptoPrivateKey.EC.ContentContainer(
             privateKey = privateValue,
             publicKey = publicKey?.let { CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.rawBytes) }
                 ?: curve.generator.times(privateValue).asPublicKey(preferCompressed = true),
@@ -615,7 +614,7 @@ private fun Sec1EcPrivateKeyInfo.toSignumContent(
             attributes = attributes,
         )
     } else {
-        EcPrivateKeyContent(
+        CryptoPrivateKey.EC.ContentContainer(
             privateKey = privateValue,
             publicKey = null,
             publicKeyBytes = publicKey,
@@ -627,7 +626,7 @@ private fun Sec1EcPrivateKeyInfo.toSignumContent(
     }
 }
 
-private fun EcPrivateKeyContent.toSec1Representation(): Sec1EcPrivateKeyInfo =
+private fun CryptoPrivateKey.EC.ContentContainer.toSec1Representation(): Sec1EcPrivateKeyInfo =
     Sec1EcPrivateKeyInfo(
         version = Sec1EcPrivateKeyInfo.Version.V1,
         privateKey = privateKey.toByteArray().ensureSize(curveOrderLengthInBytes.toUInt()),

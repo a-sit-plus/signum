@@ -13,19 +13,6 @@ import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
-
-private data class TbsCertificationRequestContent(
-    val subjectName: Name,
-    val publicKey: CryptoPublicKey,
-    val attributes: List<CsrAttribute>,
-) {
-    constructor(asn1Representation: Pkcs10CertificationRequestInfo) : this(
-        subjectName = X500Name(asn1Representation.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false),
-        publicKey = CryptoPublicKey(asn1Representation.publicKey),
-        attributes = asn1Representation.attributes.map { CsrAttribute(it) }
-    )
-}
-
 /**
  * The meat of a Certification Request:
  * The structure that gets signed.
@@ -35,15 +22,28 @@ private data class TbsCertificationRequestContent(
  * @param attributes nomen est omen
  */
 class TbsCertificationRequest private constructor(
-    providedContent: TbsCertificationRequestContent?, /*TODO EXTENSIBILITY private val*/
+    providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     providedAsn1Representation: Pkcs10CertificationRequestInfo?,
 ) : DerEncodable<Pkcs10CertificationRequestInfo> {
+
+    private data class ContentContainer(
+        val subjectName: Name,
+        val publicKey: CryptoPublicKey,
+        val attributes: List<CsrAttribute>,
+    ) {
+        constructor(asn1Representation: Pkcs10CertificationRequestInfo) : this(
+            subjectName = X500Name(asn1Representation.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false),
+            publicKey = CryptoPublicKey(asn1Representation.publicKey),
+            attributes = asn1Representation.attributes.map { CsrAttribute(it) }
+        )
+    }
+
 
     constructor(
         subjectName: Name,
         publicKey: CryptoPublicKey,
         attributes: List<CsrAttribute> = listOf(),
-    ) : this(TbsCertificationRequestContent(subjectName, publicKey, attributes), null) {
+    ) : this(ContentContainer(subjectName, publicKey, attributes), null) {
         validateAttributes(attributes, allowExtensions = true)
     }
 
@@ -80,8 +80,8 @@ class TbsCertificationRequest private constructor(
     }
 
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
-    private val providedContent: TbsCertificationRequestContent by providedContent orLazy {
-        TbsCertificationRequestContent(asn1Representation)
+    private val providedContent: ContentContainer by providedContent orLazy {
+        ContentContainer(asn1Representation)
     }
 
     val subjectName: Name get() = providedContent.subjectName

@@ -4,7 +4,6 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.RsaParams
 import at.asitplus.awesn1.crypto.RsaPkcs1PaddingParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
-import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_SALT_LENGTH
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_TRAILER_FIELD
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
@@ -15,18 +14,6 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA
 import at.asitplus.signum.internals.orLazy
 import at.asitplus.signum.internals.orLazyNullable
 import kotlinx.serialization.KSerializer
-
-private infix fun RSA.Parameters<*>.sameSignatureParametersAs(other: RSA.Parameters<*>): Boolean =
-    when {
-        this === other -> true
-        this is RSA.Parameters.PssPadded && other is RSA.Parameters.PssPadded ->
-            digest == other.digest &&
-                    mgfAlgorithm == other.mgfAlgorithm &&
-                    saltLength == other.saltLength &&
-                    trailerField == other.trailerField
-
-        else -> this == other
-    }
 
 private fun RSA.Parameters<*>.signatureParametersHashCode(): Int =
     when (this) {
@@ -51,23 +38,23 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
     val kind: Kind
 
-    private data class EcdsaParams(val digest: Digest?, val curve: ECCurve?)
     class ECDSA private constructor(
-        private val providedParams: EcdsaParams?,
+        private val providedParams: Params?,
         private val providedAsn1: X509AlgorithmIdentifier?,
     ) : SignatureAlgorithm {
-
         constructor(
             /** The digest to apply to the data, or `null` to directly process the raw data. */
             digest: Digest?,
             /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
             requiredCurve: ECCurve?
-        ) : this(EcdsaParams(digest, requiredCurve), null)
-
+        ) : this(Params(digest, requiredCurve), null)
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
 
+
         override val kind: Kind get() = Kind.EC
+
+        private data class Params(val digest: Digest?, val curve: ECCurve?)
 
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         val digest: Digest? by providedParams.orLazyNullable(
@@ -103,22 +90,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is ECDSA) return false
-            val thisIsAsn1Backed = providedAsn1 != null
-            val otherIsAsn1Backed = other.providedAsn1 != null
-
-            if (thisIsAsn1Backed && otherIsAsn1Backed) {
-                return asn1Representation == other.asn1Representation
-            }
-
-            if (!thisIsAsn1Backed && !otherIsAsn1Backed) {
-                return hasSamePropertiesAs(other)
-            }
-
-            if (asn1Representation == other.asn1Representation) return true
-
-            return runCatching {
-                hasSamePropertiesAs(other)
-            }.getOrDefault(false)
+            return hasSamePropertiesAs(other)
         }
 
         private fun hasSamePropertiesAs(other: ECDSA): Boolean =
@@ -234,7 +206,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         }
 
         private fun hasSamePropertiesAs(other: RSA): Boolean =
-            parameters sameSignatureParametersAs other.parameters
+            parameters == other.parameters
 
         override fun hashCode(): Int {
             return parameters.signatureParametersHashCode()
@@ -267,13 +239,13 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
         }
 
 
-        sealed class Parameters<T : RsaParams> : DerEncodable<T> {
+        sealed interface Parameters<T : RsaParams> : DerEncodable<T> {
 
             abstract val type: Padding
             abstract val digest: Digest
 
             class Pkcs1Padded(override val digest: Digest) :
-                Parameters<RsaPkcs1PaddingParams>() //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
+                Parameters<RsaPkcs1PaddingParams> //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
             {
                 override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
                 override val type: Padding get() = Padding.PKCS1
@@ -298,7 +270,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
             class PssPadded private constructor(
                 private val providedParams: PssParams?, private val rsaSsaPssParams: RsaSsaPssParams?
-            ) : Parameters<RsaSsaPssParams>() {
+            ) : Parameters<RsaSsaPssParams> {
                 constructor(
                     digest: Digest = Digest.SHA1,
                     mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
@@ -339,7 +311,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
                 val saltLength: UInt by providedParams?.saltLength orLazy {
                     rsaSsaPssParams!!.effectiveSaltLength.let {
-                        require(it > 0)
+                        require(it >= 0)
                         it.toUInt()
                     }
                 }
