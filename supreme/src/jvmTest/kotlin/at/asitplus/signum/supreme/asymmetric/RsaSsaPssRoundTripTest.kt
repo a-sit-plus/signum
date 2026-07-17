@@ -20,16 +20,15 @@ import java.security.spec.PSSParameterSpec
 @OptIn(SecretExposure::class)
 val RsaSsaPssRoundTripTest by matrixSuite {
 
-    //TODO: API too inflexible to define MGF params an sigest for hashing data separately.
-    Digest.entries.asData("Digest") test {
+    Digest.entries.asData("Data Digest") test { dataDigest ->
         val parameters = SignatureAlgorithm.RSA.Parameters.PssPadded(
             RsaSsaPssParams(
                 hashAlgorithm = X509AlgorithmIdentifier(
-                    it.oid,
+                    dataDigest.oid,
                     listOf(Asn1Null),
                 ),
                 maskGenAlgorithm = X509AlgorithmIdentifier(
-                    SignatureAlgorithm.RSA.Parameters.PssPadded.MGF.PKCS1_MGF1.oid,
+                    SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1.oid,
                     listOf(
                         Asn1.Sequence {
                             +Digest.SHA1.oid

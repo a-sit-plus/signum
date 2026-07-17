@@ -62,7 +62,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             digest: Digest?,
             /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
             requiredCurve: ECCurve?
-        ) : this(EcdsaParams(digest , requiredCurve), null)
+        ) : this(EcdsaParams(digest, requiredCurve), null)
 
 
         constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
@@ -301,7 +301,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
             ) : Parameters<RsaSsaPssParams>() {
                 constructor(
                     digest: Digest = Digest.SHA1,
-                    mgfAlgorithm: MGF = MGF.PKCS1_MGF1,
+                    mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(),
                     saltLength: UInt = DEFAULT_SALT_LENGTH.toUInt(),
                     trailerField: Int = DEFAULT_TRAILER_FIELD
                 ) : this(PssParams(digest, mgfAlgorithm, saltLength, trailerField), null)
@@ -314,7 +314,7 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                         hashAlgorithm = X509AlgorithmIdentifier(providedParams.digest.oid, listOf(Asn1Null)),
                         maskGenAlgorithm = X509AlgorithmIdentifier(
                             providedParams.mgfAlgorithm.oid,
-                            listOf(Asn1.Sequence { +providedParams.digest.oid; +Asn1Null })
+                            listOf(Asn1.Sequence { +(providedParams.mgfAlgorithm as MaskGenerationFunction.Pkcs1Mgf1).digest.oid; +Asn1Null })
                         ),
                         saltLength = providedParams.saltLength.also { require(it <= Int.MAX_VALUE.toUInt()) }.toInt(),
                         trailerField = providedParams.trailerField
@@ -327,7 +327,13 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
                     Digest.entries.first { it.oid == rsaSsaPssParams!!.effectiveHashAlgorithm.oid }
                 }
 
-                val mgfAlgorithm: MGF by providedParams?.mgfAlgorithm orLazy { MGF.entries.first { it.oid == rsaSsaPssParams!!.effectiveMaskGenAlgorithm.oid } }
+                val mgfAlgorithm: MaskGenerationFunction by providedParams?.mgfAlgorithm orLazy {
+                    val effectiveMaskGenAlgorithm = rsaSsaPssParams!!.effectiveMaskGenAlgorithm
+                    if (MaskGenerationFunction.Pkcs1Mgf1.oid == effectiveMaskGenAlgorithm.oid) {
+                        val params = rsaSsaPssParams.effectiveMaskGenAlgorithm.element
+                        MaskGenerationFunction.Pkcs1Mgf1(Digest.entries.first { it.oid == params.first() })
+                    } else throw IllegalArgumentException("Unsupported MGF1 algorithm: $effectiveMaskGenAlgorithm")
+                }
 
                 val saltLength: UInt by providedParams?.saltLength orLazy {
                     rsaSsaPssParams!!.effectiveSaltLength.let {
@@ -357,13 +363,17 @@ sealed interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509A
 
                 private data class PssParams(
                     val digest: Digest,
-                    val mgfAlgorithm: MGF,
+                    val mgfAlgorithm: MaskGenerationFunction,
                     val saltLength: UInt,
                     val trailerField: Int,
                 )
 
-                enum class MGF(override val oid: ObjectIdentifier) : Identifiable {
-                    PKCS1_MGF1(ObjectIdentifier("1.2.840.113549.1.1.8"))
+                sealed class MaskGenerationFunction(override val oid: ObjectIdentifier) : Identifiable {
+                    class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
+                        companion object : Identifiable {
+                            override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
+                        }
+                    }
                 }
 
                 companion object : DerDecodable<RsaSsaPssParams, PssPadded> {
