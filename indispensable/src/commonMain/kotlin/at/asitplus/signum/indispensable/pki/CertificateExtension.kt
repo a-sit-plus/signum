@@ -56,7 +56,7 @@ sealed interface CertificateExtension : Identifiable {
         fun descriptorFor(oid: ObjectIdentifier): Descriptor? = view()[oid]
 
         private fun view(): Map<ObjectIdentifier, Descriptor> =
-            sealed.load() ?: descriptors.also { sealed.store(it) }
+            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
     }
 
     companion object : DerDecodable<Awesn1X509CertificateExtension, X509Representable> {

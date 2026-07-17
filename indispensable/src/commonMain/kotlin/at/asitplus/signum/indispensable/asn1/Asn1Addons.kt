@@ -70,14 +70,7 @@ fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigIntege
  */
 fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
     require(nBytes > 0) { "nBytes must be positive" }
-
-    val buf = ByteArray(nBytes)
-
-    do {
-        nextBytes(buf)
-    } while (!isDerMinimalIntegerEncoding(buf))
-
-    return Asn1Integer.fromTwosComplement(buf)
+    return BigInteger.fromTwosComplementByteArray(ByteArray(nBytes).also { nextBytes(it) }).toAsn1Integer()
 }
 
 /**
@@ -91,19 +84,8 @@ fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
  */
 fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
     require(nBytes > 0) { "nBytes must be positive" }
-
-    val buf = ByteArray(nBytes)
-
-    do {
-        nextBytes(buf)
-
-        // Force positive sign bit.
-        buf[0] = (buf[0].toInt() and 0x7f).toByte()
-    } while (
-        buf.isAllZero || !isDerMinimalIntegerEncoding(buf)
-    )
-
-    return Asn1Integer.fromTwosComplement(buf) as Asn1Integer.Positive
+    return BigInteger.fromByteArray(ByteArray(nBytes).also { nextBytes(it) }, Sign.POSITIVE)
+        .toAsn1Integer() as Asn1Integer.Positive
 }
 
 /**
@@ -116,38 +98,6 @@ fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
 fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
-    require(nBytes > 0) { "nBytes must be positive" }
-
-    val buf = ByteArray(nBytes)
-
-    do {
-        nextBytes(buf)
-
-        // Force negative sign bit.
-        buf[0] = (buf[0].toInt() or 0x80).toByte()
-    } while (!isDerMinimalIntegerEncoding(buf))
-
-    return Asn1Integer.fromTwosComplement(buf) as Asn1Integer.Negative
-}
-
-private val ByteArray.isAllZero: Boolean
-    get() =
-        all { it == 0.toByte() }
-
-//faster than the throwing version in awesn1 (that is internal anyway)
-private fun isDerMinimalIntegerEncoding(bytes: ByteArray): Boolean {
-    require(bytes.isNotEmpty())
-
-    if (bytes.size == 1) return true
-
-    val first = bytes[0].toUByte().toInt()
-    val second = bytes[1].toUByte().toInt()
-
-    val redundantPositivePrefix =
-        first == 0x00 && (second and 0x80) == 0
-
-    val redundantNegativePrefix =
-        first == 0xff && (second and 0x80) == 0x80
-
-    return !redundantPositivePrefix && !redundantNegativePrefix
+    return BigInteger.fromByteArray(ByteArray(nBytes).also { nextBytes(it) }, Sign.NEGATIVE)
+        .toAsn1Integer() as Asn1Integer.Negative
 }
