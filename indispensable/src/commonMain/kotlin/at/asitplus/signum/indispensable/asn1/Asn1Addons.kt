@@ -8,6 +8,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import org.kotlincrypto.random.CryptoRand
+import kotlin.experimental.and
 
 private fun Asn1Integer.Sign.toBigIntegerSign() = when (this) {
     Asn1Integer.Sign.POSITIVE -> Sign.POSITIVE
@@ -84,7 +85,7 @@ fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
  */
 fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
     require(nBytes > 0) { "nBytes must be positive" }
-    return BigInteger.fromByteArray(ByteArray(nBytes).also { nextBytes(it) }, Sign.POSITIVE)
+    return BigInteger.fromByteArray(ByteArray(nBytes).also { nextBytes(it).also { it[0] = it[0] and 0x7f } }, Sign.POSITIVE)
         .toAsn1Integer() as Asn1Integer.Positive
 }
 
@@ -98,6 +99,6 @@ fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
 fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
-    return BigInteger.fromByteArray(ByteArray(nBytes).also { nextBytes(it) }, Sign.NEGATIVE)
+    return BigInteger.fromByteArray(ByteArray(nBytes).also {nextBytes(it).also { it[0] = it[0] and 0x7f } }, Sign.NEGATIVE)
         .toAsn1Integer() as Asn1Integer.Negative
 }
