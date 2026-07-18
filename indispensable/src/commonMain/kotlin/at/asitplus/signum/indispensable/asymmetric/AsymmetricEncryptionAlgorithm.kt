@@ -1,11 +1,13 @@
 package at.asitplus.signum.indispensable.asymmetric
 
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.rsaEncryption
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
-//TODO map to algorithmidentifier structure as per rfc8017
 sealed interface RSAPadding : Enumerable {
     @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
     object PKCS1 : RSAPadding {
@@ -39,12 +41,16 @@ sealed interface RSAPadding : Enumerable {
 
 }
 
-sealed interface AsymmetricEncryptionAlgorithm {
+//TODO extensible, no more sealed
+sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */
         val padding: RSAPadding
     ) : AsymmetricEncryptionAlgorithm {
-        companion object {
+        override val oid = Companion.oid
+
+        companion object : Identifiable {
+            override val oid = KnownOIDs.rsaEncryption
 
             @HazardousMaterials("This is almost always insecure and can leak your private key!")
             val NoPadding = RSA(RSAPadding.NONE)
