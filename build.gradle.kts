@@ -1,6 +1,4 @@
 import at.asitplus.gradle.dokka
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import java.time.Duration
 
 plugins {
@@ -79,5 +77,3 @@ tasks.register<Copy>("mkDocsSite") {
     into(rootDir.resolve("docs/site/assets/images/social"))
     from(rootDir.resolve("docs/docs/assets/images/social"))
 }
-
-

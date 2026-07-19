@@ -1,0 +1,47 @@
+package at.asitplus.signum.indispensable.pki
+
+import kotlin.time.Instant
+
+
+open class CertificateException(
+    message: String? = null,
+    cause: Throwable? = null,
+    var certificateIndex: Int? = null
+) : Throwable(message, cause) {
+    override val message: String?
+        get() = super.message?.let { msg ->
+            if (certificateIndex != null) "$msg (certificate index $certificateIndex)" else msg
+        } ?: if (certificateIndex != null) "Certificate error at index $certificateIndex" else null
+}
+
+class CertificateChainValidatorException(message: String) : CertificateException(message)
+sealed class CertificateValidityException(message: String) : CertificateException(message)
+class CertificateSerialNumberException(message: String) : CertificateValidityException(message)
+class SanNotCriticalWithEmptySubjectException(message: String) : CertificateValidityException(message)
+class KeyUsageException(message: String) : CertificateException(message)
+class ExtendedKeyUsageException(message: String) : CertificateException(message)
+sealed class CertificateTimeValidityException(message: String) : CertificateException(message)
+class CertificateNotYetValidException(val validFrom: Instant, val checkedAt: Instant) :
+    CertificateTimeValidityException("certificate not valid until ${validFrom}. Checked at $checkedAt")
+
+class CertificateExpiredException(val validUntil: Instant, val checkedAt: Instant) :
+    CertificateTimeValidityException("certificate expired on ${validUntil}. Checked at $checkedAt")
+
+class InvalidCertificateValidityPeriodException(message: String) : CertificateTimeValidityException(message)
+sealed class BasicConstraintsException(message: String) : CertificateException(message)
+class MissingBasicConstraintsException(message: String) : BasicConstraintsException(message)
+class NonCriticalBasicConstraintsException(message: String) : BasicConstraintsException(message)
+class MissingCaFlagException(message: String) : BasicConstraintsException(message)
+class PathLenConstraintViolationException(message: String) : BasicConstraintsException(message)
+
+class NameConstraintsException(message: String) : CertificateException(message)
+class GeneralNameException(message: String) : CertificateException(message)
+class CertificatePolicyException(message: String) : CertificateException(message)
+sealed class TrustAnchorException(message: String) : CertificateException(message)
+class NoTrustedIssuerFoundException(message: String) : TrustAnchorException(message)
+class TrustAnchorKeyMismatchException(message: String) : TrustAnchorException(message)
+sealed class KeyIdentifierException(message: String) : CertificateException(message)
+class MissingSubjectKeyIdentifierException(message: String) : KeyIdentifierException(message)
+class CriticalSubjectKeyIdentifierException(message: String) : KeyIdentifierException(message)
+class MissingAuthorityKeyIdentifierException(message: String) : KeyIdentifierException(message)
+class CriticalAuthorityKeyIdentifierException(message: String) : KeyIdentifierException(message)
