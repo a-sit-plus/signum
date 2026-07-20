@@ -1,10 +1,15 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.awesn1.ObjectIdentifier
-
-
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.BaseAttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.BaseX509AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
@@ -12,6 +17,9 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+
+private class NonX509AttributeTypeAndValue(oid: ObjectIdentifier) : BaseAttributeTypeAndValue(oid)
 
 val RelativeDistinguishedNameParsingTest  by matrixSuite{
 
@@ -66,6 +74,66 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
         val rdnStr = "CNJohn Doe+O=Company"
         shouldThrow<IllegalArgumentException> {
             RelativeDistinguishedName.fromString(rdnStr)
+        }
+    }
+
+    "X500Name should respect quotes and convert between RFC and ASN.1 RDN order" {
+        val name = X500Name.fromString("""2.5.4.3="Foo, Bar",2.5.4.10=Acme,2.5.4.6=DE""")
+
+        name.relativeDistinguishedNames.map { it.attrsAndValues.single().oid } shouldBe listOf(
+            ObjectIdentifier("2.5.4.6"),
+            ObjectIdentifier("2.5.4.10"),
+            ObjectIdentifier("2.5.4.3"),
+        )
+        name.toRfc2253String() shouldBe "2.5.4.3=foo\\, bar,2.5.4.10=acme,2.5.4.6=de"
+    }
+
+    "decoded empty RDN should be invalid" {
+        RelativeDistinguishedName(X500RelativeDistinguishedName(emptySet())).isValid shouldBe false
+    }
+
+    "decoded RDN with a duplicate attribute OID should be invalid" {
+        val oid = ObjectIdentifier("2.5.4.3")
+        val rdn = X500RelativeDistinguishedName(
+            setOf(
+                X500AttributeTypeAndValue(oid, Asn1String.UTF8("Alice").encodeToTlv()),
+                X500AttributeTypeAndValue(oid, Asn1String.UTF8("Bob").encodeToTlv()),
+            )
+        )
+
+        RelativeDistinguishedName(rdn).isValid shouldBe false
+    }
+
+    "ATV equality should be symmetric across representations" {
+        val oid = ObjectIdentifier("2.5.4.3")
+        val generic = NonX509AttributeTypeAndValue(oid)
+        val x509 = BaseX509AttributeTypeAndValue(oid, Asn1String.UTF8("Alice"))
+
+        generic shouldNotBe x509
+        x509 shouldNotBe generic
+    }
+
+    "GeneralName should reject a universal tag" {
+        val universalDns = Asn1Element.parse(byteArrayOf(0x02, 0x01, 0x00))
+
+        shouldThrow<Asn1Exception> {
+            GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, universalDns)
+        }
+    }
+
+    "GeneralName should reject the wrong constructed bit" {
+        val constructedDns = Asn1Element.parse(byteArrayOf(0xA2.toByte(), 0x00))
+
+        shouldThrow<Asn1Exception> {
+            GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, constructedDns)
+        }
+    }
+
+    "GeneralName should reject a tag that does not match its type" {
+        val rfc822Name = Asn1Element.parse(byteArrayOf(0x81.toByte(), 0x00))
+
+        shouldThrow<Asn1Exception> {
+            GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, rfc822Name)
         }
     }
 

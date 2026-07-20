@@ -70,38 +70,24 @@ class X500Name constructor(
          * Parse an RFC 2253 string (e.g., "CN=John Doe,O=Company,C=US") into an X500Name
          */
         fun fromString(value: String): X500Name {
-            val rdns = mutableListOf<RelativeDistinguishedName>()
-            var start = 0
-            var i = 0
-            var inEscape = false
-
-            while (i < value.length) {
-                val c = value[i]
-                when {
-                    inEscape -> inEscape = false
-                    c == '\\' -> inEscape = true
-                    c == ',' || c == ';' -> {
-                        val rdnStr = value.substring(start, i).trim()
-                        if (rdnStr.isNotEmpty()) rdns.add(RelativeDistinguishedName.fromString(rdnStr))
-                        start = i + 1
-                    }
-                }
-                i++
+            val rdns = with(RelativeDistinguishedName) {
+                value.splitRespectingEscapeAndQuotes(',', ';')
+            }.mapNotNull { rdn ->
+                rdn.trim().takeIf { it.isNotEmpty() }?.let(RelativeDistinguishedName::fromString)
             }
 
-            val lastRdn = value.substring(start).trim()
-            if (lastRdn.isNotEmpty()) rdns.add(RelativeDistinguishedName.fromString(lastRdn))
-
-            return X500Name(rdns)
+            // RFC 4514 writes the most-specific RDN first, while ASN.1 RDNSequence stores it last.
+            return X500Name(rdns.asReversed())
         }
     }
 
     override fun toString() = "X500Name(RDNs=${relativeDistinguishedNames.joinToString()})"
 
     fun toRfc2253String(): String {
-        // RDN order is preserved; ATVs within a (multi-valued) RDN are sorted by attribute OID
+        // RFC 4514 writes the ASN.1 RDNSequence in reverse order. ATVs within a
+        // (multi-valued) RDN are sorted by attribute OID
         // (DER encoding order, unsigned) for a canonical form.
-        return relativeDistinguishedNames.joinToString(",") { rdn ->
+        return relativeDistinguishedNames.asReversed().joinToString(",") { rdn ->
             rdn.attrsAndValues
                 .sortedBy { it.oid }
                 .joinToString("+") { atv -> atv.toRfc2253String().trim() }

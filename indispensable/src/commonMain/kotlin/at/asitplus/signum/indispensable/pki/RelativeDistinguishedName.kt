@@ -56,7 +56,11 @@ class RelativeDistinguishedName private constructor(
         asn1Representation.attrsAndValues.map(AttributeTypeAndValue::fromAsn1Representation).toSet()
     }
 
-    val isValid: Boolean by lazy { attrsAndValues.all { it.isValid != false } }
+    val isValid: Boolean by lazy {
+        attrsAndValues.isNotEmpty() &&
+                attrsAndValues.groupBy { it.oid }.none { it.value.size > 1 } &&
+                attrsAndValues.all { it.isValid != false }
+    }
 
     init {
         if (performValidation) {
@@ -104,7 +108,10 @@ class RelativeDistinguishedName private constructor(
         }
 
         //internal for tests
-        internal fun String.splitRespectingEscapeAndQuotes(delimiter: Char): List<String> {
+        internal fun String.splitRespectingEscapeAndQuotes(
+            delimiter: Char,
+            vararg additionalDelimiters: Char,
+        ): List<String> {
             val parts = mutableListOf<String>()
             val sb = StringBuilder()
             var escaped = false
@@ -123,7 +130,7 @@ class RelativeDistinguishedName private constructor(
                         inQuotes = !inQuotes
                     }
 
-                    c == delimiter && !inQuotes -> {
+                    (c == delimiter || c in additionalDelimiters) && !inQuotes -> {
                         parts.add(sb.toString())
                         sb.clear()
                     }
@@ -286,7 +293,8 @@ abstract class BaseAttributeTypeAndValue(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is AttributeTypeAndValue) return false
+        if (other == null || this::class != other::class) return false
+        other as BaseAttributeTypeAndValue
         return oid == other.oid
     }
 

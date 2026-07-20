@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.TagClass
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
@@ -42,10 +43,25 @@ interface GeneralName {
         }
 
         companion object {
-            fun fromAsn1Representation(type: NameType, src: Asn1Element): X509Representable =
-                Registry.descriptorFor(type)
+            fun fromAsn1Representation(type: NameType, src: Asn1Element): X509Representable {
+                if (src.tag.tagClass != TagClass.CONTEXT_SPECIFIC || src.tag.tagValue != type.value) {
+                    throw Asn1Exception("GeneralName $type has an invalid tag: ${src.tag}")
+                }
+                val expectedConstructed = when (type) {
+                    NameType.OTHER, NameType.X400, NameType.DIRECTORY, NameType.EDI -> true
+                    else -> false
+                }
+                //is this too strict? I fear it might be…
+                //then again, a basic X509GEneralName that parses structurally, but leniently should really go into awesn1
+                //which should settle it. See https://github.com/a-sit-plus/awesn1/issues/37
+                if (src.tag.isConstructed != expectedConstructed) {
+                    throw Asn1Exception("GeneralName $type has an invalid tag: ${src.tag}")
+                }
+
+                return Registry.descriptorFor(type)
                     ?.let { catchingUnwrapped { it.fromAsn1Representation(src) }.getOrNull() }
                     ?: GenericX509GeneralName(type, src)
+            }
         }
     }
 
