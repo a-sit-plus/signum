@@ -2,6 +2,10 @@ plugins {
     `kotlin-dsl`
 }
 
+// No buildlogic tests; avoid resolving TestKit's embedded Kotlin during IDEA sync.
+configurations.matching { it.name in setOf("testCompileClasspath", "testRuntimeClasspath") }
+    .configureEach { setExtendsFrom(emptyList()) }
+
 group = "at.asitplus.signum.buildlogic"
 
 gradlePlugin {
@@ -17,10 +21,10 @@ gradlePlugin {
 
 dependencies {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
-
     implementation("org.jetbrains.kotlin.multiplatform:org.jetbrains.kotlin.multiplatform.gradle.plugin:$kotlinVer")
     implementation(libs.agp)
     implementation(libs.asp)
+    implementation(libs.modulator)
 }
 
 repositories {
