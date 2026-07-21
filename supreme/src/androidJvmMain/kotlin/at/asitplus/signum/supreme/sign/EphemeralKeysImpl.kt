@@ -33,20 +33,20 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
             { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
         }
         (if (preHashed)
-            signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider).getOrThrow()
+            signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider)
         else
-            signatureAlgorithm.getJCASignatureInstance(provider = provider).getOrThrow())
-        .run {
-            initSign(privateKey)
-            data.data.forEach { update(it) }
-            sign().let(::parseFromJca)
-        }
+            signatureAlgorithm.getJCASignatureInstance(provider = provider))
+            .run {
+                initSign(privateKey)
+                data.data.forEach { update(it) }
+                sign().let(::parseFromJca)
+            }
     }
 
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-              override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+                                        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
         : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
@@ -57,7 +57,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
             KeyAgreement.getInstance("ECDH").let {
                 it.init(privateKey)
-                it.doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+                it.doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
                 it.generateSecret()
             }
         }
