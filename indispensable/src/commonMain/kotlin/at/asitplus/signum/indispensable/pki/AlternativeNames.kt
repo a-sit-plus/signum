@@ -13,8 +13,6 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.pki.x500.GeneralName
-import at.asitplus.signum.indispensable.pki.x500.requireX509
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
 
@@ -83,7 +81,7 @@ private class X509AlternativeNames(
     }
 
     override val generalNames: List<GeneralName> by providedGeneralNames orLazy {
-        asn1Representation.entries.map(GeneralName.X509Representable::fromAsn1Representation)
+        asn1Representation.entries.map { GeneralName.X509Representable.fromAsn1Representation(it) }
     }
 
     override fun equals(other: Any?): Boolean {
