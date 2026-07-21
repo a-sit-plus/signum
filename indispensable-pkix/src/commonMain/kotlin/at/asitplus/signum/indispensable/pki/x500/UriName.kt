@@ -1,24 +1,23 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.encoding.decodeToIa5String
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.runRethrowing
 import com.eygraber.uri.Uri
 import kotlinx.io.IOException
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
 /** RFC 5280 `uniformResourceIdentifier` GeneralName CHOICE `[6]`. */
 class UriName private constructor(
     val host: Asn1String.IA5,
     val allowWildcard: Boolean,
-    encoded: Asn1Element,
+    asn1Representation: X509GeneralName,
     performValidation: Boolean,
-) : AbstractX509GeneralName(NameType.URI, encoded) {
+) : AbstractX509GeneralName(asn1Representation) {
 
     val hostDNS: DNSName?
     val hostIP: IPAddressName?
@@ -27,7 +26,7 @@ class UriName private constructor(
 
     @Throws(Asn1Exception::class)
     constructor(value: String, allowWildcard: Boolean = false)
-            : this(Asn1String.IA5(value), allowWildcard, Asn1String.IA5(value).encodeToTlv() withImplicitTag contextTag(6u), true)
+            : this(Asn1String.IA5(value), allowWildcard, X509GeneralName.UniformResourceIdentifier(value), true)
 
     init {
         if (performValidation && host.value.isEmpty()) {
@@ -98,12 +97,15 @@ class UriName private constructor(
     }
 
     companion object : Descriptor {
-        override val type = NameType.URI
-        private val tag = contextTag(6u)
+        override val tag = X509GeneralName.Tags.uniformResourceIdentifier
 
-        override fun fromAsn1Representation(src: Asn1Element): UriName = runRethrowing {
-            val value = src.asPrimitive().decodeToIa5String(tag)
-            UriName(value, allowWildcard = false, encoded = src, performValidation = false)
+        override fun fromAsn1Representation(src: X509GeneralName): UriName = runRethrowing {
+            UriName(
+                (src as X509GeneralName.UniformResourceIdentifier).rawValue,
+                allowWildcard = false,
+                asn1Representation = src,
+                performValidation = false,
+            )
         }
     }
 }

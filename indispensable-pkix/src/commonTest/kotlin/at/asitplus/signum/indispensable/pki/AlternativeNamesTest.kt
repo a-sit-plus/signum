@@ -8,20 +8,21 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.subjectAltName_2_5_29_17
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.crypto.pki.X509GeneralNames
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
 import at.asitplus.signum.indispensable.pki.x500.RegisteredIDName
-import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 
 private fun serializer() = X509GeneralNames.serializer()
+
+private fun List<GeneralName>.tags() = map { (it as GeneralName.X509Representable).tag }
 
 val AlternativeNamesTest by matrixSuite {
     SignumPkix.install()
@@ -40,7 +41,9 @@ val AlternativeNamesTest by matrixSuite {
         val encoded = built.encodeToDer(serializer())
         val decoded = AlternativeNames.decodeFromDer(serializer(), encoded)
 
-        decoded.generalNames.map { it.type } shouldBe listOf(NameType.DNS, NameType.OID, NameType.DIRECTORY)
+        decoded.generalNames.tags() shouldBe listOf(
+            X509GeneralName.Tags.dnsName, X509GeneralName.Tags.registeredID, X509GeneralName.Tags.directoryName,
+        )
         (decoded.generalNames[2] as DirectoryName).name.toRfc2253String() shouldBe "cn=directory" // RFC 2253 canonical: type + value lower-cased
         decoded.encodeToDer(serializer()) shouldBe encoded
     }
@@ -54,7 +57,9 @@ val AlternativeNamesTest by matrixSuite {
         )
         val decoded = AlternativeNames.decodeFromTlv(serializer(), Asn1Element.parse(encoded))
 
-        decoded.generalNames.map { it.type } shouldBe listOf(NameType.DNS, NameType.IP, NameType.OID)
+        decoded.generalNames.tags() shouldBe listOf(
+            X509GeneralName.Tags.dnsName, X509GeneralName.Tags.ipAddress, X509GeneralName.Tags.registeredID,
+        )
         decoded.encodeToDer(serializer()) shouldBe encoded
     }
 

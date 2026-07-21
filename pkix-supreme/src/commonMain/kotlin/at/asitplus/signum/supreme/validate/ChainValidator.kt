@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 import at.asitplus.signum.indispensable.pki.Name
-import at.asitplus.signum.indispensable.pki.x500.X500Name
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validationPath
 import at.asitplus.signum.supreme.sign.verifierFor

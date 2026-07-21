@@ -1,25 +1,24 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.encoding.decodeToIa5String
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
 /** RFC 5280 `rfc822Name` GeneralName CHOICE `[1]`. */
 class RFC822Name private constructor(
     val value: Asn1String.IA5,
-    encoded: Asn1Element,
-) : AbstractX509GeneralName(NameType.RFC822, encoded) {
+    asn1Representation: X509GeneralName,
+) : AbstractX509GeneralName(asn1Representation) {
 
     /**
      * @throws Asn1Exception if illegal RFC822Name is provided
      */
     @Throws(Asn1Exception::class)
-    constructor(value: Asn1String.IA5) : this(value, value.encodeToTlv() withImplicitTag contextTag(1u)) {
+    constructor(value: Asn1String.IA5) : this(value, X509GeneralName.Rfc822(value.value)) {
         if (!isValid) throw Asn1Exception("Invalid RFC822Name.")
     }
 
@@ -72,9 +71,8 @@ class RFC822Name private constructor(
     }
 
     companion object : Descriptor {
-        override val type = NameType.RFC822
-        private val tag = contextTag(1u)
-        override fun fromAsn1Representation(src: Asn1Element): RFC822Name =
-            RFC822Name(src.asPrimitive().decodeToIa5String(tag), src)
+        override val tag = X509GeneralName.Tags.rfc822Name
+        override fun fromAsn1Representation(src: X509GeneralName): RFC822Name =
+            RFC822Name((src as X509GeneralName.Rfc822).rawValue, src)
     }
 }

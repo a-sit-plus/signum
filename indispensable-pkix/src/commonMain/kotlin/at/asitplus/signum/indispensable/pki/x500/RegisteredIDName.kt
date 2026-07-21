@@ -1,17 +1,16 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
 /** RFC 5280 `registeredID` GeneralName CHOICE `[8]`. */
 class RegisteredIDName private constructor(
     val value: ObjectIdentifier,
-    encoded: Asn1Element,
-) : AbstractX509GeneralName(NameType.OID, encoded) {
+    asn1Representation: X509GeneralName,
+) : AbstractX509GeneralName(asn1Representation) {
 
-    constructor(value: ObjectIdentifier) : this(value, value.encodeToTlv() withImplicitTag contextTag(8u))
+    constructor(value: ObjectIdentifier) : this(value, X509GeneralName.RegisteredId(value))
 
     /** Always valid: [ObjectIdentifier] is guaranteed valid by its own constructor. */
     override val isValid: Boolean get() = true
@@ -19,8 +18,8 @@ class RegisteredIDName private constructor(
     override fun toString(): String = value.toString()
 
     companion object : Descriptor {
-        override val type = NameType.OID
-        override fun fromAsn1Representation(src: Asn1Element): RegisteredIDName =
-            RegisteredIDName(ObjectIdentifier.decodeFromAsn1ContentBytes(src.asPrimitive().content), src)
+        override val tag = X509GeneralName.Tags.registeredID
+        override fun fromAsn1Representation(src: X509GeneralName): RegisteredIDName =
+            RegisteredIDName((src as X509GeneralName.RegisteredId).oid, src)
     }
 }

@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.X500Name
 
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe

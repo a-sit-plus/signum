@@ -7,7 +7,7 @@ import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
-import at.asitplus.signum.indispensable.pki.x500.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.x500.GeneralNameListSerializer
 import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension

@@ -2,22 +2,22 @@ package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.cidre.IpAddress
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.TagClass
-import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.serialization.Asn1Tag
 import kotlinx.serialization.Serializable
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
-import at.asitplus.signum.indispensable.pki.x500.GeneralName
 import at.asitplus.signum.indispensable.pki.x500.GeneralNameSerializer
+import at.asitplus.signum.indispensable.pki.x500.constrains
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
+import at.asitplus.signum.indispensable.pki.x500.RFC822Name
+import at.asitplus.signum.indispensable.pki.x500.UriName
 import at.asitplus.signum.indispensable.pki.x500.X400AddressName
-import at.asitplus.signum.indispensable.pki.x500.X500Name
 import kotlinx.io.IOException
-
-private fun contextTag(value: ULong) = Asn1Element.Tag(value, constructed = false, TagClass.CONTEXT_SPECIFIC)
 
 
 /**
@@ -127,15 +127,15 @@ data class GeneralSubtrees(
      */
     private fun createWidestSubtree(name: GeneralName): GeneralSubtree {
         return try {
-            val newName: GeneralName = when (name.type) {
-                GeneralName.NameType.RFC822 -> GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.RFC822, Asn1String.IA5("").encodeToTlv() withImplicitTag contextTag(1u))
-                GeneralName.NameType.DNS -> GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, Asn1String.IA5("").encodeToTlv() withImplicitTag contextTag(2u))
-                GeneralName.NameType.X400 -> X400AddressName(Asn1Element.parse("".encodeToByteArray()))
-                GeneralName.NameType.DIRECTORY -> DirectoryName(X500Name(emptyList(), false))
-                GeneralName.NameType.URI -> GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.URI, Asn1String.IA5(".").encodeToTlv() withImplicitTag contextTag(6u))
-                GeneralName.NameType.IP -> IPAddressName(address = IpAddress("0.0.0.0"))
+            val newName: GeneralName = when (name) {
+                is RFC822Name -> RFC822Name.fromAsn1Representation(X509GeneralName.Rfc822(""))
+                is DNSName -> DNSName.fromAsn1Representation(X509GeneralName.Dns(""))
+                is X400AddressName -> X400AddressName(Asn1.Sequence { })
+                is DirectoryName -> DirectoryName(X500Name(emptyList(), false))
+                is UriName -> UriName.fromAsn1Representation(X509GeneralName.UniformResourceIdentifier("."))
+                is IPAddressName -> IPAddressName(address = IpAddress("0.0.0.0"))
 
-                else -> throw IOException("Unsupported GeneralName type: ${name.type}")
+                else -> throw IOException("Unsupported GeneralName type: $name")
             }
             GeneralSubtree(newName, Asn1Integer(0), Asn1Integer(-1))
         } catch (e: IOException) {
@@ -198,7 +198,7 @@ data class GeneralSubtrees(
             if (!removed && sameType) {
                 var intersectionFound = false
                 for (altPrimary in primary) {
-                    if (altPrimary.base.type == thisEntry.type) {
+                    if (altPrimary.base::class == thisEntry::class) {
                         for (altSecondary in secondary) {
                             when (altPrimary.base.constrains(altSecondary.base)) {
                                 GeneralName.ConstraintResult.MATCH,
@@ -217,7 +217,7 @@ data class GeneralSubtrees(
                 if (!intersectionFound) {
                     if (newExcluded == null) newExcluded = mutableListOf()
 
-                    if (thisEntry.type == GeneralName.NameType.DIRECTORY) {
+                    if (thisEntry is DirectoryName) {
                         // for x500Name exclude actual subtree
                         if (newExcluded.none { it.base == primary[i].base }) {
                             newExcluded += primary[i]

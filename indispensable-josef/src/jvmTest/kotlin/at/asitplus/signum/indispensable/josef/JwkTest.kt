@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.x500.X500Name
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign

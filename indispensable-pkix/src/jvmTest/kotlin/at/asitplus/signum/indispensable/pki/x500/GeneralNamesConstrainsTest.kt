@@ -5,8 +5,10 @@ import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.location
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.attributes.*
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe

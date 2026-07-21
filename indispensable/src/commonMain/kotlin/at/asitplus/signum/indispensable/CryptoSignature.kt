@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.SignatureValue
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.serialization.Der
@@ -30,7 +29,7 @@ private data class EcSignatureContent(
  */
 sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
-    override val asn1Representation: SignatureValue
+    override val asn1Representation: X509SignatureValue
 
     /**
      * Well-defined signatures that can be encoded into raw bytes.
@@ -50,7 +49,7 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
     sealed class EC
     @Throws(IllegalArgumentException::class) private constructor(
         providedContent: EcSignatureContent?,
-        private val providedAsn1Representation: SignatureValue?,
+        private val providedAsn1Representation: X509SignatureValue?,
     ) : CryptoSignature {
 
         private val content: EcSignatureContent by providedContent orLazy {
@@ -63,8 +62,8 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
         val s: BigInteger get() = content.s
 
-        override val asn1Representation: SignatureValue by providedAsn1Representation orLazy {
-            SignatureValue.fromRS(
+        override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
+            X509SignatureValue.fromRS(
                 r.toAsn1Integer() as Asn1Integer.Positive,
                 s.toAsn1Integer() as Asn1Integer.Positive,
             )
@@ -81,12 +80,12 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
         class IndefiniteLength private constructor(
             providedContent: EcSignatureContent?,
-            providedAsn1Representation: SignatureValue?,
+            providedAsn1Representation: X509SignatureValue?,
         ) : EC(providedContent, providedAsn1Representation), NotRawByteEncodable {
 
             internal constructor(r: BigInteger, s: BigInteger) : this(EcSignatureContent(r, s), null)
 
-            internal constructor(asn1Representation: SignatureValue) : this(null, asn1Representation)
+            internal constructor(asn1Representation: X509SignatureValue) : this(null, asn1Representation)
 
             fun withScalarByteLength(l: UInt) =
                 DefiniteLength(l, r, s)
@@ -107,9 +106,9 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
                 )
             }
 
-            companion object : DerDecodable<SignatureValue, IndefiniteLength> {
+            companion object : DerDecodable<X509SignatureValue, IndefiniteLength> {
                 override fun decodeFromTlv(
-                    serializer: KSerializer<SignatureValue>,
+                    serializer: KSerializer<X509SignatureValue>,
                     src: Asn1Element,
                     der: Der
                 ): IndefiniteLength = EC.decodeFromTlv(serializer, src, der)
@@ -141,9 +140,9 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
             }
         }
 
-        companion object : DerDecodable<SignatureValue, IndefiniteLength> {
+        companion object : DerDecodable<X509SignatureValue, IndefiniteLength> {
 
-            operator fun invoke(asn1Representation: SignatureValue) =
+            operator fun invoke(asn1Representation: X509SignatureValue) =
                 IndefiniteLength(asn1Representation)
 
             //TODO: do we still want this?
@@ -175,7 +174,7 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
             )
             operator fun invoke(input: ByteArray): DefiniteLength = fromRawBytes(input)
             override fun decodeFromTlv(
-                serializer: KSerializer<SignatureValue>,
+                serializer: KSerializer<X509SignatureValue>,
                 src: Asn1Element,
                 der: Der
             ): IndefiniteLength =
@@ -191,14 +190,14 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
     class RSA private constructor(
         providedRawBytes: ByteArray?,
-        providedAsn1Representation: SignatureValue?,
+        providedAsn1Representation: X509SignatureValue?,
     ) : CryptoSignature, RawByteEncodable {
         constructor(rawBytes: ByteArray) : this(rawBytes, null)
-        constructor(x509Element: Asn1Primitive) : this(null, SignatureValue(x509Element.asAsn1BitString()))
-        constructor(signatureValue: SignatureValue) : this(null, signatureValue)
+        constructor(x509Element: Asn1Primitive) : this(null, X509SignatureValue(x509Element.asAsn1BitString()))
+        constructor(signatureValue: X509SignatureValue) : this(null, signatureValue)
 
-        override val asn1Representation: SignatureValue by providedAsn1Representation orLazy {
-            SignatureValue(rawByteArray)
+        override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
+            X509SignatureValue(rawByteArray)
         }
 
 
@@ -216,9 +215,9 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
             return rawByteArray.contentEquals(other.rawByteArray)
         }
 
-        companion object : DerDecodable<SignatureValue, RSA> {
+        companion object : DerDecodable<X509SignatureValue, RSA> {
             override fun decodeFromTlv(
-                serializer: KSerializer<SignatureValue>,
+                serializer: KSerializer<X509SignatureValue>,
                 src: Asn1Element,
                 der: Der
             ) = RSA(/*cannot really be sanity-checked*/der.decodeFromTlv(serializer, src))
@@ -227,10 +226,10 @@ sealed interface CryptoSignature : DerEncodable<X509SignatureValue> {
     }
 
     companion object {
-        operator fun invoke(algorithmObjectIdentifier: ObjectIdentifier, asn1Representation: SignatureValue) =
+        operator fun invoke(algorithmObjectIdentifier: ObjectIdentifier, asn1Representation: X509SignatureValue) =
             CryptoSignature(SignatureAlgorithm.kindByOID(algorithmObjectIdentifier), asn1Representation)
 
-        operator fun invoke(kind: SignatureAlgorithm.Kind, asn1Representation: SignatureValue) =
+        operator fun invoke(kind: SignatureAlgorithm.Kind, asn1Representation: X509SignatureValue) =
             when (kind) {
                 SignatureAlgorithm.Kind.EC -> EC(asn1Representation)
                 SignatureAlgorithm.Kind.RSA -> RSA(asn1Representation)
@@ -269,7 +268,7 @@ fun CryptoSignature.Companion.parseFromJca(
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
  */
 fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.EC(SignatureValue(input))
+    CryptoSignature.EC(X509SignatureValue(input))
 
 /**
  * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.

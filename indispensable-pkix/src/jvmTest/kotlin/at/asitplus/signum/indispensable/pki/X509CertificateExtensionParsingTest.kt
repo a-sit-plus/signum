@@ -32,7 +32,7 @@ import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.encodeToTlv
 import at.asitplus.signum.indispensable.pki.extn.UsageBit
-import at.asitplus.signum.indispensable.pki.x500.GeneralName
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
@@ -188,7 +188,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
             NameConstraints(permitted = permitted).encodeToTlv()
         ) as NameConstraints
         decoded.permitted?.trees?.size shouldBe 1
-        decoded.permitted?.trees?.first()?.base?.type shouldBe GeneralName.NameType.DNS
+        (decoded.permitted?.trees?.first()?.base as? GeneralName.X509Representable)?.tag shouldBe X509GeneralName.Tags.dnsName
         decoded.excluded shouldBe null
     }
 

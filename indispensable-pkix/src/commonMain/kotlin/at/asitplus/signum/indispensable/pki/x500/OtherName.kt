@@ -1,32 +1,29 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1ExplicitlyTagged
-import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
-/** RFC 5280 `otherName` GeneralName CHOICE `[0]`. Carries its tagged element verbatim. */
+/** RFC 5280 `otherName` GeneralName CHOICE `[0]`. Carries the awesn1 [X509GeneralName.Other] verbatim. */
 class OtherName private constructor(
-    val value: Asn1ExplicitlyTagged,
+    val other: X509GeneralName.Other,
     override val isValid: Boolean?,
-) : AbstractX509GeneralName(NameType.OTHER, value) {
+) : AbstractX509GeneralName(other) {
 
-    constructor(value: Asn1ExplicitlyTagged) : this(value, null)
+    constructor(value: X509GeneralName.Other) : this(value, null)
 
     /** Creates an instance with `isValid` determined by [validate]. */
-    constructor(value: Asn1ExplicitlyTagged, validate: (GeneralName) -> Boolean) : this(value, validate(OtherName(value)))
+    constructor(value: X509GeneralName.Other, validate: (GeneralName) -> Boolean) : this(value, validate(OtherName(value)))
 
-    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName = OtherName(value, validate)
+    /** The open, OID-discriminated `otherName` payload. */
+    val value: X509GeneralName.Other.SemanticValue get() = other.value
 
-    override fun toString(): String = value.prettyPrint()
+    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName = OtherName(other, validate)
+
+    override fun toString(): String = other.toString()
 
     companion object : Descriptor {
-        override val type = NameType.OTHER
-        override fun fromAsn1Representation(src: Asn1Element): OtherName {
-            if (src !is Asn1ExplicitlyTagged) throw Asn1StructuralException("Invalid otherName Alternative Name found: ${src.toDerHexString()}")
-            if (src.children.size != 2) throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${src.toDerHexString()}")
-            return OtherName(src)
-        }
+        override val tag = X509GeneralName.Tags.otherName
+        override fun fromAsn1Representation(src: X509GeneralName): OtherName = OtherName(src as X509GeneralName.Other)
     }
 }

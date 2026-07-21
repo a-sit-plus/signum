@@ -1,36 +1,29 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1ExplicitlyTagged
-import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
-/** RFC 5280 `ediPartyName` GeneralName CHOICE `[5]`. Carries its tagged element verbatim. */
+/** RFC 5280 `ediPartyName` GeneralName CHOICE `[5]`. Carries the awesn1 [X509GeneralName.EdiParty] verbatim. */
 class EDIPartyName private constructor(
-    val value: Asn1ExplicitlyTagged,
+    val ediParty: X509GeneralName.EdiParty,
     override val isValid: Boolean?,
-) : AbstractX509GeneralName(NameType.EDI, value) {
+) : AbstractX509GeneralName(ediParty) {
 
-    constructor(value: Asn1ExplicitlyTagged) : this(value, null)
+    constructor(value: X509GeneralName.EdiParty) : this(value, null)
+
+    constructor(value: Asn1Sequence) : this(X509GeneralName.EdiParty(value))
 
     /** Creates an instance with `isValid` determined by [validate]. */
-    constructor(value: Asn1ExplicitlyTagged, validate: (GeneralName) -> Boolean) : this(value, validate(EDIPartyName(value)))
+    constructor(value: X509GeneralName.EdiParty, validate: (GeneralName) -> Boolean) : this(value, validate(EDIPartyName(value)))
 
-    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): EDIPartyName = EDIPartyName(value, validate)
+    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): EDIPartyName = EDIPartyName(ediParty, validate)
 
-    override fun toString(): String = value.prettyPrint()
+    override fun toString(): String = ediParty.toString()
 
     companion object : Descriptor {
-        override val type = NameType.EDI
-        override fun fromAsn1Representation(src: Asn1Element): EDIPartyName {
-            if (src !is Asn1ExplicitlyTagged) throw Asn1StructuralException("Invalid ediPartyName Alternative Name found: ${src.toDerHexString()}")
-            src.also {
-                if (it.children.size > 2) throw Asn1StructuralException("Invalid partyName Alternative Name found (>2 children): ${it.toDerHexString()}")
-                if (it.children.find { c -> c.tag.tagValue != NameType.OTHER.value && c.tag.tagValue != NameType.RFC822.value } != null)
-                    throw Asn1StructuralException("Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}")
-            }
-            return EDIPartyName(src)
-        }
+        override val tag = X509GeneralName.Tags.ediPartyName
+        override fun fromAsn1Representation(src: X509GeneralName): EDIPartyName = EDIPartyName(src as X509GeneralName.EdiParty)
     }
 }

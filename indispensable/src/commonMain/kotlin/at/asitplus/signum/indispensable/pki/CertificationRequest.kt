@@ -9,7 +9,6 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension

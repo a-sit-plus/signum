@@ -2,28 +2,27 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.cidre.IpAddress
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.encoding.decodeToIa5String
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
 /** RFC 5280 `dNSName` GeneralName CHOICE `[2]`. */
 class DNSName private constructor(
     val value: Asn1String.IA5,
     val allowWildcard: Boolean,
-    encoded: Asn1Element,
-) : AbstractX509GeneralName(NameType.DNS, encoded) {
+    asn1Representation: X509GeneralName,
+) : AbstractX509GeneralName(asn1Representation) {
 
     /**
      * @throws Asn1Exception if illegal DNSName is provided
      */
     @Throws(Asn1Exception::class)
     constructor(value: Asn1String.IA5, allowWildcard: Boolean = true)
-            : this(value, allowWildcard, value.encodeToTlv() withImplicitTag contextTag(2u)) {
+            : this(value, allowWildcard, X509GeneralName.Dns(value.value)) {
         if (!isValid) throw Asn1Exception("Invalid DNSName.")
     }
 
@@ -64,11 +63,10 @@ class DNSName private constructor(
     }
 
     companion object : Descriptor {
-        override val type = NameType.DNS
-        private val tag = contextTag(2u)
+        override val tag = X509GeneralName.Tags.dnsName
 
-        override fun fromAsn1Representation(src: Asn1Element): DNSName = runRethrowing {
-            DNSName(src.asPrimitive().decodeToIa5String(tag), allowWildcard = true, encoded = src)
+        override fun fromAsn1Representation(src: X509GeneralName): DNSName = runRethrowing {
+            DNSName((src as X509GeneralName.Dns).rawValue, allowWildcard = true, asn1Representation = src)
         }
 
         private fun validate(value: String, allowWildcard: Boolean): Boolean {

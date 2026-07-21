@@ -1,13 +1,12 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.encoding.encodeToAsn1OctetStringPrimitive
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.cidre.*
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.X509Representable.Descriptor
-import at.asitplus.signum.indispensable.pki.x500.GeneralName.NameType
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
+import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
 
 /** RFC 5280 `iPAddress` GeneralName CHOICE `[7]`. */
 class IPAddressName internal constructor(
@@ -15,7 +14,7 @@ class IPAddressName internal constructor(
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     val rawBytes: ByteArray,
     performValidation: Boolean,
-) : AbstractX509GeneralName(NameType.IP, rawBytes.encodeToAsn1OctetStringPrimitive() withImplicitTag contextTag(7u)) {
+) : AbstractX509GeneralName(X509GeneralName.IpAddress(rawBytes)) {
 
     override val isValid: Boolean by lazy { address != null }
 
@@ -106,10 +105,10 @@ class IPAddressName internal constructor(
     }
 
     companion object : Descriptor {
-        override val type = NameType.IP
+        override val tag = X509GeneralName.Tags.ipAddress
 
-        override fun fromAsn1Representation(src: Asn1Element): IPAddressName {
-            val content = src.asPrimitive().content
+        override fun fromAsn1Representation(src: X509GeneralName): IPAddressName {
+            val content = (src as X509GeneralName.IpAddress).rawValue.content
             return when (content.size) {
                 IpFamily.V4.numberOfOctets -> IPAddressName(
                     IpAddress.V4(content), rawBytes = IpAddress.V4(content).octets, performValidation = false

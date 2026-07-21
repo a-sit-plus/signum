@@ -2,22 +2,24 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.cidre.IpAddress
 import at.asitplus.cidre.IpNetwork
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-// GeneralName equality is by CHOICE-tagged DER (see GeneralName.equals): two names with the same
-// wire encoding are equal, regardless of derived/validation-only fields.
+// GeneralName equality is by CHOICE-tagged DER (see AbstractX509GeneralName.equals): two names with the
+// same wire encoding are equal, regardless of derived/validation-only fields.
 val GeneralNamesEqualityTest by matrixSuite {
 
-    val bytes = byteArrayOf(-96, 30, 6, 3, 42, 3, 4, -96, 23, 12, 21, 115, 111, 109, 101, 32, 111, 116, 104, 101, 114, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114)
-    val changedBytes = byteArrayOf(-95, 31, 6, 3, 42, 3, 4, -96, 24, 12, 22, 115, 111, 109, 101, 32, 101, 100, 105, 116, 101, 100, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114)
-    val explicitValue1 = Asn1Element.parse(bytes).asExplicitlyTagged()
-    val explicitValue2 = Asn1Element.parse(changedBytes).asExplicitlyTagged()
+    val other1 = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(ObjectIdentifier("1.2.3.4"), Asn1.Int(1)))
+    val other2 = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(ObjectIdentifier("1.2.3.4"), Asn1.Int(2)))
+    val seq1 = Asn1.Sequence { +Asn1.Int(1) }
+    val seq2 = Asn1.Sequence { +Asn1.Int(2) }
 
     fun ia5(value: String) = Asn1String.IA5(value)
 
@@ -28,21 +30,21 @@ val GeneralNamesEqualityTest by matrixSuite {
     }
 
     "EDIPartyName equals and hashcode" {
-        EDIPartyName(explicitValue1) shouldBe EDIPartyName(explicitValue1)
-        EDIPartyName(explicitValue1).hashCode() shouldBe EDIPartyName(explicitValue1).hashCode()
-        EDIPartyName(explicitValue1) shouldNotBe EDIPartyName(explicitValue2)
+        EDIPartyName(seq1) shouldBe EDIPartyName(seq1)
+        EDIPartyName(seq1).hashCode() shouldBe EDIPartyName(seq1).hashCode()
+        EDIPartyName(seq1) shouldNotBe EDIPartyName(seq2)
     }
 
     "OtherName equals and hashcode" {
-        OtherName(explicitValue1) shouldBe OtherName(explicitValue1)
-        OtherName(explicitValue1).hashCode() shouldBe OtherName(explicitValue1).hashCode()
-        OtherName(explicitValue1) shouldNotBe OtherName(explicitValue2)
+        OtherName(other1) shouldBe OtherName(other1)
+        OtherName(other1).hashCode() shouldBe OtherName(other1).hashCode()
+        OtherName(other1) shouldNotBe OtherName(other2)
     }
 
     "X400AddressName equals and hashcode" {
-        X400AddressName(explicitValue1) shouldBe X400AddressName(explicitValue1)
-        X400AddressName(explicitValue1).hashCode() shouldBe X400AddressName(explicitValue1).hashCode()
-        X400AddressName(explicitValue1) shouldNotBe X400AddressName(explicitValue2)
+        X400AddressName(seq1) shouldBe X400AddressName(seq1)
+        X400AddressName(seq1).hashCode() shouldBe X400AddressName(seq1).hashCode()
+        X400AddressName(seq1) shouldNotBe X400AddressName(seq2)
     }
 
     "RFC822Name equals and hashcode" {

@@ -45,7 +45,7 @@ import at.asitplus.signum.indispensable.pki.x500.X400AddressName
  *
  * The `indispensable` core parses every certificate extension and X.500 attribute
  * *generically* (via awesn1) and keeps its [CertificateExtension.Registry] /
- * [AttributeTypeAndValue.Registry] / [at.asitplus.signum.indispensable.pki.x500.GeneralName.Registry]
+ * [AttributeTypeAndValue.Registry] / [GeneralName.X509Representable.Registry]
  * **empty** by default. This module supplies the typed counterparts (e.g. [KeyUsage], [CommonName])
  * and registers their descriptors here.
  *

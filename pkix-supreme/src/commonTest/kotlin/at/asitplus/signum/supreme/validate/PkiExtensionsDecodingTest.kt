@@ -13,7 +13,8 @@ import at.asitplus.signum.indispensable.pki.findExtension
 
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 import at.asitplus.signum.indispensable.pki.x500.DNSName
-import at.asitplus.signum.indispensable.pki.x500.GeneralName
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.extn.CertificatePolicies
 import at.asitplus.signum.indispensable.pki.extn.CertificatePolicyMap
 import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
@@ -25,6 +26,9 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.builtins.ListSerializer
+
+/** The CHOICE tag of a decoded [GeneralName], regardless of whether it upgraded to a typed variant. */
+private fun GeneralName.choiceTag() = (this as GeneralName.X509Representable).tag
 
 val PkiExtensionsDecodingTest by matrixSuite {
     SignumPkix.install()
@@ -137,7 +141,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         var cert = X509Certificate.decodeFromPem(sanRFC822namesPem)
         var generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 5
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.RFC822 }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.rfc822Name }
 
         val sanEmailDnsIpDirnameUriPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDeTCCAmGgAwIBAgITBmaVCZDdiLn35OlG4nYY3u8VXDANBgkqhkiG9w0BAQUF\n" +
@@ -204,7 +208,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         cert = X509Certificate.decodeFromPem(sanEmptyHostPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.DNS }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
 
         val sanOtherName = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIC/DCCAeSgAwIBAgITBmaU4PsnM8bqyYetOWyVgmVRkzANBgkqhkiG9w0BAQUF\n" +
@@ -228,7 +232,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         cert = X509Certificate.decodeFromPem(sanOtherName)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.OTHER }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.otherName }
 
         val sanRegisteredIdPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIICsjCCAhugAwIBAgIBADANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEO\n" +
@@ -251,7 +255,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         cert = X509Certificate.decodeFromPem(sanRegisteredIdPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.OID }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.registeredID }
 
         val sanWildcardIdnaPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIC5DCCAcygAwIBAgITBm+2/ut33Rv56bgfggfOb0a2uzANBgkqhkiG9w0BAQsF\n" +
@@ -274,7 +278,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         cert = X509Certificate.decodeFromPem(sanWildcardIdnaPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.DNS }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
 
         val sanIdnaNamesPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDGDCCAgCgAwIBAgITBmkKn/MvOUXQk1/lN2si9LdhbTANBgkqhkiG9w0BAQUF\n" +
@@ -297,9 +301,9 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "-----END CERTIFICATE-----"
         cert = X509Certificate.decodeFromPem(sanIdnaNamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
-        generalNames?.count { it.type == GeneralName.NameType.DNS } shouldBe 1
-        generalNames?.count { it.type == GeneralName.NameType.RFC822 } shouldBe 1
-        generalNames?.count { it.type == GeneralName.NameType.URI } shouldBe 1
+        generalNames?.count { it.choiceTag() == X509GeneralName.Tags.dnsName } shouldBe 1
+        generalNames?.count { it.choiceTag() == X509GeneralName.Tags.rfc822Name } shouldBe 1
+        generalNames?.count { it.choiceTag() == X509GeneralName.Tags.uniformResourceIdentifier } shouldBe 1
 
         val sanIdna2003DNSPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIICyjCCAbKgAwIBAgITBmuEOcehqQ0T8RSnZfjR7vyzcTANBgkqhkiG9w0BAQUF\n" +
@@ -321,7 +325,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         cert = X509Certificate.decodeFromPem(sanIdna2003DNSPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.DNS }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
 
         val sanRFC822NamesPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDDjCCAfagAwIBAgITBmkNiyOeghKn10MwmYC7ggPHDjANBgkqhkiG9w0BAQUF\n" +
@@ -345,7 +349,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
 
         cert = X509Certificate.decodeFromPem(sanRFC822NamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.RFC822 }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.rfc822Name }
 
         val sanURINamesPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDCzCCAfOgAwIBAgITBmkNrLuW5WVCtzoww7S9wuDJgzANBgkqhkiG9w0BAQUF\n" +
@@ -369,7 +373,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
 
         cert = X509Certificate.decodeFromPem(sanURINamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.URI }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.uniformResourceIdentifier }
 
         val sanIPAddrPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIC0DCCAbigAwIBAgITBmn5auEoAtAQyW6jp1JwJ/wwMzANBgkqhkiG9w0BAQUF\n" +
@@ -393,7 +397,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
         cert = X509Certificate.decodeFromPem(sanIPAddrPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 2
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.IP }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.ipAddress }
 
         val sanDirNamePem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIC6TCCAdGgAwIBAgITBmn5cZxxyn9QTQCzrgSRPum/ETANBgkqhkiG9w0BAQUF\n" +
@@ -416,7 +420,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
 
         cert = X509Certificate.decodeFromPem(sanDirNamePem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
-        generalNames?.forEach { it.type shouldBe GeneralName.NameType.DIRECTORY }
+        generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.directoryName }
     }
 
     // Programmatic-construction guarantees: the reusable encoders that back building certs from scratch

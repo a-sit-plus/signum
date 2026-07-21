@@ -9,13 +9,15 @@ import kotlinx.serialization.Serializable
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.Name
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
-import at.asitplus.signum.indispensable.pki.x500.GeneralName
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
 import at.asitplus.signum.indispensable.pki.x500.RFC822Name
-import at.asitplus.signum.indispensable.pki.x500.X500Name
-import at.asitplus.signum.indispensable.pki.x500.findMostSpecificCommonName
+import at.asitplus.signum.indispensable.pki.x500.constrains
 import kotlinx.io.IOException
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
@@ -160,9 +162,10 @@ class NameConstraints internal constructor(
             try {
                 val cnValue = Asn1String.decodeFromTlv(cn)
                 val isIp = runCatching { IPAddressName.fromString(cnValue.value) }.isSuccess
-                val neededType = if (isIp) GeneralName.NameType.IP else GeneralName.NameType.DNS
 
-                if (alternativeNames.none { it.type == neededType }) {
+                val alreadyPresent =
+                    if (isIp) alternativeNames.any { it is IPAddressName } else alternativeNames.any { it is DNSName }
+                if (!alreadyPresent) {
                     val generalName = if (isIp) IPAddressName.fromString(cnValue.value) else DNSName(Asn1String.IA5(cnValue.value))
                     alternativeNames.add(generalName)
                 }
@@ -251,4 +254,16 @@ private class NameConstraintsBody(
     @Asn1Tag(0u) val permitted: List<GeneralSubtree>? = null,
     @Asn1Tag(1u) val excluded: List<GeneralSubtree>? = null,
 )
+
+private val commonNameOid = ObjectIdentifier("2.5.4.3")
+
+/**
+ * The most specific (leaf-most) `commonName` (OID 2.5.4.3) attribute in this [Name]'s RDN sequence, or
+ * `null` if it carries none. RFC 5280 orders the RDNSequence most-general-first, so the last CN wins.
+ */
+private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue.X509Representable? =
+    relativeDistinguishedNames.asReversed()
+        .flatMap { it.attrsAndValues }
+        .filterIsInstance<AttributeTypeAndValue.X509Representable>()
+        .firstOrNull { it.oid == commonNameOid }
 

@@ -362,7 +362,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             override val publicKey: CryptoPublicKey.EC by content.publicKey orLazy {
                 val curve = curve
                 content.publicKeyBytes?.let {
-                    CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.rawBytes)
+                    CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.bitCarryingBytes)
                 } ?: curve.generator.times(privateKey).asPublicKey(preferCompressed = true)
             }
 
@@ -420,7 +420,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                 return if (publicKeyBytes != null) {
                     WithPublicKey(
                         privateKey,
-                        CryptoPublicKey.EC.fromAnsiX963Bytes(curve, publicKeyBytes!!.rawBytes),
+                        CryptoPublicKey.EC.fromAnsiX963Bytes(curve, publicKeyBytes!!.bitCarryingBytes),
                         encodeCurve,
                         encodePublicKey,
                         attributes,
@@ -605,7 +605,7 @@ private fun Sec1EcPrivateKeyInfo.toSignumContent(
     return if (curve != null) {
         CryptoPrivateKey.EC.ContentContainer(
             privateKey = privateValue,
-            publicKey = publicKey?.let { CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.rawBytes) }
+            publicKey = publicKey?.let { CryptoPublicKey.EC.fromAnsiX963Bytes(curve, it.bitCarryingBytes) }
                 ?: curve.generator.times(privateValue).asPublicKey(preferCompressed = true),
             publicKeyBytes = publicKey,
             encodeCurve = parameters != null,
