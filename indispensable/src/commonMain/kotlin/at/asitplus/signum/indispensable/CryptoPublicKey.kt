@@ -440,10 +440,10 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
                 val curve = ECCurve.entries.find { it.oid == curveOid }
                     ?: throw Asn1Exception("Curve not supported: $curveOid")
 
-                if (!spki.subjectPublicKey.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
+                if (!spki.subjectPublicKey.bitCarryingBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
                     throw Asn1Exception("EC key not prefixed with 0x04")
                 }
-                val xAndY = spki.subjectPublicKey.rawBytes.drop(1)
+                val xAndY = spki.subjectPublicKey.bitCarryingBytes.drop(1)
                 val coordLen = curve.coordinateLength.bytes.toInt()
                 val x = xAndY.take(coordLen).toByteArray()
                 val y = xAndY.drop(coordLen).take(coordLen).toByteArray()

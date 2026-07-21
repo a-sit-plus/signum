@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPad
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.InsecureRandom
-import at.asitplus.signum.indispensable.pki.x500.X500Name
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
@@ -340,7 +340,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                         CertificateExtension(
                             KnownOIDs.pkcs_12_OID,
                             critical = true,
-                            Asn1PrimitiveOctetString(byteArrayOf())
+                            Asn1OctetString(byteArrayOf())
                         )
                     )
                 )

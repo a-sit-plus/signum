@@ -83,11 +83,7 @@ private class X509AlternativeNames(
     }
 
     override val generalNames: List<GeneralName> by providedGeneralNames orLazy {
-        asn1Representation.entries.map { entry ->
-            val type = GeneralName.NameType.fromTagValue(entry.tag.tagValue)
-                ?: throw Asn1Exception("Unsupported GeneralName tag ${entry.tag}")
-            GeneralName.X509Representable.fromAsn1Representation(type, entry)
-        }
+        asn1Representation.entries.map(GeneralName.X509Representable::fromAsn1Representation)
     }
 
     override fun equals(other: Any?): Boolean {

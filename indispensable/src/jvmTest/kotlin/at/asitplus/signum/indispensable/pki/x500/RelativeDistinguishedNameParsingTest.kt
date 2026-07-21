@@ -6,11 +6,12 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
-import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.BaseAttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.BaseX509AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -88,6 +89,21 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
         name.toRfc2253String() shouldBe "2.5.4.3=foo\\, bar,2.5.4.10=acme,2.5.4.6=de"
     }
 
+    "X500Name should reject empty RDN segments" {
+        listOf(
+            ",2.5.4.3=Alice",
+            "2.5.4.3=Alice,",
+            "2.5.4.3=Alice,,2.5.4.10=Example",
+            "2.5.4.3=Alice; ;2.5.4.10=Example",
+        ).forEach { name ->
+            shouldThrow<IllegalArgumentException> { X500Name.fromString(name) }
+        }
+    }
+
+    "X500Name should accept the empty RDN sequence" {
+        X500Name.fromString("").relativeDistinguishedNames shouldBe emptyList()
+    }
+
     "decoded empty RDN should be invalid" {
         RelativeDistinguishedName(X500RelativeDistinguishedName(emptySet())).isValid shouldBe false
     }
@@ -113,28 +129,10 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
         x509 shouldNotBe generic
     }
 
-    "GeneralName should reject a universal tag" {
-        val universalDns = Asn1Element.parse(byteArrayOf(0x02, 0x01, 0x00))
+    "GeneralName should retain the typed X.509 representation" {
+        val dnsName = X509GeneralName.Dns("example.com")
 
-        shouldThrow<Asn1Exception> {
-            GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, universalDns)
-        }
-    }
-
-    "GeneralName should reject the wrong constructed bit" {
-        val constructedDns = Asn1Element.parse(byteArrayOf(0xA2.toByte(), 0x00))
-
-        shouldThrow<Asn1Exception> {
-            GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, constructedDns)
-        }
-    }
-
-    "GeneralName should reject a tag that does not match its type" {
-        val rfc822Name = Asn1Element.parse(byteArrayOf(0x81.toByte(), 0x00))
-
-        shouldThrow<Asn1Exception> {
-            GeneralName.X509Representable.fromAsn1Representation(GeneralName.NameType.DNS, rfc822Name)
-        }
+        GeneralName.X509Representable.fromAsn1Representation(dnsName).asn1Representation shouldBe dnsName
     }
 
     /**

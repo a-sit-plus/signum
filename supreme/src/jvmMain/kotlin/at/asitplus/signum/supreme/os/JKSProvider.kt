@@ -19,7 +19,7 @@ import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
-import at.asitplus.signum.indispensable.pki.x500.X500Name
+import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
