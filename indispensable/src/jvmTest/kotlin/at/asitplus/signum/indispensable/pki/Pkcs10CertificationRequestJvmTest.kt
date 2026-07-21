@@ -31,7 +31,7 @@ import java.security.interfaces.ECPublicKey
 
 //now it works for PSS too
 internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey): ContentSigner {
-    val signature = getJCASignatureInstance().getOrThrow().apply {
+    val signature = getJCASignatureInstance().apply {
         initSign(key)
     }
 
@@ -83,7 +83,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             )),
             publicKey = cryptoPublicKey
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToDer())
         }.sign()
@@ -143,7 +143,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
                 )
             )
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
@@ -214,7 +214,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
                 )
             )
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
@@ -260,7 +260,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
                 )
             )
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
@@ -420,19 +420,19 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val signatureAlgorithm1 = SignatureAlgorithm.ECDSAwithSHA256
         val signatureAlgorithm2 = SignatureAlgorithm.ECDSAwithSHA512
 
-        val signed = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm1.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
         }.sign()
-        val signed1 = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
+        val signed1 = signatureAlgorithm1.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
         }.sign()
-        val signed11 = signatureAlgorithm2.getJCASignatureInstance().getOrThrow().apply {
+        val signed11 = signatureAlgorithm2.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
         }.sign()
-        val signed2 = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
+        val signed2 = signatureAlgorithm1.getJCASignatureInstance().apply {
             initSign(keyPair1.private)
             update(tbsCsr2.encodeToDer())
         }.sign()
