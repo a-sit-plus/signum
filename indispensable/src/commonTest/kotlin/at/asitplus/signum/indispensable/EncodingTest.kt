@@ -1,11 +1,8 @@
-package at.asitplus.signum
+package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 val  EncodingTest by matrixSuite {
    

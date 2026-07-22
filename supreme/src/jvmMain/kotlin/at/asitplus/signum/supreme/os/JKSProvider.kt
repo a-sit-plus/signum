@@ -4,10 +4,11 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
@@ -19,6 +20,7 @@ import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -26,7 +28,7 @@ import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.EphemeralSigner
 import at.asitplus.signum.supreme.sign.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import at.asitplus.signum.supreme.sign._algSpecific
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.nio.channels.Channels
@@ -41,6 +43,7 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import org.kotlincrypto.random.CryptoRand
+import java.security.KeyPair
 import kotlin.io.path.extension
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -60,6 +63,60 @@ class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSig
     override var provider: String? = null
     /** The password protecting the stored private key. */
     var privateKeyPassword: CharArray? = null
+}
+
+// @Service
+interface JKSSigningKeyCreationProvider {
+    fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, KeyPair>?
+}
+
+object SupremeJKSSignerCreationProvider : JKSSigningKeyCreationProvider {
+    override fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, KeyPair>? {
+        config.ec.v?.let { algSpec ->
+            return Pair(
+                SignatureAlgorithm.ECDSA(when {
+                    algSpec.digests.contains(algSpec.curve.nativeDigest) -> algSpec.curve.nativeDigest
+                    algSpec.digests.contains(Digest.SHA256) -> Digest.SHA256
+                    algSpec.digests.contains(Digest.SHA384) -> Digest.SHA384
+                    algSpec.digests.contains(Digest.SHA512) -> Digest.SHA512
+                    else -> algSpec.digests.first()
+                }),
+                getKPGInstance("EC", config.provider).run {
+                    initialize(ECGenParameterSpec(algSpec.curve.jcaName))
+                    generateKeyPair()
+                })
+        }
+        config.rsa.v?.let { algSpec ->
+            val keySizeBytes = algSpec.bits/8
+            if (keySizeBytes < 64) {
+                throw UnsupportedCryptoException("The JCA has a hard key length limit of 64 bytes. (512 bits)")
+            }
+            return Pair(
+                sequenceOf(
+                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA512),
+                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA384),
+                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA256),
+                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA512),
+                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA384),
+                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA256),
+                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA1),
+                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA1),
+                    Pair(SignatureAlgorithm.RSA.Padding.PSS, algSpec.digests.first()),
+                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, algSpec.digests.first()),
+                ).firstNotNullOfOrNull { (padding, digest) ->
+                    SignatureAlgorithm.RSA(padding, digest).takeIf {
+                        algSpec.digests.contains(digest) &&
+                        algSpec.paddings.contains(padding) &&
+                        (it.minimumKeySize <= keySizeBytes)
+                    }
+                } ?: throw UnsupportedCryptoException("No selected padding/digest combination works with $keySizeBytes byte keys!"),
+                getKPGInstance("RSA", config.provider).run {
+                    initialize(RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
+                    generateKeyPair()
+                })
+        }
+        return null
+    }
 }
 
 interface JKSSigner: Signer, Signer.WithAlias {
@@ -127,17 +184,8 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             if (ctx.ks.containsAlias(alias))
                 throw NoSuchElementException("Key with alias $alias already exists")
 
-            val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
-                is SigningKeyConfiguration.RSAConfiguration ->
-                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()),
-                        SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
-                is SigningKeyConfiguration.ECConfiguration ->
-                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), SignatureAlgorithm.ECDSAwithSHA256)
-            }
-            val keyPair = getKPGInstance(jcaAlg, config.provider).run {
-                initialize(jcaSpec)
-                generateKeyPair()
-            }
+            val (certAlg, keyPair) =
+                ServiceLoader.load<JKSSigningKeyCreationProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
             val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
@@ -326,10 +374,10 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
  */
 class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
     sealed class KeyStoreConfiguration constructor(): DSL.Data()
-    internal val _keystore = subclassOf<KeyStoreConfiguration>(default = EphemeralKeyStore())
+    internal val _keystore get() = subclassOf<KeyStoreConfiguration>("KEYSTORE_CONFIG")
 
     /** Constructs an ephemeral keystore. This is the default. */
-    val ephemeral = _keystore.option(::EphemeralKeyStore)
+    val ephemeral get() = _keystore.defaultOption("EPHEMERAL", ::EphemeralKeyStore)
     class EphemeralKeyStore internal constructor(): KeyStoreConfiguration() {
         /** The KeyStore type to use. */
         var storeType: String = KeyStore.getDefaultType()
@@ -338,7 +386,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
     }
 
     /** Constructs a keystore that accesses the provided Java [KeyStore] object. Use `withBackingObject { store = ... }`. */
-    val withBackingObject = _keystore.option(::KeyStoreObject)
+    val withBackingObject get() = _keystore.option("WITH_BACKING_OBEJCT", ::KeyStoreObject)
     class KeyStoreObject internal constructor(): KeyStoreConfiguration() {
         /** The KeyStore object to use */
         lateinit var store: KeyStore
@@ -351,7 +399,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
     }
 
     /** Accesses a keystore on disk. Automatically flushes back to disk. Use `file { path = ... }.`*/
-    val file = _keystore.option(::KeyStoreFile)
+    val file get() = _keystore.option("FILE_KEYSTORE", ::KeyStoreFile)
     class KeyStoreFile internal constructor(): KeyStoreConfiguration() {
         companion object {
             /** file-based keystore types per
@@ -386,7 +434,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
     }
 
     /** Accesses a keystore via a custom [JKSAccessor]. Use `keystoreCustomAccessor { accessor = ... }` */
-    val customAccessor = _keystore.option(::KeyStoreAccessor)
+    val customAccessor get() = _keystore.option("CUSTOM_ACCESSOR", ::KeyStoreAccessor)
     class KeyStoreAccessor internal constructor(): KeyStoreConfiguration() {
         /** A custom [JKSAccessor] to use. */
         lateinit var accessor: JKSAccessor
@@ -398,17 +446,21 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
     }
 }
 
-internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfiguration): JKSProvider =
-    when (val opt = config._keystore.v) {
-        is JKSProviderConfiguration.EphemeralKeyStore ->
-            JKSProvider.Ephemeral(opt.storeType, opt.provider).getOrThrow()
-        is JKSProviderConfiguration.KeyStoreObject ->
-            JKSProvider(opt.flushCallback?.let { CallbackJKSAccessor(opt.store, it) } ?: DummyJKSAccessor(opt.store))
-        is JKSProviderConfiguration.KeyStoreFile ->
-            JKSProvider(JKSFileAccessor(opt))
-        is JKSProviderConfiguration.KeyStoreAccessor ->
-            JKSProvider(opt.accessor)
+internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfiguration): JKSProvider {
+    config.ephemeral.v?.let { opt ->
+        return JKSProvider.Ephemeral(opt.storeType, opt.provider).getOrThrow()
     }
+    config.withBackingObject.v?.let { opt ->
+        return JKSProvider(opt.flushCallback?.let { CallbackJKSAccessor(opt.store, it) } ?: DummyJKSAccessor(opt.store))
+    }
+    config.file.v?.let { opt ->
+        return JKSProvider(JKSFileAccessor(opt))
+    }
+    config.customAccessor.v?.let { opt ->
+        return JKSProvider(opt.accessor)
+    }
+    error("unreachable")
+}
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     throw UnsupportedOperationException("No default persistence mode is available on the JVM. Use JKSProvider {file {}} or similar. This will be natively available from the getPlatformSigningProvider {} DSL in a future release. (Blocked by KT-71036.)")

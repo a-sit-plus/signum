@@ -1,6 +1,6 @@
-package at.asitplus.signum
+package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.indispensable.symmetric.preferredMacKeyLength

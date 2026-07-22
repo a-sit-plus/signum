@@ -1,29 +1,27 @@
 package at.asitplus.signum.supreme.kdf
 
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2
+import at.asitplus.signum.indispensable.kdf.deriveKey
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
-import de.infix.testBalloon.framework.core.testScope
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.TestConfig
 
-val KDFTest  by matrixSuite {
+val KDFTest by matrixSuite {
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(
                 val Comment: String, val Hash: Digest, IKM: String, salt: String?,
                 info: String, val L: Int, PRK: String, OKM: String
             ) {
-                val IKM = b(IKM);
-                val salt = salt?.let(::b);
-                val info = b(info);
-                val PRK = b(PRK);
+                val IKM = b(IKM)
+                val salt = salt?.let(::b)
+                val info = b(info)
+                val PRK = b(PRK)
                 val OKM = b(OKM)
 
                 init {

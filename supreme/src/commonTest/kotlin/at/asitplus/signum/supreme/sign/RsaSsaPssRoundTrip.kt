@@ -6,9 +6,10 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
@@ -28,19 +29,8 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                 "from ASN.1" to SignatureAlgorithm.RSA(
                     SignatureAlgorithm.RSA.Parameters.PssPadded(
                         RsaSsaPssParams(
-                            hashAlgorithm = X509AlgorithmIdentifier(
-                                dataDigest.oid,
-                                listOf(Asn1Null),
-                            ),
-                            maskGenAlgorithm = X509AlgorithmIdentifier(
-                                SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1.oid,
-                                listOf(
-                                    Asn1.Sequence {
-                                        +mgfDigest.oid
-                                        +Asn1Null
-                                    }
-                                ),
-                            ),
+                            hashAlgorithm = dataDigest.asn1Representation,
+                            maskGenAlgorithm = SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                         )
                     )),
                 "from Signum" to SignatureAlgorithm.RSA(
@@ -70,7 +60,7 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                     property(Arb.byteArray(Arb.int(1, 1000), Arb.byte()), iterations = 128) test { data ->
                         try {
                             val signumSigned = signer.sign(data).signature
-                            rsaInstance.verifierFor(key.publicKey).getOrThrow()
+                            rsaInstance.verifierFor(key.publicKey)
                                 .verify(data, signumSigned).shouldSucceed()
                         } catch (_: UnsupportedCryptoException) { /* pass */ }
                     }

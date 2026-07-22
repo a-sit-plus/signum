@@ -5,6 +5,7 @@ import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509GeneralNames
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.issuerAltName_2_5_29_18
@@ -42,12 +43,8 @@ sealed interface AlternativeNames {
             X509AlternativeNames(generalNames, null)
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            serializer: KSerializer<X509GeneralNames>,
-            src: Asn1Element,
-            der: Der,
-        ): X509Representable =
-            X509AlternativeNames(null, der.decodeFromTlv(serializer, src))
+        override fun decodeFromTlv(element: X509GeneralNames, der: Der): X509Representable =
+            X509AlternativeNames(null, element)
 
         @Throws(Asn1Exception::class)
         fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {

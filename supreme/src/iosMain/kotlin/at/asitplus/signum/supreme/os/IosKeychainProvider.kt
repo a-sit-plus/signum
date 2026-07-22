@@ -4,14 +4,16 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.nonFatalOrThrow
-import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.dsl.*
-import at.asitplus.signum.supreme.hash.digest
 import at.asitplus.signum.supreme.sign.*
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*

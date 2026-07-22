@@ -8,6 +8,14 @@ import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -308,7 +316,9 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
             }
 
-            else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
+            Digest.SHA1 -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
+
+            else -> TODO("providerize")
         }
 
         is SignatureAlgorithm.RSA -> when (this.parameters) {
@@ -317,15 +327,18 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 Digest.SHA256 -> CoseAlgorithm.Signature.RS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.RS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.RS512
+                else -> TODO("providerize")
             }
 
             is SignatureAlgorithm.RSA.Parameters.PssPadded -> when (this.digest) {
                 Digest.SHA256 -> CoseAlgorithm.Signature.PS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
-                else -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
+                Digest.SHA1 -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
+                else -> TODO("providerize")
             }
         }
+        else -> TODO("providerize")
     }
 }
 
@@ -346,6 +359,7 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
             (inner == HMAC.SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
             else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
         }
+        else -> TODO("providerize")
     }
 }
 

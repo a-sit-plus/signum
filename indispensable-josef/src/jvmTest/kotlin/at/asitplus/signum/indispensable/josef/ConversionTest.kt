@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 

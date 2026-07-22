@@ -5,6 +5,9 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.digest.nativeDigest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureInput
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSOSStatusErrorDomain
 import platform.Security.SecKeyVerifySignature
@@ -35,8 +38,8 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 }
 
 private suspend fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: CryptoPublicKey,
-                       data: SignatureInput, signature: CryptoSignature,
-                       config: PlatformVerifierConfiguration) {
+                               data: SignatureInput, signature: CryptoSignature,
+                               config: PlatformVerifierConfiguration) {
     val key = publicKey.toSecKey().getOrThrow()
     val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.single()
     try {

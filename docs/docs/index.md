@@ -183,7 +183,7 @@ As an example, here's how to verify a basic signature using a public key:
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
-val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
+val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
 ```

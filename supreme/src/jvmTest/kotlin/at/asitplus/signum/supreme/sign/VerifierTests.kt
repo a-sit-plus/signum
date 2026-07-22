@@ -2,6 +2,9 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
@@ -18,14 +21,17 @@ val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
     mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
-            "BC -> PlatformVerifier" to { a, k ->
-                a.verifierFor(k) { provider = "BC" }.getOrThrow()
-                    .also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
-            },
-            "BC -> KotlinVerifier" to ::KotlinECDSAVerifier
-        ).asData(nameFn = { it.first }) - { (_, factory) ->
+        "BC -> PlatformVerifier" to { a, k ->
+            SupremePlatformVerifierProvider.verifierFor(a, k) { provider = "BC" }
+                .shouldBeInstanceOf<PlatformECDSAVerifier>()
+        },
+        "BC -> KotlinVerifier" to { a, k ->
+            SupremeKotlinVerifierProvider.verifierFor(a, k)
+                .shouldBeInstanceOf<KotlinECDSAVerifier>()
+        }
+    ).asData(nameFn = { it.first }) - { (_, factory) ->
         data(ECCurve.entries) - { curve ->
-            data(listOf<Digest?>(null) + Digest.entries, nameFn = { it.jcaAlgorithmComponent }) - { digest ->
+            data(listOf<WellKnownDigest?>(null) + WellKnownDigest.entries, nameFn = { it.jcaAlgorithmComponent }) - { digest ->
                 data(generateSequence {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
@@ -36,7 +42,7 @@ val VerifierTests by matrixSuite {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(CryptoSignature.EC::decodeFromDer)
+                    }.let(CryptoSignature.EC::parseFromJca)
                     keypair.public.encoded
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->

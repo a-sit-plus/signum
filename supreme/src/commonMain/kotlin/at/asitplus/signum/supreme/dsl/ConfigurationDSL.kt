@@ -28,54 +28,106 @@ object DSL {
             for (e in stackedData) { val d = getter(e); if (d.isSet) return d.value }; return default }
     }
 
-    sealed interface Holder<out T> {
-        val v: T
+    sealed interface Invokable<out Storage, out Target: Any> {
+        val v: Storage
+        operator fun invoke(configure: DSLInvocation<Target>)
     }
 
-    sealed interface Invokable<out Storage, out Target: Any>: Holder<Storage> {
-        operator fun invoke(configure: Target.()->Unit)
+    /** Constructed by: [DSL.Data.childOrDefault] */
+    class ChildOrDefault<out T: DSL.Data> internal constructor(
+        private val storageGetter: ()->(DSLInvocation<T>?), private val storageSetter: (DSLInvocation<T>)->Unit,
+        private val default: DSLConfigureFn<T>, private val factory: ()->(T)) : Invokable<T,T>
+    {
+
+        override val v: T get() = resolve(factory, storageGetter() ?: default)
+        override operator fun invoke(configure: DSLInvocation<T>) { storageSetter(configure) }
     }
 
-    /** Constructed by: [DSL.Data.childOrDefault] and [DSL.Data.childOrNull]. */
-    class DirectHolder<out T: DSL.Data?> internal constructor(default: T, private val factory: ()->(T & Any))
-        : Invokable<T,T&Any> {
-        private var _v: T = default
-        override val v: T get() = _v
+    /** Constructed by: [DSL.Data.childOrNull] */
+    class ChildOrNull<out T: DSL.Data> internal constructor(
+        private val storageGetter: ()->DSLInvocation<T>?, private val storageSetter: (DSLInvocation<T>)->Unit,
+        private val factory: ()->(T)) : Invokable<T?,T>
+    {
 
-        override operator fun invoke(configure: (T & Any).()->Unit) { _v = resolve(factory, configure) }
+        override val v: T? get() = storageGetter()?.let { resolve(factory, it) }
+        override operator fun invoke(configure: DSLInvocation<T>) { storageSetter(configure) }
     }
 
     /** Constructed by: [DSL.Data.subclassOf]. */
-    class Generalized<out T: DSL.Data?> internal constructor(default: T): Holder<T> {
-        private var _v: T = default
-        override val v: T get() = _v
+    class Generalized<T: DSL.Data> internal constructor(
+        private val storageGetter: ()->(Pair<String, DSLInvocation<T>>?),
+        private val storageSetter: (Pair<String, DSLInvocation<*>>)->Unit) {
 
-        inner class option<out S:T&Any>
+        val isSet: Boolean get() = (storageGetter() != null)
+
         /**
-         * Adds a specialized invokable accessor for the underlying generalized storage.
-         * Use as `val specialized = _holder.option(::SpecializedClass).`
+         * Adds a invokable specialized accessor for the underlying generalized storage.
+         * Use as `val DataType.specialized get() = _subHolder.option(::SpecializedClass).`
          *
          * User code can invoke this specialized accessor as `specialized { }`.
-         * This constructs a new specialized child, configures it using the specified block,
-         * and stores it in the underlying generalized storage.
+         * All configuration options of the same [Generalized] share a storage, and are mutually exclusive.
+         * Each configuration option should have its own separate [key], which is independent of the [Generalized]'s storage key.
+         *
+         * Value reads will return:
+         * - [S] configured by the user if this option was configured
+         * - `null` if another option was configured
+         * - [S] configured with [defaultConfiguration] if no option was configured
+         *
+         * Note that any given generalized storage should only have one default option.
+         * If multiple default options are added, behavior will be unpredictable if not explicitly configured by the user.
          */
-        internal constructor(private val factory: ()->S) : Invokable<T,S> {
-            override val v: T get() = this@Generalized.v
-            override operator fun invoke(configure: S.()->Unit) { _v = resolve(factory, configure) }
-        }
+        fun <S:T> defaultOption(key: String, factory: ()->S, defaultConfiguration: S.()->Unit = {}): Invokable<S?, S> =
+            ChildOrNull(
+                storageGetter = {
+                    val s = storageGetter()
+                    when {
+                        (s == null) -> defaultConfiguration
+                        (s.first == key) -> s.second as DSLConfigureFn<S>
+                        else -> null
+                    }
+                },
+                storageSetter = {
+                    storageSetter(Pair(key, it))
+                },
+                factory = factory
+            )
+
+        /**
+         * Adds a invokable specialized accessor for the underlying generalized storage.
+         * Use as `val DataType.specialized get() = _subHolder.option(::SpecializedClass).`
+         *
+         * User code can invoke this specialized accessor as `specialized { }`.
+         * All configuration options of the same [Generalized] share a storage, and are mutually exclusive.
+         * Each configuration option should have its own separate [key], which is independent of the [Generalized]'s storage key.
+         *
+         * Value reads will return:
+         * - [S] configured by the user if this option was configured
+         * - `null` if this option was not configured
+         */
+        fun <S:T> option(key: String, factory: ()->S): Invokable<S?,S> =
+            ChildOrNull(
+                storageGetter = {
+                    storageGetter()?.takeIf { it.first == key }?.second as DSLInvocation<S>?
+                },
+                storageSetter = {
+                    storageSetter(Pair(key, it))
+                },
+                factory = factory
+            )
     }
 
     /** Constructed by: [DSL.Data.integratedReceiver]. */
-    class Integrated<T: Any> internal constructor(): Invokable<(T.()->Unit)?, T> {
-        private var _v: (T.()->Unit)? = null
-        override val v: (T.()->Unit)? get() = _v
-        override operator fun invoke(configure: T.()->Unit) { _v = configure }
+    class Integrated<T: Any> internal constructor(
+        private val storageGetter: ()->(DSLInvocation<T>?), private val storageSetter: (DSLInvocation<T>)->Unit,
+    ): Invokable<DSLInvocation<T>?, T> {
+        override val v: DSLInvocation<T>? get() = storageGetter()
+        override operator fun invoke(configure: DSLInvocation<T>) { storageSetter(configure) }
     }
 
     /** Constructed by: [DSL.Data.unsupported]. */
-    class Unsupported<T: Any> internal constructor(val error: String): Invokable<Unit, T> {
-        override val v: Unit get() = Unit
-        override fun invoke(configure: T.() -> Unit) { throw UnsupportedOperationException(error); }
+    class Unsupported<T: Any> internal constructor(val error: String): Invokable<Nothing, T> {
+        override val v: Nothing get() = throw UnsupportedOperationException(error)
+        override fun invoke(configure: DSLInvocation<T>) { throw UnsupportedOperationException(error); }
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): Nothing { throw UnsupportedOperationException(error) }
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Any) { throw UnsupportedOperationException(error) }
@@ -87,51 +139,107 @@ object DSL {
     /** The superclass of all DSL configuration objects. Exposes helper functions for definition. */
     @Marker
     open class Data {
+
+        private val CONFIGURATION = mutableMapOf<String, Pair<String?, DSLInvocation<*>>>()
+
         /**
-         * Embeds an optional child. Use as `val sub = childOrNull(::TypeOfSub)`.
+         * Embeds an optional child. Use as `val DataType.sub get() = childOrNull("STORAGE_KEY", ::TypeOfSub)`.
          * Defaults to `null`.
          *
          * User code will invoke as `sub { }`
-         * This constructs a new child and configures it using the specified block.
+         * When resolved, constructs a new child and configures it using the specified block.
          */
-        protected fun <T: DSL.Data> childOrNull(factory: ()->T): Invokable<T?,T> =
-            DirectHolder<T?>(null, factory)
+        @Suppress("UNCHECKED_CAST")
+        fun <T: DSL.Data> childOrNull(key: String, factory: ()->T): Invokable<T?,T> =
+            ChildOrNull<T>(
+                storageGetter = { CONFIGURATION[key]?.second as DSLConfigureFn<T> },
+                storageSetter = { CONFIGURATION[key] = Pair(null, it) },
+                factory = factory)
 
         /**
-         * Embeds an optional child. Use as `val sub = childOrDefault(::TypeOfSub) { ... }
+         * Embeds an optional child. Use as `val DataType.sub get() = childOrDefault("STORAGE_KEY", ::TypeOfSub) { ... }
          * Defaults to a child configured using the specified default block.
          *
          * User code will invoke as `sub { }`
-         * This constructs a new child and configures it using the specified block.
+         * When resolved, constructs a new child and configures it using the specified block.
          * Note that the specified default block is **not** applied if user code configures the child.
          */
-        protected fun <T: DSL.Data> childOrDefault(factory: ()->T, default: (T.()->Unit)? = null): Invokable<T,T> =
-            DirectHolder<T>(factory().also{ default?.invoke(it) }, factory)
+        @Suppress("UNCHECKED_CAST")
+        fun <T: DSL.Data> childOrDefault(key: String, factory: ()->T, default: DSLConfigureFn<T> = null): Invokable<T,T> =
+            ChildOrDefault<T>(
+                storageGetter = { CONFIGURATION[key]?.second as DSLConfigureFn<T> },
+                storageSetter = { CONFIGURATION[key] = Pair(null, it) },
+                default = default,
+                factory = factory
+            )
 
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>()`.
+         * Use as `val DataType._subHolder get() = subclassOf<GeneralTypeOfSub>("STORAGE_KEY")`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
-         * Defaults to `null`.
+         * The generalized holder itself cannot be invoked.
          *
-         * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
+         * Specialized invokable accessors can be spun off via `.option("SUBCLASS_KEY", ::SpecializedClass)`.
+         * This is equivalent to using `subclassOption("STORAGE_KEY", "SUBCLASS_KEY", ::SpecializedClass)` directly.
+         * However, [subclassOf] provides a convenient mechanism for grouping options sharing the same STORAGE_KEY.
          * @see DSL.Generalized.option
          */
-        protected fun <T: DSL.Data> subclassOf(): Generalized<T?> =
-            Generalized<T?>(null)
+        @Suppress("UNCHECKED_CAST")
+        fun <T: DSL.Data> subclassOf(key: String): Generalized<T> =
+            Generalized<T>(
+                storageGetter = { CONFIGURATION[key] as Pair<String, DSLInvocation<T>>? },
+                storageSetter = { CONFIGURATION[key] = it }
+            )
+
         /**
-         * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>(SpecializedClass())`.
+         * Specifies one of multiple mutually exclusive options.
+         * Use as `val DataType.specialized get() = subclassDefaultOption("STORAGE_KEY", "SUBCLASS_KEY", ::SpecializedClass) { ... }`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
-         * Defaults to the specified `default`.
+         * All options of a mutual exclusion group should share the same [storageKey].
+         * Each should have its own distinct [subclassKey].
+         * Only one option should be the default option.
          *
-         * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
-         * @see DSL.Generalized.option
+         * Value reads will return:
+         * - [T] as configured by the user, if it has been selected
+         * - `null` if another option has been selected
+         * - [T] configured with [defaultConfiguration] if no option has been selected
          */
-        protected fun <T: DSL.Data> subclassOf(default: T): Generalized<T> =
-            Generalized<T>(default)
+        @Suppress("UNCHECKED_CAST")
+        fun <T: DSL.Data> subclassDefaultOption(
+            storageKey: String, subclassKey: String,
+            factory: ()->T, defaultConfiguration: DSLInvocation<T> = {})
+        : Invokable<T?, T> =
+            ChildOrNull<T>(
+                storageGetter = {
+                    val v = CONFIGURATION[storageKey]
+                    when {
+                        v == null -> defaultConfiguration
+                        v.first == subclassKey -> v.second as DSLInvocation<T>
+                        else -> null
+                    }
+                },
+                storageSetter = { CONFIGURATION[storageKey] = Pair(subclassKey, it) },
+                factory = factory
+            )
+
+        /**
+         * Specifies one of multiple mutually exclusive options.
+         * Use as `val DataType.specialized get() = subclassOption("STORAGE_KEY", "SUBCLASS_KEY", ::SpecializedClass)`.
+         *
+         * All options of a mutual exclusion group should share the same [storageKey].
+         * Each should have its own distinct [subclassKey].
+         *
+         * Value reads will return:
+         * - [T] as configured by the user, if it has been
+         * - `null` if this option was not selected
+         */
+        @Suppress("UNCHECKED_CAST")
+        fun <T: DSL.Data> subclassOption(storageKey: String, subclassKey: String, factory: ()->T): Invokable<T?, T> =
+            ChildOrNull<T>(
+                storageGetter = { CONFIGURATION[storageKey]?.takeIf { it.first == subclassKey }?.second as DSLConfigureFn<T> },
+                storageSetter = { CONFIGURATION[storageKey] = Pair(subclassKey, it) },
+                factory = factory
+            )
 
         /**
          * Integrates an external configuration lambda into the DSL.
@@ -140,13 +248,17 @@ object DSL {
          * This receiver can be invoked, but simply stores the received lambda instead of running it.
          * Defaults to `null`.
          */
-        protected fun <T: Any> integratedReceiver(): Integrated<T> =
-            Integrated<T>()
+        @Suppress("UNCHECKED_CAST")
+        fun <T: Any> integratedReceiver(key: String): Integrated<T> =
+            Integrated<T>(
+                storageGetter = { CONFIGURATION[key]?.second as DSLConfigureFn<T> },
+                storageSetter = { CONFIGURATION[key] = Pair(null, it) }
+            )
 
         /**
          * Marks an inherited DSL substructure as unsupported. Attempts to use it throw [UnsupportedOperationException]. Use very sparingly.
          */
-        protected fun <T: Any> unsupported(why: String): Unsupported<T> =
+        fun <T: Any> unsupported(why: String): Unsupported<T> =
             Unsupported<T>(why)
 
         /**
@@ -173,4 +285,5 @@ object DSL {
     }
 }
 
-typealias DSLConfigureFn<T> = (T.()->Unit)?
+typealias DSLInvocation<T> = (T.()->Unit)
+typealias DSLConfigureFn<T> = DSLInvocation<T>?

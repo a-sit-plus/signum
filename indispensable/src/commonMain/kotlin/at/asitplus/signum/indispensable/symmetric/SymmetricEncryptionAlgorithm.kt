@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable.symmetric
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.indispensable.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -151,12 +151,12 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
         val authTagSize: BitLength
 
-        interface Integrated<I : NonceTrait> :
+        sealed interface Integrated<I : NonceTrait> :
             Authenticated<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated> {
             override val authCapability get() = AuthCapability.Authenticated.Integrated
         }
 
-        interface EncryptThenMAC<M : MessageAuthenticationCode, I : NonceTrait> :
+        sealed interface EncryptThenMAC<M : MessageAuthenticationCode, I : NonceTrait> :
             Authenticated<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey> {
             override val authCapability get() = AuthCapability.Authenticated.WithDedicatedMac
 
@@ -311,16 +311,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             class HMAC
             private constructor(
                 override val innerCipher: Unauthenticated,
-                override val mac: at.asitplus.signum.indispensable.HMAC,
+                override val mac: at.asitplus.signum.indispensable.integrity.HMAC,
                 override val macInputCalculation: MacInputCalculation,
                 override val macAuthTagTransform: MacAuthTagTransformation,
                 override val authTagSize: BitLength
-            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.HMAC, NonceTrait.Required>,
+            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.integrity.HMAC, NonceTrait.Required>,
                 SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey>,
                 CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
-                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.HMAC) : this(
+                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.integrity.HMAC) : this(
                     innerCipher,
                     mac,
                     DefaultMacInputCalculation,
@@ -455,7 +455,7 @@ sealed interface NonceTrait {
 /**
  * Marker interface indicating a block cipher. Purely informational
  */
-abstract class BlockCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType>(
+sealed class BlockCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType>(
     val mode: ModeOfOperation,
     val blockSize: BitLength
 ) : SymmetricEncryptionAlgorithm<A, I, K> {
@@ -470,7 +470,7 @@ abstract class BlockCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType>(
 /**
  * Marker interface indicating a block cipher. Purely informational
  */
-abstract class StreamCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType> : SymmetricEncryptionAlgorithm<A, I, K>
+sealed class StreamCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType> : SymmetricEncryptionAlgorithm<A, I, K>
 
 
 //Here come the contracts!

@@ -18,13 +18,13 @@ private class Settings: DSL.Data() {
     /* we define a holder that can hold any flavor */
     /* "internal" because the generic accessor shouldn't be visible to users */
     /* this is null by default; a default could be explicitly specified, making this non-nullable */
-    internal val _flavor = subclassOf<SmoothieFlavor>()
+    val _flavor get() = subclassOf<SmoothieFlavor>("FLAVOR")
     /* and then we define user-visible accessors for the different flavors */
-    val banana = _flavor.option(::BananaFlavor)
-    val strawberry = _flavor.option(::StrawberryFlavor)
+    val banana get() = _flavor.option("BANANA", ::BananaFlavor)
+    val strawberry get() = _flavor.option("STRAWBERRY", ::StrawberryFlavor)
 
     override fun validate() {
-        require(_flavor.v != null)
+        require(_flavor.isSet)
             { "You need to choose a flavor!" }
     }
 }
@@ -54,14 +54,15 @@ val DSLVarianceDemonstration  by matrixSuite {
 private fun doWithConfiguration(configure: (Settings.()->Unit)? = null) {
     val config = DSL.resolve(::Settings, configure)
 
-    // we can access the result through the generic accessor
-    // non-null was checked in the validator already
-    when (val flavor = config._flavor.v!!) {
-        is Settings.BananaFlavor -> {
-            flavor.preparation shouldBe Preparation.SHAKEN
-        }
-        is Settings.StrawberryFlavor -> {
-            flavor.nBerries shouldBe 202
-        }
+    // we can access the result through the accessors
+    config.banana.v?.let { flavor ->
+        flavor.preparation shouldBe Preparation.SHAKEN
+        return
     }
+    config.strawberry.v?.let { flavor ->
+        flavor.nBerries shouldBe 202
+        return
+    }
+    // non-null was checked in the validator already
+    error("unreachable")
 }

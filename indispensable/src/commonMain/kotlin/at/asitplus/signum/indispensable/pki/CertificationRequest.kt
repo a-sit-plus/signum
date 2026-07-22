@@ -10,6 +10,7 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
@@ -128,11 +129,10 @@ class TbsCertificationRequest private constructor(
     companion object : DerDecodable<Pkcs10CertificationRequestInfo, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<Pkcs10CertificationRequestInfo>,
-            src: Asn1Element,
+            element: Pkcs10CertificationRequestInfo,
             der: Der,
         ): TbsCertificationRequest =
-            TbsCertificationRequest(der.decodeFromTlv(serializer, src))
+            TbsCertificationRequest(element)
     }
 }
 
@@ -220,11 +220,10 @@ class CertificationRequest private constructor(
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<Pkcs10CertificationRequest>,
-            src: Asn1Element,
+            element: Pkcs10CertificationRequest,
             der: Der,
         ): CertificationRequest =
-            CertificationRequest(der.decodeFromTlv(serializer, src))
+            CertificationRequest(element)
     }
 }
 

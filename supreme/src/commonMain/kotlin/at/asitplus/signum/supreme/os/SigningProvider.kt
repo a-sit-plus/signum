@@ -3,25 +3,33 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.FeaturePreference
 import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.sign.SignatureInput
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.AttestationConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.ECConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.ECPurposeConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.ProtectionConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.ProtectionFactorConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.RSAConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.RSAPurposeConfiguration
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import at.asitplus.signum.supreme.sign._algSpecific
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class SigningProviderSigningKeyConfigurationBase<SignerConfigurationT: SignerConfiguration> internal constructor() : SigningKeyConfiguration() {
-    /** Configure the signer that will be returned from [createSigningKey][SigningProviderI.createSigningKey] */
-    open val signer = integratedReceiver<SignerConfigurationT>()
-}
+open class SigningProviderSigningKeyConfigurationBase<SignerConfigurationT: SignerConfiguration> internal constructor() : SigningKeyConfiguration()
+/** Configure the signer that will be returned from [createSigningKey][SigningProviderI.createSigningKey] */
+val <T: SignerConfiguration> SigningProviderSigningKeyConfigurationBase<T>.signer get() = integratedReceiver<T>("SIGNER_CONFIG")
 open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSignerConfigurationBase> internal constructor(): SigningProviderSigningKeyConfigurationBase<SignerConfigurationT>() {
     open class AttestationConfiguration internal constructor(): DSL.Data() {
         /** The server-provided attestation challenge */
@@ -48,40 +56,18 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     open class ProtectionConfiguration internal constructor(): DSL.Data() {
         /** The timeout before this key will need to be unlocked again. */
         var timeout: Duration = 0.seconds
-        /** Which authentication factors can authorize this key;
-         * if multiple factors are specified, any one of them can authorize the key */
-        val factors = childOrDefault(::ProtectionFactorConfiguration)
     }
 
     open class SecureHardwareConfiguration: DSL.Data() {
         /** Whether to use hardware-backed storage, such as Android Keymaster or Apple's Secure Enclave.
          * @see FeaturePreference */
         var backing: FeaturePreference = REQUIRED
-        open val attestation = childOrNull(::AttestationConfiguration)
-        open val protection = childOrNull(::ProtectionConfiguration)
         override fun validate() {
             super.validate()
             require((backing != DISCOURAGED) || (attestation.v == null))
             { "To obtain hardware attestation, enable secure hardware support (do not set backing = DISCOURAGED, use backing = PREFERRED or backing = REQUIRED instead)."}
         }
     }
-
-    /** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
-    open val hardware = childOrNull(::SecureHardwareConfiguration)
-
-    open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
-        /** Whether this key can be used for signing data */
-        var signing = true
-        /** Whether this key can be used for encrypting data*/
-        var decrypting = false
-    }
-
-    open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
-        open val purposes = childOrDefault(::RSAPurposeConfiguration)
-    }
-
-    override val rsa = _algSpecific.option(::RSAConfiguration)
-
 
     open class ECPurposeConfiguration internal constructor(): DSL.Data() {
         /** Whether this key can be used for signing data */
@@ -90,12 +76,31 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
         var keyAgreement = false
     }
 
-    open class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
-        open val purposes = childOrDefault(::ECPurposeConfiguration)
+    open class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration()
+
+    open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+        /** Whether this key can be used for encrypting data*/
+        var decrypting = false
     }
 
-    override val ec = _algSpecific.option(::ECConfiguration)
+    open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration()
 }
+
+val SecureHardwareConfiguration.attestation get() = childOrNull("ATTESTATION", ::AttestationConfiguration)
+val SecureHardwareConfiguration.protection get() = childOrNull("PROTECTION", ::ProtectionConfiguration)
+
+/** Which authentication factors can authorize this key;
+ * if multiple factors are specified, any one of them can authorize the key */
+val ProtectionConfiguration.factors get() = childOrDefault("PROTECTION_FACTORS", ::ProtectionFactorConfiguration)
+val ECConfiguration.purposes get() = childOrDefault("PURPOSES", ::ECPurposeConfiguration)
+val RSAConfiguration.purposes get() = childOrDefault("PURPOSES", ::RSAPurposeConfiguration)
+
+val PlatformSigningKeyConfigurationBase<*>.ec get() = _algSpecific.defaultOption("EC", ::ECConfiguration)
+val PlatformSigningKeyConfigurationBase<*>.rsa get() = _algSpecific.option("RSA", ::RSAConfiguration)
+/** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
+val PlatformSigningKeyConfigurationBase<*>.hardware get() = childOrNull("HARDWARE", ::SecureHardwareConfiguration)
 
 internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsSigning get() =
     when (this) {
@@ -161,12 +166,11 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
 
 
 }
-open class SignerConfiguration internal constructor(): DSL.Data() {
-    /** Algorithm-specific configuration for a returned ECDSA signer. Ignored for RSA keys. */
-    open val ec = childOrDefault(::ECSignerConfiguration)
-    /** Algorithm-specific configuration for a returned RSA signer. Ignored for ECDSA keys. */
-    open val rsa = childOrDefault(::RSASignerConfiguration)
-}
+open class SignerConfiguration internal constructor(): DSL.Data()
+/** Algorithm-specific configuration for a returned ECDSA signer. Ignored for RSA keys. */
+val SignerConfiguration.ec get() = childOrDefault("SIGNUM_ECDSA", ::ECSignerConfiguration)
+/** Algorithm-specific configuration for a returned RSA signer. Ignored for ECDSA keys. */
+val SignerConfiguration.rsa get() = childOrDefault("SIGNUM_RSA", ::RSASignerConfiguration)
 
 open class UnlockPromptConfiguration: DSL.Data() {
 
@@ -183,14 +187,12 @@ open class UnlockPromptConfiguration: DSL.Data() {
         const val defaultCancelText = "Cancel"
     }
 }
-open class PlatformSignerConfigurationBase internal constructor(): SignerConfiguration() {
-    /** Configure the authorization prompt that will be shown to the user. */
-    open val unlockPrompt = childOrDefault(::UnlockPromptConfiguration)
-}
+open class PlatformSignerConfigurationBase internal constructor(): SignerConfiguration()
+/** Configure the authorization prompt that will be shown to the user. */
+val PlatformSignerConfigurationBase.unlockPrompt get() = childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
 
-open class PlatformSigningProviderSignerSigningConfigurationBase internal constructor(): DSL.Data() {
-    open val unlockPrompt = childOrDefault(::UnlockPromptConfiguration)
-}
+open class PlatformSigningProviderSignerSigningConfigurationBase internal constructor(): DSL.Data()
+val PlatformSigningProviderSignerSigningConfigurationBase.unlockPrompt get() = childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
 
 interface PlatformSigningProviderSigner
     <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>

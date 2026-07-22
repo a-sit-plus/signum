@@ -2,13 +2,16 @@
 
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
@@ -46,7 +49,7 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
  * RSA-PSS is supported only when MGF1 uses the signature digest, the salt length equals the digest output length,
  * and the trailer field is `1`.
  *
- * @throws IllegalArgumentException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
+ * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {
@@ -56,33 +59,36 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA256
                 Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA384
                 Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA512
-                else -> throw IllegalArgumentException("Raw signing is not supported on iOS")
+                null -> throw UnsupportedCryptoException("Raw signing is not supported on iOS")
+                else -> throw UnsupportedCryptoException("Unknown digest $digest is unsupported on iOS")
             }
         }
 
         is SignatureAlgorithm.RSA -> {
             requireSupportedIosPssParameters()
-            when (padding) {
-                RSAPadding.PSS -> when (digest) {
+            when (val params = parameters) {
+                SignatureAlgorithm.RSA.Parameters.PssPadded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA384
                     Digest.SHA512 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
                 }
 
-                RSAPadding.PKCS1 -> when (digest) {
+                SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA384
                     Digest.SHA512 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
                 }
             }
         }
+
+        else -> throw UnsupportedCryptoException("Algorithm $this is unknown")
     }!!
 
-val SpecializedSignatureAlgorithm.secKeyAlgorithm
-    get() =
-        this.algorithm.secKeyAlgorithm
+val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyAlgorithm
 
 /**
  * Maps this algorithm to its prehashed iOS Security framework equivalent.
@@ -90,7 +96,7 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithm
  * RSA-PSS is supported only when MGF1 uses the signature digest, the salt length equals the digest output length,
  * and the trailer field is `1`.
  *
- * @throws IllegalArgumentException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
+ * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
     get() = when (this) {
@@ -100,33 +106,36 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA256
                 Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA384
                 Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA512
-                else -> throw IllegalArgumentException("Raw signing is not supported on iOS")
+                null -> throw UnsupportedCryptoException("Raw signing is not supported on iOS")
+                else -> throw UnsupportedCryptoException("Unknown digest $digest is unsupported on iOS")
             }
         }
 
         is SignatureAlgorithm.RSA -> {
             requireSupportedIosPssParameters()
-            when (padding) {
-                RSAPadding.PSS -> when (digest) {
+            when (val params = parameters) {
+                is SignatureAlgorithm.RSA.Parameters.PssPadded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA384
                     Digest.SHA512 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
                 }
 
-                RSAPadding.PKCS1 -> when (digest) {
+                is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384
                     Digest.SHA512 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
                 }
             }
         }
+
+        else -> throw UnsupportedCryptoException("Algorithm $this is unknown")
     }!!
 
-val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
-    get() =
-        this.algorithm.secKeyAlgorithmPreHashed
+val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed get() = this.algorithm.secKeyAlgorithmPreHashed
 
 
 fun CryptoPublicKey.toSecKey() = catching {

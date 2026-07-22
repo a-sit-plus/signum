@@ -154,11 +154,17 @@ inline fun <reified Serializable> DerEncodable<Serializable>.encodeToDer(sink: S
  */
 interface DerDecodable<Serializable, out T : DerEncodable<Serializable>> {
     /**
+     * Processes a [Serializable], parsing it into an instance of [T].
+     * If recursive deserialization is done, it should use the [der] instance.
+     */
+    fun decodeFromTlv(element: Serializable, der: Der = DER): T
+    /**
      * Processes an [Asn1Element], parsing it into an instance of [T] through [der] serialization
      * @throws SerializationException if invalid data is provided.
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(serializer: KSerializer<Serializable>, src: Asn1Element, der: Der = DER): T
+    fun decodeFromTlv(serializer: KSerializer<Serializable>, src: Asn1Element, der: Der = DER): T =
+        decodeFromTlv(der.decodeFromTlv(serializer, src))
 }
 
 /**
@@ -169,7 +175,7 @@ inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<S
     src: Asn1Element,
     der: Der = DER
 ): T = decodeFromTlv(
-    der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
+    der.configuration.serializersModule.serializer<Serializable>(),
     src,
     der
 )
@@ -186,7 +192,7 @@ inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<S
     bytes: ByteArray,
     der: Der = DER
 ): T = decodeFromTlv(
-    der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
+    der.configuration.serializersModule.serializer<Serializable>(),
     Asn1Element.parse(bytes),
     der
 )
@@ -203,7 +209,7 @@ inline fun <reified Serializable, T : DerEncodable<Serializable>> DerDecodable<S
     limit: Long = Long.MAX_VALUE,
     der: Der = DER
 ): T = decodeFromTlv(
-    der.configuration.serializersModule.serializer(typeOf<Serializable>()) as KSerializer<Serializable>,
+    der.configuration.serializersModule.serializer<Serializable>(),
     Asn1Element.parse(source, limit),
     der
 )

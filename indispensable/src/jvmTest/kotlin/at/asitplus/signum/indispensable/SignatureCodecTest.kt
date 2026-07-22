@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -21,9 +23,6 @@ import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val SignatureCodecTest  by matrixSuite {
@@ -49,7 +48,7 @@ val SignatureCodecTest  by matrixSuite {
             CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
-                SignatureAlgorithm.ECDSA(Digest.valueOf(digest), ECCurve.byJcaName(curve))
+                SignatureAlgorithm.ECDSA(Digest.entries.first { it.name == digest }, ECCurve.byJcaName(curve))
             ).jcaSignatureBytes shouldBe sig
 
             Signature.getInstance("${digest}withECDSAinP1363Format").run {

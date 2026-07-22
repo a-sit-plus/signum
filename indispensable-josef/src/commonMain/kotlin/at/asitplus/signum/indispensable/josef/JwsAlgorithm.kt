@@ -9,6 +9,14 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -84,7 +92,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
             /** The one exception, which is not a valid JWS algorithm identifier */
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(Digest.SHA1)))
+            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(
+                Digest.SHA1)))
             companion object : Enumeration<RSA> {
                 override val entries: Collection<RSA> by lazy {
                     setOf(

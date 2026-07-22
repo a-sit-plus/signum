@@ -3,6 +3,10 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -36,17 +40,17 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
             signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider)
         else
             signatureAlgorithm.getJCASignatureInstance(provider = provider))
-            .run {
-                initSign(privateKey)
-                data.data.forEach { update(it) }
-                sign().let(::parseFromJca)
-            }
+        .run {
+            initSign(privateKey)
+            data.data.forEach { update(it) }
+            sign().let(::parseFromJca)
+        }
     }
 
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+              override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
         : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
@@ -100,18 +104,19 @@ internal sealed interface JVMEphemeralKey {
     }
 }
 
-internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
-    when (val alg = configuration._algSpecific.v) {
-        is SigningKeyConfiguration.ECConfiguration -> {
-            getKPGInstance("EC", configuration.provider).run {
-                initialize(ECGenParameterSpec(alg.curve.jcaName))
-                generateKeyPair()
-            }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
-        }
-        is SigningKeyConfiguration.RSAConfiguration -> {
-            getKPGInstance("RSA", configuration.provider).run {
-                initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
-                generateKeyPair()
-            }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
-        }
+internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
+    // TODO: do we want to providerize this
+    configuration.ec.v?.let { alg ->
+        return getKPGInstance("EC", configuration.provider).run {
+            initialize(ECGenParameterSpec(alg.curve.jcaName))
+            generateKeyPair()
+        }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
     }
+    configuration.rsa.v?.let { alg ->
+        return getKPGInstance("RSA", configuration.provider).run {
+            initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
+            generateKeyPair()
+        }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
+    }
+    error("UNREACHABLE")
+}

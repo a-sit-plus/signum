@@ -102,10 +102,9 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<SubjectPublicKeyInfo>,
-            src: Asn1Element,
+            element: SubjectPublicKeyInfo,
             der: Der,
-        ): CryptoPublicKey = CryptoPublicKey(der.decodeFromTlv(serializer, src))
+        ): CryptoPublicKey = CryptoPublicKey(element)
 
         override fun decodeFromPemBlockPayload(
             serializer: KSerializer<SubjectPublicKeyInfo>,
@@ -126,10 +125,10 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
 
 
         operator fun invoke(asn1Representation: SubjectPublicKeyInfo): CryptoPublicKey =
-            when (val oid = asn1Representation.algorithmOid) {
+            when (asn1Representation.algorithmOid) {
                 EC.oid -> EC(asn1Representation)
                 RSA.oid -> RSA(asn1Representation)
-                else -> throw Asn1Exception("Unsupported Key Type: $oid")
+                else -> TODO("providerize")
             }
 
         @Throws(Asn1Exception::class)

@@ -1,5 +1,5 @@
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.cosef.*
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -124,9 +124,8 @@ val CoseKeySerializationTest by matrixSuite {
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe false
                         decoded.toCryptoPublicKey().getOrThrow()
-                            .toJcaPublicKey().encoded.encodeToString(
-                                Base64Strict
-                            ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
+                            .toJcaPublicKey().encoded.encodeToString(Base64Strict) shouldBe
+                                pubKey.encoded.encodeToString(Base64Strict)
                     }
 
                     withClue("Compressed")
@@ -147,9 +146,8 @@ val CoseKeySerializationTest by matrixSuite {
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe true
                         decoded.toCryptoPublicKey().getOrThrow()
-                            .toJcaPublicKey().encoded.encodeToString(
-                                Base64Strict
-                            ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
+                            .toJcaPublicKey().encoded.encodeToString(Base64Strict) shouldBe
+                                pubKey.encoded.encodeToString(Base64Strict)
                     }
                 }
             }

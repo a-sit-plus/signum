@@ -1,14 +1,22 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import java.security.Signature
 
 
-internal actual fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature =
-    when (this.parameters) {
-        is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded ->
-            sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
+internal actual fun getRSAPlatformSignatureInstance(algorithm: SignatureAlgorithm.RSA, jcaProvider: String?) =
+    when (val params = algorithm.parameters) {
+        is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+            is WellKnownDigest -> sigGetInstance("${digest.jcaAlgorithmComponent}withRSA", jcaProvider)
+            else -> null
+        }
 
-        is SignatureAlgorithm.RSA.Parameters.PssPadded -> sigGetInstance("RSASSA-PSS", provider).also {
-            it.setParameter((this.parameters as SignatureAlgorithm.RSA.Parameters.PssPadded).jcaPSSParams)
+        is SignatureAlgorithm.RSA.Parameters.PssPadded -> {
+            val params = try { params.jcaPSSParams } catch (_: UnsupportedCryptoException) { null }
+            if (params != null) {
+                sigGetInstance("RSASSA-PSS", jcaProvider).also { it.setParameter(params) }
+            } else null
         }
     }

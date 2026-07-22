@@ -258,7 +258,7 @@ As an example, here's how to verify a basic signature using a public key:
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
-val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
+val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
 ```
@@ -268,20 +268,17 @@ Or here's how to validate a X.509 certificate:
 val rootCert: X509Certificate = TODO("You have this and trust it.")
 val untrustedCert: X509Certificate = TODO("You want to verify that this is trustworthy.")
 
-val verifier = untrustedCert.signatureAlgorithm.verifierFor(rootCert.publicKey).getOrThrow()
+val verifier = untrustedCert.signatureAlgorithm.verifierFor(rootCert.publicKey)
 val plaintext = untrustedCert.tbsCertificate.encodeToDer()
 val signature = untrustedCert.signature
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Certificate looks trustworthy: $isValid")
 ```
 
-#### Platform Verifiers
+#### Obtaining Verifiers
 
 Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
 If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.
-
-If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
-That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
 
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
@@ -291,9 +288,7 @@ val publicKey: CryptoPublicKey.EC = TODO("You have this.")
 val plaintext: ByteArray = TODO("This is the message.")
 val signature: CryptoSignature.EC = TODO("And this is the signature.")
     
-val verifier = SignatureAlgorithm.ECDSAwithSHA512
-    .platformVerifierFor(publicKey) { provider = "BC"} /* specify BouncyCastle */
-    .getOrThrow()
+val verifier = SignatureAlgorithm.ECDSAwithSHA512.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Is it trustworthy? $isValid")
 ```

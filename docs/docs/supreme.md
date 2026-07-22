@@ -324,16 +324,10 @@ As an example, here's how to verify a basic signature using a public key:
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
-val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
+val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
 ```
-
-!!! tip
-    Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
-    If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.  
-    If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
-    That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
 
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.

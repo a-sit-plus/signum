@@ -76,11 +76,10 @@ class RelativeDistinguishedName private constructor(
     companion object : DerDecodable<X500RelativeDistinguishedName, RelativeDistinguishedName> {
 
         override fun decodeFromTlv(
-            serializer: KSerializer<X500RelativeDistinguishedName>,
-            src: Asn1Element,
+            element: X500RelativeDistinguishedName,
             der: Der,
         ): RelativeDistinguishedName =
-            RelativeDistinguishedName(der.decodeFromTlv(serializer, src), performValidation = false)
+            RelativeDistinguishedName(element, performValidation = false)
 
         /**
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company").
@@ -232,11 +231,10 @@ sealed interface AttributeTypeAndValue : Identifiable {
             fromAsn1Representation(asn1Representation)
 
         override fun decodeFromTlv(
-            serializer: KSerializer<X500AttributeTypeAndValue>,
-            src: Asn1Element,
+            element: X500AttributeTypeAndValue,
             der: Der,
         ): X509Representable =
-            fromAsn1Representation(der.decodeFromTlv(serializer, src))
+            fromAsn1Representation(element)
 
         @OptIn(ExperimentalStdlibApi::class)
         fun fromString(type: String, value: String): AttributeTypeAndValue? {
@@ -261,6 +259,7 @@ sealed interface AttributeTypeAndValue : Identifiable {
         }
 
         fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): X509Representable =
+            // TODO: re-providerize
             Registry.descriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
                 ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }

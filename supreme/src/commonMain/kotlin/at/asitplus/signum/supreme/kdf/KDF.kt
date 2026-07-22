@@ -1,10 +1,11 @@
 package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.awesn1.encoding.toUnsignedByteArray
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.KDF
+import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
 import at.asitplus.signum.indispensable.kdf.PBKDF2
 import at.asitplus.signum.indispensable.kdf.SCrypt
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -17,26 +18,21 @@ import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.mac.mac
 import kotlin.math.min
 
-/**
- * Derives a key using the specified [KDF] implementation.
- *
- * @param salt the salt to use
- * @param ikm the input key material
- * @param derivedKeyLength the length of the derived key
- *
- * Any other parameters are set during instantiation of the [KDF] implementation.
- */
-suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): KmmResult<ByteArray> = catching {
-    when (this) {
-        is PBKDF2.WithIterations -> derive(ikm, salt, derivedKeyLength.bytes.toInt())
+object SupremeKDFProvider : KDFOperationProvider {
+    override suspend fun deriveKey(kdf: KDF, salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength) : ByteArray? = when (kdf) {
+        is PBKDF2.WithIterations ->
+            kdf.derive(ikm, salt, derivedKeyLength.bytes.toInt())
         is SCrypt -> {
-            val B = PBKDF2.HMAC_SHA256(1).derive(ikm, salt, parallelization * 128 * blockSize)
-            with(Mixer()) {
-                repeat(parallelization) { i -> scryptROMix(ByteArrayView(B, i * 128 * blockSize, 128 * blockSize)) }
+            val B = PBKDF2.HMAC_SHA256(1).derive(ikm, salt, kdf.parallelization * 128 * kdf.blockSize)
+            with(kdf.Mixer()) {
+                repeat(kdf.parallelization) { i -> scryptROMix(ByteArrayView(B, i * 128 * kdf.blockSize, 128 * kdf.blockSize)) }
             }
             PBKDF2.HMAC_SHA256(1).derive(ikm, B, derivedKeyLength.bytes.toInt())
         }
-        is HKDF.WithInfo -> derive(salt, ikm, derivedKeyLength)
+        is HKDF.WithInfo -> {
+            kdf.derive(salt, ikm, derivedKeyLength)
+        }
+        else -> null
     }
 }
 

@@ -29,6 +29,7 @@ val RFC9380Test by matrixSuite {
             crv.modulus.mod(BigInteger(4)) shouldBe BigInteger(3)
         }
     }
+
     compact("RFC 9380 Appendix J. Test Vectors") - {
         data class SuiteTestInfo(
             val suiteName: String, val suiteRef: (ByteArray) -> RFC9380.HashToEllipticCurve,

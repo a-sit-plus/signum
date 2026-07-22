@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.kdf
 
+import at.asitplus.signum.indispensable.kdf.deriveKey
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.internals.ByteArrayView
 import at.asitplus.signum.internals.toLEByteArray
@@ -16,14 +17,11 @@ import io.kotest.property.arbitrary.*
 import io.kotest.property.exhaustive.ints
 import kotlin.math.pow
 import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 private val rnd = java.util.Random()
 
 @OptIn(ExperimentalStdlibApi::class)
-val ScryptTest  by matrixSuite {
+val ScryptTest by matrixSuite {
     "Little-Endian Bytearray converters" {
         ByteArray(8).also {
             uintArrayOf(0x31b2a3f4u, 0x72ff9813u).toLEByteArray(it.view)

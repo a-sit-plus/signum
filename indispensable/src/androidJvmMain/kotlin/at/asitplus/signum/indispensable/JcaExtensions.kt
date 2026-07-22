@@ -5,9 +5,16 @@ import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -21,6 +28,7 @@ import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.security.KeyFactory
+import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -38,24 +46,29 @@ import javax.crypto.spec.PSource
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val SignatureAlgorithm.RSA.Parameters.PssPadded.jcaPSSParams
-    get() = if (mgfAlgorithm !is SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1) throw UnsupportedOperationException(
-        "Only Pkcs1MGF1 is supported"
-    ) else
-        PSSParameterSpec(
-            digest.jcaName,
-            "MGF1",
-            when ((mgfAlgorithm as SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1).digest) {
-                Digest.SHA1 -> MGF1ParameterSpec.SHA1
-                Digest.SHA256 -> MGF1ParameterSpec.SHA256
-                Digest.SHA384 -> MGF1ParameterSpec.SHA384
-                Digest.SHA512 -> MGF1ParameterSpec.SHA512
-                else -> throw UnsupportedOperationException("Only SHA1, SHA256, SHA384, SHA512 are supported") //important for extenisbility
-            },
-            saltLength.toInt(),
-            trailerField
-        )
-
+internal val SignatureAlgorithm.RSA.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec get() {
+    val mgfAlgorithm = mgfAlgorithm
+    if (mgfAlgorithm !is SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1)
+        throw UnsupportedCryptoException("Only Pkcs1MGF1 is supported")
+    val outerDigest = digest
+    if (outerDigest !is WellKnownDigest)
+        throw UnsupportedCryptoException("Unknown outer digest")
+    val innerDigest = mgfAlgorithm.digest
+    if (innerDigest !is WellKnownDigest)
+        throw UnsupportedCryptoException("Unknown inner digest")
+    return PSSParameterSpec(
+        outerDigest.jcaName,
+        "MGF1",
+        when (innerDigest) {
+            WellKnownDigest.SHA1 -> MGF1ParameterSpec.SHA1
+            WellKnownDigest.SHA256 -> MGF1ParameterSpec.SHA256
+            WellKnownDigest.SHA384 -> MGF1ParameterSpec.SHA384
+            WellKnownDigest.SHA512 -> MGF1ParameterSpec.SHA512
+        },
+        saltLength.toInt(),
+        trailerField
+    )
+}
 
 internal fun sigGetInstance(alg: String, provider: String?): Signature =
     when (provider) {
@@ -63,49 +76,63 @@ internal fun sigGetInstance(alg: String, provider: String?): Signature =
         else -> Signature.getInstance(alg, provider)
     }
 
+interface JcaMappingProvider {
+    /**
+     * Should return a pre-configured JCA [Signature] instance for this recognized algorithm, ready for [Signature.initSign]/[Signature.initVerify].
+     * This allows integration into Supreme's signer providers.
+     * - If the algorithm is not recognized, the provider should return `null`.
+     * - If the algorithm is recognized but its particular configuration is unsupported by the JCA, the provider should throw [UnsupportedCryptoException].
+     * - If the provider does not wish to implement mapping this algorithm for the JCA, it can choose to return `null`, allowing fall-through.
+     *
+     * The [jcaProvider], if non-`null`, should be respected and passed to the JCA.
+     * If the provided algorithm is unsupported by the provider in question, the JCA may then throw [NoSuchAlgorithmException].
+     * This is intended. The [SignatureAlgorithm.getJCASignatureInstance] wrapper will map this to [UnsupportedCryptoException].
+     */
+    fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProvider: String?): Signature? { return null }
+
+    /**
+     * Should return a pre-configured JCA [Signature] instance for this algorithm, ready for [Signature.initSign]/[Signature.initVerify].
+     * This instance should accept pre-hashed input data. Its output should be identical to providing the pre-image to [getJCASignatureInstance].
+     * If this is impossible for the algorithm, for example because the pre-hashed version uses different domain separators, [UnsupportedCryptoException] should be thrown.
+     *
+     * All other implementor notes from [getJCASignatureInstance] also apply.
+     */
+    fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProvider: String?): Signature? { return null }
+}
+
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): Signature =
-    when (this) {
-        is SignatureAlgorithm.ECDSA ->
-            sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
-
-        is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
-    }
-
-internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+    ServiceLoader.load<JcaMappingProvider>().get(this) { getJCASignatureInstance(it, provider) }
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): Signature =
-    when (this) {
-        is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
-        is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
-    }
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+    ServiceLoader.load<JcaMappingProvider>().get(this) { getJCASignatureInstancePreHashed(it, provider) }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
     this.algorithm.getJCASignatureInstancePreHashed(provider)
 
-
-val Digest.jcaName
+val WellKnownDigest.jcaName
     get() = when (this) {
-        Digest.SHA256 -> "SHA-256"
-        Digest.SHA384 -> "SHA-384"
-        Digest.SHA512 -> "SHA-512"
-        Digest.SHA1 -> "SHA-1"
+        WellKnownDigest.SHA1 -> "SHA-1"
+        WellKnownDigest.SHA256 -> "SHA-256"
+        WellKnownDigest.SHA384 -> "SHA-384"
+        WellKnownDigest.SHA512 -> "SHA-512"
     }
 
 
-val Digest?.jcaAlgorithmComponent
+val WellKnownDigest?.jcaAlgorithmComponent
     get() = when (this) {
         null -> "NONE"
         Digest.SHA1 -> "SHA1"
         Digest.SHA256 -> "SHA256"
         Digest.SHA384 -> "SHA384"
         Digest.SHA512 -> "SHA512"
+        else -> TODO("providerization")
     }
 
 val ECCurve.jcaName
@@ -239,14 +266,14 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING -> "AES/ECB/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        else -> TODO("$this is unsupported")
+        //else -> TODO("$this is unsupported")
     }
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
-        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
+        //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
 
 val HMAC.jcaName: String
@@ -255,6 +282,7 @@ val HMAC.jcaName: String
         HMAC.SHA256 -> "HmacSHA256"
         HMAC.SHA384 -> "HmacSHA384"
         HMAC.SHA512 -> "HmacSHA512"
+        else -> TODO("providerize")
     }
 
 /**

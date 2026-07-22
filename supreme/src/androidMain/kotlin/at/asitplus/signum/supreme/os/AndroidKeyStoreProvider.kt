@@ -20,17 +20,19 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.FeaturePreference
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.sign.SignatureInput
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -361,7 +363,7 @@ sealed class AndroidKeystoreSigner private constructor(
     }
 
     internal suspend fun getJCASignature(signingConfig: AndroidSignerSigningConfiguration): Signature =
-        signatureAlgorithm.getJCASignatureInstance().also {
+        signatureAlgorithm.getJCASignatureInstance(provider = "AndroidKeyStore").also {
             if (needsAuthenticationForEveryUse) {
                 it.initSign(jcaPrivateKey)
                 attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), CryptoObject(it))

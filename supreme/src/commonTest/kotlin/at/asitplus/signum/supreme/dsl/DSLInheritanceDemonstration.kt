@@ -11,9 +11,10 @@ private open class GenericOptions internal constructor(): DSL.Data() {
     open class GenericSubOptions internal constructor(): DSL.Data() {
         var genericSubValue: Int = 42
     }
-    /* expose GenericSubOptions as a nested DSL child */
-    open val subValue = childOrDefault(::GenericSubOptions)
 }
+/* expose GenericSubOptions as a nested DSL child */
+private val GenericOptions.subValue get() =
+    childOrDefault("GENERIC_SUB_OPTIONS", GenericOptions::GenericSubOptions)
 
 /* This is a more specific version of GenericOptions */
 private class SpecificOptions internal constructor(): GenericOptions() {
@@ -25,9 +26,11 @@ private class SpecificOptions internal constructor(): GenericOptions() {
     class SpecificSubOptions internal constructor(): GenericSubOptions() {
         var anotherSpecificSubValue: String? = null
     }
-    /* this shadows the subValue member on the superclass with a more specific version */
-    override val subValue = childOrDefault(::SpecificSubOptions)
 }
+
+/* this shadows the subValue member on the superclass with a more specific version */
+private val SpecificOptions.subValue get() =
+    childOrDefault("GENERIC_SUB_OPTIONS", SpecificOptions::SpecificSubOptions)
 
 val DSLInheritanceDemonstration  by matrixSuite {
     "\uD83D\uDE0A" {

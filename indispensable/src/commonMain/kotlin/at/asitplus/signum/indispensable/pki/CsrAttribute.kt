@@ -30,11 +30,10 @@ sealed interface CsrAttribute : Identifiable {
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<Pkcs10CsrAttribute>,
-            src: Asn1Element,
+            element: Pkcs10CsrAttribute,
             der: Der,
         ): X509Representable =
-            X509CsrAttribute(der.decodeFromTlv(serializer, src))
+            X509CsrAttribute(element)
 
         val EXTENSION_REQUEST_OID: ObjectIdentifier = Pkcs10CsrAttribute.EXTENSION_REQUEST_OID
     }

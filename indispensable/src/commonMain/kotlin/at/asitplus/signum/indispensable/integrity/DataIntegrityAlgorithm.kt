@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration

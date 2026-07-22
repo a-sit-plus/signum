@@ -1,10 +1,11 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.*
@@ -12,7 +13,7 @@ import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
 @OptIn(SecretExposure::class)
-val PrivateKeyCommonTests  by matrixSuite {
+val PrivateKeyCommonTests by matrixSuite {
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----
@@ -43,7 +44,7 @@ val PrivateKeyCommonTests  by matrixSuite {
 
 
 
-        signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow()
+        signer.signatureAlgorithm.verifierFor(signer.publicKey)
             .verify(data, signature.signature).isSuccess shouldBe true
 
     }
@@ -67,7 +68,7 @@ val PrivateKeyCommonTests  by matrixSuite {
 
 
 
-        signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow()
+        signer.signatureAlgorithm.verifierFor(signer.publicKey)
             .verify(data, signature.signature).isSuccess shouldBe true
     }
 
@@ -79,7 +80,7 @@ val PrivateKeyCommonTests  by matrixSuite {
         val data = Random.Default.nextBytes(1024)
         val sig = signer.signatureAlgorithm.signerFor(privateKey).getOrThrow().sign(data).signature
 
-        signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow().verify(data, sig).isSuccess shouldBe true
+        signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig).isSuccess shouldBe true
     }
 
     "Export RSA" {
@@ -90,7 +91,7 @@ val PrivateKeyCommonTests  by matrixSuite {
         val data = Random.Default.nextBytes(1024)
         val sig = signer.signatureAlgorithm.signerFor(privateKey).getOrThrow().sign(data).signature
 
-        signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow().verify(data, sig).isSuccess shouldBe true
+        signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig).isSuccess shouldBe true
     }
 
     "Regressions" - {

@@ -2,7 +2,8 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
@@ -34,8 +35,7 @@ val AndroidKeyStoreProviderTests by matrixSuite {
         val signature = hardwareSigner.sign(plaintext).signature
 
         //@formatter:off
-        SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).transform {
-            it.verify(plaintext, signature) }.shouldSucceed()
+        SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).verify(plaintext, signature).shouldSucceed()
         //@formatter:on
 
     }

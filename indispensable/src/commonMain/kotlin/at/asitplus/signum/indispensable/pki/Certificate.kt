@@ -9,6 +9,7 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -224,11 +225,10 @@ class TbsCertificate private constructor(
     companion object : DerDecodable<X509TbsCertificate, TbsCertificate> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<X509TbsCertificate>,
-            src: Asn1Element,
+            element: X509TbsCertificate,
             der: Der,
         ): TbsCertificate =
-            TbsCertificate(der.decodeFromTlv(serializer, src))
+            TbsCertificate(element)
     }
 }
 
@@ -393,11 +393,10 @@ class Certificate private constructor(
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<X509Certificate>,
-            src: Asn1Element,
+            element: X509Certificate,
             der: Der,
         ): Certificate =
-            Certificate(der.decodeFromTlv(serializer, src))
+            Certificate(element)
 
         @Throws(Asn1Exception::class)
         fun decodeFromTlv(src: Asn1Element): Certificate =

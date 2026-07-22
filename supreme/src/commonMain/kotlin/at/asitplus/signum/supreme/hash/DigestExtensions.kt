@@ -1,7 +1,14 @@
 package at.asitplus.signum.supreme.hash
 
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.DigestOperationProvider
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 
-internal expect suspend fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray
-suspend fun Digest.digest(data: Sequence<ByteArray>) = doDigest(this, data)
-@Suppress("NOTHING_TO_INLINE") suspend inline fun Digest.digest(bytes: ByteArray) = this.digest(sequenceOf(bytes))
+object SupremeDigestProvider : DigestOperationProvider {
+    override suspend fun digest(digest: Digest, data: Sequence<ByteArray>) : ByteArray? {
+        if (digest !is WellKnownDigest) return null
+        return doDigest(digest, data)
+    }
+}
+
+internal expect suspend fun doDigest(digest: WellKnownDigest, data: Sequence<ByteArray>): ByteArray

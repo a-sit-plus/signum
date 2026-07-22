@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
-import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -11,9 +9,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.memberProperties
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 inline fun<reified T: Any> MatrixSuiteScope.enumConsistencyTest() {
     T::class.simpleName!! {

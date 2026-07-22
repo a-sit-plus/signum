@@ -195,13 +195,13 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
 
             companion object : DerDecodable<Pkcs1RsaOtherPrimeInfo, PrimeInfo> {
                 override fun decodeFromTlv(
-                    serializer: KSerializer<Pkcs1RsaOtherPrimeInfo>,
-                    src: Asn1Element,
+                    element: Pkcs1RsaOtherPrimeInfo,
                     der: Der,
                 ): PrimeInfo =
-                    der.decodeFromTlv(serializer, src).let {
-                        PrimeInfo(it.prime.toBigInteger(), it.exponent.toBigInteger(), it.coefficient.toBigInteger())
-                    }
+                    PrimeInfo(
+                        element.prime.toBigInteger(),
+                        element.exponent.toBigInteger(),
+                        element.coefficient.toBigInteger())
             }
         }
 
@@ -211,13 +211,11 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
 
             override fun decodeFromTlv(
-                serializer: KSerializer<Pkcs8PrivateKeyInfo>,
-                src: Asn1Element,
+                element: Pkcs8PrivateKeyInfo,
                 der: Der,
-            ): RSA {
-                val decoded = der.decodeFromTlv(serializer, src)
-                require(decoded.algorithmOid == oid) { "Expected RSA private key, got ${decoded.algorithmOid}" }
-                return RSA(decoded)
+            ): RSA = runRethrowing {
+                require(element.algorithmOid == oid) { "Expected RSA private key, got ${element.algorithmOid}" }
+                return RSA(element)
             }
 
             override fun decodeFromPemBlockPayload(
@@ -442,7 +440,7 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             override val privateKeyBytes: ByteArray
                 get() = privateKey.toByteArray().ensureSize(curveOrderLengthInBytes)
 
-            override fun curveOidForPkcs8(): ObjectIdentifier? =
+            override fun curveOidForPkcs8(): Nothing =
                 throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
         }
 
@@ -452,13 +450,11 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             override fun decodeFromTlv(
-                serializer: KSerializer<Pkcs8PrivateKeyInfo>,
-                src: Asn1Element,
+                element: Pkcs8PrivateKeyInfo,
                 der: Der,
             ): EC {
-                val decoded = der.decodeFromTlv(serializer, src)
-                require(decoded.algorithmOid == oid) { "Expected EC private key, got ${decoded.algorithmOid}" }
-                return fromPkcs8Representation(decoded)
+                require(element.algorithmOid == oid) { "Expected EC private key, got ${element.algorithmOid}" }
+                return fromPkcs8Representation(element)
             }
 
             override fun decodeFromPemBlockPayload(
@@ -527,16 +523,14 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
         override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
         override val alternativePemLabels: Set<String> get() = Pkcs8PrivateKeyInfo.alternativePemLabels
         override fun decodeFromTlv(
-            serializer: KSerializer<Pkcs8PrivateKeyInfo>,
-            src: Asn1Element,
+            element: Pkcs8PrivateKeyInfo,
             der: Der,
         ): CryptoPrivateKey {
-            val decoded = der.decodeFromTlv(serializer, src)
-            require(decoded.version == Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
-            return when (decoded.algorithmOid) {
-                RSA.oid -> RSA(decoded)
-                EC.oid -> EC.decodeFromTlv(Pkcs8PrivateKeyInfo.serializer(), src, der)
-                else -> throw IllegalArgumentException("Unknown Algorithm: ${decoded.algorithmOid}")
+            require(element.version == Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
+            return when (element.algorithmOid) {
+                RSA.oid -> RSA(element)
+                EC.oid -> EC.decodeFromTlv(element) // TODO: did this remove the hack?
+                else -> TODO("providerize")
             }
         }
 

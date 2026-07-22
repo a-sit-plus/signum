@@ -1,10 +1,16 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.toJcaPublicKey
+import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
-import kotlin.sequences.forEach
+import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
+import at.asitplus.signum.indispensable.integrity.SignatureInput
 
 /**
  * Configures JVM-specific properties.

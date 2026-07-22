@@ -6,7 +6,7 @@ import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
-import at.asitplus.signum.InsecureRandom
+import at.asitplus.signum.indispensable.InsecureRandom
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.ExecutionMode
@@ -52,6 +52,7 @@ import kotlin.time.toKotlinInstant
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 
 val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
 
@@ -115,10 +116,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                 initSign(keyPair.private)
                 update(tbsCertificate.encodeToTlv().derEncoded)
             }.sign()
-            val test = when (signatureAlgorithm.kind) {
-                SignatureAlgorithm.Kind.EC -> CryptoSignature.EC.decodeFromDer(signed)
-                SignatureAlgorithm.Kind.RSA -> CryptoSignature.RSA.decodeFromDer(signed)
-            }
+            val test = CryptoSignature.decodeFromDer(signed)
                 val x509Certificate = Certificate(tbsCertificate, test)
                 val kotlinEncoded = x509Certificate.encodeToDer()
                 val jvmEncoded = certificateHolder.encoded
@@ -170,10 +168,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = when (signatureAlgorithm.kind) {
-            SignatureAlgorithm.Kind.EC -> CryptoSignature.EC.decodeFromDer(signed)
-            SignatureAlgorithm.Kind.RSA -> CryptoSignature.RSA.decodeFromDer(signed)
-        }
+        val test = CryptoSignature.decodeFromDer(signed)
         val x509Certificate = Certificate(tbsCertificate, test)
 
         repeat(500) {

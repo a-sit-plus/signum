@@ -4,13 +4,17 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
+import at.asitplus.signum.supreme.os.ec
+import at.asitplus.signum.supreme.os.rsa
+import at.asitplus.signum.supreme.sign.EphemeralSigningKeyConfigurationBase.ECConfiguration
+import at.asitplus.signum.supreme.sign.EphemeralSigningKeyConfigurationBase.RSAConfiguration
 
 
 internal expect suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
@@ -21,12 +25,12 @@ open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningK
     class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
         init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
     }
-    override val ec = _algSpecific.option(::ECConfiguration)
     class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
         init { digests = Digest.entries.toSet(); paddings = SignatureAlgorithm.RSA.Padding.entries.toSet()}
     }
-    override val rsa = _algSpecific.option(::RSAConfiguration)
 }
+val EphemeralSigningKeyConfigurationBase.ec get() = _algSpecific.defaultOption("EC", ::ECConfiguration)
+val EphemeralSigningKeyConfigurationBase.rsa get() = _algSpecific.option("RSA", ::RSAConfiguration)
 
 @Suppress("NOTHING_TO_INLINE")
 expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase
