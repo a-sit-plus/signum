@@ -46,7 +46,7 @@ class X500Name(
 ) : Name.X509Representable {
 
     override val asn1Representation: Asn1X500Name
-        get() = relativeDistinguishedNames.map { it.asn1Representation }
+        get() = Asn1X500Name(relativeDistinguishedNames.map { it.asn1Representation })
 
     val isValid: Boolean by lazy {
         relativeDistinguishedNames.all { it.isValid }
@@ -67,8 +67,7 @@ class X500Name(
 
     companion object : DerDecodable<Asn1X500Name, X500Name> {
         /** The RDNSequence serializer (`SEQUENCE OF RelativeDistinguishedName`). */
-        val serializer: KSerializer<Asn1X500Name> =
-            ListSerializer(X500RelativeDistinguishedName.serializer())
+        val serializer: KSerializer<Asn1X500Name> = Asn1X500Name.serializer()
 
         override fun decodeFromTlv(
             serializer: KSerializer<Asn1X500Name>,
