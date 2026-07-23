@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
@@ -228,7 +229,7 @@ class CertificationRequest private constructor(
 }
 
 private fun validateAttributes(attributes: List<CsrAttribute>, allowExtensions: Boolean = false) {
-    require(attributes.distinctBy { it.oid }.size == attributes.size) { "Multiple attributes with same OID found" }
+    require(attributes.allDistinctByOids()) { "Multiple attributes with same OID found" }
     if (!allowExtensions) require(attributes.none { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }) {
         "Certificate extension passed as part of regular attributes"
     }

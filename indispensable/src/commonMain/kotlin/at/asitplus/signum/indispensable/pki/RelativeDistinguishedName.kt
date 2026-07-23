@@ -7,6 +7,7 @@ import at.asitplus.awesn1.Asn1Primitive
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.serialization.Der
@@ -137,7 +138,8 @@ class RelativeDistinguishedName private constructor(
 }
 
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
-    isNotEmpty() && groupBy { it.oid }.none { it.value.size > 1 }
+    isNotEmpty() && allDistinctByOids()
+
 
 sealed interface AttributeTypeAndValue : Identifiable {
     val displayName: String?
@@ -272,16 +274,6 @@ abstract class BaseAttributeTypeAndValue(
     override val displayName: String? get() = AttributeTypeAndValue.Registry.nameFor(oid)
     override val isValid: Boolean? = null
 
-    override fun toString() = "AttributeTypeAndValue(${displayName?:""} oid=$oid})"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as BaseAttributeTypeAndValue
-        return oid == other.oid
-    }
-
-    override fun hashCode(): Int = oid.hashCode()
 }
 
 open class BaseX509AttributeTypeAndValue protected constructor(

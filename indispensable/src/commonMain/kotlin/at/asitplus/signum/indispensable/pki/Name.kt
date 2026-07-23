@@ -3,13 +3,12 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.crypto.pki.X500Name as Asn1X500Name
-import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.ListSerializer
+import at.asitplus.awesn1.crypto.pki.X500Name as Asn1X500Name
 
 /**
  * An [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) `Name` (the issuer/subject
@@ -46,7 +45,7 @@ class X500Name(
 ) : Name.X509Representable {
 
     override val asn1Representation: Asn1X500Name
-        get() = relativeDistinguishedNames.map { it.asn1Representation }
+        get() = Asn1X500Name(relativeDistinguishedNames.map { it.asn1Representation })
 
     val isValid: Boolean by lazy {
         relativeDistinguishedNames.all { it.isValid }
@@ -67,8 +66,7 @@ class X500Name(
 
     companion object : DerDecodable<Asn1X500Name, X500Name> {
         /** The RDNSequence serializer (`SEQUENCE OF RelativeDistinguishedName`). */
-        val serializer: KSerializer<Asn1X500Name> =
-            ListSerializer(X500RelativeDistinguishedName.serializer())
+        val serializer: KSerializer<Asn1X500Name> = Asn1X500Name.serializer()
 
         override fun decodeFromTlv(
             serializer: KSerializer<Asn1X500Name>,
@@ -80,9 +78,7 @@ class X500Name(
         fun fromString(value: String): X500Name {
             if (value.isEmpty()) return X500Name(emptyList())
 
-            val rdns = with(RelativeDistinguishedName) {
-                value.splitRespectingEscapeAndQuotes(',', ';')
-            }.map { rdn ->
+            val rdns = value.splitRespectingEscapeAndQuotes(',', ';').map { rdn ->
                 require(rdn.isNotBlank()) { "X500Name contains an empty RDN" }
                 RelativeDistinguishedName.fromString(rdn.trim())
             }
