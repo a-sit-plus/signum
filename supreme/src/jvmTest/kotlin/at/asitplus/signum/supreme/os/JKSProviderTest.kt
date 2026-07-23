@@ -129,8 +129,8 @@ val JKSProviderTest  by matrixSuite {
             signer.signatureAlgorithm.let {
                 if (test.isPreHashed) it.getJCASignatureInstancePreHashed()
                 else it.getJCASignatureInstance()
-            }.getOrThrow().let { sig ->
-                sig.initVerify(signer.publicKey.toJcaPublicKey().getOrThrow())
+            }.let { sig ->
+                sig.initVerify(signer.publicKey.toJcaPublicKey())
                 data.data.forEach(sig::update)
                 sig.verify(signature.jcaSignatureBytes) shouldBe true
             }

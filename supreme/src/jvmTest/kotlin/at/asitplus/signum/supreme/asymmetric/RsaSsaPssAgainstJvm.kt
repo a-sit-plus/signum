@@ -84,7 +84,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 }
                 val jcaVerifier = Signature.getInstance("RSASSA-PSS").apply {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))
-                    initVerify(key.getOrThrow().publicKey.toJcaPublicKey().getOrThrow())
+                    initVerify(key.getOrThrow().publicKey.toJcaPublicKey())
                     update(data)
                 }
 

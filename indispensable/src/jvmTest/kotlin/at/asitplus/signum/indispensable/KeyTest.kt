@@ -61,7 +61,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                     DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
                     CryptoPublicKey.fromSubjectPublicKeyInfo(own.asn1Representation) shouldBe own
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
-                    own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                    own.toJcaPublicKey().encoded shouldBe pubKey.encoded
                     CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
                 }
 
@@ -133,7 +133,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromSubjectPublicKeyInfo(own.asn1Representation) shouldBe own
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
-                own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                own.toJcaPublicKey().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {
