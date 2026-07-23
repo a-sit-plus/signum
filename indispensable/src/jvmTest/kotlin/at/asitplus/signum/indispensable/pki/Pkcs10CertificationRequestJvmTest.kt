@@ -5,7 +5,7 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.encoding.encodeToAsn1Primitive
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.pki.x500.X500Name as SignumX500Name
+import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.*

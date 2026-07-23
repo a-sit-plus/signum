@@ -50,7 +50,7 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinInstant
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
-import at.asitplus.signum.indispensable.pki.x500.X500Name as SignumX500Name
+import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 
 val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
@@ -417,7 +417,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
     }
 
     "CertificateExtension DER roundtrip" {
-        val extnValue = Asn1PrimitiveOctetString(byteArrayOf(0x01, 0x02, 0x03))
+        val extnValue = Asn1OctetString(byteArrayOf(0x01, 0x02, 0x03))
         val extension = CertificateExtension(
             oid = KnownOIDs.keyUsage,
             critical = true,

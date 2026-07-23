@@ -7,9 +7,9 @@ import at.asitplus.awesn1.Asn1Primitive
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.DerDecodable
@@ -19,8 +19,6 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.KSerializer
 
-
-//TODO: this is a plug for pkix extension, needs further review separately
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -56,13 +54,13 @@ class RelativeDistinguishedName private constructor(
         asn1Representation.attrsAndValues.map(AttributeTypeAndValue::fromAsn1Representation).toSet()
     }
 
-    val isValid: Boolean by lazy { attrsAndValues.all { it.isValid != false } }
+    val isValid: Boolean by lazy {
+        attrsAndValues.isStructurallyValid() &&
+                attrsAndValues.all { it.isValid != false }
+    }
 
     init {
-        if (performValidation) {
-            providedAttrsAndValues?.validate()
-            if (!isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
-        }
+        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
     }
 
     override fun equals(other: Any?): Boolean {
@@ -104,7 +102,7 @@ class RelativeDistinguishedName private constructor(
         }
 
         //internal for tests
-        internal fun String.splitRespectingEscapeAndQuotes(delimiter: Char): List<String> {
+        internal fun String.splitRespectingEscapeAndQuotes(vararg delimiters: Char): List<String> {
             val parts = mutableListOf<String>()
             val sb = StringBuilder()
             var escaped = false
@@ -123,7 +121,7 @@ class RelativeDistinguishedName private constructor(
                         inQuotes = !inQuotes
                     }
 
-                    c == delimiter && !inQuotes -> {
+                    c in delimiters && !inQuotes -> {
                         parts.add(sb.toString())
                         sb.clear()
                     }
@@ -139,15 +137,9 @@ class RelativeDistinguishedName private constructor(
     }
 }
 
-private fun Set<AttributeTypeAndValue>.validate() {
-    if (isEmpty()) throw Asn1Exception("RelativeDistinguishedName must contain at least one AttributeTypeAndValue")
+private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
+    isNotEmpty() && allDistinctByOids()
 
-    groupBy { it.oid }.forEach { (oid, attrs) ->
-        if (attrs.size > 1) {
-            throw Asn1Exception("RelativeDistinguishedName contains multiple values for attribute OID $oid")
-        }
-    }
-}
 
 sealed interface AttributeTypeAndValue : Identifiable {
     val displayName: String?
@@ -282,15 +274,6 @@ abstract class BaseAttributeTypeAndValue(
     override val displayName: String? get() = AttributeTypeAndValue.Registry.nameFor(oid)
     override val isValid: Boolean? = null
 
-    override fun toString() = "AttributeTypeAndValue(${displayName?:""} oid=$oid})"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is AttributeTypeAndValue) return false
-        return oid == other.oid
-    }
-
-    override fun hashCode(): Int = oid.hashCode()
 }
 
 open class BaseX509AttributeTypeAndValue protected constructor(

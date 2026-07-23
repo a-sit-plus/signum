@@ -12,7 +12,6 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
-import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -300,7 +299,7 @@ class Certificate private constructor(
 
 
     init {
-        require(tbsCertificate.extensions.distinctBy { it.oid }.size == tbsCertificate.extensions.size) { "Multiple extensions with the same OID found" }
+        require(tbsCertificate.extensions.allDistinctByOids()) { "Multiple extensions with the same OID found" }
     }
 
     /** Whether this certificate is expired at [date].
@@ -427,8 +426,7 @@ inline fun <reified T : CertificateExtension> Certificate.findExtension(): T? =
     tbsCertificate.extensions.firstNotNullOfOrNull { it as? T }
 
 private fun validateExtensions(extensions: List<CertificateExtension>) {
-    if (extensions.distinctBy { it.oid }.size != extensions.size) {
+    if (!extensions.allDistinctByOids()) {
         throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
 }
-

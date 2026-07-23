@@ -42,6 +42,7 @@ class SignumConventionsPlugin : Plugin<Project> {
         pluginManager.apply("signing")
         pluginManager.apply("at.asitplus.gradle.conventions")
         pluginManager.apply("de.infix.testBalloon")
+        pluginManager.apply("at.asitplus.gradle.modulator")
     }
 }
 

@@ -3,13 +3,13 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.pki.x500.X500Name
 import at.asitplus.signum.internals.orLazy
 import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
@@ -229,7 +229,7 @@ class CertificationRequest private constructor(
 }
 
 private fun validateAttributes(attributes: List<CsrAttribute>, allowExtensions: Boolean = false) {
-    require(attributes.distinctBy { it.oid }.size == attributes.size) { "Multiple attributes with same OID found" }
+    require(attributes.allDistinctByOids()) { "Multiple attributes with same OID found" }
     if (!allowExtensions) require(attributes.none { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }) {
         "Certificate extension passed as part of regular attributes"
     }

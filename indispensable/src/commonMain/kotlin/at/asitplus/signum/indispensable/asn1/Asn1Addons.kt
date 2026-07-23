@@ -94,10 +94,11 @@ tailrec fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positiv
         .also { it[0] = it[0] and 0x7f }
         .let(BigInteger::fromTwosComplementByteArray)
         .also {
-            if (it.isZero()) return nextPositiveAsn1Integer(nBytes) /** tail recursion */
+            if (it.isZero()) return nextPositiveAsn1Integer(nBytes)
+            /** tail recursion */
         }
         .toAsn1Integer()
-        as Asn1Integer.Positive
+            as Asn1Integer.Positive
 }
 
 /**
@@ -115,5 +116,9 @@ fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
         .also { it[0] = it[0] or 0x80.toByte() }
         .let(BigInteger::fromTwosComplementByteArray)
         .toAsn1Integer()
-        as Asn1Integer.Negative
+            as Asn1Integer.Negative
 }
+
+/** @return `true` if no two elements share the same [oid][Identifiable.oid]. */
+fun Collection<Identifiable>.allDistinctByOids(): Boolean =
+    distinctBy { it.oid }.size == size

@@ -1,36 +1,74 @@
-package at.asitplus.signum.indispensable.pki.x500
+package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.awesn1.Asn1Decodable
 import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Encodable
 import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.TagClass
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.indispensable.DerEncodable
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-//TODO TODO TODO: Still needs to be ridden of ASN.1 specifics and made more generic! Still stays here for now a s plug for pkix extension module
-/**
- * An RFC 5280 `GeneralName` CHOICE.
- *
- * The lean core parses **any** alternative generically, keeping the verbatim CHOICE-tagged DER in
- * [encoded] so it always round-trips. The **typed** variants (`DNSName`, `IPAddressName`, …) live in
- * `indispensable-pkix` as subclasses that self-register a [Descriptor] keyed by [NameType]; once
- * `SignumPkix.install()` has run, [decodeFromTlv] upgrades a generic [GeneralName] to its typed
- * subclass. Mirrors the [at.asitplus.signum.indispensable.pki.CertificateExtension] pattern.
- */
-open class GeneralName(
-    val type: NameType,
-    /** The full CHOICE-tagged DER element — the single source of truth for re-encoding. */
-    protected val encoded: Asn1Element,
-) : Asn1Encodable<Asn1Element> {
+/** An encoding-independent RFC 5280/C509 `GeneralName`. */
+interface GeneralName {
 
-    enum class NameType(val value: ULong) {
-        OTHER(0u), RFC822(1u), DNS(2u), X400(3u), DIRECTORY(4u), EDI(5u), URI(6u), IP(7u), OID(8u);
+    /** A [GeneralName] with an ASN.1/DER X.509 representation. */
+    interface X509Representable : GeneralName, DerEncodable<X509GeneralName> {
 
-        companion object {
-            fun fromTagValue(tagValue: ULong): NameType? = entries.firstOrNull { it.value == tagValue }
+        /** The context-specific [Asn1Element.Tag] of the `GeneralName` CHOICE alternative this represents. */
+        val tag: Asn1Element.Tag
+
+        /**
+         * Describes a typed [X509Representable] `GeneralName` alternative and knows how to construct it from
+         * its generic awesn1 [X509GeneralName] representation. Mirrors [CertificateExtension.Descriptor];
+         * register custom alternatives via [register].
+         */
+        interface Descriptor {
+            /** The CHOICE alternative this descriptor handles, e.g. [X509GeneralName.Tags.dnsName]. */
+            val tag: Asn1Element.Tag
+            fun fromAsn1Representation(src: X509GeneralName): X509Representable
+            fun register(): Descriptor = Registry.register(this)
+        }
+
+        /**
+         * Maps `GeneralName` CHOICE tags to their typed [Descriptor]s for the decode upgrade path.
+         *
+         * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
+         * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
+         * lookup — after that it is immutable and reads are lock-free; later [register] calls throw. This
+         * mirrors [CertificateExtension.Registry] and the `DefaultDer.register` contract.
+         */
+        @OptIn(ExperimentalAtomicApi::class)
+        object Registry {
+            private val descriptors = mutableMapOf<Asn1Element.Tag, Descriptor>()
+            private val sealed = AtomicReference<Map<Asn1Element.Tag, Descriptor>?>(null)
+
+            fun register(descriptor: Descriptor): Descriptor {
+                check(sealed.load() == null) {
+                    "GeneralName registry is sealed; register before the first (de)serialization."
+                }
+                descriptors[descriptor.tag] = descriptor
+                return descriptor
+            }
+
+            fun descriptorFor(tag: Asn1Element.Tag): Descriptor? = view()[tag]
+
+            private fun view(): Map<Asn1Element.Tag, Descriptor> =
+                sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
+        }
+
+        companion object /*for extension functions and properties*/ {
+            /**
+             * Upgrades the generic awesn1 [src] name to a registered typed alternative (e.g. a validated
+             * `DNSName` from `indispensable-pkix`) when a [Descriptor] is registered for its CHOICE tag,
+             * falling back to a generic [BaseX509GeneralName] otherwise. Decoding failures of a typed
+             * alternative also fall back to the generic representation rather than throwing.
+             */
+            fun fromAsn1Representation(src: X509GeneralName): X509Representable =
+                Registry.descriptorFor(src.tag)?.let { descriptor ->
+                    catchingUnwrapped { descriptor.fromAsn1Representation(src) }.getOrNull()
+                } ?: BaseX509GeneralName(src)
+
+            operator fun invoke(src: X509GeneralName): X509Representable = fromAsn1Representation(src)
         }
     }
 
@@ -48,96 +86,52 @@ open class GeneralName(
      * - `false`: validation failed
      * - `null`: no validation implemented (the generic [GeneralName] never validates)
      */
-    open val isValid: Boolean? get() = null
-
-    final override fun encodeToTlv(): Asn1Element = encoded
-
-    @ExperimentalPkiApi
-    open fun constrains(input: GeneralName?): ConstraintResult {
-        when {
-            input == null || this::class != input::class -> return ConstraintResult.DIFF_TYPE
-
-            isValid == null || input.isValid == null ->
-                throw IllegalArgumentException(
-                    "${this::class.simpleName} does not support validation out of the box. " +
-                            "You must explicitly provide custom validation logic using " +
-                            "${this::class.simpleName}.createValidatedCopy { /* validation logic */ } before calling constrains."
-                )
-
-            !isValid!! || !input.isValid!! -> throw Asn1Exception("Invalid ${this::class.simpleName}")
-
-            else -> throw UnsupportedOperationException(
-                "Narrows, widens and match are not yet implemented for ${this::class.simpleName}."
-            )
-        }
-    }
+    val isValid: Boolean? get() = null
 
     /**
      * Returns a copy of this name with `isValid` set per [validate]. Intended for variants that do
      * not implement validation (`isValid == null`), to mark them before constraint checks.
      */
-    open fun createValidatedCopy(validate: (GeneralName) -> Boolean): GeneralName =
-        throw IllegalArgumentException()
+    fun createValidatedCopy(validate: (GeneralName) -> Boolean): GeneralName
+}
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is GeneralName) return false
-        return type == other.type && encoded == other.encoded
+internal fun GeneralName.requireX509(): GeneralName.X509Representable =
+    this as? GeneralName.X509Representable
+        ?: throw Asn1Exception("GeneralName has no X.509/DER representation")
+
+/** The context-specific [Asn1Element.Tag] of this awesn1 `GeneralName` CHOICE alternative. */
+val X509GeneralName.tag: Asn1Element.Tag
+    get() = when (this) {
+        is X509GeneralName.Other -> X509GeneralName.Tags.otherName
+        is X509GeneralName.Rfc822 -> X509GeneralName.Tags.rfc822Name
+        is X509GeneralName.Dns -> X509GeneralName.Tags.dnsName
+        is X509GeneralName.X400Address -> X509GeneralName.Tags.x400Address
+        is X509GeneralName.Directory -> X509GeneralName.Tags.directoryName
+        is X509GeneralName.EdiParty -> X509GeneralName.Tags.ediPartyName
+        is X509GeneralName.UniformResourceIdentifier -> X509GeneralName.Tags.uniformResourceIdentifier
+        is X509GeneralName.IpAddress -> X509GeneralName.Tags.ipAddress
+        is X509GeneralName.RegisteredId -> X509GeneralName.Tags.registeredID
     }
 
-    override fun hashCode(): Int = 31 * type.hashCode() + encoded.hashCode()
+/**
+ * Generic, unvalidated [GeneralName.X509Representable] that simply wraps a raw [X509GeneralName]. Used as the
+ * fallback when no typed [GeneralName.X509Representable.Descriptor] is registered for a CHOICE tag. `open` so
+ * external modules may subclass it to inherit the wrapping plumbing.
+ */
+open class BaseX509GeneralName(
+    override val asn1Representation: X509GeneralName,
+    override val isValid: Boolean? = null,
+) : GeneralName.X509Representable {
 
-    override fun toString(): String = "GeneralName(type=$type, value=$encoded)"
+    override val tag: Asn1Element.Tag get() = asn1Representation.tag
 
-    /**
-     * Describes a typed [GeneralName] alternative and constructs it from the generic CHOICE-tagged
-     * element. Register custom alternatives via [register]. Mirrors
-     * [at.asitplus.signum.indispensable.pki.CertificateExtension.Descriptor].
-     */
-    interface Descriptor {
-        val type: NameType
-        fun fromTagged(src: Asn1Element): GeneralName
-        fun register(): Descriptor = Registry.register(this)
-    }
+    override fun equals(other: Any?): Boolean =
+        other is GeneralName.X509Representable && asn1Representation == other.asn1Representation
 
-    /**
-     * Maps GeneralName CHOICE [NameType]s to their typed [Descriptor]s for the decode upgrade path.
-     *
-     * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
-     * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
-     * lookup — after that it is immutable and reads are lock-free; later [register] calls throw.
-     */
-    @OptIn(ExperimentalAtomicApi::class)
-    object Registry {
-        private val descriptors = hashMapOf<NameType, Descriptor>()
-        private val sealed = AtomicReference<Map<NameType, Descriptor>?>(null)
+    override fun hashCode(): Int = asn1Representation.hashCode()
 
-        fun register(descriptor: Descriptor): Descriptor {
-            check(sealed.load() == null) {
-                "GeneralName registry is sealed; register before the first (de)serialization."
-            }
-            descriptors[descriptor.type] = descriptor
-            return descriptor
-        }
+    override fun toString(): String = "GeneralName($asn1Representation)"
 
-        fun descriptorFor(type: NameType): Descriptor? = view()[type]
-
-        private fun view(): Map<NameType, Descriptor> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
-    }
-
-    companion object : Asn1Decodable<Asn1Element, GeneralName> {
-        /**
-         * Decodes a `GeneralName`, upgrading to a registered typed variant when one is registered for
-         * the CHOICE tag (and decoding succeeds), else returning a generic [GeneralName] carrying the
-         * verbatim element. A typed-decode failure falls back to the generic form rather than throwing.
-         */
-        override fun doDecode(src: Asn1Element): GeneralName {
-            val type = NameType.fromTagValue(src.tag.tagValue)
-                ?: throw Asn1Exception("Unsupported GeneralName tag ${src.tag}")
-            return Registry.descriptorFor(type)
-                ?.let { catchingUnwrapped { it.fromTagged(src) }.getOrNull() }
-                ?: GeneralName(type, src)
-        }
-    }
+    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): GeneralName =
+        BaseX509GeneralName(asn1Representation, validate(this))
 }
