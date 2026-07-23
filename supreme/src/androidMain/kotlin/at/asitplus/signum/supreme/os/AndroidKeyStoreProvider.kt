@@ -361,7 +361,7 @@ sealed class AndroidKeystoreSigner private constructor(
     }
 
     internal suspend fun getJCASignature(signingConfig: AndroidSignerSigningConfiguration): Signature =
-        signatureAlgorithm.getJCASignatureInstance().getOrThrow().also {
+        signatureAlgorithm.getJCASignatureInstance().also {
             if (needsAuthenticationForEveryUse) {
                 it.initSign(jcaPrivateKey)
                 attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), CryptoObject(it))
@@ -418,7 +418,7 @@ sealed class AndroidKeystoreSigner private constructor(
                     attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), null)
                     init(jcaPrivateKey)
                 }
-                doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+                doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
                 generateSecret()
             }
         }

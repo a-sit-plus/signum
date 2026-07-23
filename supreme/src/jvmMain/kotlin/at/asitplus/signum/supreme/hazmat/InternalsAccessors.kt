@@ -13,4 +13,7 @@ val EphemeralKey.jcaPrivateKey get() = (this as? EphemeralKeyBase<*>)?.privateKe
 
 /** The underlying JCA [PrivateKey] object. */
 @HazardousMaterials
-val Signer.jcaPrivateKey get() = (this as? EphemeralSigner)?.privateKey
+val Signer.jcaPrivateKey get() = when (this) {
+    is EphemeralSigner -> this.privateKey
+    else -> null
+}

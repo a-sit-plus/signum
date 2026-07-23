@@ -64,14 +64,13 @@ internal fun sigGetInstance(alg: String, provider: String?): Signature =
     }
 
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): KmmResult<Signature> = catching {
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): Signature =
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
 
         is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
     }
-}
 
 internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature
 
@@ -80,12 +79,11 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = nu
     this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): KmmResult<Signature> = catching {
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): Signature =
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
     }
-}
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
@@ -129,24 +127,23 @@ fun CryptoPublicKey.toJcaPublicKey() = when (this) {
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
 fun CryptoPublicKey.EC.getJcaPublicKey() = toJcaPublicKey()
-fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
+fun CryptoPublicKey.EC.toJcaPublicKey(): ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
     val y = y.residue.toJavaBigInteger()
     val ecPoint = parameterSpec.curve.createPoint(x, y)
     val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-    JCEECPublicKey("EC", ecPublicKeySpec)
+    return JCEECPublicKey("EC", ecPublicKeySpec)
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
-fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
+fun CryptoPublicKey.RSA.getJcaPublicKey() = toJcaPublicKey()
+fun CryptoPublicKey.RSA.toJcaPublicKey(): RSAPublicKey =
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as RSAPublicKey
-}
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
 fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> =
@@ -331,7 +328,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
 fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: CryptoPublicKey.RSA, provider: String? = null) =
     catching {
         (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
-            init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), jcaParameterSpec)
+            init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey(), jcaParameterSpec)
         }
     }
 

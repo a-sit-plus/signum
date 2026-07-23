@@ -150,7 +150,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 validUntil = Clock.System.now() + config.certificateValidityPeriod,
                 publicKey = publicKey
             )
-            val cert = certAlg.getJCASignatureInstance(provider = config.provider).getOrThrow().run {
+            val cert = certAlg.getJCASignatureInstance(provider = config.provider).run {
                 initSign(keyPair.private)
                 update(tbsCert.encodeToDer())
                 sign()

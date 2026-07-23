@@ -124,8 +124,7 @@ val CoseKeySerializationTest by matrixSuite {
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe false
                         decoded.toCryptoPublicKey().getOrThrow()
-                            .toJcaPublicKey()
-                            .getOrThrow().encoded.encodeToString(
+                            .toJcaPublicKey().encoded.encodeToString(
                                 Base64Strict
                             ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
                     }
@@ -148,8 +147,7 @@ val CoseKeySerializationTest by matrixSuite {
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe true
                         decoded.toCryptoPublicKey().getOrThrow()
-                            .toJcaPublicKey()
-                            .getOrThrow().encoded.encodeToString(
+                            .toJcaPublicKey().encoded.encodeToString(
                                 Base64Strict
                             ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
                     }

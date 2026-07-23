@@ -29,8 +29,8 @@ val JwsSignedTest  by matrixSuite {
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey().getOrThrow())
-                else RSASSAVerifier(publicKey.toJcaPublicKey().getOrThrow() as RSAPublicKey)
+                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey())
+                else RSASSAVerifier(publicKey.toJcaPublicKey() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)
             result.shouldBeTrue()

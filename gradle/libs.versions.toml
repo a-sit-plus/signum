@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.4.0"
-agp = "9.1.1"
+agp = "9.0.1"
 core = "1.5.0"
 kotlinxIoCore = "0.9.0"
 kotlinxMetadataJvm = "0.9.0"
@@ -16,7 +16,7 @@ testballoon = "1.0.1-K2.4.0"
 serialization = "1.11.0"
 cidre = "0.4.0"
 urikmp = "0.0.20"
-awesn1 = "0.6.0"
+awesn1 = "0.6.1"
 modulator = "0.1.0"
 
 [libraries]

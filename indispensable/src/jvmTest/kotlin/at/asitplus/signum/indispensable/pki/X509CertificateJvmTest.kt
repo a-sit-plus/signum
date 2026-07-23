@@ -111,7 +111,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                 ),
                 publicKey = cryptoPublicKey
             )
-            val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+            val signed = signatureAlgorithm.getJCASignatureInstance().apply {
                 initSign(keyPair.private)
                 update(tbsCertificate.encodeToTlv().derEncoded)
             }.sign()
@@ -166,7 +166,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
             publicKey = cryptoPublicKey
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
@@ -316,15 +316,15 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             X509Certificate
         */
 
-        val signed1 = signatureAlgorithm256.getJCASignatureInstance().getOrThrow().apply {
+        val signed1 = signatureAlgorithm256.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCertificate1.encodeToTlv().derEncoded)
         }.sign()
-        val signed2 = signatureAlgorithm256.getJCASignatureInstance().getOrThrow().apply {
+        val signed2 = signatureAlgorithm256.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCertificate2.encodeToTlv().derEncoded)
         }.sign()
-        val signed3 = signatureAlgorithm512.getJCASignatureInstance().getOrThrow().apply {
+        val signed3 = signatureAlgorithm512.getJCASignatureInstance().apply {
             initSign(keyPair.private)
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()

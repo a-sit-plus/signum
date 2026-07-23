@@ -27,8 +27,8 @@ val JwsJvmTest by matrixSuite {
             ec { curve = ECCurve.SECP_256_R_1 }
         }.getOrThrow()}
 
-        val verifier1 = ECDSAVerifier(signer1.publicKey.toJcaPublicKey().getOrThrow() as ECPublicKey)
-        val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey().getOrThrow() as ECPublicKey)
+        val verifier1 = ECDSAVerifier(signer1.publicKey.toJcaPublicKey() as ECPublicKey)
+        val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey() as ECPublicKey)
 
         fun signerFor(signer: Signer): suspend (ByteArray) -> ByteArray = { input ->
             signer.sign(input).signature.rawByteArray
