@@ -11,7 +11,8 @@ typealias JwsFlattenedTyped<P> = JwsTyped<JwsFlattened, P>
 typealias JwsGeneralTyped<P> = JwsTyped<JwsGeneral, P>
 
 /**
- * Convenience Serializer Template which only serializes [JwsTyped.jws]
+ * Convenience Serializer Template to serialize through wrapper and
+ * only serialize [JwsTyped.jws].
  */
 class JwsTypedSerializerTemplate<J : JWS, P>(
     jwsSerializer: KSerializer<J>,
