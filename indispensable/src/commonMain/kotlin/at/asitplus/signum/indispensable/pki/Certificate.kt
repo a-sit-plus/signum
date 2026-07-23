@@ -299,7 +299,7 @@ class Certificate private constructor(
 
 
     init {
-        require(tbsCertificate.extensions.distinctBy { it.oid }.size == tbsCertificate.extensions.size) { "Multiple extensions with the same OID found" }
+        require(tbsCertificate.extensions.allDistinctByOids()) { "Multiple extensions with the same OID found" }
     }
 
     /** Whether this certificate is expired at [date].
@@ -426,7 +426,7 @@ inline fun <reified T : CertificateExtension> Certificate.findExtension(): T? =
     tbsCertificate.extensions.firstNotNullOfOrNull { it as? T }
 
 private fun validateExtensions(extensions: List<CertificateExtension>) {
-    if (extensions.distinctBy { it.oid }.size != extensions.size) {
+    if (!extensions.allDistinctByOids()) {
         throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
 }

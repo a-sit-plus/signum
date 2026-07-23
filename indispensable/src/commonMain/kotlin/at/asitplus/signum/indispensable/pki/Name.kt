@@ -3,13 +3,12 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.crypto.pki.X500Name as Asn1X500Name
-import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.ListSerializer
+import at.asitplus.awesn1.crypto.pki.X500Name as Asn1X500Name
 
 /**
  * An [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) `Name` (the issuer/subject
@@ -79,9 +78,7 @@ class X500Name(
         fun fromString(value: String): X500Name {
             if (value.isEmpty()) return X500Name(emptyList())
 
-            val rdns = with(RelativeDistinguishedName) {
-                value.splitRespectingEscapeAndQuotes(',', ';')
-            }.map { rdn ->
+            val rdns = value.splitRespectingEscapeAndQuotes(',', ';').map { rdn ->
                 require(rdn.isNotBlank()) { "X500Name contains an empty RDN" }
                 RelativeDistinguishedName.fromString(rdn.trim())
             }

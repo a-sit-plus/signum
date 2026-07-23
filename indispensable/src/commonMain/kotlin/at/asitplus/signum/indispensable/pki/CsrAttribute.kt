@@ -40,25 +40,12 @@ sealed interface CsrAttribute : Identifiable {
     }
 }
 
-abstract class BaseCsrAttribute(
-    override val oid: ObjectIdentifier,
-) : CsrAttribute {
-    override fun toString(): String = "BaseCsrAttribute(oid=$oid)"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is CsrAttribute) return false
-        return oid == other.oid
-    }
-
-    override fun hashCode(): Int = oid.hashCode()
-}
 
 class X509CsrAttribute private constructor(
     providedAsn1Representation: Pkcs10CsrAttribute?,
-    oid: ObjectIdentifier,
+    override val oid: ObjectIdentifier,
     override val value: Set<Asn1Element>,
-) : BaseCsrAttribute(oid), CsrAttribute.X509Representable {
+) : CsrAttribute.X509Representable {
 
     constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(null, oid, value)
 
