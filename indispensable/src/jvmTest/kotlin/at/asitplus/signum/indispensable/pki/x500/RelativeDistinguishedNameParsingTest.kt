@@ -1,19 +1,13 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.BaseAttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.BaseX509AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
-import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -21,10 +15,11 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlin.streams.asSequence
 
 private class NonX509AttributeTypeAndValue(oid: ObjectIdentifier) : BaseAttributeTypeAndValue(oid)
 
-val RelativeDistinguishedNameParsingTest  by matrixSuite{
+val RelativeDistinguishedNameParsingTest by matrixSuite {
 
     "splitRespectingEscapeAndQuotes should split simple RDN" {
         val input = "CN=John+O=Company"
@@ -67,9 +62,11 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
         val rdn = RelativeDistinguishedName.fromString(rdnStr)
         rdn.attrsAndValues.size shouldBe 2
         // attrsAndValues is a Set; look up by displayName instead of positional index
-        val cn = rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue.X509Representable
+        val cn =
+            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue.X509Representable
         Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "John Doe"
-        val o = rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue.X509Representable
+        val o =
+            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue.X509Representable
         Asn1String.decodeFromTlv(o.value.asPrimitive()).value shouldBe "Company"
     }
 
@@ -154,15 +151,15 @@ val RelativeDistinguishedNameParsingTest  by matrixSuite{
         BaseX509AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice")).isValid shouldBe true
 
         // An IA5String (tag 0x16, len 1) whose content byte 0x7f (DEL) is valid UTF-8 but falls outside
-        // IA5's permitted [\x00-\x7e] range
-        val invalidIa5 = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x7f))
+        // IA5's permitted [\x00-\x7f] range
+        val invalidIa5 = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
         val atv = BaseX509AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5)
 
         atv.isValid shouldBe false
         // raw value survives untouched and can still be received/decoded
         atv.value shouldBe invalidIa5
-        atv.value.asPrimitive().content shouldBe byteArrayOf(0x7f)
-        Asn1String.decodeFromTlv(atv.value.asPrimitive()).value shouldBe "\u007F"
+        atv.value.asPrimitive().content shouldBe byteArrayOf(0x80.toByte())
+        Asn1String.decodeFromTlv(atv.value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
     }
 
     "ATV equality should be symmetric across representations" {
