@@ -150,7 +150,6 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "ATV isValid accessor reflects the stored value" {
         BaseX509AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice")).isValid shouldBe true
 
-        // An IA5String (tag 0x16, len 1) whose content byte 0x7f (DEL) is valid UTF-8 but falls outside
         // IA5's permitted [\x00-\x7f] range
         val invalidIa5 = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
         val atv = BaseX509AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5)
