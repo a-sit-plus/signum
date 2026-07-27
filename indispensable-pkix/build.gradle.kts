@@ -19,50 +19,12 @@ signumConventions {
 }
 
 
-kotlin {
-    indispensableTargets()
-
-    sourceSets {
-        commonMain {
-            kotlin.srcDir(bundledRootsSrcDir)
-            dependencies {
-                api(project(":indispensable"))
-                implementation(project(":internals"))
-                implementation(libs.bignum) //Intellij bug work-around
-                api(libs.cidre)
-                api(libs.urikmp)
-            }
-        }
-
-        jvmTest {
-            dependencies {
-                implementation(project(":supreme"))
-                gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
-            }
-        }
-    }
-}
-
-exportXCFramework(
-    "IndispensablePkix",
-    transitiveExports = false,
-    static = false,
-    serialization("json"),
-    datetime(),
-    kmmresult(),
-    project(":indispensable"),
-    libs.awesn1.crypto,
-    libs.awesn1.oids,
-    libs.bignum,
-    libs.cidre,
-    libs.urikmp
-)
-
-
 // ---- BundledTrustStore source generation -------------------------------------------------------
 // Downloads Apple's open-source PKITrustStore (apple-oss-distributions/security_certificates) at the
 // version pinned by `appleTrustStoreRef`, and hex-encodes every certificates/roots/*.cer (DER) into a
 // generated `bundledRoots` list consumed by BundledTrustStore. See that class's KDoc for provenance.
+// Registered before the `kotlin {}` block so the source set can consume the task provider directly and
+// every downstream task (compile, sources jars, metadata) inherits the dependency automatically.
 
 val appleTrustStoreRef: String by project.extra
 
@@ -116,8 +78,9 @@ tasks.register("fetchAppleRoots") {
 val generateBundledRootsSource = tasks.register("generateBundledRootsSource") {
     dependsOn(unpackAppleRoots)
 
+    outputs.dir(bundledRootsSrcDir)
+
     val outputFile = bundledRootsSrcDir.map { it.file("BundledRoots.kt") }
-    outputs.file(outputFile)
 
     doLast {
         val outFile = outputFile.get().asFile
@@ -149,7 +112,45 @@ val generateBundledRootsSource = tasks.register("generateBundledRootsSource") {
     }
 }
 
-// The bundle lives in commonMain, so every Kotlin compilation (metadata + each target) needs it first.
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
-    dependsOn(generateBundledRootsSource)
+
+kotlin {
+    indispensableTargets()
+
+    sourceSets {
+        commonMain {
+            // Consume the generator's task provider (not the bare directory) so Gradle wires an
+            // implicit dependency into every task that reads this source dir — compile tasks as well
+            // as the `*SourcesJar` / metadata jars that would otherwise trip Gradle 9's validation.
+            kotlin.srcDir(generateBundledRootsSource)
+            dependencies {
+                api(project(":indispensable"))
+                implementation(project(":internals"))
+                implementation(libs.bignum) //Intellij bug work-around
+                api(libs.cidre)
+                api(libs.urikmp)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                implementation(project(":supreme"))
+                gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
+            }
+        }
+    }
 }
+
+exportXCFramework(
+    "IndispensablePkix",
+    transitiveExports = false,
+    static = false,
+    serialization("json"),
+    datetime(),
+    kmmresult(),
+    project(":indispensable"),
+    libs.awesn1.crypto,
+    libs.awesn1.oids,
+    libs.bignum,
+    libs.cidre,
+    libs.urikmp
+)
