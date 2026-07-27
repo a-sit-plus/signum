@@ -28,7 +28,7 @@ develocity {
 
 // Include the local build logic as a composite build
 includeBuild("buildlogic")
-val awesn1 = file("awesn1")
+val awesn1 = file("../awesn1")
 if (awesn1.resolve("build.gradle.kts").isFile) {
     val localVersion = java.util.Properties().apply {
         awesn1.resolve("gradle.properties").inputStream().use(::load)
