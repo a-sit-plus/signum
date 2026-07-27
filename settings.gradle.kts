@@ -28,9 +28,19 @@ develocity {
 
 // Include the local build logic as a composite build
 includeBuild("buildlogic")
-val awesn1 = file("awesn1")
-if (awesn1.exists() && awesn1.isDirectory() && file(awesn1.path + "/build.gradle.kts").exists())
-    includeBuild("awesn1")
+val awesn1 = file("../awesn1")
+if (awesn1.resolve("build.gradle.kts").isFile) {
+    val localVersion = java.util.Properties().apply {
+        awesn1.resolve("gradle.properties").inputStream().use(::load)
+    }.getProperty("awesn1Version")
+    val catalogVersion = file("gradle/libs.versions.toml").useLines { lines ->
+        lines.firstNotNullOf { Regex("""^awesn1\s*=\s*"(.+)"""").find(it)?.groupValues?.get(1) }
+    }
+    if (org.gradle.util.internal.VersionNumber.parse(localVersion) >= org.gradle.util.internal.VersionNumber.parse(catalogVersion)) {
+        logger.lifecycle("Including awesn1 $localVersion as composite build")
+        includeBuild(awesn1)
+    }
+}
 
 include(":internals")
 include(":indispensable")
