@@ -34,14 +34,14 @@ interface Digest : Identifiable, Enumerable, DerEncodable<X509AlgorithmIdentifie
         val SHA512 inline get() = WellKnownDigest.SHA512
 
         override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): Digest = runRethrowing {
-            ServiceLoader.load<DigestProvider>().get(element.oid) { getDigest(element) }
+            ServiceLoader.load<DigestProvider>().get(element, DigestProvider::getDigest)
         }
     }
 }
 
 // @Service
 interface DigestProvider {
-    /** The list of digests supported by this provider */
+    /** A best-effort attempt at a list of digests supported by this provider. May be incomplete for, e.g., parametrized digests. */
     fun getDigests(): Iterable<Digest>
     /** Parse a [Digest] from its [X509AlgorithmIdentifier] form */
     fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest?
