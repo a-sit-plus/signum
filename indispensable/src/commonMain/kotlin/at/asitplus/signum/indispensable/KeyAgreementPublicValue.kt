@@ -7,7 +7,7 @@ import at.asitplus.awesn1.Asn1Decodable
 /**
  * Key agreement public value. Must be PEM encodable/decodable.
  */
-sealed interface KeyAgreementPublicValue : Asn1Encodable<Asn1Sequence> {
+interface KeyAgreementPublicValue : Asn1Encodable<Asn1Sequence> {
     /**
      * ECDH key agreement public value. Is always an EC public key, thus comes with [asCryptoPublicKey]
      */

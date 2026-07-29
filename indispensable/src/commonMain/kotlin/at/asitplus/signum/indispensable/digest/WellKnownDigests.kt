@@ -29,7 +29,7 @@ sealed class WellKnownDigest(
     data object SHA512 : WellKnownDigest("SHA512", 1024.bit, 512.bit, KnownOIDs.sha_512)
 
     override val asn1Representation: X509AlgorithmIdentifier
-        get() = X509AlgorithmIdentifier(oid, listOf(Asn1Null))
+        get() = X509AlgorithmIdentifier(oid, Asn1Null)
 
     companion object : Enumeration<WellKnownDigest> {
         override val entries: Iterable<WellKnownDigest> by lazy { setOf(SHA1, SHA256, SHA384, SHA512) }

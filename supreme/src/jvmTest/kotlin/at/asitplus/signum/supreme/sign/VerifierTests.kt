@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
@@ -42,8 +43,7 @@ val VerifierTests by matrixSuite {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(CryptoSignature.EC::parseFromJca)
-                    keypair.public.encoded
+                    }.let(CryptoSignature::parseFromJca)
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
                     val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)

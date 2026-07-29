@@ -5,12 +5,10 @@ import at.asitplus.awesn1.crypto.RsaParams
 import at.asitplus.awesn1.crypto.RsaPkcs1PaddingParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_TRAILER_FIELD
+import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.Asn1
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.DerDecodable
@@ -21,7 +19,6 @@ import at.asitplus.signum.indispensable.Indispensable
 import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.internals.orLazy
 import at.asitplus.signum.internals.orLazyNullable
-import kotlinx.serialization.KSerializer
 
 //for now, we just replicate the pattern, but since everything is sealed, we don't actually parse
 interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
@@ -70,7 +67,7 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
                     Digest.SHA512 -> KnownOIDs.ecdsaWithSHA512
                     else -> throw IllegalArgumentException("Unsupported digest: $digest")
                 },
-                parameters = emptyList()
+                parameters = null
             )
         }
 
@@ -127,7 +124,7 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
                 KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
                 KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
                 KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-                KnownOIDs.rsaPSS -> Parameters.PssPadded(providedAsn1.rsaSsaPssParams!!).digest
+                KnownOIDs.rsaPSS -> Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1)).digest
                 else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
             }
         }
@@ -139,7 +136,7 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
                 KnownOIDs.sha256WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA256)
                 KnownOIDs.sha384WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA384)
                 KnownOIDs.sha512WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA512)
-                KnownOIDs.rsaPSS -> Parameters.PssPadded(providedAsn1.rsaSsaPssParams!!)
+                KnownOIDs.rsaPSS -> Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1))
                 else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
             }
         }
@@ -167,13 +164,11 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
                         Digest.SHA512 -> KnownOIDs.sha512WithRSAEncryption
                         else -> TODO("providerize")
                     },
-                    listOf(Asn1Null)
+                    Asn1Null
                 )
 
-                is Parameters.PssPadded -> X509AlgorithmIdentifier(
-                    KnownOIDs.rsaPSS,
-                    listOf(DER.encodeToTlv(currentParameters.asn1Representation))
-                )
+                is Parameters.PssPadded ->
+                    X509AlgorithmIdentifier(currentParameters.asn1Representation)
             }
         }
 
@@ -217,7 +212,7 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
             abstract val digest: Digest
 
             class Pkcs1Padded(override val digest: Digest) :
-                Parameters<RsaPkcs1PaddingParams> //TODO: wo we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
+                Parameters<RsaPkcs1PaddingParams> //TODO: do we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
             {
                 override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
                 override val type: Padding get() = Padding.PKCS1
@@ -241,16 +236,24 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
             }
 
             class PssPadded private constructor(
-                private val providedParams: PssParams?, private val rsaSsaPssParams: RsaSsaPssParams?
+                private val providedParams: Content?,
+                private val rsaSsaPssParams: RsaSsaPssParams?
             ) : Parameters<RsaSsaPssParams> {
                 constructor(
                     digest: Digest = Digest.SHA1,
                     mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
                     saltLength: UInt = digest.outputLength.bytes,
                     trailerField: Int = DEFAULT_TRAILER_FIELD
-                ) : this(PssParams(digest, mgfAlgorithm, saltLength, trailerField), null)
+                ) : this(Content(digest, mgfAlgorithm, saltLength, trailerField), null)
 
                 constructor(asn1Representation: RsaSsaPssParams) : this(null, asn1Representation)
+
+                private data class Content(
+                    val digest: Digest,
+                    val mgfAlgorithm: MaskGenerationFunction,
+                    val saltLength: UInt,
+                    val trailerField: Int,
+                )
 
                 override val asn1Representation: RsaSsaPssParams by rsaSsaPssParams orLazy {
                     requireNotNull(providedParams)
@@ -263,22 +266,20 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
 
                 }
 
+                private val params by providedParams orLazy {
+                    Content(
+                        Digest.decodeFromTlv(rsaSsaPssParams!!.hashAlgorithm),
+                        MaskGenerationFunction.decodeFromTlv(rsaSsaPssParams.maskGenAlgorithm),
+                        rsaSsaPssParams.saltLength.let { require(it >= 0); it.toUInt() },
+                        rsaSsaPssParams.trailerField
+                    )
+                }
+
                 override val type: Padding get() = Padding.PSS
-                override val digest: Digest by providedParams?.digest orLazy {
-                    Digest.decodeFromTlv(rsaSsaPssParams!!.effectiveHashAlgorithm)
-                }
-
-                val mgfAlgorithm: MaskGenerationFunction by providedParams?.mgfAlgorithm orLazy {
-                    MaskGenerationFunction.decodeFromTlv(rsaSsaPssParams!!.effectiveMaskGenAlgorithm)
-                }
-
-                val saltLength: UInt by providedParams?.saltLength orLazy {
-                    rsaSsaPssParams!!.effectiveSaltLength.let {
-                        require(it >= 0)
-                        it.toUInt()
-                    }
-                }
-                val trailerField: Int by providedParams?.trailerField orLazy { rsaSsaPssParams!!.effectiveTrailerField }
+                override val digest: Digest get() = params.digest
+                val mgfAlgorithm get() = params.mgfAlgorithm
+                val saltLength get() = params.saltLength
+                val trailerField get() = params.trailerField
 
                 override fun equals(other: Any?): Boolean {
                     if (this === other) return true
@@ -297,18 +298,10 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
                     return result
                 }
 
-
-                private data class PssParams(
-                    val digest: Digest,
-                    val mgfAlgorithm: MaskGenerationFunction,
-                    val saltLength: UInt,
-                    val trailerField: Int,
-                )
-
                 sealed class MaskGenerationFunction(override val oid: ObjectIdentifier) : Identifiable, DerEncodable<X509AlgorithmIdentifier> {
                     data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
                         override val asn1Representation: X509AlgorithmIdentifier
-                            get() = X509AlgorithmIdentifier(oid, listOf(digest.asn1Representation.element))
+                            get() = X509AlgorithmIdentifier(oid, digest.asn1Representation.element)
                         companion object : Identifiable {
                             override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                         }

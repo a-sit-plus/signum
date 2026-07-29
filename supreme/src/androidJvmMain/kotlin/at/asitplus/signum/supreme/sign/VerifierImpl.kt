@@ -11,6 +11,8 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.RSASignature
 
 /**
  * Configures JVM-specific properties.
@@ -35,7 +37,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 @JvmSynthetic
 internal actual suspend fun verifyECDSAImpl
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             data: SignatureInput, signature: CryptoSignature.EC,
+             data: SignatureInput, signature: ECDSASignature,
              config: PlatformVerifierConfiguration)
 {
     val (input, sig) = when {
@@ -68,7 +70,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 @JvmSynthetic
 internal actual suspend fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSA,
+             data: SignatureInput, signature: RSASignature,
              config: PlatformVerifierConfiguration)
 {
     signatureAlgorithm.getJCASignatureInstance(config.provider).run {

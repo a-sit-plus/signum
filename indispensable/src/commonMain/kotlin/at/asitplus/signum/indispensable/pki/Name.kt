@@ -69,10 +69,11 @@ class X500Name(
         val serializer: KSerializer<Asn1X500Name> = Asn1X500Name.serializer()
 
         override fun decodeFromTlv(
-            serializer: KSerializer<Asn1X500Name>,
-            src: Asn1Element,
+            element: Asn1X500Name,
             der: Der,
-        ): X500Name = X500Name(der.decodeFromTlv(serializer, src).map { RelativeDistinguishedName(it) }, false)
+        ): X500Name = X500Name(
+            element
+                .map { RelativeDistinguishedName(it) }, false)
 
         /** Parse an RFC 2253 string (e.g., `CN=John Doe,O=Company,C=US`). */
         fun fromString(value: String): X500Name {

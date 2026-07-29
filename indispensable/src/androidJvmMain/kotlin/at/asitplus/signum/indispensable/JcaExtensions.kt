@@ -128,11 +128,10 @@ val WellKnownDigest.jcaName
 val WellKnownDigest?.jcaAlgorithmComponent
     get() = when (this) {
         null -> "NONE"
-        Digest.SHA1 -> "SHA1"
-        Digest.SHA256 -> "SHA256"
-        Digest.SHA384 -> "SHA384"
-        Digest.SHA512 -> "SHA512"
-        else -> TODO("providerization")
+        WellKnownDigest.SHA1 -> "SHA1"
+        WellKnownDigest.SHA256 -> "SHA256"
+        WellKnownDigest.SHA384 -> "SHA384"
+        WellKnownDigest.SHA512 -> "SHA512"
     }
 
 val ECCurve.jcaName

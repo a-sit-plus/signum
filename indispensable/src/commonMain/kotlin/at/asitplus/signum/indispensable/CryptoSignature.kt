@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.serialization.DER
@@ -8,6 +7,8 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.RSASignature
 
 /**
  * Algorithm-agnostic signature value. X.509 algorithm context lives in [X509Signature].
@@ -25,7 +26,15 @@ interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
     val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
 
+    @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
+        replaceWith = ReplaceWith("ECDSASignature"))
+    typealias EC = ECDSASignature
+    @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
+        replaceWith = ReplaceWith("RSASignature"))
+    typealias RSA = RSASignature
+
     companion object : DerDecodable<X509SignatureValue, CryptoSignature> {
+        init { Indispensable.init() }
         operator fun invoke(signatureAlgorithm: SignatureAlgorithm, asn1Representation: X509SignatureValue, der: Der = DER) =
             decodeFromTlv(asn1Representation, der).withSignatureAlgorithm(signatureAlgorithm)
         operator fun invoke(x509Algorithm: X509AlgorithmIdentifier, asn1Representation: X509SignatureValue, der: Der = DER) =
@@ -37,6 +46,9 @@ interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
 val CryptoSignature.jcaSignatureBytes: ByteArray get() = asn1Representation.rawBytes
 val CryptoSignature.iosEncoded get() = asn1Representation.rawBytes
+
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.decodeFromTlv(X509SignatureValue(input))
 
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
@@ -50,7 +62,7 @@ fun CryptoSignature.Companion.parseFromJca(
 ) = parseFromJca(input, algorithm.algorithm)
 
 fun CryptoSignature.withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
-    ServiceLoader.load<CryptoSignatureProvider>().get(signatureAlgorithm) {
+    ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {
         parseCryptoSignature(it, this@withSignatureAlgorithm)
     }
 
@@ -58,12 +70,12 @@ fun CryptoSignature.withSignatureAlgorithm(signatureAlgorithm: SpecializedSignat
     withSignatureAlgorithm(signatureAlgorithm.algorithm)
 
 fun CryptoSignature.withX509Algorithm(x509Algorithm: X509AlgorithmIdentifier) =
-    ServiceLoader.load<CryptoSignatureProvider>().get(x509Algorithm) {
+    ServiceLoader.load<SignatureFormatProvider>().get(x509Algorithm) {
         parseCryptoSignature(it, this@withX509Algorithm)
     }
 
 // @Service
-interface CryptoSignatureProvider {
+interface SignatureFormatProvider {
     /**
      * If the provider knows how to parse a signature for this [SignatureAlgorithm], it should try to parse
      * the provided [signature] as such.

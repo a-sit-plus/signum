@@ -14,8 +14,9 @@ import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
-import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey.Companion.asPublicKey
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -493,9 +494,9 @@ sealed interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identi
                     ),
                     encodeCurve = false,
                     encodePublicKey = true,
-                    publicKey = CryptoPublicKey.fromIosEncoded(
+                    publicKey = ECDSAPublicKey.fromIosEncoded(
                         keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)
-                    ) as CryptoPublicKey.EC,
+                    ),
                 )
             }
         }

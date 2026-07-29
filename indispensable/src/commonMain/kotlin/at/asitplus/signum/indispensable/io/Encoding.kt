@@ -1,10 +1,15 @@
 package at.asitplus.signum.indispensable.io
 
+import at.asitplus.awesn1.BERTags
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoPublicKey.RSA
 import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -115,7 +120,15 @@ private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
 object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
     encodeAs = CryptoPublicKey::iosEncoded,
-    decodeAs = CryptoPublicKey::fromIosEncoded)
+    // TODO: medium term this needs to be replaced with a more sensible encoding
+    //  but it needs to stay in sync with clients (cycle type identifier etc)
+    decodeAs = { when (it[0].toUByte()) {
+        ANSIECPrefix.UNCOMPRESSED.prefixUByte ->
+            ECDSAPublicKey.fromIosEncoded(it)
+        (BERTags.SEQUENCE or BERTags.CONSTRUCTED) ->
+            RSAPublicKey.fromIosEncoded(it)
+        else -> throw IllegalArgumentException("Unknown iOS Key type")
+    }})
 
 sealed class ListSerializerTemplate<ValueT>(
     using: KSerializer<ValueT>, serialName: String = "")

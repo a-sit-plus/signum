@@ -2,35 +2,28 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
-import at.asitplus.signum.internals.orLazy
-import com.ionspin.kotlin.bignum.integer.BigInteger
-import com.ionspin.kotlin.bignum.integer.Sign
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
 
-private data class RsaPublicKeyContent(
-    val n: Asn1Integer.Positive,
-    val e: Asn1Integer.Positive,
-)
-
-private data class EcPublicKeyContent(
-    val publicPoint: ECPoint.Normalized,
-    val preferCompressedRepresentation: Boolean,
-)
+// @ServiceProvider
+interface PublicKeyFormatProvider {
+    fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
+    fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
+}
 
 /**
  * Representation of a public key structure
  */
-sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiable {
+abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -40,22 +33,24 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
     //must be serializable, therefore <String,String>
     val additionalProperties = mutableMapOf<String, String>()
 
-    /**
-     * Representation of the key in DID format, EC compression is used if key was compressed on reception
-     */
-    abstract val didEncoded: String
+    /** Representation of the key in DID format */
+    val didEncoded: String by lazy {
+        PREFIX_DID_KEY +
+                (didCodec.encodeToByteArray() + didKeyBytes).multibaseEncode(MultiBase.Base.BASE58_BTC)
+    }
+    abstract val didCodec: UVarInt
+    abstract val didKeyBytes: ByteArray
 
-    /**
-     * Representation of the key in the format used by iOS, EC compression is used if key was compressed on reception
-     */
+    /** Representation of the key in the format used by iOS */
     abstract val iosEncoded: ByteArray
 
     fun encodeToTlv(): Asn1Sequence =
-        DER.encodeToTlv(SubjectPublicKeyInfo.serializer(), asn1Representation) as Asn1Sequence
+        DER.encodeToTlv(asn1Representation) as Asn1Sequence
 
     override val pemLabel: String get() = canonicalPemLabel
 
     companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
+        init { Indispensable.init() }
         override val canonicalPemLabel: String get() = SubjectPublicKeyInfo.canonicalPemLabel
         override val alternativePemLabels: Set<String> get() = SubjectPublicKeyInfo.alternativePemLabels
 
@@ -66,39 +61,20 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
          */
         @Throws(Throwable::class)
         fun fromDid(input: String): CryptoPublicKey {
-            val bytes = multiKeyRemovePrefix(input).let {
-                if (it.contains("#")) it.substringBefore("#") else it
-            }
-            var decoded = catching { bytes.multibaseDecode() }.getOrThrow()
+            val bytes = multiKeyRemovePrefix(input).substringBefore("#")
+            val decoded = catching { bytes.multibaseDecode() }.getOrThrow()
                 ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
-            val codec = UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong().let { codec ->
-                //workaround our blursed encoding of legacy DID-encoded keys
-                if (codec < 0x1200uL) {
-                    decoded = BaseN.decode(MultiBase.Base.BASE64.alphabet, BigInteger(64), bytes.substring(1))
-                    UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong()
-                } else codec
-            }
+            val codec = UVarInt.fromByteArray(decoded)
+            val keyBytes = decoded.copyOfRange(codec.encodeToByteArray().size, decoded.size)
 
-            val keyBytes = decoded.copyOfRange(2, decoded.size)
-
-            return when (codec) {
-                0x1200uL, 0x1290uL ->
-                    EC.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
-
-                0x1201uL, 0x1291uL, 8uL ->
-                    EC.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
-
-                0x1202uL, 0x1292uL ->
-                    EC.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
-
-                0x1205uL ->
-                    RSA.fromPKCS1encoded(keyBytes)
-
-                else ->
-                    throw IllegalArgumentException("Unknown public key identifier $codec")
+            return ServiceLoader.load<PublicKeyFormatProvider>().get(codec) {
+                decodeFromDidKey(it, keyBytes)
             }
         }
 
+        operator fun invoke(asn1Representation: SubjectPublicKeyInfo) =
+            ServiceLoader.load<PublicKeyFormatProvider>()
+                .get(asn1Representation, PublicKeyFormatProvider::decodeFromAsn1)
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
@@ -113,27 +89,9 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
             der: Der,
         ): CryptoPublicKey =
             when (src.pemLabel) {
-                "RSA PUBLIC KEY" -> der.decodeFromTlv(
-                    Pkcs1RsaPublicKeyInfo.serializer(),
-                    Asn1Element.parse(src.payload),
-                ).let {
-                    RSA(it.modulus as Asn1Integer.Positive, it.publicExponent as Asn1Integer.Positive)
-                }
-
+                "RSA PUBLIC KEY" -> RSAPublicKey.fromPKCS1encoded(src.payload)
                 else -> decodeFromDer(serializer, src.payload, limit, der)
             }
-
-
-        operator fun invoke(asn1Representation: SubjectPublicKeyInfo): CryptoPublicKey =
-            when (asn1Representation.algorithmOid) {
-                EC.oid -> EC(asn1Representation)
-                RSA.oid -> RSA(asn1Representation)
-                else -> TODO("providerize")
-            }
-
-        @Throws(Asn1Exception::class)
-        fun decodeFromTlv(src: Asn1Element): CryptoPublicKey =
-            decodeFromTlv(SubjectPublicKeyInfo.serializer(), src, DER)
 
         @Throws(Asn1Exception::class)
         fun decodeFromDer(src: ByteArray): CryptoPublicKey =
@@ -143,313 +101,15 @@ sealed class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiab
         fun doDecode(src: Asn1Sequence): CryptoPublicKey =
             decodeFromTlv(src)
 
-        fun fromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): CryptoPublicKey =
-            when (val oid = spki.algorithmOid) {
-                EC.oid -> EC(spki)
-                RSA.oid -> RSA(spki)
-                else -> throw Asn1Exception("Unsupported Key Type: $oid")
-            }
-
-        /**
-         * Parses this key from an iOS-encoded one
-         */
-        @Throws(Throwable::class)
-        fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
-            when (it[0].toUByte()) {
-                ANSIECPrefix.UNCOMPRESSED.prefixUByte -> {
-                    val curve = ECCurve.fromIosEncodedPublicKeyLength(it.size)
-                        ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
-                    EC.fromAnsiX963Bytes(curve, it)
-                }
-
-                //TODO: this could be nicer, maybe?
-                (BERTags.SEQUENCE or BERTags.CONSTRUCTED) -> RSA.fromPKCS1encoded(it)
-                else -> throw IllegalArgumentException("Unsupported Key type")
-            }
-
+        fun fromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo) = CryptoPublicKey(spki)
     }
 
-    /** RSA Public key */
-    class RSA private constructor(
-        providedAsn1Representation: SubjectPublicKeyInfo?,
-        providedContent: RsaPublicKeyContent?,
-    ) : CryptoPublicKey() {
-
-        @Throws(IllegalArgumentException::class)
-        constructor(
-            /** modulus */
-            n: Asn1Integer.Positive,
-
-            /** public exponent */
-            e: Asn1Integer.Positive,
-        ) : this(null, RsaPublicKeyContent(n, e))
-
-        constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
-
-        override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-            SubjectPublicKeyInfo.rsa(n, e)
-        }
-
-        /** modulus */
-        val n: Asn1Integer.Positive by providedContent?.n orLazy {
-            asn1Representation.decodeRsaPublicKey().modulus as Asn1Integer.Positive
-        }
-
-        /** public exponent */
-        val e: Asn1Integer.Positive by providedContent?.e orLazy {
-            asn1Representation.decodeRsaPublicKey().publicExponent as Asn1Integer.Positive
-        }
-
-        val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
-
-        @Deprecated(message = "Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
-        constructor(n: ByteArray, e: Int) : this(
-            Asn1Integer.fromUnsignedByteArray(n),
-            Asn1Integer(e) as Asn1Integer.Positive
-        )
-
-        constructor(n: Asn1Integer, e: Asn1Integer) : this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
-        constructor(n: BigInteger, e: BigInteger) : this(n.toAsn1Integer(), e.toAsn1Integer())
-        constructor(n: BigInteger, e: UInt) : this(n.toAsn1Integer(), Asn1Integer(e))
-
-        override val oid = RSA.oid
-
-        /**
-         * enum of supported RSA key sizes. For sanity checks!
-         */
-        enum class Size(val number: UInt) {
-            RSA_512(512u),
-            RSA_1024(1024u),
-            RSA_2048(2048u),
-            RSA_3027(3072u),
-            RSA_4096(4096u),
-            RSA_8192(8192u);
-
-            companion object : Identifiable {
-                fun of(numBits: UInt) = entries.find { it.number == numBits }
-
-                override val oid = KnownOIDs.rsaEncryption
-            }
-        }
-
-        /**
-         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes
-         * after `MULTIBASE_ENCODING_IDENTIFIER` in the assigned encoding.
-         * The Multicodec identifier for RSA is `0x1205` and the key bytes are represented as PKCS#1 encoding.
-         */
-        override val didEncoded by lazy {
-            "$PREFIX_DID_KEY:" +
-                    (UVarInt(0x1205u).encodeToByteArray() + this.pkcsEncoded).multibaseEncode(MultiBase.Base.BASE58_BTC)
-        }
-
-        override val iosEncoded by lazy { pkcsEncoded }
-
-        /**
-         * PKCS#1 encoded RSA Public Key
-         */
-        val pkcsEncoded by lazy {
-            DER.encodeToTlv(Pkcs1RsaPublicKeyInfo.serializer(), Pkcs1RsaPublicKeyInfo(n, e)).derEncoded
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is RSA) return false
-            return n == other.n && e == other.e
-        }
-
-        override fun hashCode(): Int {
-            var result = n.hashCode()
-            result = 31 * result + e.hashCode()
-            return result
-        }
-
-        override fun toString(): String = "RSA(n=$n, e=$e)"
-
-        companion object : Identifiable {
-            /**
-             * decodes a PKCS#1-encoded RSA key
-             *
-             * @throws Asn1Exception all sorts of exceptions on invalid input
-             */
-            @Throws(Asn1Exception::class)
-            fun fromPKCS1encoded(input: ByteArray): RSA = DER.decodeFromTlv(
-                Pkcs1RsaPublicKeyInfo.serializer(),
-                Asn1Element.parse(input),
-            ).let {
-                RSA(it.modulus as Asn1Integer.Positive, it.publicExponent as Asn1Integer.Positive)
-            }
-
-            @Suppress("NOTHING_TO_INLINE")
-            inline operator fun invoke(n: BigInteger, e: Int) =
-                RSA(n, e.also { require(it > 0) }.toUInt())
-
-            override val oid = KnownOIDs.rsaEncryption
-        }
-    }
-
-    /**
-     * EC public key representation
-     * The properties and constructor params are exactly what their names suggest
-     * @param preferCompressedRepresentation indicates whether to use point compression where applicable
-     */
-    @SerialName("EC")
-    class EC private constructor(
-        providedAsn1Representation: SubjectPublicKeyInfo?,
-        providedContent: EcPublicKeyContent?,
-    ) : CryptoPublicKey(), KeyAgreementPublicValue.ECDH {
-
-        constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
-
-        override fun asCryptoPublicKey() = this
-
-        override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-            SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
-        }
-
-        val publicPoint: ECPoint.Normalized by providedContent?.publicPoint orLazy {
-            decodePublicPoint(asn1Representation)
-        }
-
-        val preferCompressedRepresentation by providedContent?.preferCompressedRepresentation orLazy { false }
-
-        val curve get() = publicPoint.curve
-        val x get() = publicPoint.x
-        val xBytes get() = publicPoint.xBytes
-        val y get() = publicPoint.y
-        val yBytes get() = publicPoint.yBytes
-        val yCompressed get() = publicPoint.yCompressed
-
-        override val oid = EC.oid
-
-        /**
-         * ANSI X9.63 Encoding as used by iOS
-         */
-        fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
-            when (useCompressed) {
-                true -> ANSIECPrefix.forSign(yCompressed) + xBytes
-                false -> ANSIECPrefix.UNCOMPRESSED + xBytes + yBytes
-            }
-
-        /**
-         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes
-         * after `MULTIBASE_ENCODING_IDENTIFIER` in the assigned encoding.
-         *
-         * Multicodec identifiers `0x120x` are draft identifiers for P-xxx keys with point compression:
-         *
-         * * `0x1200` P-256
-         * * `0x1201` P-384
-         * * `0x1202` P-512
-         *
-         * The keybytes are ANSI X9.63 encoded (important for compression)
-         */
-        override val didEncoded by lazy {
-            "$PREFIX_DID_KEY:" +
-                    (UVarInt(curve.multibaseId()).encodeToByteArray() + this.toAnsiX963Encoded(useCompressed = true))
-                        .multibaseEncode(MultiBase.Base.BASE58_BTC)
-        }
-
-        private fun ECCurve.multibaseId(): UInt {
-            return when (this) {
-                ECCurve.SECP_256_R_1 -> 0x1200u
-                ECCurve.SECP_384_R_1 -> 0x1201u
-                ECCurve.SECP_521_R_1 -> 0x1202u
-            }
-        }
-
-        override val iosEncoded by lazy { toAnsiX963Encoded(useCompressed = false) }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null || this::class != other::class) return false
-
-            other as EC
-
-            return (this.publicPoint == other.publicPoint)
-        }
-
-        override fun hashCode() =
-            publicPoint.hashCode()
-
-        companion object : Identifiable {
-
-            fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EC {
-                return EC(null, EcPublicKeyContent(this.normalize(), preferCompressed))
-            }
-
-            /** Decodes key from big-endian X and sign of Y */
-            @Suppress("NOTHING_TO_INLINE")
-            inline fun fromCompressed(curve: ECCurve, x: ByteArray, sign: Sign) =
-                ECPoint.fromCompressed(curve, x, sign).asPublicKey(true)
-
-            /** Decodes key from big-endian X and sign of Y */
-            @Suppress("NOTHING_TO_INLINE")
-            inline fun fromCompressed(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
-                ECPoint.fromCompressed(curve, x, usePositiveY).asPublicKey(true)
-
-            /** Decodes key from big-endian X and big-endian Y */
-            @Suppress("NOTHING_TO_INLINE")
-            inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
-                ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
-
-            @Deprecated(
-                "Explicitly specify what you want",
-                ReplaceWith("fromCompressed(curve, x, usePositiveY)"),
-                DeprecationLevel.ERROR
-            )
-            @Suppress("NOTHING_TO_INLINE")
-            inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
-                fromCompressed(curve, x, usePositiveY)
-
-            @Deprecated(
-                "Explicitly specify what you want",
-                ReplaceWith("fromUncompressed(curve, x, y)"),
-                DeprecationLevel.ERROR
-            )
-            @Suppress("NOTHING_TO_INLINE")
-            inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
-                fromUncompressed(curve, x, y)
-
-            /** Decodes a key from its ANSI X9.63 representation */
-            @Throws(Throwable::class)
-            fun fromAnsiX963Bytes(curve: ECCurve, src: ByteArray): EC {
-                val numBytes = curve.coordinateLength.bytes.toInt()
-
-                val prefix = catching { ANSIECPrefix.fromPrefixByte(src[0]) }
-                    .getOrElse { throw IllegalArgumentException("Invalid X9.63 EC key format") }
-
-                if (prefix.isUncompressed) {
-                    require(src.size == (2 * numBytes + 1))
-                    val x = src.copyOfRange(1, numBytes + 1)
-                    val y = src.copyOfRange(numBytes + 1, 2 * numBytes + 1)
-                    return fromUncompressed(curve, x, y)
-                } else {
-                    require(src.size == (numBytes + 1))
-                    val x = src.copyOfRange(1, src.size)
-                    return fromCompressed(curve, x, prefix.compressionSign)
-                }
-            }
-
-            override val oid = KnownOIDs.ecPublicKey
-
-            private fun decodePublicPoint(spki: SubjectPublicKeyInfo): ECPoint.Normalized {
-                val parameters = spki.algorithmIdentifier.parameters
-                requireNotNull(parameters) { "No EC params found" }
-
-                val curveOid = parameters.asPrimitive().readOid()
-                val curve = ECCurve.entries.find { it.oid == curveOid }
-                    ?: throw Asn1Exception("Curve not supported: $curveOid")
-
-                if (!spki.subjectPublicKey.bitCarryingBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
-                    throw Asn1Exception("EC key not prefixed with 0x04")
-                }
-                val xAndY = spki.subjectPublicKey.bitCarryingBytes.drop(1)
-                val coordLen = curve.coordinateLength.bytes.toInt()
-                val x = xAndY.take(coordLen).toByteArray()
-                val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                return ECPoint.fromUncompressed(curve, x, y).normalize()
-            }
-        }
-    }
+    @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
+        replaceWith = ReplaceWith("ECDSAPublicKey"))
+    typealias EC = ECDSAPublicKey
+    @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
+        replaceWith = ReplaceWith("RSAPublicKey"))
+    typealias RSA = RSAPublicKey
 }
 
 interface SpecializedCryptoPublicKey {
@@ -473,9 +133,9 @@ fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
     other.equalsCryptographically(this)
 
 
-private val PREFIX_DID_KEY = "did:key"
+private const val PREFIX_DID_KEY = "did:key:"
 
 @Throws(Throwable::class)
 private fun multiKeyRemovePrefix(keyId: String): String =
-    keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")
+    keyId.takeIf { it.startsWith(PREFIX_DID_KEY) }?.removePrefix(PREFIX_DID_KEY)
         ?: throw IllegalArgumentException("Input does not specify public key")

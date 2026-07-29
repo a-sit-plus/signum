@@ -145,7 +145,7 @@ private data class CertificationRequestContent(
     constructor(asn1Representation: Pkcs10CertificationRequest) : this(
         tbsCsr = TbsCertificationRequest(asn1Representation.certificationRequestInfo),
         signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
-        signature = CryptoSignature(asn1Representation.signatureAlgorithm.oid, asn1Representation.signatureValue)
+        signature = CryptoSignature(asn1Representation.signatureAlgorithm, asn1Representation.signatureValue)
     )
 }
 

@@ -1,14 +1,25 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.crypto.EcdsaSigValue
 import at.asitplus.awesn1.crypto.EcdsaSigValue.Companion.toEcdsaSigValue
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
+import at.asitplus.awesn1.ecdsaWithSHA1
+import at.asitplus.awesn1.ecdsaWithSHA256
+import at.asitplus.awesn1.ecdsaWithSHA384
+import at.asitplus.awesn1.ecdsaWithSHA512
+import at.asitplus.awesn1.rsaPSS
 import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.sha1WithRSAEncryption
+import at.asitplus.awesn1.sha256WithRSAEncryption
+import at.asitplus.awesn1.sha384WithRSAEncryption
+import at.asitplus.awesn1.sha512WithRSAEncryption
 import at.asitplus.awesn1.toAsn1Integer
+import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.CryptoSignature.RawByteEncodable
-import at.asitplus.signum.indispensable.CryptoSignatureProvider
+import at.asitplus.signum.indispensable.SignatureFormatProvider
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -46,10 +57,7 @@ sealed class ECDSASignature
     val s: BigInteger get() = content.s
 
     override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
-        X509SignatureValue.fromRS(
-            r.toAsn1Integer() as Asn1Integer.Positive,
-            s.toAsn1Integer() as Asn1Integer.Positive,
-        )
+        EcdsaSigValue(r.toAsn1Integer(), s.toAsn1Integer()).toX509SignatureValue()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -169,7 +177,6 @@ class RSASignature private constructor(
         X509SignatureValue(rawByteArray)
     }
 
-
     override val rawByteArray: ByteArray by providedRawBytes orLazy {
         asn1Representation.rawBytes
     }
@@ -185,12 +192,13 @@ class RSASignature private constructor(
     }
 
     companion object : DerDecodable<X509SignatureValue, RSASignature> {
-        override fun decodeFromTlv(element: X509SignatureValue, der: Der): RSASignature = RSASignature(null, element)
+        override fun decodeFromTlv(element: X509SignatureValue, der: Der): RSASignature =
+            RSASignature(null, element)
         fun parseFromJca(input: ByteArray) = RSASignature(input)
     }
 }
 
-object IndispensableSignatureFormats : CryptoSignatureProvider {
+object IndispensableSignatureFormats : SignatureFormatProvider {
     override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: CryptoSignature) = when (signatureAlgorithm) {
         is SignatureAlgorithm.ECDSA ->
             when (val parsedSig =
@@ -210,7 +218,14 @@ object IndispensableSignatureFormats : CryptoSignatureProvider {
         else -> null
     }
 
-    override fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: CryptoSignature) = when (x509Algorithm) {
+    override fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: CryptoSignature) = when (x509Algorithm.oid) {
+
+        KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,
+        KnownOIDs.sha512WithRSAEncryption, KnownOIDs.rsaPSS
+            -> signature as? RSASignature ?: RSASignature.decodeFromTlv(signature.asn1Representation)
+
+        KnownOIDs.ecdsaWithSHA1, KnownOIDs.ecdsaWithSHA256, KnownOIDs.ecdsaWithSHA384, KnownOIDs.ecdsaWithSHA512
+            -> signature as? ECDSASignature ?: ECDSASignature.decodeFromTlv(signature.asn1Representation)
 
         else -> null
     }

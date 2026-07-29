@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -10,6 +11,9 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
+import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.withSignatureAlgorithm
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
@@ -74,8 +78,12 @@ class PlatformECDSAVerifier
     }
 
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        require (sig is CryptoSignature.EC)
-            { "Attempted to validate non-EC signature using EC public key" }
+        val sig = try {
+            sig.withSignatureAlgorithm(signatureAlgorithm) as ECDSASignature
+        } catch (x: Exception) {
+            throw IllegalArgumentException("Attempted to validate non-EC signature using EC public key",
+                x.nonFatalOrThrow())
+        }
         return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { SignatureVerifier.Success }
     }
 }
@@ -101,8 +109,12 @@ class PlatformRSAVerifier
         checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier(signatureAlgorithm, publicKey, config)
     }
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        require (sig is CryptoSignature.RSA)
-            { "Attempted to validate non-RSA signature using RSA public key" }
+        val sig = try {
+            sig.withSignatureAlgorithm(signatureAlgorithm) as RSASignature
+        } catch (x: Exception) {
+            throw IllegalArgumentException("Attempted to validate non-RSA signature using RSA public key",
+                x.nonFatalOrThrow())
+        }
         if (data.format != null)
             throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")
         return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { SignatureVerifier.Success }
@@ -113,12 +125,16 @@ class KotlinECDSAVerifier
     internal constructor (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC)
     : Verifier.EC(signatureAlgorithm, publicKey), KotlinVerifier {
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        require (sig is CryptoSignature.EC)
-            { "Attempted to validate non-EC signature using EC public key" }
+        val sig = try {
+            sig.withSignatureAlgorithm(signatureAlgorithm) as ECDSASignature
+        } catch (x: Exception) {
+            throw IllegalArgumentException("Attempted to validate non-EC signature using EC public key",
+                x.nonFatalOrThrow())
+        }
 
         when (sig) {
-            is CryptoSignature.EC.DefiniteLength -> require(sig.scalarByteLength == curve.scalarLength.bytes)
-            is CryptoSignature.EC.IndefiniteLength -> sig.withCurve(curve)
+            is ECDSASignature.DefiniteLength -> require(sig.scalarByteLength == curve.scalarLength.bytes)
+            is ECDSASignature.IndefiniteLength -> { val _ = sig.withCurve(curve) /* validate */ }
         }
         if (!((sig.r > 0) && (sig.r < curve.order))) {
             throw InvalidSignature("r is not in [1,n-1] (r=${sig.r}, n=${curve.order})")

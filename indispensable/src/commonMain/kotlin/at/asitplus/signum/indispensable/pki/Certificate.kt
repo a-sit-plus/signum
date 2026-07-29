@@ -271,7 +271,7 @@ class Certificate private constructor(
     }
 
     val signature: CryptoSignature by providedSignature orLazy {
-        CryptoSignature(asn1Representation.signatureAlgorithm.oid, asn1Representation.signatureValue)
+        CryptoSignature(asn1Representation.signatureAlgorithm, asn1Representation.signatureValue)
     }
 
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
