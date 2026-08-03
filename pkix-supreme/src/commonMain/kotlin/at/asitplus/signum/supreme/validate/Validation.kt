@@ -175,9 +175,10 @@ suspend fun AnchoredCertificateChain.validate(
 @OptIn(ExperimentalPkiApi::class)
 suspend fun CertificateChain.buildPathAndValidate(
     validatorFactory: ValidatorFactory,
-    context: CertificateValidationContext = CertificateValidationContext()
+    context: CertificateValidationContext = CertificateValidationContext(),
+    pathBuilder: PathBuilder = PathBuilder.Default
 ): CertificateValidationResult {
-    val candidateChains = TrustAnchorChainConstructor().buildChains(this, context)
+    val candidateChains = with(pathBuilder) { buildCandidates(context) }
     val aggregatedFailures = mutableMapOf<CertificateChain, CertificateValidationResult.Failure>()
 
     for (anchoredChain in candidateChains) {
