@@ -68,5 +68,6 @@ data class CertificateValidationContext(
             throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
         }
     },
-    val supportRevocationChecking: Boolean = false
+    val supportRevocationChecking: Boolean = false,
+    val intermediateCertificates: List<X509Certificate> = emptyList(),
 )

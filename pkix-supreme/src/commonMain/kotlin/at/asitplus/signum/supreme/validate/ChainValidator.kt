@@ -77,9 +77,9 @@ class ChainValidator: CertificateChainValidator {
             throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
         }
     }
-
-    /** RFC 5280 §7.1 canonical form of a [Name] for issuer/subject matching. */
-    private fun Name.canonicalForMatching(): String =
-        (this as? X500Name)?.toRfc2253String()?.lowercase()?.replace(Regex("\\s+"), " ")?.trim()
-            ?: toString()
 }
+
+/** RFC 5280 §7.1 canonical form of a [Name] for issuer/subject matching. */
+fun Name.canonicalForMatching(): String =
+    (this as? X500Name)?.toRfc2253String()?.lowercase()?.replace(Regex("\\s+"), " ")?.trim()
+        ?: toString()
