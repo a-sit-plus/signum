@@ -20,7 +20,7 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm.RSA.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException

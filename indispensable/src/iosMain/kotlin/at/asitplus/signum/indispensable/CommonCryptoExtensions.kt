@@ -2,7 +2,6 @@
 
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm.RSA.Padding as RSAPadding
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
@@ -12,14 +11,17 @@ import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
 import platform.Security.*
 
-private fun SignatureAlgorithm.RSA.requireSupportedIosPssParameters() {
-    val pss = parameters as? SignatureAlgorithm.RSA.Parameters.PssPadded ?: return
-    val mgf = pss.mgfAlgorithm as? SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1
+private fun RSAAlgorithm.requireSupportedIosPssParameters() {
+    val pss = parameters as? RSAAlgorithm.Parameters.PssPadded ?: return
+    val mgf = pss.mgfAlgorithm as? RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1
     if (!(
         mgf?.digest == pss.digest &&
                 pss.saltLength.toInt() == pss.digest.outputLength.bytes.toInt() &&
@@ -64,10 +66,10 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
             }
         }
 
-        is SignatureAlgorithm.RSA -> {
+        is RSAAlgorithm -> {
             requireSupportedIosPssParameters()
             when (val params = parameters) {
-                SignatureAlgorithm.RSA.Parameters.PssPadded -> when (val digest = params.digest) {
+                is RSAAlgorithm.Parameters.PssPadded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA384
@@ -75,7 +77,7 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
                     else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
                 }
 
-                SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+                is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA384
@@ -114,7 +116,7 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
         is SignatureAlgorithm.RSA -> {
             requireSupportedIosPssParameters()
             when (val params = parameters) {
-                is SignatureAlgorithm.RSA.Parameters.PssPadded -> when (val digest = params.digest) {
+                is RSAAlgorithm.Parameters.PssPadded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA384
@@ -122,7 +124,7 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
                     else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
                 }
 
-                is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+                is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
                     Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1
                     Digest.SHA256 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256
                     Digest.SHA384 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384
@@ -143,8 +145,9 @@ fun CryptoPublicKey.toSecKey() = catching {
         val attr = cfDictionaryOf(
             kSecAttrKeyClass to kSecAttrKeyClassPublic,
             kSecAttrKeyType to when (this@toSecKey) {
-                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
-                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
+                is ECDSAPublicKey -> kSecAttrKeyTypeEC
+                is RSAPublicKey -> kSecAttrKeyTypeRSA
+                else -> TODO("providerize")
             })
         corecall {
             SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().let(::giveToCF), attr, error)
@@ -172,6 +175,8 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyR
                     kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
                     asPKCS1.encodeToDer()
                 }
+
+                else -> TODO("providerize")
             }
         }
         corecall {

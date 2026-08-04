@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.CompactConcurrency
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -20,9 +21,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 
-private fun SignatureAlgorithm.RSA.Parameters.Companion.valueOf(name: String, digest: Digest) = when (name) {
-    "PSS" -> SignatureAlgorithm.RSA.Parameters.PssPadded(digest)
-    "PKCS1" -> SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(digest)
+private fun RSAAlgorithm.Parameters.Companion.valueOf(name: String, digest: Digest) = when (name) {
+    "PSS" -> RSAAlgorithm.Parameters.PssPadded(digest)
+    "PKCS1" -> RSAAlgorithm.Parameters.Pkcs1Padded(digest)
     else -> {
         TODO()
     }
@@ -37,7 +38,7 @@ val RSAVerifierCommonTests by matrixSuite {
 
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.entries.first { it.name == test.dig }
-        val parameters = SignatureAlgorithm.RSA.Parameters.valueOf(test.pad, digest)
+        val parameters = RSAAlgorithm.Parameters.valueOf(test.pad, digest)
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.RSA
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
@@ -177,17 +178,17 @@ fun main() {
                 compact("digest mismatch") { concurrency = CompactConcurrency.Shared(8) } - {
                     property(Arb.of(Digest.entries.filter { it != test.digest })) test { dig ->
                         catching {
-                            if (test.parameters is SignatureAlgorithm.RSA.Parameters.PssPadded)
-                                SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.PssPadded(dig))
+                            if (test.parameters is RSAAlgorithm.Parameters.PssPadded)
+                                SignatureAlgorithm.RSA(RSAAlgorithm.Parameters.PssPadded(dig))
                                     .verifierFor(test.key)
                             else
-                                SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(dig))
+                                SignatureAlgorithm.RSA(RSAAlgorithm.Parameters.Pkcs1Padded(dig))
                                     .verifierFor(test.key)
                         }.transform { it.verify(test.msg, test.sig) } shouldNot succeed
                     }
                 }
                 compact("parameter mismatch") { concurrency = CompactConcurrency.Shared(8) } - {
-                    property(Arb.of(SignatureAlgorithm.RSA.Parameters.entries.filter { it != test.parameters })) test { pad ->
+                    property(Arb.of(RSAAlgorithm.Parameters.entries.filter { it != test.parameters })) test { pad ->
                         catching { SignatureAlgorithm.RSA(pad).verifierFor(test.key) }.transform { it.verify(test.msg, test.sig) } shouldNot succeed
                     }
                 }

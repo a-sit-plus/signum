@@ -138,7 +138,7 @@ sealed interface CoseAlgorithm : Enumerable {
 
         // RSASSA-PKCS1-v1_5 using SHA-1
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(Digest.SHA1)))
+        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(RSAAlgorithm.Parameters.Pkcs1Padded(Digest.SHA1)))
 
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy {
@@ -322,7 +322,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
         }
 
         is SignatureAlgorithm.RSA -> when (this.parameters) {
-            is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (this.digest) {
+            is RSAAlgorithm.Parameters.Pkcs1Padded -> when (this.digest) {
                 Digest.SHA1 -> CoseAlgorithm.Signature.RS1
                 Digest.SHA256 -> CoseAlgorithm.Signature.RS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.RS384
@@ -330,7 +330,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 else -> TODO("providerize")
             }
 
-            is SignatureAlgorithm.RSA.Parameters.PssPadded -> when (this.digest) {
+            is RSAAlgorithm.Parameters.PssPadded -> when (this.digest) {
                 Digest.SHA256 -> CoseAlgorithm.Signature.PS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512

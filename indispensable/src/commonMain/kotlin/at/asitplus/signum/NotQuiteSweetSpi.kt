@@ -1,5 +1,6 @@
 package at.asitplus.signum
 
+import at.asitplus.nonFatalOrThrow
 import kotlin.reflect.KClass
 
 object ServiceLoader {
@@ -25,7 +26,7 @@ object ServiceLoader {
                     if (result != null) return result
                     failures.add(Pair(provider::class.simpleName ?: "<anonymous>", null))
                 } catch (e: Throwable) {
-                    failures.add(Pair(provider::class.simpleName ?: "<anonymous>", e))
+                    failures.add(Pair(provider::class.simpleName ?: "<anonymous>", e.nonFatalOrThrow()))
                 }
             }
             val sb = StringBuilder("No loaded $className is able to handle $what.")

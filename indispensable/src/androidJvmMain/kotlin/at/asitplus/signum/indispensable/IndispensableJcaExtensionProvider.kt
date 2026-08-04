@@ -2,21 +2,38 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import java.security.PublicKey
 import java.security.Signature
 
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
     override fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProvider: String?) = when (algorithm) {
-        is SignatureAlgorithm.ECDSA -> when (val digest = algorithm.digest) {
+        is ECDSAAlgorithm -> when (val digest = algorithm.digest) {
             is WellKnownDigest? -> sigGetInstance("${digest.jcaAlgorithmComponent}withECDSA", jcaProvider)
             else -> null
         }
-        is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(algorithm, jcaProvider)
+        is RSAAlgorithm -> getRSAPlatformSignatureInstance(algorithm, jcaProvider)
         else -> null
     }
 
     override fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProvider: String?) = when (algorithm) {
-        is SignatureAlgorithm.ECDSA ->
+        is ECDSAAlgorithm ->
             sigGetInstance("NONEwithECDSA", jcaProvider)
+        else -> null
+    }
+
+    override fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey) = when(publicKey) {
+        is ECDSAPublicKey -> publicKey.toJcaPublicKey()
+        is RSAPublicKey -> publicKey.toJcaPublicKey()
+        else -> null
+    }
+
+    override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey) = when(publicKey) {
+        is java.security.interfaces.RSAPublicKey -> publicKey.toCryptoPublicKey().getOrThrow()
+        is java.security.interfaces.ECPublicKey -> publicKey.toCryptoPublicKey().getOrThrow()
         else -> null
     }
 }

@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
@@ -26,7 +27,7 @@ open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningK
         init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
     }
     class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
-        init { digests = Digest.entries.toSet(); paddings = SignatureAlgorithm.RSA.Padding.entries.toSet()}
+        init { digests = Digest.entries.toSet(); paddings = RSAAlgorithm.Padding.entries.toSet()}
     }
 }
 val EphemeralSigningKeyConfigurationBase.ec get() = _algSpecific.defaultOption("EC", ::ECConfiguration)
@@ -110,7 +111,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     abstract class RSA<PrivateKeyT, SignerT: Signer.RSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.RSA, SignatureAlgorithm.RSA)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.RSA,
-        val digests: Set<Digest>, val paddings: Set<SignatureAlgorithm.RSA.Padding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
+        val digests: Set<Digest>, val paddings: Set<RSAAlgorithm.Padding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
@@ -137,8 +138,8 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                 }
 
                 false -> when {
-                    paddings.firstOrNull { it == SignatureAlgorithm.RSA.Padding.PSS } != null -> SignatureAlgorithm.RSA.Padding.PSS
-                    paddings.contains(SignatureAlgorithm.RSA.Padding.PKCS1) -> SignatureAlgorithm.RSA.Padding.PKCS1
+                    paddings.firstOrNull { it == RSAAlgorithm.Padding.PSS } != null -> RSAAlgorithm.Padding.PSS
+                    paddings.contains(RSAAlgorithm.Padding.PKCS1) -> RSAAlgorithm.Padding.PKCS1
                     else -> paddings.first()
                 }
             }

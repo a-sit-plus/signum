@@ -29,7 +29,7 @@ sealed class WellKnownDigest(
     data object SHA512 : WellKnownDigest("SHA512", 1024.bit, 512.bit, KnownOIDs.sha_512)
 
     override val asn1Representation: X509AlgorithmIdentifier
-        get() = X509AlgorithmIdentifier(oid, Asn1Null)
+        get() = X509AlgorithmIdentifier(oid, null)
 
     companion object : Enumeration<WellKnownDigest> {
         override val entries: Iterable<WellKnownDigest> by lazy { setOf(SHA1, SHA256, SHA384, SHA512) }
@@ -38,8 +38,11 @@ sealed class WellKnownDigest(
 
 object IndispensableDigestsProvider: DigestProvider {
     override fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest? {
-        if (algorithmIdentifier.parameters != Asn1Null) return null
-        return WellKnownDigest.entries.firstOrNull { it.oid == algorithmIdentifier.oid }
+        return WellKnownDigest.entries.firstOrNull { it.oid == algorithmIdentifier.oid }?.also {
+            val params = algorithmIdentifier.parameters
+            // parameters must be either absent (kotlin null) or NULL (ASN.1 null)
+            if (params != null) require(params == Asn1Null)
+        }
     }
     override fun getDigests(): Iterable<Digest> = WellKnownDigest.entries
     override fun getRFC2104HMACOID(digest: Digest): ObjectIdentifier? = when(digest) {

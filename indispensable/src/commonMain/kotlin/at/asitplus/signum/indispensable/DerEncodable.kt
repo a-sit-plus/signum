@@ -157,6 +157,7 @@ interface DerDecodable<Serializable, out T : DerEncodable<Serializable>> {
      * Processes a [Serializable], parsing it into an instance of [T].
      * If recursive deserialization is done, it should use the [der] instance.
      */
+    @Throws(Asn1Exception::class)
     fun decodeFromTlv(element: Serializable, der: Der = DER): T
     /**
      * Processes an [Asn1Element], parsing it into an instance of [T] through [der] serialization

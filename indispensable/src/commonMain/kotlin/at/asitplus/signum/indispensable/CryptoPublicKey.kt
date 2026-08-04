@@ -42,6 +42,7 @@ abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifi
     abstract val didKeyBytes: ByteArray
 
     /** Representation of the key in the format used by iOS */
+    // TODO: why is this privileged? JCA conversion is also in its own JcaExtensions file
     abstract val iosEncoded: ByteArray
 
     fun encodeToTlv(): Asn1Sequence =
@@ -64,8 +65,8 @@ abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifi
             val bytes = multiKeyRemovePrefix(input).substringBefore("#")
             val decoded = catching { bytes.multibaseDecode() }.getOrThrow()
                 ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
-            val codec = UVarInt.fromByteArray(decoded)
-            val keyBytes = decoded.copyOfRange(codec.encodeToByteArray().size, decoded.size)
+            val (codec, codecLength) = UVarInt.fromByteArrayPermissive(decoded)
+            val keyBytes = decoded.copyOfRange(codecLength, decoded.size)
 
             return ServiceLoader.load<PublicKeyFormatProvider>().get(codec) {
                 decodeFromDidKey(it, keyBytes)

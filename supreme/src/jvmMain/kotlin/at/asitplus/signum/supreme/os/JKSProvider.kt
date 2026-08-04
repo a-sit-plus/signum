@@ -22,6 +22,7 @@ import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
@@ -93,16 +94,16 @@ object SupremeJKSSignerCreationProvider : JKSSigningKeyCreationProvider {
             }
             return Pair(
                 sequenceOf(
-                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA512),
-                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA384),
-                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA256),
-                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA512),
-                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA384),
-                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA256),
-                    Pair(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA1),
-                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA1),
-                    Pair(SignatureAlgorithm.RSA.Padding.PSS, algSpec.digests.first()),
-                    Pair(SignatureAlgorithm.RSA.Padding.PKCS1, algSpec.digests.first()),
+                    Pair(RSAAlgorithm.Padding.PSS, Digest.SHA512),
+                    Pair(RSAAlgorithm.Padding.PSS, Digest.SHA384),
+                    Pair(RSAAlgorithm.Padding.PSS, Digest.SHA256),
+                    Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA512),
+                    Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA384),
+                    Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA256),
+                    Pair(RSAAlgorithm.Padding.PSS, Digest.SHA1),
+                    Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA1),
+                    Pair(RSAAlgorithm.Padding.PSS, algSpec.digests.first()),
+                    Pair(RSAAlgorithm.Padding.PKCS1, algSpec.digests.first()),
                 ).firstNotNullOfOrNull { (padding, digest) ->
                     SignatureAlgorithm.RSA(padding, digest).takeIf {
                         algSpec.digests.contains(digest) &&
@@ -223,12 +224,13 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 requiredCurve = publicKey.curve),
             alias)
         is CryptoPublicKey.RSA -> {
-            val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else SignatureAlgorithm.RSA.Padding.PSS
+            val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAAlgorithm.Padding.PSS
             val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
             JKSSigner.RSA(
                 config, privateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(padding, digest), alias
             )
         }
+        else -> TODO("providerize")
     }
 
     override suspend fun getSignerForKey(

@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
@@ -24,16 +25,16 @@ val RsaSsaPssRoundTripTest by matrixSuite {
 
             mapOf(
                 "from ASN.1" to SignatureAlgorithm.RSA(
-                    SignatureAlgorithm.RSA.Parameters.PssPadded(
+                    RSAAlgorithm.Parameters.PssPadded(
                         RsaSsaPssParams(
                             hashAlgorithm = dataDigest.asn1Representation,
-                            maskGenAlgorithm = SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                            maskGenAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                         )
                     )),
                 "from Signum" to SignatureAlgorithm.RSA(
-                    SignatureAlgorithm.RSA.Parameters.PssPadded(
+                    RSAAlgorithm.Parameters.PssPadded(
                         digest = dataDigest,
-                        mgfAlgorithm = SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
+                        mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
                             mgfDigest
                         )
                     )
@@ -43,7 +44,7 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                 val key = runBlocking {
                     EphemeralKey {
                         rsa {
-                            this.paddings = setOf(SignatureAlgorithm.RSA.Padding.PSS)
+                            this.paddings = setOf(RSAAlgorithm.Padding.PSS)
                             this.digests = Digest.entries.toSet()
                         }
                     }

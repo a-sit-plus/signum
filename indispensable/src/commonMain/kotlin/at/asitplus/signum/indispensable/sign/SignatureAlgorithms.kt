@@ -19,10 +19,15 @@ import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.rsaPSS
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.sha1
 import at.asitplus.awesn1.sha1WithRSAEncryption
 import at.asitplus.awesn1.sha256WithRSAEncryption
 import at.asitplus.awesn1.sha384WithRSAEncryption
 import at.asitplus.awesn1.sha512WithRSAEncryption
+import at.asitplus.awesn1.sha_224
+import at.asitplus.awesn1.sha_256
+import at.asitplus.awesn1.sha_384
+import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.DerDecodable
@@ -33,9 +38,8 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithmsProvider
 import at.asitplus.signum.internals.orLazy
-import at.asitplus.signum.internals.orLazyNullable
 
-class ECDSA private constructor(
+class ECDSAAlgorithm private constructor(
     private val providedParams: Params?,
     private val providedAsn1: X509AlgorithmIdentifier?,
 ) : SignatureAlgorithm {
@@ -57,7 +61,9 @@ class ECDSA private constructor(
             KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
             KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
             else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-        }, null)
+        }, null).also {
+            require(providedAsn1.parameters == null)
+        }
     }
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
@@ -81,28 +87,28 @@ class ECDSA private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is ECDSA) return false
+        if (other !is ECDSAAlgorithm) return false
         return params == other.params
     }
 
     override fun hashCode() = params.hashCode()
 
-    companion object : Enumeration<ECDSA>, DerDecodable<X509AlgorithmIdentifier, ECDSA> {
+    companion object : Enumeration<ECDSAAlgorithm>, DerDecodable<X509AlgorithmIdentifier, ECDSAAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
 
-        val withSHA256 = ECDSA(Digest.SHA256)
-        val withSHA384 = ECDSA(Digest.SHA384)
-        val withSHA512 = ECDSA(Digest.SHA512)
+        val withSHA256 = ECDSAAlgorithm(Digest.SHA256)
+        val withSHA384 = ECDSAAlgorithm(Digest.SHA384)
+        val withSHA512 = ECDSAAlgorithm(Digest.SHA512)
 
         override fun decodeFromTlv(
             element: X509AlgorithmIdentifier,
             der: Der
-        ) = ECDSA(element)
+        ) = ECDSAAlgorithm(element)
 
     }
 }
 
-class RSA private constructor(
+class RSAAlgorithm private constructor(
     providedParams: Parameters<*>?,
     private val providedAsn1: X509AlgorithmIdentifier?,
 ) : SignatureAlgorithm {
@@ -119,35 +125,52 @@ class RSA private constructor(
      */
     constructor(padding: Padding, digest: Digest) : this(Parameters(padding, digest))
 
-    /** The digest to apply to the data. */
-    val digest: Digest by providedParams?.digest orLazy {
-        when (providedAsn1!!.oid) {
-            KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
-            KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
-            KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
-            KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-            KnownOIDs.rsaPSS -> Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1)).digest
-            else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
+    /** The RSA signature parameters to apply to the data. */
+    val parameters: Parameters<*> by providedParams orLazy {
+        val oid = providedAsn1!!.oid
+        if (oid == KnownOIDs.rsaPSS) {
+            Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1))
+        } else {
+            when (oid) {
+                KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
+                KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
+                KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
+                KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
+                // TODO: do we want to sub-providerize part of RSA here?
+                //  or just let anyone who wants other-RSA do the legwork?
+                else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
+            }.let { digest ->
+                require(providedAsn1.parameters == Asn1Null)
+                Parameters.Pkcs1Padded(digest)
+            }
         }
     }
 
-    /** The RSA signature parameters to apply to the data. */
-    val parameters: Parameters<*> by providedParams orLazy {
-        when (providedAsn1!!.oid) {
-            KnownOIDs.sha1WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA1)
-            KnownOIDs.sha256WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA256)
-            KnownOIDs.sha384WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA384)
-            KnownOIDs.sha512WithRSAEncryption -> Parameters.Pkcs1Padded(Digest.SHA512)
-            KnownOIDs.rsaPSS -> Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1))
-            else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-        }
-    }
+    /** The digest to apply to the data. */
+    val digest get() = parameters.digest
 
     /** minimum key size, in full bytes, for these RSA parameters */
     val minimumKeySize get(): Int = when (val params = parameters) {
         is Parameters.Pkcs1Padded -> {
             11 + Asn1.Sequence {
-                +params.digest.asn1Representation.element
+                /**
+                 * RFC 8017 Page 71:
+                 *  -- Exception: When formatting the DigestInfoValue in EMSA-PKCS1-v1_5
+                 *  -- (see Section 9.2), the parameters field associated with id-sha1,
+                 *  -- id-sha224, id-sha256, id-sha384, id-sha512, id-sha512-224, and
+                 *  -- id-sha512-256 SHALL have a value of type NULL.  This is to
+                 *  -- maintain compatibility with existing implementations and with the
+                 *  -- numeric information values already published for EMSA-PKCS1-v1_5,
+                 *  -- which are also reflected in IEEE 1363a.
+                 */
+                +(params.digest.asn1Representation.let {
+                    val exceptions = sequenceOf(
+                        KnownOIDs.sha1, KnownOIDs.sha_224, KnownOIDs.sha_256, KnownOIDs.sha_384,
+                        KnownOIDs.sha_512 /* TODO: sha512-224, sha512-256 */)
+                    if (it.parameters == null && exceptions.contains(it.oid))
+                        X509AlgorithmIdentifier(it.oid, Asn1Null)
+                    else it
+                })
                 +Asn1OctetString(ByteArray(params.digest.outputLength.bytes.toInt()))
             }.overallLength
         }
@@ -176,7 +199,7 @@ class RSA private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is RSA) return false
+        if (other !is RSAAlgorithm) return false
         return (parameters == other.parameters)
     }
 
@@ -188,13 +211,13 @@ class RSA private constructor(
         PSS
     }
 
-    companion object : Enumeration<RSA>, DerDecodable<X509AlgorithmIdentifier, RSA> {
-        val withSHA256andPKCS1Padding = RSA(Parameters.Pkcs1Padded(Digest.SHA256))
-        val withSHA384andPKCS1Padding = RSA(Parameters.Pkcs1Padded(Digest.SHA384))
-        val withSHA512andPKCS1Padding = RSA(Parameters.Pkcs1Padded(Digest.SHA512))
-        val withSHA256andPSSPadding = RSA(Parameters.PssPadded(Digest.SHA256))
-        val withSHA384andPSSPadding = RSA(Parameters.PssPadded(Digest.SHA384))
-        val withSHA512andPSSPadding = RSA(Parameters.PssPadded(Digest.SHA512))
+    companion object : Enumeration<RSAAlgorithm>, DerDecodable<X509AlgorithmIdentifier, RSAAlgorithm> {
+        val withSHA256andPKCS1Padding = RSAAlgorithm(Parameters.Pkcs1Padded(Digest.SHA256))
+        val withSHA384andPKCS1Padding = RSAAlgorithm(Parameters.Pkcs1Padded(Digest.SHA384))
+        val withSHA512andPKCS1Padding = RSAAlgorithm(Parameters.Pkcs1Padded(Digest.SHA512))
+        val withSHA256andPSSPadding = RSAAlgorithm(Parameters.PssPadded(Digest.SHA256))
+        val withSHA384andPSSPadding = RSAAlgorithm(Parameters.PssPadded(Digest.SHA384))
+        val withSHA512andPSSPadding = RSAAlgorithm(Parameters.PssPadded(Digest.SHA512))
         override val entries by lazy {
             listOf(withSHA256andPKCS1Padding, withSHA384andPKCS1Padding, withSHA512andPKCS1Padding,
                    withSHA256andPSSPadding,   withSHA384andPSSPadding,   withSHA512andPSSPadding)
@@ -203,7 +226,7 @@ class RSA private constructor(
         override fun decodeFromTlv(
             element: X509AlgorithmIdentifier,
             der: Der
-        ) = RSA(element)
+        ) = RSAAlgorithm(element)
     }
 
 
@@ -352,18 +375,19 @@ class RSA private constructor(
 }
 
 object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
-    override fun getAlgorithms() = (ECDSA.entries + RSA.entries)
+    override fun getAlgorithms() = (ECDSAAlgorithm.entries + RSAAlgorithm.entries)
 
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) = when (algorithmIdentifier.oid) {
+        KnownOIDs.ecdsaWithSHA1,
         KnownOIDs.ecdsaWithSHA256,
         KnownOIDs.ecdsaWithSHA384,
-        KnownOIDs.ecdsaWithSHA512 -> ECDSA(algorithmIdentifier)
+        KnownOIDs.ecdsaWithSHA512 -> ECDSAAlgorithm(algorithmIdentifier)
 
         KnownOIDs.sha1WithRSAEncryption,
         KnownOIDs.sha256WithRSAEncryption,
         KnownOIDs.sha384WithRSAEncryption,
         KnownOIDs.sha512WithRSAEncryption,
-        KnownOIDs.rsaPSS -> RSA(algorithmIdentifier)
+        KnownOIDs.rsaPSS -> RSAAlgorithm(algorithmIdentifier)
 
         else -> null
     }

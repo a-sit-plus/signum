@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.supreme.SignatureResult
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -94,7 +94,7 @@ internal sealed interface JVMEphemeralKey {
         override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 
-    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<SignatureAlgorithm.RSA.Padding>)
+    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAAlgorithm.Padding>)
         : EphemeralKeyBase.RSA<RSAPrivateKey, EphemeralSigner.RSA>(EphemeralSigner::RSA,
         pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
         digests = digests, paddings = paddings)

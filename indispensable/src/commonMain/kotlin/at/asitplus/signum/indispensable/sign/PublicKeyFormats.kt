@@ -314,11 +314,11 @@ object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = when(codec) {
         RSAPublicKey.DID_KEY_CODEC ->
             RSAPublicKey.fromPKCS1encoded(keyBytes)
-        ECDSAPublicKey.DID_KEY_CODEC_P256 ->
+        ECDSAPublicKey.DID_KEY_CODEC_P256, UVarInt(0x1290u) ->
             ECDSAPublicKey.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
-        ECDSAPublicKey.DID_KEY_CODEC_P384 ->
+        ECDSAPublicKey.DID_KEY_CODEC_P384, UVarInt(0x1291u), UVarInt(8u) ->
             ECDSAPublicKey.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
-        ECDSAPublicKey.DID_KEY_CODEC_P521 ->
+        ECDSAPublicKey.DID_KEY_CODEC_P521, UVarInt(0x1292u) ->
             ECDSAPublicKey.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
         else -> null
     }

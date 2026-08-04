@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
@@ -161,7 +162,7 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
      *
      * @see SigningKeyConfiguration.RSAConfiguration.paddings
      */
-    lateinit var padding: SignatureAlgorithm.RSA.Padding
+    lateinit var padding: RSAAlgorithm.Padding
     internal val paddingSpecified get() = this::padding.isInitialized
 
 

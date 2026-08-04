@@ -9,6 +9,10 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.agree.UsableECDHPrivateValue
 import at.asitplus.signum.supreme.dsl.DSL
@@ -50,8 +54,8 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
         /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.SHA256]. */
         open var digests: Set<Digest> = setOf(Digest.SHA256)
 
-        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][SignatureAlgorithm.RSA.Padding.PSS]. */
-        open var paddings: Set<SignatureAlgorithm.RSA.Padding> = setOf(SignatureAlgorithm.RSA.Padding.PSS)
+        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][RSAAlgorithm.Padding.PSS]. */
+        open var paddings: Set<RSAAlgorithm.Padding> = setOf(RSAAlgorithm.Padding.PSS)
 
         /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
         var bits: Int = 3072
@@ -108,8 +112,8 @@ interface Signer {
 
     /** A [Signer] that signs using ECDSA. */
     interface ECDSA : AlgTrait, UsableECDHPrivateValue {
-        override val signatureAlgorithm: SignatureAlgorithm.ECDSA
-        override val publicKey: CryptoPublicKey.EC
+        override val signatureAlgorithm: ECDSAAlgorithm
+        override val publicKey: ECDSAPublicKey
 
         @SecretExposure
         override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
@@ -124,8 +128,8 @@ interface Signer {
      * and trailer field `1`. Other RSA-PSS parameter combinations fail as unsupported by the platform.
      */
     interface RSA : AlgTrait {
-        override val signatureAlgorithm: SignatureAlgorithm.RSA
-        override val publicKey: CryptoPublicKey.RSA
+        override val signatureAlgorithm: RSAAlgorithm
+        override val publicKey: RSAPublicKey
 
         @SecretExposure
         override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
@@ -162,18 +166,18 @@ interface Signer {
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
  */
 fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>): KmmResult<Signer> =
-    if ((this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)) {
+    if ((this is ECDSAAlgorithm && privateKey is CryptoPrivateKey.EC) ||
+                (this is RSAAlgorithm && privateKey is CryptoPrivateKey.RSA)) {
         when (this) {
-            is SignatureAlgorithm.ECDSA -> this.signerFor(privateKey as CryptoPrivateKey.EC.WithPublicKey)
-            is SignatureAlgorithm.RSA -> this.signerFor(privateKey as CryptoPrivateKey.RSA)
+            is ECDSAAlgorithm -> this.signerFor(privateKey as CryptoPrivateKey.EC.WithPublicKey)
+            is RSAAlgorithm -> this.signerFor(privateKey as CryptoPrivateKey.RSA)
             else -> TODO("providerize")
         }
     } else {
         KmmResult.failure(IllegalArgumentException("Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"))
     }
 
-fun SignatureAlgorithm.ECDSA.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
+fun ECDSAAlgorithm.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
     catching { makePrivateKeySigner(privateKey, this) }
 
 /**
@@ -182,7 +186,7 @@ fun SignatureAlgorithm.ECDSA.signerFor(privateKey: CryptoPrivateKey.EC.WithPubli
  * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
  * and trailer field `1`.
  */
-fun SignatureAlgorithm.RSA.signerFor(privateKey: CryptoPrivateKey.RSA) =
+fun RSAAlgorithm.signerFor(privateKey: CryptoPrivateKey.RSA) =
     catching { makePrivateKeySigner(privateKey, this) }
 
 /**

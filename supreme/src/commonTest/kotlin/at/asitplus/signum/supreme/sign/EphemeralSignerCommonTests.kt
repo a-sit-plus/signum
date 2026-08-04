@@ -4,13 +4,14 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm.RSA.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.ec
@@ -135,7 +136,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                     return@test
                 }
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
-                    it.parameters shouldBe SignatureAlgorithm.RSA.Parameters(padding, digest)
+                    it.parameters shouldBe RSAAlgorithm.Parameters(padding, digest)
                 }
 
                 val secondSig = signer.exportPrivateKey()

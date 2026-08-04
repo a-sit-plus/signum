@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import java.security.spec.MGF1ParameterSpec
@@ -11,16 +12,16 @@ import kotlin.getValue
 
 val SignatureAlgorihmTest by matrixSuite {
     "Minimum key sizes for known digests match expected values" - {
-        data class TestSpec(val padding: SignatureAlgorithm.RSA.Padding, val digest: WellKnownDigest, val expected: Int)
+        data class TestSpec(val padding: RSAAlgorithm.Padding, val digest: WellKnownDigest, val expected: Int)
         sequenceOf(
-            TestSpec(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA1, 46),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA256, 62),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA384, 78),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PKCS1, Digest.SHA512, 94),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA1, 42),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA256, 66),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA384, 98),
-            TestSpec(SignatureAlgorithm.RSA.Padding.PSS, Digest.SHA512, 130),
+            TestSpec(RSAAlgorithm.Padding.PKCS1, Digest.SHA1, 46),
+            TestSpec(RSAAlgorithm.Padding.PKCS1, Digest.SHA256, 62),
+            TestSpec(RSAAlgorithm.Padding.PKCS1, Digest.SHA384, 78),
+            TestSpec(RSAAlgorithm.Padding.PKCS1, Digest.SHA512, 94),
+            TestSpec(RSAAlgorithm.Padding.PSS, Digest.SHA1, 42),
+            TestSpec(RSAAlgorithm.Padding.PSS, Digest.SHA256, 66),
+            TestSpec(RSAAlgorithm.Padding.PSS, Digest.SHA384, 98),
+            TestSpec(RSAAlgorithm.Padding.PSS, Digest.SHA512, 130),
         ).asData(nameFn = { "${it.padding}/${it.digest}" }).test { spec ->
             SignatureAlgorithm.RSA(spec.padding, spec.digest).minimumKeySize shouldBe spec.expected
         }
@@ -33,7 +34,7 @@ val SignatureAlgorihmTest by matrixSuite {
             PSSSpec(Digest.SHA384, MGF1ParameterSpec.SHA384, 48, 1),
             PSSSpec(Digest.SHA512, MGF1ParameterSpec.SHA512, 64, 1),
         ).asData(nameFn = { it.digest.name }).test { spec ->
-            val params = SignatureAlgorithm.RSA.Parameters.PssPadded(spec.digest).jcaPSSParams
+            val params = RSAAlgorithm.Parameters.PssPadded(spec.digest).jcaPSSParams
             params.digestAlgorithm shouldBe spec.digest.jcaName
             params.mgfAlgorithm shouldBe "MGF1"
             params.mgfParameters shouldBe spec.spec

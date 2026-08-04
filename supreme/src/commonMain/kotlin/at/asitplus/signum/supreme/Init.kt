@@ -5,7 +5,6 @@ import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.Indispensable
-import at.asitplus.signum.indispensable.Indispensable.init
 import at.asitplus.signum.supreme.hash.SupremeDigestProvider
 import at.asitplus.signum.supreme.kdf.SupremeKDFProvider
 import at.asitplus.signum.supreme.sign.SupremeKotlinVerifierProvider
@@ -15,6 +14,7 @@ import at.asitplus.signum.supreme.sign.SupremePlatformVerifierProvider
 internal expect fun supremePlatformInit()
 object Supreme {
     private val initialize by lazy {
+        Indispensable.init()
         ServiceLoader.register<SignatureVerifierProvider>(SupremePlatformVerifierProvider)
         ServiceLoader.register<SignatureVerifierProvider>(SupremeKotlinVerifierProvider)
         ServiceLoader.register<DigestOperationProvider>(SupremeDigestProvider)

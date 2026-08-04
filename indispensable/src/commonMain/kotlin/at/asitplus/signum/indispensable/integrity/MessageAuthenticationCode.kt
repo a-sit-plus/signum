@@ -56,7 +56,7 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
 /**
  * RFC 2104 HMAC
  */
-class HMAC(val digest: Digest)
+data class HMAC(val digest: Digest)
     : MessageAuthenticationCode, Identifiable, Asn1Encodable<Asn1Sequence>
 {
 

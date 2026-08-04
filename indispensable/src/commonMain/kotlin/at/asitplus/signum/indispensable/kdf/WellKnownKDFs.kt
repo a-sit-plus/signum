@@ -10,7 +10,7 @@ import at.asitplus.signum.internals.isPowerOfTwo
  *
  * To obtain an actual [KDF] for key derivation, invoke as `(info = ...)`
  * */
-class HKDF(val digest: Digest) {
+data class HKDF(val digest: Digest) {
 
     companion object {
         val SHA1 = HKDF(WellKnownDigest.SHA1)
@@ -56,7 +56,7 @@ class HKDF(val digest: Digest) {
  *
  *  To obtain an actual [KDF] for key derivation, invoke as `(iterations = ...)`
  */
-class PBKDF2(val prf: HMAC) {
+data class PBKDF2(val prf: HMAC) {
 
     constructor(digest: Digest) : this(HMAC(digest))
 
@@ -105,7 +105,7 @@ class PBKDF2(val prf: HMAC) {
  * - [blockSize] factor; must be >=1; fine-tunes sequential memory read size and performance. Defaults to `8`, which is commonly used.
  *     * affects: `scryptBlockMix` and `scryptROMix`
  */
-class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : KDF {
+data class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : KDF {
     init {
         require((cost > 1) && cost.isPowerOfTwo()) { "cost must be a positive power of two" }
         require(parallelization >= 1) { "parallelization must be >=1" }

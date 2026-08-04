@@ -11,6 +11,8 @@ import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -124,14 +126,6 @@ data class CoseKey(
                 CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow()
             }
 
-        /**
-         * iOS encoded is currently only supporting uncompressed keys. Might change in the future
-         */
-        fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
-            catching {
-                CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow()
-            }
-
         fun fromCoordinates(
             curve: CoseEllipticCurve,
             x: ByteArray,
@@ -202,7 +196,7 @@ fun CryptoPublicKey.toCoseKey(
     keyId: ByteArray? = this.coseKid
 ): KmmResult<CoseKey> =
     when (this) {
-        is CryptoPublicKey.EC ->
+        is ECDSAPublicKey ->
             if ((algorithm != null) && (algorithm.algorithm !is SignatureAlgorithm.ECDSA))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
@@ -228,7 +222,7 @@ fun CryptoPublicKey.toCoseKey(
                 }
             }
 
-        is CryptoPublicKey.RSA ->
+        is RSAPublicKey ->
             if ((algorithm != null) && (algorithm !in listOf(
                     CoseAlgorithm.Signature.PS256,
                     CoseAlgorithm.Signature.PS384,
@@ -250,6 +244,7 @@ fun CryptoPublicKey.toCoseKey(
                     algorithm = algorithm
                 )
             }
+        else -> TODO("providerize")
     }
 
 
