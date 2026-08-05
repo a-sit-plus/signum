@@ -1,0 +1,77 @@
+name: Test TCC Docker Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      kotlin-repo-url:
+        description: Kotlin Maven repository URL
+        required: false
+        type: string
+      kotlin-version:
+        description: Kotlin compiler version
+        required: false
+        type: string
+      kotlin-api-version:
+        description: Kotlin API version
+        required: false
+        type: string
+      kotlin-language-version:
+        description: Kotlin language version
+        required: false
+        type: string
+      kotlin-additional-cli-options:
+        description: Additional Kotlin compiler options
+        required: false
+        type: string
+      testballoon-version:
+        description: TestBalloon version
+        required: false
+        type: string
+      android-compile-sdk:
+        description: Android compile SDK
+        required: false
+        type: string
+      android-build-tools:
+        description: Android build-tools version
+        required: false
+        type: string
+      android-test-api:
+        description: Android managed-device API
+        required: false
+        type: string
+      android-cmdline-tools-version:
+        description: Android command-line tools version
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      KOTLIN_REPO_URL: ${{ inputs.kotlin-repo-url }}
+      KOTLIN_VERSION: ${{ inputs.kotlin-version }}
+      KOTLIN_API_VERSION: ${{ inputs.kotlin-api-version }}
+      KOTLIN_LANGUAGE_VERSION: ${{ inputs.kotlin-language-version }}
+      KOTLIN_ADDITIONAL_CLI_OPTIONS: ${{ inputs.kotlin-additional-cli-options }}
+      TESTBALLOON_VERSION: ${{ inputs.testballoon-version }}
+      ANDROID_COMPILE_SDK: ${{ inputs.android-compile-sdk }}
+      ANDROID_BUILD_TOOLS: ${{ inputs.android-build-tools }}
+      ANDROID_TEST_API: ${{ inputs.android-test-api }}
+      ANDROID_CMDLINE_TOOLS_VERSION: ${{ inputs.android-cmdline-tools-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test
+        run: |
+          args=()
+          for arg in \
+            KOTLIN_REPO_URL KOTLIN_VERSION KOTLIN_API_VERSION KOTLIN_LANGUAGE_VERSION \
+            KOTLIN_ADDITIONAL_CLI_OPTIONS TESTBALLOON_VERSION ANDROID_COMPILE_SDK \
+            ANDROID_BUILD_TOOLS ANDROID_TEST_API ANDROID_CMDLINE_TOOLS_VERSION; do
+            value="${!arg}"
+            [[ -n "$value" ]] && args+=(--build-arg "$arg=$value")
+          done
+          docker build --progress=plain "${args[@]}" .
