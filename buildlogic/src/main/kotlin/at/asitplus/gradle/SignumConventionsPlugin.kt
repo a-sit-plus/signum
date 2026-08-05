@@ -308,7 +308,7 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
         iosArm64()
         iosSimulatorArm64()
         watchosSimulatorArm64()
-        watchosArm32()
+      //  watchosArm32()
         watchosArm64()
         tvosSimulatorArm64()
         tvosArm64()
@@ -316,9 +316,9 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
 
     if (project.hasAndroidSdk()) {
         if (project.hasAndroidNdk() && !project.disableNdkTargets) {
-            androidNativeX64()
-            androidNativeX86()
-            androidNativeArm32()
+        //    androidNativeX64()
+        //    androidNativeX86()
+        //    androidNativeArm32()
             androidNativeArm64()
         } else {
             Logger.lifecycle("  > Skipping Android native targets (NDK missing or disableNdkTargets=true)")
@@ -336,7 +336,7 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
 
     linuxX64()
     linuxArm64()
-    mingwX64()
+ //   mingwX64()
 
 }
 

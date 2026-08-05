@@ -19,7 +19,7 @@ ENV PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools
 
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends unzip wget; \
+    apt-get install -y --no-install-recommends libatomic1 unzip wget; \
     rm -rf /var/lib/apt/lists/*; \
     mkdir -p "${ANDROID_HOME}/cmdline-tools"; \
     wget -q "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip" -O /tmp/android-commandlinetools.zip; \
