@@ -46,6 +46,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
 
 jobs:
   test:
@@ -74,4 +75,18 @@ jobs:
             value="${!arg}"
             [[ -n "$value" ]] && args+=(--build-arg "$arg=$value")
           done
-          docker build --progress=plain "${args[@]}" .
+          docker build --progress=plain -t signum-tcc-tests "${args[@]}" .
+      - name: Extract test results
+        if: success()
+        run: |
+          container=$(docker create signum-tcc-tests)
+          mkdir docker-test-results
+          docker cp "$container:/workspace/." docker-test-results
+          docker rm "$container"
+      - name: Publish test report
+        if: success()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: docker-test-results/**/build/test-results/**/*.xml
+          detailed_summary: true
+          include_passed: true
