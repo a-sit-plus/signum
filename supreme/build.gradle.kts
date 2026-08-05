@@ -117,31 +117,32 @@ tasks.register("assembleSignumSupremeXCFramework") {
 }
 
 //work no stand-alone needs manual booting and we manually shutdown
-val shutdownIosSimulator by tasks.registering {
-    doLast {
-        providers.exec {
-            commandLine("xcrun", "simctl", "shutdown", "iPhone 16")
-            isIgnoreExitValue = true
-        }.result.get()
+if (HostManager.hostIsMac) {
+    val shutdownIosSimulator by tasks.registering {
+        doLast {
+            providers.exec {
+                commandLine("xcrun", "simctl", "shutdown", "iPhone 16")
+                isIgnoreExitValue = true
+            }.result.get()
+        }
     }
-}
+    //remove --standalone from simulator to cast out demons. but then we need to boot manually
+    tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+        standalone.set(false)
 
-//remove --standalone from simulator to cast out demons. but then we need to boot manually
-tasks.withType<KotlinNativeSimulatorTest>().configureEach {
-    standalone.set(false)
+        doFirst {
+            providers.exec {
+                commandLine("xcrun", "simctl", "boot", device.get())
+                isIgnoreExitValue = true
+            }.result.get()
 
-    doFirst {
-        providers.exec {
-            commandLine("xcrun", "simctl", "boot", device.get())
-            isIgnoreExitValue = true
-        }.result.get()
+            providers.exec {
+                commandLine("xcrun", "simctl", "bootstatus", device.get(), "-b")
+            }.result.get().assertNormalExitValue()
+        }
 
-        providers.exec {
-            commandLine("xcrun", "simctl", "bootstatus", device.get(), "-b")
-        }.result.get().assertNormalExitValue()
+        finalizedBy(shutdownIosSimulator)
     }
-
-    finalizedBy(shutdownIosSimulator)
 }
 
 exportXCFramework(
