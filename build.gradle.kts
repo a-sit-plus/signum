@@ -4,12 +4,8 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import java.time.Duration
 
 plugins {
-    val kotlinVer = providers.gradleProperty("kotlin_version").orNull
-        ?: System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null }
-        ?: libs.versions.kotlin.get()
-    val testballoonVer = providers.gradleProperty("testballoon_version").orNull
-        ?: System.getenv("TESTBALLOON_VERSION_OVERRIDE")?.ifBlank { null }
-        ?: libs.versions.testballoon.get()
+    val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
+    val testballoonVer = System.getenv("TESTBALLOON_VERSION_OVERRIDE")?.ifBlank { null } ?: libs.versions.testballoon.get()
 
     alias(libs.plugins.asp)
     kotlin("multiplatform") version kotlinVer apply false

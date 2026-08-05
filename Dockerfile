@@ -42,4 +42,4 @@ RUN set -eux; \
     if [ -n "${KOTLIN_LANGUAGE_VERSION:-}" ]; then set -- "$@" "-Pkotlin_language_version=${KOTLIN_LANGUAGE_VERSION}"; fi; \
     if [ -n "${KOTLIN_ADDITIONAL_CLI_OPTIONS:-}" ]; then set -- "$@" "-Pkotlin_additional_cli_options=${KOTLIN_ADDITIONAL_CLI_OPTIONS}"; fi; \
     if [ -n "${TESTBALLOON_VERSION:-}" ]; then set -- "$@" "-Ptestballoon_version=${TESTBALLOON_VERSION}"; fi; \
-    ./gradlew "$@"
+    KOTLIN_VERSION_ENV="${KOTLIN_VERSION:-}" TESTBALLOON_VERSION_OVERRIDE="${TESTBALLOON_VERSION:-}" ./gradlew "$@"
