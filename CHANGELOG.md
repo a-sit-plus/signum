@@ -1,5 +1,8 @@
 # Changelog
 
+## NEXT
+ * Add `challenge` to `JsonWebToken`, used in [OAuth 2.0 Attestation-Based Client Authentication](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-10)
+
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support
 * Defence-in-depth
