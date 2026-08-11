@@ -14,7 +14,7 @@ object DSL {
 
     /** Resolve a set of options to the chosen one (or null, if none) */
     fun <T: DSL.Data> options(vararg options: Invokable<T?,T>) =
-        options.firstNotNullOf(Invokable<T?,T>::v)
+        options.firstNotNullOfOrNull(Invokable<T?,T>::v)
 
     /** A collection of equivalent DSL configuration structures which shadow each other.
      * @see getProperty */

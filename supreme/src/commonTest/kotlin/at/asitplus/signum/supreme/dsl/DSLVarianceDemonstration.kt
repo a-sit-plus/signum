@@ -54,15 +54,15 @@ val DSLVarianceDemonstration  by matrixSuite {
 private fun doWithConfiguration(configure: (Settings.()->Unit)? = null) {
     val config = DSL.resolve(::Settings, configure)
 
-    // we can access the result through the accessors
-    config.banana.v?.let { flavor ->
-        flavor.preparation shouldBe Preparation.SHAKEN
-        return
+    // we can access the result through the accessors, or use the helper
+    when (val flavor = DSL.options(config.banana, config.strawberry)) {
+        is Settings.BananaFlavor -> {
+            flavor.preparation shouldBe Preparation.SHAKEN
+        }
+        is Settings.StrawberryFlavor -> {
+            flavor.nBerries shouldBe 202
+        }
+        // non-null was checked in the validator already
+        null -> error("unreachable")
     }
-    config.strawberry.v?.let { flavor ->
-        flavor.nBerries shouldBe 202
-        return
-    }
-    // non-null was checked in the validator already
-    error("unreachable")
 }

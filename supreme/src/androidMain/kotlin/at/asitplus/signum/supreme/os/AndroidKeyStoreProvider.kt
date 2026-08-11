@@ -169,14 +169,14 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
+        val algSpec = DSL.options(config.ec, config.rsa)
+            ?: throw UnsupportedCryptoException("Unknown chosen key type")
         val spec = KeyGenParameterSpec.Builder(
             alias,
-            DSL.options(config.ec, config.rsa).let {
-                (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
-                (if (it.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
-            }
+            (if (algSpec.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
+            (if (algSpec.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
         ).apply {
-            when(val algSpec = DSL.options(config.ec, config.rsa)) {
+            when (algSpec) {
                 is SigningKeyConfiguration.RSAConfiguration -> {
                     setAlgorithmParameterSpec(
                         RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
@@ -229,7 +229,7 @@ object AndroidKeyStoreProvider:
                 }
             }
         }.build()
-        KeyPairGenerator.getInstance(when(DSL.options(config.ec, config.rsa)) {
+        KeyPairGenerator.getInstance(when (algSpec) {
             is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
             is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
             else -> TODO("providerize")

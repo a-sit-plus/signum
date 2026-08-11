@@ -1,7 +1,9 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
+import at.asitplus.signum.dsl.EphemeralSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
@@ -11,6 +13,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -100,17 +103,17 @@ internal sealed interface JVMEphemeralKey {
 
 internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
     // TODO: do we want to providerize this
-    configuration.ec.v?.let { alg ->
-        return getKPGInstance("EC", configuration.provider).run {
-            initialize(ECGenParameterSpec(alg.curve.jcaName))
-            generateKeyPair()
-        }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
+    return when (val alg = DSL.options(configuration.ec, configuration.rsa)) {
+        is EphemeralSigningKeyConfigurationBase.ECConfiguration ->
+            getKPGInstance("EC", configuration.provider).run {
+                initialize(ECGenParameterSpec(alg.curve.jcaName))
+                generateKeyPair()
+            }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
+        is EphemeralSigningKeyConfigurationBase.RSAConfiguration ->
+            getKPGInstance("RSA", configuration.provider).run {
+                initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
+                generateKeyPair()
+            }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
+        else -> throw UnsupportedCryptoException("chosen ephemeral key type is not supported")
     }
-    configuration.rsa.v?.let { alg ->
-        return getKPGInstance("RSA", configuration.provider).run {
-            initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
-            generateKeyPair()
-        }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
-    }
-    error("UNREACHABLE")
 }
