@@ -12,6 +12,10 @@ object DSL {
     fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
         (if (config == null) factory() else factory().apply(config)).also(DSL.Data::validate)
 
+    /** Resolve a set of options to the chosen one (or null, if none) */
+    fun <T: DSL.Data> options(vararg options: Invokable<T?,T>) =
+        options.firstNotNullOf(Invokable<T?,T>::v)
+
     /** A collection of equivalent DSL configuration structures which shadow each other.
      * @see getProperty */
     class ConfigStack<S: DSL.Data>(private vararg val stackedData: S): Iterable<S> by stackedData.asIterable() {

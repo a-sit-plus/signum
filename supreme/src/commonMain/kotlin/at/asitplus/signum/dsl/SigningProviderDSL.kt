@@ -58,10 +58,12 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
 open class SignerConfiguration internal constructor(): DSL.Data()
 
 /** Algorithm-specific configuration for a returned ECDSA signer. Ignored for RSA keys. */
-val SignerConfiguration.ec get() = childOrDefault("SIGNUM_ECDSA", ::ECSignerConfiguration)
+val SignerConfiguration.ec get() =
+    childOrDefault("SIGNUM_ECDSA", ::ECSignerConfiguration)
 
 /** Algorithm-specific configuration for a returned RSA signer. Ignored for ECDSA keys. */
-val SignerConfiguration.rsa get() = childOrDefault("SIGNUM_RSA", ::RSASignerConfiguration)
+val SignerConfiguration.rsa get() =
+    childOrDefault("SIGNUM_RSA", ::RSASignerConfiguration)
 
 open class UnlockPromptConfiguration: DSL.Data() {
 
@@ -82,11 +84,13 @@ open class UnlockPromptConfiguration: DSL.Data() {
 open class PlatformSignerConfigurationBase internal constructor(): SignerConfiguration()
 
 /** Configure the authorization prompt that will be shown to the user. */
-val PlatformSignerConfigurationBase.unlockPrompt get() = childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
+val PlatformSignerConfigurationBase.unlockPrompt get() =
+    childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
 
 open class PlatformSigningProviderSignerSigningConfigurationBase internal constructor(): DSL.Data()
 
-val PlatformSigningProviderSignerSigningConfigurationBase.unlockPrompt get() = childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
+val PlatformSigningProviderSignerSigningConfigurationBase.unlockPrompt get() =
+    childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
 open class SigningProviderSigningKeyConfigurationBase<SignerConfigurationT: SignerConfiguration> internal constructor() : SigningKeyConfiguration()
@@ -152,21 +156,17 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration()
 }
 
-val PlatformSigningKeyConfigurationBase<*>.ec get() = _algSpecific.defaultOption("EC",
-    ::ECConfiguration
-)
-val PlatformSigningKeyConfigurationBase<*>.rsa get() = _algSpecific.option("RSA",
-    ::RSAConfiguration
-)
+val PlatformSigningKeyConfigurationBase<*>.ec get() =
+    _algSpecific.defaultOption("EC", ::ECConfiguration)
+val PlatformSigningKeyConfigurationBase<*>.rsa get() =
+    _algSpecific.option("RSA", ::RSAConfiguration)
 
 /** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
-val PlatformSigningKeyConfigurationBase<*>.hardware get() = childOrNull("HARDWARE",
-    ::SecureHardwareConfiguration
-)
+val PlatformSigningKeyConfigurationBase<*>.hardware get() =
+    childOrNull("HARDWARE",::SecureHardwareConfiguration)
 
-val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.attestation get() = childOrNull("ATTESTATION",
-    ::AttestationConfiguration
-)
+val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.attestation get() =
+    childOrNull("ATTESTATION", ::AttestationConfiguration)
 val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.protection get() =
     childOrNull("PROTECTION", ::ProtectionConfiguration)
 

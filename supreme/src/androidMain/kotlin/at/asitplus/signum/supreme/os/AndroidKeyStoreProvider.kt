@@ -28,7 +28,6 @@ import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationBase
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -42,9 +41,16 @@ import at.asitplus.signum.dsl.UnlockPromptConfiguration
 import at.asitplus.signum.dsl.attestation
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.factors
+import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.dsl.protection
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
@@ -79,9 +85,7 @@ class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyCo
     /** Whether a StrongBox TPM is required. */
     var strongBox: FeaturePreference = PREFERRED
 }
-class AndroidSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<AndroidSignerConfiguration>() {
-    override val hardware = childOrNull(::AndroidKeymasterConfiguration)
-}
+class AndroidSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<AndroidSignerConfiguration>()
 
 class AndroidUnlockPromptConfiguration internal constructor(): UnlockPromptConfiguration() {
     /** Explicitly specify the FragmentActivity to use for authentication prompts.
@@ -119,13 +123,9 @@ class AndroidUnlockPromptConfiguration internal constructor(): UnlockPromptConfi
     var invalidBiometryCallback: (()->Unit)? = null
 }
 
-class AndroidSignerConfiguration: PlatformSignerConfigurationBase() {
-    override val unlockPrompt = childOrDefault(::AndroidUnlockPromptConfiguration)
-}
+class AndroidSignerConfiguration: PlatformSignerConfigurationBase()
 
-class AndroidSignerSigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase() {
-    override val unlockPrompt = childOrDefault(::AndroidUnlockPromptConfiguration)
-}
+class AndroidSignerSigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase()
 
 /**
  * Resolve [what] differently based on whether the [vA]lue was [spec]ified.
@@ -171,16 +171,17 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
         val spec = KeyGenParameterSpec.Builder(
             alias,
-            config._algSpecific.v.let {
+            DSL.options(config.ec, config.rsa).let {
                 (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
                 (if (it.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
             }
         ).apply {
-            when(val algSpec = config._algSpecific.v) {
+            when(val algSpec = DSL.options(config.ec, config.rsa)) {
                 is SigningKeyConfiguration.RSAConfiguration -> {
                     setAlgorithmParameterSpec(
                         RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
-                    setDigests(*algSpec.digests.map(Digest::jcaName).toTypedArray())
+                    setDigests(*algSpec.digests.filterIsInstance<WellKnownDigest>()
+                                .map(WellKnownDigest::jcaName).toTypedArray())
                     setSignaturePaddings(*algSpec.paddings.map {
                         when (it) {
                             RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
@@ -190,7 +191,8 @@ object AndroidKeyStoreProvider:
                 }
                 is SigningKeyConfiguration.ECConfiguration -> {
                     setAlgorithmParameterSpec(ECGenParameterSpec(algSpec.curve.jcaName))
-                    setDigests(*algSpec.digests.map { it?.jcaName ?: KeyProperties.DIGEST_NONE }.toTypedArray())
+                    setDigests(*algSpec.digests.filterIsInstance<WellKnownDigest?>()
+                                .map { it?.jcaName ?: KeyProperties.DIGEST_NONE }.toTypedArray())
                 }
             }
             setCertificateNotBefore(Date.from(Instant.now()))
@@ -227,9 +229,10 @@ object AndroidKeyStoreProvider:
                 }
             }
         }.build()
-        KeyPairGenerator.getInstance(when(config._algSpecific.v) {
+        KeyPairGenerator.getInstance(when(DSL.options(config.ec, config.rsa)) {
             is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
             is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
+            else -> TODO("providerize")
         }, "AndroidKeyStore").apply {
             initialize(spec)
         }.generateKeyPair()
@@ -268,33 +271,37 @@ object AndroidKeyStoreProvider:
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
         val algorithm = when (publicKey) {
-            is CryptoPublicKey.EC -> {
+            is ECDSAPublicKey -> {
                 val ecConfig = config.ec.v
-                val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
-                SignatureAlgorithm.ECDSA(digest, publicKey.curve)
+                val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
+                ECDSAAlgorithm(digest, publicKey.curve)
             }
-            is CryptoPublicKey.RSA -> {
+            is RSAPublicKey -> {
                 val rsaConfig = config.rsa.v
-                val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
+                val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, WellKnownDigest::jcaName)
                 val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
                     when (it) {
                         RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                         RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
                     }
                 }
-                SignatureAlgorithm.RSA(padding, digest)
+                RSAAlgorithm(padding, digest)
             }
+            else -> TODO("providerize")
         }
 
         return@catching when (publicKey) {
-            is CryptoPublicKey.EC ->
+            is ECDSAPublicKey ->
                 AndroidKeystoreSigner.ECDSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
-                    attestation, algorithm as SignatureAlgorithm.ECDSA)
-            is CryptoPublicKey.RSA ->
+                    attestation, algorithm as ECDSAAlgorithm
+                )
+            is RSAPublicKey ->
                 AndroidKeystoreSigner.RSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
-                    attestation, algorithm as SignatureAlgorithm.RSA)
+                    attestation, algorithm as RSAAlgorithm
+                )
+            else -> TODO("providerize")
         }
     }}
 
