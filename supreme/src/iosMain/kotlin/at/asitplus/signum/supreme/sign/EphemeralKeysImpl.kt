@@ -3,6 +3,10 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.dsl.EphemeralSignerConfiguration
+import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl._algSpecific
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
@@ -14,9 +18,6 @@ import kotlinx.cinterop.*
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
 import platform.Security.*
-
-actual class EphemeralSigningKeyConfiguration internal actual constructor() : EphemeralSigningKeyConfigurationBase()
-actual class EphemeralSignerConfiguration internal actual constructor() : EphemeralSignerConfigurationBase()
 
 internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreementPublicValue.ECDH) =
     corecall {

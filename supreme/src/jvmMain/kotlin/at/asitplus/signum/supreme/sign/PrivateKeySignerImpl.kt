@@ -1,6 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.dsl.EphemeralSignerConfiguration
+import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -33,7 +35,7 @@ actual fun makePrivateKeySigner(
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA) or if it has no public key attached
  * This JVM-specific variant allows for optionally specifying a provider
  *
- * @see JvmEphemeralSignerCompatibleConfiguration
+ * @see at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
  *
  */
 fun SignatureAlgorithm.signerFor(

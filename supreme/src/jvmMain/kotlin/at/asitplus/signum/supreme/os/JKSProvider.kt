@@ -18,6 +18,13 @@ import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.hardware
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.nativeDigest
@@ -27,9 +34,8 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.EphemeralSigner
-import at.asitplus.signum.supreme.sign.JvmEphemeralSignerCompatibleConfiguration
+import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.sign._algSpecific
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.nio.channels.Channels

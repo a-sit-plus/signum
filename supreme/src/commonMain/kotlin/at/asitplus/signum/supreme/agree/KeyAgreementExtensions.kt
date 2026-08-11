@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.sign.ec
+import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.supreme.sign.signerFor
 import kotlin.jvm.JvmName
 

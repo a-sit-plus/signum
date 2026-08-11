@@ -2,6 +2,8 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.dsl.EphemeralSignerConfiguration
+import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.digest.Digest
@@ -11,34 +13,13 @@ import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.os.SignerConfiguration
-import at.asitplus.signum.supreme.os.ec
-import at.asitplus.signum.supreme.os.rsa
-import at.asitplus.signum.supreme.sign.EphemeralSigningKeyConfigurationBase.ECConfiguration
-import at.asitplus.signum.supreme.sign.EphemeralSigningKeyConfigurationBase.RSAConfiguration
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.rsa
 
 
 internal expect suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
 internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
 internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
-
-open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {
-    class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
-        init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
-    }
-    class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
-        init { digests = Digest.entries.toSet(); paddings = RSAAlgorithm.Padding.entries.toSet()}
-    }
-}
-val EphemeralSigningKeyConfigurationBase.ec get() = _algSpecific.defaultOption("EC", ::ECConfiguration)
-val EphemeralSigningKeyConfigurationBase.rsa get() = _algSpecific.option("RSA", ::RSAConfiguration)
-
-@Suppress("NOTHING_TO_INLINE")
-expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase
-
-typealias EphemeralSignerConfigurationBase = SignerConfiguration
-@Suppress("NOTHING_TO_INLINE")
-expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
 
 /**
  * An ephemeral keypair, not stored in any kind of persistent storage.
@@ -58,7 +39,7 @@ sealed interface EphemeralKey {
     suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
 
     /** Create a signer that signs using this [EphemeralKey].
-     * @see EphemeralSignerConfiguration */
+     * @see at.asitplus.dsl.EphemeralSignerConfiguration */
     fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration> = null): KmmResult<Signer>
 
     /** An [EphemeralKey] suitable for ECDSA operations. */

@@ -1,0 +1,180 @@
+package at.asitplus.signum.dsl
+
+import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase.*
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.supreme.dsl.DISCOURAGED
+import at.asitplus.signum.supreme.dsl.FeaturePreference
+import at.asitplus.signum.supreme.dsl.REQUIRED
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+open class ECSignerConfiguration internal constructor(): DSL.Data() {
+    /**
+     * Explicitly specify the digest to sign over.
+     * Omit to default to the only supported digest.
+     *
+     * If the key stored in hardware supports multiple digests, you need to explicitly specify the digest to use.
+     * (By default, hardware keys are configured to only support a single digest.)
+     *
+     * @see SigningKeyConfiguration.ECConfiguration.digests
+     */
+    var digest: Digest? = null; set(v) { digestSpecified = true; field = v }
+    internal var digestSpecified = false
+}
+
+open class RSASignerConfiguration internal constructor(): DSL.Data() {
+
+    //this is more convenient, but does not allow customization of PSS except for digest.
+    //it would be exact, but nobody supports them anyways, so…
+    /**
+     * Explicitly specify the digest to sign over.
+     * Omit to default to a reasonable default choice.
+     *
+     * If a key stored in hardware supports multiple digests, you need to explicitly specify the digest to use.
+     * (By default, hardware keys are configured to only support a single digest.)
+     *
+     * @see SigningKeyConfiguration.RSAConfiguration.digests
+     */
+    lateinit var digest: Digest
+    internal val digestSpecified get() = this::digest.isInitialized
+
+    /**
+     * Explicitly specify the padding to use.
+     * Omit to default to the only supported padding.
+     *
+     * If the key stored in hardware supports multiple padding modes, you need to explicitly specify the padding to use.
+     * (By default, hardware keys are configured to only support a single padding.)
+     *
+     * @see SigningKeyConfiguration.RSAConfiguration.paddings
+     */
+    lateinit var padding: RSAAlgorithm.Padding
+    internal val paddingSpecified get() = this::padding.isInitialized
+
+
+}
+
+open class SignerConfiguration internal constructor(): DSL.Data()
+
+/** Algorithm-specific configuration for a returned ECDSA signer. Ignored for RSA keys. */
+val SignerConfiguration.ec get() = childOrDefault("SIGNUM_ECDSA", ::ECSignerConfiguration)
+
+/** Algorithm-specific configuration for a returned RSA signer. Ignored for ECDSA keys. */
+val SignerConfiguration.rsa get() = childOrDefault("SIGNUM_RSA", ::RSASignerConfiguration)
+
+open class UnlockPromptConfiguration: DSL.Data() {
+
+    internal val _message = Stackable<String>()
+    /** The prompt message to show to the user when asking for unlock */
+    var message by _message
+
+    internal val _cancelText = Stackable<String>()
+    /** The message to show on the cancellation button */
+    var cancelText by _cancelText
+
+    companion object {
+        const val defaultMessage = "Please authorize cryptographic signature"
+        const val defaultCancelText = "Cancel"
+    }
+}
+
+open class PlatformSignerConfigurationBase internal constructor(): SignerConfiguration()
+
+/** Configure the authorization prompt that will be shown to the user. */
+val PlatformSignerConfigurationBase.unlockPrompt get() = childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
+
+open class PlatformSigningProviderSignerSigningConfigurationBase internal constructor(): DSL.Data()
+
+val PlatformSigningProviderSignerSigningConfigurationBase.unlockPrompt get() = childOrDefault("UNLOCK_PROMPT", ::UnlockPromptConfiguration)
+
+open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
+open class SigningProviderSigningKeyConfigurationBase<SignerConfigurationT: SignerConfiguration> internal constructor() : SigningKeyConfiguration()
+
+/** Configure the signer that will be returned from [createSigningKey][at.asitplus.signum.supreme.os.SigningProviderI.createSigningKey] */
+val <T: SignerConfiguration> SigningProviderSigningKeyConfigurationBase<T>.signer get() = integratedReceiver<T>("SIGNER_CONFIG")
+
+open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSignerConfigurationBase> internal constructor(): SigningProviderSigningKeyConfigurationBase<SignerConfigurationT>() {
+    open class AttestationConfiguration internal constructor(): DSL.Data() {
+        /** The server-provided attestation challenge */
+        lateinit var challenge: ByteArray
+        override fun validate() {
+            require(this::challenge.isInitialized) { "Server-provided attestation challenge must be set" }
+        }
+    }
+
+    open class ProtectionFactorConfiguration internal constructor(): DSL.Data() {
+        /** Whether a biometric factor (fingerprint, facial recognition, ...) can authorize this key */
+        var biometry = true
+        /** Whether additional biometric factors can be added without invalidating the key */
+        var biometryWithNewFactors = false; set(v) { field = v; if (v) biometry = true }
+        /** Whether a device unlock code, PIN, etc. can authorize this key */
+        var deviceLock = true
+
+        override fun validate() {
+            require(biometry || deviceLock) { "At least one authentication factor must be permissible" }
+            require (biometry || !biometryWithNewFactors) { "You cannot allow future biometric factors but disallow current ones" }
+        }
+    }
+
+    open class ProtectionConfiguration internal constructor(): DSL.Data() {
+        /** The timeout before this key will need to be unlocked again. */
+        var timeout: Duration = 0.seconds
+    }
+
+    open class SecureHardwareConfiguration: DSL.Data() {
+        /** Whether to use hardware-backed storage, such as Android Keymaster or Apple's Secure Enclave.
+         * @see at.asitplus.signum.supreme.dsl.FeaturePreference */
+        var backing: FeaturePreference = REQUIRED
+        override fun validate() {
+            super.validate()
+            require((backing != DISCOURAGED) || (attestation.v == null))
+            { "To obtain hardware attestation, enable secure hardware support (do not set backing = DISCOURAGED, use backing = PREFERRED or backing = REQUIRED instead)."}
+        }
+    }
+
+    open class ECPurposeConfiguration internal constructor(): DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+        /** Whether this key can be used for ECDH key agreement */
+        var keyAgreement = false
+    }
+
+    open class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration()
+
+    open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+        /** Whether this key can be used for encrypting data*/
+        var decrypting = false
+    }
+
+    open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration()
+}
+
+val PlatformSigningKeyConfigurationBase<*>.ec get() = _algSpecific.defaultOption("EC",
+    ::ECConfiguration
+)
+val PlatformSigningKeyConfigurationBase<*>.rsa get() = _algSpecific.option("RSA",
+    ::RSAConfiguration
+)
+
+/** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
+val PlatformSigningKeyConfigurationBase<*>.hardware get() = childOrNull("HARDWARE",
+    ::SecureHardwareConfiguration
+)
+
+val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.attestation get() = childOrNull("ATTESTATION",
+    ::AttestationConfiguration
+)
+val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.protection get() =
+    childOrNull("PROTECTION", ::ProtectionConfiguration)
+
+/** Which authentication factors can authorize this key;
+ * if multiple factors are specified, any one of them can authorize the key */
+val PlatformSigningKeyConfigurationBase.ProtectionConfiguration.factors get() =
+    childOrDefault("PROTECTION_FACTORS", ::ProtectionFactorConfiguration)
+val PlatformSigningKeyConfigurationBase.ECConfiguration.purposes get() =
+    childOrDefault("PURPOSES", ::ECPurposeConfiguration)
+val PlatformSigningKeyConfigurationBase.RSAConfiguration.purposes get() =
+    childOrDefault("PURPOSES", ::RSAPurposeConfiguration)

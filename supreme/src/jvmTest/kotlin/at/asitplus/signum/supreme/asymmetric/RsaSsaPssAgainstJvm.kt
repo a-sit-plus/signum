@@ -1,10 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.shouldSucceed
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm

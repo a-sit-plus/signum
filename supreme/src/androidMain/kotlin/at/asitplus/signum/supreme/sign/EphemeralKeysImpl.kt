@@ -2,6 +2,10 @@ package at.asitplus.signum.supreme.sign
 
 import android.security.keystore.KeyProperties
 import at.asitplus.catching
+import at.asitplus.signum.dsl.EphemeralSignerConfiguration
+import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl._algSpecific
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.digest.Digest
@@ -10,7 +14,6 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
@@ -26,9 +29,6 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
-
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
-actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
 
 sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
@@ -65,7 +65,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 
     class RSA(config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-               override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+              override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)

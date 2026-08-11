@@ -24,6 +24,10 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationBase
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
@@ -33,7 +37,14 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.FeaturePreference
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl.UnlockPromptConfiguration
+import at.asitplus.signum.dsl.attestation
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.factors
+import at.asitplus.signum.dsl.protection
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier

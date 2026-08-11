@@ -7,6 +7,20 @@ import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
+import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationBase
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl.UnlockPromptConfiguration
+import at.asitplus.signum.dsl._algSpecific
+import at.asitplus.signum.dsl.attestation
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.factors
+import at.asitplus.signum.dsl.protection
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.dsl.unlockPrompt
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.digest
@@ -162,9 +176,11 @@ sealed class IosSigner(final override val alias: String,
                 }
                 ctx.apply {
                     val stack = DSL.ConfigStack(signingConfig.unlockPrompt.v, signerConfig.unlockPrompt.v)
-                    localizedReason = stack.getProperty(UnlockPromptConfiguration::_message,
+                    localizedReason = stack.getProperty(
+                        UnlockPromptConfiguration::_message,
                         default = UnlockPromptConfiguration.defaultMessage)
-                    localizedCancelTitle = stack.getProperty(UnlockPromptConfiguration::_cancelText,
+                    localizedCancelTitle = stack.getProperty(
+                        UnlockPromptConfiguration::_cancelText,
                         default = UnlockPromptConfiguration.defaultCancelText)
                 }
             } else {

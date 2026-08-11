@@ -4,6 +4,9 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
@@ -12,11 +15,9 @@ import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.supreme.os.SignerConfiguration
-import at.asitplus.signum.supreme.os.ec
-import at.asitplus.signum.supreme.os.rsa
-import at.asitplus.signum.supreme.os.signer
+import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.dsl.SignerConfiguration
+import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed

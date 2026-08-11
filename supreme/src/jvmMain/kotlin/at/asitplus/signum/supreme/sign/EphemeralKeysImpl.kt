@@ -1,6 +1,10 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
+import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
@@ -17,16 +21,6 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.KeyAgreement
-
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase() {
-    var provider: String? = null
-}
-interface JvmEphemeralSignerCompatibleConfiguration {
-    var provider: String?
-}
-actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
-    override var provider: String? = null
-}
 
 sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val provider: String?) : Signer {
     override val mayRequireUserUnlock = false
@@ -50,7 +44,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-              override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+                                        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
         : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)

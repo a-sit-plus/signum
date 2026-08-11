@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
