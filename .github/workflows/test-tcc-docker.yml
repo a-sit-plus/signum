@@ -35,10 +35,6 @@ on:
         description: Android build-tools version
         required: false
         type: string
-      android-test-api:
-        description: Android managed-device API
-        required: false
-        type: string
       android-cmdline-tools-version:
         description: Android command-line tools version
         required: false
@@ -61,32 +57,46 @@ jobs:
       TESTBALLOON_VERSION: ${{ inputs.testballoon-version }}
       ANDROID_COMPILE_SDK: ${{ inputs.android-compile-sdk }}
       ANDROID_BUILD_TOOLS: ${{ inputs.android-build-tools }}
-      ANDROID_TEST_API: ${{ inputs.android-test-api }}
       ANDROID_CMDLINE_TOOLS_VERSION: ${{ inputs.android-cmdline-tools-version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build and test
+      - name: Build test image
         run: |
           args=()
           for arg in \
             KOTLIN_REPO_URL KOTLIN_VERSION KOTLIN_API_VERSION KOTLIN_LANGUAGE_VERSION \
             KOTLIN_ADDITIONAL_CLI_OPTIONS TESTBALLOON_VERSION ANDROID_COMPILE_SDK \
-            ANDROID_BUILD_TOOLS ANDROID_TEST_API ANDROID_CMDLINE_TOOLS_VERSION; do
+            ANDROID_BUILD_TOOLS ANDROID_CMDLINE_TOOLS_VERSION; do
             value="${!arg}"
             [[ -n "$value" ]] && args+=(--build-arg "$arg=$value")
           done
-          docker build --progress=plain -t signum-tcc-tests "${args[@]}" .
-      - name: Extract test results
-        if: success()
+          docker build --progress=plain -t signum-tcc "${args[@]}" .
+      - name: Run tests
         run: |
-          container=$(docker create signum-tcc-tests)
-          mkdir docker-test-results
-          docker cp "$container:/workspace/." docker-test-results
-          docker rm "$container"
+          docker run --rm \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            --env KOTLIN_REPO_URL \
+            --env KOTLIN_VERSION \
+            --env KOTLIN_API_VERSION \
+            --env KOTLIN_LANGUAGE_VERSION \
+            --env KOTLIN_ADDITIONAL_CLI_OPTIONS \
+            --env TESTBALLOON_VERSION \
+            signum-tcc \
+            bash -lc 'set -eux
+              chmod +x ./gradlew
+              printf "sdk.dir=%s\\n" "$ANDROID_HOME" > local.properties
+              args=(--no-daemon)
+              [[ -n "$KOTLIN_REPO_URL" ]] && args+=("-Pkotlin_repo_url=$KOTLIN_REPO_URL")
+              [[ -n "$KOTLIN_API_VERSION" ]] && args+=("-Pkotlin_api_version=$KOTLIN_API_VERSION")
+              [[ -n "$KOTLIN_LANGUAGE_VERSION" ]] && args+=("-Pkotlin_language_version=$KOTLIN_LANGUAGE_VERSION")
+              [[ -n "$KOTLIN_ADDITIONAL_CLI_OPTIONS" ]] && args+=("-Pkotlin_additional_cli_options=$KOTLIN_ADDITIONAL_CLI_OPTIONS")
+              ./gradlew kotlinUpgradeYarnLock "${args[@]}"
+              ./gradlew allTests "${args[@]}"'
       - name: Publish test report
-        if: success()
+        if: always()
         uses: mikepenz/action-junit-report@v5
         with:
-          report_paths: docker-test-results/**/build/test-results/**/*.xml
+          report_paths: '**/build/test-results/**/*.xml'
           detailed_summary: true
           include_passed: true
