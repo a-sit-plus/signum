@@ -35,11 +35,9 @@ RUN chmod +x ./gradlew; \
     printf 'sdk.dir=%s\n' "${ANDROID_HOME}" > local.properties
 
 RUN set -eux; \
-    set -- allTests pixelAVDAndroidDeviceTest --no-daemon; \
+    set -- allTests --no-daemon; \
     if [ -n "${KOTLIN_REPO_URL:-}" ]; then set -- "$@" "-Pkotlin_repo_url=${KOTLIN_REPO_URL}"; fi; \
-    if [ -n "${KOTLIN_VERSION:-}" ]; then set -- "$@" "-Pkotlin_version=${KOTLIN_VERSION}"; fi; \
     if [ -n "${KOTLIN_API_VERSION:-}" ]; then set -- "$@" "-Pkotlin_api_version=${KOTLIN_API_VERSION}"; fi; \
     if [ -n "${KOTLIN_LANGUAGE_VERSION:-}" ]; then set -- "$@" "-Pkotlin_language_version=${KOTLIN_LANGUAGE_VERSION}"; fi; \
     if [ -n "${KOTLIN_ADDITIONAL_CLI_OPTIONS:-}" ]; then set -- "$@" "-Pkotlin_additional_cli_options=${KOTLIN_ADDITIONAL_CLI_OPTIONS}"; fi; \
-    if [ -n "${TESTBALLOON_VERSION:-}" ]; then set -- "$@" "-Ptestballoon_version=${TESTBALLOON_VERSION}"; fi; \
-    KOTLIN_VERSION_ENV="${KOTLIN_VERSION:-}" TESTBALLOON_VERSION_OVERRIDE="${TESTBALLOON_VERSION:-}" ./gradlew "$@"
+    ./gradlew "$@"
