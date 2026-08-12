@@ -27,7 +27,8 @@ RUN set -eux; \
     mv "${ANDROID_HOME}/cmdline-tools/cmdline-tools" "${ANDROID_HOME}/cmdline-tools/latest"; \
     rm /tmp/android-commandlinetools.zip; \
     yes | sdkmanager --licenses > /dev/null; \
-    sdkmanager "platform-tools" "emulator" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}" "system-images;android-${ANDROID_TEST_API};aosp_atd;x86_64"
+    sdkmanager "platform-tools" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}"
+# Add `"emulator" "system-images;android-${ANDROID_TEST_API};aosp_atd;x86_64"` to sdkmanager when pixelAVDAndroidDeviceTest runs below; downloading it otherwise makes no sense.
 
 COPY . .
 
@@ -35,6 +36,8 @@ RUN chmod +x ./gradlew; \
     printf 'sdk.dir=%s\n' "${ANDROID_HOME}" > local.properties
 
 RUN set -eux; \
+#    android device tests cannot run inside docker, so we only run jvm tests. this misses quite a chunk of coverage
+#    set -- allTests pixelAVDAndroidDeviceTest --no-daemon; \
     set -- allTests --no-daemon; \
     if [ -n "${KOTLIN_REPO_URL:-}" ]; then set -- "$@" "-Pkotlin_repo_url=${KOTLIN_REPO_URL}"; fi; \
     if [ -n "${KOTLIN_API_VERSION:-}" ]; then set -- "$@" "-Pkotlin_api_version=${KOTLIN_API_VERSION}"; fi; \
