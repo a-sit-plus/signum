@@ -4,6 +4,7 @@ import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.nextAsn1Integer
 import at.asitplus.awesn1.nextNegativeAsn1Integer
 import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.signum.InsecureRandom
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -19,19 +20,19 @@ val RandomAsn1IntTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     var negativeLimitHit = false
     property("nBytes", Arb.int(1, 100), nameFn = { "$it" }) - { nBytes ->
         "Two's complement" {
-            val size = CryptoRand.nextAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
+            val size = InsecureRandom.nextAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
             size shouldBeLessThanOrEqual nBytes
             if (size == nBytes) twosComplementLimitHit = true
 
         }
         "Positive" {
-            val size = CryptoRand.nextPositiveAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
+            val size = InsecureRandom.nextPositiveAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
             size shouldBeLessThanOrEqual nBytes
             if (size == nBytes) positiveLimitHit = true
         }
 
         "Negative" {
-            val size = CryptoRand.nextNegativeAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
+            val size = InsecureRandom.nextNegativeAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
             size shouldBeLessThanOrEqual nBytes
             if(size == nBytes) negativeLimitHit = true
         }
