@@ -8,7 +8,10 @@ import kotlin.time.Instant
 
 /**
  * Base-Claims defined in RFC7519 which build the basis for
- * JWT Payloads none of which are required
+ * JWT Payloads none of which are required.
+ *
+ * `@SerialName` annotations are just for convenience and
+ * ARE NOT BEING INHERITED to the implementing class!
  *
  * See [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)
  */
