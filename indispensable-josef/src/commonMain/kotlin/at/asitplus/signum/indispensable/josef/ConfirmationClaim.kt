@@ -2,15 +2,8 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 /**
  * Structure to declare posession of a particular proof-of-possesion key,
@@ -68,31 +61,13 @@ data class ConfirmationClaim(
     @SerialName("jkt")
     val jsonWebKeyThumbprint: String? = null,
 ) {
-
-    
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     companion object {
-        
         @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<ConfirmationClaim>(it)
         }
-    }
-}
-
-
-object JweEncryptedSerializer : KSerializer<JweEncrypted> {
-
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("JweEncryptedSerializer", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: JweEncrypted) {
-        encoder.encodeString(value.serialize())
-    }
-
-    override fun deserialize(decoder: Decoder): JweEncrypted {
-        return JweEncrypted.deserialize(decoder.decodeString()).getOrThrow()
     }
 }
