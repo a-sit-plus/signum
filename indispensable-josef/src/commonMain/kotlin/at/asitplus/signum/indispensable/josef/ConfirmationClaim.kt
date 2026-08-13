@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
  *
  * See [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800)
  */
+@Deprecated("Moved to VCK. Will be removed next release", replaceWith = ReplaceWith("ConfirmationClaim", "at.asitplus.data.jwtpayload.ConfirmationClaim"))
 @Serializable
 data class ConfirmationClaim(
     /**

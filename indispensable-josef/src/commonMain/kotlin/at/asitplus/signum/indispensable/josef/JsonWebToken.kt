@@ -19,6 +19,7 @@ import kotlin.time.Instant
  * See [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)
  */
 @Serializable
+@Deprecated("Refactored to interface. Will be removed.", replaceWith = ReplaceWith("JwtPayload"))
 data class JsonWebToken(
 
     /**
@@ -258,6 +259,7 @@ data class JsonWebToken(
 }
 
 @Serializable
+@Deprecated("Moved to VCK", replaceWith = ReplaceWith("ClientStatus", "at.asitplus.data.jwtpayload.ClientStatus"))
 data class ClientStatus(
     /**
      * Status list reference as specified by OID4VCI Appendix E. The value represents the revocation state of the
