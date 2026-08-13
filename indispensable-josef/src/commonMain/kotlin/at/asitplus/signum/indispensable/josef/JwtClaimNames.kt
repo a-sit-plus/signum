@@ -19,7 +19,7 @@ object JwtClaimNames {
         }
         object EudiTs3Claims {
             @Deprecated("TS3 WUA 1.5 removed eudi_wallet_info")
-            const val WALLET_INFO = "wallet_info"
+            const val WALLET_INFO = "eudi_wallet_info"
 
             const val WALLET_VERSION = "wallet_version"
             const val WALLET_SOLUTION_CERTIFICATION_INFORMATION = "wallet_solution_certification_information"
