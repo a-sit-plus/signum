@@ -13,6 +13,7 @@ import kotlin.time.Instant
  * [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#keyattestation-jwt)
  */
 @Serializable
+@Deprecated("Moved to VCK", replaceWith = ReplaceWith("KeyAttestationPayload","at.asitplus.data.jwtpayload.payloads.KeyAttestationPayload"))
 data class KeyAttestationJwt(
     @SerialName("iss")
     val issuer: String? = null,

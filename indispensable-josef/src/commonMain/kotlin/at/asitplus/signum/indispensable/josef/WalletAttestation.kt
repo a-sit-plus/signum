@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * See https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
  */
 @Serializable
+@Deprecated("TS3 WUA 1.5 removed eudi_wallet_info from Wallet Instance Attestations. Will be removed.")
 data class EudiWalletInfo(
     @SerialName("general_info")
     val generalInfo: GeneralInfo? = null,
@@ -21,6 +22,7 @@ data class EudiWalletInfo(
  * See https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
  */
 @Serializable
+@Deprecated("TS3 WUA 1.5 removed eudi_wallet_info from Wallet Instance Attestations. Will be removed")
 data class GeneralInfo(
     @SerialName("wallet_provider_name")
     val walletProviderName: String,
@@ -37,6 +39,7 @@ data class GeneralInfo(
  * See https://github.com/eu-digital-identity-wallet/eudi-doc-standards-and-technical-specifications/blob/main/docs/technical-specifications/ts3-wallet-unit-attestation.md
  */
 @Serializable
+@Deprecated("TS3 WUA 1.5 removed eudi_wallet_info from Wallet Instance Attestations. Will be removed")
 data class KeyStorageInfo(
     @SerialName("storage_type")
     val storageType: String,
