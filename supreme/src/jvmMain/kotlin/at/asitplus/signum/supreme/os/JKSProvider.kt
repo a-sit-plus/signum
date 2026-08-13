@@ -37,7 +37,6 @@ import at.asitplus.signum.supreme.sign.EphemeralSigner
 import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.supreme.os.SupremeJKSSignerCreationProvider.JKSProvider.Companion.invoke
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -127,6 +126,7 @@ object SupremeJKSSignerCreationProvider : JKSSigningKeyCreationProvider {
             }
             else -> TODO("providerize")
         }
+}
 
 interface JKSSigner: Signer, Signer.WithAlias {
     class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
@@ -468,7 +468,6 @@ internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfigura
             JKSProvider(opt.accessor)
         null -> error("unreachable")
     }
-}
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     throw UnsupportedOperationException("No default persistence mode is available on the JVM. Use JKSProvider {file {}} or similar. This will be natively available from the getPlatformSigningProvider {} DSL in a future release. (Blocked by KT-71036.)")

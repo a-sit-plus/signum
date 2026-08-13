@@ -76,7 +76,7 @@ class TbsCertificationRequest private constructor(
         Pkcs10CertificationRequestInfo(
             subjectName = providedContent.subjectName.requireX509().asn1Representation,
             publicKey = providedContent.publicKey.asn1Representation,
-            attributes = providedContent.attributes.map { it.requireX509().asn1Representation },
+            attributes = providedContent.attributes.mapTo(mutableSetOf()) { it.requireX509().asn1Representation },
         )
     }
 
