@@ -3,7 +3,9 @@ package at.asitplus.signum.supreme
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
+import kotlin.coroutines.coroutineContext
 import kotlin.jvm.JvmInline
+import kotlinx.coroutines.ensureActive
 
 /** These map to SignatureResult.Failure instead of SignatureResult.Error */
 sealed class UserInitiatedCancellationReason(message: String?, cause: Throwable?): Throwable(message, cause)
@@ -56,8 +58,15 @@ inline fun <T: CryptoSignature.RawByteEncodable, S: CryptoSignature.RawByteEncod
         onFailure = { SignatureResult.FromException(it) })
 
 /** Runs the block, catches exceptions, and maps to [SignatureResult].
+ * Respects coroutine cancellation: checks [ensureActive] before executing and
+ * re-throws [CancellationException] so that structured concurrency is preserved.
  * @see SignatureResult.FromException */
-internal inline fun signCatching(fn: ()->CryptoSignature.RawByteEncodable): SignatureResult<*> =
-    catching { fn() }.fold(
+internal suspend inline fun signCatching(fn: ()->CryptoSignature.RawByteEncodable): SignatureResult<*> {
+    coroutineContext.ensureActive()
+    return catching { fn() }.fold(
         onSuccess = { SignatureResult.Success(it) },
-        onFailure = { SignatureResult.FromException(it) })
+        onFailure = {
+            coroutineContext.ensureActive()
+            SignatureResult.FromException(it)
+        })
+}
