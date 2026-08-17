@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -64,18 +65,20 @@ val JwsHeaderPartsTest by matrixSuite {
     }
 
     "encoded protected header bytes can be merged with unprotected fields" {
+        val unprotected = listOf(
+            JwsHeader.SerialNames.KEY_ID,
+            JwsHeader.SerialNames.CONTENT_TYPE,
+        )
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "did:example:signer",
             contentType = "application/example+json",
-            unprotectedMembers = listOf(
-                JwsHeader.SerialNames.KEY_ID,
-                JwsHeader.SerialNames.CONTENT_TYPE,
-            ),
+            unprotectedMembers = unprotected,
         )
         val protectedHeader = header.protectedPart()
         val unprotectedHeader = header.unprotectedPart()
+        unprotectedHeader.keys shouldContainAll unprotected
 
         val combined = JwsHeader.fromParts(
             protectedHeader = protectedHeader.toProtectedHeaderBytes(),

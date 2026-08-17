@@ -332,7 +332,7 @@ data class JwsHeader(
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JwtPayload>? by lazy {
+    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken>? by lazy {
         attestationJwt?.typed()
     }
 
