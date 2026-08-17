@@ -64,13 +64,9 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /**
-         * Creates a flattened JWS from protected and unprotected header fragments.
-         * The fragments may be partial, but their merged content must form a valid [JwsHeader].
-         */
-        suspend inline operator fun <reified P> invoke(
-            protectedHeader: JwsHeader.Part?,
-            unprotectedHeader: JwsHeader.Part?,
+        /** Creates a flattened JWS, splitting [jwsHeader] according to [JwsHeader.unprotectedMembers]. */
+        suspend inline fun <reified P> flattened(
+            jwsHeader: JwsHeader,
             payload: P,
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
@@ -79,7 +75,7 @@ data class JwsTyped<out J : JWS, out P>(
             ).encodeToByteArray()
             return JwsFlattenedTyped(
                 JwsFlattened(
-                    protectedHeader, unprotectedHeader, plainPayload, signer = signer
+                    jwsHeader, plainPayload, signer = signer
                 ), payload
             )
         }

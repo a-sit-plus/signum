@@ -23,7 +23,7 @@ val JwsTypedTest by matrixSuite {
             keyId = "kid-compact",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+        val expectedProtectedHeader = header.protectedPart().toProtectedHeaderBytes()
         var capturedSignatureInput: ByteArray? = null
 
         val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
@@ -84,22 +84,23 @@ val JwsTypedTest by matrixSuite {
         reparsed.payload shouldBe payload
     }
 
-    "flattened typed wrappers can be created from header fragments and existing flattened JWS" {
-        val protectedHeader = JwsHeader.Part(
+    "flattened typed wrappers can be created from split headers and existing flattened JWS" {
+        val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
-        )
-        val unprotectedHeader = JwsHeader.Part(
             keyId = "kid-flattened",
             contentType = "application/example+json",
+            unprotectedMembers = listOf(
+                JwsHeader.SerialNames.KEY_ID,
+                JwsHeader.SerialNames.CONTENT_TYPE,
+            ),
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)
+        val expectedProtectedHeader = header.protectedPart().takeUnless { it.isEmpty() }?.toProtectedHeaderBytes()
         var capturedSignatureInput: ByteArray? = null
 
-        val typedFlattened: JwsFlattenedTyped<JsonObject> = JwsTyped(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
+        val typedFlattened: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
+            jwsHeader = header,
             payload = payload,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
@@ -108,7 +109,7 @@ val JwsTypedTest by matrixSuite {
 
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
-        typedFlattened.jws.unprotectedHeader shouldBe unprotectedHeader
+        typedFlattened.jws.unprotectedHeader shouldBe header.unprotectedPart()
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
@@ -116,22 +117,24 @@ val JwsTypedTest by matrixSuite {
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
-        val first: JwsFlattenedTyped<JsonObject> = JwsTyped(
-            protectedHeader = JwsHeader.Part(
+        val first: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
+            jwsHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
+                keyId = "kid-1",
+                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
             ),
-            unprotectedHeader = JwsHeader.Part(keyId = "kid-1"),
             payload = payload,
         ) {
             byteArrayOf(1, 1, 1, 1)
         }
-        val second: JwsFlattenedTyped<JsonObject> = JwsTyped(
-            protectedHeader = JwsHeader.Part(
+        val second: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
+            jwsHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
+                keyId = "kid-2",
+                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
             ),
-            unprotectedHeader = JwsHeader.Part(keyId = "kid-2"),
             payload = payload,
         ) {
             byteArrayOf(2, 2, 2, 2)

@@ -58,11 +58,12 @@ val JwsJvmTest by matrixSuite {
 
         "flattened JWS can be serialized and verified by Nimbus" { it ->
             val flattened = JwsFlattened.invoke(
-                protectedHeader = JwsHeader.Part(
+                jwsHeader = JwsHeader(
                     algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                     type = "application/example+jws",
+                    keyId = "kid-1",
+                    unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 ),
-                unprotectedHeader = JwsHeader.Part(keyId = "kid-1"),
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),
             )
@@ -82,18 +83,20 @@ val JwsJvmTest by matrixSuite {
 
         "general JWS can be serialized and verified by Nimbus" { it ->
             val flattened1 = JwsFlattened.invoke(
-                protectedHeader = JwsHeader.Part(
+                jwsHeader = JwsHeader(
                     algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                    keyId = "kid-1",
+                    unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 ),
-                unprotectedHeader = JwsHeader.Part(keyId = "kid-1"),
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),
             )
             val flattened2 = JwsFlattened.invoke(
-                protectedHeader = JwsHeader.Part(
+                jwsHeader = JwsHeader(
                     algorithm = it.signer2.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                    keyId = "kid-2",
+                    unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 ),
-                unprotectedHeader = JwsHeader.Part(keyId = "kid-2"),
                 payload = it.payload,
                 signer = it.signerFor(it.signer2),
             )

@@ -5,12 +5,13 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Flattened JSON JWS serialization.
  *
  * A flattened JWS carries one payload and one signature. The protected header is stored as encoded bytes in
- * [plainProtectedHeader]; the optional unprotected header is represented as [JwsHeader.Part]. The effective
+ * [plainProtectedHeader]; the optional unprotected header is represented as a [JsonObject]. The effective
  * [jwsHeader] is reconstructed by merging both fragments with [JwsHeader.fromParts].
  *
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
@@ -29,7 +30,7 @@ data class JwsFlattened internal constructor(
     @SerialName(SerialNames.PROTECTED)
     val plainProtectedHeader: ByteArray? = null,
     @SerialName(SerialNames.HEADER)
-    val unprotectedHeader: JwsHeader.Part? = null,
+    val unprotectedHeader: JsonObject? = null,
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val plainPayload: ByteArray,
@@ -39,11 +40,11 @@ data class JwsFlattened internal constructor(
 ) : JWS() {
 
     init {
-        JwsProtectedHeaderSerializer.requireAbsentIfEmpty(plainProtectedHeader)
+        plainProtectedHeader.requireAbsentIfEmptyProtectedHeader()
     }
 
     @Transient
-    val jwsHeader = JwsHeader.fromParts(protectedHeader, unprotectedHeader)
+    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
     @Transient
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
@@ -75,19 +76,19 @@ data class JwsFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWS from protected and unprotected header fragments.
+         * Creates a flattened JWS, splitting [jwsHeader] according to [JwsHeader.unprotectedMembers].
          *
-         * The fragments may be partial, but their merged content must form a valid [JwsHeader].
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
         suspend operator fun invoke(
-            protectedHeader: JwsHeader.Part?,
-            unprotectedHeader: JwsHeader.Part?,
+            jwsHeader: JwsHeader,
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArrayOrNull(protectedHeader)
+            val protectedHeader = jwsHeader.protectedPart()
+            val unprotectedHeader = jwsHeader.unprotectedPart().takeUnless { it.isEmpty() }
+            val plainProtectedHeader = protectedHeader.takeUnless { it.isEmpty() }?.toProtectedHeaderBytes()
             return JwsFlattened(
                 plainProtectedHeader,
                 unprotectedHeader,
@@ -98,8 +99,8 @@ data class JwsFlattened internal constructor(
     }
 }
 
-val JwsFlattened.protectedHeader: JwsHeader.Part?
-        get() = plainProtectedHeader?.let(JwsProtectedHeaderSerializer::decodeFromByteArray)
+val JwsFlattened.protectedHeader: JsonObject?
+        get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
 
 /**
  * Converts flattened JSON serialization to compact serialization.
@@ -110,7 +111,6 @@ val JwsFlattened.protectedHeader: JwsHeader.Part?
 fun JwsFlattened.toJwsCompact(): JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
-    runCatching { JwsHeader.fromParts(protectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
     return JwsCompact(
         plainProtectedHeader = plainProtectedHeader,
         plainPayload = plainPayload,

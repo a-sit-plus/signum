@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonObject
 
 /**
  * General JSON JWS.
@@ -82,7 +83,7 @@ data class JwsGeneral internal constructor(
     }
 }
 
-val JwsGeneral.protectedHeaders: List<JwsHeader.Part?>
+val JwsGeneral.protectedHeaders: List<JsonObject?>
     get() = signatureElements.map { it.protectedHeader }
 
 /**
