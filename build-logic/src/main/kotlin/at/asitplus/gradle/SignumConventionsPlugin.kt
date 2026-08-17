@@ -1,7 +1,7 @@
 package at.asitplus.gradle
 
 import at.asitplus.gradle.at.asitplus.gradle.addTestExtensions
-import com.android.build.api.dsl.androidLibrary
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -61,7 +61,9 @@ class SignumConventionsExtension(private val project: Project) {
 
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
             compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
-            sourceSets.whenObjectAdded {
+            // configureEach (not whenObjectAdded): covers eagerly-created source sets like AGP 9's androidMain,
+            // so the ExperimentalUnsignedTypes opt-in is applied uniformly and KGP's opt-in consistency check passes.
+            sourceSets.configureEach {
                 languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
             }
         }
@@ -175,7 +177,9 @@ class SignumConventionsExtension(private val project: Project) {
             return
         }
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
-            androidLibrary {
+            // AGP 9.0 removed the `androidLibrary { }` extension function; the KMP android library target is
+            // configured via the targets container instead (it carries the same namespace/minSdk/packaging DSL).
+            targets.withType<KotlinMultiplatformAndroidLibraryTarget>().configureEach {
                 this.namespace = namespace
                 minSdkOverride?.let {
                     project.logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to $minSdkOverride for project ${project.name}" + "\u001b[0m")
@@ -209,6 +213,8 @@ class SignumConventionsExtension(private val project: Project) {
                         "win32-x86/attach_hotspot_windows.dll",
                         "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
                         "META-INF/licenses/*",
+                        "META-INF/LICENSE.md",
+                        "META-INF/NOTICE.md",
                         //noinspection WrongGradleMethod
                     ).forEach { resources.excludes.add(it) }
                 }
