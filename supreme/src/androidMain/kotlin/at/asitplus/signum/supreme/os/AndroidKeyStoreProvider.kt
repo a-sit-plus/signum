@@ -218,33 +218,41 @@ object AndroidKeyStoreProvider:
             }
         }
 
-        with(config) {
-            val hw = config.hardware.v
-            when {
-                hw == null || hw.strongBox == DISCOURAGED -> builder.useStrongBox( false).generate()
-                hw.strongBox == REQUIRED -> builder.useStrongBox(true).generate() //throws if no strongbox
+        val hw = config.hardware.v
+        val createdStrongBox: Boolean = with(config) {
+           when {
+                hw == null || hw.strongBox == DISCOURAGED -> {
+                    builder.useStrongBox(false).generate()
+                    false
+                }
+
+                hw.strongBox == REQUIRED -> {
+                    builder.useStrongBox(true).generate() //throws if no strongbox
+                    true
+                }
+
                 else /* PREFERRED */ -> try {
                     //there is no API to query, so try-catch the specific n/a exception
-                    builder.useStrongBox( true).generate()
+                    builder.useStrongBox(true).generate()
+                    true
                 } catch (_: StrongBoxUnavailableException) {
                     catchingUnwrapped { ks.deleteEntry(alias) } // drop and swallow exception: should not work, but hello Samsung!
-                    builder.useStrongBox( false).generate()
+                    builder.useStrongBox(false).generate()
+                    false
                 }
             }
         }
+
+        //Double-check on newer Android Versions. Better safe than Samsung
         val signer = getSignerForKey(alias, config.signer.v).getOrThrow()
         config.hardware.v?.let { hw ->
-            @Suppress("DEPRECATION")
-            val isHardwareBacked = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                signer.securityLevel == KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT ||
-                        signer.securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX ||
-                        signer.securityLevel == KeyProperties.SECURITY_LEVEL_UNKNOWN_SECURE
-            } else signer.keyInfo.isInsideSecureHardware
-
             val missingRequirement = when {
-                hw.strongBox == REQUIRED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                        !signer.isStrongBoxBacked -> "StrongBox"
-                hw.backing == REQUIRED && !isHardwareBacked -> "secure hardware"
+                hw.strongBox == REQUIRED -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !signer.isStrongBoxBacked) "StrongBox"
+                    else createdStrongBox.let { if (it) null else "StrongBox" } //fallback to keyStore indicator on older Android versions
+                }
+
+                hw.backing == REQUIRED && !signer.isInsideSecureHardware -> "secure hardware"
                 else -> null
             }
             missingRequirement?.let {
@@ -502,6 +510,15 @@ val AndroidKeystoreSigner.securityLevel: Int
 /** Whether this key is actually backed by a StrongBox secure element (precise on API 31+; false on older devices). */
 val AndroidKeystoreSigner.isStrongBoxBacked: Boolean
     get() = securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX
+
+/** Whether this key isis inside any secure hardware (TEE or StrognBox). */
+@Suppress("DEPRECATION")
+val AndroidKeystoreSigner.isInsideSecureHardware: Boolean
+    get() =  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        securityLevel == KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT ||
+                securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX ||
+                securityLevel == KeyProperties.SECURITY_LEVEL_UNKNOWN_SECURE
+    } else keyInfo.isInsideSecureHardware
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     AndroidKeyStoreProvider
