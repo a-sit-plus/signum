@@ -15,7 +15,7 @@ bouncycastle= "1.85"
 testballoon = "1.0.1-K2.4.0"
 serialization = "1.11.0"
 cidre = "0.4.0"
-urikmp = "0.0.20"
+urikmp = "0.0.21"
 awesn1 = "0.6.1"
 modulator = "0.1.0"
 
