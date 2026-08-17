@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.26.0 / 0.16.0
+* Fix StrongBox `PREFERRED` actually preferring strongbox, which is now the default for HW-backed keys on Android
+* Fix AndroidKeyStore not verifying security level
+* Dependency Updates:
+    * Kotlin 2.4.10
+    * AGP 9.1.1
+    * Gradle 9.6.1
+    * ASP Gradle Conventions 20260722
+    * Multibase 1.3.0
+    * Bouncy Castle 1.85
+    * kotlinx-datetime 0.8.0
+    * Ktor 3.5.1
+    * TestBalloon 1.0.1-K2.4.0
+    * TestBalloon Addons 0.16.0
+
 ## 3.25.0 (Supreme unaffected)
  * Add `challenge` to `JsonWebToken`, used in [OAuth 2.0 Attestation-Based Client Authentication](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-10)
 
