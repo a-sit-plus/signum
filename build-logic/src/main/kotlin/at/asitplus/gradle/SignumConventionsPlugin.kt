@@ -213,6 +213,8 @@ class SignumConventionsExtension(private val project: Project) {
                         "win32-x86/attach_hotspot_windows.dll",
                         "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
                         "META-INF/licenses/*",
+                        "META-INF/LICENSE.md",
+                        "META-INF/NOTICE.md",
                         //noinspection WrongGradleMethod
                     ).forEach { resources.excludes.add(it) }
                 }

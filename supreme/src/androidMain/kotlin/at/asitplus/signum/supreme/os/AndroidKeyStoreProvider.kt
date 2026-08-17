@@ -5,6 +5,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
+import android.security.keystore.StrongBoxUnavailableException
 import android.security.keystore.UserNotAuthenticatedException
 import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.AuthenticationResult
@@ -14,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -62,7 +64,14 @@ internal sealed interface FragmentContext {
 private val dispatcher = Dispatchers.IO.limitedParallelism(1, "Android Keystore Operations")
 
 class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
-    /** Whether a StrongBox TPM is required. */
+    /**
+     * Whether to back this key with a StrongBox secure element.
+     * - [REQUIRED]: use StrongBox; key generation fails if the device lacks StrongBox or the algorithm/params are unsupported.
+     * - [PREFERRED] (default): use StrongBox if available and it supports the requested algorithm/params, otherwise transparently
+     *   fall back to the TEE.
+     * - [DISCOURAGED]: do not use StrongBox.
+     * @see FeaturePreference
+     */
     var strongBox: FeaturePreference = PREFERRED
 }
 class AndroidSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<AndroidSignerConfiguration>() {
@@ -155,7 +164,7 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        val spec = KeyGenParameterSpec.Builder(
+        val builder= KeyGenParameterSpec.Builder(
             alias,
             config._algSpecific.v.let {
                 (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
@@ -182,11 +191,6 @@ object AndroidKeyStoreProvider:
             setCertificateNotBefore(Date.from(Instant.now()))
             setCertificateSubject(X500Principal("CN=$alias")) // TODO
             config.hardware.v?.let { hw ->
-                setIsStrongBoxBacked(when (hw.strongBox) {
-                    REQUIRED -> true
-                    PREFERRED -> false // TODO
-                    DISCOURAGED -> false
-                })
                 hw.attestation.v?.let {
                     setAttestationChallenge(it.challenge)
                 }
@@ -212,15 +216,61 @@ object AndroidKeyStoreProvider:
                     }
                 }
             }
-        }.build()
+        }
+
+        with(config) {
+            val hw = config.hardware.v
+            when {
+                hw == null || hw.strongBox == DISCOURAGED -> builder.useStrongBox( false).generate()
+                hw.strongBox == REQUIRED -> builder.useStrongBox(true).generate() //throws if no strongbox
+                else /* PREFERRED */ -> try {
+                    //there is no API to query, so try-catch the specific n/a exception
+                    builder.useStrongBox( true).generate()
+                } catch (_: StrongBoxUnavailableException) {
+                    catchingUnwrapped { ks.deleteEntry(alias) } // drop and swallow exception: should not work, but hello Samsung!
+                    builder.useStrongBox( false).generate()
+                }
+            }
+        }
+        val signer = getSignerForKey(alias, config.signer.v).getOrThrow()
+        config.hardware.v?.let { hw ->
+            @Suppress("DEPRECATION")
+            val isHardwareBacked = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                signer.securityLevel == KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT ||
+                        signer.securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX ||
+                        signer.securityLevel == KeyProperties.SECURITY_LEVEL_UNKNOWN_SECURE
+            } else signer.keyInfo.isInsideSecureHardware
+
+            val missingRequirement = when {
+                hw.strongBox == REQUIRED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        !signer.isStrongBoxBacked -> "StrongBox"
+                hw.backing == REQUIRED && !isHardwareBacked -> "secure hardware"
+                else -> null
+            }
+            missingRequirement?.let {
+                ks.deleteEntry(alias)
+                throw UnsupportedCryptoException("Generated key is not backed by required $it")
+            }
+        }
+        return@catching signer
+    }}
+
+    context(config: AndroidSigningKeyConfiguration)
+    private fun KeyGenParameterSpec.Builder.useStrongBox(use: Boolean): KeyGenParameterSpec.Builder = apply{
+        config.hardware.v?.also {
+            setIsStrongBoxBacked(use)
+        }
+    }
+
+    context(config: AndroidSigningKeyConfiguration)
+    private fun KeyGenParameterSpec.Builder.generate() {
         KeyPairGenerator.getInstance(when(config._algSpecific.v) {
             is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
             is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
         }, "AndroidKeyStore").apply {
-            initialize(spec)
+            initialize(this@generate.build())
         }.generateKeyPair()
-        return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
-    }}
+    }
 
     override suspend fun getSignerForKey(
         alias: String,
@@ -438,6 +488,20 @@ val AndroidKeystoreSigner.needsAuthentication inline get() =
 val AndroidKeystoreSigner.needsAuthenticationForEveryUse inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds <= 0)
+
+/**
+ * The Keymaster security level backing this key: one of [KeyProperties.SECURITY_LEVEL_STRONGBOX],
+ * [KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT], [KeyProperties.SECURITY_LEVEL_SOFTWARE] or
+ * [KeyProperties.SECURITY_LEVEL_UNKNOWN]. Requires API 31+; on older devices returns
+ * [KeyProperties.SECURITY_LEVEL_UNKNOWN] (use [isStrongBoxBacked] / `keyInfo.isInsideSecureHardware` there).
+ */
+val AndroidKeystoreSigner.securityLevel: Int
+    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) keyInfo.securityLevel
+    else KeyProperties.SECURITY_LEVEL_UNKNOWN
+
+/** Whether this key is actually backed by a StrongBox secure element (precise on API 31+; false on older devices). */
+val AndroidKeystoreSigner.isStrongBoxBacked: Boolean
+    get() = securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     AndroidKeyStoreProvider
