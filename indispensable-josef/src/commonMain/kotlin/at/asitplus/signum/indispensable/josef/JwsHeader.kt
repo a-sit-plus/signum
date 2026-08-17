@@ -5,14 +5,17 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
-import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
+import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlin.time.Instant
 
@@ -256,110 +259,15 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
-) {
+
     /**
-     * Typed representation of either the protected or unprotected JWS header fragment.
-     *
-     * A [Part] may be incomplete and does not have to be a valid [JwsHeader] on its own. Only the merged protected
-     * plus unprotected representation must decode to a valid [JwsHeader].
+     * [SerialName]s of parameters which are *not* in the protected header
      */
-    @Serializable
-    data class Part(
-        @SerialName(SerialNames.KEY_ID)
-        val keyId: String? = null,
-        @SerialName(SerialNames.TYPE)
-        val type: String? = null,
-        @SerialName(SerialNames.ALGORITHM)
-        val algorithm: JwsAlgorithm? = null,
-        @SerialName(SerialNames.CONTENT_TYPE)
-        val contentType: String? = null,
-        @SerialName(SerialNames.CERTIFICATE_CHAIN)
-        @Serializable(with = CertificateChainBase64Serializer::class)
-        val certificateChain: CertificateChain? = null,
-        @SerialName(SerialNames.NOT_BEFORE)
-        @Serializable(with = InstantLongSerializer::class)
-        val notBefore: Instant? = null,
-        @SerialName(SerialNames.ISSUED_AT)
-        @Serializable(with = InstantLongSerializer::class)
-        val issuedAt: Instant? = null,
-        @SerialName(SerialNames.EXPIRATION)
-        @Serializable(with = InstantLongSerializer::class)
-        val expiration: Instant? = null,
-        @SerialName(SerialNames.JSON_WEB_KEY)
-        val jsonWebKey: JsonWebKey? = null,
-        @SerialName(SerialNames.JSON_WEB_KEY_SET_URL)
-        val jsonWebKeySetUrl: String? = null,
-        @SerialName(SerialNames.CERTIFICATE_URL)
-        val certificateUrl: String? = null,
-        @SerialName(SerialNames.CERTIFICATE_SHA1_THUMBPRINT)
-        @Serializable(with = ByteArrayBase64UrlSerializer::class)
-        val certificateSha1Thumbprint: ByteArray? = null,
-        @SerialName(SerialNames.CERTIFICATE_SHA256_THUMBPRINT)
-        @Serializable(with = ByteArrayBase64UrlSerializer::class)
-        val certificateSha256Thumbprint: ByteArray? = null,
-        @SerialName(SerialNames.ATTESTATION_JWT)
-        @Serializable(with = JwsCompactStringSerializer::class)
-        val attestationJwt: JwsCompact? = null,
-        @SerialName(SerialNames.KEY_ATTESTATION)
-        @Serializable(with = JwsCompactStringSerializer::class)
-        val keyAttestation: JwsCompact? = null,
-        @SerialName(SerialNames.VC_TYPE_METADATA)
-        val vcTypeMetadata: Set<String>? = null,
-        @SerialName(SerialNames.CLIENT_ID)
-        val clientId: String? = null,
-    ) {
-        fun toJsonObject(): JsonObject =
-            joseCompliantSerializer.encodeToJsonElement(serializer(), this).jsonObject
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null || this::class != other::class) return false
-
-            other as Part
-
-            if (keyId != other.keyId) return false
-            if (type != other.type) return false
-            if (algorithm != other.algorithm) return false
-            if (contentType != other.contentType) return false
-            if (certificateChain != other.certificateChain) return false
-            if (notBefore != other.notBefore) return false
-            if (issuedAt != other.issuedAt) return false
-            if (expiration != other.expiration) return false
-            if (jsonWebKey != other.jsonWebKey) return false
-            if (jsonWebKeySetUrl != other.jsonWebKeySetUrl) return false
-            if (certificateUrl != other.certificateUrl) return false
-            if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
-            if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
-            if (attestationJwt != other.attestationJwt) return false
-            if (keyAttestation != other.keyAttestation) return false
-            if (vcTypeMetadata != other.vcTypeMetadata) return false
-            if (clientId != other.clientId) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = keyId?.hashCode() ?: 0
-            result = 31 * result + (type?.hashCode() ?: 0)
-            result = 31 * result + (algorithm?.hashCode() ?: 0)
-            result = 31 * result + (contentType?.hashCode() ?: 0)
-            result = 31 * result + (certificateChain?.hashCode() ?: 0)
-            result = 31 * result + (notBefore?.hashCode() ?: 0)
-            result = 31 * result + (issuedAt?.hashCode() ?: 0)
-            result = 31 * result + (expiration?.hashCode() ?: 0)
-            result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
-            result = 31 * result + (jsonWebKeySetUrl?.hashCode() ?: 0)
-            result = 31 * result + (certificateUrl?.hashCode() ?: 0)
-            result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
-            result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
-            result = 31 * result + (attestationJwt?.hashCode() ?: 0)
-            result = 31 * result + (keyAttestation?.hashCode() ?: 0)
-            result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
-            result = 31 * result + (clientId?.hashCode() ?: 0)
-            return result
-        }
-
-    }
+    @Transient
+    val unprotectedMembers: List<String> = listOf()
+) {
+    fun protectedPart(serialFormat: Json) = serialFormat.encodeToJsonElement(this).jsonObject.filter { it.key !in unprotectedMembers } as JsonObject
+    fun unprotectedPart(serialFormat: Json) = serialFormat.encodeToJsonElement(this).jsonObject.filter { it.key in unprotectedMembers } as JsonObject
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
