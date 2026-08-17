@@ -6,6 +6,7 @@ This is a major refactor!
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
+* Replace `JwsHeader.Part` with `JwsHeader.unprotectedMembers`-based header splitting
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Dependency Updates:

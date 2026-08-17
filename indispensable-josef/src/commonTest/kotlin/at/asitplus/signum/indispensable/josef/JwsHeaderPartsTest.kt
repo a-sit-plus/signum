@@ -6,9 +6,11 @@ import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 val JwsHeaderPartsTest by matrixSuite {
-    "full JWS header can be converted to a typed header part" {
+    "full JWS header can be converted to its protected JSON object" {
         val header = JwsHeader(
             keyId = "did:example:signer",
             type = "vc+sd-jwt",
@@ -19,33 +21,29 @@ val JwsHeaderPartsTest by matrixSuite {
             vcTypeMetadata = setOf("bWV0YWRhdGE"),
         )
 
-        val part = header.toPart()
+        val part = header.protectedPart()
 
-        part shouldBe JwsHeader.Part(
-            keyId = "did:example:signer",
-            type = "vc+sd-jwt",
-            algorithm = JwsAlgorithm.Signature.ES256,
-            contentType = "application/example+json",
-            certificateSha1Thumbprint = byteArrayOf(1, 2, 3),
-            certificateSha256Thumbprint = byteArrayOf(4, 5, 6),
-            vcTypeMetadata = setOf("bWV0YWRhdGE"),
+        part shouldBe joseCompliantSerializer.decodeFromString<JsonObject>(
+            joseCompliantSerializer.encodeToString(header)
         )
-        JwsHeader.fromParts(protectedHeader = part) shouldBe header
+        JwsHeader.fromJsonObjects(protectedHeader = part) shouldBe header
     }
 
     "split headers combine into a valid JWS header" {
-        val protectedHeader = JwsHeader.Part(
+        val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.ES256,
             type = "vc+sd-jwt",
-        )
-        val unprotectedHeader = JwsHeader.Part(
             keyId = "did:example:signer",
             vcTypeMetadata = setOf("bWV0YWRhdGE"),
+            unprotectedMembers = listOf(
+                JwsHeader.SerialNames.KEY_ID,
+                JwsHeader.SerialNames.VC_TYPE_METADATA,
+            ),
         )
 
-        val combined = JwsHeader.fromParts(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
+        val combined = JwsHeader.fromJsonObjects(
+            protectedHeader = header.protectedPart(),
+            unprotectedHeader = header.unprotectedPart(),
         )
 
         combined.algorithm shouldBe JwsAlgorithm.Signature.ES256
@@ -56,9 +54,9 @@ val JwsHeaderPartsTest by matrixSuite {
 
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
-            JwsHeader.fromParts(
-                protectedHeader = JwsHeader.Part(keyId = "protected"),
-                unprotectedHeader = JwsHeader.Part(keyId = "unprotected"),
+            JwsHeader.fromJsonObjects(
+                protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
+                unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
             )
         }
 
@@ -66,60 +64,64 @@ val JwsHeaderPartsTest by matrixSuite {
     }
 
     "encoded protected header bytes can be merged with unprotected fields" {
-        val protectedHeader = JwsHeader.Part(
+        val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
-        )
-        val unprotectedHeader = JwsHeader.Part(
             keyId = "did:example:signer",
             contentType = "application/example+json",
+            unprotectedMembers = listOf(
+                JwsHeader.SerialNames.KEY_ID,
+                JwsHeader.SerialNames.CONTENT_TYPE,
+            ),
         )
+        val protectedHeader = header.protectedPart()
+        val unprotectedHeader = header.unprotectedPart()
 
         val combined = JwsHeader.fromParts(
-            protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
+            protectedHeader = protectedHeader.toProtectedHeaderBytes(),
             unprotectedHeader = unprotectedHeader,
         )
 
-        combined shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader)
+        combined shouldBe JwsHeader.fromJsonObjects(protectedHeader, unprotectedHeader)
     }
 
     "duplicate names across encoded protected and unprotected headers are rejected" {
-        val protectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(
-            JwsHeader.Part(
-                algorithm = JwsAlgorithm.Signature.RS256,
-                keyId = "protected",
+        val protectedHeader = JsonObject(
+            mapOf(
+                JwsHeader.SerialNames.ALGORITHM to JsonPrimitive("RS256"),
+                JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"),
             )
-        )
+        ).toProtectedHeaderBytes()
 
         val exception = runCatching {
             JwsHeader.fromParts(
                 protectedHeader = protectedHeader,
-                unprotectedHeader = JwsHeader.Part(keyId = "unprotected"),
+                unprotectedHeader = JsonObject(
+                    mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))
+                ),
             )
         }
 
         exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
     }
 
-    "flattened JWS accepts typed header parts" {
-        val protectedHeader = JwsHeader.Part(
+    "flattened JWS splits headers according to unprotected members" {
+        val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.ES256,
             type = "application/example+jwt",
-        )
-        val unprotectedHeader = JwsHeader.Part(
             vcTypeMetadata = setOf("bWV0YWRhdGE"),
+            unprotectedMembers = listOf(JwsHeader.SerialNames.VC_TYPE_METADATA),
         )
         val payload = "payload".encodeToByteArray()
 
         val flattened = JwsFlattened.invoke(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
+            jwsHeader = header,
             payload = payload,
         ) {
             validEs256SignatureFixture
         }
 
-        flattened.jwsHeader shouldBe JwsHeader.fromParts(protectedHeader, unprotectedHeader)
+        flattened.jwsHeader shouldBe header
     }
 
     "compact JWS accepts full headers and serializes their protected part" {
@@ -139,22 +141,21 @@ val JwsHeaderPartsTest by matrixSuite {
         }
 
         compact.jwsHeader shouldBe header
-        compact.plainProtectedHeader shouldBe
-                JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+        compact.plainProtectedHeader shouldBe header.protectedPart().toProtectedHeaderBytes()
     }
 
     "protected header bytes are raw header json bytes" {
-        val protectedHeader = JwsHeader.Part(
+        val protectedHeader = JwsHeader(
             algorithm = JwsAlgorithm.Signature.ES256,
             type = "application/example+jwt",
-        )
+        ).protectedPart()
 
-        val encoded = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader)
-        val expected = joseCompliantSerializer.encodeToString(JwsHeader.Part.serializer(), protectedHeader)
+        val encoded = protectedHeader.toProtectedHeaderBytes()
+        val expected = joseCompliantSerializer.encodeToString(JsonObject.serializer(), protectedHeader)
             .encodeToByteArray()
 
         encoded shouldBe expected
-        JwsProtectedHeaderSerializer.decodeFromByteArray(encoded) shouldBe protectedHeader
+        encoded.toProtectedHeaderJsonObject() shouldBe protectedHeader
     }
 }
 

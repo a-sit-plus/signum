@@ -119,7 +119,10 @@ data class JwsCompact internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
+            require(protectedHeader.unprotectedMembers.isEmpty()) {
+                "Compact Serialization does not support unprotected header members"
+            }
+            val plainProtectedHeader = protectedHeader.protectedPart().toProtectedHeaderBytes()
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 plainPayload = payload,

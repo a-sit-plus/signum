@@ -8,27 +8,19 @@ import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
-import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
 import kotlin.time.Instant
+
 
 /**
  * Effective JWS header as defined in [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  * after combining protected and unprotected header members.
  *
  * [JwsCompact] carries this header entirely in the protected section. [JwsFlattened], [JwsGeneral], and
- * [SignatureElement] represent the protected and unprotected fragments as [Part] and reconstruct the effective
- * header with [fromParts].
- *
- * Individual fragments may be incomplete. Only the combination of protected and unprotected parameters must
- * constitute a valid [JwsHeader].
+ * [SignatureElement] split it according to [unprotectedMembers].
  *
  * Private Header Parameters as specified in RFC 7515 4.3 are currently not implemented
  */
@@ -266,8 +258,11 @@ data class JwsHeader(
     @Transient
     val unprotectedMembers: List<String> = listOf()
 ) {
-    fun protectedPart(serialFormat: Json) = serialFormat.encodeToJsonElement(this).jsonObject.filter { it.key !in unprotectedMembers } as JsonObject
-    fun unprotectedPart(serialFormat: Json) = serialFormat.encodeToJsonElement(this).jsonObject.filter { it.key in unprotectedMembers } as JsonObject
+    fun protectedPart(serialFormat: Json = joseCompliantSerializer) =
+        JsonObject(serialFormat.encodeToJsonElement(this).jsonObject.filterKeys { it !in unprotectedMembers })
+
+    fun unprotectedPart(serialFormat: Json = joseCompliantSerializer) =
+        JsonObject(serialFormat.encodeToJsonElement(this).jsonObject.filterKeys { it in unprotectedMembers })
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -300,26 +295,26 @@ data class JwsHeader(
     }
 
     override fun hashCode(): Int {
-        var result = keyId?.hashCode() ?: 0
-        result = 31 * result + (type?.hashCode() ?: 0)
+        var result = keyId.hashCode()
+        result = 31 * result + type.hashCode()
         result = 31 * result + algorithm.hashCode()
-        result = 31 * result + (contentType?.hashCode() ?: 0)
-        result = 31 * result + (certificateChain?.hashCode() ?: 0)
-        result = 31 * result + (notBefore?.hashCode() ?: 0)
-        result = 31 * result + (issuedAt?.hashCode() ?: 0)
-        result = 31 * result + (expiration?.hashCode() ?: 0)
-        result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
-        result = 31 * result + (jsonWebKeySetUrl?.hashCode() ?: 0)
-        result = 31 * result + (certificateUrl?.hashCode() ?: 0)
+        result = 31 * result + contentType.hashCode()
+        result = 31 * result + certificateChain.hashCode()
+        result = 31 * result + notBefore.hashCode()
+        result = 31 * result + issuedAt.hashCode()
+        result = 31 * result + expiration.hashCode()
+        result = 31 * result + jsonWebKey.hashCode()
+        result = 31 * result + jsonWebKeySetUrl.hashCode()
+        result = 31 * result + certificateUrl.hashCode()
         result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
         result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
-        result = 31 * result + (attestationJwt?.hashCode() ?: 0)
-        result = 31 * result + (keyAttestation?.hashCode() ?: 0)
-        result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
-        result = 31 * result + (clientId?.hashCode() ?: 0)
-        result = 31 * result + (publicKey?.hashCode() ?: 0)
-        result = 31 * result + (keyAttestationParsed?.hashCode() ?: 0)
-        result = 31 * result + (verifierAttestationParsed?.hashCode() ?: 0)
+        result = 31 * result + attestationJwt.hashCode()
+        result = 31 * result + keyAttestation.hashCode()
+        result = 31 * result + vcTypeMetadata.hashCode()
+        result = 31 * result + clientId.hashCode()
+        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + keyAttestationParsed.hashCode()
+        result = 31 * result + verifierAttestationParsed.hashCode()
         return result
     }
 
@@ -337,7 +332,7 @@ data class JwsHeader(
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken>? by lazy {
+    val verifierAttestationParsed: JwsCompactTyped<JwtPayload>? by lazy {
         attestationJwt?.typed()
     }
 
@@ -362,63 +357,38 @@ data class JwsHeader(
     }
 
     companion object {
-        /**
-         * Merges protected and unprotected header fragments into the effective [JwsHeader].
-         *
-         * Either fragment may be partial, but their combined content must form a valid header.
-         */
-        fun fromParts(
-            protectedHeader: Part? = null,
-            unprotectedHeader: Part? = null,
-        ): JwsHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.toJsonObject(),
-            unprotectedHeader = unprotectedHeader?.toJsonObject(),
-        )
-
+        @Deprecated("No longer necessary. Replaced by JwsHeader.unprotectedMembers")
+        typealias Part = JwsHeader
         /**
          * Decodes the protected fragment and merges it with the optional unprotected fragment.
          *
          * This is the form used when reading serialized JWS values such as [JwsCompact] or [JwsFlattened].
          */
-        fun fromParts(
+        internal fun fromParts(
             protectedHeader: ByteArray? = null,
-            unprotectedHeader: Part? = null,
+            unprotectedHeader: JsonObject? = null,
         ): JwsHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.let(JwsProtectedHeaderSerializer::decodeToJsonObject),
-            unprotectedHeader = unprotectedHeader?.toJsonObject(),
+            protectedHeader = protectedHeader?.toProtectedHeaderJsonObject(),
+            unprotectedHeader = unprotectedHeader,
         )
 
         internal fun fromJsonObjects(
             protectedHeader: JsonObject? = null,
             unprotectedHeader: JsonObject? = null,
-        ): JwsHeader = joseCompliantSerializer.decodeFromJsonElement<JwsHeader>(
-            protectedHeader.strictUnion(unprotectedHeader)
-        )
+        ): JwsHeader = joseCompliantSerializer
+            .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader))
+            .copy(unprotectedMembers = unprotectedHeader?.keys?.toList().orEmpty())
     }
 }
 
-/**
- * Converts the effective header into a single [JwsHeader.Part].
- *
- * Use this when one fragment should represent the whole header, for example the protected header in [JwsCompact].
- * When protected and unprotected members differ, construct the two [JwsHeader.Part] values explicitly.
- */
-fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
-    keyId = keyId,
-    type = type,
-    algorithm = algorithm,
-    contentType = contentType,
-    certificateChain = certificateChain,
-    notBefore = notBefore,
-    issuedAt = issuedAt,
-    expiration = expiration,
-    jsonWebKey = jsonWebKey,
-    jsonWebKeySetUrl = jsonWebKeySetUrl,
-    certificateUrl = certificateUrl,
-    certificateSha1Thumbprint = certificateSha1Thumbprint,
-    certificateSha256Thumbprint = certificateSha256Thumbprint,
-    attestationJwt = attestationJwt,
-    keyAttestation = keyAttestation,
-    vcTypeMetadata = vcTypeMetadata,
-    clientId = clientId,
-)
+internal fun JsonObject.toProtectedHeaderBytes(): ByteArray =
+    joseCompliantSerializer.encodeToString(JsonObject.serializer(), this).encodeToByteArray()
+
+internal fun ByteArray.toProtectedHeaderJsonObject(): JsonObject =
+    joseCompliantSerializer.decodeFromString(JsonObject.serializer(), decodeToString())
+
+internal fun ByteArray?.requireAbsentIfEmptyProtectedHeader() {
+    require(this == null || toProtectedHeaderJsonObject().isNotEmpty()) {
+        "JWS protected header must be absent when it would otherwise be empty"
+    }
+}
