@@ -218,26 +218,26 @@ object AndroidKeyStoreProvider:
             }
         }
 
-        val hw = config.hardware.v
+        val strongBoxPreference = config.hardware.v?.strongBox ?: DISCOURAGED
         val createdStrongBox: Boolean = with(config) {
-           when {
-                hw == null || hw.strongBox == DISCOURAGED -> {
-                    builder.useStrongBox(false).generate()
+            when (strongBoxPreference) {
+                DISCOURAGED -> {
+                    builder.setIsStrongBoxBacked(false).generate()
                     false
                 }
 
-                hw.strongBox == REQUIRED -> {
-                    builder.useStrongBox(true).generate() //throws if no strongbox
+                REQUIRED -> {
+                    builder.setIsStrongBoxBacked(true).generate()//throws if no strongbox
                     true
                 }
 
-                else /* PREFERRED */ -> try {
+                PREFERRED -> try {
                     //there is no API to query, so try-catch the specific n/a exception
-                    builder.useStrongBox(true).generate()
+                    builder.setIsStrongBoxBacked(true).generate()
                     true
                 } catch (_: StrongBoxUnavailableException) {
                     catchingUnwrapped { ks.deleteEntry(alias) } // drop and swallow exception: should not work, but hello Samsung!
-                    builder.useStrongBox(false).generate()
+                    builder.setIsStrongBoxBacked(false).generate()
                     false
                 }
             }
@@ -262,13 +262,6 @@ object AndroidKeyStoreProvider:
         }
         return@catching signer
     }}
-
-    context(config: AndroidSigningKeyConfiguration)
-    private fun KeyGenParameterSpec.Builder.useStrongBox(use: Boolean): KeyGenParameterSpec.Builder = apply{
-        config.hardware.v?.also {
-            setIsStrongBoxBacked(use)
-        }
-    }
 
     context(config: AndroidSigningKeyConfiguration)
     private fun KeyGenParameterSpec.Builder.generate() {
