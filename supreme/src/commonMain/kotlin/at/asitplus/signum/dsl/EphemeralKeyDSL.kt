@@ -12,12 +12,10 @@ open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningK
     }
 }
 
-val EphemeralSigningKeyConfigurationBase.ec get() = _algSpecific.defaultOption("EC",
-    EphemeralSigningKeyConfigurationBase::ECConfiguration
-)
-val EphemeralSigningKeyConfigurationBase.rsa get() = _algSpecific.option("RSA",
-    EphemeralSigningKeyConfigurationBase::RSAConfiguration
-)
+val EphemeralSigningKeyConfigurationBase.ec get() =
+    _algSpecific.defaultOption("EC", EphemeralSigningKeyConfigurationBase::ECConfiguration)
+val EphemeralSigningKeyConfigurationBase.rsa get() =
+    _algSpecific.option("RSA", EphemeralSigningKeyConfigurationBase::RSAConfiguration)
 
 @Suppress("NOTHING_TO_INLINE")
 expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase

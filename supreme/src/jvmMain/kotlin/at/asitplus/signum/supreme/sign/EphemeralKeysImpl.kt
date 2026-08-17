@@ -82,8 +82,8 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
     }
 
 internal sealed interface JVMEphemeralKey {
-    class EC(pair: KeyPair, digests: Set<Digest?>)
-        : EphemeralKeyBase.EC<ECPrivateKey, EphemeralSigner.EC>(EphemeralSigner::EC,
+    class ECDSA(pair: KeyPair, digests: Set<Digest?>)
+        : EphemeralKeyBase.ECDSA<ECPrivateKey, EphemeralSigner.EC>(EphemeralSigner::EC,
         pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
         digests = digests)
     {
@@ -101,19 +101,18 @@ internal sealed interface JVMEphemeralKey {
     }
 }
 
-internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
-    // TODO: do we want to providerize this
+internal actual suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey? {
     return when (val alg = DSL.options(configuration.ec, configuration.rsa)) {
         is EphemeralSigningKeyConfigurationBase.ECConfiguration ->
             getKPGInstance("EC", configuration.provider).run {
                 initialize(ECGenParameterSpec(alg.curve.jcaName))
                 generateKeyPair()
-            }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
+            }.let { pair -> JVMEphemeralKey.ECDSA(pair, digests = alg.digests) }
         is EphemeralSigningKeyConfigurationBase.RSAConfiguration ->
             getKPGInstance("RSA", configuration.provider).run {
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
             }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
-        else -> throw UnsupportedCryptoException("chosen ephemeral key type is not supported")
+        else -> null
     }
 }

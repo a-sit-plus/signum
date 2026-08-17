@@ -65,6 +65,7 @@ class X500Name(
     constructor(singleAttribute: X500AttributeTypeAndValue) : this(RelativeDistinguishedName(singleAttribute))
 
     companion object : DerDecodable<Asn1X500Name, X500Name> {
+        val EMPTY = X500Name(emptyList(), false)
         /** The RDNSequence serializer (`SEQUENCE OF RelativeDistinguishedName`). */
         val serializer: KSerializer<Asn1X500Name> = Asn1X500Name.serializer()
 

@@ -42,8 +42,9 @@ abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifi
     abstract val didKeyBytes: ByteArray
 
     /** Representation of the key in the format used by iOS */
-    // TODO: why is this privileged? JCA conversion is also in its own JcaExtensions file
-    abstract val iosEncoded: ByteArray
+    open val iosEncoded: ByteArray get() = asn1Representation.subjectPublicKey.also {
+        require (it.numPaddingBits != 0.toByte()) { "SPKI is not full octets, cannot convert to iOS" }
+    }.bitCarryingBytes
 
     fun encodeToTlv(): Asn1Sequence =
         DER.encodeToTlv(asn1Representation) as Asn1Sequence

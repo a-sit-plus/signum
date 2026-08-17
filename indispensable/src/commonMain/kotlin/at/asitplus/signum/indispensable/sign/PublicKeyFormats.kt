@@ -97,7 +97,6 @@ class RSAPublicKey private constructor(
 
     override val didCodec get() = DID_KEY_CODEC
     override val didKeyBytes get() = pkcsEncoded
-    override val iosEncoded get() = pkcsEncoded
 
     /**
      * PKCS#1 encoded RSA Public Key
@@ -164,14 +163,26 @@ class ECDSAPublicKey private constructor(
     override fun asCryptoPublicKey() = this
 
     override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.ec(curve.oid, iosEncoded)
+        SubjectPublicKeyInfo.ec(curve.oid, toAnsiX963Encoded(useCompressed = false))
     }
 
-    val publicPoint: ECPoint.Normalized by providedContent?.publicPoint orLazy {
-        decodePublicPoint(asn1Representation)
+    private val content: Content by providedContent orLazy {
+        val parameters = asn1Representation.algorithmIdentifier.parameters
+        requireNotNull(parameters) { "No EC params found" }
+        val curveOid = parameters.asPrimitive().readOid()
+        val curve = ECCurve.entries.find { it.oid == curveOid }
+            ?: throw Asn1Exception("Curve not supported: $curveOid")
+        if (asn1Representation.subjectPublicKey.numPaddingBits != 0.toByte()) {
+            throw Asn1Exception("EC key must consist of full octets")
+        }
+        if (!asn1Representation.subjectPublicKey.bitCarryingBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
+            throw Asn1Exception("EC key not prefixed with 0x04")
+        }
+        fromAnsiX963Bytes(curve, asn1Representation.subjectPublicKey.bitCarryingBytes).content
     }
 
-    val preferCompressedRepresentation by providedContent?.preferCompressedRepresentation orLazy { false }
+    val publicPoint get() = content.publicPoint
+    val preferCompressedRepresentation get() = content.preferCompressedRepresentation
 
     val curve get() = publicPoint.curve
     val x get() = publicPoint.x
@@ -197,7 +208,6 @@ class ECDSAPublicKey private constructor(
         ECCurve.SECP_521_R_1 -> DID_KEY_CODEC_P521
     }
     override val didKeyBytes get() = toAnsiX963Encoded(useCompressed = true)
-    override val iosEncoded get() = toAnsiX963Encoded(useCompressed = false)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -283,23 +293,6 @@ class ECDSAPublicKey private constructor(
 
         override val oid = KnownOIDs.ecPublicKey
 
-        private fun decodePublicPoint(spki: SubjectPublicKeyInfo): ECPoint.Normalized {
-            val parameters = spki.algorithmIdentifier.parameters
-            requireNotNull(parameters) { "No EC params found" }
-
-            val curveOid = parameters.asPrimitive().readOid()
-            val curve = ECCurve.entries.find { it.oid == curveOid }
-                ?: throw Asn1Exception("Curve not supported: $curveOid")
-
-            if (!spki.subjectPublicKey.bitCarryingBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
-                throw Asn1Exception("EC key not prefixed with 0x04")
-            }
-            val xAndY = spki.subjectPublicKey.bitCarryingBytes.drop(1)
-            val coordLen = curve.coordinateLength.bytes.toInt()
-            val x = xAndY.take(coordLen).toByteArray()
-            val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-            return ECPoint.fromUncompressed(curve, x, y).normalize()
-        }
     }
 }
 

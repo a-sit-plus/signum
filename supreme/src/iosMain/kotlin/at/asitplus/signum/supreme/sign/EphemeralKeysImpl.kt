@@ -7,6 +7,8 @@ import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl._algSpecific
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
@@ -14,6 +16,7 @@ import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
+import at.asitplus.signum.supreme.dsl.DSL
 import kotlinx.cinterop.*
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
@@ -69,8 +72,8 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
 }
 
 internal sealed interface IosEphemeralKey {
-    class EC(privateKey: OwnedCFValue<SecKeyRef>, publicKey: CryptoPublicKey.EC, digests: Set<Digest?>)
-        : EphemeralKeyBase.EC<OwnedCFValue<SecKeyRef>, EphemeralSigner.EC>(EphemeralSigner::EC, privateKey, publicKey, digests)
+    class ECDSA(privateKey: OwnedCFValue<SecKeyRef>, publicKey: CryptoPublicKey.EC, digests: Set<Digest?>)
+        : EphemeralKeyBase.ECDSA<OwnedCFValue<SecKeyRef>, EphemeralSigner.EC>(EphemeralSigner::EC, privateKey, publicKey, digests)
     {
         @SecretExposure
         override suspend fun exportPrivateKey() =
@@ -86,10 +89,11 @@ internal sealed interface IosEphemeralKey {
     }
 }
 
-internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration): EphemeralKey {
+internal actual suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigningKeyConfiguration): EphemeralKey? {
+    val algSpecific = DSL.options(configuration.ec, configuration.rsa) ?: return null
     memScoped {
         val attr = createCFDictionary {
-            when (val alg = configuration._algSpecific.v) {
+            when (val alg = algSpecific) {
                 is SigningKeyConfiguration.ECConfiguration -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
@@ -113,9 +117,9 @@ internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyC
             }
         }.takeFromCF<NSData>().toByteArray()
 
-        return when (val alg = configuration._algSpecific.v) {
+        return when (val alg = algSpecific) {
             is SigningKeyConfiguration.ECConfiguration ->
-                IosEphemeralKey.EC(
+                IosEphemeralKey.ECDSA(
                     privateKey,
                     CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, pubkeyBytes),
                     alg.digests

@@ -5,7 +5,8 @@ import at.asitplus.catching
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
 import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl._algSpecific
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.digest.Digest
@@ -20,6 +21,7 @@ import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -77,8 +79,8 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
 }
 
 internal sealed interface AndroidEphemeralKey {
-    class EC(pair: KeyPair, digests: Set<Digest?>)
-        : EphemeralKeyBase.EC<ECPrivateKey, AndroidEphemeralSigner.EC>(AndroidEphemeralSigner::EC,
+    class ECDSA(pair: KeyPair, digests: Set<Digest?>)
+        : EphemeralKeyBase.ECDSA<ECPrivateKey, AndroidEphemeralSigner.EC>(AndroidEphemeralSigner::EC,
         pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
         digests = digests)
     {
@@ -96,14 +98,14 @@ internal sealed interface AndroidEphemeralKey {
     }
 }
 
-internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
-    when (val alg = configuration._algSpecific.v) {
+internal actual suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey? =
+    when (val alg = DSL.options(configuration.ec, configuration.rsa)) {
         is SigningKeyConfiguration.ECConfiguration -> {
             KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC).run {
                 initialize(ECGenParameterSpec(alg.curve.jcaName))
                 generateKeyPair()
             }.let { pair ->
-                AndroidEphemeralKey.EC(pair, alg.digests)
+                AndroidEphemeralKey.ECDSA(pair, alg.digests)
             }
         }
         is SigningKeyConfiguration.RSAConfiguration -> {
@@ -114,4 +116,5 @@ internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyC
                 AndroidEphemeralKey.RSA(pair, alg.digests, alg.paddings)
             }
         }
+        else -> null
     }

@@ -626,7 +626,7 @@ The full list of changes is:
 
 **Fixes**
 
-* Standardize class names: `Ec` -> `EC` everywhere
+* Standardize class names: `Ec` -> `ECDSA` everywhere
 * Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
 * Remove bogus ASN.1 encoding from JWS Algorithms
     * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes
