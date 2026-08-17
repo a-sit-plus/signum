@@ -6,6 +6,9 @@ import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.ec
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.readOid
@@ -22,7 +25,6 @@ import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.PublicKeyFormatProvider
 import at.asitplus.signum.indispensable.fromIosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
 import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -163,22 +165,19 @@ class ECDSAPublicKey private constructor(
     override fun asCryptoPublicKey() = this
 
     override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.ec(curve.oid, toAnsiX963Encoded(useCompressed = false))
+        SubjectPublicKeyInfo(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
     }
 
     private val content: Content by providedContent orLazy {
-        val parameters = asn1Representation.algorithmIdentifier.parameters
-        requireNotNull(parameters) { "No EC params found" }
-        val curveOid = parameters.asPrimitive().readOid()
-        val curve = ECCurve.entries.find { it.oid == curveOid }
-            ?: throw Asn1Exception("Curve not supported: $curveOid")
-        if (asn1Representation.subjectPublicKey.numPaddingBits != 0.toByte()) {
-            throw Asn1Exception("EC key must consist of full octets")
-        }
-        if (!asn1Representation.subjectPublicKey.bitCarryingBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) {
-            throw Asn1Exception("EC key not prefixed with 0x04")
-        }
-        fromAnsiX963Bytes(curve, asn1Representation.subjectPublicKey.bitCarryingBytes).content
+        val parsed = Sec1EcPublicKeyInfo.of(asn1Representation)
+        val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
+            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
+        when (parsed) {
+            is Sec1EcPublicKeyInfo.Compressed ->
+                fromCompressed(curve, parsed.x, parsed.positiveY)
+            is Sec1EcPublicKeyInfo.Uncompressed ->
+                fromUncompressed(curve, parsed.x, parsed.y)
+        }.content
     }
 
     val publicPoint get() = content.publicPoint
@@ -193,9 +192,7 @@ class ECDSAPublicKey private constructor(
 
     override val oid get() = Companion.oid
 
-    /**
-     * ANSI X9.63 Encoding as used by iOS
-     */
+    /** ANSI X9.63 encoding (as used in the X.509 signatureValue) */
     fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
         when (useCompressed) {
             true -> ANSIECPrefix.forSign(yCompressed) + xBytes
@@ -246,24 +243,6 @@ class ECDSAPublicKey private constructor(
         @Suppress("NOTHING_TO_INLINE")
         inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
             ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
-
-        @Deprecated(
-            "Explicitly specify what you want",
-            ReplaceWith("fromCompressed(curve, x, usePositiveY)"),
-            DeprecationLevel.ERROR
-        )
-        @Suppress("NOTHING_TO_INLINE")
-        inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
-            fromCompressed(curve, x, usePositiveY)
-
-        @Deprecated(
-            "Explicitly specify what you want",
-            ReplaceWith("fromUncompressed(curve, x, y)"),
-            DeprecationLevel.ERROR
-        )
-        @Suppress("NOTHING_TO_INLINE")
-        inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
-            fromUncompressed(curve, x, y)
 
         /** Decodes a key from its ANSI X9.63 representation */
         @Throws(Throwable::class)
