@@ -498,13 +498,13 @@ val AndroidKeystoreSigner.securityLevel: Int get() = when {
     else -> KeyProperties.SECURITY_LEVEL_UNKNOWN
 }
 
-/** Whether this key is actually backed by a StrongBox secure element (precise on API 31+; false on older devices). */
+/** Whether this key is actually backed by a StrongBox secure element (precise on API 31+; null on older devices). */
 val AndroidKeystoreSigner.isStrongBoxBacked: Boolean? get() = when {
     (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> (securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX)
     else -> null
 }
 
-/** Whether this key isis inside any secure hardware (TEE or StrognBox). */
+/** Whether this key is inside any secure hardware (TEE or StrongBox). */
 @Suppress("DEPRECATION")
 val AndroidKeystoreSigner.isInsideSecureHardware: Boolean get() = when {
     (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> (
