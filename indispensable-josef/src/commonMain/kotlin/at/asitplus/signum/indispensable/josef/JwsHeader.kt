@@ -287,6 +287,7 @@ data class JwsHeader(
         if (keyAttestation != other.keyAttestation) return false
         if (vcTypeMetadata != other.vcTypeMetadata) return false
         if (clientId != other.clientId) return false
+        if (unprotectedMembers != other.unprotectedMembers) return false
         if (publicKey != other.publicKey) return false
         if (keyAttestationParsed != other.keyAttestationParsed) return false
         if (verifierAttestationParsed != other.verifierAttestationParsed) return false
@@ -312,6 +313,7 @@ data class JwsHeader(
         result = 31 * result + keyAttestation.hashCode()
         result = 31 * result + vcTypeMetadata.hashCode()
         result = 31 * result + clientId.hashCode()
+        result = 31 * result + unprotectedMembers.hashCode()
         result = 31 * result + publicKey.hashCode()
         result = 31 * result + keyAttestationParsed.hashCode()
         result = 31 * result + verifierAttestationParsed.hashCode()
