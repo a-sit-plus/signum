@@ -1,8 +1,11 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
@@ -31,7 +34,7 @@ val JKSProviderTest  by matrixSuite {
 
         val data = Random.Default.nextBytes(64)
         val signature = signer.sign(data).signature
-        otherSigner.makeVerifier().getOrThrow().verify(data, signature) should succeed
+        otherSigner.makeVerifier().verify(data, signature) should succeed
     }
     "Key With Password" {
         val ks = JKSProvider {
@@ -116,16 +119,16 @@ val JKSProviderTest  by matrixSuite {
             }
             val signature = try {
                 signer.sign(data).signature
-            } catch (x: UnsupportedOperationException) {
+            } catch (_: UnsupportedOperationException) {
                 return@test
             }
             CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
             when (signer.signatureAlgorithm) {
-                is SignatureAlgorithm.RSA ->
-                    CryptoSignature.RSA.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                is RSAAlgorithm ->
+                    RSASignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
 
-                is SignatureAlgorithm.ECDSA ->
-                    CryptoSignature.EC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                is ECDSAAlgorithm ->
+                    ECDSASignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
             }
 
             signer.signatureAlgorithm.let {

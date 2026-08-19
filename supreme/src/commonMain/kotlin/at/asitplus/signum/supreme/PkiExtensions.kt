@@ -14,19 +14,21 @@ import at.asitplus.signum.supreme.sign.Signer
 /**
  * Shorthand helper to create an [Certificate] by signing [tbsCertificate]
  */
-suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<Certificate> = catching {
-    val sigAlgMatch = signatureAlgorithm == tbsCertificate.signatureAlgorithm
-
-    if (!sigAlgMatch) throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
-    val encoded = tbsCertificate.encodeToDer()
-    Certificate(tbsCertificate = tbsCertificate, signature = sign(encoded).signature)
+suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
+    if (signatureAlgorithm != tbsCertificate.signatureAlgorithm)
+        throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
+    return Certificate(
+        tbsCertificate = tbsCertificate,
+        signature = sign(tbsCertificate.encodeToDer()).signature)
 }
 
 /**
  * Shorthand helper to create a [CertificationRequest] by signing [tbsCsr]
  */
-suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): KmmResult<CertificationRequest> = catching {
+suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
     if (!tbsCsr.publicKey.equalsCryptographically(this.publicKey))
         throw Asn1StructuralException("The signer's public key does not match the TbsCSR's.")
-    CertificationRequest(tbsCsr = tbsCsr, signatureAlgorithm = signatureAlgorithm, sign(tbsCsr.encodeToDer()).signature)
+    return CertificationRequest(
+        tbsCsr = tbsCsr, signatureAlgorithm = signatureAlgorithm,
+        signature = sign(tbsCsr.encodeToDer()).signature)
 }

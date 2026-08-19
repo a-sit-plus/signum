@@ -8,6 +8,9 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.nativeDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSASignature
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSOSStatusErrorDomain
 import platform.Security.SecKeyVerifySignature
@@ -23,7 +26,7 @@ actual class PlatformVerifierConfiguration internal actual constructor() : DSL.D
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+            (signatureAlgorithm: ECDSAAlgorithm, publicKey: CryptoPublicKey.EC,
              config: PlatformVerifierConfiguration)
 {
     if (publicKey.curve == ECCurve.SECP_521_R_1 && signatureAlgorithm.digest == null)
@@ -32,7 +35,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
+            (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
              config: PlatformVerifierConfiguration)
 {
 }
@@ -55,7 +58,7 @@ private suspend fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey
 }
 
 internal actual suspend fun verifyECDSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+            (signatureAlgorithm: ECDSAAlgorithm, publicKey: CryptoPublicKey.EC,
              data: SignatureInput, signature: CryptoSignature.EC,
              config: PlatformVerifierConfiguration) = when (signatureAlgorithm.digest) {
     null -> {
@@ -65,14 +68,14 @@ internal actual suspend fun verifyECDSAImpl
             data.asECDSABigInteger(targetDigest.outputLength).toByteArray().ensureSize(targetDigest.outputLength.bytes),
             targetDigest)
 
-        verifyImpl(SignatureAlgorithm.ECDSA(targetDigest, null), publicKey, processed, signature, config)
+        verifyImpl(ECDSAAlgorithm(targetDigest, null), publicKey, processed, signature, config)
     }
     else -> verifyImpl(signatureAlgorithm, publicKey, data, signature, config)
  }
 
 
 internal actual suspend fun verifyRSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSA,
+            (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
+             data: SignatureInput, signature: RSASignature,
              config: PlatformVerifierConfiguration) =
 verifyImpl(signatureAlgorithm, publicKey, data, signature, config)

@@ -45,31 +45,32 @@ actual fun makePrivateKeySigner(
 fun SignatureAlgorithm.signerFor(
     privateKey: CryptoPrivateKey.WithPublicKey<*>,
     configure: DSLConfigureFn<JvmEphemeralSignerCompatibleConfiguration>
-) = catching {
+): Signer {
     require(
-        (this is SignatureAlgorithm.ECDSA && privateKey is EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is RSAPrivateKey)
+        (this is ECDSAAlgorithm && privateKey is ECDSAPrivateKey) ||
+                (this is RSAAlgorithm && privateKey is RSAPrivateKey)
     ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
 
-    when (this) {
-        is SignatureAlgorithm.ECDSA -> EphemeralSigner.EC(
+    return when (this) {
+        is ECDSAAlgorithm -> EphemeralSigner.EC(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
                 configure
             ),
-            privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
+            privateKey = privateKey.toJcaPrivateKey(),
             publicKey = privateKey.publicKey as CryptoPublicKey.EC,
             signatureAlgorithm = this
         )
 
-        is SignatureAlgorithm.RSA -> EphemeralSigner.RSA(
+        is RSAAlgorithm -> EphemeralSigner.RSA(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
                 configure
             ),
-            privateKey = privateKey.toJcaPrivateKey().getOrThrow(),
+            privateKey = privateKey.toJcaPrivateKey(),
             publicKey = privateKey.publicKey as CryptoPublicKey.RSA,
             signatureAlgorithm = this
         )
+        else -> TODO("providerize")
     }
 }

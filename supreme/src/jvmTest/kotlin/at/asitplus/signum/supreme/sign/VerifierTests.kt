@@ -4,7 +4,8 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
@@ -21,7 +22,7 @@ import kotlin.random.Random
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
+    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> Verifier.EC>(
         "BC -> PlatformVerifier" to { a, k ->
             SupremePlatformVerifierProvider.verifierFor(a, k) { provider = "BC" }
                 .shouldBeInstanceOf<PlatformECDSAVerifier>()
@@ -37,7 +38,7 @@ val VerifierTests by matrixSuite {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
-                    val publicKey = keypair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC
+                    val publicKey = keypair.public.toCryptoPublicKey() as ECDSAPublicKey
                     val data = Random.nextBytes(256)
                     val sig = Signature.getInstance("${digest.jcaAlgorithmComponent}withECDSA", "BC").run {
                         initSign(keypair.private)
@@ -46,7 +47,7 @@ val VerifierTests by matrixSuite {
                     }.let(CryptoSignature::parseFromJca)
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
-                    val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)
+                    val verifier = factory(ECDSAAlgorithm(digest, null), key)
                     verifier.verify(byteArrayOf(), sig) shouldNot succeed
                     if (digest != null) {
                         verifier.verify(data.copyOfRange(0, 128), sig) shouldNot succeed
@@ -54,7 +55,7 @@ val VerifierTests by matrixSuite {
                     }
                     verifier.verify(data, sig) should succeed
                     Random.of(Digest.entries.filter { it != digest }).let { dig ->
-                        catching { factory(SignatureAlgorithm.ECDSA(dig, null), key) }
+                        catching { factory(ECDSAAlgorithm(dig, null), key) }
                             .transform { it.verify(data, sig) } shouldNot succeed
                     }
                 }

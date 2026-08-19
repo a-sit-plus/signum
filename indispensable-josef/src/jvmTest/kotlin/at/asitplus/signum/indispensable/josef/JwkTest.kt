@@ -4,13 +4,13 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.nextPositiveAsn1Integer
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -154,7 +154,7 @@ private fun randomCertificate() = Certificate(
         issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
-        signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256,
+        signatureAlgorithm = ECDSAAlgorithm.withSHA256,
         subjectName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         validFrom = (Clock.System.now()),
         validUntil = (Clock.System.now()),

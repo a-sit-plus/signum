@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe

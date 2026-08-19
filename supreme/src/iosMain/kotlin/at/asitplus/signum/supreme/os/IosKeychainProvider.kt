@@ -24,7 +24,8 @@ import at.asitplus.signum.dsl.unlockPrompt
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.digest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.dsl.*
@@ -289,7 +290,7 @@ sealed class IosSigner(final override val alias: String,
         : IosSigner(alias, metadata, config),
             PlatformSigningProviderSigner.ECDSA<IosSignerSigningConfiguration, IosHomebrewAttestation>
     {
-        override val signatureAlgorithm: SignatureAlgorithm.ECDSA
+        override val signatureAlgorithm: ECDSAAlgorithm
         init {
             check (metadata.algSpecific is IosKeyAlgSpecificMetadata.ECDSA)
             { "Metadata type mismatch (ECDSA key, metadata not ECDSA)" }
@@ -297,7 +298,7 @@ sealed class IosSigner(final override val alias: String,
             signatureAlgorithm = when (
                 val digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.ec.v.digestSpecified, { config.ec.v.digest })
             ){
-                Digest.SHA256, Digest.SHA384, Digest.SHA512 -> SignatureAlgorithm.ECDSA(digest, publicKey.curve)
+                Digest.SHA256, Digest.SHA384, Digest.SHA512 -> ECDSAAlgorithm(digest, publicKey.curve)
                 else -> throw UnsupportedCryptoException("ECDSA with $digest is not supported on iOS")
             }
         }
@@ -318,18 +319,18 @@ sealed class IosSigner(final override val alias: String,
         (alias: String, override val publicKey: CryptoPublicKey.RSA, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config), Signer.RSA
     {
-        override val signatureAlgorithm: SignatureAlgorithm.RSA
+        override val signatureAlgorithm: RSAAlgorithm
         init {
             check (metadata.algSpecific is IosKeyAlgSpecificMetadata.RSA)
             { "Metadata type mismatch (RSA key, metadata not RSA) "}
 
-            signatureAlgorithm = SignatureAlgorithm.RSA(
+            signatureAlgorithm = RSAAlgorithm(
                 digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.rsa.v.digestSpecified, { config.rsa.v.digest }),
                 padding = resolveOption("padding", metadata.algSpecific.supportedPaddings, config.rsa.v.paddingSpecified, { config.rsa.v.padding })
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            CryptoSignature.RSA(sigBytes)
+            RSASignature(sigBytes)
     }
 
 }

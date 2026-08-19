@@ -338,7 +338,7 @@ abstract class AndroidKeystoreSigner protected constructor(
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
 
     @SecretExposure
-    override suspend fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
+    override suspend fun exportPrivateKey(): Nothing = error("Non-Exportable key")
 
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 
@@ -442,7 +442,8 @@ abstract class AndroidKeystoreSigner protected constructor(
                                      config: AndroidSignerConfiguration,
                                      override val publicKey: CryptoPublicKey.EC,
                                      attestation: AndroidKeystoreAttestation?,
-                                     override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+                                     override val signatureAlgorithm: ECDSAAlgorithm
+    )
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation),
         PlatformSigningProviderSigner.ECDSA<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation>
     {
@@ -474,7 +475,8 @@ abstract class AndroidKeystoreSigner protected constructor(
                                    config: AndroidSignerConfiguration,
                                    override val publicKey: CryptoPublicKey.RSA,
                                    attestation: AndroidKeystoreAttestation?,
-                                   override val signatureAlgorithm: SignatureAlgorithm.RSA)
+                                   override val signatureAlgorithm: RSAAlgorithm
+    )
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA
     {
         override fun parseSignatureFromJca(jcaSig: ByteArray) =

@@ -3,6 +3,7 @@ import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -12,6 +13,7 @@ import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 
 //somehow including kmmresult-test makes this fail
+@IgnorableReturnValue
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
@@ -32,7 +34,7 @@ val ConversionTests by matrixSuite {
     "COSE -> SigAlg -> COSE" - {
         data(CoseAlgorithm.Signature.entries) - {
             it.algorithm.asn1Representation.let { x509 ->
-                if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
+                if (it.algorithm is ECDSAAlgorithm && (it.algorithm as ECDSAAlgorithm).requiredCurve != null) {
                     "Curve information is lost" {
                         val algorithm = SignatureAlgorithm(x509).toCoseAlgorithm().getOrThrow()
                         algorithm shouldNotBe it
@@ -60,4 +62,4 @@ val ConversionTests by matrixSuite {
 
 private fun randomPublicKey() =
     (KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-        .genKeyPair().public as ECPublicKey).toCryptoPublicKey().getOrThrow()
+        .genKeyPair().public as ECPublicKey).toCryptoPublicKey()

@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
@@ -170,8 +171,8 @@ val JwsSignedRegressionTest by matrixSuite {
         legacy.header.algorithm shouldBe JwsAlgorithm.Signature.ES256
         legacy.signature shouldBe regressionCase.compact.signature
         legacy.signature.rawByteArray shouldBe plainSignature
-        legacy.signature.shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
-        regressionCase.compact.signature.shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
+        legacy.signature.shouldBeInstanceOf<ECDSASignature.DefiniteLength>()
+        regressionCase.compact.signature.shouldBeInstanceOf<ECDSASignature.DefiniteLength>()
     }
 }
 

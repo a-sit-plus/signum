@@ -149,7 +149,7 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
                 val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAAlgorithm.Padding.PSS
                 val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
                 JKSSigner.RSA(
-                    config, jcaPrivateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(padding, digest), alias
+                    config, jcaPrivateKey as RSAPrivateKey, publicKey, RSAAlgorithm(padding, digest), alias
                 )
             }
             else -> null
@@ -158,12 +158,12 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
 
 interface JKSSigner: Signer, Signer.WithAlias {
     class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                   publicKey: CryptoPublicKey.EC, signatureAlgorithm: SignatureAlgorithm.ECDSA,
+                                   publicKey: CryptoPublicKey.EC, signatureAlgorithm: ECDSAAlgorithm,
                                    override val alias: String)
         : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                    publicKey: CryptoPublicKey.RSA, signatureAlgorithm: SignatureAlgorithm.RSA,
+                                    publicKey: CryptoPublicKey.RSA, signatureAlgorithm: RSAAlgorithm,
                                     override val alias: String)
         : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }

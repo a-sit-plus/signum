@@ -11,7 +11,6 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
@@ -47,13 +46,13 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         }.takeFromCF<NSData>().toByteArray()
         return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
-            is CryptoPublicKey.RSA -> CryptoSignature.RSA(signatureBytes)
+            is CryptoPublicKey.RSA -> RSASignature(signatureBytes)
         }
     }
 
     class EC internal constructor(
         config: EphemeralSignerConfiguration, privateKey: OwnedCFValue<SecKeyRef>,
-        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA
+        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: ECDSAAlgorithm
     ) : EphemeralSigner(privateKey), Signer.ECDSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =
@@ -66,7 +65,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
 
     class RSA internal constructor(
         config: EphemeralSignerConfiguration, privateKey: OwnedCFValue<SecKeyRef>,
-        override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA
+        override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: RSAAlgorithm
     ) : EphemeralSigner(privateKey), Signer.RSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =

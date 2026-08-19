@@ -6,7 +6,6 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.signature
@@ -25,21 +24,22 @@ val RsaSsaPssRoundTripTest by matrixSuite {
         Digest.entries.asData("Data Digest") - { mgfDigest ->
 
             mapOf(
-                "from ASN.1" to SignatureAlgorithm.RSA(
+                "from ASN.1" to RSAAlgorithm(
                     RSAAlgorithm.Parameters.PssPadded(
                         RsaSsaPssParams(
                             hashAlgorithm = dataDigest.asn1Representation,
                             maskGenAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                         )
                     )),
-                "from Signum" to SignatureAlgorithm.RSA(
+                "from Signum" to RSAAlgorithm(
                     RSAAlgorithm.Parameters.PssPadded(
                         digest = dataDigest,
                         mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
                             mgfDigest
                         )
                     )
-                )).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
+                )
+            ).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
 
 
                 val key = runBlocking {
@@ -49,10 +49,10 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                             this.digests = Digest.entries.toSet()
                         }
                     }
-                }.getOrThrow()
+                }
 
-                val privateKey = runBlocking { key.exportPrivateKey().getOrThrow() }
-                val signer = rsaInstance.signerFor(privateKey).getOrThrow()
+                val privateKey = runBlocking { key.exportPrivateKey() }
+                val signer = rsaInstance.signerFor(privateKey)
                 signer.signatureAlgorithm shouldBe rsaInstance
 
                 compact("random payloads for RSA-PSS") - {

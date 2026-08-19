@@ -65,7 +65,7 @@ sealed class JWS {
         fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
             when (algorithm) {
                 is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(algorithm.ecCurve, plainSignature)
-                is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
+                is JwsAlgorithm.Signature.RSA -> RSASignature(plainSignature)
                 else -> throw SerializationException("Unsupported algorithm for JWS signature element: $algorithm")
             }
 

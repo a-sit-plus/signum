@@ -1,12 +1,12 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -104,7 +104,7 @@ private fun ByteArray.toSignature(
 ): CryptoSignature.RawByteEncodable =
     if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
         CryptoSignature.EC.fromRawBytes(this)
-    else CryptoSignature.RSA(this)
+    else RSASignature(this)
 
 private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
     if (serializer == ByteArraySerializer()) {
@@ -127,8 +127,8 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
         ?.let { Certificate.decodeFromByteArray(it) }
-        ?.let { it.signatureAlgorithm is SignatureAlgorithm.ECDSA }
-    is CoseAlgorithm.Signature -> (algorithm.algorithm is SignatureAlgorithm.ECDSA)
+        ?.let { it.signatureAlgorithm is ECDSAAlgorithm }
+    is CoseAlgorithm.Signature -> (algorithm.algorithm is ECDSAAlgorithm)
     else -> false
 }
 

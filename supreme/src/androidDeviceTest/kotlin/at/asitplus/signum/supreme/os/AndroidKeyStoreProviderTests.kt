@@ -3,8 +3,8 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.attestation
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -34,7 +34,7 @@ val AndroidKeyStoreProviderTests by matrixSuite {
         val signature = hardwareSigner.sign(plaintext).signature
 
         //@formatter:off
-        SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).verify(plaintext, signature).shouldSucceed()
+        ECDSAAlgorithm.withSHA256.verifierFor(publicKey).verify(plaintext, signature).shouldSucceed()
         //@formatter:on
 
     }

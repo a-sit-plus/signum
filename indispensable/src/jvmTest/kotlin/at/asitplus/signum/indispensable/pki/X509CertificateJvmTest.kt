@@ -53,6 +53,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 
 val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
 
@@ -90,7 +91,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                     /* subject = */ issuer,
                     /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
                 )
-                val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
+                val signatureAlgorithm = ECDSAAlgorithm.withSHA256
                 val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
                 val certificateHolder = builder.build(contentSigner)
 
@@ -151,7 +152,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
         val serialNumber = InsecureRandom.nextPositiveAsn1Integer(10)
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
+        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
 
 
         // create certificate with our structure
@@ -199,7 +200,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256
+        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
@@ -245,7 +246,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         val serialNumber= InsecureRandom.nextPositiveAsn1Integer(10)
         val commonName = "DefaultCryptoService"
 
-        val signatureAlgorithm256 = SignatureAlgorithm.ECDSAwithSHA256
+        val signatureAlgorithm256 = ECDSAAlgorithm.withSHA256
         val signatureAlgorithm512 = SignatureAlgorithm.ECDSAwithSHA512
 
         // create certificate with our structure

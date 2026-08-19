@@ -80,7 +80,7 @@ val JweEncryptedTest by matrixSuite {
         parsed.header.agreementPartyUInfo shouldBe apu
         parsed.header.agreementPartyVInfo shouldBe apv
         parsed.header.jsonWebKeyUrl shouldBe jku
-        val ourJwk = jwk.toECPublicKey().toCryptoPublicKey().getOrThrow().toJsonWebKey()
+        val ourJwk = jwk.toECPublicKey().toCryptoPublicKey().toJsonWebKey()
         parsed.header.jsonWebKey shouldBe ourJwk
         parsed.header.keyId shouldBe kid
         parsed.header.type shouldBe typ

@@ -75,9 +75,9 @@ object CursorySignatureScheme : SignatureAlgorithm {
                 Asn1BitString(bit))
 
         @SecretExposure
-        override suspend fun exportPrivateKey() = KmmResult.failure<Nothing>(NotImplementedError())
+        override suspend fun exportPrivateKey() = throw NotImplementedError()
         override val publicKey: CryptoPublicKey get() = this
-        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>) = KmmResult.success(this)
+        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>) = this
 
         override val signatureAlgorithm: SignatureAlgorithm get() = CursorySignatureScheme
         override suspend fun sign(data: SignatureInput) = signCatching {
@@ -114,7 +114,7 @@ object CursorySignatureSchemeProvider :
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey? {
         return if (publicKeyInfo.algorithmIdentifier == CursorySignatureScheme.ALG) {
             publicKeyInfo.subjectPublicKey
-                .also { require(it.size == 1L) }
+                .also { require(it.sizeBits == 1L) }
                 .get(0)
                 .let(CursorySignatureScheme::Key)
         } else null
@@ -134,10 +134,10 @@ val ExtensibilityTest by matrixSuite {
     ServiceLoader.register<SignatureVerifierProvider>(CursorySignatureSchemeProvider)
     "Signing" {
         repeat (50) {
-            val privateKey = EphemeralKey { cursory {} }.getOrThrow()
+            val privateKey = EphemeralKey { cursory {} }
             val publicKey = privateKey.publicKey
             val data = Random.nextBytes(1)
-            val signature = privateKey.signer().getOrThrow().sign(data).signature
+            val signature = privateKey.signer().sign(data).signature
             CursorySignatureScheme.verifierFor(publicKey).verify(data, signature) should succeed
         }
     }
@@ -145,8 +145,8 @@ val ExtensibilityTest by matrixSuite {
     "Certificates" {
         repeat(50) {
             val data = Random.nextBytes(1)
-            val privateKey = EphemeralKey { cursory {} }.getOrThrow()
-            val theSignature = privateKey.signer().getOrThrow().sign(data).signature.encodeToDer()
+            val privateKey = EphemeralKey { cursory {} }
+            val theSignature = privateKey.signer().sign(data).signature.encodeToDer()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
                 val tbsCertificate = TbsCertificate(
@@ -158,7 +158,7 @@ val ExtensibilityTest by matrixSuite {
                     issuerName = X500Name.fromString("2.5.4.3=Test,2.5.4.6=AT"),
                     subjectName = X500Name.EMPTY
                 )
-                val signature = privateKey.signer().getOrThrow().sign(tbsCertificate.encodeToDer()).signature
+                val signature = privateKey.signer().sign(tbsCertificate.encodeToDer()).signature
                 Certificate(tbsCertificate, signature).encodeToDer()
             }
 

@@ -6,6 +6,7 @@ import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
 //somehow including kmmresult-test makes this fail
+@IgnorableReturnValue
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 

@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -57,7 +57,7 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
  */
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {
-        is SignatureAlgorithm.ECDSA -> {
+        is ECDSAAlgorithm -> {
             when (digest) {
                 Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA1
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA256
@@ -104,7 +104,7 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyA
  */
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
     get() = when (this) {
-        is SignatureAlgorithm.ECDSA -> {
+        is ECDSAAlgorithm -> {
             when (digest) {
                 Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA1
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA256
@@ -115,7 +115,7 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
             }
         }
 
-        is SignatureAlgorithm.RSA -> {
+        is RSAAlgorithm -> {
             requireSupportedIosPssParameters()
             when (val params = parameters) {
                 is RSAAlgorithm.Parameters.PssPadded -> when (val digest = params.digest) {

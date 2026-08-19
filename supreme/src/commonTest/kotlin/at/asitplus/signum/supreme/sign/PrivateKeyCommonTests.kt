@@ -3,12 +3,13 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.integrity.verifierFor
-import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.*
@@ -39,7 +40,7 @@ val PrivateKeyCommonTests by matrixSuite {
 
         val key = CryptoPrivateKey.decodeFromPem(rsa) as CryptoPrivateKey.WithPublicKey<*>
 
-        val signer: Signer = SignatureAlgorithm.RSAwithSHA256andPSSPadding.signerFor(key).getOrThrow()
+        val signer: Signer = RSAAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
         val data = Random.nextBytes(384)
         val signature = signer.sign(data)
@@ -60,10 +61,10 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as EC.WithPublicKey
+        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as ECDSAPrivateKey.WithPublicKey
 
 
-        val signer: Signer = SignatureAlgorithm.ECDSAwithSHA256.signerFor(privateKey).getOrThrow()
+        val signer: Signer = ECDSAAlgorithm.withSHA256.signerFor(privateKey)
 
         val data = Random.Default.nextBytes(1024)
         val signature = signer.sign(data)
@@ -76,30 +77,29 @@ val PrivateKeyCommonTests by matrixSuite {
     }
 
     "Export EC" {
-        val signer = Signer.Ephemeral { ec {} }.getOrThrow()
-        val privateKey = signer.exportPrivateKey().getOrThrow()
+        val signer = Signer.Ephemeral { ec {} }
+        val privateKey = signer.exportPrivateKey()
         signer.publicKey shouldBe privateKey.publicKey
 
         val data = Random.Default.nextBytes(1024)
-        val sig = signer.signatureAlgorithm.signerFor(privateKey).getOrThrow().sign(data).signature
+        val sig = signer.signatureAlgorithm.signerFor(privateKey).sign(data).signature
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig).isSuccess shouldBe true
     }
 
     "Export RSA" {
-        val signer = Signer.Ephemeral { rsa {} }.getOrThrow()
-        val privateKey = signer.exportPrivateKey().getOrThrow()
+        val signer = Signer.Ephemeral { rsa {} }
+        val privateKey = signer.exportPrivateKey()
         signer.publicKey shouldBe privateKey.publicKey
 
         val data = Random.Default.nextBytes(1024)
-        val sig = signer.signatureAlgorithm.signerFor(privateKey).getOrThrow().sign(data).signature
+        val sig = signer.signatureAlgorithm.signerFor(privateKey).sign(data).signature
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig).isSuccess shouldBe true
     }
 
     "Regressions" - {
         "#233" {
-            @OptIn(ExperimentalStdlibApi::class)
             CryptoPrivateKey.decodeFromDer("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
         }
     }

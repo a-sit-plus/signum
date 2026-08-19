@@ -55,4 +55,4 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
         }
 }
 
-internal expect fun getRSAPlatformSignatureInstance(algorithm: SignatureAlgorithm.RSA, jcaProvider: String?): Signature?
+internal expect fun getRSAPlatformSignatureInstance(algorithm: RSAAlgorithm, jcaProvider: String?): Signature?

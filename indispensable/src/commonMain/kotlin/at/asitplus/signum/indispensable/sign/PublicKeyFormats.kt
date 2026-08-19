@@ -5,8 +5,10 @@ import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.rsaEncryption
@@ -162,7 +164,7 @@ class ECDSAPublicKey private constructor(
     override fun asCryptoPublicKey() = this
 
     override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
+        SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
     }
 
     private val content: Content by providedContent orLazy {

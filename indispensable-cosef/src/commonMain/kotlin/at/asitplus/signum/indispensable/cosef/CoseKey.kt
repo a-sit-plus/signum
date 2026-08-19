@@ -9,8 +9,8 @@ import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
@@ -197,7 +197,7 @@ fun CryptoPublicKey.toCoseKey(
 ): KmmResult<CoseKey> =
     when (this) {
         is ECDSAPublicKey ->
-            if ((algorithm != null) && (algorithm.algorithm !is SignatureAlgorithm.ECDSA))
+            if ((algorithm != null) && (algorithm.algorithm !is ECDSAAlgorithm))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.preferCompressedRepresentation) {

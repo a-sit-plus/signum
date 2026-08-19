@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
@@ -23,7 +22,7 @@ val SignatureAlgorihmTest by matrixSuite {
             TestSpec(RSAAlgorithm.Padding.PSS, Digest.SHA384, 98),
             TestSpec(RSAAlgorithm.Padding.PSS, Digest.SHA512, 130),
         ).asData(nameFn = { "${it.padding}/${it.digest}" }).test { spec ->
-            SignatureAlgorithm.RSA(spec.padding, spec.digest).minimumKeySize shouldBe spec.expected
+            RSAAlgorithm(spec.padding, spec.digest).minimumKeySize shouldBe spec.expected
         }
     }
     "RSA PSS from digest matches default params" - {

@@ -41,7 +41,7 @@ interface PlatformSigningProviderSigner
     <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
     : Signer.WithAlias, Signer.Attestable<AttestationT> {
 
-    suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<SigningConfiguration> = null) : KmmResult<Unit> = KmmResult.success(Unit)
+    suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<SigningConfiguration> = null) {}
     override suspend fun trySetupUninterruptedSigning() = trySetupUninterruptedSigning(null)
 
     suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : SignatureResult<*>

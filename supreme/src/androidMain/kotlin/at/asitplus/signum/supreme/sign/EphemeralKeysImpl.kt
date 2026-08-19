@@ -12,7 +12,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.toCryptoPrivateKey
@@ -21,6 +20,10 @@ import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -49,14 +52,15 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     class EC (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-              override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+              override val publicKey: ECDSAPublicKey, override val signatureAlgorithm: ECDSAAlgorithm
+    )
         : AndroidEphemeralSigner(privateKey), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            catching { privateKey as ECPrivateKey }.transform(ECPrivateKey::toCryptoPrivateKey)
+            (privateKey as ECPrivateKey).toCryptoPrivateKey()
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
             javax.crypto.KeyAgreement.getInstance("ECDH").also {
@@ -67,21 +71,22 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 
     class RSA(config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-              override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+              override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: RSAAlgorithm
+    )
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = RSASignature.parseFromJca(bytes)
 
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            catching { privateKey as RSAPrivateKey }.transform(RSAPrivateKey::toCryptoPrivateKey)
+            (privateKey as RSAPrivateKey).toCryptoPrivateKey()
     }
 }
 
 internal sealed interface AndroidEphemeralKey {
     class ECDSA(pair: KeyPair, digests: Set<Digest?>)
         : EphemeralKeyBase.ECDSA<ECPrivateKey, AndroidEphemeralSigner.EC>(AndroidEphemeralSigner::EC,
-        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
+        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey() as CryptoPublicKey.EC,
         digests = digests)
     {
         @SecretExposure
@@ -90,7 +95,7 @@ internal sealed interface AndroidEphemeralKey {
 
     class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
         : EphemeralKeyBase.RSA<RSAPrivateKey, AndroidEphemeralSigner.RSA>(AndroidEphemeralSigner::RSA,
-        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
+        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey() as CryptoPublicKey.RSA,
         digests = digests, paddings = paddings)
     {
         @SecretExposure

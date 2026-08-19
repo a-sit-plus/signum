@@ -3,6 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.ASN1Sequence
@@ -48,7 +50,7 @@ val SignatureCodecTest  by matrixSuite {
             CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
-                SignatureAlgorithm.ECDSA(Digest.entries.first { it.name == digest }, ECCurve.byJcaName(curve))
+                ECDSAAlgorithm(Digest.entries.first { it.name == digest }, ECCurve.byJcaName(curve))
             ).jcaSignatureBytes shouldBe sig
 
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
@@ -64,7 +66,7 @@ val SignatureCodecTest  by matrixSuite {
 
         val digest = ("SHA256")
         val signatureAlgorithm =
-            if (Random.nextBoolean()) SignatureAlgorithm.RSAwithSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
+            if (Random.nextBoolean()) RSAAlgorithm.withSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
 
         // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
@@ -78,7 +80,7 @@ val SignatureCodecTest  by matrixSuite {
 
 
 
-            CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            RSASignature.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
                 signatureAlgorithm
@@ -105,7 +107,7 @@ val SignatureCodecTest  by matrixSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            RSASignature.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
             CryptoSignature.parseFromJca(
                 certificateHolder.signature,
                 signatureAlgorithm

@@ -200,7 +200,7 @@ class RSASignature private constructor(
 
 object IndispensableSignatureFormats : SignatureFormatProvider {
     override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: CryptoSignature) = when (signatureAlgorithm) {
-        is SignatureAlgorithm.ECDSA ->
+        is ECDSAAlgorithm ->
             when (val parsedSig =
                 (signature as? ECDSASignature) ?:
                     ECDSASignature.decodeFromTlv(signature.asn1Representation))
@@ -213,7 +213,7 @@ object IndispensableSignatureFormats : SignatureFormatProvider {
                     else -> parsedSig.withCurve(crv)
                 }
             }
-        is SignatureAlgorithm.RSA ->
+        is RSAAlgorithm ->
             signature as? RSASignature ?: RSASignature.decodeFromTlv(signature.asn1Representation)
         else -> null
     }

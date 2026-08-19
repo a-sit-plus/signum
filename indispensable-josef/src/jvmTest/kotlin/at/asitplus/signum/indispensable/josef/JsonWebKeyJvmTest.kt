@@ -1,10 +1,9 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.toAsn1Integer
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -33,7 +32,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         val keyPair: KeyPair = keyGenEC.genKeyPair()
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
-        val pubKey = fromUncompressed(ecCurve, xFromBc, yFromBc).also { it.jwkId = it.didEncoded }
+        val pubKey = ECDSAPublicKey.fromUncompressed(ecCurve, xFromBc, yFromBc).also { it.jwkId = it.didEncoded }
         val jsonWebKey = pubKey.toJsonWebKey()
 
         jsonWebKey.shouldNotBeNull()
@@ -43,7 +42,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         jsonWebKey.keyId shouldHaveMinLength 32
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId!!).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jsonWebKey.keyId
             recreatedJwk.x shouldBe jsonWebKey.x
@@ -60,7 +59,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         val keyPairRSA: KeyPair = keyGenRSA.genKeyPair()
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent
-        val pubKey = CryptoPublicKey.RSA(
+        val pubKey = at.asitplus.signum.indispensable.sign.RSAPublicKey(
             nFromBc.toAsn1Integer() as Asn1Integer.Positive,
             eFromBc.toAsn1Integer() as Asn1Integer.Positive
         )
@@ -78,7 +77,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         }
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId!!).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jwk.keyId
             recreatedJwk.n shouldBe jwk.n

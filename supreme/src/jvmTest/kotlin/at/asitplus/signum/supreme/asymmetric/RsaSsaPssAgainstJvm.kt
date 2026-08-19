@@ -5,9 +5,9 @@ import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
@@ -24,21 +24,22 @@ val RsaSsaPssAgainstJvm by matrixSuite {
         Digest.entries.asData("Data Digest") - { mgfDigest ->
 
             mapOf(
-                "from ASN.1" to SignatureAlgorithm.RSA(
+                "from ASN.1" to RSAAlgorithm(
                     RSAAlgorithm.Parameters.PssPadded(
                     RsaSsaPssParams(
                         hashAlgorithm = dataDigest.asn1Representation,
                         maskGenAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                     )
                 )),
-                "from Signum" to SignatureAlgorithm.RSA(
+                "from Signum" to RSAAlgorithm(
                     RSAAlgorithm.Parameters.PssPadded(
                         digest = dataDigest,
                         mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
                             mgfDigest
                         )
                     )
-                )).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
+                )
+            ).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
 
 
                 val key = runBlocking {
@@ -50,8 +51,8 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                     }
                 }
 
-                val privateKey = runBlocking { key.getOrThrow().exportPrivateKey().getOrThrow() }
-                val signer = rsaInstance.signerFor(privateKey).getOrThrow()
+                val privateKey = runBlocking { key.exportPrivateKey() }
+                val signer = rsaInstance.signerFor(privateKey)
                 signer.signatureAlgorithm shouldBe rsaInstance
 
                 val data = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -63,19 +64,19 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 }
                 val jvmSigned = Signature.getInstance("RSASSA-PSS").run {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))
-                    initSign(privateKey.toJcaPrivateKey().getOrThrow())
+                    initSign(privateKey.toJcaPrivateKey())
                     update(data)
                     sign()
                 }
 
 
                 "Signum's verifier against JCA signed" {
-                    rsaInstance.verifierFor(key.getOrThrow().publicKey)
-                        .verify(data, CryptoSignature.RSA.parseFromJca(jvmSigned)).shouldSucceed()
+                    rsaInstance.verifierFor(key.publicKey)
+                        .verify(data, RSASignature.parseFromJca(jvmSigned)).shouldSucceed()
                 }
                 val jcaVerifier = Signature.getInstance("RSASSA-PSS").apply {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))
-                    initVerify(key.getOrThrow().publicKey.toJcaPublicKey())
+                    initVerify(key.publicKey.toJcaPublicKey())
                     update(data)
                 }
 

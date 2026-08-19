@@ -2,11 +2,10 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 
 
-internal actual fun getRSAPlatformSignatureInstance(algorithm: SignatureAlgorithm.RSA, jcaProvider: String?) =
+internal actual fun getRSAPlatformSignatureInstance(algorithm: RSAAlgorithm, jcaProvider: String?) =
     when (val params = algorithm.parameters) {
         is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
             is WellKnownDigest -> sigGetInstance("${digest.jcaAlgorithmComponent}withRSA", jcaProvider)

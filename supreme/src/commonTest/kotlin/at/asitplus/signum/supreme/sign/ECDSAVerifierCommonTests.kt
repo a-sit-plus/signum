@@ -5,8 +5,10 @@ import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import kotlinx.serialization.Serializable
@@ -35,10 +37,10 @@ val ECDSAVerifierCommonTests by matrixSuite {
             "None" -> null
             else -> Digest.entries.first { it.name == test.dig }
         }
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.EC
+        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as ECDSAPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
-        val sig = CryptoSignature.EC.parseFromJca(Base64.decode(test.sig))
+        val sig = ECDSASignature.parseFromJca(Base64.decode(test.sig))
     }
 
     /** Generated on JVM using:
@@ -388,7 +390,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
         tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
             byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
                 data(byDigest, nameFn = { it.b64msg }) test { test ->
-                    val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key)
+                    val verifier = ECDSAAlgorithm(test.digest, null).verifierFor(test.key)
                     verifier.verify(test.msg, test.sig) should succeed
                     Random.of(byDigest).let {
                         if (it !== test) {
@@ -397,7 +399,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
                         }
                     }
                     Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
-                        SignatureAlgorithm.ECDSA(dig, null)
+                        ECDSAAlgorithm(dig, null)
                             .verifierFor(test.key).verify(test.msg, test.sig) shouldNot succeed
                     }
                 }
