@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.supreme.sign.signerFor
 import kotlin.jvm.JvmName
 
@@ -23,7 +24,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
         return KmmResult.failure(IllegalArgumentException("Expected KeyAgreementPublicValue.ECDH, got ${publicValue::class.simpleName}"))
     return when (this) {
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
-        is CryptoPrivateKey.EC.WithPublicKey -> SignatureAlgorithm.ECDSAwithSHA256.signerFor(this)
+        is EC.WithPublicKey -> SignatureAlgorithm.ECDSAwithSHA256.signerFor(this)
             .transform { it.keyAgreement(publicValue) }
 
         else -> KmmResult.failure(IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}"))

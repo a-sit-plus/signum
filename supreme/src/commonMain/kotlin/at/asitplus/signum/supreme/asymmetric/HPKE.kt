@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
@@ -10,6 +9,7 @@ import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.NonceTrait
@@ -356,14 +356,14 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                 sk = os2ip(bytes)
                 counter += 1
             }
-            val key = CryptoPrivateKey.EC.WithPublicKey(sk, dhGroup, true, true)
+            val key = EC.WithPublicKey(sk, dhGroup, true, true)
             return KeyPair(key, key.publicValue)
         }
 
         override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asCryptoPublicKey().toAnsiX963Encoded(useCompressed = false)
         override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = CryptoPublicKey.EC.fromAnsiX963Bytes(dhGroup, pkXm)
-        override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as CryptoPrivateKey.EC.WithPublicKey).privateKeyBytes
-        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = CryptoPrivateKey.EC.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)
+        override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as EC.WithPublicKey).privateKeyBytes
+        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EC.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)
 
         private suspend fun ExtractAndExpand(dh: ByteArray, kem_context: ByteArray): ByteArray {
             val eae_prk = LabeledExtract(byteArrayOf(), "eae_prk".encodeToByteArray(), dh)

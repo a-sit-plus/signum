@@ -14,7 +14,9 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -31,8 +33,8 @@ import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.security.KeyFactory
 import java.security.NoSuchAlgorithmException
-import java.security.PrivateKey
-import java.security.PublicKey
+import java.security.PrivateKey as JCAPrivateKey
+import java.security.PublicKey as JCAPublicKey
 import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.spec.*
@@ -98,10 +100,16 @@ interface JcaMappingProvider {
     fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProvider: String?): Signature? { return null }
 
     /** Maps this CryptoPublicKey to a JCA PublicKey instance. */
-    fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey): PublicKey? { return null }
+    fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey): JCAPublicKey? { return null }
 
     /** Maps this JCA PublicKey instance to a CryptoPublicKey. */
-    fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? { return null }
+    fun jcaPublicKeyToCryptoPublicKey(publicKey: JCAPublicKey): CryptoPublicKey? { return null }
+
+    /** Maps this CryptoPrivateKey to a JCA PrivateKey instance. */
+    fun cryptoPrivateKeyToJcaPrivateKey(privateKey: CryptoPrivateKey): JCAPrivateKey? { return null }
+
+    /** Maps this JCA PrivateKey instance to a CryptoPrivateKey. */
+    fun jcaPrivateKeyToCryptoPrivateKey(privateKey: JCAPrivateKey): CryptoPrivateKey.WithPublicKey<*>? { return null }
 }
 
 /** Get a pre-configured JCA instance for this algorithm */
@@ -148,13 +156,9 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.getJcaPublicKey() = toJcaPublicKey()
 fun CryptoPublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun ECDSAPublicKey.getJcaPublicKey() = toJcaPublicKey()
 fun ECDSAPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
@@ -166,18 +170,12 @@ fun ECDSAPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun RSAPublicKey.getJcaPublicKey() = toJcaPublicKey()
 fun RSAPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as java.security.interfaces.RSAPublicKey
 
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun ECDSAPublicKey.Companion.fromJcaPublicKey(publicKey: java.security.interfaces.ECPublicKey): KmmResult<ECDSAPublicKey> =
-    publicKey.toCryptoPublicKey()
-
-fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): KmmResult<ECDSAPublicKey> = catching {
+fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): ECDSAPublicKey {
     // TODO: don't we have "curve by oid" now?
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
@@ -186,29 +184,19 @@ fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): KmmResult<ECDSAPub
             ).algorithm.parameters as ASN1ObjectIdentifier
         )
     ) ?: throw SerializationException("Unknown Jca name")
-    ECDSAPublicKey.fromUncompressed(
+    return ECDSAPublicKey.fromUncompressed(
         curve,
         w.affineX.toByteArray(),
         w.affineY.toByteArray()
     )
 }
 
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun RSAPublicKey.Companion.fromJcaPublicKey(publicKey: java.security.interfaces.RSAPublicKey): KmmResult<RSAPublicKey> =
-    publicKey.toCryptoPublicKey()
+fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RSAPublicKey =
+    RSAPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
 
-fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): KmmResult<RSAPublicKey> =
-    catching { RSAPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
-
-
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
-    publicKey.toCryptoPublicKey()
-
-fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-    ServiceLoader.load<JcaMappingProvider>().get(this,
-        JcaMappingProvider::jcaPublicKeyToCryptoPublicKey)
-}
+fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::jcaPublicKeyToCryptoPublicKey)
 
 /**
  * Converts this [Certificate] to a [java.security.cert.X509Certificate].
@@ -232,29 +220,29 @@ fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Cer
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { Certificate.decodeFromDer(encoded) }
 
-fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
-    val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
-    val kf = when (this) {
-        is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
-        is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
-    }
-    kf.generatePrivate(spec)!!
-}
+fun CryptoPrivateKey.toJcaPrivateKey() =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::cryptoPrivateKeyToJcaPrivateKey)
 
-fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<java.security.interfaces.ECPrivateKey> =
-    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as java.security.interfaces.ECPrivateKey }
+fun ECDSAPrivateKey.toJcaPrivateKey() =
+    KeyFactory.getInstance("EC")
+        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+            as java.security.interfaces.ECPrivateKey
 
-fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<java.security.interfaces.RSAPrivateKey> =
-    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as java.security.interfaces.RSAPrivateKey }
+fun RSAPrivateKey.toJcaPrivateKey() =
+    KeyFactory.getInstance("RSA")
+        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+            as java.security.interfaces.RSAPrivateKey
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
-    catching { CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*> }
+fun JCAPrivateKey.toCryptoPrivateKey() =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::jcaPrivateKeyToCryptoPrivateKey)
 
-fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
-    catching { CryptoPrivateKey.EC.decodeFromDer(encoded) as CryptoPrivateKey.EC.WithPublicKey }
+fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): ECDSAPrivateKey.WithPublicKey =
+    ECDSAPrivateKey.decodeFromDer(encoded) as ECDSAPrivateKey.WithPublicKey
 
-fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
-    catching { CryptoPrivateKey.RSA.decodeFromDer(encoded) }
+fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RSAPrivateKey =
+    RSAPrivateKey.decodeFromDer(encoded)
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
@@ -361,9 +349,9 @@ fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RSAPublicKe
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
-fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: CryptoPrivateKey.RSA, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RSAPrivateKey, provider: String? = null) =
     catching {
         (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
-            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), jcaParameterSpec)
+            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey(), jcaParameterSpec)
         }
     }

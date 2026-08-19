@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.*
@@ -59,7 +60,7 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as CryptoPrivateKey.EC.WithPublicKey
+        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as EC.WithPublicKey
 
 
         val signer: Signer = SignatureAlgorithm.ECDSAwithSHA256.signerFor(privateKey).getOrThrow()

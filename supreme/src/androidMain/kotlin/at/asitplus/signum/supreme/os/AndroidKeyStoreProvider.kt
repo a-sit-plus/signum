@@ -180,8 +180,8 @@ interface AndroidKeyStoreOperationsProvider {
      * Implementers likely only need to determine the [SignatureAlgorithm] to expose, and have their subclass
      * implement the relevant [SignerI] marker interface (if applicable).
      *
-     * They also need to integrate with X.509 classes to ensure certificate/public key parsing for their algorithm works,
-     * as the public key is retrieved from the key's key store certificate.
+     * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
+     * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.
      */
     fun getAndroidKeystoreSigner(jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo,
                                  config: AndroidSignerConfiguration, publicKey: CryptoPublicKey,
@@ -301,7 +301,7 @@ object AndroidKeyStoreProvider:
                         Napier.v { "Correcting Android 10 AKS signature bug" }
                         publicKey = CertificateFactory.getInstance("X.509")
                             .generateCertificate(chain.first().encoded.inputStream())
-                            .publicKey.toCryptoPublicKey().getOrThrow()
+                            .publicKey.toCryptoPublicKey()
                         attestation = null
                     } else throw it
                 }

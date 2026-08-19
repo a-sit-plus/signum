@@ -9,8 +9,10 @@ import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.supreme.SignatureResult
@@ -60,7 +62,7 @@ interface Signer {
         override val publicKey: ECDSAPublicKey
 
         @SecretExposure
-        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
+        override suspend fun exportPrivateKey(): KmmResult<EC.WithPublicKey>
 
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
@@ -76,7 +78,7 @@ interface Signer {
         override val publicKey: RSAPublicKey
 
         @SecretExposure
-        override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
+        override suspend fun exportPrivateKey(): KmmResult<at.asitplus.signum.indispensable.sign.RSAPrivateKey>
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
@@ -110,18 +112,18 @@ interface Signer {
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
  */
 fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>): KmmResult<Signer> =
-    if ((this is ECDSAAlgorithm && privateKey is CryptoPrivateKey.EC) ||
-                (this is RSAAlgorithm && privateKey is CryptoPrivateKey.RSA)) {
+    if ((this is ECDSAAlgorithm && privateKey is EC) ||
+                (this is RSAAlgorithm && privateKey is RSAPrivateKey)) {
         when (this) {
-            is ECDSAAlgorithm -> this.signerFor(privateKey as CryptoPrivateKey.EC.WithPublicKey)
-            is RSAAlgorithm -> this.signerFor(privateKey as CryptoPrivateKey.RSA)
+            is ECDSAAlgorithm -> this.signerFor(privateKey as EC.WithPublicKey)
+            is RSAAlgorithm -> this.signerFor(privateKey as RSAPrivateKey)
             else -> TODO("providerize")
         }
     } else {
         KmmResult.failure(IllegalArgumentException("Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"))
     }
 
-fun ECDSAAlgorithm.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
+fun ECDSAAlgorithm.signerFor(privateKey: EC.WithPublicKey) =
     catching { makePrivateKeySigner(privateKey, this) }
 
 /**
@@ -130,7 +132,7 @@ fun ECDSAAlgorithm.signerFor(privateKey: CryptoPrivateKey.EC.WithPublicKey) =
  * On iOS, RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length,
  * and trailer field `1`.
  */
-fun RSAAlgorithm.signerFor(privateKey: CryptoPrivateKey.RSA) =
+fun RSAAlgorithm.signerFor(privateKey: RSAPrivateKey) =
     catching { makePrivateKeySigner(privateKey, this) }
 
 /**

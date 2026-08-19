@@ -11,7 +11,9 @@ import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -163,14 +165,14 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyR
             kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
             kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             data = when (this@toSecKey) {
-                is CryptoPrivateKey.EC.WithPublicKey -> {
+                is EC.WithPublicKey -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo curve.coordinateLength.bits.toInt()
                     val ecPubKey = this@toSecKey.publicKey
                     ecPubKey.iosEncoded+ privateKeyBytes
                 }
 
-                is CryptoPrivateKey.RSA -> {
+                is RSAPrivateKey -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                     kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
                     asPKCS1.encodeToDer()

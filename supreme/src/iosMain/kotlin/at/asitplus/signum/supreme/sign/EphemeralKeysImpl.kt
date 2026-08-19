@@ -6,7 +6,6 @@ import at.asitplus.catching
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
 import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl._algSpecific
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
@@ -14,6 +13,9 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.dsl.DSL
@@ -54,7 +56,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
     ) : EphemeralSigner(privateKey), Signer.ECDSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+            privateKey.value.toCryptoPrivateKey().mapCatching { it as ECDSAPrivateKey.WithPublicKey }
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
             performKeyAgreement(privateKey.value, publicValue)
@@ -67,7 +69,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
     ) : EphemeralSigner(privateKey), Signer.RSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.RSA }
+            privateKey.value.toCryptoPrivateKey().mapCatching { it as RSAPrivateKey }
     }
 }
 
@@ -77,7 +79,7 @@ internal sealed interface IosEphemeralKey {
     {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+            privateKey.value.toCryptoPrivateKey().mapCatching { it as EC.WithPublicKey }
     }
 
     class RSA(privateKey: OwnedCFValue<SecKeyRef>, publicKey: CryptoPublicKey.RSA, digests: Set<Digest>, paddings: Set<RSAPadding>)
@@ -85,7 +87,7 @@ internal sealed interface IosEphemeralKey {
     {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.RSA }
+            privateKey.value.toCryptoPrivateKey().mapCatching { it as at.asitplus.signum.indispensable.sign.RSAPrivateKey }
     }
 }
 
@@ -138,14 +140,14 @@ internal actual suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigning
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.RSA,
+    key: RSAPrivateKey,
     algorithm: SignatureAlgorithm.RSA
 ): Signer.RSA =
     key.toSecKey().mapCatching { EphemeralSigner.RSA(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC.WithPublicKey,
+    key: EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA =
     key.toSecKey().mapCatching { EphemeralSigner.EC(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()

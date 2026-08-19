@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
@@ -91,7 +92,7 @@ abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifi
             der: Der,
         ): CryptoPublicKey =
             when (src.pemLabel) {
-                "RSA PUBLIC KEY" -> RSAPublicKey.fromPKCS1encoded(src.payload)
+                Pkcs1RsaPublicKeyInfo.PEM_LABEL -> RSAPublicKey.fromPKCS1encoded(src.payload)
                 else -> decodeFromDer(serializer, src.payload, limit, der)
             }
 

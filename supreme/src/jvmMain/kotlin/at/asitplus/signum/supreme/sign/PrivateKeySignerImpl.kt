@@ -6,13 +6,15 @@ import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.RSA,
+    key: RSAPrivateKey,
     algorithm: SignatureAlgorithm.RSA
 ): Signer.RSA = EphemeralSigner.RSA(
     config = EphemeralSignerConfiguration(),
@@ -22,7 +24,7 @@ actual fun makePrivateKeySigner(
 )
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC.WithPublicKey,
+    key: EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA = EphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
@@ -43,8 +45,8 @@ fun SignatureAlgorithm.signerFor(
     configure: DSLConfigureFn<JvmEphemeralSignerCompatibleConfiguration>
 ) = catching {
     require(
-        (this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
-                (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)
+        (this is SignatureAlgorithm.ECDSA && privateKey is EC) ||
+                (this is SignatureAlgorithm.RSA && privateKey is RSAPrivateKey)
     ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
 
     when (this) {

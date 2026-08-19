@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
@@ -22,7 +23,7 @@ import kotlinx.serialization.json.Json
 val RsaEncryptionTest  by matrixSuite {
     compact("From OpenSSL") - {
         data(testData, nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }) test {
-            it.key as CryptoPrivateKey.RSA
+            it.key as RSAPrivateKey
             AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
                 .getOrThrow() shouldBe it.plain
             val newEncrypted =

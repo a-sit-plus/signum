@@ -16,13 +16,15 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 
 
 internal expect suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey?
-internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
-internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
+internal expect fun makePrivateKeySigner(key: EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
+internal expect fun makePrivateKeySigner(key: RSAPrivateKey, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
 
 /**
  * An ephemeral keypair, not stored in any kind of persistent storage.
@@ -71,7 +73,7 @@ interface ECDSAEphemeralKey: EphemeralKey {
     override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.ECDSA>
 
     @SecretExposure
-    override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
+    override suspend fun exportPrivateKey(): KmmResult<EC.WithPublicKey>
 }
 /** An [EphemeralKey] suitable for RSA operations. */
 interface RSAEphemeralKey: EphemeralKey {
@@ -79,7 +81,7 @@ interface RSAEphemeralKey: EphemeralKey {
     override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.RSA>
 
     @SecretExposure
-    override suspend fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
+    override suspend fun exportPrivateKey(): KmmResult<RSAPrivateKey>
 }
 
 internal sealed class EphemeralKeyBase <PrivateKeyT>

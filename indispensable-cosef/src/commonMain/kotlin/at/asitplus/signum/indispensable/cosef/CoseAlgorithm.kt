@@ -17,6 +17,8 @@ import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgori
 import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
@@ -297,7 +299,7 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+        is ECDSAAlgorithm -> when (this.digest) {
             Digest.SHA256 -> when (this.requiredCurve) {
                 ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
                 null -> CoseAlgorithm.Signature.ES256
@@ -321,7 +323,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
             else -> TODO("providerize")
         }
 
-        is SignatureAlgorithm.RSA -> when (this.parameters) {
+        is RSAAlgorithm -> when (this.parameters) {
             is RSAAlgorithm.Parameters.Pkcs1Padded -> when (this.digest) {
                 Digest.SHA1 -> CoseAlgorithm.Signature.RS1
                 Digest.SHA256 -> CoseAlgorithm.Signature.RS256

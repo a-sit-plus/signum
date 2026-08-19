@@ -1,10 +1,10 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.getJCADecryptorInstance
 import at.asitplus.signum.indispensable.getJCAEncryptorInstance
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
 
 actual class PlatformDecryptorConfiguration internal actual constructor() :
@@ -32,7 +32,7 @@ internal actual fun encryptRSAImpl(
 
 internal actual suspend fun decryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: CryptoPrivateKey.RSA,
+    privateKey: RSAPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray =

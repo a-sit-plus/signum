@@ -1,9 +1,9 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.dsl.DSL
@@ -33,7 +33,7 @@ internal actual fun encryptRSAImpl(
 @OptIn(ExperimentalForeignApi::class)
 internal actual suspend fun decryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: CryptoPrivateKey.RSA,
+    privateKey: RSAPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray=  corecall {

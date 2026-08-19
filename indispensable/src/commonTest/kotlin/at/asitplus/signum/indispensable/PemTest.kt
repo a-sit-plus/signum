@@ -6,6 +6,8 @@ import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -150,10 +152,10 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         CryptoPrivateKey.decodeFromPem(rnd + sec1).let {
-            it.shouldBeInstanceOf<CryptoPrivateKey.EC>()
-            CryptoPrivateKey.EC.decodeFromPem(sec1) shouldBe it
+            it.shouldBeInstanceOf<EC>()
+            EC.decodeFromPem(sec1) shouldBe it
             kotlin.runCatching {
-                CryptoPrivateKey.RSA.decodeFromPem(sec1)
+                RSAPrivateKey.decodeFromPem(sec1)
             }.isSuccess shouldBe false
 
             it.asSEC1.encodeToPem().lines() shouldBe sec1.lines()
@@ -170,9 +172,9 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         CryptoPrivateKey.decodeFromPem(rnd + pkcs8).let {
-            CryptoPrivateKey.EC.decodeFromPem(pkcs8) shouldBe it
+            EC.decodeFromPem(pkcs8) shouldBe it
             kotlin.runCatching {
-                CryptoPrivateKey.RSA.decodeFromPem(pkcs8)
+                RSAPrivateKey.decodeFromPem(pkcs8)
             }.isSuccess shouldBe false
             it.encodeToPem().lines() shouldBe pkcs8.lines()
         }
@@ -195,12 +197,12 @@ val PemTest  by matrixSuite {
 
         rsa.forEach { string ->
             CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
-                .shouldBeInstanceOf<CryptoPrivateKey.RSA>()
+                .shouldBeInstanceOf<RSAPrivateKey>()
         }
 
         ec.forEach { string ->
             CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
-                .shouldBeInstanceOf<CryptoPrivateKey.EC>()
+                .shouldBeInstanceOf<EC>()
 
         }
     }

@@ -37,6 +37,8 @@ import at.asitplus.signum.supreme.sign.EphemeralSigner
 import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -53,7 +55,6 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import org.kotlincrypto.random.CryptoRand
 import java.security.KeyPair
-import kotlin.getOrThrow
 import kotlin.io.path.extension
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -76,11 +77,21 @@ class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSig
 }
 
 // @Service
-interface JKSSigningKeyCreationProvider {
+interface JavaKeyStoreOperationsProvider {
     fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, KeyPair>?
+
+    /**
+     * Construct an [JKSSigner] for the given values.
+     * Implementers likely only need to determine the [SignatureAlgorithm] to expose, and have their subclass
+     * implement the relevant [Signer] marker interface (if applicable).
+     *
+     * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
+     * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.
+     */
+    fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, certificate: Certificate) : JKSSigner?
 }
 
-object SupremeJKSSignerCreationProvider : JKSSigningKeyCreationProvider {
+object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
     override fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, KeyPair>? =
         when (val algSpec = DSL.options(config.ec, config.rsa)) {
             is SigningKeyConfiguration.ECConfiguration -> Pair(
@@ -113,7 +124,7 @@ object SupremeJKSSignerCreationProvider : JKSSigningKeyCreationProvider {
                         Pair(RSAAlgorithm.Padding.PSS, algSpec.digests.first()),
                         Pair(RSAAlgorithm.Padding.PKCS1, algSpec.digests.first()),
                     ).firstNotNullOfOrNull { (padding, digest) ->
-                        SignatureAlgorithm.RSA(padding, digest).takeIf {
+                        RSAAlgorithm(padding, digest).takeIf {
                             algSpec.digests.contains(digest) &&
                             algSpec.paddings.contains(padding) &&
                             (it.minimumKeySize <= keySizeBytes)
@@ -124,7 +135,24 @@ object SupremeJKSSignerCreationProvider : JKSSigningKeyCreationProvider {
                         generateKeyPair()
                     })
             }
-            else -> TODO("providerize")
+            else -> null
+        }
+
+    override fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, certificate: Certificate): JKSSigner? =
+        when (val publicKey = certificate.publicKey) {
+            is ECDSAPublicKey -> JKSSigner.EC(config, jcaPrivateKey as ECPrivateKey, publicKey,
+                ECDSAAlgorithm(
+                    digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
+                    requiredCurve = publicKey.curve),
+                alias)
+            is RSAPublicKey -> {
+                val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAAlgorithm.Padding.PSS
+                val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
+                JKSSigner.RSA(
+                    config, jcaPrivateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(padding, digest), alias
+                )
+            }
+            else -> null
         }
 }
 
@@ -194,10 +222,10 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 throw NoSuchElementException("Key with alias $alias already exists")
 
             val (certAlg, keyPair) =
-                ServiceLoader.load<JKSSigningKeyCreationProvider>().get(config) { createKeyPair(it) }
+                ServiceLoader.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
             val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
-            val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
+            val publicKey = keyPair.public.toCryptoPublicKey()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextPositiveAsn1Integer(20),
                 signatureAlgorithm = certAlg,
@@ -220,26 +248,9 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         }
     }
 
-    private fun getSigner(
-        alias: String,
-        config: JKSSignerConfiguration,
-        privateKey: PrivateKey,
-        certificate: Certificate
-    ): JKSSigner = when (val publicKey = certificate.publicKey) {
-        is CryptoPublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
-            SignatureAlgorithm.ECDSA(
-                digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
-                requiredCurve = publicKey.curve),
-            alias)
-        is CryptoPublicKey.RSA -> {
-            val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAAlgorithm.Padding.PSS
-            val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
-            JKSSigner.RSA(
-                config, privateKey as RSAPrivateKey, publicKey, SignatureAlgorithm.RSA(padding, digest), alias
-            )
-        }
-        else -> TODO("providerize")
-    }
+    private fun getSigner(alias: String, config: JKSSignerConfiguration, privateKey: PrivateKey, certificate: Certificate) =
+        ServiceLoader.load<JavaKeyStoreOperationsProvider>()
+            .get(alias) { getJKSSigner(privateKey, alias, config, certificate) }
 
     override suspend fun getSignerForKey(
         alias: String,
