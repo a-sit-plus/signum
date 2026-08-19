@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.sign.EC
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -62,7 +63,7 @@ interface Signer {
         override val publicKey: ECDSAPublicKey
 
         @SecretExposure
-        override suspend fun exportPrivateKey(): KmmResult<EC.WithPublicKey>
+        override suspend fun exportPrivateKey(): KmmResult<ECDSAPrivateKey.WithPublicKey>
 
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
@@ -112,10 +113,10 @@ interface Signer {
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
  */
 fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>): KmmResult<Signer> =
-    if ((this is ECDSAAlgorithm && privateKey is EC) ||
+    if ((this is ECDSAAlgorithm && privateKey is ECDSAPrivateKey) ||
                 (this is RSAAlgorithm && privateKey is RSAPrivateKey)) {
         when (this) {
-            is ECDSAAlgorithm -> this.signerFor(privateKey as EC.WithPublicKey)
+            is ECDSAAlgorithm -> this.signerFor(privateKey as ECDSAPrivateKey.WithPublicKey)
             is RSAAlgorithm -> this.signerFor(privateKey as RSAPrivateKey)
             else -> TODO("providerize")
         }
@@ -123,7 +124,7 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>):
         KmmResult.failure(IllegalArgumentException("Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"))
     }
 
-fun ECDSAAlgorithm.signerFor(privateKey: EC.WithPublicKey) =
+fun ECDSAAlgorithm.signerFor(privateKey: ECDSAPrivateKey.WithPublicKey) =
     catching { makePrivateKeySigner(privateKey, this) }
 
 /**

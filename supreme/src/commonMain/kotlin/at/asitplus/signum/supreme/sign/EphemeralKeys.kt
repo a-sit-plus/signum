@@ -17,14 +17,16 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 
 
 internal expect suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey?
-internal expect fun makePrivateKeySigner(key: EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
-internal expect fun makePrivateKeySigner(key: RSAPrivateKey, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
+internal expect fun makePrivateKeySigner(key: ECDSAPrivateKey.WithPublicKey, algorithm: ECDSAAlgorithm) : Signer.ECDSA
+internal expect fun makePrivateKeySigner(key: RSAPrivateKey, algorithm: RSAAlgorithm) : Signer.RSA
 
 /**
  * An ephemeral keypair, not stored in any kind of persistent storage.

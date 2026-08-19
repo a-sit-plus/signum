@@ -4,10 +4,19 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import at.asitplus.signum.supreme.dsl.FeaturePreference
 import at.asitplus.signum.supreme.dsl.PREFERRED
+import at.asitplus.signum.supreme.dsl.REQUIRED
+import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.os.FragmentContext
 
 class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
-    /** Whether a StrongBox TPM is required. */
+    /**
+     * Whether to back this key with a StrongBox secure element.
+     * - [REQUIRED]: use StrongBox; key generation fails if the device lacks StrongBox or the algorithm/params are unsupported.
+     * - [PREFERRED] (default): use StrongBox if available and it supports the requested algorithm/params,
+     *   otherwise transparently fall back to the TEE.
+     * - [DISCOURAGED]: do not use StrongBox.
+     * @see FeaturePreference
+     */
     var strongBox: FeaturePreference = PREFERRED
 }
 

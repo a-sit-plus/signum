@@ -13,8 +13,9 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
@@ -141,13 +142,13 @@ internal actual suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigning
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
     key: RSAPrivateKey,
-    algorithm: SignatureAlgorithm.RSA
+    algorithm: RSAAlgorithm
 ): Signer.RSA =
     key.toSecKey().mapCatching { EphemeralSigner.RSA(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
-    key: EC.WithPublicKey,
-    algorithm: SignatureAlgorithm.ECDSA
+    key: ECDSAPrivateKey.WithPublicKey,
+    algorithm: ECDSAAlgorithm
 ): Signer.ECDSA =
     key.toSecKey().mapCatching { EphemeralSigner.EC(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()

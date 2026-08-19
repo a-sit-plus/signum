@@ -6,7 +6,9 @@ import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EC
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
@@ -15,20 +17,20 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 actual fun makePrivateKeySigner(
     key: RSAPrivateKey,
-    algorithm: SignatureAlgorithm.RSA
+    algorithm: RSAAlgorithm
 ): Signer.RSA = EphemeralSigner.RSA(
     config = EphemeralSignerConfiguration(),
-    privateKey = key.toJcaPrivateKey().getOrThrow(),
+    privateKey = key.toJcaPrivateKey(),
     publicKey = key.publicKey,
     signatureAlgorithm = algorithm
 )
 
 actual fun makePrivateKeySigner(
-    key: EC.WithPublicKey,
-    algorithm: SignatureAlgorithm.ECDSA
+    key: ECDSAPrivateKey.WithPublicKey,
+    algorithm: ECDSAAlgorithm
 ): Signer.ECDSA = EphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
-    privateKey = key.toJcaPrivateKey().getOrThrow(),
+    privateKey = key.toJcaPrivateKey(),
     publicKey = key.publicKey,
     signatureAlgorithm = algorithm
 )
