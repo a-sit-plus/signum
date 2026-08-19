@@ -33,6 +33,7 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.signCatching
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.supreme.verify
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -164,8 +165,10 @@ val ExtensibilityTest by matrixSuite {
 
             val parsedCertificate = Certificate.decodeFromDer(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
+            val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
+            verifier.verify(parsedCertificate) should succeed
             val parsedSignature = CryptoSignature.decodeFromDer(theSignature)
-            CursorySignatureScheme.verifierFor(parsedCertificate.publicKey).verify(data, parsedSignature) should succeed
+            verifier.verify(data, parsedSignature) should succeed
         }
     }
 }

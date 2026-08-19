@@ -21,6 +21,7 @@ import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.supreme.verify
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowAny
@@ -283,7 +284,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val verifier = signer.makeVerifier()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
+                verifier.verify(signedCSR.tbsCsr, signedCSR.signature) should succeed
 
 
                 val tbsCrt = TbsCertificate(
@@ -304,7 +305,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 )
                 val cert = signer.sign(tbsCrt)
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
+                verifier.verify(cert.tbsCertificate, cert.signature) should succeed
 
             }
         }
@@ -333,7 +334,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val verifier = signer.makeVerifier()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
+                verifier.verify(signedCSR.tbsCsr, signedCSR.signature) should succeed
 
 
                 val tbsCrt = TbsCertificate(
@@ -354,7 +355,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 )
                 val cert = signer.sign(tbsCrt)
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
+                verifier.verify(cert.tbsCertificate, cert.signature) should succeed
             }
         }
     }
