@@ -23,9 +23,10 @@ val JwsHeaderPartsTest by matrixSuite {
             contentType = "application/example+json",
             vcTypeMetadata = setOf(metadata),
         )
+        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
 
-        val protectedHeader = header.protectedPart(unprotectedMembers)
-        val unprotectedHeader = header.unprotectedPart(unprotectedMembers)
+        val protectedHeader = wrappedHeader.toProtectedHeader().toProtectedHeaderJsonObject()
+        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
 
         protectedHeader shouldBe JsonObject(
             mapOf(
@@ -54,9 +55,10 @@ val JwsHeaderPartsTest by matrixSuite {
             keyId = "did:example:signer",
             contentType = "application/example+json",
         )
-        val protectedHeader = header.protectedPart(unprotectedMembers)
-        val encodedProtectedHeader = protectedHeader.toProtectedHeaderBytes()
-        val unprotectedHeader = header.unprotectedPart(unprotectedMembers)
+        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
+        val encodedProtectedHeader = wrappedHeader.toProtectedHeader()
+        val protectedHeader = encodedProtectedHeader.toProtectedHeaderJsonObject()
+        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
 
         Json.parseToJsonElement(encodedProtectedHeader.decodeToString()) shouldBe protectedHeader
         encodedProtectedHeader.toProtectedHeaderJsonObject() shouldBe protectedHeader

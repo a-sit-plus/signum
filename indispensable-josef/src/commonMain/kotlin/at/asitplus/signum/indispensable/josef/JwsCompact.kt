@@ -119,7 +119,7 @@ data class JwsCompact internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            val plainProtectedHeader = protectedHeader.protectedPart(emptyList()).toProtectedHeaderBytes()
+            val plainProtectedHeader = JwsHeaderWrapped(protectedHeader).toProtectedHeader()
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 plainPayload = payload,

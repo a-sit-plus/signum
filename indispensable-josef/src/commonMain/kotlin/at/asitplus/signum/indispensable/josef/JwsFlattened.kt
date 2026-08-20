@@ -87,11 +87,10 @@ data class JwsFlattened internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val protectedHeader = jwsHeader.header.protectedPart(jwsHeader.unprotectedMembers)
-            val unprotectedHeader = jwsHeader.header
-                .unprotectedPart(jwsHeader.unprotectedMembers)
+            val plainProtectedHeader = jwsHeader.toProtectedHeader()
+                .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
+            val unprotectedHeader = jwsHeader.toUnprotectedHeader()
                 .takeUnless { it.isEmpty() }
-            val plainProtectedHeader = protectedHeader.takeUnless { it.isEmpty() }?.toProtectedHeaderBytes()
             return JwsFlattened(
                 plainProtectedHeader,
                 unprotectedHeader,

@@ -22,7 +22,7 @@ val JwsTypedTest by matrixSuite {
             keyId = "kid-compact",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = header.protectedPart(emptyList()).toProtectedHeaderBytes()
+        val expectedProtectedHeader = JwsHeaderWrapped(header).toProtectedHeader()
         var capturedSignatureInput: ByteArray? = null
 
         val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
@@ -95,13 +95,13 @@ val JwsTypedTest by matrixSuite {
             contentType = "application/example+json",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = header.protectedPart(unprotectedMembers)
-            .takeUnless { it.isEmpty() }
-            ?.toProtectedHeaderBytes()
+        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
+        val expectedProtectedHeader = wrappedHeader.toProtectedHeader()
+            .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
         var capturedSignatureInput: ByteArray? = null
 
         val typedFlattened: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            jwsHeader = JwsHeaderWrapped(header, unprotectedMembers),
+            jwsHeader = wrappedHeader,
             payload = payload,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
@@ -110,8 +110,8 @@ val JwsTypedTest by matrixSuite {
 
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
-        typedFlattened.jws.unprotectedHeader shouldBe header.unprotectedPart(unprotectedMembers)
-        typedFlattened.jws.jwsHeader shouldBe JwsHeaderWrapped(header, unprotectedMembers)
+        typedFlattened.jws.unprotectedHeader shouldBe wrappedHeader.toUnprotectedHeader()
+        typedFlattened.jws.jwsHeader shouldBe wrappedHeader
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
