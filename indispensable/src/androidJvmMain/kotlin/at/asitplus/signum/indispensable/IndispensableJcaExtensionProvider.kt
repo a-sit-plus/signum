@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
@@ -8,11 +9,20 @@ import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
+    override fun getJCAMessageDigestInstance(digest: Digest, jcaProvider: String?): MessageDigest? {
+        if (digest !is WellKnownDigest) return null
+        return when (jcaProvider) {
+            null -> MessageDigest.getInstance(digest.jcaName)
+            else -> MessageDigest.getInstance(digest.jcaName, jcaProvider)
+        }
+    }
+
     override fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProvider: String?) = when (algorithm) {
         is ECDSAAlgorithm -> when (val digest = algorithm.digest) {
             is WellKnownDigest? -> sigGetInstance("${digest.jcaAlgorithmComponent}withECDSA", jcaProvider)

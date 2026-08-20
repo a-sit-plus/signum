@@ -49,7 +49,7 @@ class RSAPrivateKey private constructor(
     private val providedContent: ContentContainer?,
     private val providedPkcs1Source: RsaPkcs1Source?,
     private val providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
-) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey<RSAPublicKey> {
+) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
 
     data class ContentContainer(
         val publicKey: RSAPublicKey,
@@ -389,7 +389,7 @@ sealed class ECDSAPrivateKey private constructor(
         providedSec1Source: EcSec1Source?,
         providedPkcs8Representation: Pkcs8PrivateKeyInfo?,
     ) : ECDSAPrivateKey(providedContent, providedSec1Source, providedPkcs8Representation),
-        CryptoPrivateKey.WithPublicKey<ECDSAPublicKey>,
+        CryptoPrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
         constructor(

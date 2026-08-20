@@ -5,7 +5,6 @@ import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from

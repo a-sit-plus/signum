@@ -103,7 +103,7 @@ val EphemeralSigningKeyConfiguration.cursory get() =
     _algSpecific.option("CURSORY", CursorySignatureScheme.Key::Config)
 
 object CursorySignatureSchemeProvider :
-    SignatureAlgorithmsProvider, EphemeralKeysProvider, PublicKeyFormatProvider, SignatureVerifierProvider,
+    SignatureAlgorithmsProvider, InMemoryKeysProvider, PublicKeyFormatProvider, SignatureVerifierProvider,
         SignatureFormatProvider
 {
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
@@ -151,7 +151,7 @@ object CursorySignatureSchemeProvider :
 
 val ExtensibilityTest by matrixSuite {
     ServiceLoader.register<SignatureAlgorithmsProvider>(CursorySignatureSchemeProvider)
-    ServiceLoader.register<EphemeralKeysProvider>(CursorySignatureSchemeProvider)
+    ServiceLoader.register<InMemoryKeysProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<PublicKeyFormatProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureVerifierProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureFormatProvider>(CursorySignatureSchemeProvider)

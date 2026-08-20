@@ -36,7 +36,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
  * Performs key agreement
  */
 @JvmName("keyAgreementEC")
-suspend fun CryptoPrivateKey.WithPublicKey<ECDSAPublicKey>.keyAgreement(publicValue: KeyAgreementPublicValue) =
+suspend fun ECDSAPrivateKey.keyAgreement(publicValue: KeyAgreementPublicValue) =
     (this as KeyAgreementPrivateValue.ECDH).keyAgreement(publicValue)
 
 suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPrivateValue) =
@@ -48,7 +48,7 @@ suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPriva
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 @JvmName("keyAgreementECDH")
-suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: CryptoPrivateKey.WithPublicKey<ECDSAPublicKey>) =
+suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: ECDSAPrivateKey) =
     privateValue.keyAgreement(this)
 
 /**

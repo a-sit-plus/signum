@@ -165,16 +165,16 @@ val PlatformSigningKeyConfigurationBase<*>.rsa get() =
 val PlatformSigningKeyConfigurationBase<*>.hardware get() =
     childOrNull("HARDWARE",::SecureHardwareConfiguration)
 
-val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.attestation get() =
+val SecureHardwareConfiguration.attestation get() =
     childOrNull("ATTESTATION", ::AttestationConfiguration)
-val PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration.protection get() =
+val SecureHardwareConfiguration.protection get() =
     childOrNull("PROTECTION", ::ProtectionConfiguration)
 
 /** Which authentication factors can authorize this key;
  * if multiple factors are specified, any one of them can authorize the key */
-val PlatformSigningKeyConfigurationBase.ProtectionConfiguration.factors get() =
+val ProtectionConfiguration.factors get() =
     childOrDefault("PROTECTION_FACTORS", ::ProtectionFactorConfiguration)
-val PlatformSigningKeyConfigurationBase.ECConfiguration.purposes get() =
+val ECConfiguration.purposes get() =
     childOrDefault("PURPOSES", ::ECPurposeConfiguration)
-val PlatformSigningKeyConfigurationBase.RSAConfiguration.purposes get() =
+val RSAConfiguration.purposes get() =
     childOrDefault("PURPOSES", ::RSAPurposeConfiguration)

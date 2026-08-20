@@ -19,7 +19,7 @@ import at.asitplus.signum.indispensable.misc.bit
 
 sealed class WellKnownDigest(
     override val name: String,
-    override val inputBlockSize: BitLength, override val outputLength: BitLength,
+override val inputBlockSize: BitLength, override val outputLength: BitLength,
     override val oid: ObjectIdentifier
 ) : Digest, Enumerable {
 

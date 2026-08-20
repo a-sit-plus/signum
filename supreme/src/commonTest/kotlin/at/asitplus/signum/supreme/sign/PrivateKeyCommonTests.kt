@@ -39,7 +39,7 @@ val PrivateKeyCommonTests by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = CryptoPrivateKey.decodeFromPem(rsa) as CryptoPrivateKey.WithPublicKey<*>
+        val key = CryptoPrivateKey.decodeFromPem(rsa) as CryptoPrivateKey.WithPublicKey
 
         val signer: Signer = RSAAlgorithm.withSHA256andPSSPadding.signerFor(key)
 

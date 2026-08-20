@@ -6,10 +6,16 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.ECCurve.SECP_256_R_1
+import at.asitplus.signum.indispensable.ECCurve.SECP_384_R_1
+import at.asitplus.signum.indispensable.ECCurve.SECP_521_R_1
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA256
+import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA384
+import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA512
 import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
@@ -36,28 +42,24 @@ sealed class JwsAlgorithm(override val identifier: String) :
     JsonWebAlgorithm, SpecializedDataIntegrityAlgorithm, Enumerable {
 
     @Serializable(with = JwsAlgorithmSerializer::class)
-    sealed class Signature(identifier: String, override val algorithm: SignatureAlgorithm) :
+    sealed class Signature(identifier: String) :
         JwsAlgorithm(identifier),
         SpecializedSignatureAlgorithm {
 
-        sealed class EC(identifier: String, algorithm: SignatureAlgorithm) : Signature(identifier, algorithm) {
+        sealed class EC(identifier: String, override val algorithm: ECDSAAlgorithm) : Signature(identifier) {
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES256 : EC("ES256", ECDSAAlgorithm.withSHA256)
+            data object ES256 : EC("ES256", ECDSAAlgorithm(SHA256, SECP_256_R_1))
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES384 : EC("ES384", ECDSAAlgorithm.withSHA384)
+            data object ES384 : EC("ES384", ECDSAAlgorithm(SHA384, SECP_384_R_1))
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES512 : EC("ES512", ECDSAAlgorithm.withSHA512)
+            data object ES512 : EC("ES512", ECDSAAlgorithm(SHA512, SECP_521_R_1))
 
             /** The curve to create signatures on.
              * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
             val ecCurve: ECCurve
-                get() = when (this) {
-                    ES256 -> ECCurve.SECP_256_R_1
-                    ES384 -> ECCurve.SECP_384_R_1
-                    ES512 -> ECCurve.SECP_521_R_1
-                }
+                get() = this.algorithm.requiredCurve!!
 
             companion object : Enumeration<EC> {
                 override val entries: Collection<EC> by lazy {
@@ -70,7 +72,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
             }
         }
 
-        sealed class RSA(identifier: String, algorithm: SignatureAlgorithm) : Signature(identifier, algorithm) {
+        sealed class RSA(identifier: String, override val algorithm: RSAAlgorithm) : Signature(identifier) {
 
             @Serializable(with = JwsAlgorithmSerializer::class)
             data object PS256 : RSA("PS256", RSAAlgorithm.withSHA256andPSSPadding)
@@ -196,6 +198,10 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
             Digest.SHA384 -> JwsAlgorithm.Signature.ES384
             Digest.SHA512 -> JwsAlgorithm.Signature.ES512
             else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
+        }.also {
+            // if the curve is set, it must match the spec's curve
+            require(requiredCurve?.equals(it.ecCurve) != false)
+                { "ECDSA with ${this.digest} and ${this.requiredCurve} does not map to JWS (${it.ecCurve} is required)" }
         }
 
         is RSAAlgorithm -> when (val params = this.parameters) {

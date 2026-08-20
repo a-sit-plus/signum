@@ -1,26 +1,48 @@
 package at.asitplus.signum.dsl
 
-import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.supreme.dsl.DSL
 
-open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {
-    class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
-        init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
-    }
-    class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
-        init { digests = Digest.entries.toSet(); paddings = RSAAlgorithm.Padding.entries.toSet()}
-    }
+open class InMemorySignerConfiguration: DSL.Data() {
+
+}
+class EphemeralSignerConfiguration: InMemorySignerConfiguration() {
+    val _algSpecific = subclassOf<AlgorithmSpecific>("ALG_SPECIFIC_CONFIG")
+    abstract class AlgorithmSpecific : DSL.Data()
 }
 
-val EphemeralSigningKeyConfigurationBase.ec get() =
-    _algSpecific.defaultOption("EC", EphemeralSigningKeyConfigurationBase::ECConfiguration)
-val EphemeralSigningKeyConfigurationBase.rsa get() =
-    _algSpecific.option("RSA", EphemeralSigningKeyConfigurationBase::RSAConfiguration)
+class EphemeralECDSAConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific() {
+    /** The curve to operate on. Defaults to [secp256r1][ECCurve.SECP_256_R_1]. */
+    var curve: ECCurve = ECCurve.SECP_256_R_1
+    /** The digest to sign over. Explicit `null` to sign over raw input. Omit to derive from curve. */
+    internal var _digestSpecified = false
+    var digest: WellKnownDigest? = null
+        get() = if (_digestSpecified) field else curve.nativeDigest
+        set(value) { field = value; _digestSpecified = true }
+}
 
-@Suppress("NOTHING_TO_INLINE")
-expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase
+class EphemeralRSAConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific() {
+    /** The digest to sign over. Defaults to [SHA384][WellKnownDigest.SHA384]. */
+    var digest : WellKnownDigest = WellKnownDigest.SHA512
+    /** The padding algorithm to use. Defaults to [PSS][RSAAlgorithm.Padding.PSS]. */
+    var padding : RSAAlgorithm.Padding = RSAAlgorithm.Padding.PSS
+    /** The bit size of the generated key. Defaults to 3072 bits. */
+    var bits: Int = 3072
+}
 
-typealias EphemeralSignerConfigurationBase = SignerConfiguration
+class JVMEphemeralConfiguration : DSL.Data() {
+    /** The JCA provider to use. Defaults to `null` (no particular provider specified). */
+    var provider: String? = null
+}
 
-@Suppress("NOTHING_TO_INLINE")
-expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
+val InMemorySignerConfiguration.jvm get() =
+    childOrDefault("JVM", ::JVMEphemeralConfiguration)
+
+val EphemeralSignerConfiguration.ec get() =
+    _algSpecific.option("SIGNUM_ECDSA", ::EphemeralECDSAConfiguration)
+
+val EphemeralSignerConfiguration.rsa get() =
+    _algSpecific.option("SIGNUM_RSA", ::EphemeralRSAConfiguration)

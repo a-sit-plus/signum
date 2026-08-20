@@ -5,12 +5,13 @@ import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.encoding.decodeFromDer
 import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -22,13 +23,13 @@ import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.jce.interfaces.ECPrivateKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
 import java.security.Security
-import java.security.interfaces.ECPublicKey
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
+import java.security.interfaces.ECPrivateKey as JcaECPrivateKey
+import java.security.interfaces.ECPublicKey as JcaECPublicKey
+import java.security.interfaces.RSAPrivateKey as JcaRSAPrivateKey
+import java.security.interfaces.RSAPublicKey as JcaRSAPublicKey
 
 @OptIn(ExperimentalStdlibApi::class)
 val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
@@ -40,20 +41,20 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
-                ecKp.private as ECPrivateKey to ecKp.public as ECPublicKey
+                ecKp.private as JcaECPrivateKey to ecKp.public as JcaECPublicKey
             }
             data(keys, nameFn = {
                 "(x: ${it.second.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
                         " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
             }) test { (privKey, pubKey) ->
 
-                val own = pubKey.toCryptoPublicKey().getOrThrow()
+                val own = pubKey.toCryptoPublicKey()
 
-                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey
 
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
-                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
+                ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
 
 
                 withClue("Basic Conversions") {
@@ -66,9 +67,8 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 }
 
                 withClue("Compressed Test") {
-                    own as CryptoPublicKey.EC
                     val compressedPresentation = own.toAnsiX963Encoded(useCompressed = true)
-                    val fromCompressed = CryptoPublicKey.EC.fromAnsiX963Bytes(own.curve, compressedPresentation)
+                    val fromCompressed = ECDSAPublicKey.fromAnsiX963Bytes(own.curve, compressedPresentation)
 
                     // bouncy castle compressed representation is calculated by exposing public coordinate from key and then encode that
                     compressedPresentation shouldBe (pubKey as BCECPublicKey).q.getEncoded(true)
@@ -101,7 +101,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
-                rsaKP.private as RSAPrivateKey to rsaKP.public as RSAPublicKey
+                rsaKP.private as JcaRSAPrivateKey to rsaKP.public as JcaRSAPublicKey
             }
             data(keys, nameFn = {
                 "(n: ${
@@ -111,10 +111,10 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val own = RSAPublicKey(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
-                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
-                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
+                ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
 
 
                 val own1 = RSAPublicKey(

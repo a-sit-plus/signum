@@ -158,14 +158,14 @@ fun CryptoPublicKey.toSecKey() = catching {
 }
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
-fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
+fun CryptoPrivateKey.WithPublicKey.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
     memScoped {
         var data : ByteArray? = null
         val attr = createCFDictionary {
             kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
             kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             data = when (this@toSecKey) {
-                is EC.WithPublicKey -> {
+                is ECDSAPublicKey -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo curve.coordinateLength.bits.toInt()
                     val ecPubKey = this@toSecKey.publicKey

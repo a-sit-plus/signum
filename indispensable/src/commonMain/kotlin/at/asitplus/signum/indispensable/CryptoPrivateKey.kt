@@ -18,8 +18,8 @@ import kotlinx.serialization.KSerializer
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
 interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable {
 
-    interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
-        val publicKey: T
+    interface WithPublicKey : CryptoPrivateKey {
+        val publicKey: CryptoPublicKey
     }
 
     val attributes: Set<Asn1Element>?
@@ -52,12 +52,12 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable 
                 else -> error("Label ${src.pemLabel} for private key is invalid")
             }
 
-        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
+        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey> = catching {
             // TODO: providerize cleanly & move to iOS
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 ECDSAPrivateKey.iosDecodeInternal(keyBytes)
             } else {
-                RSAPrivateKey.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey<*>
+                RSAPrivateKey.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey
             }
         }
     }

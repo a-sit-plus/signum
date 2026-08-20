@@ -17,6 +17,7 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 open class SigningKeyConfiguration internal constructor() : DSL.Data() {
 
     open class AlgorithmSpecific internal constructor() : DSL.Data()
+    val _algSpecific = subclassOf<DSL.Data>("ALG_SPECIFIC_CONFIG")
 
     open class ECConfiguration internal constructor() : AlgorithmSpecific() {
         /** The [at.asitplus.signum.indispensable.ECCurve] on which to generate the key. Defaults to [P-256][at.asitplus.signum.indispensable.ECCurve.SECP_256_R_1] */
@@ -36,8 +37,8 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
         }
 
 
-        /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.Companion.SHA256]. */
-        open var digests: Set<Digest> = setOf(Digest.SHA256)
+        /** The digests supported by the key. If not specified, defaults to [SHA384][Digest.Companion.SHA384]. */
+        open var digests: Set<Digest> = setOf(Digest.SHA384)
 
         /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding.PSS]. */
         open var paddings: Set<RSAAlgorithm.Padding> = setOf(RSAAlgorithm.Padding.PSS)
@@ -50,8 +51,6 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
         var publicExponent: BigInteger = F4
     }
 }
-
-val SigningKeyConfiguration._algSpecific get() = subclassOf<DSL.Data>("ALG_SPECIFIC_CONFIG")
 
 /** Generates an elliptic-curve key. */
 val SigningKeyConfiguration.ec get() = _algSpecific.defaultOption("EC", SigningKeyConfiguration::ECConfiguration)
