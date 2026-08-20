@@ -251,18 +251,6 @@ data class JwsHeader(
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
 ) {
-    fun protectedPart(
-        unprotectedMembers: Collection<String>,
-        serialFormat: Json = joseCompliantSerializer,
-    ) =
-        JsonObject(serialFormat.encodeToJsonElement(this).jsonObject.filterKeys { it !in unprotectedMembers })
-
-    fun unprotectedPart(
-        unprotectedMembers: Collection<String>,
-        serialFormat: Json = joseCompliantSerializer,
-    ) =
-        JsonObject(serialFormat.encodeToJsonElement(this).jsonObject.filterKeys { it in unprotectedMembers })
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
