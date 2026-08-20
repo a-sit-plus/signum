@@ -39,10 +39,10 @@ data class JwsCompact internal constructor(
 ) : JWS() {
 
     @Transient
-    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, null)
+    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, null)
 
     @Transient
-    val signature = getSignature(jwsHeader.algorithm, plainSignature)
+    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
 
     @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
@@ -119,7 +119,7 @@ data class JwsCompact internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
+            val plainProtectedHeader = JwsHeaderWrapped(protectedHeader).toProtectedHeader()
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 plainPayload = payload,

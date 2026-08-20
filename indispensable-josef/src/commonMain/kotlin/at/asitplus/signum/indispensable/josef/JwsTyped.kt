@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
@@ -64,13 +63,9 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /**
-         * Creates a flattened JWS from protected and unprotected header fragments.
-         * The fragments may be partial, but their merged content must form a valid [JwsHeader].
-         */
-        suspend inline operator fun <reified P> invoke(
-            protectedHeader: JwsHeader.Part?,
-            unprotectedHeader: JwsHeader.Part?,
+        /** Creates a flattened JWS using the member placement carried by [wrappedHeader]. */
+        suspend inline fun <reified P> flattened(
+            wrappedHeader: JwsHeaderWrapped,
             payload: P,
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
@@ -78,9 +73,7 @@ data class JwsTyped<out J : JWS, out P>(
                 joseCompliantSerializer.serializersModule.serializer(), payload
             ).encodeToByteArray()
             return JwsFlattenedTyped(
-                JwsFlattened(
-                    protectedHeader, unprotectedHeader, plainPayload, signer = signer
-                ), payload
+                JwsFlattened(wrappedHeader, plainPayload, signer = signer), payload
             )
         }
     }

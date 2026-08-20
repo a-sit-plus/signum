@@ -5,13 +5,14 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonObject
 
 /**
  * General JSON JWS.
  *
  * A general JWS carries one payload and one or more [SignatureElement]s. Each [SignatureElement] contains the header
- * fragments for one signature and exposes its merged effective [JwsHeader]. All signatures in a [JwsGeneral] share
- * the same payload.
+ * fragments for one signature and exposes its effective header together with its member-placement metadata. All
+ * signatures in a [JwsGeneral] share the same payload.
  *
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.
@@ -34,7 +35,7 @@ data class JwsGeneral internal constructor(
     }
 
     @Transient
-    val jwsHeaders: List<JwsHeader> = signatureElements.map { it.jwsHeader }
+    val wrappedHeaders: List<JwsHeaderWrapped> = signatureElements.map { it.wrappedHeader }
 
     @Transient
     val signatures = signatureElements.map { it.signature }
@@ -82,7 +83,7 @@ data class JwsGeneral internal constructor(
     }
 }
 
-val JwsGeneral.protectedHeaders: List<JwsHeader.Part?>
+val JwsGeneral.protectedHeaders: List<JsonObject?>
     get() = signatureElements.map { it.protectedHeader }
 
 /**
