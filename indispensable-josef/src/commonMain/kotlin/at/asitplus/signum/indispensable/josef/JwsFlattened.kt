@@ -47,6 +47,9 @@ data class JwsFlattened internal constructor(
     val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
     @Transient
+    val unprotectedMembers: List<String> = unprotectedHeader?.keys?.toList().orEmpty()
+
+    @Transient
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
 
     @Transient
@@ -76,18 +79,19 @@ data class JwsFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWS, splitting [jwsHeader] according to [JwsHeader.unprotectedMembers].
+         * Creates a flattened JWS, splitting [jwsHeader] according to [unprotectedMembers].
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
         suspend operator fun invoke(
             jwsHeader: JwsHeader,
+            unprotectedMembers: List<String> = emptyList(),
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val protectedHeader = jwsHeader.protectedPart()
-            val unprotectedHeader = jwsHeader.unprotectedPart().takeUnless { it.isEmpty() }
+            val protectedHeader = jwsHeader.protectedPart(unprotectedMembers)
+            val unprotectedHeader = jwsHeader.unprotectedPart(unprotectedMembers).takeUnless { it.isEmpty() }
             val plainProtectedHeader = protectedHeader.takeUnless { it.isEmpty() }?.toProtectedHeaderBytes()
             return JwsFlattened(
                 plainProtectedHeader,

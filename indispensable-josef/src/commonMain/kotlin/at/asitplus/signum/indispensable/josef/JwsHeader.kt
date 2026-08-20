@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.*
 import kotlin.time.Instant
 
@@ -19,8 +18,8 @@ import kotlin.time.Instant
  * Effective JWS header as defined in [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  * after combining protected and unprotected header members.
  *
- * [JwsCompact] carries this header entirely in the protected section. [JwsFlattened], [JwsGeneral], and
- * [SignatureElement] split it according to [unprotectedMembers].
+ * Whether a member was protected is metadata of the containing JWS representation, exposed by
+ * [JwsCompact.unprotectedMembers], [JwsFlattened.unprotectedMembers], or [JwsGeneral.unprotectedMembers].
  *
  * Private Header Parameters as specified in RFC 7515 4.3 are currently not implemented
  */
@@ -251,17 +250,17 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
-
-    /**
-     * [SerialName]s of parameters which are *not* in the protected header
-     */
-    @Transient
-    val unprotectedMembers: List<String> = listOf()
 ) {
-    fun protectedPart(serialFormat: Json = joseCompliantSerializer) =
+    fun protectedPart(
+        unprotectedMembers: Collection<String>,
+        serialFormat: Json = joseCompliantSerializer,
+    ) =
         JsonObject(serialFormat.encodeToJsonElement(this).jsonObject.filterKeys { it !in unprotectedMembers })
 
-    fun unprotectedPart(serialFormat: Json = joseCompliantSerializer) =
+    fun unprotectedPart(
+        unprotectedMembers: Collection<String>,
+        serialFormat: Json = joseCompliantSerializer,
+    ) =
         JsonObject(serialFormat.encodeToJsonElement(this).jsonObject.filterKeys { it in unprotectedMembers })
 
     override fun equals(other: Any?): Boolean {
@@ -287,7 +286,6 @@ data class JwsHeader(
         if (keyAttestation != other.keyAttestation) return false
         if (vcTypeMetadata != other.vcTypeMetadata) return false
         if (clientId != other.clientId) return false
-        if (unprotectedMembers != other.unprotectedMembers) return false
         if (publicKey != other.publicKey) return false
         if (keyAttestationParsed != other.keyAttestationParsed) return false
         if (verifierAttestationParsed != other.verifierAttestationParsed) return false
@@ -313,7 +311,6 @@ data class JwsHeader(
         result = 31 * result + keyAttestation.hashCode()
         result = 31 * result + vcTypeMetadata.hashCode()
         result = 31 * result + clientId.hashCode()
-        result = 31 * result + unprotectedMembers.hashCode()
         result = 31 * result + publicKey.hashCode()
         result = 31 * result + keyAttestationParsed.hashCode()
         result = 31 * result + verifierAttestationParsed.hashCode()
@@ -359,8 +356,6 @@ data class JwsHeader(
     }
 
     companion object {
-        @Deprecated("No longer necessary. Replaced by JwsHeader.unprotectedMembers")
-        typealias Part = JwsHeader
         /**
          * Decodes the protected fragment and merges it with the optional unprotected fragment.
          *
@@ -379,7 +374,6 @@ data class JwsHeader(
             unprotectedHeader: JsonObject? = null,
         ): JwsHeader = joseCompliantSerializer
             .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader))
-            .copy(unprotectedMembers = unprotectedHeader?.keys?.toList().orEmpty())
     }
 }
 

@@ -39,6 +39,9 @@ data class JwsCompact internal constructor(
 ) : JWS() {
 
     @Transient
+    val unprotectedMembers: List<String> = emptyList()
+
+    @Transient
     val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, null)
 
     @Transient
@@ -119,10 +122,7 @@ data class JwsCompact internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            require(protectedHeader.unprotectedMembers.isEmpty()) {
-                "Compact Serialization does not support unprotected header members"
-            }
-            val plainProtectedHeader = protectedHeader.protectedPart().toProtectedHeaderBytes()
+            val plainProtectedHeader = protectedHeader.protectedPart(emptyList()).toProtectedHeaderBytes()
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 plainPayload = payload,

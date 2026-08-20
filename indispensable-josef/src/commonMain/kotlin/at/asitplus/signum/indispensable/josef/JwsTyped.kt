@@ -64,9 +64,10 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /** Creates a flattened JWS, splitting [jwsHeader] according to [JwsHeader.unprotectedMembers]. */
+        /** Creates a flattened JWS, splitting [jwsHeader] according to [unprotectedMembers]. */
         suspend inline fun <reified P> flattened(
             jwsHeader: JwsHeader,
+            unprotectedMembers: List<String> = emptyList(),
             payload: P,
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
@@ -75,7 +76,7 @@ data class JwsTyped<out J : JWS, out P>(
             ).encodeToByteArray()
             return JwsFlattenedTyped(
                 JwsFlattened(
-                    jwsHeader, plainPayload, signer = signer
+                    jwsHeader, unprotectedMembers, plainPayload, signer = signer
                 ), payload
             )
         }

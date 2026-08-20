@@ -62,8 +62,8 @@ val JwsJvmTest by matrixSuite {
                     algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                     type = "application/example+jws",
                     keyId = "kid-1",
-                    unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 ),
+                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),
             )
@@ -86,8 +86,8 @@ val JwsJvmTest by matrixSuite {
                 jwsHeader = JwsHeader(
                     algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                     keyId = "kid-1",
-                    unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 ),
+                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),
             )
@@ -95,8 +95,8 @@ val JwsJvmTest by matrixSuite {
                 jwsHeader = JwsHeader(
                     algorithm = it.signer2.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                     keyId = "kid-2",
-                    unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 ),
+                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
                 payload = it.payload,
                 signer = it.signerFor(it.signer2),
             )
