@@ -7,6 +7,7 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.matrixSuite

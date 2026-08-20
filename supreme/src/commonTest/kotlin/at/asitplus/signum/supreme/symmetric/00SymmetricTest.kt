@@ -294,7 +294,7 @@ val SymmetricTest by matrixSuite {
                     withClue(
                         "KEY: ${
                             key.secretKey.getOrThrow().toHexString()
-                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
+                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce.toHexString()}"
                     ) {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed

@@ -17,7 +17,6 @@ import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Transient
 import kotlin.time.Clock
 import kotlin.time.Instant

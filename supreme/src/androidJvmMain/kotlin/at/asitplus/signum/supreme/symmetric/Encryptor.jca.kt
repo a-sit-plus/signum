@@ -63,7 +63,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
         return when {
             algorithm.requiresNonce() -> when {
                 algorithm.isAuthenticated() -> {
-                    (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>)
+                    algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>
                     algorithm.sealedBox.withNonce(nonce!!).from(ciphertext, authTag!!)
                 }
 

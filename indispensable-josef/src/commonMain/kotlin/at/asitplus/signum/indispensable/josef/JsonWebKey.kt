@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.io.sha256
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
@@ -304,7 +305,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                CryptoPublicKey.RSA(
+                RSAPublicKey(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")
                     ),
@@ -413,7 +414,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
 
 
-        is CryptoPublicKey.RSA ->
+        is RSAPublicKey ->
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,

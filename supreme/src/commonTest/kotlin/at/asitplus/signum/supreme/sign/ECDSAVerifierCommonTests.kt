@@ -6,6 +6,7 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature

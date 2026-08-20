@@ -163,7 +163,7 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
         }
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-            CryptoPublicKey.RSA(
+            RSAPublicKey(
                 n = Asn1Integer.fromUnsignedByteArray(
                     n ?: throw IllegalArgumentException("Missing modulus n")),
                 e = Asn1Integer.fromUnsignedByteArray(

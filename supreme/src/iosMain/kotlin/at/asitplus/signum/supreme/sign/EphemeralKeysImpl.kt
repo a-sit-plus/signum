@@ -16,6 +16,7 @@ import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.dsl.DSL
@@ -46,7 +47,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         }.takeFromCF<NSData>().toByteArray()
         return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
-            is CryptoPublicKey.RSA -> RSASignature(signatureBytes)
+            is RSAPublicKey -> RSASignature(signatureBytes)
         }
     }
 
@@ -65,7 +66,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
 
     class RSA internal constructor(
         config: EphemeralSignerConfiguration, privateKey: OwnedCFValue<SecKeyRef>,
-        override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: RSAAlgorithm
+        override val publicKey: RSAPublicKey, override val signatureAlgorithm: RSAAlgorithm
     ) : EphemeralSigner(privateKey), Signer.RSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =
@@ -82,7 +83,7 @@ internal sealed interface IosEphemeralKey {
             privateKey.value.toCryptoPrivateKey().mapCatching { it as EC.WithPublicKey }
     }
 
-    class RSA(privateKey: OwnedCFValue<SecKeyRef>, publicKey: CryptoPublicKey.RSA, digests: Set<Digest>, paddings: Set<RSAPadding>)
+    class RSA(privateKey: OwnedCFValue<SecKeyRef>, publicKey: RSAPublicKey, digests: Set<Digest>, paddings: Set<RSAPadding>)
         : EphemeralKeyBase.RSA<OwnedCFValue<SecKeyRef>, EphemeralSigner.RSA>(EphemeralSigner::RSA, privateKey, publicKey, digests, paddings)
     {
         @SecretExposure
@@ -130,7 +131,7 @@ internal actual suspend fun makeEphemeralKeyImpl(configuration: EphemeralSigning
             is SigningKeyConfiguration.RSAConfiguration ->
                 IosEphemeralKey.RSA(
                     privateKey,
-                    CryptoPublicKey.RSA.fromPKCS1encoded(pubkeyBytes),
+                    RSAPublicKey.fromPKCS1encoded(pubkeyBytes),
                     alg.digests,
                     alg.paddings
                 )

@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSOSStatusErrorDomain
@@ -35,7 +36,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
+            (signatureAlgorithm: RSAAlgorithm, publicKey: RSAPublicKey,
              config: PlatformVerifierConfiguration)
 {
 }
@@ -75,7 +76,7 @@ internal actual suspend fun verifyECDSAImpl
 
 
 internal actual suspend fun verifyRSAImpl
-            (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
+            (signatureAlgorithm: RSAAlgorithm, publicKey: RSAPublicKey,
              data: SignatureInput, signature: RSASignature,
              config: PlatformVerifierConfiguration) =
 verifyImpl(signatureAlgorithm, publicKey, data, signature, config)

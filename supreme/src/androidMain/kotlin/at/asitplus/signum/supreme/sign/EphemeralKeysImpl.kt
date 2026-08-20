@@ -7,7 +7,6 @@ import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
@@ -22,7 +21,9 @@ import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.signCatching
@@ -56,7 +57,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     )
         : AndroidEphemeralSigner(privateKey), Signer.ECDSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+        override fun parseFromJca(bytes: ByteArray) = ECDSASignature.parseFromJca(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
         override suspend fun exportPrivateKey() =
@@ -71,7 +72,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 
     class RSA(config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-              override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: RSAAlgorithm
+              override val publicKey: RSAPublicKey, override val signatureAlgorithm: RSAAlgorithm
     )
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
@@ -86,7 +87,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
 internal sealed interface AndroidEphemeralKey {
     class ECDSA(pair: KeyPair, digests: Set<Digest?>)
         : EphemeralKeyBase.ECDSA<ECPrivateKey, AndroidEphemeralSigner.EC>(AndroidEphemeralSigner::EC,
-        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey() as CryptoPublicKey.EC,
+        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey() as ECDSAPublicKey,
         digests = digests)
     {
         @SecretExposure
@@ -95,7 +96,7 @@ internal sealed interface AndroidEphemeralKey {
 
     class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
         : EphemeralKeyBase.RSA<RSAPrivateKey, AndroidEphemeralSigner.RSA>(AndroidEphemeralSigner::RSA,
-        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey() as CryptoPublicKey.RSA,
+        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey() as RSAPublicKey,
         digests = digests, paddings = paddings)
     {
         @SecretExposure

@@ -7,6 +7,8 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.RSASignature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -103,7 +105,7 @@ private fun ByteArray.toSignature(
     unprotectedHeader: CoseHeader?,
 ): CryptoSignature.RawByteEncodable =
     if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        CryptoSignature.EC.fromRawBytes(this)
+        ECDSASignature.fromRawBytes(this)
     else RSASignature(this)
 
 private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =

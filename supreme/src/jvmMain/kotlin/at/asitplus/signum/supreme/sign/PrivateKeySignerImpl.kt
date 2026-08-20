@@ -4,12 +4,13 @@ import at.asitplus.catching
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -58,7 +59,7 @@ fun SignatureAlgorithm.signerFor(
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey(),
-            publicKey = privateKey.publicKey as CryptoPublicKey.EC,
+            publicKey = privateKey.publicKey as ECDSAPublicKey,
             signatureAlgorithm = this
         )
 
@@ -68,7 +69,7 @@ fun SignatureAlgorithm.signerFor(
                 configure
             ),
             privateKey = privateKey.toJcaPrivateKey(),
-            publicKey = privateKey.publicKey as CryptoPublicKey.RSA,
+            publicKey = privateKey.publicKey as RSAPublicKey,
             signatureAlgorithm = this
         )
         else -> TODO("providerize")

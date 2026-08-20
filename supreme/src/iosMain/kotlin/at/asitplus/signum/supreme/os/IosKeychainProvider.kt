@@ -26,6 +26,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.dsl.*
@@ -316,7 +317,7 @@ sealed class IosSigner(final override val alias: String,
     }
 
     class RSA internal constructor
-        (alias: String, override val publicKey: CryptoPublicKey.RSA, metadata: IosKeyMetadata, config: IosSignerConfiguration)
+        (alias: String, override val publicKey: RSAPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config), Signer.RSA
     {
         override val signatureAlgorithm: RSAAlgorithm
@@ -539,7 +540,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 is SigningKeyConfiguration.ECConfiguration ->
                     CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, publicKeyBytes)
                 is SigningKeyConfiguration.RSAConfiguration ->
-                    CryptoPublicKey.RSA.fromPKCS1encoded(publicKeyBytes)
+                    RSAPublicKey.fromPKCS1encoded(publicKeyBytes)
             }
 
             val attestation = if (useSecureEnclave) {
@@ -593,7 +594,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             return@catching when (publicKey) {
                 is CryptoPublicKey.EC ->
                     IosSigner.ECDSA(alias, publicKey, metadata, signerConfiguration)
-                is CryptoPublicKey.RSA ->
+                is RSAPublicKey ->
                     IosSigner.RSA(alias, publicKey, metadata, signerConfiguration)
             }
         } catch (e: Throwable) {
@@ -620,7 +621,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         val metadata = getKeyMetadata(alias)
         return@catching when (publicKey) {
             is CryptoPublicKey.EC -> IosSigner.ECDSA(alias, publicKey, metadata, config)
-            is CryptoPublicKey.RSA -> IosSigner.RSA(alias, publicKey, metadata, config)
+            is RSAPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
         }
     }}
 

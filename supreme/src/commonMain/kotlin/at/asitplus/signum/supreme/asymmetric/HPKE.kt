@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
@@ -10,6 +9,7 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.NonceTrait
@@ -54,7 +54,7 @@ private inline fun os2ip(value: ByteArray): BigInteger = BigInteger.fromByteArra
 private fun concat(vararg datas: ByteArray): ByteArray {
     val totalSize = datas.sumOf { it.size }
     val result = ByteArray(totalSize)
-    datas.fold(0, { offset, data ->
+    val _ = datas.fold(0, { offset, data ->
         data.copyInto(result, destinationOffset = offset)
         return@fold offset+data.size
     })
@@ -361,7 +361,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         }
 
         override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asCryptoPublicKey().toAnsiX963Encoded(useCompressed = false)
-        override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = CryptoPublicKey.EC.fromAnsiX963Bytes(dhGroup, pkXm)
+        override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = ECDSAPublicKey.fromAnsiX963Bytes(dhGroup, pkXm)
         override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as ECDSAPrivateKey.WithPublicKey).privateKeyBytes
         override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = ECDSAPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)
 

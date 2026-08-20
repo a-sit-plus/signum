@@ -4,7 +4,6 @@ import at.asitplus.awesn1.BERTags
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.RSA
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate

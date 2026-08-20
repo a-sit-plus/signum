@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -158,12 +157,12 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
 
 interface JKSSigner: Signer, Signer.WithAlias {
     class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                   publicKey: CryptoPublicKey.EC, signatureAlgorithm: ECDSAAlgorithm,
+                                   publicKey: ECDSAPublicKey, signatureAlgorithm: ECDSAAlgorithm,
                                    override val alias: String)
         : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                    publicKey: CryptoPublicKey.RSA, signatureAlgorithm: RSAAlgorithm,
+                                    publicKey: RSAPublicKey, signatureAlgorithm: RSAAlgorithm,
                                     override val alias: String)
         : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }

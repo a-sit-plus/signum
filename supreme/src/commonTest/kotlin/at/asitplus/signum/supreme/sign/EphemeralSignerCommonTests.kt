@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature

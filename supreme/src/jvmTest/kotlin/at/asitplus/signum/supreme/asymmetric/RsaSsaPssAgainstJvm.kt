@@ -6,6 +6,7 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.signature

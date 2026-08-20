@@ -473,7 +473,7 @@ abstract class AndroidKeystoreSigner protected constructor(
                                    alias: String,
                                    keyInfo: KeyInfo,
                                    config: AndroidSignerConfiguration,
-                                   override val publicKey: CryptoPublicKey.RSA,
+                                   override val publicKey: RSAPublicKey,
                                    attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: RSAAlgorithm
     )

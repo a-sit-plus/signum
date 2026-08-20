@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm

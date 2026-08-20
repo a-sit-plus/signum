@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.Asn1BitString
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.ObjectIdentifier
@@ -17,6 +16,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.PublicKeyFormatProvider
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.SignatureFormatProvider
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -25,6 +25,7 @@ import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
@@ -63,7 +64,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val rawByteArray: ByteArray
             get() = byteArrayOfHighest(bit)
     }
-    data class Key(private val bit: Boolean) : CryptoPublicKey(), EphemeralKey, Signer, Verifier {
+    data class Key(private val bit: Boolean) : CryptoPublicKey(), EphemeralKey, Signer, SignatureVerifier {
         companion object {
             val OID = ObjectIdentifier(Uuid.parse("01a00ed6-7067-7149-a548-40aa87ed4bbc"))
         }
@@ -88,6 +89,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         }
 
         override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+            require(sig is CursorySignatureScheme.Signature)
             require(sign(data).signature == sig) { "Invalid signature" }
             SignatureVerifier.Success
         }
@@ -101,7 +103,8 @@ val EphemeralSigningKeyConfiguration.cursory get() =
     _algSpecific.option("CURSORY", CursorySignatureScheme.Key::Config)
 
 object CursorySignatureSchemeProvider :
-    SignatureAlgorithmsProvider, EphemeralKeysProvider, PublicKeyFormatProvider, SignatureVerifierProvider
+    SignatureAlgorithmsProvider, EphemeralKeysProvider, PublicKeyFormatProvider, SignatureVerifierProvider,
+        SignatureFormatProvider
 {
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
         CursorySignatureScheme.takeIf { algorithmIdentifier == CursorySignatureScheme.ALG }
@@ -126,6 +129,24 @@ object CursorySignatureSchemeProvider :
     override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey): SignatureVerifier? {
         return if (algorithm == CursorySignatureScheme) (key as CursorySignatureScheme.Key) else null
     }
+
+    override fun parseCryptoSignature(
+        signatureAlgorithm: SignatureAlgorithm,
+        signature: X509SignatureValue
+    ): CryptoSignature? {
+        if (signatureAlgorithm != CursorySignatureScheme) return null
+        return signature.rawBitString
+                .also { require(it.sizeBits == 1L) }
+                .let { CursorySignatureScheme.Signature(it[0]) }
+    }
+
+    override fun parseCryptoSignature(
+        x509Algorithm: X509AlgorithmIdentifier,
+        signature: X509SignatureValue
+    ): CryptoSignature? {
+        if (x509Algorithm != CursorySignatureScheme.ALG) return null
+        return parseCryptoSignature(CursorySignatureScheme, signature)
+    }
 }
 
 val ExtensibilityTest by matrixSuite {
@@ -133,6 +154,7 @@ val ExtensibilityTest by matrixSuite {
     ServiceLoader.register<EphemeralKeysProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<PublicKeyFormatProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureVerifierProvider>(CursorySignatureSchemeProvider)
+    ServiceLoader.register<SignatureFormatProvider>(CursorySignatureSchemeProvider)
     "Signing" {
         repeat (50) {
             val privateKey = EphemeralKey { cursory {} }

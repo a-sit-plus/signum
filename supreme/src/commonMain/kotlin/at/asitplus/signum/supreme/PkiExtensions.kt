@@ -7,15 +7,14 @@ import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.equalsCryptographically
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
 import at.asitplus.signum.supreme.sign.Signer
 
-/**
- * Shorthand helper to create an [Certificate] by signing [tbsCertificate]
- */
+/** Shorthand helper to create an [Certificate] by signing [tbsCertificate] */
 suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
     if (signatureAlgorithm != tbsCertificate.signatureAlgorithm)
         throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
@@ -24,9 +23,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
         signature = sign(tbsCertificate.encodeToDer()).signature)
 }
 
-/**
- * Shorthand helper to create a [CertificationRequest] by signing [tbsCsr]
- */
+/** Shorthand helper to create a [CertificationRequest] by signing [tbsCsr] */
 suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
     if (!tbsCsr.publicKey.equalsCryptographically(this.publicKey))
         throw Asn1StructuralException("The signer's public key does not match the TbsCSR's.")
@@ -34,6 +31,9 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
         tbsCsr = tbsCsr, signatureAlgorithm = signatureAlgorithm,
         signature = sign(tbsCsr.encodeToDer()).signature)
 }
+
+suspend inline fun <reified T> Signer.sign(input: DerEncodable<T>) =
+    sign(input.encodeToDer())
 
 suspend inline fun <reified T> SignatureVerifier.verify(input: DerEncodable<T>, signature: CryptoSignature) =
     verify(input.encodeToDer(), signature)

@@ -4,9 +4,9 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.should
@@ -22,7 +22,7 @@ import kotlin.random.Random
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> Verifier.EC>(
+    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> SupremeVerifier.EC>(
         "BC -> PlatformVerifier" to { a, k ->
             SupremePlatformVerifierProvider.verifierFor(a, k) { provider = "BC" }
                 .shouldBeInstanceOf<PlatformECDSAVerifier>()

@@ -109,7 +109,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 } e: ${it.second.publicExponent.toInt()})"
             }) test { (privKey, pubKey) ->
 
-                val own = CryptoPublicKey.RSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
+                val own = RSAPublicKey(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
                 val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
@@ -117,7 +117,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
-                val own1 = CryptoPublicKey.RSA(
+                val own1 = RSAPublicKey(
                     Asn1Integer.fromUnsignedByteArray(ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray()),
                     Asn1Integer.fromUnsignedByteArray(pubKey.publicExponent.toByteArray())
                 )

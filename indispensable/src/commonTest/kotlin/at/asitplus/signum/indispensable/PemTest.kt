@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -113,7 +114,7 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         val rsa = CryptoPublicKey.decodeFromPem(pem)
-            .shouldBeInstanceOf<CryptoPublicKey.RSA>()
+            .shouldBeInstanceOf<RSAPublicKey>()
 
         //the old test was borked and should never have worked
         val pkcs1 = """
@@ -136,7 +137,7 @@ val PemTest  by matrixSuite {
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
-        CryptoPublicKey.decodeFromPem(pkcs1).shouldBeInstanceOf<CryptoPublicKey.RSA>()
+        CryptoPublicKey.decodeFromPem(pkcs1).shouldBeInstanceOf<RSAPublicKey>()
     }
 
 

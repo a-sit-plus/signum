@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
@@ -46,7 +47,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         general.jwsHeaders[0].algorithm shouldBe JwsAlgorithm.Signature.RS256
         general.jwsHeaders[1].algorithm shouldBe JwsAlgorithm.Signature.ES256
         general.signatures[0].shouldBeInstanceOf<RSASignature>()
-        general.signatures[1].shouldBeInstanceOf<CryptoSignature.EC.DefiniteLength>()
+        general.signatures[1].shouldBeInstanceOf<ECDSASignature.DefiniteLength>()
 
         general.signatureElements.forEachIndexed { index, signatureElement ->
             val sourceSignature = generalVectorSignatures[index].jsonObject

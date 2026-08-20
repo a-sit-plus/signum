@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
-import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -12,22 +11,23 @@ import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
-import at.asitplus.signum.indispensable.withSignatureAlgorithm
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
 
-interface Verifier: SignatureVerifier {
+sealed interface SupremeVerifier: SignatureVerifier {
 
     sealed class EC
     @Throws(IllegalArgumentException::class)
     constructor (
         final override val signatureAlgorithm: ECDSAAlgorithm,
-        final override val publicKey: CryptoPublicKey.EC)
-    : Verifier {
+        final override val publicKey: ECDSAPublicKey)
+    : SupremeVerifier {
         init {
             signatureAlgorithm.requiredCurve?.let {
                 require(publicKey.curve == it)
@@ -46,33 +46,33 @@ interface Verifier: SignatureVerifier {
     sealed class RSA
     constructor (
         final override val signatureAlgorithm: RSAAlgorithm,
-        final override val publicKey: CryptoPublicKey.RSA
+        final override val publicKey: RSAPublicKey
     )
-    : Verifier
+    : SupremeVerifier
 }
 
 expect class PlatformVerifierConfiguration internal constructor(): DSL.Data
 typealias ConfigurePlatformVerifier = DSLConfigureFn<PlatformVerifierConfiguration>
 
 /** A distinguishing interface for verifiers that delegate to the underlying platform (JCA, CryptoKit, ...) */
-sealed interface PlatformVerifier: Verifier
+sealed interface PlatformVerifier: SupremeVerifier
 /** A distinguishing interface for verifiers that are implemented in pure Kotlin */
-sealed interface KotlinVerifier: Verifier
+sealed interface KotlinVerifier: SupremeVerifier
 
 @Throws(UnsupportedCryptoException::class)
 internal expect fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
-            (signatureAlgorithm: ECDSAAlgorithm, publicKey: CryptoPublicKey.EC,
+            (signatureAlgorithm: ECDSAAlgorithm, publicKey: ECDSAPublicKey,
              config: PlatformVerifierConfiguration)
 
 internal expect suspend fun verifyECDSAImpl
-            (signatureAlgorithm: ECDSAAlgorithm, publicKey: CryptoPublicKey.EC,
-             data: SignatureInput, signature: CryptoSignature.EC,
+            (signatureAlgorithm: ECDSAAlgorithm, publicKey: ECDSAPublicKey,
+             data: SignatureInput, signature: ECDSASignature,
              config: PlatformVerifierConfiguration)
 
 class PlatformECDSAVerifier
-    internal constructor (signatureAlgorithm: ECDSAAlgorithm, publicKey: CryptoPublicKey.EC,
+    internal constructor (signatureAlgorithm: ECDSAAlgorithm, publicKey: ECDSAPublicKey,
                           configure: ConfigurePlatformVerifier)
-    : Verifier.EC(signatureAlgorithm, publicKey), PlatformVerifier {
+    : SupremeVerifier.EC(signatureAlgorithm, publicKey), PlatformVerifier {
 
     private val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
     init {
@@ -80,43 +80,35 @@ class PlatformECDSAVerifier
     }
 
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        val sig = try {
-            sig.withSignatureAlgorithm(signatureAlgorithm) as ECDSASignature
-        } catch (x: Exception) {
-            throw IllegalArgumentException("Attempted to validate non-EC signature using EC public key",
-                x.nonFatalOrThrow())
-        }
+        require(sig is ECDSASignature)
+            { "Attempted to validate ${sig::class.simpleName} signature using EC public key" }
         return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { SignatureVerifier.Success }
     }
 }
 
 @Throws(UnsupportedCryptoException::class)
 internal expect fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
+            (signatureAlgorithm: RSAAlgorithm, publicKey: RSAPublicKey,
              config: PlatformVerifierConfiguration)
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect suspend fun verifyRSAImpl
-            (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
+            (signatureAlgorithm: RSAAlgorithm, publicKey: RSAPublicKey,
              data: SignatureInput, signature: RSASignature,
              config: PlatformVerifierConfiguration)
 
 class PlatformRSAVerifier
-    internal constructor (signatureAlgorithm: RSAAlgorithm, publicKey: CryptoPublicKey.RSA,
+    internal constructor (signatureAlgorithm: RSAAlgorithm, publicKey: RSAPublicKey,
                           configure: ConfigurePlatformVerifier)
-    : Verifier.RSA(signatureAlgorithm, publicKey), PlatformVerifier {
+    : SupremeVerifier.RSA(signatureAlgorithm, publicKey), PlatformVerifier {
 
     private val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
     init {
         checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier(signatureAlgorithm, publicKey, config)
     }
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        val sig = try {
-            sig.withSignatureAlgorithm(signatureAlgorithm) as RSASignature
-        } catch (x: Exception) {
-            throw IllegalArgumentException("Attempted to validate non-RSA signature using RSA public key",
-                x.nonFatalOrThrow())
-        }
+        require(sig is RSASignature)
+            { "Attempted to validate ${sig::class.simpleName} signature using RSA public key" }
         if (data.format != null)
             throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")
         return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { SignatureVerifier.Success }
@@ -124,15 +116,11 @@ class PlatformRSAVerifier
 }
 
 class KotlinECDSAVerifier
-    internal constructor (signatureAlgorithm: ECDSAAlgorithm, publicKey: CryptoPublicKey.EC)
-    : Verifier.EC(signatureAlgorithm, publicKey), KotlinVerifier {
+    internal constructor (signatureAlgorithm: ECDSAAlgorithm, publicKey: ECDSAPublicKey)
+    : SupremeVerifier.EC(signatureAlgorithm, publicKey), KotlinVerifier {
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        val sig = try {
-            sig.withSignatureAlgorithm(signatureAlgorithm) as ECDSASignature
-        } catch (x: Exception) {
-            throw IllegalArgumentException("Attempted to validate non-EC signature using EC public key",
-                x.nonFatalOrThrow())
-        }
+        require(sig is ECDSASignature)
+            { "Attempted to validate ${sig::class.simpleName} signature using EC public key" }
 
         when (sig) {
             is ECDSASignature.DefiniteLength -> require(sig.scalarByteLength == curve.scalarLength.bytes)
@@ -167,14 +155,14 @@ object SupremePlatformVerifierProvider : SignatureVerifierProvider {
     ): SignatureVerifier? =
         when (algorithm) {
             is ECDSAAlgorithm -> {
-                if (key !is CryptoPublicKey.EC)
+                if (key !is ECDSAPublicKey)
                     throw IllegalArgumentException("Non-EC public key passed to ECDSA algorithm")
                 else
                     PlatformECDSAVerifier(algorithm, key, configure)
             }
 
             is RSAAlgorithm -> {
-                if (key !is CryptoPublicKey.RSA)
+                if (key !is RSAPublicKey)
                     throw IllegalArgumentException("Non-RSA public key passed to RSA algorithm")
                 else
                     PlatformRSAVerifier(algorithm, key, configure)
@@ -187,7 +175,7 @@ object SupremePlatformVerifierProvider : SignatureVerifierProvider {
 object SupremeKotlinVerifierProvider : SignatureVerifierProvider {
     override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey): SignatureVerifier? {
         if (algorithm !is ECDSAAlgorithm) return null
-        if (key !is CryptoPublicKey.EC)
+        if (key !is ECDSAPublicKey)
             throw IllegalArgumentException("Non-EC public key passed to ECDSA algorithm")
         return KotlinECDSAVerifier(algorithm, key)
     }

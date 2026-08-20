@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.supreme.dsl.DSL
 
 
@@ -16,7 +17,7 @@ sealed interface Encryptor {
 
     sealed class RSA(
         final override val algorithm: AsymmetricEncryptionAlgorithm.RSA,
-        final override val publicKey: CryptoPublicKey.RSA
+        final override val publicKey: RSAPublicKey
     ) : Encryptor
 }
 
@@ -24,14 +25,14 @@ sealed interface Encryptor {
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect fun encryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    publicKey: CryptoPublicKey.RSA,
+    publicKey: RSAPublicKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
 ): ByteArray
 
 class PlatformRSAEncryptor
 internal constructor(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
+    algorithm: AsymmetricEncryptionAlgorithm.RSA, publicKey: RSAPublicKey,
     configure: ConfigurePlatformEncryptor
 ) : Encryptor.RSA(algorithm, publicKey) {
 
@@ -58,7 +59,7 @@ private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
     when (this) {
         is AsymmetricEncryptionAlgorithm.RSA -> PlatformRSAEncryptor(
             this,
-            publicKey.let { require(it is CryptoPublicKey.RSA);it },
+            publicKey.let { require(it is RSAPublicKey);it },
             config
         )
     }
@@ -67,6 +68,6 @@ private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
  * Obtains an Encryptor.
  */
 fun AsymmetricEncryptionAlgorithm.RSA.encryptorFor(
-    publicKey: CryptoPublicKey.RSA,
+    publicKey: RSAPublicKey,
     config: ConfigurePlatformEncryptor = null
 ) = encryptorForImpl(publicKey, config)

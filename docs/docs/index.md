@@ -173,7 +173,7 @@ Any unspecified parameters use sensible, secure defaults.
 
 ### Signature Verification (Supreme)
 
-To verify a signature, obtain a `Verifier` instance using `verifierFor(k: PublicKey)`, either directly on a
+To verify a signature, obtain a `SupremeVerifier` instance using `verifierFor(k: PublicKey)`, either directly on a
 `SignatureAlgorithm`, or on one of the specialized algorithms (`X509SignatureAlgorithm`, `CoseAlgorithm`, ...).
 A variety of constants, resembling the well-known JCA names, are also available in `SignatureAlgorithm`'s companion.
 

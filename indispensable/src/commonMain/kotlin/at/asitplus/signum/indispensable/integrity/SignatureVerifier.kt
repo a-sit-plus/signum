@@ -1,10 +1,12 @@
 package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.withSignatureAlgorithm
 
 interface SignatureVerifier {
     val signatureAlgorithm: SignatureAlgorithm
@@ -20,8 +22,17 @@ interface SignatureVerifier {
     data object Success
 
     suspend fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Success>
-    suspend fun verify(data: ByteArray, sig: CryptoSignature) = verify(SignatureInput(data), sig)
 }
+suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
+    verify(SignatureInput(data), sig)
+suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: CryptoSignature) =
+    verify(SignatureInput(data), sig)
+suspend fun SignatureVerifier.verify(data: SignatureInput, sig: DerEncodable<X509SignatureValue>) =
+    verify(data, sig as? CryptoSignature ?: sig.withSignatureAlgorithm(signatureAlgorithm))
+suspend fun SignatureVerifier.verify(data: ByteArray, sig: DerEncodable<X509SignatureValue>) =
+    verify(SignatureInput(data), sig)
+suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: DerEncodable<X509SignatureValue>) =
+    verify(SignatureInput(data), sig)
 
 // @Service
 interface SignatureVerifierProvider {

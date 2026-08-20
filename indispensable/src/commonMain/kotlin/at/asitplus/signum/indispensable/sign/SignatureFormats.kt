@@ -199,34 +199,28 @@ class RSASignature private constructor(
 }
 
 object IndispensableSignatureFormats : SignatureFormatProvider {
-    override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: CryptoSignature) = when (signatureAlgorithm) {
-        is ECDSAAlgorithm ->
-            when (val parsedSig =
-                (signature as? ECDSASignature) ?:
-                    ECDSASignature.decodeFromTlv(signature.asn1Representation))
-            {
-                is ECDSASignature.DefiniteLength -> parsedSig.also {
-                    signatureAlgorithm.requiredCurve?.let { crv -> require(it.scalarByteLength == crv.scalarLength.bytes) }
-                }
-                is ECDSASignature.IndefiniteLength -> when (val crv = signatureAlgorithm.requiredCurve) {
-                    null -> parsedSig
-                    else -> parsedSig.withCurve(crv)
-                }
+    override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
+        is ECDSAAlgorithm -> {
+            val parsedSig = ECDSASignature.decodeFromTlv(signature)
+            when (val crv = signatureAlgorithm.requiredCurve) {
+                null -> parsedSig
+                else -> parsedSig.withCurve(crv)
             }
-        is RSAAlgorithm ->
-            signature as? RSASignature ?: RSASignature.decodeFromTlv(signature.asn1Representation)
+        }
+        is RSAAlgorithm -> RSASignature.decodeFromTlv(signature)
         else -> null
     }
 
-    override fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: CryptoSignature) = when (x509Algorithm.oid) {
+    override fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue) =
+        when (x509Algorithm.oid) {
 
-        KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,
-        KnownOIDs.sha512WithRSAEncryption, KnownOIDs.rsaPSS
-            -> signature as? RSASignature ?: RSASignature.decodeFromTlv(signature.asn1Representation)
+            KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,
+            KnownOIDs.sha512WithRSAEncryption, KnownOIDs.rsaPSS
+                -> RSASignature.decodeFromTlv(signature)
 
-        KnownOIDs.ecdsaWithSHA1, KnownOIDs.ecdsaWithSHA256, KnownOIDs.ecdsaWithSHA384, KnownOIDs.ecdsaWithSHA512
-            -> signature as? ECDSASignature ?: ECDSASignature.decodeFromTlv(signature.asn1Representation)
+            KnownOIDs.ecdsaWithSHA1, KnownOIDs.ecdsaWithSHA256, KnownOIDs.ecdsaWithSHA384, KnownOIDs.ecdsaWithSHA512
+                -> ECDSASignature.decodeFromTlv(signature)
 
-        else -> null
-    }
+            else -> null
+        }
 }
