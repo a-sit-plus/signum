@@ -18,8 +18,8 @@ import kotlin.time.Instant
  * Effective JWS header as defined in [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  * after combining protected and unprotected header members.
  *
- * Whether a member was protected is metadata of the containing JWS representation, exposed by
- * [JwsCompact.unprotectedMembers], [JwsFlattened.unprotectedMembers], or [JwsGeneral.unprotectedMembers].
+ * Protected/unprotected member placement is representation metadata exposed through [JwsHeaderWrapped].
+ * Compact JWS protects every header member, so its unprotected-member list is always empty.
  *
  * Private Header Parameters as specified in RFC 7515 4.3 are currently not implemented
  */
@@ -364,16 +364,20 @@ data class JwsHeader(
         internal fun fromParts(
             protectedHeader: ByteArray? = null,
             unprotectedHeader: JsonObject? = null,
-        ): JwsHeader = fromJsonObjects(
-            protectedHeader = protectedHeader?.toProtectedHeaderJsonObject(),
-            unprotectedHeader = unprotectedHeader,
-        )
+        ): JwsHeaderWrapped =
+            fromJsonObjects(
+                protectedHeader = protectedHeader?.toProtectedHeaderJsonObject(),
+                unprotectedHeader = unprotectedHeader,
+            )
 
         internal fun fromJsonObjects(
             protectedHeader: JsonObject? = null,
             unprotectedHeader: JsonObject? = null,
-        ): JwsHeader = joseCompliantSerializer
-            .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader))
+        ): JwsHeaderWrapped = JwsHeaderWrapped(
+            joseCompliantSerializer
+                .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader)),
+            unprotectedHeader?.keys?.toList().orEmpty()
+        )
     }
 }
 

@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
@@ -64,10 +63,9 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /** Creates a flattened JWS, splitting [jwsHeader] according to [unprotectedMembers]. */
+        /** Creates a flattened JWS using the member placement carried by [jwsHeader]. */
         suspend inline fun <reified P> flattened(
-            jwsHeader: JwsHeader,
-            unprotectedMembers: List<String> = emptyList(),
+            jwsHeader: JwsHeaderWrapped,
             payload: P,
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
@@ -75,9 +73,7 @@ data class JwsTyped<out J : JWS, out P>(
                 joseCompliantSerializer.serializersModule.serializer(), payload
             ).encodeToByteArray()
             return JwsFlattenedTyped(
-                JwsFlattened(
-                    jwsHeader, unprotectedMembers, plainPayload, signer = signer
-                ), payload
+                JwsFlattened(jwsHeader, plainPayload, signer = signer), payload
             )
         }
     }

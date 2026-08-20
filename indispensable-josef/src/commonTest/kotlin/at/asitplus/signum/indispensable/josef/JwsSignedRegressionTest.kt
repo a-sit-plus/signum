@@ -48,7 +48,7 @@ val JwsSignedRegressionTest by matrixSuite {
             plainSignature = byteArrayOf(5, 4, 3, 2, 1),
         )
 
-        regressionCase.legacy.header shouldBe regressionCase.compact.jwsHeader
+        regressionCase.legacy.header shouldBe regressionCase.compact.jwsHeader.header
         regressionCase.legacy.signature shouldBe regressionCase.compact.signature
         regressionCase.legacy.plainSignatureInput shouldBe regressionCase.compact.signatureInput
 
@@ -110,7 +110,7 @@ val JwsSignedRegressionTest by matrixSuite {
             json = joseCompliantSerializer,
         ).getOrThrow()
 
-        legacyTyped.header shouldBe regressionCase.compact.jwsHeader
+        legacyTyped.header shouldBe regressionCase.compact.jwsHeader.header
         legacyTyped.payload shouldBe regressionCase.compact.getPayload(JsonObject.serializer()).getOrThrow()
         legacyTyped.signature shouldBe regressionCase.compact.signature
         legacyTyped.plainSignatureInput shouldBe regressionCase.compact.signatureInput
@@ -129,11 +129,13 @@ val JwsSignedRegressionTest by matrixSuite {
         val flattened = regressionCase.compact.toJwsFlattened()
         val general = listOf(flattened).toJwsGeneral()
 
-        flattened.jwsHeader shouldBe regressionCase.legacy.header
+        flattened.jwsHeader.header shouldBe regressionCase.legacy.header
+        flattened.jwsHeader.unprotectedMembers shouldBe emptyList()
         flattened.signature shouldBe regressionCase.legacy.signature
         flattened.signatureInput shouldBe regressionCase.legacy.plainSignatureInput
 
-        general.jwsHeaders[0] shouldBe regressionCase.legacy.header
+        general.jwsHeaders[0].header shouldBe regressionCase.legacy.header
+        general.jwsHeaders[0].unprotectedMembers shouldBe emptyList()
         general.signatures[0] shouldBe regressionCase.legacy.signature
         general.signatureInputs[0] shouldBe regressionCase.legacy.plainSignatureInput
     }

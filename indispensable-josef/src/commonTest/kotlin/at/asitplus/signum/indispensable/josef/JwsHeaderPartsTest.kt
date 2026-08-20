@@ -72,8 +72,8 @@ val JwsHeaderPartsTest by matrixSuite {
             plainSignature = byteArrayOf(2),
         )
 
-        reconstructed shouldBe header
-        flattened.unprotectedMembers shouldBe unprotectedMembers
+        reconstructed shouldBe JwsHeaderWrapped(header, unprotectedMembers)
+        flattened.jwsHeader shouldBe JwsHeaderWrapped(header, unprotectedMembers)
     }
 
     "duplicate names across protected and unprotected headers are rejected" {
@@ -93,18 +93,19 @@ val JwsHeaderPartsTest by matrixSuite {
             keyId = "did:example:signer",
         )
         val protectedJws = JwsFlattened(
-            jwsHeader = header,
-            unprotectedMembers = emptyList(),
+            jwsHeader = JwsHeaderWrapped(header),
             payload = byteArrayOf(1),
         ) { byteArrayOf(2) }
         val partlyUnprotectedJws = JwsFlattened(
-            jwsHeader = header,
-            unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
+            jwsHeader = JwsHeaderWrapped(
+                header,
+                listOf(JwsHeader.SerialNames.KEY_ID),
+            ),
             payload = byteArrayOf(1),
         ) { byteArrayOf(2) }
 
-        partlyUnprotectedJws.jwsHeader shouldBe protectedJws.jwsHeader
-        partlyUnprotectedJws.unprotectedMembers shouldNotBe protectedJws.unprotectedMembers
+        partlyUnprotectedJws.jwsHeader.header shouldBe protectedJws.jwsHeader.header
+        partlyUnprotectedJws.jwsHeader shouldNotBe protectedJws.jwsHeader
     }
 
     "compact JWS protects every header member" {
@@ -123,7 +124,6 @@ val JwsHeaderPartsTest by matrixSuite {
         }
 
         signerCalled shouldBe true
-        compact.jwsHeader shouldBe header
-        compact.unprotectedMembers shouldBe emptyList()
+        compact.jwsHeader shouldBe JwsHeaderWrapped(header)
     }
 }

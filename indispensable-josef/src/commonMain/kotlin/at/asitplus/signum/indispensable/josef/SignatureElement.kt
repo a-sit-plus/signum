@@ -12,7 +12,8 @@ import kotlinx.serialization.json.JsonObject
  *
  * A [SignatureElement] contains the signature bytes plus the header fragments for that signature. The protected
  * fragment is stored as encoded bytes in [plainProtectedHeader], while the optional unprotected fragment is
- * represented as a [JsonObject]. The effective [jwsHeader] is reconstructed by merging both fragments.
+ * represented as a [JsonObject]. The effective header and its member-placement metadata are exposed together
+ * through [jwsHeader].
  *
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
  * constitute a valid [JwsHeader].
@@ -49,14 +50,10 @@ data class SignatureElement internal constructor(
         plainProtectedHeader.requireAbsentIfEmptyProtectedHeader()
     }
     @Transient
-    val jwsHeader: JwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
-
-    /** [JwsHeader] member names carried in this signature's unprotected header. */
-    @Transient
-    val unprotectedMembers: List<String> = unprotectedHeader?.keys?.toList().orEmpty()
+    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
     @Transient
-    val signature = getSignature(jwsHeader.algorithm, plainSignature)
+    val signature = getSignature(jwsHeader.header.algorithm, plainSignature)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
