@@ -63,9 +63,9 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /** Creates a flattened JWS using the member placement carried by [jwsHeader]. */
+        /** Creates a flattened JWS using the member placement carried by [wrappedHeader]. */
         suspend inline fun <reified P> flattened(
-            jwsHeader: JwsHeaderWrapped,
+            wrappedHeader: JwsHeaderWrapped,
             payload: P,
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
@@ -73,7 +73,7 @@ data class JwsTyped<out J : JWS, out P>(
                 joseCompliantSerializer.serializersModule.serializer(), payload
             ).encodeToByteArray()
             return JwsFlattenedTyped(
-                JwsFlattened(jwsHeader, plainPayload, signer = signer), payload
+                JwsFlattened(wrappedHeader, plainPayload, signer = signer), payload
             )
         }
     }

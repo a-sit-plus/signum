@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonObject
  *
  * A flattened JWS carries one payload and one signature. The protected header is stored as encoded bytes in
  * [plainProtectedHeader]; the optional unprotected header is represented as a [JsonObject]. The effective header
- * and its member-placement metadata are exposed together through [jwsHeader].
+ * and its member-placement metadata are exposed together through [wrappedHeader].
  *
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
  * constitute a valid [JwsHeader].
@@ -44,10 +44,10 @@ data class JwsFlattened internal constructor(
     }
 
     @Transient
-    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
     @Transient
-    val signature = getSignature(jwsHeader.header.algorithm, plainSignature)
+    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
 
     @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
@@ -81,15 +81,15 @@ data class JwsFlattened internal constructor(
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
-         */
+        */
         suspend operator fun invoke(
-            jwsHeader: JwsHeaderWrapped,
+            wrappedHeader: JwsHeaderWrapped,
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val plainProtectedHeader = jwsHeader.toProtectedHeader()
+            val plainProtectedHeader = wrappedHeader.toProtectedHeader()
                 .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
-            val unprotectedHeader = jwsHeader.toUnprotectedHeader()
+            val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
                 .takeUnless { it.isEmpty() }
             return JwsFlattened(
                 plainProtectedHeader,
