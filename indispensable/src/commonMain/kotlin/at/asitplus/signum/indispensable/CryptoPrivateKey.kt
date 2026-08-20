@@ -72,5 +72,5 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable 
 
 // @Service
 interface PrivateKeyFormatProvider {
-    fun decodeFromAsn1(element: Pkcs8PrivateKeyInfo): CryptoPrivateKey?
+    fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey?
 }

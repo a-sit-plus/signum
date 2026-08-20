@@ -7,4 +7,7 @@ import java.security.PrivateKey
 
 /** The underlying JCA [PrivateKey] object. */
 @HazardousMaterials
-val Signer.jcaPrivateKey get() = (this as? SupremeEphemeralJvmSigner)?.privateKey
+val Signer.jcaPrivateKey get() = when (this) {
+    is SupremeEphemeralJvmSigner -> this.privateKey
+    else -> null
+}

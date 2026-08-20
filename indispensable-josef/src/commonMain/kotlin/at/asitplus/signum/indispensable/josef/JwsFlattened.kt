@@ -110,7 +110,7 @@ val JwsFlattened.protectedHeader: JwsHeader.Part?
 fun JwsFlattened.toJwsCompact(): JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
-    runCatching { JwsHeader.fromParts(protectedHeader) }.getOrElse { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
+    runCatching { JwsHeader.fromParts(protectedHeader) }.onFailure { throw IllegalArgumentException("Compact JWS requires protected header to be a valid JwsHeader") }
     return JwsCompact(
         plainProtectedHeader = plainProtectedHeader,
         plainPayload = plainPayload,

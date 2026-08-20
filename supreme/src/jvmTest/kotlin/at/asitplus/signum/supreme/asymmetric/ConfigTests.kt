@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.supreme.sign.Signer
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -14,7 +15,7 @@ import java.security.Security
 val ConfigTests  by matrixSuite {
     "Asymmetric Provider Config" {
         val kp =
-            EphemeralKey {
+            Signer.Ephemeral {
                 rsa {
                     bits = 2048
                 }

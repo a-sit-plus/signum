@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray

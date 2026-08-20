@@ -610,11 +610,11 @@ private fun positive(value: BigInteger): Asn1Integer.Positive =
     value.toAsn1Integer() as Asn1Integer.Positive
 
 object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
-    override fun decodeFromAsn1(element: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
-        require(element.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
-        return when (element.algorithmOid) {
-            RSAPrivateKey.oid -> RSAPrivateKey(element)
-            ECDSAPrivateKey.oid -> ECDSAPrivateKey.decodeFromTlv(element)
+    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
+        require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
+        return when (privateKeyInfo.algorithmOid) {
+            RSAPrivateKey.oid -> RSAPrivateKey.decodeFromTlv(privateKeyInfo)
+            ECDSAPrivateKey.oid -> ECDSAPrivateKey.decodeFromTlv(privateKeyInfo)
             else -> null
         }
     }

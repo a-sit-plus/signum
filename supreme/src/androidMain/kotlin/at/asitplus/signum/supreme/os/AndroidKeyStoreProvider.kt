@@ -21,7 +21,6 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
-import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
@@ -48,6 +47,7 @@ import at.asitplus.signum.dsl.protection
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
@@ -186,7 +186,7 @@ interface AndroidKeyStoreOperationsProvider {
      * Construct an [AndroidKeystoreSigner] for the given values.
      * Implementers likely only need to determine the [SignatureAlgorithm] to expose, and have their subclass
      * implement the relevant [SignerI] marker interface (if applicable).
-     * [AndroidKeystoreSigner]'s default implementation then forwards to [JcaMappingProvider.getJCASignatureInstance].
+     * [AndroidKeystoreSigner]'s default implementation then forwards to [getAndroidKeystoreJCASignature].
      *
      * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
      * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.
@@ -195,6 +195,14 @@ interface AndroidKeyStoreOperationsProvider {
                                  config: AndroidSignerConfiguration, publicKey: CryptoPublicKey,
                                  attestation: AndroidKeystoreAttestation?): AndroidKeystoreSigner?
 }
+
+private fun getAndroidKeystoreRSAParams(digest: Digest): RSAAlgorithm.Parameters<*> =
+    RSAAlgorithm.Parameters.PssPadded(
+        digest = digest,
+        mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(digest),
+        saltLength = digest.outputLength.bytes,
+        trailerField = 1,
+    )
 
 object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvider {
     @SuppressLint("WrongConstant")
@@ -213,7 +221,8 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
                     setAlgorithmParameterSpec(
                         RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
                     setDigests(*algSpec.digests.map {
-                        (it as? WellKnownDigest)?.jcaName ?: throw UnsupportedCryptoException("Unknown digest $it")
+                        component(it as? WellKnownDigest ?:
+                            throw UnsupportedCryptoException("Unknown digest $it"))
                     }.toTypedArray())
                     setSignaturePaddings(*algSpec.paddings.map {
                         when (it) {
@@ -225,41 +234,54 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
             is SigningKeyConfiguration.ECConfiguration ->
                 Pair(KeyProperties.KEY_ALGORITHM_EC, builder.apply {
                     setAlgorithmParameterSpec(ECGenParameterSpec(algSpec.curve.jcaName))
-                    setDigests(*algSpec.digests.map {
-                        ((it ?: return@map KeyProperties.DIGEST_NONE) as? WellKnownDigest)?.jcaName
-                            ?: throw UnsupportedCryptoException("Unknown digest $it")
-                    }.toTypedArray())
+                    setDigests(*algSpec.digests.map { when (it) {
+                        WellKnownDigest.SHA1 -> KeyProperties.DIGEST_SHA1
+                        WellKnownDigest.SHA256 -> KeyProperties.DIGEST_SHA256
+                        WellKnownDigest.SHA384 -> KeyProperties.DIGEST_SHA384
+                        WellKnownDigest.SHA512 -> KeyProperties.DIGEST_SHA512
+                        null -> KeyProperties.DIGEST_NONE
+                        else -> throw UnsupportedCryptoException("Unknown digest $it")
+                    }}.toTypedArray())
                 })
             else -> throw UnsupportedCryptoException("Unknown algorithm is configured")
         }
     }
 
+    private fun component(digest: WellKnownDigest?) = when (digest) {
+        null -> "NONE"
+        WellKnownDigest.SHA1 -> "SHA1"
+        WellKnownDigest.SHA256 -> "SHA256"
+        WellKnownDigest.SHA384 -> "SHA384"
+        WellKnownDigest.SHA512 -> "SHA512"
+    }
+    private fun component(padding: RSAAlgorithm.Padding) = when (padding) {
+        RSAAlgorithm.Padding.PSS -> "RSA/PSS"
+        RSAAlgorithm.Padding.PKCS1 -> "RSA"
+    }
     override fun getAndroidKeystoreSigner(
         jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo, config: AndroidSignerConfiguration,
         publicKey: CryptoPublicKey, attestation: AndroidKeystoreAttestation?
     ): AndroidKeystoreSigner? = when (publicKey) {
         is ECDSAPublicKey -> {
             val ecConfig = config.ec.v
-            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
+            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }, ::component)
             AndroidKeystoreSigner.ECDSA(
-                jcaPrivateKey, alias, keyInfo, config, publicKey,
-                attestation, ECDSAAlgorithm(digest, publicKey.curve)
+                jcaPrivateKey, alias, keyInfo, "${component(digest)}withECDSA",
+                config, publicKey, attestation,
+                ECDSAAlgorithm(digest, publicKey.curve)
             )
         }
         is RSAPublicKey -> {
             val rsaConfig = config.rsa.v
-            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, WellKnownDigest::jcaName)
-            val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
-                when (it) {
-                    RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
-                    RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
-                }
-            }
+            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, ::component)
+            val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }, ::component)
             AndroidKeystoreSigner.RSA(
-                jcaPrivateKey, alias, keyInfo, config, publicKey,
-                attestation, RSAAlgorithm(padding, digest)
-            )
-
+                jcaPrivateKey, alias, keyInfo, "${component(digest)}with${component(padding)}",
+                config, publicKey, attestation,
+                when (padding) {
+                    RSAPadding.PKCS1 -> RSAAlgorithm(RSAPadding.PKCS1, digest)
+                    RSAPadding.PSS -> RSAAlgorithm(getAndroidKeystoreRSAParams(digest))
+                })
         }
         else -> throw UnsupportedCryptoException("Unknown public key type")
     }
@@ -281,7 +303,7 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
+        val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
             generateKeyPair(it, config)
         }
         return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
@@ -333,6 +355,8 @@ abstract class AndroidKeystoreSigner protected constructor(
     internal val jcaPrivateKey: PrivateKey,
     final override val alias: String,
     val keyInfo: KeyInfo,
+    /** The Android KeyStore does not support setParams or similar. Each algorithm has a string identifier. */
+    private val algorithmString: String,
     protected val config: AndroidSignerConfiguration,
     final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
@@ -400,7 +424,7 @@ abstract class AndroidKeystoreSigner protected constructor(
     }
 
     internal suspend fun getJCASignature(signingConfig: AndroidSignerSigningConfiguration): Signature =
-        signatureAlgorithm.getJCASignatureInstance(provider = "AndroidKeyStore").also {
+        Signature.getInstance(algorithmString).also {
             if (needsAuthenticationForEveryUse) {
                 it.initSign(jcaPrivateKey)
                 attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), CryptoObject(it))
@@ -436,12 +460,13 @@ abstract class AndroidKeystoreSigner protected constructor(
     class ECDSA internal constructor(jcaPrivateKey: PrivateKey,
                                      alias: String,
                                      keyInfo: KeyInfo,
+                                     algorithmString: String,
                                      config: AndroidSignerConfiguration,
-                                     override val publicKey: CryptoPublicKey.EC,
+                                     override val publicKey: ECDSAPublicKey,
                                      attestation: AndroidKeystoreAttestation?,
                                      override val signatureAlgorithm: ECDSAAlgorithm
     )
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation),
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation),
         PlatformSigningProviderSigner.ECDSA<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation>
     {
         override suspend fun keyAgreement(
@@ -469,12 +494,13 @@ abstract class AndroidKeystoreSigner protected constructor(
     class RSA internal constructor(jcaPrivateKey: PrivateKey,
                                    alias: String,
                                    keyInfo: KeyInfo,
+                                   algorithmString: String,
                                    config: AndroidSignerConfiguration,
                                    override val publicKey: RSAPublicKey,
                                    attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: RSAAlgorithm
     )
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation), SignerI.RSA
     {
         override fun parseSignatureFromJca(jcaSig: ByteArray) =
             RSASignature.parseFromJca(jcaSig)

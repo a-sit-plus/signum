@@ -44,10 +44,10 @@ val RsaSsaPssRoundTripTest by matrixSuite {
 
 
                 val key = runBlocking {
-                    EphemeralKey {
+                    Signer.Ephemeral {
                         rsa {
-                            this.paddings = setOf(RSAAlgorithm.Padding.PSS)
-                            this.digests = Digest.entries.toSet()
+                            this.padding = RSAAlgorithm.Padding.PSS
+                            this.digest = Digest.SHA256
                         }
                     }
                 }

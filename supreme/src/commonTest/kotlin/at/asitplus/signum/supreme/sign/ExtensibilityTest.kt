@@ -1,8 +1,11 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.Asn1BitString
+import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1OctetString
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
@@ -10,10 +13,11 @@ import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
-import at.asitplus.signum.dsl.EphemeralSigningKeyConfiguration
-import at.asitplus.signum.dsl._algSpecific
+import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.PrivateKeyFormatProvider
 import at.asitplus.signum.indispensable.PublicKeyFormatProvider
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SignatureFormatProvider
@@ -29,8 +33,6 @@ import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.signCatching
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
@@ -64,7 +66,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val rawByteArray: ByteArray
             get() = byteArrayOfHighest(bit)
     }
-    data class Key(private val bit: Boolean) : CryptoPublicKey(), EphemeralKey, Signer, SignatureVerifier {
+    data class Key(private val bit: Boolean) : CryptoPublicKey(), Signer.WithExportableKey, SignatureVerifier {
         companion object {
             val OID = ObjectIdentifier(Uuid.parse("01a00ed6-7067-7149-a548-40aa87ed4bbc"))
         }
@@ -76,10 +78,20 @@ object CursorySignatureScheme : SignatureAlgorithm {
                 ALG,
                 Asn1BitString(bit))
 
+        inner class Private : CryptoPrivateKey.WithPublicKey {
+            override val attributes = setOf<Asn1Element>()
+            override val publicKey = this@Key
+            override val asn1Representation = Pkcs8PrivateKeyInfo(
+                Pkcs8PrivateKeyInfo.Version.V1,
+                ALG,
+                Asn1OctetString(byteArrayOfHighest(bit))
+            )
+            override val oid: ObjectIdentifier get() = OID
+        }
+
         @SecretExposure
-        override suspend fun exportPrivateKey() = throw NotImplementedError()
+        override suspend fun exportPrivateKey() = TODO()
         override val publicKey: CryptoPublicKey get() = this
-        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>) = this
 
         override val signatureAlgorithm: SignatureAlgorithm get() = CursorySignatureScheme
         override suspend fun sign(data: SignatureInput) = signCatching {
@@ -94,25 +106,35 @@ object CursorySignatureScheme : SignatureAlgorithm {
             SignatureVerifier.Success
         }
 
-        class Config : DSL.Data() {
+        class Config : EphemeralSignerConfiguration.AlgorithmSpecific() {
             var overrideKey: Boolean? = null
         }
     }
 }
-val EphemeralSigningKeyConfiguration.cursory get() =
+val EphemeralSignerConfiguration.cursory get() =
     _algSpecific.option("CURSORY", CursorySignatureScheme.Key::Config)
 
 object CursorySignatureSchemeProvider :
-    SignatureAlgorithmsProvider, InMemoryKeysProvider, PublicKeyFormatProvider, SignatureVerifierProvider,
-        SignatureFormatProvider
+    SignatureAlgorithmsProvider, InMemoryKeysProvider, PublicKeyFormatProvider, PrivateKeyFormatProvider,
+        SignatureVerifierProvider, SignatureFormatProvider
 {
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
         CursorySignatureScheme.takeIf { algorithmIdentifier == CursorySignatureScheme.ALG }
     override fun getAlgorithms() = listOf(CursorySignatureScheme)
-    override suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration): EphemeralKey? {
+    override suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration): CursorySignatureScheme.Key? {
         val v = configuration.cursory.v ?: return null
         return CursorySignatureScheme.Key(
             v.overrideKey ?: CryptoRand.nextBytes(ByteArray(1)).hasHighest)
+    }
+
+    override fun createSignerForKey(
+        algorithm: SignatureAlgorithm,
+        privateKey: CryptoPrivateKey.WithPublicKey,
+        configuration: InMemorySignerConfiguration
+    ): Signer.WithExportableKey? {
+        if (algorithm != CursorySignatureScheme) return null
+        require (privateKey is CursorySignatureScheme.Key.Private)
+        return privateKey.publicKey
     }
 
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey? {
@@ -122,6 +144,12 @@ object CursorySignatureSchemeProvider :
                 .get(0)
                 .let(CursorySignatureScheme::Key)
         } else null
+    }
+
+    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey? {
+        if (privateKeyInfo.version != Pkcs8PrivateKeyInfo.Version.V1) return null
+        if (privateKeyInfo.privateKeyAlgorithm != CursorySignatureScheme.ALG) return null
+        return CursorySignatureScheme.Key(privateKeyInfo.privateKey.content.hasHighest).Private()
     }
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = null
@@ -153,14 +181,15 @@ val ExtensibilityTest by matrixSuite {
     ServiceLoader.register<SignatureAlgorithmsProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<InMemoryKeysProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<PublicKeyFormatProvider>(CursorySignatureSchemeProvider)
+    ServiceLoader.register<PrivateKeyFormatProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureVerifierProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureFormatProvider>(CursorySignatureSchemeProvider)
     "Signing" {
         repeat (50) {
-            val privateKey = EphemeralKey { cursory {} }
+            val privateKey = Signer.Ephemeral { cursory {} }
             val publicKey = privateKey.publicKey
             val data = Random.nextBytes(1)
-            val signature = privateKey.signer().sign(data).signature
+            val signature = privateKey.sign(data).signature
             CursorySignatureScheme.verifierFor(publicKey).verify(data, signature) should succeed
         }
     }
@@ -168,8 +197,8 @@ val ExtensibilityTest by matrixSuite {
     "Certificates" {
         repeat(50) {
             val data = Random.nextBytes(1)
-            val privateKey = EphemeralKey { cursory {} }
-            val theSignature = privateKey.signer().sign(data).signature.encodeToDer()
+            val privateKey = Signer.Ephemeral { cursory {} }
+            val theSignature = privateKey.sign(data).signature.encodeToDer()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
                 val tbsCertificate = TbsCertificate(
@@ -181,7 +210,7 @@ val ExtensibilityTest by matrixSuite {
                     issuerName = X500Name.fromString("2.5.4.3=Test,2.5.4.6=AT"),
                     subjectName = X500Name.EMPTY
                 )
-                val signature = privateKey.signer().sign(tbsCertificate.encodeToDer()).signature
+                val signature = privateKey.sign(tbsCertificate.encodeToDer()).signature
                 Certificate(tbsCertificate, signature).encodeToDer()
             }
 

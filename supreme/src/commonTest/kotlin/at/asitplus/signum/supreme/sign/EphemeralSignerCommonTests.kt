@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.supreme.sign
@@ -41,7 +42,7 @@ interface SignatureTestSuite {
     fun configure(it: SignerConfiguration)
 }
 
-data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val isPreHashed: Boolean) :
+data class ECDSATestSuite(val curve: ECCurve, val digest: WellKnownDigest, override val isPreHashed: Boolean) :
     SignatureTestSuite {
     override fun toString() = "ECDSA/$curve/$digest${if (isPreHashed) "/pre" else ""}"
     override fun configure(it: SigningKeyConfiguration) {
@@ -63,7 +64,7 @@ data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val i
 
 data class RSATestSuite(
     val padding: RSAPadding,
-    val digest: Digest,
+    val digest: WellKnownDigest,
     val keySize: Int,
     override val isPreHashed: Boolean
 ) : SignatureTestSuite {
@@ -92,7 +93,7 @@ object TestSuites {
     val ECDSA
         get() = sequence {
             ECCurve.entries.forEach { curve ->
-                Digest.entries.forEach { digest ->
+                WellKnownDigest.entries.forEach { digest ->
                     yield(ECDSATestSuite(curve, digest, false))
                     yield(ECDSATestSuite(curve, digest, true))
                 }
@@ -101,7 +102,7 @@ object TestSuites {
     val RSA
         get() = sequence {
             RSAPadding.entries.forEach { padding ->
-                Digest.entries.forEach { digest ->
+                WellKnownDigest.entries.forEach { digest ->
                     when {
                         digest == Digest.SHA512 && padding == RSAPadding.PSS
                             -> listOf(2048, 3072, 4096)
@@ -130,7 +131,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 val signature = try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
+                            this.digest = digest; this.padding = padding; bits = keySize
                         }
                     }
                     signer.sign(SignatureInput(data).let {
@@ -156,7 +157,7 @@ val EphemeralSignerCommonTests by matrixSuite {
             data(TestSuites.ECDSA) test { (crv, digest, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer =
-                    Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }
+                    Signer.Ephemeral { ec { curve = crv; this.digest = digest } }
                 signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
@@ -180,71 +181,24 @@ val EphemeralSignerCommonTests by matrixSuite {
         "ECDSA" - {
             "No digest specified (defaults to native)" {
                 val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey { ec { this.curve = curve } }
-                val signer = key.signer()
+                val signer = Signer.Ephemeral { ec { this.curve = curve } }
                 signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldBe curve.nativeDigest
 
-                shouldNotThrowAny { key.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
-            }
-            "No digest specified, native disallowed, still succeeds" {
-                val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey {
-                    ec {
-                        this.curve = curve; digests = Digest.entries.filter { it != curve.nativeDigest }.toSet()
-                    }
-                }
-                val signer = key.signer()
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldNotBeIn setOf(
-                    curve.nativeDigest,
-                    null
-                )
-
-                shouldNotThrowAny { key.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
-            }
-            "All digests legal by default" {
-                val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey { ec { this.curve = curve } }
-                val nonNativeDigest = Random.of(Digest.entries.filter { it != curve.nativeDigest })
-                val signer = key.signer { ec { digest = nonNativeDigest } }
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldBe nonNativeDigest
-
-                shouldNotThrowAny { key.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
-            }
-            "Illegal digests should fail" {
-                val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey {
-                    ec {
-                        this.curve = curve; digests = Digest.entries.filter { it != curve.nativeDigest }.toSet()
-                    }
-                }
-                shouldThrowAny { key.signer { ec { digest = curve.nativeDigest } } }
-            }
-            "Null digest should work as a default" {
-                val key = EphemeralKey {
-                    ec {
-                        this.curve = Random.of(ECCurve.entries); digests = setOf<Digest?>(null)
-                    }
-                }
-                val signer = key.signer()
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldBe null
-
-                shouldNotThrowAny { key.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
+                shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
             "Null digest should work if explicitly specified" {
-                val key = EphemeralKey { ec {} }
-                val signer = key.signer { ec { digest = null } }
+                val signer = Signer.Ephemeral { ec { digest = null } }
                 signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldBe null
 
-                shouldNotThrowAny { key.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
+                shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
         }
         "RSA" - {
             "No digest specified" {
-                val key = EphemeralKey { rsa {} }
-                val signer = key.signer()
+                val signer = Signer.Ephemeral { rsa {} }
                 signer.signatureAlgorithm.shouldBeInstanceOf<RSAAlgorithm>()
 
-                shouldNotThrowAny { key.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
+                shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
         }
     }
@@ -258,7 +212,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
+                            this.digest = digest; this.padding = padding; bits = keySize
                         }
                     }
                     signer.sign(SignatureInput(data).let {
@@ -314,7 +268,7 @@ val EphemeralSignerCommonTests by matrixSuite {
         "ECDSA" - {
             data(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) test { (crv, digest, _) ->
                 val signer =
-                    Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }
+                    Signer.Ephemeral { ec { curve = crv; this.digest = digest } }
                 signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)

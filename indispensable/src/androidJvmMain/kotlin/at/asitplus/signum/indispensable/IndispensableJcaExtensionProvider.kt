@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
@@ -12,7 +13,6 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
-import java.security.Signature
 
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
     override fun getJCAMessageDigestInstance(digest: Digest, jcaProvider: String?): MessageDigest? {
@@ -28,7 +28,23 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
             is WellKnownDigest? -> sigGetInstance("${digest.jcaAlgorithmComponent}withECDSA", jcaProvider)
             else -> null
         }
-        is RSAAlgorithm -> getRSAPlatformSignatureInstance(algorithm, jcaProvider)
+        is RSAAlgorithm -> when (val params = algorithm.parameters) {
+            is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+                is WellKnownDigest -> sigGetInstance("${digest.jcaAlgorithmComponent}withRSA", jcaProvider)
+                else -> null
+            }
+
+            is RSAAlgorithm.Parameters.PssPadded -> {
+                val params = try {
+                    params.jcaPSSParams
+                } catch (_: UnsupportedCryptoException) {
+                    null
+                }
+                if (params != null) {
+                    sigGetInstance("RSASSA-PSS", jcaProvider).also { it.setParameter(params) }
+                } else null
+            }
+        }
         else -> null
     }
 
@@ -65,4 +81,3 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
         }
 }
 
-internal expect fun getRSAPlatformSignatureInstance(algorithm: RSAAlgorithm, jcaProvider: String?): Signature?

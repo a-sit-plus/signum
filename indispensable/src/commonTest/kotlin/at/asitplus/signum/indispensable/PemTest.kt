@@ -6,6 +6,8 @@ import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.testballoon.matrix.*
@@ -78,7 +80,7 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         val key = CryptoPublicKey.decodeFromPem(pem)
-            .shouldBeInstanceOf<CryptoPublicKey.EC>()
+        key.shouldBeInstanceOf<ECDSAPublicKey>()
     }
     "CSR" {
         val pem = """
@@ -92,7 +94,7 @@ val PemTest  by matrixSuite {
 
         val csr = CertificationRequest.decodeFromPem(pem)
             .shouldBeInstanceOf<CertificationRequest>()
-        csr.tbsCsr.publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        csr.tbsCsr.publicKey.shouldBeInstanceOf<ECDSAPublicKey>()
     }
 
     "RSA Public Key" {
@@ -114,7 +116,7 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         val rsa = CryptoPublicKey.decodeFromPem(pem)
-            .shouldBeInstanceOf<RSAPublicKey>()
+        rsa.shouldBeInstanceOf<RSAPublicKey>()
 
         //the old test was borked and should never have worked
         val pkcs1 = """
@@ -152,8 +154,8 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         CryptoPrivateKey.decodeFromPem(rnd + sec1).let {
-            it.shouldBeInstanceOf<EC>()
-            EC.decodeFromPem(sec1) shouldBe it
+            it.shouldBeInstanceOf<ECDSAPrivateKey>()
+            ECDSAPrivateKey.decodeFromPem(sec1) shouldBe it
             kotlin.runCatching {
                 RSAPrivateKey.decodeFromPem(sec1)
             }.isSuccess shouldBe false
@@ -172,7 +174,7 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         CryptoPrivateKey.decodeFromPem(rnd + pkcs8).let {
-            EC.decodeFromPem(pkcs8) shouldBe it
+            ECDSAPrivateKey.decodeFromPem(pkcs8) shouldBe it
             kotlin.runCatching {
                 RSAPrivateKey.decodeFromPem(pkcs8)
             }.isSuccess shouldBe false
@@ -202,7 +204,7 @@ val PemTest  by matrixSuite {
 
         ec.forEach { string ->
             CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
-                .shouldBeInstanceOf<EC>()
+                .shouldBeInstanceOf<ECDSAPrivateKey>()
 
         }
     }

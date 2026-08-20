@@ -49,6 +49,7 @@ private inline fun i2ospForLen2(value: Int): ByteArray {
     return byteArrayOf(((value shr 8) and 0xff).toByte(), (value and 0xff).toByte())
 }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun os2ip(value: ByteArray): BigInteger = BigInteger.fromByteArray(value, Sign.POSITIVE)
 
 private fun concat(vararg datas: ByteArray): ByteArray {

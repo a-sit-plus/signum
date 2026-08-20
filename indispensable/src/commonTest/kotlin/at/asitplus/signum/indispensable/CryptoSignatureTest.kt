@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.encoding.toTwosComplementByteArray
+import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.testballoon.matrix.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
@@ -18,9 +20,9 @@ val CryptoSignatureTest  by matrixSuite {
             val first: Int = values.random().also { values.remove(it) }
             val second: Int = values.random().also { values.remove(it) }
 
-            val ec1 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
-            val ec2 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
-            val ec3 = CryptoSignature.EC.fromRS(second.toBigInteger(), first.toBigInteger())
+            val ec1 = ECDSASignature.fromRS(first.toBigInteger(), second.toBigInteger())
+            val ec2 = ECDSASignature.fromRS(first.toBigInteger(), second.toBigInteger())
+            val ec3 = ECDSASignature.fromRS(second.toBigInteger(), first.toBigInteger())
             val rsa1 = RSASignature(first.toTwosComplementByteArray())
             val rsa2 = RSASignature(first.toTwosComplementByteArray())
             val rsa3 = RSASignature(second.toTwosComplementByteArray())
@@ -57,7 +59,7 @@ val CryptoSignatureTest  by matrixSuite {
             ByteArray(66) { if (it == 0) 0x01 else 0x00 } +
                     ByteArray(66) { if (it == 65) 0x01 else 0x00 }
 
-        val sig = CryptoSignature.EC.fromRS(r, s)
+        val sig = ECDSASignature.fromRS(r, s)
 
         val sig1 = sig.guessCurve()
         sig1 shouldBe sig
@@ -74,7 +76,7 @@ val CryptoSignatureTest  by matrixSuite {
         sig2.scalarByteLength shouldBe sig1.scalarByteLength
         sig2.rawByteArray shouldBe encoded
 
-        val sig3 = CryptoSignature.EC.fromRawBytes(encoded)
+        val sig3 = ECDSASignature.fromRawBytes(encoded)
         sig3 shouldBe sig2
         sig3 shouldBe sig
         sig3.r shouldBe sig.r
@@ -83,6 +85,6 @@ val CryptoSignatureTest  by matrixSuite {
         sig3.rawByteArray shouldBe encoded
 
         val r2 = BigInteger.ONE.shl(ECCurve.entries.maxOf { it.scalarLength.bits }.toInt() + 1)
-        shouldThrow<IllegalArgumentException> { CryptoSignature.EC.fromRS(r2, s).guessCurve() }
+        shouldThrow<IllegalArgumentException> { ECDSASignature.fromRS(r2, s).guessCurve() }
     }
 }
