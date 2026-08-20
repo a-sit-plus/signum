@@ -364,7 +364,7 @@ data class JwsHeader(
         ): JwsHeaderWrapped = JwsHeaderWrapped(
             joseCompliantSerializer
                 .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader)),
-            unprotectedHeader?.keys?.toList().orEmpty()
+            unprotectedHeader?.keys ?: emptySet()
         )
     }
 }
