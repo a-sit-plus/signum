@@ -11,8 +11,8 @@ import kotlinx.serialization.json.JsonObject
  * Flattened JSON JWS serialization.
  *
  * A flattened JWS carries one payload and one signature. The protected header is stored as encoded bytes in
- * [plainProtectedHeader]; the optional unprotected header is represented as a [JsonObject]. The effective
- * [jwsHeader] is reconstructed by merging both fragments with [JwsHeader.fromParts].
+ * [plainProtectedHeader]; the optional unprotected header is represented as a [JsonObject]. The effective header
+ * and its member-placement metadata are exposed together through [jwsHeader].
  *
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
  * constitute a valid [JwsHeader].
@@ -47,10 +47,7 @@ data class JwsFlattened internal constructor(
     val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
 
     @Transient
-    val unprotectedMembers: List<String> = unprotectedHeader?.keys?.toList().orEmpty()
-
-    @Transient
-    val signature = getSignature(jwsHeader.algorithm, plainSignature)
+    val signature = getSignature(jwsHeader.header.algorithm, plainSignature)
 
     @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
@@ -79,19 +76,21 @@ data class JwsFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWS, splitting [jwsHeader] according to [unprotectedMembers].
+         * Creates a flattened JWS, splitting [JwsHeaderWrapped.header] according to
+         * [JwsHeaderWrapped.unprotectedMembers].
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
         suspend operator fun invoke(
-            jwsHeader: JwsHeader,
-            unprotectedMembers: List<String> = emptyList(),
+            jwsHeader: JwsHeaderWrapped,
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val protectedHeader = jwsHeader.protectedPart(unprotectedMembers)
-            val unprotectedHeader = jwsHeader.unprotectedPart(unprotectedMembers).takeUnless { it.isEmpty() }
+            val protectedHeader = jwsHeader.header.protectedPart(jwsHeader.unprotectedMembers)
+            val unprotectedHeader = jwsHeader.header
+                .unprotectedPart(jwsHeader.unprotectedMembers)
+                .takeUnless { it.isEmpty() }
             val plainProtectedHeader = protectedHeader.takeUnless { it.isEmpty() }?.toProtectedHeaderBytes()
             return JwsFlattened(
                 plainProtectedHeader,
