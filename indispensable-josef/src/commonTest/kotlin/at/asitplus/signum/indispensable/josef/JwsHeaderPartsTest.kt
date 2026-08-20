@@ -120,17 +120,20 @@ val JwsHeaderPartsTest by matrixSuite {
         reparsed.jwsHeader.header shouldBe header
     }
 
-    "member placement rejects names absent from the effective header" {
-        val result = runCatching {
-            JwsHeaderWrapped(
-                JwsHeader(algorithm = JwsAlgorithm.Signature.RS256),
-                setOf(JwsHeader.SerialNames.KEY_ID),
-            )
-        }
-
-        result.shouldBeFailure() shouldBe IllegalArgumentException(
-            "Unprotected members are absent from the effective JWS header: kid"
+    "effective member placement ignores names absent from the modeled header" {
+        val header = JwsHeader(algorithm = JwsAlgorithm.Signature.RS256)
+        val withAbsentMember = JwsHeaderWrapped(
+            header,
+            setOf(JwsHeader.SerialNames.KEY_ID),
         )
+        val withoutAbsentMember = JwsHeaderWrapped(header)
+
+        withAbsentMember.unprotectedMembers shouldBe setOf(JwsHeader.SerialNames.KEY_ID)
+        withAbsentMember.effectiveUnprotectedMembers shouldBe emptySet()
+        withAbsentMember.toProtectedHeader() shouldBe withoutAbsentMember.toProtectedHeader()
+        withAbsentMember.toUnprotectedHeader() shouldBe withoutAbsentMember.toUnprotectedHeader()
+        withAbsentMember shouldBe withoutAbsentMember
+        withAbsentMember.hashCode() shouldBe withoutAbsentMember.hashCode()
     }
 
     "fully protected flattened JWS omits the unprotected header" {
