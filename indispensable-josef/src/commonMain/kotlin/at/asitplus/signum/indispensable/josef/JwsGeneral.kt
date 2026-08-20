@@ -37,6 +37,10 @@ data class JwsGeneral internal constructor(
     @Transient
     val jwsHeaders: List<JwsHeader> = signatureElements.map { it.jwsHeader }
 
+    /** Convenience view of [SignatureElement.unprotectedMembers] in signature order. */
+    @Transient
+    val unprotectedMembers: List<List<String>> = signatureElements.map { it.unprotectedMembers }
+
     @Transient
     val signatures = signatureElements.map { it.signature }
 

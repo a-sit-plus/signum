@@ -50,6 +50,11 @@ data class SignatureElement internal constructor(
     }
     @Transient
     val jwsHeader: JwsHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+
+    /** [JwsHeader] member names carried in this signature's unprotected header. */
+    @Transient
+    val unprotectedMembers: List<String> = unprotectedHeader?.keys?.toList().orEmpty()
+
     @Transient
     val signature = getSignature(jwsHeader.algorithm, plainSignature)
 

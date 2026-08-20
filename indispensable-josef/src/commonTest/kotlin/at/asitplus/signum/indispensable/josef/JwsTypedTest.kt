@@ -23,7 +23,7 @@ val JwsTypedTest by matrixSuite {
             keyId = "kid-compact",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = header.protectedPart().toProtectedHeaderBytes()
+        val expectedProtectedHeader = header.protectedPart(emptyList()).toProtectedHeaderBytes()
         var capturedSignatureInput: ByteArray? = null
 
         val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
@@ -85,22 +85,25 @@ val JwsTypedTest by matrixSuite {
     }
 
     "flattened typed wrappers can be created from split headers and existing flattened JWS" {
+        val unprotectedMembers = listOf(
+            JwsHeader.SerialNames.KEY_ID,
+            JwsHeader.SerialNames.CONTENT_TYPE,
+        )
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "kid-flattened",
             contentType = "application/example+json",
-            unprotectedMembers = listOf(
-                JwsHeader.SerialNames.KEY_ID,
-                JwsHeader.SerialNames.CONTENT_TYPE,
-            ),
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = header.protectedPart().takeUnless { it.isEmpty() }?.toProtectedHeaderBytes()
+        val expectedProtectedHeader = header.protectedPart(unprotectedMembers)
+            .takeUnless { it.isEmpty() }
+            ?.toProtectedHeaderBytes()
         var capturedSignatureInput: ByteArray? = null
 
         val typedFlattened: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
             jwsHeader = header,
+            unprotectedMembers = unprotectedMembers,
             payload = payload,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
@@ -109,7 +112,8 @@ val JwsTypedTest by matrixSuite {
 
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
-        typedFlattened.jws.unprotectedHeader shouldBe header.unprotectedPart()
+        typedFlattened.jws.unprotectedHeader shouldBe header.unprotectedPart(unprotectedMembers)
+        typedFlattened.jws.unprotectedMembers shouldBe unprotectedMembers
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
@@ -122,8 +126,8 @@ val JwsTypedTest by matrixSuite {
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
                 keyId = "kid-1",
-                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
             ),
+            unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
             payload = payload,
         ) {
             byteArrayOf(1, 1, 1, 1)
@@ -133,8 +137,8 @@ val JwsTypedTest by matrixSuite {
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
                 keyId = "kid-2",
-                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
             ),
+            unprotectedMembers = listOf(JwsHeader.SerialNames.TYPE),
             payload = payload,
         ) {
             byteArrayOf(2, 2, 2, 2)
@@ -144,6 +148,14 @@ val JwsTypedTest by matrixSuite {
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
+        typedGeneral.jws.signatureElements.map { it.unprotectedMembers } shouldBe listOf(
+            listOf(JwsHeader.SerialNames.KEY_ID),
+            listOf(JwsHeader.SerialNames.TYPE),
+        )
+        typedGeneral.jws.unprotectedMembers shouldBe listOf(
+            listOf(JwsHeader.SerialNames.KEY_ID),
+            listOf(JwsHeader.SerialNames.TYPE),
+        )
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toJwsFlattenedTyped() shouldBe listOf(first, second)
 

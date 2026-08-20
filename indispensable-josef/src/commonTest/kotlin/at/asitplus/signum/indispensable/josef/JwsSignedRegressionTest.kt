@@ -29,7 +29,7 @@ val JwsSignedRegressionTest by matrixSuite {
             byteArrayOf(1, 2, 3, 4)
         }
 
-        val expectedProtectedHeader = header.protectedPart().toProtectedHeaderBytes()
+        val expectedProtectedHeader = header.protectedPart(emptyList()).toProtectedHeaderBytes()
 
         compact.plainProtectedHeader shouldBe expectedProtectedHeader
         capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
@@ -186,7 +186,7 @@ private fun compactRegressionCase(
 ): CompactRegressionCase {
     val header = protectedHeader
     val compact = JwsCompact(
-        plainProtectedHeader = protectedHeader.protectedPart().toProtectedHeaderBytes(),
+        plainProtectedHeader = protectedHeader.protectedPart(emptyList()).toProtectedHeaderBytes(),
         plainPayload = payload,
         plainSignature = plainSignature,
     )

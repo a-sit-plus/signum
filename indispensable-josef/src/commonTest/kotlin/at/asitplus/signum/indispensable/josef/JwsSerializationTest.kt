@@ -66,25 +66,26 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     }
 
     "flattened JWS keeps unprotected headers stable through serialization and general conversion" {
+        val unprotectedMembers = listOf(
+            JwsHeader.SerialNames.CONTENT_TYPE,
+            JwsHeader.SerialNames.CERTIFICATE_URL,
+        )
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "protected-kid",
             contentType = "application/example+json",
             certificateUrl = "https://example.com/cert.pem",
-            unprotectedMembers = listOf(
-                JwsHeader.SerialNames.CONTENT_TYPE,
-                JwsHeader.SerialNames.CERTIFICATE_URL,
-            ),
         )
-        val protectedHeader = header.protectedPart()
-        val unprotectedHeader = header.unprotectedPart()
+        val protectedHeader = header.protectedPart(unprotectedMembers)
+        val unprotectedHeader = header.unprotectedPart(unprotectedMembers)
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
         val plainProtectedHeader = protectedHeader.toProtectedHeaderBytes()
         var capturedSignatureInput: ByteArray? = null
 
         val flattened = JwsFlattened.invoke(
             jwsHeader = header,
+            unprotectedMembers = unprotectedMembers,
             payload = payload,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
@@ -97,6 +98,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened>(serialized)
 
         reparsed shouldBe flattened
+        reparsed.unprotectedMembers shouldBe unprotectedMembers
         with(joseCompliantSerializer) {
             decodeFromString<JsonObject>(serialized) shouldBe decodeFromString<JsonObject>(encodeToString(reparsed))
         }
@@ -106,6 +108,8 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         general.jwsHeaders[0] shouldBe flattened.jwsHeader
         general.signatures[0] shouldBe flattened.signature
         general.signatureInputs[0] shouldBe flattened.signatureInput
+        general.signatureElements.single().unprotectedMembers shouldBe unprotectedMembers
+        general.unprotectedMembers shouldBe listOf(unprotectedMembers)
         general.toJwsFlattened() shouldBe listOf(flattened)
     }
 
@@ -114,12 +118,12 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             keyId = "kid-1",
-            unprotectedMembers = listOf(
-                JwsHeader.SerialNames.ALGORITHM,
-                JwsHeader.SerialNames.KEY_ID,
-            ),
         )
-        val unprotectedHeader = header.unprotectedPart()
+        val unprotectedMembers = listOf(
+            JwsHeader.SerialNames.ALGORITHM,
+            JwsHeader.SerialNames.KEY_ID,
+        )
+        val unprotectedHeader = header.unprotectedPart(unprotectedMembers)
         val conformantWithoutProtected = JwsFlattened(
             plainProtectedHeader = null,
             unprotectedHeader = unprotectedHeader,
@@ -130,6 +134,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         val flattened = JwsFlattened(
             jwsHeader = header,
+            unprotectedMembers = unprotectedMembers,
             payload = payload,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
@@ -405,7 +410,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
     "signature and general equality include unprotected headers" {
         val protectedHeader = JwsHeader(algorithm = JwsAlgorithm.Signature.RS256)
-            .protectedPart()
+            .protectedPart(emptyList())
             .toProtectedHeaderBytes()
         val signatureA = SignatureElement(
             plainSignature = byteArrayOf(1),
@@ -443,8 +448,8 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
                 contentType = "application/example+json",
-                unprotectedMembers = listOf(JwsHeader.SerialNames.CONTENT_TYPE),
             ),
+            unprotectedMembers = listOf(JwsHeader.SerialNames.CONTENT_TYPE),
             payload = """{"sub":"alice"}""".encodeToByteArray(),
             plainSignature = byteArrayOf(9, 8, 7, 6),
         )
@@ -521,11 +526,14 @@ private fun generalJson(
 
 private fun flattenedSample(
     jwsHeader: JwsHeader,
+    unprotectedMembers: List<String> = emptyList(),
     payload: ByteArray,
     plainSignature: ByteArray,
 ): JwsFlattened = JwsFlattened(
-    plainProtectedHeader = jwsHeader.protectedPart().takeUnless { it.isEmpty() }?.toProtectedHeaderBytes(),
-    unprotectedHeader = jwsHeader.unprotectedPart().takeUnless { it.isEmpty() },
+    plainProtectedHeader = jwsHeader.protectedPart(unprotectedMembers)
+        .takeUnless { it.isEmpty() }
+        ?.toProtectedHeaderBytes(),
+    unprotectedHeader = jwsHeader.unprotectedPart(unprotectedMembers).takeUnless { it.isEmpty() },
     plainPayload = payload,
     plainSignature = plainSignature,
 )
