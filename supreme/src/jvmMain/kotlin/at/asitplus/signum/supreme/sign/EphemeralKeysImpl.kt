@@ -29,7 +29,7 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.KeyAgreement
 
-sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val provider: String?) : Signer {
+sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val provider: String?) : Signer.WithExportableKey {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = signCatching {
         val preHashed = (data.format != null)
@@ -53,7 +53,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
                                         override val publicKey: ECDSAPublicKey, override val signatureAlgorithm: ECDSAAlgorithm
     )
-        : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
+        : EphemeralSigner(privateKey, config.provider), Signer.WithExportableKey.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = ECDSASignature.parseFromJca(bytes).withCurve(publicKey.curve)
 
@@ -72,7 +72,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
                                          override val publicKey: RSAPublicKey, override val signatureAlgorithm: RSAAlgorithm
     )
-        : EphemeralSigner(privateKey, config.provider), Signer.RSA {
+        : EphemeralSigner(privateKey, config.provider), Signer.WithExportableKey.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = RSASignature.parseFromJca(bytes)
 

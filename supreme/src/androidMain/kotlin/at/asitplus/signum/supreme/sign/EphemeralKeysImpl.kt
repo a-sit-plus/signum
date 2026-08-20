@@ -36,7 +36,7 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 
-sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
+sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer.WithExportableKey {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = signCatching {
         when {
@@ -55,7 +55,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     class EC (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
               override val publicKey: ECDSAPublicKey, override val signatureAlgorithm: ECDSAAlgorithm
     )
-        : AndroidEphemeralSigner(privateKey), Signer.ECDSA {
+        : AndroidEphemeralSigner(privateKey), Signer.WithExportableKey.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = ECDSASignature.parseFromJca(bytes).withCurve(publicKey.curve)
 
@@ -74,7 +74,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     class RSA(config: EphemeralSignerConfiguration, privateKey: PrivateKey,
               override val publicKey: RSAPublicKey, override val signatureAlgorithm: RSAAlgorithm
     )
-        : AndroidEphemeralSigner(privateKey), Signer.RSA {
+        : AndroidEphemeralSigner(privateKey), Signer.WithExportableKey.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = RSASignature.parseFromJca(bytes)
 

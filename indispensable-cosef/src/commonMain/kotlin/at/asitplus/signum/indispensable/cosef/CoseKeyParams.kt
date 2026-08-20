@@ -7,6 +7,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.encoding.decodeFromAsn1ContentBytes
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAPublicKey
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
@@ -87,7 +89,7 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
         override fun yHashCode(): Int = y?.contentHashCode() ?: 0
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-            CryptoPublicKey.EC.fromUncompressed(
+            ECDSAPublicKey.fromUncompressed(
                 curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                 x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                 y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -121,7 +123,7 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
             val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
             val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
             val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
-            CryptoPublicKey.EC.fromCompressed(curve.toEcCurve(), x, yFlag)
+            ECDSAPublicKey.fromCompressed(curve.toEcCurve(), x, yFlag)
         }
     }
 
@@ -167,7 +169,8 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
                 n = Asn1Integer.fromUnsignedByteArray(
                     n ?: throw IllegalArgumentException("Missing modulus n")),
                 e = Asn1Integer.fromUnsignedByteArray(
-                    e ?: throw IllegalArgumentException("Missing or invalid exponent e")))
+                    e ?: throw IllegalArgumentException("Missing or invalid exponent e"))
+            )
         }
     }
 

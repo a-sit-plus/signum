@@ -48,19 +48,28 @@ interface Signer {
     /** Whether the signer may ask for user interaction when [sign] is called */
     val mayRequireUserUnlock: Boolean get() = true
 
-    @SecretExposure
-    suspend fun exportPrivateKey(): CryptoPrivateKey.WithPublicKey<*>
-
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer
+
+    interface WithExportableKey : Signer {
+        @SecretExposure
+        suspend fun exportPrivateKey(): CryptoPrivateKey.WithPublicKey<*>
+
+        interface ECDSA : WithExportableKey, Signer.ECDSA {
+            @SecretExposure
+            override suspend fun exportPrivateKey(): ECDSAPrivateKey.WithPublicKey
+        }
+
+        interface RSA : WithExportableKey, Signer.RSA {
+            @SecretExposure
+            override suspend fun exportPrivateKey(): RSAPrivateKey
+        }
+    }
 
     /** A [Signer] that signs using ECDSA. */
     interface ECDSA : AlgTrait, UsableECDHPrivateValue {
         override val signatureAlgorithm: ECDSAAlgorithm
         override val publicKey: ECDSAPublicKey
-
-        @SecretExposure
-        override suspend fun exportPrivateKey(): ECDSAPrivateKey.WithPublicKey
 
         override val publicValue: KeyAgreementPublicValue.ECDH get() = publicKey
     }
@@ -74,9 +83,6 @@ interface Signer {
     interface RSA : AlgTrait {
         override val signatureAlgorithm: RSAAlgorithm
         override val publicKey: RSAPublicKey
-
-        @SecretExposure
-        override suspend fun exportPrivateKey(): RSAPrivateKey
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */

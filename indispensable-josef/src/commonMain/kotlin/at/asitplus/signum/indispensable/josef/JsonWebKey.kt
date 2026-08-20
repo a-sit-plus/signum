@@ -5,7 +5,6 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
@@ -17,6 +16,7 @@ import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.io.sha256
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -297,7 +297,7 @@ data class JsonWebKey(
     override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
         when (type) {
             JwkType.EC -> {
-                fromUncompressed(
+                ECDSAPublicKey.fromUncompressed(
                     curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -344,11 +344,8 @@ data class JsonWebKey(
         fun fromDid(input: String): KmmResult<JsonWebKey> =
             catching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
 
-        fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
-            catching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }
-
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            catching { fromUncompressed(curve, x, y).toJsonWebKey() }
+            catching { ECDSAPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
     }
 
     /**
@@ -404,7 +401,7 @@ val SymmetricKey<*, *, *>.jsonWebKeyBytes
  */
 fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
-        is CryptoPublicKey.EC ->
+        is ECDSAPublicKey ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = keyId,
@@ -421,6 +418,8 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 n = n.magnitude,
                 e = e.magnitude
             )
+
+        else -> TODO("providerize")
     }
 
 /**

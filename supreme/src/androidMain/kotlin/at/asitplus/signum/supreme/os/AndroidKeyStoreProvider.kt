@@ -337,9 +337,6 @@ abstract class AndroidKeystoreSigner protected constructor(
     final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
 
-    @SecretExposure
-    override suspend fun exportPrivateKey(): Nothing = error("Non-Exportable key")
-
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 
     private sealed interface AuthResult {
@@ -417,7 +414,7 @@ abstract class AndroidKeystoreSigner protected constructor(
             }
         }
 
-    override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<AndroidSignerSigningConfiguration>) = catching {
+    override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<AndroidSignerSigningConfiguration>) {
         if (needsAuthentication && !needsAuthenticationForEveryUse) {
             withContext(dispatcher) { getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure)) }
         }
