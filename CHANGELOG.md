@@ -6,7 +6,12 @@ This is a major refactor!
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
-* Remove `JwsHeader.Part`. Unprotected-member placement metadata for `JwsHeader` is now handled by the JWS representations
+* Rework JWS header handling (**breaking**):
+    * Remove `JwsHeader.Part`
+    * Introduce `JwsHeaderWrapped`, combining the modeled `JwsHeader` with its unprotected-member placement metadata
+    * Expose wrapped headers as `JwsCompact.wrappedHeader`, `JwsFlattened.wrappedHeader`, `SignatureElement.wrappedHeader`, and `JwsGeneral.wrappedHeaders`
+    * Add `JwsHeaderWrapped.toProtectedHeader()` and `toUnprotectedHeader()` for splitting the effective header
+    * Track only modeled header parameters in `effectiveUnprotectedMembers`, allowing valid unmodeled extension parameters during JWS deserialization
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Dependency Updates:
