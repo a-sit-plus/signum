@@ -337,6 +337,30 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         generalResult.shouldBeRejectedEmptyProtectedHeader()
     }
 
+    "flattened and general JSON JWS accept unmodeled unprotected header members" {
+        val headerJson = """{"nonce":"nonce-value"}"""
+        val flattenedJson = flattenedJson(headerJson = headerJson)
+        val generalJson = generalJson(headerJson = headerJson)
+
+        val flattened = joseCompliantSerializer.decodeFromString<JwsFlattened>(flattenedJson)
+        val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalJson)
+
+        listOf(flattened.jwsHeader, general.jwsHeaders.single()).forEach { wrappedHeader ->
+            wrappedHeader.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
+            wrappedHeader.unprotectedMembers shouldBe setOf("nonce")
+            wrappedHeader.effectiveUnprotectedMembers shouldBe emptySet()
+            wrappedHeader shouldBe JwsHeaderWrapped(wrappedHeader.header)
+            wrappedHeader.hashCode() shouldBe JwsHeaderWrapped(wrappedHeader.header).hashCode()
+        }
+
+        joseCompliantSerializer.decodeFromString<JsonObject>(
+            joseCompliantSerializer.encodeToString(flattened)
+        ) shouldBe joseCompliantSerializer.decodeFromString<JsonObject>(flattenedJson)
+        joseCompliantSerializer.decodeFromString<JsonObject>(
+            joseCompliantSerializer.encodeToString(general)
+        ) shouldBe joseCompliantSerializer.decodeFromString<JsonObject>(generalJson)
+    }
+
     "compact, flattened, and general JWS reject malformed protected header JSON" {
         val malformedProtectedHeader = "bm90LWpzb24"
         val results = listOf(
