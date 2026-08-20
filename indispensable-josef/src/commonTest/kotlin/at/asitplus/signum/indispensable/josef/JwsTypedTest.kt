@@ -101,7 +101,7 @@ val JwsTypedTest by matrixSuite {
         var capturedSignatureInput: ByteArray? = null
 
         val typedFlattened: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            jwsHeader = wrappedHeader,
+            wrappedHeader = wrappedHeader,
             payload = payload,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
@@ -111,7 +111,7 @@ val JwsTypedTest by matrixSuite {
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
         typedFlattened.jws.unprotectedHeader shouldBe wrappedHeader.toUnprotectedHeader()
-        typedFlattened.jws.jwsHeader shouldBe wrappedHeader
+        typedFlattened.jws.wrappedHeader shouldBe wrappedHeader
         capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
@@ -120,7 +120,7 @@ val JwsTypedTest by matrixSuite {
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
         val first: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            jwsHeader = JwsHeaderWrapped(
+            wrappedHeader = JwsHeaderWrapped(
                 header = JwsHeader(
                     algorithm = JwsAlgorithm.Signature.RS256,
                     type = "application/example+jws",
@@ -133,7 +133,7 @@ val JwsTypedTest by matrixSuite {
             byteArrayOf(1, 1, 1, 1)
         }
         val second: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            jwsHeader = JwsHeaderWrapped(
+            wrappedHeader = JwsHeaderWrapped(
                 header = JwsHeader(
                     algorithm = JwsAlgorithm.Signature.RS256,
                     type = "application/example+jws",
@@ -150,7 +150,7 @@ val JwsTypedTest by matrixSuite {
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
-        typedGeneral.jws.jwsHeaders.map { it.unprotectedMembers } shouldBe listOf(
+        typedGeneral.jws.wrappedHeaders.map { it.unprotectedMembers } shouldBe listOf(
             setOf(JwsHeader.SerialNames.KEY_ID),
             setOf(JwsHeader.SerialNames.TYPE),
         )

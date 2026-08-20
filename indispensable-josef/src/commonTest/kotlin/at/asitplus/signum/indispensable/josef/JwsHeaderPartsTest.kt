@@ -81,7 +81,7 @@ val JwsHeaderPartsTest by matrixSuite {
             plainSignature = byteArrayOf(2),
         )
 
-        flattened.jwsHeader shouldBe wrappedHeader
+        flattened.wrappedHeader shouldBe wrappedHeader
     }
 
     "duplicate names across protected and unprotected headers are rejected" {
@@ -109,15 +109,15 @@ val JwsHeaderPartsTest by matrixSuite {
             ),
         )
         val flattened = JwsFlattened(
-            jwsHeader = wrappedHeader,
+            wrappedHeader = wrappedHeader,
             payload = byteArrayOf(1),
         ) { byteArrayOf(2) }
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened>(
             joseCompliantSerializer.encodeToString(flattened)
         )
 
-        reparsed.jwsHeader shouldBe wrappedHeader
-        reparsed.jwsHeader.header shouldBe header
+        reparsed.wrappedHeader shouldBe wrappedHeader
+        reparsed.wrappedHeader.header shouldBe header
     }
 
     "effective member placement ignores names absent from the modeled header" {
@@ -143,12 +143,12 @@ val JwsHeaderPartsTest by matrixSuite {
         )
         val wrappedHeader = JwsHeaderWrapped(header)
         val flattened = JwsFlattened.invoke(
-            jwsHeader = wrappedHeader,
+            wrappedHeader = wrappedHeader,
             payload = "payload".encodeToByteArray(),
         ) { byteArrayOf(1) }
         val serialized = joseCompliantSerializer.encodeToJsonElement(flattened).jsonObject
 
-        flattened.jwsHeader shouldBe wrappedHeader
+        flattened.wrappedHeader shouldBe wrappedHeader
         flattened.unprotectedHeader shouldBe null
         (JWS.SerialNames.HEADER in serialized) shouldBe false
     }
