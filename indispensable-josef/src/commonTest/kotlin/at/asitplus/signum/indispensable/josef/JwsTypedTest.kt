@@ -84,7 +84,7 @@ val JwsTypedTest by matrixSuite {
     }
 
     "flattened typed wrappers can be created from split headers and existing flattened JWS" {
-        val unprotectedMembers = listOf(
+        val unprotectedMembers = setOf(
             JwsHeader.SerialNames.KEY_ID,
             JwsHeader.SerialNames.CONTENT_TYPE,
         )
@@ -126,7 +126,7 @@ val JwsTypedTest by matrixSuite {
                     type = "application/example+jws",
                     keyId = "kid-1",
                 ),
-                unprotectedMembers = listOf(JwsHeader.SerialNames.KEY_ID),
+                unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
             ),
             payload = payload,
         ) {
@@ -139,7 +139,7 @@ val JwsTypedTest by matrixSuite {
                     type = "application/example+jws",
                     keyId = "kid-2",
                 ),
-                unprotectedMembers = listOf(JwsHeader.SerialNames.TYPE),
+                unprotectedMembers = setOf(JwsHeader.SerialNames.TYPE),
             ),
             payload = payload,
         ) {
@@ -151,8 +151,8 @@ val JwsTypedTest by matrixSuite {
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
         typedGeneral.jws.jwsHeaders.map { it.unprotectedMembers } shouldBe listOf(
-            listOf(JwsHeader.SerialNames.KEY_ID),
-            listOf(JwsHeader.SerialNames.TYPE),
+            setOf(JwsHeader.SerialNames.KEY_ID),
+            setOf(JwsHeader.SerialNames.TYPE),
         )
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toJwsFlattenedTyped() shouldBe listOf(first, second)

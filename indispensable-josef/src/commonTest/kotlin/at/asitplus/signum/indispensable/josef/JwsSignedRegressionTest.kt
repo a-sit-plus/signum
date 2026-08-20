@@ -130,12 +130,12 @@ val JwsSignedRegressionTest by matrixSuite {
         val general = listOf(flattened).toJwsGeneral()
 
         flattened.jwsHeader.header shouldBe regressionCase.legacy.header
-        flattened.jwsHeader.unprotectedMembers shouldBe emptyList()
+        flattened.jwsHeader.unprotectedMembers shouldBe emptySet()
         flattened.signature shouldBe regressionCase.legacy.signature
         flattened.signatureInput shouldBe regressionCase.legacy.plainSignatureInput
 
         general.jwsHeaders[0].header shouldBe regressionCase.legacy.header
-        general.jwsHeaders[0].unprotectedMembers shouldBe emptyList()
+        general.jwsHeaders[0].unprotectedMembers shouldBe emptySet()
         general.signatures[0] shouldBe regressionCase.legacy.signature
         general.signatureInputs[0] shouldBe regressionCase.legacy.plainSignatureInput
     }

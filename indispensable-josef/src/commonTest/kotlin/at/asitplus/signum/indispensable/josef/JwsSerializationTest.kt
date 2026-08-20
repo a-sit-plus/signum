@@ -10,6 +10,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -65,7 +66,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     }
 
     "flattened JWS keeps unprotected headers stable through serialization and general conversion" {
-        val unprotectedMembers = listOf(
+        val unprotectedMembers = setOf(
             JwsHeader.SerialNames.CONTENT_TYPE,
             JwsHeader.SerialNames.CERTIFICATE_URL,
         )
@@ -97,6 +98,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         reparsed shouldBe flattened
         reparsed.jwsHeader shouldBe JwsHeaderWrapped(header, unprotectedMembers)
+        flattened.protectedHeader shouldBe plainProtectedHeader.toProtectedHeaderJsonObject()
         with(joseCompliantSerializer) {
             decodeFromString<JsonObject>(serialized) shouldBe decodeFromString<JsonObject>(encodeToString(reparsed))
         }
@@ -106,8 +108,44 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         general.jwsHeaders[0] shouldBe flattened.jwsHeader
         general.signatures[0] shouldBe flattened.signature
         general.signatureInputs[0] shouldBe flattened.signatureInput
-        general.signatureElements.single().jwsHeader shouldBe flattened.jwsHeader
+        general.signatureElements.single().protectedHeader shouldBe flattened.protectedHeader
+        general.protectedHeaders shouldBe listOf(flattened.protectedHeader)
         general.toJwsFlattened() shouldBe listOf(flattened)
+    }
+
+    "general JWS preserves per-signature member placement through serialization" {
+        val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
+        val firstHeader = JwsHeaderWrapped(
+            header = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                keyId = "kid-1",
+                contentType = "application/example+json",
+            ),
+            unprotectedMembers = linkedSetOf(
+                JwsHeader.SerialNames.CONTENT_TYPE,
+                JwsHeader.SerialNames.KEY_ID,
+            ),
+        )
+        val secondHeader = JwsHeaderWrapped(
+            header = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                type = "application/example+jws",
+                keyId = "kid-2",
+            ),
+            unprotectedMembers = setOf(JwsHeader.SerialNames.TYPE),
+        )
+        val general = listOf(
+            flattenedSample(firstHeader, payload, byteArrayOf(1)),
+            flattenedSample(secondHeader, payload, byteArrayOf(2)),
+        ).toJwsGeneral()
+
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral>(
+            joseCompliantSerializer.encodeToString(general)
+        )
+
+        reparsed shouldBe general
+        reparsed.jwsHeaders shouldBe listOf(firstHeader, secondHeader)
+        reparsed.toJwsFlattened().map { it.jwsHeader } shouldBe listOf(firstHeader, secondHeader)
     }
 
     "empty protected header is omitted from flattened/general JWS and signing input" {
@@ -116,7 +154,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
             algorithm = JwsAlgorithm.Signature.RS256,
             keyId = "kid-1",
         )
-        val unprotectedMembers = listOf(
+        val unprotectedMembers = setOf(
             JwsHeader.SerialNames.ALGORITHM,
             JwsHeader.SerialNames.KEY_ID,
         )
@@ -299,6 +337,28 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         generalResult.shouldBeRejectedEmptyProtectedHeader()
     }
 
+    "compact, flattened, and general JWS reject malformed protected header JSON" {
+        val malformedProtectedHeader = "bm90LWpzb24"
+        val results = listOf(
+            runCatching { JwsCompact("$malformedProtectedHeader.e30.AQ") },
+            runCatching {
+                joseCompliantSerializer.decodeFromString<JwsFlattened>(
+                    flattenedJson(protectedHeaderBase64 = malformedProtectedHeader)
+                )
+            },
+            runCatching {
+                joseCompliantSerializer.decodeFromString<JwsGeneral>(
+                    generalJson(protectedHeaderBase64 = malformedProtectedHeader)
+                )
+            },
+        )
+
+        results.forEach { result ->
+            result.isSuccess shouldBe false
+            result.shouldBeFailure().shouldBeInstanceOf<SerializationException>()
+        }
+    }
+
     "general to flattened to compact preserves each single-signature view" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
         val flattened = general.toJwsFlattened()
@@ -454,7 +514,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
                     type = "application/example+jws",
                     contentType = "application/example+json",
                 ),
-                unprotectedMembers = listOf(JwsHeader.SerialNames.CONTENT_TYPE),
+                unprotectedMembers = setOf(JwsHeader.SerialNames.CONTENT_TYPE),
             ),
             payload = """{"sub":"alice"}""".encodeToByteArray(),
             plainSignature = byteArrayOf(9, 8, 7, 6),
