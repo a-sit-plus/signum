@@ -6,6 +6,9 @@ import at.asitplus.awesn1.nextPositiveAsn1Integer
 import at.asitplus.catching
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.JCAProviderRefO
+import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
@@ -33,6 +36,7 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
+import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
@@ -48,8 +52,8 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.KeyPair
 import java.security.KeyStore
-import java.security.KeyStore.getDefaultType
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
@@ -62,7 +66,7 @@ import kotlin.use
 
 class JKSSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<JKSSignerConfiguration>() {
     /** The registered JCA provider to use. */
-    var provider: String? = null
+    var provider: JCAProviderRef = JCAProviderRef.None
     /** The password with which to protect the private key. */
     var privateKeyPassword: CharArray? = null
     /** The lifetime of the private key's certificate. */
@@ -77,7 +81,7 @@ class JKSSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<JKSSignerC
 
 class JKSSignerConfiguration: PlatformSignerConfigurationBase() {
     /** The registered JCA provider to use. */
-    var provider: String? = null
+    var provider: JCAProviderRef = JCAProviderRef.None
     /** The password protecting the stored private key. */
     var privateKeyPassword: CharArray? = null
 }
@@ -164,20 +168,22 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
 }
 
 interface JKSSigner: Signer, Signer.WithAlias {
-    class EC internal constructor (privateKey: PrivateKey, provider: String?,
+    class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                    publicKey: ECDSAPublicKey, signatureAlgorithm: ECDSAAlgorithm,
                                    override val alias: String)
         : SupremeEphemeralJvmSigner.EC(privateKey, provider, publicKey, signatureAlgorithm), JKSSigner
 
-    class RSA internal constructor (privateKey: PrivateKey, provider: String?,
+    class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                     publicKey: RSAPublicKey, signatureAlgorithm: RSAAlgorithm,
                                     override val alias: String)
         : SupremeEphemeralJvmSigner.RSA(privateKey, provider, publicKey, signatureAlgorithm), JKSSigner
 }
 
-private fun keystoreGetInstance(type: String, provider: String?) = when (provider) {
-    null -> KeyStore.getInstance(type)
-    else -> KeyStore.getInstance(type, provider)
+private fun keystoreGetInstance(type: String, provider: JCAProviderRef) = when (provider) {
+    is JCAProviderRef.ByName -> KeyStore.getInstance(type, provider.provider)
+    is JCAProviderRefO -> KeyStore.getInstance(type, provider.provider)
+    is JCAProviderRef.None -> KeyStore.getInstance(type)
+    else -> throw ImplementationError("invalid JCAProvider ref")
 }
 
 /** Read handle, [requested][JKSAccessor.forReading] whenever the provider needs to perform a read operation.
@@ -265,6 +271,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     ): KmmResult<JKSSigner> = catching {
         access.forReading().use { ctx ->
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
+            if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
             val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
             return@catching getSigner(alias, config, privateKey, certificateChain.leaf)
@@ -283,8 +290,12 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     companion object {
         operator fun invoke(configure: DSLConfigureFn<JKSProviderConfiguration> = null) =
             makePlatformSigningProvider(DSL.resolve(::JKSProviderConfiguration, configure))
-        fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: String? = null) =
+        fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: JCAProviderRef) =
             JKSProvider(DummyJKSAccessor(keystoreGetInstance(type, provider).apply { load(null) }))
+        fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: String? = null) =
+            Ephemeral(type, JCAProviderRef.Of(provider))
+        fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: Provider?) =
+            Ephemeral(type, JCAProviderRef.Of(provider))
     }
 }
 
@@ -400,7 +411,7 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
  */
 class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
     sealed class KeyStoreConfiguration constructor(): DSL.Data()
-    internal val _keystore get() = subclassOf<KeyStoreConfiguration>("KEYSTORE_CONFIG")
+    private val _keystore = subclassOf<KeyStoreConfiguration>("KEYSTORE_CONFIG")
 
     /** Constructs an ephemeral keystore. This is the default. */
     val ephemeral get() = _keystore.defaultOption("EPHEMERAL", ::EphemeralKeyStore)
@@ -408,7 +419,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
         /** The KeyStore type to use. */
         var storeType: String = KeyStore.getDefaultType()
         /** The JCA provider to use. Leave `null` to not care. */
-        var provider: String? = null
+        var provider: JCAProviderRef = JCAProviderRef.None
     }
 
     /** Constructs a keystore that accesses the provided Java [KeyStore] object. Use `withBackingObject { store = ... }`. */
@@ -446,8 +457,8 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
         lateinit var file: Path
         /** The password to protect the keystore with */
         var password: CharArray? = null
-        /** The JCA provider to use. Leave `null` to use any. */
-        var provider: String? = null
+        /** The JCA provider to use. Leave default to use any. */
+        var provider: JCAProviderRef = JCAProviderRef.None
         /** Whether to open the keystore file in read-only mode. Changes can be made, but will not be flushed to disk. Defaults to false. */
         var readOnly = false
         /** Whether to create the keystore file if missing. Defaults to true. Will be forced to false if `readOnly = true` is set. */

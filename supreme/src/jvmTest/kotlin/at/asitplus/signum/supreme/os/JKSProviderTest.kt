@@ -27,7 +27,7 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 val JKSProviderTest  by matrixSuite {
     "Ephemeral" {
-        val ks = JKSProvider.Ephemeral().getOrThrow()
+        val ks = JKSProvider.Ephemeral()
         val alias = "Elfenbeinschloss"
         ks.getSignerForKey(alias) shouldNot succeed
         val signer = ks.createSigningKey(alias).getOrThrow()
@@ -46,7 +46,7 @@ val JKSProviderTest  by matrixSuite {
                 /* test auto-detection */
                 storeType shouldBe "pkcs12"
             }
-        }.getOrThrow()
+        }
         val alias = "Moria"
         val correctKeyPassword = "Mellon".toCharArray()
         val wrongKeyPassword = "Edro".toCharArray()
@@ -70,7 +70,7 @@ val JKSProviderTest  by matrixSuite {
                     file = tempfile
                     password = correctPassword
                 }
-            }.getOrThrow().also {
+            }.also {
                 it.getSignerForKey(alias) shouldNot succeed
                 it.createSigningKey(alias) should succeed
                 it.createSigningKey(alias) shouldNot succeed
@@ -85,7 +85,7 @@ val JKSProviderTest  by matrixSuite {
                     file = tempfile
                     password = wrongPassword
                 }
-            }.getOrThrow().let {
+            }.let {
                 // wrong password should fail
                 it.getSignerForKey(alias) shouldNot succeed
             }
@@ -95,7 +95,7 @@ val JKSProviderTest  by matrixSuite {
                     file = tempfile
                     password = correctPassword
                 }
-            }.getOrThrow().let {
+            }.let {
                 it.getSignerForKey(alias) should succeed
                 it.deleteSigningKey(alias)
             }
@@ -109,7 +109,7 @@ val JKSProviderTest  by matrixSuite {
     "Certificate encoding" - {
         data(TestSuites.ALL) test { test ->
             val alias = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(RandomSource.default()).value
-            val ks = JKSProvider().getOrThrow()
+            val ks = JKSProvider()
             val signer = ks.createSigningKey(alias) {
                 test.configure(this)
             }.getOrThrow()

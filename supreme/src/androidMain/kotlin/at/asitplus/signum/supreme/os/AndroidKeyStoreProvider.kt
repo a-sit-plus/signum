@@ -107,7 +107,7 @@ private inline fun <reified E> resolveOption(what: String, valid: Array<String>,
             val only = valid.first()
             possible.find {
                 nameMap(it).equals(only, ignoreCase=true)
-            } ?: throw UnsupportedCryptoException("Unsupported $what $only")
+            } ?: throw UnsupportedCryptoException("Unsupported $what $only; supported: ${valid.joinToString(", ")}")
         }
     }
 
@@ -220,41 +220,38 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
                 Pair(KeyProperties.KEY_ALGORITHM_RSA, builder.apply {
                     setAlgorithmParameterSpec(
                         RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
-                    setDigests(*algSpec.digests.map {
-                        component(it as? WellKnownDigest ?:
-                            throw UnsupportedCryptoException("Unknown digest $it"))
-                    }.toTypedArray())
-                    setSignaturePaddings(*algSpec.paddings.map {
-                        when (it) {
-                            RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
-                            RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
-                        }
-                    }.toTypedArray())
+                    setDigests(*algSpec.digests.map(::keyProperty).toTypedArray())
+                    setSignaturePaddings(*algSpec.paddings.map(::keyProperty).toTypedArray())
                 })
             is SigningKeyConfiguration.ECConfiguration ->
                 Pair(KeyProperties.KEY_ALGORITHM_EC, builder.apply {
                     setAlgorithmParameterSpec(ECGenParameterSpec(algSpec.curve.jcaName))
-                    setDigests(*algSpec.digests.map { when (it) {
-                        WellKnownDigest.SHA1 -> KeyProperties.DIGEST_SHA1
-                        WellKnownDigest.SHA256 -> KeyProperties.DIGEST_SHA256
-                        WellKnownDigest.SHA384 -> KeyProperties.DIGEST_SHA384
-                        WellKnownDigest.SHA512 -> KeyProperties.DIGEST_SHA512
-                        null -> KeyProperties.DIGEST_NONE
-                        else -> throw UnsupportedCryptoException("Unknown digest $it")
-                    }}.toTypedArray())
+                    setDigests(*algSpec.digests.map(::keyProperty).toTypedArray())
                 })
             else -> throw UnsupportedCryptoException("Unknown algorithm is configured")
         }
     }
 
-    private fun component(digest: WellKnownDigest?) = when (digest) {
+    private fun keyProperty(digest: Digest?) = when (digest) {
+        WellKnownDigest.SHA1 -> KeyProperties.DIGEST_SHA1
+        WellKnownDigest.SHA256 -> KeyProperties.DIGEST_SHA256
+        WellKnownDigest.SHA384 -> KeyProperties.DIGEST_SHA384
+        WellKnownDigest.SHA512 -> KeyProperties.DIGEST_SHA512
+        null -> KeyProperties.DIGEST_NONE
+        else -> throw UnsupportedCryptoException("Unknown digest $digest")
+    }
+    private fun keyProperty(padding: RSAAlgorithm.Padding) = when (padding) {
+        RSAAlgorithm.Padding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+        RSAAlgorithm.Padding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
+    }
+    private fun jcaComponent(digest: WellKnownDigest?) = when (digest) {
         null -> "NONE"
         WellKnownDigest.SHA1 -> "SHA1"
         WellKnownDigest.SHA256 -> "SHA256"
         WellKnownDigest.SHA384 -> "SHA384"
         WellKnownDigest.SHA512 -> "SHA512"
     }
-    private fun component(padding: RSAAlgorithm.Padding) = when (padding) {
+    private fun jcaComponent(padding: RSAAlgorithm.Padding) = when (padding) {
         RSAAlgorithm.Padding.PSS -> "RSA/PSS"
         RSAAlgorithm.Padding.PKCS1 -> "RSA"
     }
@@ -264,19 +261,19 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
     ): AndroidKeystoreSigner? = when (publicKey) {
         is ECDSAPublicKey -> {
             val ecConfig = config.ec.v
-            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }, ::component)
+            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }, ::keyProperty)
             AndroidKeystoreSigner.ECDSA(
-                jcaPrivateKey, alias, keyInfo, "${component(digest)}withECDSA",
+                jcaPrivateKey, alias, keyInfo, "${jcaComponent(digest)}withECDSA",
                 config, publicKey, attestation,
                 ECDSAAlgorithm(digest, publicKey.curve)
             )
         }
         is RSAPublicKey -> {
             val rsaConfig = config.rsa.v
-            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, ::component)
-            val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }, ::component)
+            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, ::keyProperty)
+            val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }, ::keyProperty)
             AndroidKeystoreSigner.RSA(
-                jcaPrivateKey, alias, keyInfo, "${component(digest)}with${component(padding)}",
+                jcaPrivateKey, alias, keyInfo, "${jcaComponent(digest)}with${jcaComponent(padding)}",
                 config, publicKey, attestation,
                 when (padding) {
                     RSAPadding.PKCS1 -> RSAAlgorithm(RSAPadding.PKCS1, digest)

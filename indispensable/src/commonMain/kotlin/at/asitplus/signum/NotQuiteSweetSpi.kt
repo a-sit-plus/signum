@@ -31,7 +31,18 @@ object ServiceLoader {
             }
             val sb = StringBuilder("No loaded $className is able to handle $what.")
             for ((provider, failure) in failures) {
-                sb.append('\n').append("- $provider reports: ${failure?.message ?: "<no explicit error; it likely did not recognize the ${KeyT::class.simpleName}>"}")
+                sb.append('\n')
+                sb.append("- $provider reports: ")
+                if (failure == null) sb.append("<no explicit error; it likely did not recognize the ${KeyT::class.simpleName}>")
+                else {
+                    val failureMessage = failure.message
+                    if (failureMessage.isNullOrEmpty()) sb.append("<it threw ${failure::class.simpleName} with no message>")
+                    else {
+                        val lines = failureMessage.lineSequence().iterator()
+                        sb.append(lines.next())
+                        lines.forEach { sb.append("\n  ").append(it) }
+                    }
+                }
             }
             val x = UnsupportedCryptoException(sb.toString())
             for ((_, failure) in failures) {

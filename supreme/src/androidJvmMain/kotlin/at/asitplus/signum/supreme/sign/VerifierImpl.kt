@@ -1,11 +1,11 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.integrity.SignatureInput
@@ -22,7 +22,7 @@ import at.asitplus.signum.indispensable.sign.RSASignature
  */
 actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data() {
     /** The JCA provider to use, or none. */
-    var provider: String? = null
+    var provider: JCAProviderRef = JCAProviderRef.None
 }
 
 @Throws(UnsupportedCryptoException::class)

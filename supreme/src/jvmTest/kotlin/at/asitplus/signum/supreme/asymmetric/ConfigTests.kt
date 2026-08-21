@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.supreme.sign.EphemeralKey
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.supreme.sign.Signer
 import io.kotest.assertions.throwables.shouldThrow

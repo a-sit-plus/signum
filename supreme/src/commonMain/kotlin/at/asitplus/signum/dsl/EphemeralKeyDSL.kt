@@ -34,8 +34,8 @@ class EphemeralRSAConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific
 }
 
 class JVMEphemeralConfiguration : DSL.Data() {
-    /** The JCA provider to use. Defaults to `null` (no particular provider specified). */
-    var provider: String? = null
+    /** The JCA provider to use. Defaults to [JCAProviderRef.None] (no particular provider specified). */
+    var provider: JCAProviderRef = JCAProviderRef.None
 }
 
 val InMemorySignerConfiguration.jvm get() =

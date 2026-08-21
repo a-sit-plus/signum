@@ -5,6 +5,8 @@ import at.asitplus.signum.dsl.EphemeralECDSAConfiguration
 import at.asitplus.signum.dsl.EphemeralRSAConfiguration
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.dsl.rsa
@@ -19,6 +21,7 @@ import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.signCatching
 import java.security.KeyPairGenerator
@@ -29,7 +32,7 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.KeyAgreement
 
-abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, protected val provider: String?) : Signer.WithExportableKey {
+abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, protected val provider: JCAProviderRef) : Signer.WithExportableKey {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = signCatching {
         val preHashed = (data.format != null)
@@ -50,7 +53,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
 
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
-    open class EC internal constructor (privateKey: PrivateKey, provider: String?,
+    open class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                         override val publicKey: ECDSAPublicKey, override val signatureAlgorithm: ECDSAAlgorithm
     )
         : SupremeEphemeralJvmSigner(privateKey, provider), Signer.WithExportableKey.ECDSA {
@@ -62,8 +65,10 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
             when (provider) {
-                null -> KeyAgreement.getInstance("ECDH")
-                else -> KeyAgreement.getInstance("ECDH", provider)
+                is JCAProviderRef.ByName -> KeyAgreement.getInstance("ECDH", provider.provider)
+                is JCAProviderRefO -> KeyAgreement.getInstance("ECDH", provider.provider)
+                is JCAProviderRef.None -> KeyAgreement.getInstance("ECDH")
+                else -> throw ImplementationError("invalid JCAProvider ref")
             }.run {
                 init(privateKey)
                 doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
@@ -72,7 +77,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
         }
     }
 
-    open class RSA internal constructor (privateKey: PrivateKey, provider: String?,
+    open class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                          override val publicKey: RSAPublicKey, override val signatureAlgorithm: RSAAlgorithm
     )
         : SupremeEphemeralJvmSigner(privateKey, provider), Signer.WithExportableKey.RSA {
@@ -84,10 +89,12 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
     }
 }
 
-internal fun getKPGInstance(alg: String, provider: String? = null) =
+internal fun getKPGInstance(alg: String, provider: JCAProviderRef) =
     when (provider) {
-        null -> KeyPairGenerator.getInstance(alg)
-        else -> KeyPairGenerator.getInstance(alg, provider)
+        is JCAProviderRef.ByName -> KeyPairGenerator.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> KeyPairGenerator.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> KeyPairGenerator.getInstance(alg)
+        else -> throw ImplementationError("invalid JCAProvider ref")
     }
 
 object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {

@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
+import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
@@ -19,12 +20,19 @@ import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
 
+private fun component(digest: WellKnownDigest?) = when(digest) {
+    WellKnownDigest.SHA1 -> "SHA1"
+    WellKnownDigest.SHA256 -> "SHA256"
+    WellKnownDigest.SHA384 -> "SHA384"
+    WellKnownDigest.SHA512 -> "SHA512"
+    null -> "NONE"
+}
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
     mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> SupremeVerifier.EC>(
         "BC -> PlatformVerifier" to { a, k ->
-            SupremePlatformVerifierProvider.verifierFor(a, k) { provider = "BC" }
+            SupremePlatformVerifierProvider.verifierFor(a, k) { provider = JCAProviderRef.Of("BC") }
                 .shouldBeInstanceOf<PlatformECDSAVerifier>()
         },
         "BC -> KotlinVerifier" to { a, k ->
@@ -33,14 +41,14 @@ val VerifierTests by matrixSuite {
         }
     ).asData(nameFn = { it.first }) - { (_, factory) ->
         data(ECCurve.entries) - { curve ->
-            data(listOf<WellKnownDigest?>(null) + WellKnownDigest.entries, nameFn = { it.jcaAlgorithmComponent }) - { digest ->
+            data(listOf<WellKnownDigest?>(null) + WellKnownDigest.entries, nameFn = { it.toString() }) - { digest ->
                 data(generateSequence {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
                     val publicKey = keypair.public.toCryptoPublicKey() as ECDSAPublicKey
                     val data = Random.nextBytes(256)
-                    val sig = Signature.getInstance("${digest.jcaAlgorithmComponent}withECDSA", "BC").run {
+                    val sig = Signature.getInstance("${component(digest)}withECDSA", "BC").run {
                         initSign(keypair.private)
                         update(data)
                         sign()

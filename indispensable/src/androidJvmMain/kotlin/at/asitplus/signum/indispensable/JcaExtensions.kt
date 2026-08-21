@@ -13,6 +13,9 @@ import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.JCAProviderRefO
+import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
@@ -20,6 +23,7 @@ import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.internals.ImplementationError
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -35,6 +39,7 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.security.MessageDigest
 import java.security.KeyFactory
 import java.security.NoSuchAlgorithmException
+import java.security.Provider
 import java.security.PrivateKey as JCAPrivateKey
 import java.security.PublicKey as JCAPublicKey
 import java.security.Signature
@@ -72,10 +77,12 @@ internal val RSAAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec g
     )
 }
 
-internal fun sigGetInstance(alg: String, provider: String?): Signature =
+internal fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
     when (provider) {
-        null -> Signature.getInstance(alg)
-        else -> Signature.getInstance(alg, provider)
+        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> Signature.getInstance(alg)
+        else -> throw ImplementationError("invalid JCAProvider ref")
     }
 
 interface JcaMappingProvider {
@@ -83,7 +90,7 @@ interface JcaMappingProvider {
      * Should return a pre-configured JCA [MessageDigest] instance for this recognized digest, ready for
      * [MessageDigest.update]/[MessageDigest.digest]. This also powers `.digest` on JVM targets if Supreme is loaded.
      */
-    fun getJCAMessageDigestInstance(digest: Digest, jcaProvider: String?): MessageDigest? { return null }
+    fun getJCAMessageDigestInstance(digest: Digest, jcaProviderRef: JCAProviderRef): MessageDigest? { return null }
 
     /**
      * Should return a pre-configured JCA [Signature] instance for this recognized algorithm, ready for
@@ -92,11 +99,11 @@ interface JcaMappingProvider {
      * - If the algorithm is recognized but its particular configuration is unsupported by the JCA, the provider should throw [UnsupportedCryptoException].
      * - If the provider does not wish to implement mapping this algorithm for the JCA, it can choose to return `null`, allowing fall-through.
      *
-     * The [jcaProvider], if non-`null`, should be respected and passed to the JCA.
+     * The [jcaProviderRef], if non-`null`, should be respected and passed to the JCA.
      * If the provided algorithm is unsupported by the provider in question, the JCA may then throw [NoSuchAlgorithmException].
      * This is intended. The [SignatureAlgorithm.getJCASignatureInstance] wrapper will map this to [UnsupportedCryptoException].
      */
-    fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProvider: String?): Signature? { return null }
+    fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef): Signature? { return null }
 
     /**
      * Should return a pre-configured JCA [Signature] instance for this algorithm, ready for [Signature.initSign]/[Signature.initVerify].
@@ -105,7 +112,7 @@ interface JcaMappingProvider {
      *
      * All other implementor notes from [getJCASignatureInstance] also apply.
      */
-    fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProvider: String?): Signature? { return null }
+    fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef): Signature? { return null }
 
     /** Maps this CryptoPublicKey to a JCA PublicKey instance. */
     fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey): JCAPublicKey? { return null }
@@ -121,27 +128,67 @@ interface JcaMappingProvider {
 }
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
-fun Digest.getJCAMessageDigestInstance(provider: String? = null) =
+fun Digest.getJCAMessageDigestInstance(provider: JCAProviderRef) =
     ServiceLoader.load<JcaMappingProvider>().get(this)
         { getJCAMessageDigestInstance(it, provider) }
 
+/** Get a pre-configured JCA [MessageDigest] instance for this digest */
+fun Digest.getJCAMessageDigestInstance(provider: String? = null) =
+    getJCAMessageDigestInstance(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA [MessageDigest] instance for this digest */
+fun Digest.getJCAMessageDigestInstance(provider: Provider?) =
+    getJCAMessageDigestInstance(JCAProviderRef.Of(provider))
+
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+fun SignatureAlgorithm.getJCASignatureInstance(provider: JCAProviderRef) =
     ServiceLoader.load<JcaMappingProvider>().get(this)
         { getJCASignatureInstance(it, provider) }
+
+/** Get a pre-configured JCA instance for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+    getJCASignatureInstance(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstance(provider: Provider?) =
+    getJCASignatureInstance(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: JCAProviderRef) =
+    this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
 
+/** Get a pre-configured JCA instance for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: Provider?) =
+    this.algorithm.getJCASignatureInstance(provider)
+
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: JCAProviderRef) =
     ServiceLoader.load<JcaMappingProvider>().get(this)
         { getJCASignatureInstancePreHashed(it, provider) }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+    getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Provider?) =
+    getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: JCAProviderRef) =
     this.algorithm.getJCASignatureInstancePreHashed(provider)
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+    this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Provider?) =
+    this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
 
 internal val WellKnownDigest.jcaName
     get() = when (this) {
