@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
 import kotlin.coroutines.coroutineContext
 import kotlin.jvm.JvmInline
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 
 /** These map to SignatureResult.Failure instead of SignatureResult.Error */
@@ -61,12 +62,16 @@ inline fun <T: CryptoSignature.RawByteEncodable, S: CryptoSignature.RawByteEncod
  * Respects coroutine cancellation: checks [ensureActive] before executing and
  * re-throws [CancellationException] so that structured concurrency is preserved.
  * @see SignatureResult.FromException */
-internal suspend inline fun signCatching(fn: ()->CryptoSignature.RawByteEncodable): SignatureResult<*> {
+internal suspend inline fun signCatching(fn: suspend ()->CryptoSignature.RawByteEncodable): SignatureResult<*> {
     coroutineContext.ensureActive()
-    return catching { fn() }.fold(
-        onSuccess = { SignatureResult.Success(it) },
-        onFailure = {
-            coroutineContext.ensureActive()
-            SignatureResult.FromException(it)
-        })
+    return try {
+        val result = fn()
+        coroutineContext.ensureActive()
+        SignatureResult.Success(result)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        coroutineContext.ensureActive()
+        SignatureResult.FromException(e)
+    }
 }
