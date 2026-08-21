@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.getJCADecryptorInstance
 import at.asitplus.signum.indispensable.getJCAEncryptorInstance
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.dsl.DSL
 
 actual class PlatformDecryptorConfiguration internal actual constructor() :
     DSL.Data() {

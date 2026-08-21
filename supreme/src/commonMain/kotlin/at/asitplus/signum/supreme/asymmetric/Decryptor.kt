@@ -5,8 +5,8 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.dsl.DSLConfigureFn
 
 
 sealed interface Decryptor {

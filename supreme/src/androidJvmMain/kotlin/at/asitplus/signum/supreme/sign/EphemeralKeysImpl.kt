@@ -22,7 +22,7 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.ImplementationError
-import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.supreme.signCatching
 import java.security.KeyPairGenerator
 import java.security.PrivateKey

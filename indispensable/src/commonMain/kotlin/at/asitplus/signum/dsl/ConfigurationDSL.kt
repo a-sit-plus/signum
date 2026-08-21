@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.dsl
+package at.asitplus.signum.dsl
 
 import kotlin.reflect.KProperty
 
@@ -9,16 +9,16 @@ import kotlin.reflect.KProperty
  */
 object DSL {
     /** Resolve a DSL lambda to a concrete configuration */
-    fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
-        (if (config == null) factory() else factory().apply(config)).also(DSL.Data::validate)
+    fun <S: Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
+        (if (config == null) factory() else factory().apply(config)).also(Data::doValidate)
 
     /** Resolve a set of options to the chosen one (or null, if none) */
-    fun <T: DSL.Data> options(vararg options: Invokable<T?,T>) =
+    fun <T: Data> options(vararg options: Invokable<T?,T>) =
         options.firstNotNullOfOrNull(Invokable<T?,T>::v)
 
     /** A collection of equivalent DSL configuration structures which shadow each other.
      * @see getProperty */
-    class ConfigStack<S: DSL.Data>(private vararg val stackedData: S): Iterable<S> by stackedData.asIterable() {
+    class ConfigStack<S: Data>(private vararg val stackedData: S): Iterable<S> by stackedData.asIterable() {
         /** Retrieve a property from a stack of (partially-)configured DSL data.
          * Each element of the stack should have an indication of whether the property is set, and a value of the property (which is only accessed if the property is set).
          * This is commonly implemented using `lateinit var`s (with `internal val .. get() = this::prop.isInitialized` as the property checker).*/
@@ -38,7 +38,7 @@ object DSL {
     }
 
     /** Constructed by: [DSL.Data.childOrDefault] */
-    class ChildOrDefault<out T: DSL.Data> internal constructor(
+    class ChildOrDefault<out T: Data> internal constructor(
         private val storageGetter: ()->(DSLInvocation<T>?), private val storageSetter: (DSLInvocation<T>)->Unit,
         private val default: DSLConfigureFn<T>, private val factory: ()->(T)) : Invokable<T,T>
     {
@@ -48,7 +48,7 @@ object DSL {
     }
 
     /** Constructed by: [DSL.Data.childOrNull] */
-    class ChildOrNull<out T: DSL.Data> internal constructor(
+    class ChildOrNull<out T: Data> internal constructor(
         private val storageGetter: ()->DSLInvocation<T>?, private val storageSetter: (DSLInvocation<T>)->Unit,
         private val factory: ()->(T)) : Invokable<T?,T>
     {
@@ -58,7 +58,7 @@ object DSL {
     }
 
     /** Constructed by: [DSL.Data.subclassOf]. */
-    class Generalized<T: DSL.Data> internal constructor() {
+    class Generalized<T: Data> internal constructor() {
 
         private var storage: Pair<String, DSLInvocation<*>>? = null
 
@@ -153,7 +153,7 @@ object DSL {
          * User code will invoke as `sub { }`
          * When resolved, constructs a new child and configures it using the specified block.
          */
-        fun <T: DSL.Data> childOrNull(key: String, factory: ()->T): Invokable<T?,T> =
+        fun <T: Data> childOrNull(key: String, factory: ()->T): Invokable<T?,T> =
             ChildOrNull<T>(
                 storageGetter = @Suppress("UNCHECKED_CAST") { CONFIGURATION[key] as DSLConfigureFn<T> },
                 storageSetter = { CONFIGURATION[key] = it },
@@ -167,7 +167,7 @@ object DSL {
          * When resolved, constructs a new child and configures it using the specified block.
          * Note that the specified default block is **not** applied if user code configures the child.
          */
-        fun <T: DSL.Data> childOrDefault(key: String, factory: ()->T, default: DSLConfigureFn<T> = null): Invokable<T,T> =
+        fun <T: Data> childOrDefault(key: String, factory: ()->T, default: DSLConfigureFn<T> = null): Invokable<T,T> =
             ChildOrDefault<T>(
                 storageGetter = @Suppress("UNCHECKED_CAST") { CONFIGURATION[key] as DSLConfigureFn<T> },
                 storageSetter = { CONFIGURATION[key] = it },
@@ -183,7 +183,7 @@ object DSL {
          * Specialized invokable accessors can be spun off via `.option("SUBCLASS_KEY", ::SpecializedClass)`.
          * @see DSL.Generalized.option
          */
-        fun <T: DSL.Data> subclassOf(key: String): Generalized<T> =
+        fun <T: Data> subclassOf(key: String): Generalized<T> =
             Generalized<T>()
 
         /**
@@ -225,7 +225,8 @@ object DSL {
          * Invoked by `DSL.resolve()` after the configuration block runs.
          * Can be used for sanity checks.
          */
-        internal open fun validate() {}
+        protected open fun validate() {}
+        internal fun doValidate() = validate()
     }
 }
 

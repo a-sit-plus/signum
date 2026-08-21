@@ -2,9 +2,12 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.VerifierConfiguration
+import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
@@ -30,13 +33,17 @@ private fun component(digest: WellKnownDigest?) = when(digest) {
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> SupremeVerifier.EC>(
+    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> SignatureVerifier.ECDSA>(
         "BC -> PlatformVerifier" to { a, k ->
-            SupremePlatformVerifierProvider.verifierFor(a, k) { provider = JCAProviderRef.Of("BC") }
-                .shouldBeInstanceOf<PlatformECDSAVerifier>()
+            val config = VerifierConfiguration::class.java.getDeclaredConstructor().newInstance()
+            config.jvm { provider = JCAProviderRef.Of("BC") }
+            SupremeJVMVerifierProvider.verifierFor(a, k, config)
+                .shouldBeInstanceOf<SupremeJVMVerifier.ECDSA>()
         },
         "BC -> KotlinVerifier" to { a, k ->
-            SupremeKotlinVerifierProvider.verifierFor(a, k)
+            // hack past the internal
+            val emptyConfig = VerifierConfiguration::class.java.getDeclaredConstructor().newInstance()
+            SupremeKotlinVerifierProvider.verifierFor(a, k, emptyConfig)
                 .shouldBeInstanceOf<KotlinECDSAVerifier>()
         }
     ).asData(nameFn = { it.first }) - { (_, factory) ->

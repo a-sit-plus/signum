@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.dsl.DSL
 
 open class InMemorySignerConfiguration: DSL.Data() {
 
@@ -31,11 +30,6 @@ class EphemeralRSAConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific
     var padding : RSAAlgorithm.Padding = RSAAlgorithm.Padding.PSS
     /** The bit size of the generated key. Defaults to 3072 bits. */
     var bits: Int = 3072
-}
-
-class JVMEphemeralConfiguration : DSL.Data() {
-    /** The JCA provider to use. Defaults to [JCAProviderRef.None] (no particular provider specified). */
-    var provider: JCAProviderRef = JCAProviderRef.None
 }
 
 val InMemorySignerConfiguration.jvm get() =

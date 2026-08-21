@@ -32,11 +32,11 @@ import at.asitplus.signum.dsl.AndroidUnlockPromptConfiguration
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.supreme.dsl.DISCOURAGED
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.dsl.REQUIRED
+import at.asitplus.signum.dsl.DISCOURAGED
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.dsl.DSLConfigureFn
+import at.asitplus.signum.dsl.PREFERRED
+import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.UnlockPromptConfiguration
 import at.asitplus.signum.dsl.attestation

@@ -13,3 +13,12 @@ interface JCAProviderRef {
         fun Of(string: String?) = if (string != null) ByName(string) else None
     }
 }
+
+class JVMEphemeralConfiguration : DSL.Data() {
+    /** The JCA provider to use. Defaults to [JCAProviderRef.None] (no particular provider specified). */
+    var provider: JCAProviderRef = JCAProviderRef.None
+}
+
+class VerifierConfiguration internal constructor(): DSL.Data()
+val VerifierConfiguration.jvm get() =
+    childOrDefault("JVM", ::JVMEphemeralConfiguration)

@@ -5,10 +5,10 @@ import android.os.Build
 import android.security.keystore.KeyProperties
 import androidx.test.platform.app.InstrumentationRegistry
 import at.asitplus.signum.dsl.hardware
-import at.asitplus.signum.supreme.dsl.DISCOURAGED
-import at.asitplus.signum.supreme.dsl.FeaturePreference
-import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.dsl.REQUIRED
+import at.asitplus.signum.dsl.DISCOURAGED
+import at.asitplus.signum.dsl.FeaturePreference
+import at.asitplus.signum.dsl.PREFERRED
+import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe

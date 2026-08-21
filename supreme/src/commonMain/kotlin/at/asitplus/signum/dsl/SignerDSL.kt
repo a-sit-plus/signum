@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.dsl.DSL
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
 /** DSL for configuring a signing key.

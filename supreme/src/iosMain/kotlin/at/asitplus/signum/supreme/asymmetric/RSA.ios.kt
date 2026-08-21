@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.internals.*
-import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.dsl.DSL
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSData
 import platform.Security.SecKeyCreateEncryptedData

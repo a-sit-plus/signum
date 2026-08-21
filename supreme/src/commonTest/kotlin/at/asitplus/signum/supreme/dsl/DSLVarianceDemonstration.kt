@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.dsl
 
+import at.asitplus.signum.dsl.DSL
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe

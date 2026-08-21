@@ -23,7 +23,7 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
-import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.dsl.DSL
 import kotlinx.cinterop.*
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData

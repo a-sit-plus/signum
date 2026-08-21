@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.supreme.SignatureResult
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
+import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.purposes

@@ -14,6 +14,7 @@ import at.asitplus.io.UVarInt
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -154,7 +155,7 @@ object CursorySignatureSchemeProvider :
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = null
 
-    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey): SignatureVerifier? {
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration): SignatureVerifier? {
         return if (algorithm == CursorySignatureScheme) (key as CursorySignatureScheme.Key) else null
     }
 

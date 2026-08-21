@@ -3,10 +3,6 @@ package at.asitplus.signum.dsl
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DISCOURAGED
-import at.asitplus.signum.supreme.dsl.FeaturePreference
-import at.asitplus.signum.supreme.dsl.REQUIRED
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -128,7 +124,7 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
 
     open class SecureHardwareConfiguration: DSL.Data() {
         /** Whether to use hardware-backed storage, such as Android Keymaster or Apple's Secure Enclave.
-         * @see at.asitplus.signum.supreme.dsl.FeaturePreference */
+         * @see FeaturePreference */
         var backing: FeaturePreference = REQUIRED
         override fun validate() {
             super.validate()

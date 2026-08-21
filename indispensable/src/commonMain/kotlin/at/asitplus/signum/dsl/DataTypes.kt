@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.dsl
+package at.asitplus.signum.dsl
 
 /** Tri-state setting for enabling a given feature.
  * @see REQUIRED

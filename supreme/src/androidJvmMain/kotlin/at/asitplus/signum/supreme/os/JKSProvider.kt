@@ -37,9 +37,9 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.internals.ImplementationError
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.dsl.REQUIRED
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.dsl.DSLConfigureFn
+import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance

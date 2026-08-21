@@ -2,10 +2,6 @@ package at.asitplus.signum.dsl
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import at.asitplus.signum.supreme.dsl.FeaturePreference
-import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.os.FragmentContext
 
 class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {

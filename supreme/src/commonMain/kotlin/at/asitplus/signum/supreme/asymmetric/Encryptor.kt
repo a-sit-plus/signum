@@ -5,7 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.dsl.DSL
 
 
 sealed interface Encryptor {

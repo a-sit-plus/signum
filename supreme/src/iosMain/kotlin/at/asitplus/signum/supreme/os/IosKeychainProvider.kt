@@ -7,13 +7,17 @@ import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.dsl.DISCOURAGED
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.dsl.DSLConfigureFn
+import at.asitplus.signum.dsl.PREFERRED
 import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationBase
+import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.UnlockPromptConfiguration
-import at.asitplus.signum.dsl._algSpecific
 import at.asitplus.signum.dsl.attestation
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.factors
