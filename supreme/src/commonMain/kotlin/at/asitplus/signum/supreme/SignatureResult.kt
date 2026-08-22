@@ -62,7 +62,7 @@ inline fun <T: CryptoSignature.RawByteEncodable, S: CryptoSignature.RawByteEncod
  * Respects coroutine cancellation: checks [ensureActive] before executing and
  * re-throws [CancellationException] so that structured concurrency is preserved.
  * @see SignatureResult.FromException */
-internal suspend inline fun signCatching(fn: suspend ()->CryptoSignature.RawByteEncodable): SignatureResult<*> {
+internal suspend inline fun signCatching(fn: ()->CryptoSignature.RawByteEncodable): SignatureResult<*> {
     coroutineContext.ensureActive()
     return try {
         val result = fn()
