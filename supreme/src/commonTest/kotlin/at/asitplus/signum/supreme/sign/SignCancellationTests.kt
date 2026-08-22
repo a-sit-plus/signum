@@ -9,7 +9,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlin.random.Random
 
@@ -27,10 +26,8 @@ val SignCancellationTests by matrixSuite {
         val data = Random.Default.nextBytes(64)
         shouldThrow<CancellationException> {
             coroutineScope {
-                launch {
-                    cancel()
-                    signer.sign(data)
-                }
+                cancel()
+                signer.sign(data)
             }
         }
     }
