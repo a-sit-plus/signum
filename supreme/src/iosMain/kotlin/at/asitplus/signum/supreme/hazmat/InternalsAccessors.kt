@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.hazmat
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.supreme.os.IosSigner
-import at.asitplus.signum.supreme.os.IosSignerSigningConfiguration
+import at.asitplus.signum.dsl.IosSignerSigningConfiguration
 import at.asitplus.signum.supreme.sign.SupremeIosEphemeralSigner
 import at.asitplus.signum.supreme.sign.Signer
 import kotlinx.cinterop.ExperimentalForeignApi

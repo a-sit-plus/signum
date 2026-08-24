@@ -33,7 +33,7 @@ internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreeme
     corecall {
         SecKeyCopyKeyExchangeResult(
             privateKey,
-            platform.Security.kSecKeyAlgorithmECDHKeyExchangeStandard,
+            kSecKeyAlgorithmECDHKeyExchangeStandard,
             publicValue.asCryptoPublicKey().toSecKey().getOrThrow().value,
             parameters = null,
             error
@@ -90,12 +90,12 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
         memScoped {
             val attr = createCFDictionary {
                 when (alg) {
-                    is SigningKeyConfiguration.ECConfiguration -> {
+                    is EphemeralECDSAConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                         kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
                     }
 
-                    is SigningKeyConfiguration.RSAConfiguration -> {
+                    is EphemeralRSAConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo alg.bits
                     }
@@ -127,6 +127,8 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
                         publicKey = RSAPublicKey.fromPKCS1encoded(pubkeyBytes),
                         signatureAlgorithm = RSAAlgorithm(alg.padding, alg.digest)
                     )
+
+                else -> error("unreachable")
             }
         }
     }
@@ -149,5 +151,4 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
             }
             else -> null
         }
-    }
 }

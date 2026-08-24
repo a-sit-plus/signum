@@ -61,7 +61,7 @@ val AndroidKeyStorePreferenceTests by matrixSuite {
                         try {
                             AndroidKeyStoreProvider.createSigningKey(probeAlias).getOrThrow().securityLevel
                         } finally {
-                            AndroidKeyStoreProvider.deleteSigningKey(probeAlias).getOrThrow()
+                            AndroidKeyStoreProvider.deleteSigningKey(probeAlias)
                         }
                     }
                     val expectedSecurityLevel = when {

@@ -109,6 +109,8 @@ inline fun <reified T: CFTypeRef?> DeferScope.giveToCF(v: Any?) = when(v) {
 
 inline fun <reified T> CFTypeRef?.takeFromCF() = CFBridgingRelease(this) as T
 
+fun CFStringRef?.toKotlin() = CFRetain(this!!).takeFromCF<String>()
+
 fun DeferScope.cfDictionaryOf(vararg pairs: Pair<*,*>): CFDictionaryRef {
     val dict = CFDictionaryCreateMutable(null, pairs.size.toLong(),
         kCFTypeDictionaryKeyCallBacks.ptr, kCFTypeDictionaryValueCallBacks.ptr)!!

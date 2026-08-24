@@ -343,9 +343,9 @@ object AndroidKeyStoreProvider:
         }
     }}
 
-    override suspend fun deleteSigningKey(alias: String) = catching { withContext(dispatcher) {
+    override suspend fun deleteSigningKey(alias: String) { withContext(dispatcher) {
         ks.deleteEntry(alias)
-    }}
+    } }
 }
 
 abstract class AndroidKeystoreSigner protected constructor(

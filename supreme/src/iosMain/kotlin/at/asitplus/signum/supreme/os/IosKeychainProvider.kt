@@ -11,10 +11,7 @@ import at.asitplus.signum.dsl.DISCOURAGED
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.PREFERRED
-import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
-import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
-import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationBase
 import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.UnlockPromptConfiguration
@@ -33,7 +30,10 @@ import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
-import at.asitplus.signum.supreme.dsl.*
+import at.asitplus.signum.dsl.*
+import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.sign.*
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
@@ -93,19 +93,6 @@ private object KeychainTags {
     val PUBLIC_KEYS = listOfNotNull(NEW_PUBLIC_KEYS, LEGACY_PUBLIC_KEYS)
 }
 
-class IosSecureEnclaveConfiguration internal constructor() : PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
-    /** Set to true to allow this key to be backed up. */
-    var allowBackup = false
-    enum class Availability { ALWAYS, AFTER_FIRST_UNLOCK, WHILE_UNLOCKED }
-    /** Specify when this key should be available */
-    var availability = Availability.ALWAYS
-}
-class IosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<IosSignerConfiguration>() {
-    override val hardware = childOrDefault(::IosSecureEnclaveConfiguration) {
-        backing = DISCOURAGED
-    }
-}
-
 /**
  * Resolve [what] differently based on whether the [vA]lue was [spec]ified.
  *
@@ -127,15 +114,12 @@ private inline fun <reified E> resolveOption(what: String, valid: Set<E>, spec: 
         }
     }
 
-class IosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase()
-
 private object LAContextStorage {
     data class SuccessfulAuthentication(
         val authnContext: LAContext, val authnTime: TimeSource.Monotonic.ValueTimeMark)
     var successfulAuthentication: SuccessfulAuthentication? = null
 }
 
-typealias IosSignerSigningConfiguration = PlatformSigningProviderSignerSigningConfigurationBase
 /**
  * A signer backed by an iOS Keychain key.
  *
@@ -146,10 +130,6 @@ sealed class IosSigner(final override val alias: String,
                        internal/*cannot be protected, as IosKeyMetadata is internal*/ val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
-
-
-    @SecretExposure
-    override suspend fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
@@ -256,13 +236,14 @@ sealed class IosSigner(final override val alias: String,
         }
     }
 
-    final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<IosSignerSigningConfiguration>): KmmResult<Unit> =
-    withContext(dispatcher) { catching {
-        if (needsAuthentication && !needsAuthenticationForEveryUse) {
-            val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
-            privateKeyManager.get(config)
+    final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<IosSignerSigningConfiguration>) {
+        withContext(dispatcher) {
+            if (needsAuthentication && !needsAuthenticationForEveryUse) {
+                val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
+                val _ = privateKeyManager.get(config)
+            }
         }
-    } }
+    }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
     final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
@@ -310,7 +291,7 @@ sealed class IosSigner(final override val alias: String,
         override fun bytesToSignature(sigBytes: ByteArray) =
             CryptoSignature.EC.decodeFromDer(sigBytes).withCurve(publicKey.curve)
 
-        final override suspend fun keyAgreement(
+        override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<IosSignerSigningConfiguration>
         ) = catching {
@@ -450,9 +431,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
         // ok, the key does not exist, create it
         try {
-            deleteSigningKey(alias).getOrThrow() /* make sure there are no leftover private keys */
+            deleteSigningKey(alias) /* make sure there are no leftover private keys */
 
             val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
+            val algSpecific = DSL.options(config.ec, config.rsa)!!
             val availability = config.hardware.v.let { c -> when (c.availability) {
                 IosSecureEnclaveConfiguration.Availability.ALWAYS -> if (c.allowBackup) kSecAttrAccessibleAlways else kSecAttrAccessibleAlwaysThisDeviceOnly
                 IosSecureEnclaveConfiguration.Availability.AFTER_FIRST_UNLOCK -> if (c.allowBackup) kSecAttrAccessibleAfterFirstUnlock else kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -461,21 +443,21 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
             val useSecureEnclave = when (config.hardware.v.backing) {
                 is REQUIRED -> true
-                is PREFERRED -> isSecureEnclaveSupportedConfiguration(config._algSpecific.v)
+                is PREFERRED -> isSecureEnclaveSupportedConfiguration(algSpecific)
                 is DISCOURAGED -> false
             }
 
             val publicKeyBytes: ByteArray = memScoped {
                 val attr = createCFDictionary {
-                    when (val alg = config._algSpecific.v) {
+                    when (algSpecific) {
                         is SigningKeyConfiguration.ECConfiguration -> {
                             kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                            kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
+                            kSecAttrKeySizeInBits mapsTo algSpecific.curve.coordinateLength.bits.toInt()
                         }
 
                         is SigningKeyConfiguration.RSAConfiguration -> {
                             kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
-                            kSecAttrKeySizeInBits mapsTo alg.bits
+                            kSecAttrKeySizeInBits mapsTo algSpecific.bits
                         }
                     }
                     if (useSecureEnclave) {
@@ -532,7 +514,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
                     if ((status == -50) &&
                         useSecureEnclave &&
-                        !isSecureEnclaveSupportedConfiguration(config._algSpecific.v))
+                        !isSecureEnclaveSupportedConfiguration(algSpecific))
                     {
                         throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", x)
                     }
@@ -540,11 +522,12 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 }
             }
 
-            val publicKey = when (val alg = config._algSpecific.v) {
+            val publicKey = when (algSpecific) {
                 is SigningKeyConfiguration.ECConfiguration ->
-                    CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, publicKeyBytes)
+                    CryptoPublicKey.EC.fromAnsiX963Bytes(algSpecific.curve, publicKeyBytes)
                 is SigningKeyConfiguration.RSAConfiguration ->
                     RSAPublicKey.fromPKCS1encoded(publicKeyBytes)
+                else -> error("unreachable")
             }
 
             val attestation = if (useSecureEnclave) {
@@ -568,8 +551,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     val clientDataJSON = clientData.prepareDigestInput()
 
                     val digest = Digest.SHA256.digest(clientDataJSON)
-                val assertionKeyAttestation = swiftasync {
-                    service.attestKey(keyId, digest.toNSData(), callback)
+                    val assertionKeyAttestation = swiftasync {
+                        service.attestKey(keyId, digest.toNSData(), callback)
                     }.toByteArray()
                     Napier.v { "attested key ($assertionKeyAttestation)" }
 
@@ -582,12 +565,13 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val metadata = IosKeyMetadata(
                 attestation = attestation,
                 rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
-                allowSigning = config._algSpecific.v.allowsSigning,
-                allowEncryption = config._algSpecific.v.allowsDecrypting,
-                allowKeyAgreement = config._algSpecific.v.allowsKeyAgreement,
-                algSpecific = when (val alg = config._algSpecific.v) {
-                    is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
-                    is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(alg.digests, alg.paddings)
+                allowSigning = algSpecific.allowsSigning,
+                allowEncryption = algSpecific.allowsDecrypting,
+                allowKeyAgreement = algSpecific.allowsKeyAgreement,
+                algSpecific = when (algSpecific) {
+                    is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(algSpecific.digests)
+                    is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(algSpecific.digests, algSpecific.paddings)
+                    else -> error("unreachable")
                 }
             ).also { storeKeyMetadata(alias, metadata = it) }
 
@@ -600,6 +584,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     IosSigner.ECDSA(alias, publicKey, metadata, signerConfiguration)
                 is RSAPublicKey ->
                     IosSigner.RSA(alias, publicKey, metadata, signerConfiguration)
+                else ->
+                    error("unreachable")
             }
         } catch (e: Throwable) {
             // get rid of any "partial" keys
@@ -613,23 +599,34 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         configure: DSLConfigureFn<IosSignerConfiguration>
     ): KmmResult<IosSigner> = withContext(dispatcher) { catching {
         val config = DSL.resolve(::IosSignerConfiguration, configure)
-        val publicKeyBytes: ByteArray = memScoped {
+        val keyType: String
+        val publicKeyBytes: ByteArray
+        memScoped {
             val publicKey = getPublicKey(alias)
                 ?: throw NoSuchElementException("No key for alias $alias exists")
-            return@memScoped corecall {
+            val attrs = corecall {
+                SecKeyCopyAttributes(publicKey.value).also { defer { CFRelease(it) }}
+            }
+            keyType = attrs.get<String>(kSecAttrKeyType)
+            publicKeyBytes = corecall {
                 SecKeyCopyExternalRepresentation(publicKey.value, error)
             }.takeFromCF<NSData>().toByteArray()
         }
-        val publicKey =
-            CryptoPublicKey.fromIosEncoded(publicKeyBytes)
+        val publicKey = when (keyType) {
+            kSecAttrKeyTypeRSA.toKotlin() -> RSAPublicKey.fromIosEncoded(publicKeyBytes)
+            kSecAttrKeyTypeECSECPrimeRandom.toKotlin() -> ECDSAPublicKey.fromIosEncoded(publicKeyBytes)
+            else -> throw UnsupportedCryptoException("Unknown public key type $keyType")
+        }
+
         val metadata = getKeyMetadata(alias)
         return@catching when (publicKey) {
             is CryptoPublicKey.EC -> IosSigner.ECDSA(alias, publicKey, metadata, config)
             is RSAPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
+            else -> error("unreachable")
         }
     }}
 
-    override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) { catching {
+    override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) {
         memScoped {
             // Deletes both the new bundle-id-free tag and the legacy bundle-id-scoped tag.
             listOf(
@@ -653,7 +650,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     throw CryptoOperationFailed(it.joinToString(","))
             }
         }
-    } }
+    }
 }
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =

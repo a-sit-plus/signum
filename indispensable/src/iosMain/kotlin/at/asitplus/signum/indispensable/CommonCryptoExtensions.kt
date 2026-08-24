@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
@@ -165,9 +166,9 @@ fun CryptoPrivateKey.WithPublicKey.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>
             kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
             kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             data = when (this@toSecKey) {
-                is ECDSAPublicKey -> {
+                is ECDSAPrivateKey.WithPublicKey -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                    kSecAttrKeySizeInBits mapsTo curve.coordinateLength.bits.toInt()
+                    kSecAttrKeySizeInBits mapsTo this@toSecKey.curve.coordinateLength.bits.toInt()
                     val ecPubKey = this@toSecKey.publicKey
                     ecPubKey.iosEncoded+ privateKeyBytes
                 }
