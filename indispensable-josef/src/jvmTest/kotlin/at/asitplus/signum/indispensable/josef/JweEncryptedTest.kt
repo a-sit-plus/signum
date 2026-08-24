@@ -17,7 +17,6 @@ import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.kotlincrypto.random.CryptoRand
-import org.kotlincrypto.random.DelicateCryptoRandApi
 import java.net.URI
 import javax.crypto.KeyGenerator
 import kotlin.random.Random

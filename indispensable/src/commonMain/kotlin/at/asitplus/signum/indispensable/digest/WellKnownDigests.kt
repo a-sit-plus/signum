@@ -14,12 +14,17 @@ import at.asitplus.awesn1.sha_384
 import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 
+@Serializable(with = WellKnownDigest.Serializer::class)
 sealed class WellKnownDigest(
     override val name: String,
-override val inputBlockSize: BitLength, override val outputLength: BitLength,
+    override val inputBlockSize: BitLength, override val outputLength: BitLength,
     override val oid: ObjectIdentifier
 ) : Digest, Enumerable {
 
@@ -34,6 +39,12 @@ override val inputBlockSize: BitLength, override val outputLength: BitLength,
     companion object : Enumeration<WellKnownDigest> {
         override val entries: Iterable<WellKnownDigest> by lazy { setOf(SHA1, SHA256, SHA384, SHA512) }
     }
+
+    object Serializer : TransformingSerializerTemplate<WellKnownDigest, String>(
+        parent = String.serializer(),
+        encodeAs = WellKnownDigest::toString,
+        decodeAs = { s -> entries.first { it.name == s } }
+    )
 }
 
 object IndispensableDigestsProvider: DigestProvider {

@@ -9,6 +9,8 @@ import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.withClue
@@ -68,7 +70,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSR match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -114,7 +116,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSR with attributes match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -175,7 +177,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSRs with extensionRequest match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "localhost"
@@ -239,7 +241,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSRs with empty extensions match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "localhost"
@@ -311,7 +313,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
     "CSR DER roundtrips through awesn1 backing" {
         val keyPair: KeyPair = keyGen.genKeyPair()
-        val cryptoPublicKey = (keyPair.public as ECPublicKey).toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey = (keyPair.public as ECPublicKey).toCryptoPublicKey()
         val attribute = CsrAttribute(
             KnownOIDs.keyUsage,
             Asn1Element.parse(KeyUsage(KeyUsage.digitalSignature).encoded)
@@ -344,7 +346,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         val csr = CertificationRequest(
             tbsCsr,
-            SignatureAlgorithm.RSAwithSHA256andPKCS1Padding,
+            RSAAlgorithm.withSHA256andPKCS1Padding,
             RSASignature(byteArrayOf(1, 2, 3, 4))
         )
         val decodedCsr = CertificationRequest.decodeFromDer(csr.encodeToDer())
@@ -359,11 +361,11 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val keyPair1: KeyPair = keyGen.genKeyPair()
         val ecPublicKey1 = keyPair.public as ECPublicKey
-        val cryptoPublicKey1 = ecPublicKey1.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey1 = ecPublicKey1.toCryptoPublicKey()
         val ecPublicKey11 = keyPair.public as ECPublicKey
-        val cryptoPublicKey11 = ecPublicKey11.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey11 = ecPublicKey11.toCryptoPublicKey()
         val ecPublicKey2 = keyPair1.public as ECPublicKey
-        val cryptoPublicKey2 = ecPublicKey2.toCryptoPublicKey().getOrThrow()
+        val cryptoPublicKey2 = ecPublicKey2.toCryptoPublicKey()
 
         val commonName = "DefaultCryptoService"
         val commonName1 = "DefaultCryptoService1"

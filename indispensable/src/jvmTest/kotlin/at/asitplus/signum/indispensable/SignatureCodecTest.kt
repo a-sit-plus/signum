@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.testballoon.matrix.*
@@ -40,7 +41,7 @@ val SignatureCodecTest  by matrixSuite {
                 it.initialize(ECGenParameterSpec(curve))
             }.generateKeyPair()
         }
-        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().didEncoded }) test { keys ->
             val sig = Signature.getInstance("${digest}withECDSA").run {
                 initSign(keys.private)
                 update(data)
@@ -70,7 +71,7 @@ val SignatureCodecTest  by matrixSuite {
 
         // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
-        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().didEncoded }) test { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
                 initSign(keys.private)

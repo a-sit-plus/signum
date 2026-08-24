@@ -18,22 +18,17 @@ kotlin {
     indispensableTargets()
 
     sourceSets {
-        commonMain {
-            dependencies {
-                api(project(":indispensable"))
-                implementation(project(":internals"))
-                api(libs.multibase)
-                implementation(libs.bignum) //Intellij bug work-around
-            }
+        commonMain.dependencies {
+            api(project(":indispensable"))
+            implementation(project(":internals"))
+            api(libs.multibase)
+            implementation(libs.bignum) //Intellij bug work-around
         }
 
-        jvmTest {
-            dependencies {
-                implementation(libs.jose)
-                implementation(project(":supreme"))
-                gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
-            }
-
+        jvmTest.dependencies {
+            implementation(project(":supreme"))
+            implementation(libs.jose)
+            gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }
     }
 }

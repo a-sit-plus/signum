@@ -12,6 +12,7 @@ import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
@@ -75,7 +76,7 @@ val JKSProviderTest  by matrixSuite {
                 it.createSigningKey(alias) should succeed
                 it.createSigningKey(alias) shouldNot succeed
                 it.getSignerForKey(alias) should succeed
-                it.deleteSigningKey(alias) should succeed
+                shouldNotThrowAny { it.deleteSigningKey(alias) }
                 it.getSignerForKey(alias) shouldNot succeed
                 it.createSigningKey(alias) should succeed
             }

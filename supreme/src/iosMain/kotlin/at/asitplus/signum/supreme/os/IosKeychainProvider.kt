@@ -31,6 +31,7 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.dsl.*
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
@@ -326,13 +327,13 @@ internal sealed interface IosKeyAlgSpecificMetadata {
     @Serializable
     @SerialName("ecdsa")
     data class ECDSA(
-        val supportedDigests: Set<Digest?>
+        val supportedDigests: Set<WellKnownDigest?>
     ) : IosKeyAlgSpecificMetadata
 
     @Serializable
     @SerialName("rsa")
     data class RSA(
-        val supportedDigests: Set<Digest>,
+        val supportedDigests: Set<WellKnownDigest>,
         val supportedPaddings: Set<RSAPadding>
     ): IosKeyAlgSpecificMetadata
 }
@@ -550,7 +551,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                         publicKey = publicKey, challenge = attestationConfig.challenge)
                     val clientDataJSON = clientData.prepareDigestInput()
 
-                    val digest = Digest.SHA256.digest(clientDataJSON)
+                    val digest = WellKnownDigest.SHA256.digest(clientDataJSON)
                     val assertionKeyAttestation = swiftasync {
                         service.attestKey(keyId, digest.toNSData(), callback)
                     }.toByteArray()
@@ -569,8 +570,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 allowEncryption = algSpecific.allowsDecrypting,
                 allowKeyAgreement = algSpecific.allowsKeyAgreement,
                 algSpecific = when (algSpecific) {
-                    is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(algSpecific.digests)
-                    is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(algSpecific.digests, algSpecific.paddings)
+                    is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(algSpecific.digests.filterIsInstance<WellKnownDigest>().toSet())
+                    is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(algSpecific.digests.filterIsInstance<WellKnownDigest>().toSet(), algSpecific.paddings)
                     else -> error("unreachable")
                 }
             ).also { storeKeyMetadata(alias, metadata = it) }
