@@ -37,6 +37,7 @@ import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithmsProvider
+import at.asitplus.signum.indispensable.integrity.SignatureInputFormat
 import at.asitplus.signum.internals.orLazy
 
 class ECDSAAlgorithm private constructor(
@@ -68,6 +69,7 @@ class ECDSAAlgorithm private constructor(
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
     val digest get() = params.digest
+    override val preHashedSignatureFormat get() = digest
 
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
     val requiredCurve get() = params.curve
@@ -136,8 +138,6 @@ class RSAAlgorithm private constructor(
                 KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
                 KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
                 KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-                // TODO: do we want to sub-providerize part of RSA here?
-                //  or just let anyone who wants other-RSA do the legwork?
                 else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
             }.let { digest ->
                 require(providedAsn1.parameters == Asn1Null)
@@ -148,6 +148,7 @@ class RSAAlgorithm private constructor(
 
     /** The digest to apply to the data. */
     val digest get() = parameters.digest
+    override val preHashedSignatureFormat get() = digest
 
     /** minimum key size, in full bytes, for these RSA parameters */
     val minimumKeySize get(): Int = when (val params = parameters) {
@@ -187,7 +188,7 @@ class RSAAlgorithm private constructor(
                     Digest.SHA256 -> KnownOIDs.sha256WithRSAEncryption
                     Digest.SHA384 -> KnownOIDs.sha384WithRSAEncryption
                     Digest.SHA512 -> KnownOIDs.sha512WithRSAEncryption
-                    else -> TODO("providerize")
+                    else -> throw UnsupportedCryptoException("Unknown RSA digest ${currentParameters.digest}")
                 },
                 Asn1Null
             )
@@ -334,7 +335,6 @@ class RSAAlgorithm private constructor(
                 companion object : DerDecodable<X509AlgorithmIdentifier, MaskGenerationFunction> {
                     override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MaskGenerationFunction =
                         runRethrowing {
-                            // TODO: providerize
                             when (element.oid) {
                                 Pkcs1Mgf1.oid ->
                                     Pkcs1Mgf1(Digest.decodeFromTlv(element.parameters!!, der))

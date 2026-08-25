@@ -4,12 +4,14 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.security.keystore.KeyProperties
 import androidx.test.platform.app.InstrumentationRegistry
+import at.asitplus.catching
 import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.dsl.DISCOURAGED
 import at.asitplus.signum.dsl.FeaturePreference
 import at.asitplus.signum.dsl.PREFERRED
 import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import java.util.*
@@ -59,7 +61,7 @@ val AndroidKeyStorePreferenceTests by matrixSuite {
                     val probeAlias = "probe-${UUID.randomUUID()}"
                     val defaultSecurityLevel = runBlocking {
                         try {
-                            AndroidKeyStoreProvider.createSigningKey(probeAlias).getOrThrow().securityLevel
+                            AndroidKeyStoreProvider.createSigningKey(probeAlias).securityLevel
                         } finally {
                             AndroidKeyStoreProvider.deleteSigningKey(probeAlias)
                         }
@@ -81,18 +83,18 @@ val AndroidKeyStorePreferenceTests by matrixSuite {
                     ("device=${Build.MANUFACTURER}" +
                             "SB=$hasStrongBox, default seclevel=$defaultSecurityLevel, ") - {
                         try {
-                            val result = runBlocking {
+                            val result = catching { runBlocking {
                                 AndroidKeyStoreProvider.createSigningKey(alias) {
                                     hardware {
                                         this.backing = hardwareBacking.value
                                         this.strongBox = strongBox.value
                                     }
                                 }
-                            }
+                            } }
                             "should succeed=${shouldSucceed}" { result.isSuccess shouldBe shouldSucceed }
                             if (!shouldSucceed) {
                                 "A failed REQUIRED request must not leave a key behind" {
-                                    AndroidKeyStoreProvider.getSignerForKey(alias).isFailure shouldBe true
+                                    shouldThrow<NoSuchElementException> { AndroidKeyStoreProvider.getSignerForKey(alias) }
                                 }
                             }
                             result.getOrNull()?.let { signer ->
@@ -104,7 +106,7 @@ val AndroidKeyStorePreferenceTests by matrixSuite {
                                 }
                             }
                         } finally {
-                            runBlocking { AndroidKeyStoreProvider.deleteSigningKey(alias).getOrThrow() }
+                            runBlocking { AndroidKeyStoreProvider.deleteSigningKey(alias) }
                         }
                     }
                 }

@@ -7,7 +7,6 @@ import at.asitplus.signum.dsl.EphemeralECDSAConfiguration
 import at.asitplus.signum.dsl.EphemeralRSAConfiguration
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
-import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
@@ -34,7 +33,7 @@ internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreeme
         SecKeyCopyKeyExchangeResult(
             privateKey,
             kSecKeyAlgorithmECDHKeyExchangeStandard,
-            publicValue.asCryptoPublicKey().toSecKey().getOrThrow().value,
+            publicValue.asCryptoPublicKey().toSecKey().value,
             parameters = null,
             error
         )
@@ -43,12 +42,10 @@ internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreeme
 sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) : Signer.WithExportableKey {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = signCatching {
-        /** We always pre-hash on iOS because the digest methods take a sequence well, while the signature methods do not */
-        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
-        val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
-        val input = inputData.data.single().toNSData()
+        val (algorithm, format) = signatureAlgorithm.suitableSecKeyAlgAndFormat
+        val input = data.convertTo(format).collapsed().data.single().toNSData()
         val signatureBytes = corecall {
-            SecKeyCreateSignature(privateKey.value, algorithm, input.let(::giveToCF), error)
+            SecKeyCreateSignature(privateKey.value, algorithm, input.giveToCF(), error)
         }.takeFromCF<NSData>().toByteArray()
         return@signCatching parseSignature(signatureBytes)
     }
@@ -61,7 +58,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     ) : SupremeIosEphemeralSigner(privateKey), Signer.WithExportableKey.ECDSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey().mapCatching { it as ECDSAPrivateKey.WithPublicKey }.getOrThrow()
+            privateKey.value.toCryptoPrivateKey() as ECDSAPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
             ECDSASignature.decodeFromDer(signatureBytes).withCurve(publicKey.curve)
@@ -77,7 +74,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     ) : SupremeIosEphemeralSigner(privateKey), Signer.WithExportableKey.RSA {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey().mapCatching { it as RSAPrivateKey }.getOrThrow()
+            privateKey.value.toCryptoPrivateKey() as RSAPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
             RSASignature(signatureBytes)
@@ -142,12 +139,12 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
             is ECDSAAlgorithm -> {
                 require(privateKey is ECDSAPrivateKey.WithPublicKey)
                     { "Trying to use a non-ECDSA private key (${privateKey::class.simpleName}) with $algorithm" }
-                SupremeIosEphemeralSigner.EC(privateKey.toSecKey().getOrThrow(), privateKey.publicKey, algorithm)
+                SupremeIosEphemeralSigner.EC(privateKey.toSecKey(), privateKey.publicKey, algorithm)
             }
             is RSAAlgorithm -> {
                 require(privateKey is RSAPrivateKey)
                     { "Trying to use a non-RSA private key (${privateKey::class.simpleName}) with $algorithm" }
-                SupremeIosEphemeralSigner.RSA(privateKey.toSecKey().getOrThrow(), privateKey.publicKey, algorithm)
+                SupremeIosEphemeralSigner.RSA(privateKey.toSecKey(), privateKey.publicKey, algorithm)
             }
             else -> null
         }

@@ -39,20 +39,22 @@ object SupremeCCVerifierProvider : SignatureVerifierProvider {
 
 abstract class SupremeCCVerifier: SignatureVerifier {
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        val key = publicKey.toSecKey().getOrThrow()
-        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.single()
+        val key = publicKey.toSecKey()
+        val (algorithm, format) = signatureAlgorithm.suitableSecKeyAlgAndFormat
+        val inputData = data.convertTo(format).collapsed().data.single()
         try {
             /** inner takeIf ensures that only true returns, false will throw. see [corecall] */
-            val _ = corecall {
-                SecKeyVerifySignature(key.value, signatureAlgorithm.secKeyAlgorithmPreHashed,
-                    inputData.toNSData().let(::giveToCF), sig.iosEncoded.toNSData().let(::giveToCF), error).takeIf { it }
+            val result = corecall {
+                SecKeyVerifySignature(key.value, algorithm,
+                    inputData.toNSData().giveToCF(), sig.iosEncoded.toNSData().giveToCF(), error).takeIf { it }
             }
+            if (result == true) return@catching SignatureVerifier.Success
+            else error("unreachable")
         } catch (x: CoreFoundationException) {
             if ((x.nsError.domain == NSOSStatusErrorDomain) && (x.nsError.code == errSecVerifyFailed.toLong()))
                 throw InvalidSignature("Signature failed to verify", x)
             throw x
         }
-        SignatureVerifier.Success
     }
 
     class ECDSA(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)

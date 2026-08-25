@@ -226,7 +226,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<JKSSigningKeyConfiguration>
-    ): KmmResult<JKSSigner> = catching {
+    ): JKSSigner {
         val config = DSL.resolve(::JKSSigningKeyConfiguration, configure)
         if (config.hardware.v?.backing == REQUIRED)
             throw UnsupportedCryptoException("Hardware storage is unsupported on the JVM")
@@ -257,7 +257,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()
 
-            getSigner(alias, DSL.resolve(::JKSSignerConfiguration, config.signer.v), keyPair.private, cert)
+            return getSigner(alias, DSL.resolve(::JKSSignerConfiguration, config.signer.v), keyPair.private, cert)
         }
     }
 
@@ -268,13 +268,13 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<JKSSignerConfiguration>
-    ): KmmResult<JKSSigner> = catching {
+    ): JKSSigner {
         access.forReading().use { ctx ->
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
             val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
-            return@catching getSigner(alias, config, privateKey, certificateChain.leaf)
+            return getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }
 

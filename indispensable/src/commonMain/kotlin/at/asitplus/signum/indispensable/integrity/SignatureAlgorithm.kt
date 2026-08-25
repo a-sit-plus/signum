@@ -19,6 +19,9 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
         replaceWith = ReplaceWith("RSAAlgorithm"))
     typealias RSA = RSAAlgorithm
 
+    /** The signature input format in which this algorithm accepts pre-hashed input, if any */
+    val preHashedSignatureFormat: SignatureInputFormat get() = null
+
     companion object : Enumeration<SignatureAlgorithm> {
         init { Indispensable.init() }
 

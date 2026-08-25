@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.os
 
+import at.asitplus.catching
 import at.asitplus.shouldSucceed
 import at.asitplus.signum.supreme.azString
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -14,18 +15,16 @@ val IosKeychainProviderTest by matrixSuite {
             val alias = Random.azString(32)
             try {
                 // an existing key lives under this alias
-                val original = IosKeychainProvider.createSigningKey(alias).getOrThrow()
+                val original = IosKeychainProvider.createSigningKey(alias)
 
                 // attempt to create another key with the same alias, using a config that throws
-                val secondAttempt = IosKeychainProvider.createSigningKey(alias) {
+                val secondAttempt = catching { IosKeychainProvider.createSigningKey(alias) {
                     throw IllegalStateException("intentionally broken config")
-                }
+                }}
                 secondAttempt.isFailure shouldBe true
 
                 // the original key must still be present and unchanged
-                val recovered = IosKeychainProvider.getSignerForKey(alias)
-                recovered.shouldSucceed()
-                recovered.getOrThrow().publicKey shouldBe original.publicKey
+                IosKeychainProvider.getSignerForKey(alias).publicKey shouldBe original.publicKey
             } finally {
                 IosKeychainProvider.deleteSigningKey(alias)
             }
@@ -34,14 +33,12 @@ val IosKeychainProviderTest by matrixSuite {
         "fails but leaves the existing key untouched when the new config is valid" {
             val alias = Random.azString(32)
             try {
-                val original = IosKeychainProvider.createSigningKey(alias).getOrThrow()
+                val original = IosKeychainProvider.createSigningKey(alias)
 
-                val secondAttempt = IosKeychainProvider.createSigningKey(alias)
+                val secondAttempt = catching { IosKeychainProvider.createSigningKey(alias) }
                 secondAttempt.isFailure shouldBe true
 
-                val recovered = IosKeychainProvider.getSignerForKey(alias)
-                recovered.shouldSucceed()
-                recovered.getOrThrow().publicKey shouldBe original.publicKey
+                IosKeychainProvider.getSignerForKey(alias).publicKey shouldBe original.publicKey
             } finally {
                 IosKeychainProvider.deleteSigningKey(alias)
             }

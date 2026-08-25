@@ -3,23 +3,17 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.internals.*
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.integrity.SignatureInputFormat
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.memScoped
-import platform.Foundation.NSData
 import platform.Security.*
 
 private fun RSAAlgorithm.requireSupportedIosPssParameters() {
@@ -46,6 +40,17 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
         @OptIn(HazardousMaterials::class)
         at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> kSecKeyAlgorithmRSAEncryptionRaw
     }!!
+}
+
+interface CommonCryptoExtensionProvider {
+    /** Converts a CommonCrypto SecKeyRef to a CryptoPublicKey */
+    fun secKeyToCryptoPublicKey(key: SecKeyRef): CryptoPublicKey? { return null }
+    /** Converts a CryptoPublicKey to a CommonCrypto SecKeyRef */
+    fun cryptoPublicKeyToSecKey(key: CryptoPublicKey): OwnedCFValue<SecKeyRef>? { return null }
+    /** Converts a CommonCrypto SeckeyRef to a CryptoPrivateKey, if possible */
+    fun secKeyToCryptoPrivateKey(key: SecKeyRef): CryptoPrivateKey.WithPublicKey? { return null }
+    /** Converts a CryptoPrivateKey to a CommonCrypto SecKeyRef */
+    fun cryptoPrivateKeyToSecKey(key: CryptoPrivateKey.WithPublicKey): OwnedCFValue<SecKeyRef>? { return null }
 }
 
 /**
@@ -103,7 +108,7 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyA
  *
  * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
-val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
+val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm?
     get() = when (this) {
         is ECDSAAlgorithm -> {
             when (digest) {
@@ -137,59 +142,35 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
             }
         }
 
-        else -> throw UnsupportedCryptoException("Algorithm $this is unknown")
+        else -> return null
     }!!
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed get() = this.algorithm.secKeyAlgorithmPreHashed
 
-
-fun CryptoPublicKey.toSecKey() = catching {
-    memScoped {
-        val attr = cfDictionaryOf(
-            kSecAttrKeyClass to kSecAttrKeyClassPublic,
-            kSecAttrKeyType to when (this@toSecKey) {
-                is ECDSAPublicKey -> kSecAttrKeyTypeEC
-                is RSAPublicKey -> kSecAttrKeyTypeRSA
-                else -> TODO("providerize")
-            })
-        corecall {
-            SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().let(::giveToCF), attr, error)
-        }.manage()
+/** We always pre-hash on iOS if possible because the digest methods take a sequence well, while the signature methods do not */
+val SignatureAlgorithm.suitableSecKeyAlgAndFormat get(): Pair<SecKeyAlgorithm, SignatureInputFormat> {
+    val phAlg = secKeyAlgorithmPreHashed
+    val phFormat = preHashedSignatureFormat
+    return when {
+        (phAlg != null && phFormat != null) -> Pair(phAlg, phFormat)
+        else -> Pair(secKeyAlgorithm, null)
     }
 }
+
+
+fun CryptoPublicKey.toSecKey() =
+    ServiceLoader.load<CommonCryptoExtensionProvider>()
+        .get(this, CommonCryptoExtensionProvider::cryptoPublicKeyToSecKey)
+
+fun SecKeyRef?.toCryptoPublicKey() =
+    ServiceLoader.load<CommonCryptoExtensionProvider>()
+        .get(this!!, CommonCryptoExtensionProvider::secKeyToCryptoPublicKey)
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
-fun CryptoPrivateKey.WithPublicKey.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
-    memScoped {
-        var data : ByteArray? = null
-        val attr = createCFDictionary {
-            kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
-            kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
-            data = when (this@toSecKey) {
-                is ECDSAPrivateKey.WithPublicKey -> {
-                    kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                    kSecAttrKeySizeInBits mapsTo this@toSecKey.curve.coordinateLength.bits.toInt()
-                    val ecPubKey = this@toSecKey.publicKey
-                    ecPubKey.iosEncoded+ privateKeyBytes
-                }
+fun CryptoPrivateKey.WithPublicKey.toSecKey() =
+    ServiceLoader.load<CommonCryptoExtensionProvider>()
+        .get(this, CommonCryptoExtensionProvider::cryptoPrivateKeyToSecKey)
 
-                is RSAPrivateKey -> {
-                    kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
-                    kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
-                    asPKCS1.encodeToDer()
-                }
-
-                else -> TODO("providerize")
-            }
-        }
-        corecall {
-            SecKeyCreateWithData(data!!.toNSData().let(::giveToCF), attr, error)
-        }.manage()
-    }
-}
-
-fun SecKeyRef?.toCryptoPrivateKey() = catching {
-    corecall {
-        SecKeyCopyExternalRepresentation(this@toCryptoPrivateKey, error)
-    }.let { it.takeFromCF<NSData>() }.toByteArray()
-}.transform(CryptoPrivateKey::fromIosEncoded)
+fun SecKeyRef?.toCryptoPrivateKey() =
+    ServiceLoader.load<CommonCryptoExtensionProvider>()
+        .get(this!!, CommonCryptoExtensionProvider::secKeyToCryptoPrivateKey)

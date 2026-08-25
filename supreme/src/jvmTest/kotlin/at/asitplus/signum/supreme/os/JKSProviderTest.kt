@@ -13,6 +13,9 @@ import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldNotThrowAnyUnit
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
@@ -30,9 +33,9 @@ val JKSProviderTest  by matrixSuite {
     "Ephemeral" {
         val ks = JKSProvider.Ephemeral()
         val alias = "Elfenbeinschloss"
-        ks.getSignerForKey(alias) shouldNot succeed
-        val signer = ks.createSigningKey(alias).getOrThrow()
-        val otherSigner = ks.getSignerForKey(alias).getOrThrow()
+        shouldThrow<NoSuchElementException> { ks.getSignerForKey(alias) }
+        val signer = ks.createSigningKey(alias)
+        val otherSigner = ks.getSignerForKey(alias)
 
         val data = Random.Default.nextBytes(64)
         val signature = signer.sign(data).signature
@@ -51,9 +54,9 @@ val JKSProviderTest  by matrixSuite {
         val alias = "Moria"
         val correctKeyPassword = "Mellon".toCharArray()
         val wrongKeyPassword = "Edro".toCharArray()
-        ks.getSignerForKey(alias) shouldNot succeed
-        ks.getSignerForKey(alias) { privateKeyPassword = wrongKeyPassword } shouldNot succeed
-        val signer = ks.getSignerForKey(alias) { privateKeyPassword = correctKeyPassword }.getOrThrow()
+        shouldThrowAny { ks.getSignerForKey(alias) }
+        shouldThrowAny { ks.getSignerForKey(alias) { privateKeyPassword = wrongKeyPassword }}
+        val signer = ks.getSignerForKey(alias) { privateKeyPassword = correctKeyPassword }
         signer.publicKey.encodeToDer().toHexString(HexFormat.UpperCase) shouldBe
                 "3059301306072A8648CE3D020106082A8648CE3D030107034200046EEDD7DCE99AA264797906CE55BC158E4" +
                 "22EA9722E7EB0F0A6C7C9AB53F4B0D09176D8D169F52872BE2ED31D33C9ABD5785BB1DF96F53213BA659636" +
@@ -72,13 +75,13 @@ val JKSProviderTest  by matrixSuite {
                     password = correctPassword
                 }
             }.also {
-                it.getSignerForKey(alias) shouldNot succeed
-                it.createSigningKey(alias) should succeed
-                it.createSigningKey(alias) shouldNot succeed
-                it.getSignerForKey(alias) should succeed
+                shouldThrow<NoSuchElementException> { it.getSignerForKey(alias) }
+                shouldNotThrowAny { it.createSigningKey(alias) }
+                shouldThrow<NoSuchElementException> { it.createSigningKey(alias) }
+                shouldNotThrowAny { it.getSignerForKey(alias) }
                 shouldNotThrowAny { it.deleteSigningKey(alias) }
-                it.getSignerForKey(alias) shouldNot succeed
-                it.createSigningKey(alias) should succeed
+                shouldThrow<NoSuchElementException> { it.getSignerForKey(alias) }
+                shouldNotThrowAny { val _ = it.createSigningKey(alias) }
             }
 
             JKSProvider {
@@ -88,7 +91,7 @@ val JKSProviderTest  by matrixSuite {
                 }
             }.let {
                 // wrong password should fail
-                it.getSignerForKey(alias) shouldNot succeed
+                shouldThrowAny { it.getSignerForKey(alias) }
             }
 
             JKSProvider {
@@ -97,12 +100,12 @@ val JKSProviderTest  by matrixSuite {
                     password = correctPassword
                 }
             }.let {
-                it.getSignerForKey(alias) should succeed
+                shouldNotThrowAny { it.getSignerForKey(alias) }
                 it.deleteSigningKey(alias)
             }
 
             // check that ks1 "sees" the deletion that was made by ks3
-            ks1.getSignerForKey(alias) shouldNot succeed
+            shouldThrow<NoSuchElementException> { ks1.getSignerForKey(alias) }
         } finally {
             Files.deleteIfExists(tempfile)
         }
@@ -113,10 +116,10 @@ val JKSProviderTest  by matrixSuite {
             val ks = JKSProvider()
             val signer = ks.createSigningKey(alias) {
                 test.configure(this)
-            }.getOrThrow()
+            }
 
             val data = SignatureInput(Random.nextBytes(1200)).let {
-                if (test.isPreHashed) it.convertTo(signer.signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
+                if (test.isPreHashed) it.convertTo(signer.signatureAlgorithm.preHashedSignatureFormat)
                 else it
             }
             val signature = try {

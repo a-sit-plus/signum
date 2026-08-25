@@ -25,8 +25,8 @@ internal actual fun encryptRSAImpl(
     config: PlatformEncryptorConfiguration
 ): ByteArray =
     corecall {
-        val k = publicKey.toSecKey().getOrThrow()
-        SecKeyCreateEncryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().let(::giveToCF), error)
+        val k = publicKey.toSecKey()
+        SecKeyCreateEncryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().giveToCF(), error)
     }.takeFromCF<NSData>().toByteArray()
 
 
@@ -37,6 +37,6 @@ internal actual suspend fun decryptRSAImpl(
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray=  corecall {
-    val k = privateKey.toSecKey().getOrThrow()
-    SecKeyCreateDecryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().let(::giveToCF), error)
+    val k = privateKey.toSecKey()
+    SecKeyCreateDecryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().giveToCF(), error)
 }.takeFromCF<NSData>().toByteArray()

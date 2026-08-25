@@ -82,7 +82,6 @@ sealed interface CertificateExtension : Identifiable {
          * a typed extension also fall back to the generic representation rather than throwing.
          */
         fun fromAsn1Representation(src: Awesn1X509CertificateExtension): X509Representable =
-            // TODO: re-providerize
             Registry.descriptorFor(src.oid)?.let { descriptor ->
                 catchingUnwrapped { descriptor.fromAsn1Representation(src) }.getOrNull()
             } ?: X509CertificateExtension(src)

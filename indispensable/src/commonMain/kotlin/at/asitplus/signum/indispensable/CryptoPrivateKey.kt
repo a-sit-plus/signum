@@ -52,8 +52,8 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable 
                 else -> error("Label ${src.pemLabel} for private key is invalid")
             }
 
+        @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
         fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey> = catching {
-            // TODO: providerize cleanly & move to iOS
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 ECDSAPrivateKey.iosDecodeInternal(keyBytes)
             } else {

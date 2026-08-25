@@ -34,9 +34,3 @@ internal fun SignatureInput.asECDSABigInteger(length: BitLength): BigInteger {
             it
     }
 }
-
-internal val SignatureAlgorithm.preHashedSignatureFormat: SignatureInputFormat get() = when(this) {
-    is RSAAlgorithm -> this.digest
-    is ECDSAAlgorithm -> this.digest
-    else -> throw UnsupportedCryptoException()
-}

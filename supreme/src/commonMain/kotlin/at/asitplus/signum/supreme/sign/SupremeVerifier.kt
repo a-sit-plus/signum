@@ -39,7 +39,7 @@ class KotlinECDSAVerifier
             throw InvalidSignature("s is not in [1,n-1] (s=${sig.s}, n=${curve.order})")
         }
 
-        val z = data.convertTo(signatureAlgorithm.digest).getOrThrow().asECDSABigInteger(curve.scalarLength)
+        val z = data.convertTo(signatureAlgorithm.digest).asECDSABigInteger(curve.scalarLength)
         val sInv = sig.s.modInverse(curve.order)
         val u1 = (z * sInv).mod(curve.order)
         val u2 = (sig.r * sInv).mod(curve.order)

@@ -131,6 +131,7 @@ class RSAPublicKey private constructor(
             RSAPublicKey(null,
                 Content(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)))
 
+        @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
         fun fromIosEncoded(input: ByteArray) = fromPKCS1encoded(input)
 
         // on companion to prevent platform signature clashes with JVM
@@ -262,6 +263,7 @@ class ECDSAPublicKey private constructor(
             }
         }
 
+        @Deprecated("Use SecKeyRef.toCryptoPublicKey instead", ReplaceWith("fromAnsiX963Bytes(ECCurve.fromIosEncodedPublicKeyLength(src.size)!!, src)"))
         fun fromIosEncoded(src: ByteArray) =
             fromAnsiX963Bytes(
                 ECCurve.fromIosEncodedPublicKeyLength(src.size)

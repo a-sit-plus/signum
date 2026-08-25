@@ -177,8 +177,8 @@ interface AndroidKeyStoreOperationsProvider {
      * by Signum.
      *
      * If full control over the key construction (including certificates, attestations, etc.) is desired, override
-     * [initKeyPairGenerator] and dummy this function out.
-     * (This function is only used in [initKeyPairGenerator]'s default implementation.)
+     * [generateKeyPair] and dummy this function out.
+     * (This function is only used in [generateKeyPair]'s default implementation.)
      */
     fun initKeyGenSpec(alias: String, config: AndroidSigningKeyConfiguration): Pair<String, KeyGenParameterSpec.Builder>?
 
@@ -295,7 +295,7 @@ object AndroidKeyStoreProvider:
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSigningKeyConfiguration>
-    ) = withContext(dispatcher) { catching {
+    ) = withContext(dispatcher) {
         if (ks.containsAlias(alias)) {
             throw NoSuchElementException("Key with alias $alias already exists")
         }
@@ -303,13 +303,13 @@ object AndroidKeyStoreProvider:
         val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
             generateKeyPair(it, config)
         }
-        return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
-    }}
+        return@withContext getSignerForKey(alias, config.signer.v)
+    }
 
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSignerConfiguration>
-    ): KmmResult<AndroidKeystoreSigner> = withContext(dispatcher) { catching {
+    ): AndroidKeystoreSigner = withContext(dispatcher) {
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
             ?: throw NoSuchElementException("No key for alias $alias exists")
@@ -338,10 +338,10 @@ object AndroidKeyStoreProvider:
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
 
-        return@catching ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
+        return@withContext ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
             getAndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, it, attestation)
         }
-    }}
+    }
 
     override suspend fun deleteSigningKey(alias: String) { withContext(dispatcher) {
         ks.deleteEntry(alias)

@@ -259,7 +259,6 @@ sealed interface AttributeTypeAndValue : Identifiable {
         }
 
         fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): X509Representable =
-            // TODO: re-providerize
             Registry.descriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
                 ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }

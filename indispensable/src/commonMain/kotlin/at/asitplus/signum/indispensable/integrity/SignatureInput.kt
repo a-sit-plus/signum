@@ -21,11 +21,26 @@ class SignatureInput private constructor (
         }
     }
 
-    suspend fun convertTo(format: SignatureInputFormat) = catching {
-        if (this.format == format) return@catching this
-        if (this.format != RAW_BYTES) throw IllegalStateException("Cannot convert from ${this.format} to $format")
+    suspend fun convertTo(format: SignatureInputFormat): SignatureInput {
+        if (this.format == format) return this
+        if (this.format != RAW_BYTES) throw IllegalStateException("Cannot convert signature input from ${this.format} to $format")
         format!! /* RAW_BYTES is null; this is for the compiler */
-        SignatureInput(sequenceOf(format.digest(this.data)), format)
+        return SignatureInput(sequenceOf(format.digest(this.data)), format)
+    }
+
+    /** Returns a [SignatureInput] in the same [format] but with only a single [data] element. */
+    fun collapsed(): SignatureInput {
+        val datas = data.toList()
+        if (datas.size == 1) return this
+        val size = datas.sumOf { it.size }
+        val result = ByteArray(size)
+        var offset = 0
+        for (d in datas) {
+            d.copyInto(d, offset, 0, d.size)
+            offset += d.size
+        }
+        require(offset == result.size)
+        return SignatureInput(sequenceOf(result), format)
     }
 
     constructor(data: ByteArray) : this(sequenceOf(data), RAW_BYTES)

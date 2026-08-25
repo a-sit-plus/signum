@@ -99,8 +99,8 @@ val PlatformSigningProvider get() = getPlatformSigningProvider(null)
 interface SigningProviderI<out SignerT: Signer.WithAlias,
         out SignerConfigT: SignerConfiguration,
         out KeyConfigT: PlatformSigningKeyConfigurationBase<*>> {
-    suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null): KmmResult<SignerT>
-    suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null): KmmResult<SignerT>
+    suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null): SignerT
+    suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null): SignerT
     suspend fun deleteSigningKey(alias: String)
 
     companion object {

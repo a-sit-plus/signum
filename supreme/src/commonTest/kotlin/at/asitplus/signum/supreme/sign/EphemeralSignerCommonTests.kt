@@ -135,7 +135,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                         }
                     }
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(digest) else it
                     }).signature
                 } catch (_: UnsupportedOperationException) {
                     return@test
@@ -163,7 +163,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
                 val signature = signer.sign(SignatureInput(data).let {
-                    if (preHashed) it.convertTo(digest).getOrThrow() else it
+                    if (preHashed) it.convertTo(digest) else it
                 }).signature
 
 
@@ -216,7 +216,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                         }
                     }
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(digest) else it
                     }).signature
                 } catch (_: UnsupportedOperationException) {
                     return@test
