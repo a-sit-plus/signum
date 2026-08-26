@@ -1,28 +1,17 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
-import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.indispensable.jcaSignatureBytes
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.jvm
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSASignature
 import java.security.Signature
 
 abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPublicKey, protected val provider: JCAProviderRef) : SignatureVerifier {
@@ -31,7 +20,7 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPubl
         data.forEach(jcaSig::update)
         return jcaSig.verify(sig)
     }
-    override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
         val success = when {
             (data.format == null) -> verifyWith(instance, data.data, sig.jcaSignatureBytes)
             (data.format == signatureAlgorithm.preHashedSignatureFormat) ->
@@ -40,9 +29,10 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPubl
                     .let { verifyWith(it, data.data, sig.jcaSignatureBytes) }
             else -> throw IllegalArgumentException("Pre-hashed data (format=${data.format}) is incompatible with $signatureAlgorithm")
         }
-        if (!success)
+        if (success)
+            return SignatureVerifier.Success
+        else
             throw InvalidSignature("Signature is cryptographically invalid")
-        SignatureVerifier.Success
     }
 
     class ECDSA(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey, provider: JCAProviderRef)

@@ -1,36 +1,17 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.awesn1.Asn1BitString
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.Asn1OctetString
-import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
-import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.VerifierConfiguration
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.PrivateKeyFormatProvider
-import at.asitplus.signum.indispensable.PublicKeyFormatProvider
-import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SignatureFormatProvider
-import at.asitplus.signum.indispensable.decodeFromDer
-import at.asitplus.signum.indispensable.encodeToDer
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithmsProvider
-import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
-import at.asitplus.signum.indispensable.integrity.verifierFor
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.integrity.*
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
@@ -39,6 +20,7 @@ import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.verify
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import org.kotlincrypto.random.CryptoRand
@@ -101,10 +83,10 @@ object CursorySignatureScheme : SignatureAlgorithm {
             Signature(dataHasHighest != this.bit)
         }
 
-        override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+        override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
             require(sig is CursorySignatureScheme.Signature)
             require(sign(data).signature == sig) { "Invalid signature" }
-            SignatureVerifier.Success
+            return SignatureVerifier.Success
         }
 
         class Config : EphemeralSignerConfiguration.AlgorithmSpecific() {
@@ -191,7 +173,7 @@ val ExtensibilityTest by matrixSuite {
             val publicKey = privateKey.publicKey
             val data = Random.nextBytes(1)
             val signature = privateKey.sign(data).signature
-            CursorySignatureScheme.verifierFor(publicKey).verify(data, signature) should succeed
+            shouldNotThrowAny { CursorySignatureScheme.verifierFor(publicKey).verify(data, signature) }
         }
     }
 
@@ -218,9 +200,9 @@ val ExtensibilityTest by matrixSuite {
             val parsedCertificate = Certificate.decodeFromDer(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
             val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
-            verifier.verify(parsedCertificate) should succeed
+            verifier.verify(parsedCertificate) shouldBe SignatureVerifier.Success
             val parsedSignature = CryptoSignature.decodeFromDer(theSignature)
-            verifier.verify(data, parsedSignature) should succeed
+            verifier.verify(data, parsedSignature) shouldBe SignatureVerifier.Success
         }
     }
 }

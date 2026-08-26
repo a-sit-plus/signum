@@ -134,10 +134,10 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                     get() = BitLength.fromBytes(hkdf.outputLength)
 
                 override suspend fun Expand(prk: ByteArray, info: ByteArray, L: BitLength) =
-                    hkdf.expandStep(prk, info, L).getOrThrow()
+                    hkdf.expandStep(prk, info, L)
 
                 override suspend fun Extract(salt: ByteArray?, ikm: ByteArray) =
-                    hkdf.extractStep(salt, ikm).getOrThrow()
+                    hkdf.extractStep(salt, ikm)
             }
 
             /** well-known KDFs as referenced in RFC9180 section 7.2 */
@@ -331,7 +331,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
     {
         override val suiteId = concat("KEM".encodeToByteArray(), i2ospForLen2(kemId))
         private suspend fun DH(sk: KeyAgreementPrivateValue.ECDH, pk: KeyAgreementPublicValue.ECDH) =
-              sk.keyAgreement(pk).getOrThrow()
+              sk.keyAgreement(pk)
 
         override val Nsecret get() = dhGroup.nativeDigest.outputLength
         override val Nenc get() = Npk
@@ -342,7 +342,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         override suspend fun GenerateKeyPair(): KeyPair<KeyAgreementPrivateValue.ECDH, KeyAgreementPublicValue.ECDH> {
             // ECDH.Ephemeral is suspend; bridge it the same way DH() does just above (runBlocking),
             // rather than rippling `suspend` through the entire sender-side KEM/Seal public API.
-            val it =  KeyAgreementPrivateValue.ECDH.Ephemeral(curve = dhGroup).getOrThrow()
+            val it =  KeyAgreementPrivateValue.ECDH.Ephemeral(curve = dhGroup)
             return KeyPair(it, it.publicValue)
         }
 

@@ -13,7 +13,9 @@ import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -63,15 +65,17 @@ val VerifierTests by matrixSuite {
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
                     val verifier = factory(ECDSAAlgorithm(digest, null), key)
-                    verifier.verify(byteArrayOf(), sig) shouldNot succeed
+                    shouldThrowAny { verifier.verify(byteArrayOf(), sig) }
                     if (digest != null) {
-                        verifier.verify(data.copyOfRange(0, 128), sig) shouldNot succeed
-                        verifier.verify(data + Random.nextBytes(8), sig) shouldNot succeed
+                        shouldThrowAny { verifier.verify(data.copyOfRange(0, 128), sig) }
+                        shouldThrowAny { verifier.verify(data + Random.nextBytes(8), sig) }
                     }
-                    verifier.verify(data, sig) should succeed
+                    verifier.verify(data, sig) shouldBe SignatureVerifier.Success
                     Random.of(Digest.entries.filter { it != digest }).let { dig ->
-                        catching { factory(ECDSAAlgorithm(dig, null), key) }
-                            .transform { it.verify(data, sig) } shouldNot succeed
+                        shouldThrowAny {
+                            factory(ECDSAAlgorithm(dig, null), key)
+                                .verify(data, sig)
+                        }
                     }
                 }
             }

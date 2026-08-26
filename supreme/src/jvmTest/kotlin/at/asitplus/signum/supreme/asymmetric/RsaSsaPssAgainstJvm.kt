@@ -5,12 +5,14 @@ import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -72,7 +74,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
 
                 "Signum's verifier against JCA signed" {
                     rsaInstance.verifierFor(key.publicKey)
-                        .verify(data, RSASignature.parseFromJca(jvmSigned)).shouldSucceed()
+                        .verify(data, RSASignature.parseFromJca(jvmSigned)) shouldBe SignatureVerifier.Success
                 }
                 val jcaVerifier = Signature.getInstance("RSASSA-PSS").apply {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))

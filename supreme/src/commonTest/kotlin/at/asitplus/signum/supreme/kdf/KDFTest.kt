@@ -131,9 +131,9 @@ val KDFTest by matrixSuite {
                 )
             }, nameFn = { it.Comment }) test { t ->
                 val hkdf = HKDF(t.Hash)
-                val prk = hkdf.extractStep(t.salt, t.IKM).getOrThrow()
+                val prk = hkdf.extractStep(t.salt, t.IKM)
                 prk shouldBe t.PRK
-                val okm = hkdf.expandStep(prk, t.info, t.L.bytes).getOrThrow()
+                val okm = hkdf.expandStep(prk, t.info, t.L.bytes)
                 okm shouldBe t.OKM
             }
         }
@@ -191,15 +191,13 @@ val KDFTest by matrixSuite {
                 )
             }, nameFn = { "RFC6070: \"${it.d}\"" }) test { (P, S, c, ref) ->
                 PBKDF2.HMAC_SHA1(c)
-                    .deriveKey(ikm = a(P), salt = a(S), derivedKeyLength = b(ref).size.bytes).getOrThrow() shouldBe b(
-                    ref
-                )
+                    .deriveKey(ikm = a(P), salt = a(S), derivedKeyLength = b(ref).size.bytes) shouldBe b(ref)
             }
         }
         "PBKDF2-HMAC-SHA-256" - {
             "RFC7914: passwd" {
                 PBKDF2.HMAC_SHA256(1)
-                    .deriveKey(ikm = a("passwd"), salt = a("salt"), derivedKeyLength = 64.bytes).getOrThrow() shouldBe
+                    .deriveKey(ikm = a("passwd"), salt = a("salt"), derivedKeyLength = 64.bytes) shouldBe
                         b(
                             "55 ac 04 6e 56 e3 08 9f ec 16 91 c2 25 44 b6 05\n" +
                                     "   f9 41 85 21 6d de 04 65 e6 8b 9d 57 c2 0d ac bc\n" +
@@ -209,7 +207,7 @@ val KDFTest by matrixSuite {
             }
             "RFC7914: Password" {
                 PBKDF2.HMAC_SHA256(iterations = 80000)
-                    .deriveKey(ikm = a("Password"), salt = a("NaCl"), derivedKeyLength = 64.bytes).getOrThrow() shouldBe
+                    .deriveKey(ikm = a("Password"), salt = a("NaCl"), derivedKeyLength = 64.bytes) shouldBe
                         b(
                             "4d dc d8 f6 0b 98 be 21 83 0c ee 5e f2 27 01 f9\n" +
                                     "   64 1a 44 18 d0 4c 04 14 ae ff 08 87 6b 34 ab 56\n" +

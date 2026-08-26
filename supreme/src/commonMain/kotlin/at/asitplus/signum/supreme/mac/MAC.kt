@@ -1,7 +1,5 @@
 package at.asitplus.signum.supreme.mac
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
@@ -19,7 +17,7 @@ private val HMAC.blockLength get() = digest.inputBlockSize.bytes.toInt()
 private val HMAC.innerPad get() = ByteArray(blockLength) { 0x36 }
 private val HMAC.outerPad get() = ByteArray(blockLength) { 0x5C }
 
-suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> =
+suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray =
     algorithm.mac(key, msg)
 
 private fun ByteArray.truncateTo(size: BitLength): ByteArray {
@@ -30,10 +28,10 @@ private fun ByteArray.truncateTo(size: BitLength): ByteArray {
     return a
 }
 
-suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> =
+suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray =
     when (this@mac) {
-        is HMAC -> catching { hmac(key, msg) }
-        is MessageAuthenticationCode.Truncated -> inner.mac(key, msg).map { it.truncateTo(outputLength) }
+        is HMAC -> hmac(key, msg)
+        is MessageAuthenticationCode.Truncated -> inner.mac(key, msg).truncateTo(outputLength)
     }
 
 internal suspend fun HMAC.hmac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray {

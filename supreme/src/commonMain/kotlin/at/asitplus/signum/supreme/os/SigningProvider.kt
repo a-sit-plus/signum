@@ -57,7 +57,7 @@ interface PlatformSigningProviderSigner
     <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
         : PlatformSigningProviderSigner<SigningConfiguration, AttestationT>, Signer.ECDSA
     {
-        suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH, configure: DSLConfigureFn<SigningConfiguration> = null): KmmResult<ByteArray>
+        suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH, configure: DSLConfigureFn<SigningConfiguration> = null): ByteArray
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = keyAgreement(publicValue, null)
     }
 }

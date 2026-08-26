@@ -1,7 +1,6 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.dsl.VerifierConfiguration
@@ -38,7 +37,7 @@ object SupremeCCVerifierProvider : SignatureVerifierProvider {
 }
 
 abstract class SupremeCCVerifier: SignatureVerifier {
-    override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
         val key = publicKey.toSecKey()
         val (algorithm, format) = signatureAlgorithm.suitableSecKeyAlgAndFormat
         val inputData = data.convertTo(format).collapsed().data.single()
@@ -48,7 +47,7 @@ abstract class SupremeCCVerifier: SignatureVerifier {
                 SecKeyVerifySignature(key.value, algorithm,
                     inputData.toNSData().giveToCF(), sig.iosEncoded.toNSData().giveToCF(), error).takeIf { it }
             }
-            if (result == true) return@catching SignatureVerifier.Success
+            if (result == true) return SignatureVerifier.Success
             else error("unreachable")
         } catch (x: CoreFoundationException) {
             if ((x.nsError.domain == NSOSStatusErrorDomain) && (x.nsError.code == errSecVerifyFailed.toLong()))
@@ -70,13 +69,14 @@ abstract class SupremeCCVerifier: SignatureVerifier {
         private val targetDigest = publicKey.curve.nativeDigest
         private val inner = ECDSA(ECDSAAlgorithm(targetDigest, null), publicKey)
 
-        override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+        override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
             check(publicKey.curve.scalarLength == targetDigest.outputLength)
-            SignatureInput.unsafeCreate(
+            val fakeInput = SignatureInput.unsafeCreate(
                 data.asECDSABigInteger(targetDigest.outputLength).toByteArray().ensureSize(targetDigest.outputLength.bytes),
                 targetDigest
             )
-        }.transform { inner.verify(it, sig) }
+            return inner.verify(fakeInput, sig)
+        }
     }
 
     class RSA(override val signatureAlgorithm: RSAAlgorithm, override val publicKey: RSAPublicKey)

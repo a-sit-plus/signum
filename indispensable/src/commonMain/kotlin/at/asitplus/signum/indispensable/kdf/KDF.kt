@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.kdf
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.ServiceLoader
@@ -37,8 +35,7 @@ interface KDFOperationProvider {
  * @param ikm the input key material
  * @param derivedKeyLength the length of the derived key
  */
-suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): KmmResult<ByteArray> = catching {
+suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): ByteArray =
     ServiceLoader.load<KDFOperationProvider>().get(this) {
         deriveKey(it, salt, ikm, derivedKeyLength)
     }
-}

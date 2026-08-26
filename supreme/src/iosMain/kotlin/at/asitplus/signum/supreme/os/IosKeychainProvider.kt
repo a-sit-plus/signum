@@ -1,60 +1,32 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.catching
+import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.nonFatalOrThrow
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.dsl.DISCOURAGED
-import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.dsl.PREFERRED
-import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
-import at.asitplus.signum.dsl.REQUIRED
-import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl.UnlockPromptConfiguration
-import at.asitplus.signum.dsl.attestation
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.dsl.factors
-import at.asitplus.signum.dsl.protection
-import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.dsl.signer
-import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.digest.digest
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
-import at.asitplus.signum.dsl.*
-import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSASignature
-import at.asitplus.signum.supreme.sign.*
+import at.asitplus.signum.supreme.sign.Signer
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import platform.CoreFoundation.CFDictionaryAddValue
-import platform.CoreFoundation.CFDictionaryRefVar
-import platform.CoreFoundation.CFDictionaryRemoveValue
-import platform.CoreFoundation.CFMutableDictionaryRef
-import platform.CoreFoundation.CFRelease
-import platform.CoreFoundation.CFStringGetCString
+import platform.CoreFoundation.*
 import platform.DeviceCheck.DCAppAttestService
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
@@ -63,9 +35,10 @@ import platform.Security.*
 import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.TimeSource
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 
 @OptIn(DelicateCoroutinesApi::class)
-private val _dispatcher = Dispatchers.IO.limitedParallelism(1, "iOS Keychain Operations")
+private val dispatcher = Dispatchers.IO.limitedParallelism(1, "iOS Keychain Operations")
 
 private object KeychainTags {
     /** Bundle-id-free tags used for all newly created keys; tried first on retrieval and deletion. */
@@ -132,17 +105,18 @@ sealed class IosSigner(final override val alias: String,
                        private val signerConfig: IosSignerConfiguration)
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
 
-    protected val dispatcher get() = _dispatcher
-
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
     val needsAuthenticationForEveryUse get() = metadata.needsUnlock && (metadata.unlockTimeout == Duration.ZERO)
     override val attestation get() = metadata.attestation
 
-    protected interface PrivateKeyManager { fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> }
+    protected interface PrivateKeyManager { suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration): OwnedCFValue<SecKeyRef> }
+    @HazardousMaterials
+    /** For InternalsAccessor ONLY!!! */
+    internal val DONOTUSEsecKeyRef get() = runBlocking { privateKeyManager.get(null, null, IosSignerSigningConfiguration()) }
     protected val privateKeyManager = object : PrivateKeyManager {
-        private var storedKey: AutofreeVariable<SecKeyRef>? = null
-        override fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> {
+        private var storedKey: OwnedCFValue<SecKeyRef>? = null
+        override suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration) = withContext(dispatcher) {
             Napier.v { "Private Key access for alias $alias requested (needs unlock? ${metadata.needsUnlock}; timeout? ${metadata.unlockTimeout})" }
 
             val ctx: LAContext? /* the LAContext (potentially old if the timeout permits) to use */
@@ -153,7 +127,7 @@ sealed class IosSigner(final override val alias: String,
                     // if we are allowed to reuse the key, and we have the key, then reuse the key
                     storedKey?.let {
                         Napier.v { "Re-using cached private key reference for alias $alias" }
-                        return it
+                        return@withContext it
                     }
                     Napier.v { "Re-using successful LAContext to retrieve key with alias $alias" }
                     recordable = false
@@ -179,8 +153,9 @@ sealed class IosSigner(final override val alias: String,
 
             // ok, we need to get the key from the keychain
             // try the new bundle-id-free tag first, then fall back to the legacy bundle-id-scoped tag
-            val newPrivateKey = AutofreeVariable<SecKeyRef>()
+            val newPrivateKey: OwnedCFValue<SecKeyRef>
             memScoped {
+                val newPrivateKeyVar = alloc<SecKeyRefVar>()
                 KeychainTags.PRIVATE_KEYS.forEach { tag ->
                     val query = createCFDictionary {
                         kSecClass mapsTo kSecClassKey
@@ -201,8 +176,12 @@ sealed class IosSigner(final override val alias: String,
                             kSecUseAuthenticationUI mapsTo kSecUseAuthenticationUIFail
                         }
                     }
-                    when (val lastStatus = SecItemCopyMatching(query, newPrivateKey.ptr.reinterpret())) {
-                        errSecSuccess -> { require(newPrivateKey.value != null); return@memScoped }
+                    when (val lastStatus = SecItemCopyMatching(query, newPrivateKeyVar.ptr.reinterpret())) {
+                        errSecSuccess -> {
+                            newPrivateKey = newPrivateKeyVar.value?.adopt()
+                                ?: throw IllegalStateException("SecItemCopyMatching returned success, but no key")
+                            return@memScoped
+                        }
                         errSecItemNotFound -> {/*fall through*/}
                         else -> throw CFCryptoOperationFailed(
                             thing = "retrieve private key",
@@ -216,16 +195,18 @@ sealed class IosSigner(final override val alias: String,
                     osStatus = errSecItemNotFound
                 )
             }
-            if (!SecKeyIsAlgorithmSupported(newPrivateKey.value, kSecKeyOperationTypeSign, signatureAlgorithm.secKeyAlgorithmPreHashed)) {
-                throw UnsupportedCryptoException("Requested operation is not supported by this key")
+            if (operation != null && algorithm != null) {
+                if (!SecKeyIsAlgorithmSupported(newPrivateKey.value, operation, algorithm)) {
+                    throw UnsupportedCryptoException("Requested operation is not supported by this key")
+                }
             }
 
             if (recordable && (ctx != null)) {
                 Napier.v { "Going to record successful LAContext after retrieving key $alias" }
                 // record the successful unlock timestamp and LAContext for reuse
                 // produce a dummy signature to ensure that the unlock has succeeded; this is required by secure enclave keys, which do not prompt for unlock until signing time
-                corecall { SecKeyCreateSignature(newPrivateKey.value, signatureAlgorithm.secKeyAlgorithmPreHashed,
-                    ByteArray(signatureAlgorithm.preHashedSignatureFormat!!.outputLength.bytes.toInt()).toNSData().giveToCF(), error)?.let(::CFRelease) }
+                corecall { SecKeyCreateSignature(newPrivateKey.value, signatureAlgorithm.secKeyAlgorithm,
+                    byteArrayOf(0x0).toNSData().giveToCF(), error)?.let(::CFRelease) }
 
                 // if we have reached this point, the unlock operation has definitively succeeded
                 LAContextStorage.successfulAuthentication = LAContextStorage.SuccessfulAuthentication(
@@ -235,30 +216,29 @@ sealed class IosSigner(final override val alias: String,
             if (!needsAuthenticationForEveryUse) {
                 storedKey = newPrivateKey
             }
-            return newPrivateKey
+            return@withContext newPrivateKey
         }
     }
 
     final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<IosSignerSigningConfiguration>) {
-        withContext(dispatcher) {
-            if (needsAuthentication && !needsAuthenticationForEveryUse) {
-                val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
-                val _ = privateKeyManager.get(config)
-            }
+        if (needsAuthentication && !needsAuthenticationForEveryUse) {
+            val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
+            val _ = privateKeyManager.get(null, null, config)
         }
     }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
     override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
-    withContext(dispatcher) { signCatching {
+    signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
         val (algorithm, inputFormat) = signatureAlgorithm.suitableSecKeyAlgAndFormat
         val plaintext = data.convertTo(inputFormat).collapsed().data.single().toNSData()
         val signatureBytes = try {
+            val key = privateKeyManager.get(kSecKeyOperationTypeSign, algorithm, signingConfig).value
             corecall {
-                SecKeyCreateSignature(privateKeyManager.get(signingConfig).value, algorithm, plaintext.giveToCF(), error)
+                SecKeyCreateSignature(key, algorithm, plaintext.giveToCF(), error)
             }.takeFromCF<NSData>().toByteArray()
         } catch (x: CoreFoundationException) { /* secure enclave failure */
             if (x.nsError.domain == LAErrorDomain) when (x.nsError.code) {
@@ -272,7 +252,7 @@ sealed class IosSigner(final override val alias: String,
             }
         }
         return@signCatching bytesToSignature(signatureBytes)
-    }}
+    }
 
     class ECDSA internal constructor
         (alias: String, override val publicKey: ECDSAPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
@@ -290,15 +270,24 @@ sealed class IosSigner(final override val alias: String,
             }
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            ECDSASignature.decodeFromDer(sigBytes).withCurve(publicKey.curve)
+            ECDSASignature.decodeFromTlv(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<IosSignerSigningConfiguration>
-        ) = catching {
+        ): ByteArray {
             require(metadata.allowKeyAgreement) { "Key agreement purpose not set! Key agreement disallowed!" }
             val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
-            performKeyAgreement(privateKeyManager.get(config).value, publicValue)
+            val key = privateKeyManager.get(kSecKeyOperationTypeKeyExchange, kSecKeyAlgorithmECDHKeyExchangeStandard, config).value
+            return corecall {
+                SecKeyCopyKeyExchangeResult(
+                    key,
+                    kSecKeyAlgorithmECDHKeyExchangeStandard,
+                    publicValue.asCryptoPublicKey().toSecKey().value,
+                    parameters = null,
+                    error
+                )
+            }.takeFromCF<NSData>().toByteArray()
         }
     }
 
@@ -316,7 +305,7 @@ sealed class IosSigner(final override val alias: String,
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            RSASignature(sigBytes)
+            RSASignature.decodeFromTlv(X509SignatureValue(sigBytes))
     }
 
 }
@@ -340,7 +329,7 @@ interface IosKeyAlgSpecificMetadata {
 data class IosKeyMetadata(
     val attestation: IosHomebrewAttestation?,
     val rawUnlockTimeout: Duration?,
-    val algSpecific: JsonObject?,
+    val algSpecific: JsonElement?,
     val allowSigning: Boolean = true,
     val allowKeyAgreement: Boolean = false,
     @SerialName("allowEncryption") // for compatibility reasons
@@ -355,7 +344,7 @@ interface IosKeychainOperationsProvider {
     interface OperationsBundle {
         fun CFDictionaryInitScope.initTopLevelDictionary()
         fun CFDictionaryInitScope.initPrivateKeyDictionary()
-        fun GetAlgSpecificMetadata(): IosKeyAlgSpecificMetadata?
+        fun GetAlgSpecificMetadata(): JsonElement?
     }
 
     /**
@@ -366,7 +355,7 @@ interface IosKeychainOperationsProvider {
      * This function is only called by [makeKeyAttributes]'s default implementation.
      * If you override [makeKeyAttributes], you can dummy this function out.
      */
-    fun getOperationsBundle(config: SigningKeyConfiguration): OperationsBundle?
+    fun getOperationsBundle(config: IosSigningKeyConfiguration): OperationsBundle?
 
     /**
      * **You likely do not want to override this. Override [getOperationsBundle] instead.**
@@ -376,7 +365,7 @@ interface IosKeychainOperationsProvider {
      * - kSecAttrAccessControl (to enable access control)
      */
     context (scope: MemScope)
-    fun makeKeyAttributes(alias: String, config: SigningKeyConfiguration): Pair<CFMutableDictionaryRef, IosKeyAlgSpecificMetadata?>? {
+    fun makeKeyAttributes(alias: String, config: IosSigningKeyConfiguration): Pair<CFMutableDictionaryRef, JsonElement?>? {
         val bundle = getOperationsBundle(config) ?: return null
         return createCFDictionary {
             kSecAttrTokenID mapsTo "placeholder" // will be set in generate()
@@ -414,7 +403,7 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
         }
 
         override fun GetAlgSpecificMetadata() =
-            IosKeyAlgSpecificMetadata.ECDSA(config.digests.filterIsInstance<WellKnownDigest>().toSet())
+            Json.encodeToJsonElement(IosKeyAlgSpecificMetadata.ECDSA(config.digests.filterIsInstance<WellKnownDigest>().toSet()))
     }
 
     private class RSAOps(val config: PlatformSigningKeyConfigurationBase.RSAConfiguration) : IosKeychainOperationsProvider.OperationsBundle {
@@ -431,10 +420,10 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
         }
 
         override fun GetAlgSpecificMetadata() =
-            IosKeyAlgSpecificMetadata.RSA(config.digests.filterIsInstance<WellKnownDigest>().toSet(), config.paddings)
+            Json.encodeToJsonElement(IosKeyAlgSpecificMetadata.RSA(config.digests.filterIsInstance<WellKnownDigest>().toSet(), config.paddings))
     }
 
-    override fun getOperationsBundle(config: SigningKeyConfiguration): IosKeychainOperationsProvider.OperationsBundle? =
+    override fun getOperationsBundle(config: IosSigningKeyConfiguration): IosKeychainOperationsProvider.OperationsBundle? =
         when (val algSpecific = DSL.options(config.ec, config.rsa)) {
             is PlatformSigningKeyConfigurationBase.ECConfiguration -> ECDSAOps(algSpecific)
             is PlatformSigningKeyConfigurationBase.RSAConfiguration -> RSAOps(algSpecific)
@@ -470,7 +459,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecReturnRef mapsTo true
             }
             when (val status = SecItemCopyMatching(query, it.ptr.reinterpret())) {
-                errSecSuccess -> { require (it.value != null); return it.value!!.manage() }
+                errSecSuccess -> { require (it.value != null); return it.value!!.adopt() }
                 errSecItemNotFound -> {/* fall through */}
                 else -> throw CFCryptoOperationFailed(thing = "retrieve public key", osStatus = status)
             }
@@ -507,7 +496,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 kSecReturnAttributes mapsTo true
             }
             when (val status = SecItemCopyMatching(query, dict.ptr.reinterpret())) {
-                errSecSuccess -> return dict.value!!.get<String>(kSecAttrLabel).let { Json.decodeFromString<IosKeyMetadata>(it) }
+                errSecSuccess -> return dict.value!!.getAndTake<String>(kSecAttrLabel).let { Json.decodeFromString<IosKeyMetadata>(it) }
                     .also { _ -> CFRelease(dict.value) }
                 errSecItemNotFound -> {/* fall through */}
                 else -> throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = status)
@@ -523,7 +512,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
-    ): IosSigner = withContext(_dispatcher) {
+    ): IosSigner = withContext(dispatcher) {
         memScoped {
             // also catches legacy bundle-id-tagged keys, so we never shadow an existing key
             if (getPublicKey(alias) != null)
@@ -540,15 +529,18 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val allowKeyAgreement: Boolean
             val allowDecryption: Boolean
             val allowSigning: Boolean
-            val algSpecificMetadata: IosKeyAlgSpecificMetadata?
+            val algSpecificMetadata: JsonElement?
             memScoped {
                 val attr: CFMutableDictionaryRef
                 ServiceLoader.load<IosKeychainOperationsProvider>()
                     .get(alias) { makeKeyAttributes(it, config) }
                     .let { attr = it.first; algSpecificMetadata = it.second }
-                allowSigning = attr.get<Boolean?>(kSecAttrCanSign) ?: true
-                allowDecryption = attr.get<Boolean?>(kSecAttrCanEncrypt) ?: true
-                allowKeyAgreement = attr.get<Boolean?>(kSecAttrCanDerive) ?: true
+
+                attr.get<CFDictionaryRef>(kSecPrivateKeyAttrs).value.let { privateAttrs ->
+                    allowSigning = privateAttrs.getAndTake<Boolean?>(kSecAttrCanSign) ?: true
+                    allowDecryption = privateAttrs.getAndTake<Boolean?>(kSecAttrCanDecrypt) ?: true
+                    allowKeyAgreement = privateAttrs.getAndTake<Boolean?>(kSecAttrCanDerive) ?: true
+                }
 
                 val availability = config.hardware.v.let { c -> when (c.availability) {
                     IosSecureEnclaveConfiguration.Availability.ALWAYS -> if (c.allowBackup) kSecAttrAccessibleAlways else kSecAttrAccessibleAlwaysThisDeviceOnly
@@ -560,10 +552,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     if (useSecureEnclave)
                         attr[kSecAttrTokenID] = kSecAttrTokenIDSecureEnclave
                     else
-                        CFDictionaryRemoveValue(attr, kSecAttrTokenID.giveToCF())
+                        CFDictionaryRemoveValue(attr, kSecAttrTokenID)
 
                     val factors = config.hardware.v.protection.v?.factors?.v
-                    attr[kSecAttrAccessControl] = corecall {
+                    attr.get<CFMutableDictionaryRef>(kSecPrivateKeyAttrs).value[kSecAttrAccessControl] = corecall {
                         SecAccessControlCreateWithFlags(
                             null, availability,
                             when {
@@ -587,7 +579,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
                         if ((status == errSecSuccess) && (pubkey != null) && (privkey != null)) {
                             Napier.v { "Successfully generated iOS keypair for alias $alias (secure enclave? $useSecureEnclave)" }
-                            return KeyPair(public = pubkey.manage(), private = privkey.manage())
+                            return KeyPair(public = pubkey.adopt(), private = privkey.adopt())
                         } else {
                             if (pubkey != null) CFRelease(pubkey)
                             if (privkey != null) CFRelease(privkey)
@@ -613,7 +605,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 }
                 usedSecureEnclave = kSecAttrTokenIDSecureEnclave.toKotlinString() == corecall {
                     SecKeyCopyAttributes(keyPair.private.value).also { defer { CFRelease(it) } }
-                }.get<String>(kSecAttrTokenID)
+                }.getAndTake<String?>(kSecAttrTokenID)
 
                 if (config.hardware.v.backing == REQUIRED)
                     require(usedSecureEnclave) { "Requested secure enclave key but received non-secure enclave key?" }
@@ -659,7 +651,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 allowSigning = allowSigning,
                 allowDecryption = allowDecryption,
                 allowKeyAgreement = allowKeyAgreement,
-                algSpecific = algSpecificMetadata?.let { Json.encodeToJsonElement(it) as JsonObject }
+                algSpecific = algSpecificMetadata
             ).also { storeKeyMetadata(alias, metadata = it) }
 
             Napier.v { "key $alias metadata stored (has attestation? ${attestation != null})" }
@@ -676,31 +668,18 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<IosSignerConfiguration>
-    ): IosSigner = withContext(_dispatcher) {
+    ): IosSigner = withContext(dispatcher) {
         val config = DSL.resolve(::IosSignerConfiguration, configure)
-        val keyType: String
-        val publicKeyBytes: ByteArray
-        memScoped {
-            val publicKey = getPublicKey(alias)
-                ?: throw NoSuchElementException("No key for alias $alias exists")
-            keyType = corecall {
-                SecKeyCopyAttributes(publicKey.value).also { defer { CFRelease(it) }}
-            }.get<String>(kSecAttrKeyType)
-            publicKeyBytes = corecall {
-                SecKeyCopyExternalRepresentation(publicKey.value, error)
-            }.takeFromCF<NSData>().toByteArray()
-        }
-        val publicKey = when (keyType) {
-            kSecAttrKeyTypeRSA.toKotlinString() -> RSAPublicKey.fromIosEncoded(publicKeyBytes)
-            kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() -> ECDSAPublicKey.fromIosEncoded(publicKeyBytes)
-            else -> throw UnsupportedCryptoException("Unknown public key type $keyType")
-        }
-
+        val publicKey =
+            memScoped {
+                getPublicKey(alias)
+                    ?: throw NoSuchElementException("No key for alias $alias exists")
+            }.value.toCryptoPublicKey()
         val metadata = getKeyMetadata(alias)
         return@withContext getSignerInternal(alias, publicKey, metadata, config)
     }
 
-    override suspend fun deleteSigningKey(alias: String) = withContext(_dispatcher) {
+    override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) {
         memScoped {
             // Deletes both the new bundle-id-free tag and the legacy bundle-id-scoped tag.
             listOf(

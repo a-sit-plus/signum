@@ -92,12 +92,13 @@ class swiftcall private constructor(val error: CPointer<ObjCObjectVar<NSError?>>
 }
 
 @OptIn(ExperimentalNativeApi::class)
-class OwnedCFValue<T: CFTypeRef> constructor(val value: T) {
+class OwnedCFValue<T: CFTypeRef?> constructor(val value: T) {
     @Suppress("UNUSED")
-    private val cleaner = createCleaner(value, ::CFRelease)
+    private val cleaner = createCleaner(value,) { if (it != null) CFRelease(it) }
 }
 
-@Suppress("NOTHING_TO_INLINE") inline fun <T: CFTypeRef> T.manage() = OwnedCFValue(this)
+@Suppress("NOTHING_TO_INLINE") inline fun <T: CFTypeRef?> T.adopt() = OwnedCFValue(this)
+@Suppress("NOTHING_TO_INLINE") inline fun <T: CFTypeRef?> T.manage() = OwnedCFValue(this.also { it?.let(::CFRetain) })
 
 inline fun <reified T: CFTypeRef?> giveToCFInternal(v: Any?, defer: (()->Unit)->Unit) = when (v) {
     null -> null
@@ -139,8 +140,11 @@ context (scope: DeferScope)
 fun createCFDictionary(pairs: CFDictionaryInitScope.()->Unit) =
     CFDictionaryInitScope.resolve(pairs)
 
-inline operator fun <reified T> CFDictionaryRef.get(key: Any?): T = memScoped {
-    CFDictionaryGetValue(this@get, key.giveToCF())?.also(::CFRetain).takeFromCF<T>()
+inline fun <reified T: CFTypeRef?> CFDictionaryRef.get(key: Any?): OwnedCFValue<T> = memScoped {
+    (CFDictionaryGetValue(this@get, key.giveToCF()) as T).manage()
+}
+inline fun <reified T> CFDictionaryRef.getAndTake(key: Any?): T = memScoped {
+    CFDictionaryGetValue(this@getAndTake, key.giveToCF())?.also(::CFRetain).takeFromCF<T>()
 }
 
 

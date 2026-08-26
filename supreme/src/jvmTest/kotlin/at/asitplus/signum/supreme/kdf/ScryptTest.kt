@@ -151,7 +151,7 @@ val ScryptTest by matrixSuite {
                                     salt,
                                     ikm,
                                     len.bytes
-                                ).getOrThrow()
+                                )
                             }
                         }
                     }

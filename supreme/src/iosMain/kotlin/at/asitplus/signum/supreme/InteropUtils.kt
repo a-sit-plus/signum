@@ -15,26 +15,6 @@ import platform.darwin.OSStatus
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
-@OptIn(ExperimentalNativeApi::class)
-class AutofreeVariable<T: CFTypeRef> internal constructor(
-    arena: Arena,
-    private val variable: CPointerVarOf<T>) {
-    companion object {
-        internal inline operator fun <reified T: CPointer<*>> invoke(): AutofreeVariable<T> {
-            val arena = Arena()
-            val variable = arena.alloc<CPointerVarOf<T>>()
-            return AutofreeVariable<T>(arena, variable)
-        }
-    }
-    @Suppress("UNUSED")
-    private val cleaner = createCleaner(Pair(arena, variable)) {
-        it.second.value?.let(::CFRelease)
-        it.first.clear()
-    }
-    internal val ptr get() = variable.ptr
-    internal val value get() = variable.value
-}
-
 class CFCryptoOperationFailed(thing: String, val osStatus: OSStatus) : CryptoOperationFailed(buildMessage(thing, osStatus)) {
     companion object {
         private fun buildMessage(thing: String, osStatus: OSStatus): String {

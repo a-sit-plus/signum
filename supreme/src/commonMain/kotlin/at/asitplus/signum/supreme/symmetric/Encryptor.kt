@@ -76,7 +76,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
                 )
 
             val outputTransform = algorithm.macAuthTagTransform
-            val authTag = algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput).getOrThrow())
+            val authTag = algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput))
 
             @Suppress("UNCHECKED_CAST")
             return (

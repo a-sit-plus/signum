@@ -6,6 +6,7 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -61,7 +62,7 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                         try {
                             val signumSigned = signer.sign(data).signature
                             rsaInstance.verifierFor(key.publicKey)
-                                .verify(data, signumSigned).shouldSucceed()
+                                .verify(data, signumSigned) shouldBe SignatureVerifier.Success
                         } catch (_: UnsupportedCryptoException) { /* pass */ }
                     }
                 }

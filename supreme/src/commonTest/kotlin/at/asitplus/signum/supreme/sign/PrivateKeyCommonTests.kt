@@ -6,12 +6,12 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -44,13 +44,12 @@ val PrivateKeyCommonTests by matrixSuite {
         val signer: Signer = RSAAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
         val data = Random.nextBytes(384)
-        val signature = signer.sign(data)
-        signature.isSuccess shouldBe true
+        val signature = signer.sign(data).signature
 
 
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey)
-            .verify(data, signature.signature).isSuccess shouldBe true
+            .verify(data, signature) shouldBe SignatureVerifier.Success
 
     }
 
@@ -68,13 +67,12 @@ val PrivateKeyCommonTests by matrixSuite {
         val signer: Signer = ECDSAAlgorithm.withSHA256.signerFor(privateKey)
 
         val data = Random.Default.nextBytes(1024)
-        val signature = signer.sign(data)
-        signature.isSuccess shouldBe true
+        val signature = signer.sign(data).signature
 
 
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey)
-            .verify(data, signature.signature).isSuccess shouldBe true
+            .verify(data, signature) shouldBe SignatureVerifier.Success
     }
 
     "Export EC" {
@@ -85,7 +83,7 @@ val PrivateKeyCommonTests by matrixSuite {
         val data = Random.Default.nextBytes(1024)
         val sig = signer.signatureAlgorithm.signerFor(privateKey).sign(data).signature
 
-        signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig).isSuccess shouldBe true
+        signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig) shouldBe SignatureVerifier.Success
     }
 
     "Export RSA" {
@@ -96,7 +94,7 @@ val PrivateKeyCommonTests by matrixSuite {
         val data = Random.Default.nextBytes(1024)
         val sig = signer.signatureAlgorithm.signerFor(privateKey).sign(data).signature
 
-        signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig).isSuccess shouldBe true
+        signer.signatureAlgorithm.verifierFor(signer.publicKey).verify(data, sig) shouldBe SignatureVerifier.Success
     }
 
     "Regressions" - {

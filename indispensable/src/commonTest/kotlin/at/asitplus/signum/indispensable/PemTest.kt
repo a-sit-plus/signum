@@ -198,12 +198,12 @@ val PemTest  by matrixSuite {
         )
 
         rsa.forEach { string ->
-            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray())
                 .shouldBeInstanceOf<RSAPrivateKey>()
         }
 
         ec.forEach { string ->
-            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray())
                 .shouldBeInstanceOf<ECDSAPrivateKey>()
 
         }

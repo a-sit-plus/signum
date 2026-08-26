@@ -175,7 +175,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         repeat(500) {
             launch {
-                x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow()
+                x509Certificate.toJcaCertificate().toKmpCertificate().getOrThrow()
                     .encodeToDer() shouldBe x509Certificate.encodeToDer()
             }
         }

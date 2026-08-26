@@ -7,6 +7,7 @@ This is a major refactor!
 * publish javadoc redirect to save space
 * make all provider functions suspend
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
+* `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Dependency Updates:
     * Bouncy Castle 1.85
     * multibase 1.3.0

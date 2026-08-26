@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSASignature
@@ -39,7 +40,7 @@ val JKSProviderTest  by matrixSuite {
 
         val data = Random.Default.nextBytes(64)
         val signature = signer.sign(data).signature
-        otherSigner.makeVerifier().verify(data, signature) should succeed
+        otherSigner.makeVerifier().verify(data, signature) shouldBe SignatureVerifier.Success
     }
     "Key With Password" {
         val ks = JKSProvider {

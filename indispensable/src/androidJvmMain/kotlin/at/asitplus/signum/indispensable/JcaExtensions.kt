@@ -264,16 +264,15 @@ fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
  * Converts this [Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
+suspend fun Certificate.toJcaCertificate(): java.security.cert.X509Certificate =
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
-}
 
 /**
  * blocking implementation of [toJcaCertificate]
  */
-fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+fun Certificate.toJcaCertificateBlocking(): java.security.cert.X509Certificate =
     runBlocking { toJcaCertificate() }
 
 /**

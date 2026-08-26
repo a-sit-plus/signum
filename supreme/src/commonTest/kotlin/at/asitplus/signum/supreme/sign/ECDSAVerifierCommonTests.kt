@@ -5,12 +5,15 @@ import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -392,16 +395,18 @@ val ECDSAVerifierCommonTests by matrixSuite {
             byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
                 data(byDigest, nameFn = { it.b64msg }) test { test ->
                     val verifier = ECDSAAlgorithm(test.digest, null).verifierFor(test.key)
-                    verifier.verify(test.msg, test.sig) should succeed
+                    verifier.verify(test.msg, test.sig) shouldBe SignatureVerifier.Success
                     Random.of(byDigest).let {
                         if (it !== test) {
-                            verifier.verify(it.msg, test.sig) shouldNot succeed
-                            verifier.verify(it.msg, it.sig) shouldNot succeed
+                            shouldThrowAny { verifier.verify(it.msg, test.sig) }
+                            shouldThrowAny { verifier.verify(it.msg, it.sig) }
                         }
                     }
                     Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
-                        ECDSAAlgorithm(dig, null)
-                            .verifierFor(test.key).verify(test.msg, test.sig) shouldNot succeed
+                        shouldThrowAny {
+                            ECDSAAlgorithm(dig, null)
+                                .verifierFor(test.key).verify(test.msg, test.sig)
+                        }
                     }
                 }
             }

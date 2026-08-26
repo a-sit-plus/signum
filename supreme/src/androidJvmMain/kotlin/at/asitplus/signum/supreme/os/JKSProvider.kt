@@ -254,7 +254,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 sign()
             }.let { Certificate(tbsCert, CryptoSignature.parseFromJca(it, certAlg)) }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
-                arrayOf(cert.toJcaCertificate().getOrThrow()))
+                arrayOf(cert.toJcaCertificate()))
             ctx.markAsDirty()
 
             return getSigner(alias, DSL.resolve(::JKSSignerConfiguration, config.signer.v), keyPair.private, cert)

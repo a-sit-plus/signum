@@ -2,7 +2,7 @@
 
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
+import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.dsl.EphemeralECDSAConfiguration
 import at.asitplus.signum.dsl.EphemeralRSAConfiguration
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
@@ -23,21 +23,16 @@ import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.indispensable.toSecKey
+import at.asitplus.signum.internals.corecall
+import at.asitplus.signum.internals.takeFromCF
+import at.asitplus.signum.internals.toByteArray
 import kotlinx.cinterop.*
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
 import platform.Security.*
-
-internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreementPublicValue.ECDH) =
-    corecall {
-        SecKeyCopyKeyExchangeResult(
-            privateKey,
-            kSecKeyAlgorithmECDHKeyExchangeStandard,
-            publicValue.asCryptoPublicKey().toSecKey().value,
-            parameters = null,
-            error
-        )
-    }.takeFromCF<NSData>().toByteArray()
+import platform.Security.SecKeyCopyKeyExchangeResult
+import platform.Security.kSecKeyAlgorithmECDHKeyExchangeStandard
 
 sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) : Signer.WithExportableKey {
     final override val mayRequireUserUnlock: Boolean get() = false
@@ -61,11 +56,18 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as ECDSAPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            ECDSASignature.decodeFromDer(signatureBytes).withCurve(publicKey.curve)
+            ECDSASignature.decodeFromTlv(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
 
-        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
-            performKeyAgreement(privateKey.value, publicValue)
-        }
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
+            corecall {
+                SecKeyCopyKeyExchangeResult(
+                    privateKey.value,
+                    kSecKeyAlgorithmECDHKeyExchangeStandard,
+                    publicValue.asCryptoPublicKey().toSecKey().value,
+                    parameters = null,
+                    error
+                )
+            }.takeFromCF<NSData>().toByteArray()
     }
 
     class RSA internal constructor(
@@ -77,7 +79,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as RSAPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            RSASignature(signatureBytes)
+            RSASignature.decodeFromTlv(X509SignatureValue(signatureBytes))
     }
 }
 
@@ -102,7 +104,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
             }
             val privateKey = corecall {
                 SecKeyCreateRandomKey(attr, error)
-            }.manage()
+            }.adopt()
             val pubkeyBytes = SecKeyCopyPublicKey(privateKey.value).also { defer { CFRelease(it) } }
                 .let {
                     corecall {

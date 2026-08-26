@@ -155,7 +155,7 @@ sealed class ECDSASignature
 
         /** Parses a signature produced by the JCA digestwithECDSA algorithm. */
         fun parseFromJca(input: ByteArray) =
-            IndefiniteLength(X509SignatureValue(input))
+            decodeFromTlv(X509SignatureValue(input))
 
         /** Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm. */
         fun parseFromJcaP1363(input: ByteArray) =

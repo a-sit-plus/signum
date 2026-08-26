@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.KmmResult
 import at.asitplus.awesn1.encoding.toUnsignedByteArray
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.KDF
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
@@ -37,7 +36,7 @@ object SupremeKDFProvider : KDFOperationProvider {
 }
 
 private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): ByteArray =
-    hkdf.extractStep(salt, ikm).getOrThrow().let { hkdf.expandStep(it, info, derivedKeyLength).getOrThrow() }
+    hkdf.extractStep(salt, ikm).let { hkdf.expandStep(it, info, derivedKeyLength) }
 
 /**
  * HKDF `expand` step. **NOT A FULL KDF!**
@@ -45,7 +44,7 @@ private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, derive
  * @param info context
  * @param derivedKeyLength derived key length
  */
-suspend fun HKDF.expandStep(pseudoRandomKey: ByteArray, info: ByteArray, derivedKeyLength: BitLength): KmmResult<ByteArray> = catching {
+suspend fun HKDF.expandStep(pseudoRandomKey: ByteArray, info: ByteArray, derivedKeyLength: BitLength): ByteArray {
     val output = ByteArray(derivedKeyLength.bytes.toInt())
     var T = byteArrayOf()
     var populated = 0
@@ -53,12 +52,11 @@ suspend fun HKDF.expandStep(pseudoRandomKey: ByteArray, info: ByteArray, derived
     while (populated < output.size) {
         check(nextI <= 255)
         T = hmac.mac(pseudoRandomKey, sequenceOf(T, info, byteArrayOf((nextI++).toUByte().toByte())))
-            .getOrThrow()
         val toCopy = min(output.size - populated, T.size)
         T.copyInto(output, populated, 0, toCopy)
         populated += toCopy
     }
-    output
+    return output
 }
 
 /**
@@ -66,7 +64,7 @@ suspend fun HKDF.expandStep(pseudoRandomKey: ByteArray, info: ByteArray, derived
  * @param salt optional salt. If not provided, defaults to `ByteArray(outputLength)`, i.e. ["a string of HashLen zeros"](https://datatracker.ietf.org/doc/html/rfc5869#section-2.2)
  * @param inputKeyMaterial input key material
  */
-suspend fun HKDF.extractStep(salt: ByteArray?, inputKeyMaterial: ByteArray): KmmResult<ByteArray> =
+suspend fun HKDF.extractStep(salt: ByteArray?, inputKeyMaterial: ByteArray): ByteArray =
     hmac.mac(salt ?: ByteArray(outputLength), inputKeyMaterial)
 
 
@@ -82,10 +80,10 @@ private suspend fun PBKDF2.WithIterations.derive(password: ByteArray, salt: Byte
         // the loop body is RFC8018#Section-5.2's "F"
         require(i < UInt.MAX_VALUE) { "derived key too long" }
         ++i
-        var U = pbkdf2.prf.mac(password, sequenceOf(salt, pbkdf2.int(i))).getOrThrow()
+        var U = pbkdf2.prf.mac(password, sequenceOf(salt, pbkdf2.int(i)))
         var T = U
         repeat(iterations - 1) {
-            U = pbkdf2.prf.mac(password, U).getOrThrow()
+            U = pbkdf2.prf.mac(password, U)
             T = T xor U
         }
         val toCopy = min(T.size, dkLen - populated)

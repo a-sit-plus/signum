@@ -11,6 +11,8 @@ import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.CompactConcurrency
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
@@ -167,30 +169,33 @@ fun main() {
                 "basic verification" {
                     val verifier =
                         RSAAlgorithm(test.parameters).verifierFor(test.key)
-                    verifier.verify(test.msg, test.sig) should succeed
-                    verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) shouldNot succeed
+                    shouldNotThrowAny { verifier.verify(test.msg, test.sig) }
+                    shouldThrowAny { verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) }
                     Random.of(byDigest).let {
                         if (it !== test) {
-                            verifier.verify(it.msg, test.sig) shouldNot succeed
-                            verifier.verify(it.msg, it.sig) shouldNot succeed
+                            shouldThrowAny { verifier.verify(it.msg, test.sig) }
+                            shouldThrowAny { verifier.verify(it.msg, it.sig) }
                         }
                     }
                 }
                 compact("digest mismatch") { concurrency = CompactConcurrency.Shared(8) } - {
                     property(Arb.of(Digest.entries.filter { it != test.digest })) test { dig ->
-                        catching {
-                            if (test.parameters is RSAAlgorithm.Parameters.PssPadded)
-                                RSAAlgorithm(RSAAlgorithm.Parameters.PssPadded(dig))
-                                    .verifierFor(test.key)
-                            else
-                                RSAAlgorithm(RSAAlgorithm.Parameters.Pkcs1Padded(dig))
-                                    .verifierFor(test.key)
-                        }.transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                        shouldThrowAny {
+                            val verifier = when (test.parameters) {
+                                is RSAAlgorithm.Parameters.PssPadded ->
+                                    RSAAlgorithm(RSAAlgorithm.Parameters.PssPadded(dig))
+                                        .verifierFor(test.key)
+                                else ->
+                                    RSAAlgorithm(RSAAlgorithm.Parameters.Pkcs1Padded(dig))
+                                        .verifierFor(test.key)
+                            }
+                            verifier.verify(test.msg, test.sig)
+                        }
                     }
                 }
                 compact("parameter mismatch") { concurrency = CompactConcurrency.Shared(8) } - {
                     property(Arb.of(RSAAlgorithm.Parameters.entries.filter { it != test.parameters })) test { pad ->
-                        catching { RSAAlgorithm(pad).verifierFor(test.key) }.transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                        shouldThrowAny { RSAAlgorithm(pad).verifierFor(test.key).verify(test.msg, test.sig) }
                     }
                 }
             }

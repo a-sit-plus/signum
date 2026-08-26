@@ -1,24 +1,32 @@
 package at.asitplus.signum.provider
 
+import at.asitplus.awesn1.encoding.toUnsignedByteArray
+import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.os.SigningProviderI
-import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.supreme.sign.makeVerifier
+import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 val ParallelismTest by matrixSuite {
-    val alias = "TestAlias"
-
     "10k Loop" {
         getTestProvider().let { provider ->
-            val jobs = List(10000) {
-                launch {
-                    provider.deleteSigningKey(alias)
-                    provider.getSignerForKey(alias)
-                    provider.createSigningKey(alias) { ec { } } /*this was failing silently, because no key type was specified*/
-                }
-            }
-            jobs.joinAll()
+            List(100) { i -> launch {
+                val alias = "${Random.azString(64)}-$i"
+                provider.createSigningKey(alias)
+                List(100) { j -> launch {
+                    val signer = provider.getSignerForKey(alias)
+                    val sig = signer.sign(j.toUnsignedByteArray()).signature
+                    val verifier = provider.getSignerForKey(alias).makeVerifier()
+                    verifier.verify(j.toUnsignedByteArray(), sig)
+                }}.joinAll()
+                provider.deleteSigningKey(alias)
+            }}.joinAll()
         }
     }
 }

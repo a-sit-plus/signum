@@ -1,13 +1,10 @@
 package at.asitplus.signum.supreme.agree
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.supreme.sign.signerFor
 import kotlin.jvm.JvmName
 
@@ -15,20 +12,20 @@ import kotlin.jvm.JvmName
  * This interface exists for technical reasons and brings nothing to the public API
  */
 interface UsableECDHPrivateValue : KeyAgreementPrivateValue.ECDH {
-    suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): KmmResult<ByteArray>
+    suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray
 }
 
 /**
  * Performs key agreement
  */
-suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPublicValue): KmmResult<ByteArray> {
+suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPublicValue): ByteArray {
     if (publicValue !is KeyAgreementPublicValue.ECDH)
-        return KmmResult.failure(IllegalArgumentException("Expected KeyAgreementPublicValue.ECDH, got ${publicValue::class.simpleName}"))
+        throw IllegalArgumentException("Expected KeyAgreementPublicValue.ECDH, got ${publicValue::class.simpleName}")
     return when (this) {
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
         is ECDSAPrivateKey.WithPublicKey -> ECDSAAlgorithm.withSHA256.signerFor(this).keyAgreement(publicValue)
 
-        else -> KmmResult.failure(IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}"))
+        else -> throw IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}")
     }
 }
 
@@ -55,8 +52,7 @@ suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: ECDSAPrivate
  * Generates an ephemeral ECDH private value on the provided [curve].
  */
 suspend fun KeyAgreementPrivateValue.ECDH.Companion.Ephemeral(curve: ECCurve = ECCurve.SECP_256_R_1)
-        : KmmResult<KeyAgreementPrivateValue.ECDH> = catching {
+        : KeyAgreementPrivateValue.ECDH =
     Signer.Ephemeral {
         ec { this.curve = curve }
     } as Signer.ECDSA
-}

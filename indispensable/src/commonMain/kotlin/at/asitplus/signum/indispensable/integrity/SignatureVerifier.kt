@@ -29,25 +29,26 @@ interface SignatureVerifier {
         override val publicKey: RSAPublicKey
     }
 
-    /**
-     * Works around the pathological behavior of KmmResult<Unit> with .map, which would make
-     * ```
-     * val proxyVerify(...): KmmResult<Unit> = getVerifier().map { it.verify(...) }
-     * ```
-     * silently succeed (with the programmer confusing `map` and `transform`).
-     */
+    /** Make it explicit that we only return on successful validation */
     data object Success
 
-    suspend fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Success>
+    /** Verify the signature. Returns on success. Throws on failure. */
+    @IgnorableReturnValue
+    suspend fun verify(data: SignatureInput, sig: CryptoSignature): Success
 }
+@IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
+@IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
+@IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: SignatureInput, sig: DerEncodable<X509SignatureValue>) =
     verify(data, sig as? CryptoSignature ?: sig.withSignatureAlgorithm(signatureAlgorithm))
+@IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: ByteArray, sig: DerEncodable<X509SignatureValue>) =
     verify(SignatureInput(data), sig)
+@IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: DerEncodable<X509SignatureValue>) =
     verify(SignatureInput(data), sig)
 

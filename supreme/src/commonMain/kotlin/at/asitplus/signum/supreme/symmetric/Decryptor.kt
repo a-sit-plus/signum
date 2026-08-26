@@ -41,7 +41,7 @@ internal class Decryptor(
                 platformCipher.aad!!
             )
             val macAuthTagTransform = algorithm.macAuthTagTransform
-            if (!algorithm.macAuthTagTransform(algorithm.mac.mac(macKey!!, hmacInput).getOrThrow()).contentEquals(authTag))
+            if (!algorithm.macAuthTagTransform(algorithm.mac.mac(macKey!!, hmacInput)).contentEquals(authTag))
                 throw IllegalArgumentException("Auth Tag mismatch!")
         }
         return platformCipher.doDecrypt(encryptedData, authTag)

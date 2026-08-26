@@ -53,13 +53,12 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable 
             }
 
         @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
-        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey> = catching {
+        fun fromIosEncoded(keyBytes: ByteArray): CryptoPrivateKey.WithPublicKey =
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 ECDSAPrivateKey.iosDecodeInternal(keyBytes)
             } else {
                 RSAPrivateKey.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey
             }
-        }
     }
 
     @Deprecated(message = "Private key types migrated out of CryptoPrivateKey as part of providerization",

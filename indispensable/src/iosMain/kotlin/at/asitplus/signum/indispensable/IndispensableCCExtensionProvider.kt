@@ -2,42 +2,108 @@
 
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.fromIosEncodedPublicKeyLength
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.internals.OwnedCFValue
-import at.asitplus.signum.internals.cfDictionaryOf
-import at.asitplus.signum.internals.corecall
-import at.asitplus.signum.internals.corecall.Companion.invoke
-import at.asitplus.signum.internals.createCFDictionary
-import at.asitplus.signum.internals.get
-import at.asitplus.signum.internals.manage
-import at.asitplus.signum.internals.takeFromCF
-import at.asitplus.signum.internals.toByteArray
-import at.asitplus.signum.internals.toKotlinString
-import at.asitplus.signum.internals.toNSData
+import at.asitplus.signum.internals.*
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
-import platform.Security.SecKeyCopyAttributes
-import platform.Security.SecKeyCopyExternalRepresentation
-import platform.Security.SecKeyCreateWithData
-import platform.Security.SecKeyRef
-import platform.Security.kSecAttrIsPermanent
-import platform.Security.kSecAttrKeyClass
-import platform.Security.kSecAttrKeyClassPrivate
-import platform.Security.kSecAttrKeyClassPublic
-import platform.Security.kSecAttrKeySizeInBits
-import platform.Security.kSecAttrKeyType
-import platform.Security.kSecAttrKeyTypeECSECPrimeRandom
-import platform.Security.kSecAttrKeyTypeRSA
-import platform.Security.kSecPrivateKeyAttrs
+import platform.Security.*
+
+private fun RSAAlgorithm.Parameters.PssPadded.requireSupportedIosPssParameters() {
+    val mgf = mgfAlgorithm
+    if (!(
+        mgf is RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1 &&
+        mgf.digest == this.digest &&
+        saltLength.toInt() == digest.outputLength.bytes.toInt() &&
+        trailerField == 1
+    )) {
+        throw UnsupportedCryptoException("iOS supports RSA-PSS only with MGF1 using the signature digest, a salt matching the digest length, and trailer field 1")
+    }
+}
 
 object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
+    override fun signatureAlgorithmToSecKeyAlgorithm(algorithm: SignatureAlgorithm) = when (algorithm) {
+        is ECDSAAlgorithm -> {
+            when (algorithm.digest) {
+                Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA1
+                Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA256
+                Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA384
+                Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA512
+                null -> throw UnsupportedCryptoException("Raw signing is not supported on iOS")
+                else -> throw UnsupportedCryptoException("Unknown digest ${algorithm.digest} is unsupported on iOS")
+            }
+        }
+
+        is RSAAlgorithm -> {
+            when (val params = algorithm.parameters) {
+                is RSAAlgorithm.Parameters.PssPadded -> when (val digest = params.also {
+                    it.requireSupportedIosPssParameters()
+                }.digest) {
+                    Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA1
+                    Digest.SHA256 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA256
+                    Digest.SHA384 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA384
+                    Digest.SHA512 -> kSecKeyAlgorithmRSASignatureMessagePSSSHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
+                }
+
+                is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+                    Digest.SHA1 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA1
+                    Digest.SHA256 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256
+                    Digest.SHA384 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA384
+                    Digest.SHA512 -> kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
+                }
+            }
+        }
+
+        else -> throw UnsupportedCryptoException("Algorithm $this is unknown")
+    }
+
+    override fun signatureAlgorithmToSecKeyAlgorithmPreHashed(algorithm: SignatureAlgorithm) = when (algorithm) {
+        is ECDSAAlgorithm -> {
+            when (algorithm.digest) {
+                Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA1
+                Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA256
+                Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA384
+                Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA512
+                null -> throw UnsupportedCryptoException("Raw signing is not supported on iOS")
+                else -> throw UnsupportedCryptoException("Unknown digest ${algorithm.digest} is unsupported on iOS")
+            }
+        }
+
+        is RSAAlgorithm -> {
+            when (val params = algorithm.parameters) {
+                is RSAAlgorithm.Parameters.PssPadded -> when (val digest = params.also {
+                    it.requireSupportedIosPssParameters()
+                }.digest) {
+                    Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA1
+                    Digest.SHA256 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA256
+                    Digest.SHA384 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA384
+                    Digest.SHA512 -> kSecKeyAlgorithmRSASignatureDigestPSSSHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
+                }
+
+                is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+                    Digest.SHA1 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1
+                    Digest.SHA256 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256
+                    Digest.SHA384 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384
+                    Digest.SHA512 -> kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512
+                    else -> throw UnsupportedCryptoException("Digest $digest is unsupported on iOS")
+                }
+            }
+        }
+
+        else -> throw UnsupportedCryptoException("Algorithm $this is unknown")
+    }
     override fun cryptoPublicKeyToSecKey(key: CryptoPublicKey): OwnedCFValue<SecKeyRef>? {
         val (keyType, keyBytes) = when (key) {
             is ECDSAPublicKey -> Pair(kSecAttrKeyTypeECSECPrimeRandom, key.iosEncoded)
@@ -50,7 +116,7 @@ object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
                 kSecAttrKeyType to keyType)
             return corecall {
                 SecKeyCreateWithData(keyBytes.toNSData().giveToCF(), attr, error)
-            }.manage()
+            }.adopt()
         }
     }
 
@@ -58,7 +124,7 @@ object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
         memScoped {
             val keyType = corecall {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
-            }.get<String>(kSecAttrKeyType)
+            }.getAndTake<String>(kSecAttrKeyType)
             val ctor = when (keyType) {
                 kSecAttrKeyTypeRSA.toKotlinString() -> RSAPublicKey::fromPKCS1encoded
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() -> { bytes ->
@@ -92,7 +158,7 @@ object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
             }
             return corecall {
                 SecKeyCreateWithData(keyBytes.toNSData().giveToCF(), attr, error)
-            }.manage()
+            }.adopt()
         }
     }
 
@@ -100,7 +166,7 @@ object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
         memScoped {
             val keyType = corecall {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
-            }.get<String>(kSecAttrKeyType)
+            }.getAndTake<String>(kSecAttrKeyType)
             val ctor: ((ByteArray)-> CryptoPrivateKey.WithPublicKey) = when (keyType) {
                 kSecAttrKeyTypeRSA.toKotlinString() ->
                     RSAPrivateKey.FromPKCS1::decodeFromDer

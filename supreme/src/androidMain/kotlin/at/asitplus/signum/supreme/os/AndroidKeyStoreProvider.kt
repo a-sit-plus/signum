@@ -13,7 +13,6 @@ import androidx.biometric.BiometricPrompt.CryptoObject
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.Asn1StructuralException
@@ -469,7 +468,7 @@ abstract class AndroidKeystoreSigner protected constructor(
         override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-        ) = catching {
+        ) : ByteArray {
             val signingConfig = DSL.resolve(::AndroidSignerSigningConfiguration, configure)
             javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").run {
                 //Android bug here: impossible to do for auth-on-every use keys. Earliest possible fix: Android 16, if ever
@@ -480,7 +479,7 @@ abstract class AndroidKeystoreSigner protected constructor(
                     init(jcaPrivateKey)
                 }
                 doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
-                generateSecret()
+                return generateSecret()
             }
         }
 

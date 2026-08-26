@@ -52,7 +52,9 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
 }
 
 /** Generates an elliptic-curve key. */
-val SigningKeyConfiguration.ec get() = _algSpecific.defaultOption("EC", SigningKeyConfiguration::ECConfiguration)
+val SigningKeyConfiguration.ec get() =
+    _algSpecific.defaultOption("EC", SigningKeyConfiguration::ECConfiguration)
 
 /** Generates an RSA key. */
-val SigningKeyConfiguration.rsa get() = _algSpecific.option("RSA", SigningKeyConfiguration::RSAConfiguration)
+val SigningKeyConfiguration.rsa get() =
+    _algSpecific.option("RSA", SigningKeyConfiguration::RSAConfiguration)

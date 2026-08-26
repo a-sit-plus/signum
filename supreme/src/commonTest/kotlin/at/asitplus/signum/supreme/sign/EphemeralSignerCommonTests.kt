@@ -149,8 +149,8 @@ val EphemeralSignerCommonTests by matrixSuite {
                     .sign(data).signature
 
                 val verifier = signer.makeVerifier()
-                verifier.verify(data, signature) should succeed
-                verifier.verify(data, secondSig) should succeed
+                shouldNotThrowAny { verifier.verify(data, signature) }
+                shouldNotThrowAny { verifier.verify(data, secondSig) }
             }
         }
         "ECDSA" - {
@@ -172,8 +172,8 @@ val EphemeralSignerCommonTests by matrixSuite {
                     .sign(data).signature
 
                 val verifier = signer.makeVerifier()
-                verifier.verify(data, signature) should succeed
-                verifier.verify(data, secondSig) should succeed
+                shouldNotThrowAny { verifier.verify(data, signature) }
+                shouldNotThrowAny { verifier.verify(data, secondSig) }
             }
         }
     }
@@ -239,7 +239,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val verifier = signer.makeVerifier()
-                verifier.verify(signedCSR.tbsCsr, signedCSR.signature) should succeed
+                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr, signedCSR.signature) }
 
 
                 val tbsCrt = TbsCertificate(
@@ -260,7 +260,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 )
                 val cert = signer.sign(tbsCrt)
 
-                verifier.verify(cert.tbsCertificate, cert.signature) should succeed
+                shouldNotThrowAny { verifier.verify(cert.tbsCertificate, cert.signature) }
 
             }
         }
@@ -289,7 +289,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val verifier = signer.makeVerifier()
-                verifier.verify(signedCSR.tbsCsr, signedCSR.signature) should succeed
+                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr, signedCSR.signature) }
 
 
                 val tbsCrt = TbsCertificate(
@@ -310,7 +310,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 )
                 val cert = signer.sign(tbsCrt)
 
-                verifier.verify(cert.tbsCertificate, cert.signature) should succeed
+                shouldNotThrowAny { verifier.verify(cert.tbsCertificate, cert.signature) }
             }
         }
     }

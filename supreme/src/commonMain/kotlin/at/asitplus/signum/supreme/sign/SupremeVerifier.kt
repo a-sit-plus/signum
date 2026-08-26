@@ -1,28 +1,23 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.ecmath.straussShamir
-import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.jvm
-import at.asitplus.signum.indispensable.integrity.verifierFor
+import at.asitplus.signum.ecmath.straussShamir
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.integrity.*
+import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
 
 class KotlinECDSAVerifier
     internal constructor (override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)
     : SignatureVerifier.ECDSA {
-    override suspend fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
         require(sig is ECDSASignature)
             { "Attempted to validate ${sig::class.simpleName} signature using EC public key" }
 
@@ -45,10 +40,11 @@ class KotlinECDSAVerifier
         val u2 = (sig.r * sInv).mod(curve.order)
         val point = straussShamir(u1, curve.generator, u2, publicKey.publicPoint).run {
             tryNormalize() ?: throw InvalidSignature("(x1,y1) = additive zero") }
-        if (point.x.residue.mod(curve.order) != sig.r.mod(curve.order)) {
+        if (point.x.residue.mod(curve.order) == sig.r.mod(curve.order)) {
+            return SignatureVerifier.Success
+        } else {
             throw InvalidSignature("Signature is invalid: x1 != r")
         }
-        return@catching SignatureVerifier.Success
     }
 }
 

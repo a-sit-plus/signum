@@ -83,14 +83,14 @@ val MACTest  by matrixSuite {
             check(info.ref384.size == 48)
             check(info.ref512.size == 64)
 
-            HMAC.SHA256.mac(key=info.k, msg=info.d).getOrThrow() shouldBe info.ref256
-            HMAC.SHA384.mac(key=info.k, msg=info.d).getOrThrow() shouldBe info.ref384
-            HMAC.SHA512.mac(key=info.k, msg=info.d).getOrThrow() shouldBe info.ref512
+            HMAC.SHA256.mac(key=info.k, msg=info.d) shouldBe info.ref256
+            HMAC.SHA384.mac(key=info.k, msg=info.d) shouldBe info.ref384
+            HMAC.SHA512.mac(key=info.k, msg=info.d) shouldBe info.ref512
         }
     }
     "Truncated" {
         HMAC.SHA256.truncatedTo(3.bit)
             .mac(key=b("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"), b("4869205468657265"))
-            .getOrThrow() shouldBe byteArrayOf(0xa0.toByte())
+            .shouldBe(byteArrayOf(0xa0.toByte()))
     }
 }

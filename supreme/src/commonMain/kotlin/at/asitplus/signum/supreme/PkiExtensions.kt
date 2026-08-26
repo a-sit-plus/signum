@@ -35,15 +35,18 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
 suspend inline fun <reified T> Signer.sign(input: DerEncodable<T>) =
     sign(input.encodeToDer())
 
+@IgnorableReturnValue
 suspend inline fun <reified T> SignatureVerifier.verify(input: DerEncodable<T>, signature: CryptoSignature) =
     verify(input.encodeToDer(), signature)
 
-suspend fun SignatureVerifier.verify(input: Certificate): KmmResult<SignatureVerifier.Success> {
+@IgnorableReturnValue
+suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
     return verify(input.tbsCertificate, input.signature)
 }
 
-suspend fun SignatureVerifier.verify(input: CertificationRequest): KmmResult<SignatureVerifier.Success> {
+@IgnorableReturnValue
+suspend fun SignatureVerifier.verify(input: CertificationRequest): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
     return verify(input.tbsCsr, input.signature)
 }

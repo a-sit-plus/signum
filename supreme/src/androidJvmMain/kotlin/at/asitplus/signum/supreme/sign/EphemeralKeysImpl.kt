@@ -63,7 +63,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
         @SecretExposure
         final override suspend fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
 
-        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
             when (provider) {
                 is JCAProviderRef.ByName -> KeyAgreement.getInstance("ECDH", provider.provider)
                 is JCAProviderRefO -> KeyAgreement.getInstance("ECDH", provider.provider)
@@ -74,7 +74,6 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
                 doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
                 generateSecret()
             }
-        }
     }
 
     open class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
