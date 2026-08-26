@@ -32,7 +32,7 @@ import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.DerPemDecodable
 import at.asitplus.signum.indispensable.DerPemEncodable
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.PrivateKeyFormatProvider
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.equalsCryptographically

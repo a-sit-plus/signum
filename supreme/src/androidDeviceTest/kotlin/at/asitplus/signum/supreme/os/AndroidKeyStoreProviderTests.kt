@@ -1,13 +1,12 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.attestation
 import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb

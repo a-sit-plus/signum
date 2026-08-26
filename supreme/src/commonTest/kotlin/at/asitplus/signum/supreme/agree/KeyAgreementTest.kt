@@ -2,7 +2,8 @@ package at.asitplus.signum.supreme.agree
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.keyAgreement
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrowAny

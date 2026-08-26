@@ -15,13 +15,13 @@ import at.asitplus.signum.indispensable.integrity.*
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.supreme.signCatching
-import at.asitplus.signum.supreme.signature
-import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.signum.supreme.verify
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
@@ -77,7 +77,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val publicKey: CryptoPublicKey get() = this
 
         override val signatureAlgorithm: SignatureAlgorithm get() = CursorySignatureScheme
-        override suspend fun sign(data: SignatureInput) = signCatching {
+        override suspend fun sign(data: SignatureInput) = SignatureResult.make {
             require(data.format == null)
             val dataHasHighest = data.data.first(ByteArray::isNotEmpty).hasHighest
             Signature(dataHasHighest != this.bit)

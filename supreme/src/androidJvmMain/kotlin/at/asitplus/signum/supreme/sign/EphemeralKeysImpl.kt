@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
 import at.asitplus.signum.dsl.EphemeralECDSAConfiguration
 import at.asitplus.signum.dsl.EphemeralRSAConfiguration
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
@@ -23,7 +22,10 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.supreme.signCatching
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.Signer
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPrivateKey
@@ -34,7 +36,7 @@ import javax.crypto.KeyAgreement
 
 abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, protected val provider: JCAProviderRef) : Signer.WithExportableKey {
     override val mayRequireUserUnlock = false
-    override suspend fun sign(data: SignatureInput) = signCatching {
+    override suspend fun sign(data: SignatureInput) = SignatureResult.make {
         val preHashed = (data.format != null)
         if (preHashed) {
             require (data.format == signatureAlgorithm.preHashedSignatureFormat)

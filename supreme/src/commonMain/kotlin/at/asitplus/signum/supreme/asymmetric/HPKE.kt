@@ -2,8 +2,8 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
-import at.asitplus.signum.indispensable.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
@@ -22,7 +22,7 @@ import at.asitplus.signum.indispensable.symmetric.nonceSize
 import at.asitplus.signum.indispensable.symmetric.sealedBox
 import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.agree.Ephemeral
-import at.asitplus.signum.supreme.agree.keyAgreement
+import at.asitplus.signum.indispensable.agree.keyAgreement
 import at.asitplus.signum.supreme.kdf.expandStep
 import at.asitplus.signum.supreme.kdf.extractStep
 import at.asitplus.signum.supreme.symmetric.Encryptor

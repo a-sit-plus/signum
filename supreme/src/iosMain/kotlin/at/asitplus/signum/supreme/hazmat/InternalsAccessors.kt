@@ -5,7 +5,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.internals.OwnedCFValue
 import at.asitplus.signum.supreme.os.IosSigner
 import at.asitplus.signum.supreme.sign.SupremeIosEphemeralSigner
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.Signer
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Security.SecKeyRef
 

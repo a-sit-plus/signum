@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.DerEncodable
@@ -12,7 +11,8 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.Signer
 
 /** Shorthand helper to create an [Certificate] by signing [tbsCertificate] */
 suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
@@ -20,7 +20,8 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
         throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
     return Certificate(
         tbsCertificate = tbsCertificate,
-        signature = sign(tbsCertificate.encodeToDer()).signature)
+        signature = sign(tbsCertificate.encodeToDer()).signature
+    )
 }
 
 /** Shorthand helper to create a [CertificationRequest] by signing [tbsCsr] */

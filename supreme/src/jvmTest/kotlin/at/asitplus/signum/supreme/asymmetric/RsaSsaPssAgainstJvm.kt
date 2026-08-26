@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
-import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
@@ -10,9 +9,10 @@ import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.signerFor
 import at.asitplus.testballoon.matrix.matrixSuite
-import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier

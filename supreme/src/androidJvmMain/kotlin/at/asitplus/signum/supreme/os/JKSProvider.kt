@@ -1,9 +1,7 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveAsn1Integer
-import at.asitplus.catching
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
@@ -40,7 +38,7 @@ import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.REQUIRED
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger

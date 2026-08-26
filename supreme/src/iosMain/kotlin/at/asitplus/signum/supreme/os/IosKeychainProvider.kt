@@ -9,14 +9,16 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.*
-import at.asitplus.signum.supreme.*
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.supreme.CFCryptoOperationFailed
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.supreme.swiftasync
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
@@ -229,7 +231,7 @@ sealed class IosSigner(final override val alias: String,
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
     override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
-    signCatching {
+    SignatureResult.make {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
@@ -251,7 +253,7 @@ sealed class IosSigner(final override val alias: String,
                 else -> throw x
             }
         }
-        return@signCatching bytesToSignature(signatureBytes)
+        return@make bytesToSignature(signatureBytes)
     }
 
     class ECDSA internal constructor

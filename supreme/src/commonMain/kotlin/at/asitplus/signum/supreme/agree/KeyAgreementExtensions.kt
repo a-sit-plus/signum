@@ -1,52 +1,9 @@
 package at.asitplus.signum.supreme.agree
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.supreme.sign.signerFor
-import kotlin.jvm.JvmName
-
-/**
- * This interface exists for technical reasons and brings nothing to the public API
- */
-interface UsableECDHPrivateValue : KeyAgreementPrivateValue.ECDH {
-    suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray
-}
-
-/**
- * Performs key agreement
- */
-suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPublicValue): ByteArray {
-    if (publicValue !is KeyAgreementPublicValue.ECDH)
-        throw IllegalArgumentException("Expected KeyAgreementPublicValue.ECDH, got ${publicValue::class.simpleName}")
-    return when (this) {
-        is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
-        is ECDSAPrivateKey.WithPublicKey -> ECDSAAlgorithm.withSHA256.signerFor(this).keyAgreement(publicValue)
-
-        else -> throw IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}")
-    }
-}
-
-/**
- * Performs key agreement
- */
-@JvmName("keyAgreementEC")
-suspend fun ECDSAPrivateKey.keyAgreement(publicValue: KeyAgreementPublicValue) =
-    (this as KeyAgreementPrivateValue.ECDH).keyAgreement(publicValue)
-
-suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPrivateValue) =
-    privateValue.keyAgreement(this)
-
-/**
- * Performs key agreement
- */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-@kotlin.internal.LowPriorityInOverloadResolution
-@JvmName("keyAgreementECDH")
-suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: ECDSAPrivateKey) =
-    privateValue.keyAgreement(this)
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 
 /**
  * Generates an ephemeral ECDH private value on the provided [curve].

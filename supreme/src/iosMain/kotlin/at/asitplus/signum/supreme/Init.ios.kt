@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
 import at.asitplus.signum.supreme.hash.SupremeIosDigestProvider
 import at.asitplus.signum.supreme.os.IosKeychainOperationsProvider
 import at.asitplus.signum.supreme.os.SupremeIosKeychainOperationsProvider
-import at.asitplus.signum.supreme.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
 import at.asitplus.signum.supreme.sign.SupremeCCVerifierProvider
 import at.asitplus.signum.supreme.sign.SupremeIosInMemoryKeysProvider
 

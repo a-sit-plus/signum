@@ -12,7 +12,9 @@ import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.signerFor
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random

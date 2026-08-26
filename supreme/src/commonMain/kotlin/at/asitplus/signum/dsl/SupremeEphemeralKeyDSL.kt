@@ -5,14 +5,6 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 
-open class InMemorySignerConfiguration: DSL.Data() {
-
-}
-class EphemeralSignerConfiguration: InMemorySignerConfiguration() {
-    val _algSpecific = subclassOf<AlgorithmSpecific>("ALG_SPECIFIC_CONFIG")
-    abstract class AlgorithmSpecific : DSL.Data()
-}
-
 class EphemeralECDSAConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific() {
     /** The curve to operate on. Defaults to [secp256r1][ECCurve.SECP_256_R_1]. */
     var curve: ECCurve = ECCurve.SECP_256_R_1
@@ -31,9 +23,6 @@ class EphemeralRSAConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific
     /** The bit size of the generated key. Defaults to 3072 bits. */
     var bits: Int = 3072
 }
-
-val InMemorySignerConfiguration.jvm get() =
-    childOrDefault("JVM", ::JVMEphemeralConfiguration)
 
 val EphemeralSignerConfiguration.ec get() =
     _algSpecific.option("SIGNUM_ECDSA", ::EphemeralECDSAConfiguration)

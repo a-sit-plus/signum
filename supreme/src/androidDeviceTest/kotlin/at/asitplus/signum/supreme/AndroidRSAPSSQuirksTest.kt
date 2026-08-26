@@ -5,7 +5,8 @@ import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import org.bouncycastle.jce.provider.BouncyCastleProvider

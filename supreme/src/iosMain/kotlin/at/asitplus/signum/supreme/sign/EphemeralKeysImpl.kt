@@ -21,8 +21,11 @@ import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.*
-import at.asitplus.signum.supreme.*
 import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.internals.corecall
 import at.asitplus.signum.internals.takeFromCF
@@ -36,13 +39,13 @@ import platform.Security.kSecKeyAlgorithmECDHKeyExchangeStandard
 
 sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) : Signer.WithExportableKey {
     final override val mayRequireUserUnlock: Boolean get() = false
-    final override suspend fun sign(data: SignatureInput) = signCatching {
+    final override suspend fun sign(data: SignatureInput) = SignatureResult.make {
         val (algorithm, format) = signatureAlgorithm.suitableSecKeyAlgAndFormat
         val input = data.convertTo(format).collapsed().data.single().toNSData()
         val signatureBytes = corecall {
             SecKeyCreateSignature(privateKey.value, algorithm, input.giveToCF(), error)
         }.takeFromCF<NSData>().toByteArray()
-        return@signCatching parseSignature(signatureBytes)
+        return@make parseSignature(signatureBytes)
     }
 
     protected abstract fun parseSignature(signatureBytes: ByteArray): CryptoSignature.RawByteEncodable

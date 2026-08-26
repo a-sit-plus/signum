@@ -21,8 +21,8 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
-import at.asitplus.signum.supreme.SignatureResult
-import at.asitplus.signum.supreme.UnlockFailed
+import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.AndroidSignerConfiguration
 import at.asitplus.signum.dsl.AndroidSignerSigningConfiguration
@@ -46,6 +46,7 @@ import at.asitplus.signum.dsl.protection
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
@@ -54,10 +55,9 @@ import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSASignature
-import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
-import at.asitplus.signum.supreme.sign.Signer as SignerI
+import at.asitplus.signum.indispensable.sign.Signer as SignerI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -443,12 +443,12 @@ abstract class AndroidKeystoreSigner protected constructor(
     override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-    ): SignatureResult<*> = withContext(dispatcher) { signCatching {
+    ): SignatureResult<*> = withContext(dispatcher) { SignatureResult.make {
         require(data.format == null)
         val jcaSig = getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
             .let { data.data.forEach(it::update); it.sign() }
 
-        return@signCatching parseSignatureFromJca(jcaSig)
+        return@make parseSignatureFromJca(jcaSig)
     }}
 
     abstract fun parseSignatureFromJca(jcaSig: ByteArray): CryptoSignature.RawByteEncodable

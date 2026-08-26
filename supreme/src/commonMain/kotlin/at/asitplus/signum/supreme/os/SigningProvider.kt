@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
@@ -8,11 +7,11 @@ import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationBase
 import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.indispensable.Attestation
-import at.asitplus.signum.indispensable.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.supreme.SignatureResult
+import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.purposes
 

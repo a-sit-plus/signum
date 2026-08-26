@@ -4,11 +4,9 @@ import at.asitplus.awesn1.encoding.toUnsignedByteArray
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.os.SigningProviderI
-import at.asitplus.signum.supreme.sign.makeVerifier
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.indispensable.sign.makeVerifier
+import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.testballoon.matrix.matrixSuite
-import io.github.aakira.napier.DebugAntilog
-import io.github.aakira.napier.Napier
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlin.random.Random

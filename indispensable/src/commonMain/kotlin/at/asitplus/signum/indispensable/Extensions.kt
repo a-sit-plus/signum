@@ -26,3 +26,8 @@ inline fun Any.contentHashCodeIfArray() = when(this) {
     is BooleanArray -> this.contentHashCode()
     else -> this.hashCode()
 }
+
+@Deprecated("moved to indispensable", replaceWith = ReplaceWith("at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue"))
+typealias KeyAgreementPublicValue = at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+@Deprecated("moved to indispensable", replaceWith = ReplaceWith("at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue"))
+typealias KeyAgreementPrivateValue = at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue

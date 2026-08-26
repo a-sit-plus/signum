@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.hazmat
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.supreme.os.AndroidKeystoreSigner
-import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import java.security.PrivateKey
 
