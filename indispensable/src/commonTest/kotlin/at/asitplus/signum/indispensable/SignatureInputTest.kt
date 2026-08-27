@@ -22,7 +22,14 @@ val SignatureInputTest by matrixSuite {
         input.data.single() shouldBe bytes
         input.format shouldBe Digest.SHA512
     }
-    "SignatureInput collapsing" {
+    "SignatureInput collapsing (single-part)" {
+        val bytes = Random.nextBytes(256)
+        val input = SignatureInput(sequenceOf(bytes).constrainOnce())
+        val collapsed = input.collapsed()
+        collapsed.format shouldBe null
+        collapsed.data.single() shouldBe bytes
+    }
+    "SignatureInput collapsing (multi-part)" {
         val bytes = Random.nextBytes(256)
         val part1 = bytes.copyOfRange(0, 32)
         val part2 = bytes.copyOfRange(32, 96)

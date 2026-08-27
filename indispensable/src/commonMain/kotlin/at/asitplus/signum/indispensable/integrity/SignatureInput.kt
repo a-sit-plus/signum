@@ -31,7 +31,7 @@ class SignatureInput private constructor (
     /** Returns a [SignatureInput] in the same [format] but with only a single [data] element. */
     fun collapsed(): SignatureInput {
         val datas = data.toList()
-        if (datas.size == 1) return this
+        datas.singleOrNull()?.let { return SignatureInput(sequenceOf(it), format) }
         val size = datas.sumOf { it.size }
         val result = ByteArray(size)
         var offset = 0
