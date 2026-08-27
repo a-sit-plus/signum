@@ -36,7 +36,7 @@ class SignatureInput private constructor (
         val result = ByteArray(size)
         var offset = 0
         for (d in datas) {
-            d.copyInto(d, offset, 0, d.size)
+            d.copyInto(result, offset, 0, d.size)
             offset += d.size
         }
         require(offset == result.size)

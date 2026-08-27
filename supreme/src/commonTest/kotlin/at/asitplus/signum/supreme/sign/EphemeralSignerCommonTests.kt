@@ -133,7 +133,10 @@ val EphemeralSignerCommonTests by matrixSuite {
                             this.digest = digest; this.padding = padding; bits = keySize
                         }
                     }
-                    signer.sign(SignatureInput(data).let {
+                    val delimiter = Random.nextInt(1, data.size-1)
+                    val data1 = data.copyOfRange(0, delimiter)
+                    val data2 = data.copyOfRange(delimiter, data.size)
+                    signer.sign(SignatureInput(sequenceOf(data1, byteArrayOf(), data2)).let {
                         if (preHashed) it.convertTo(digest) else it
                     }).signature
                 } catch (_: UnsupportedOperationException) {
@@ -161,7 +164,10 @@ val EphemeralSignerCommonTests by matrixSuite {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
-                val signature = signer.sign(SignatureInput(data).let {
+                val delimiter = Random.nextInt(1, data.size-1)
+                val data1 = data.copyOfRange(0, delimiter)
+                val data2 = data.copyOfRange(delimiter, data.size)
+                val signature = signer.sign(SignatureInput(sequenceOf(data1, byteArrayOf(), data2)).let {
                     if (preHashed) it.convertTo(digest) else it
                 }).signature
 
