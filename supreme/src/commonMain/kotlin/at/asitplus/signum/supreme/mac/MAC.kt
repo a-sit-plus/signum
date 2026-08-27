@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.mac
 import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeOperationsProvider
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeOperationProvider
 import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.integrity.mac
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -23,7 +23,7 @@ private fun ByteArray.truncateTo(size: BitLength): ByteArray {
     return a
 }
 
-object SupremeHMACOperationsProvider : MessageAuthenticationCodeOperationsProvider {
+object SupremeHMACOperationsProvider : MessageAuthenticationCodeOperationProvider {
     override suspend fun doMAC(mac: MessageAuthenticationCode, key: ByteArray, message: Sequence<ByteArray>) =
         when(mac) {
             is HMAC -> mac.hmac(key, message)

@@ -5,9 +5,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.signum.ServiceLoader
@@ -15,7 +13,6 @@ import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import kotlinx.serialization.KSerializer
 
-// @ServiceProvider
 interface PublicKeyFormatProvider {
     fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
     fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?

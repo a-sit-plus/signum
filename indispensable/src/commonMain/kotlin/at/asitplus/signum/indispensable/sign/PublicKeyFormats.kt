@@ -280,7 +280,6 @@ class ECDSAPublicKey private constructor(
     }
 }
 
-// @ServiceProvider
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
         ECDSAPublicKey.oid -> ECDSAPublicKey(publicKeyInfo)

@@ -185,7 +185,6 @@ interface AndroidKeyStoreOperationsProvider {
      * Construct an [AndroidKeystoreSigner] for the given values.
      * Implementers likely only need to determine the [SignatureAlgorithm] to expose, and have their subclass
      * implement the relevant [SignerI] marker interface (if applicable).
-     * [AndroidKeystoreSigner]'s default implementation then forwards to [getAndroidKeystoreJCASignature].
      *
      * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
      * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.

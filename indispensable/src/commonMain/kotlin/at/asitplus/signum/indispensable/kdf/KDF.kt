@@ -7,19 +7,15 @@ import at.asitplus.signum.indispensable.Indispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
 
-interface KDF: Enumerable {
-    companion object : Enumeration<KDF> {
+interface KDF {
+    companion object {
         init { Indispensable.init() }
-        override val entries: Iterable<KDF> get() =
-            ServiceLoader.load<KDFProvider>().asSequence().flatMap(KDFProvider::getKDFs).toList()
     }
 }
 
 // @Service
 // TODO: do we need/want this? it only makes sense if we want to find KDFs by OID in the future or similar
 interface KDFProvider {
-    /** The list of KDFs supported by this provider */
-    fun getKDFs(): Iterable<KDF>
 }
 
 // @Service

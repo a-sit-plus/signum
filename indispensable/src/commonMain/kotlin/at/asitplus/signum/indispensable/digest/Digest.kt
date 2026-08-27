@@ -38,9 +38,9 @@ interface DigestProvider {
 // @Service
 interface DigestOperationProvider {
     /** If the Digest in question is supported by this provider, return the digest value; otherwise, return null or throw */
-    suspend fun digest(digest: Digest, data: Sequence<ByteArray>): ByteArray?
+    suspend fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray?
 }
 
 suspend fun Digest.digest(data: Sequence<ByteArray>): ByteArray =
-    ServiceLoader.load<DigestOperationProvider>().get(this) { digest(it, data) }
+    ServiceLoader.load<DigestOperationProvider>().get(this) { doDigest(it, data) }
 suspend fun Digest.digest(data: ByteArray) = digest(sequenceOf(data))

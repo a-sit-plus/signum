@@ -6,7 +6,7 @@ import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodesProvider
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
@@ -49,7 +49,7 @@ object IndispensableDigestsProvider: DigestProvider {
     }
 }
 
-object IndispensableHMACProvider: MessageAuthenticationCodesProvider {
+object IndispensableHMACProvider: MessageAuthenticationCodeProvider {
     override fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode? {
         if (algorithmIdentifier.parameters != Asn1Null) return null
         return WellKnownDigest.entries.asSequence().map(HMAC::byDigest)

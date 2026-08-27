@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.jcaName
 import java.security.MessageDigest
 
 object SupremeJVMDigestProvider : DigestOperationProvider {
-    override suspend fun digest(digest: Digest, data: Sequence<ByteArray>): ByteArray? {
+    override suspend fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray? {
         if (digest !is WellKnownDigest) return null
         return digest.getJCAMessageDigestInstance().apply {
             data.forEach { update(it) }

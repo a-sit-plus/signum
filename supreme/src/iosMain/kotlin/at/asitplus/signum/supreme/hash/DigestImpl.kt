@@ -47,7 +47,7 @@ private inline fun <reified T: CVariable> digestTemplate(
 }
 
 object SupremeIosDigestProvider : DigestOperationProvider {
-    override suspend fun digest(digest: Digest, data: Sequence<ByteArray>) =
+    override suspend fun doDigest(digest: Digest, data: Sequence<ByteArray>) =
         when (digest as? WellKnownDigest) {
             WellKnownDigest.SHA1 -> digestTemplate(data, 20, ::CC_SHA1_Init, ::CC_SHA1_Update, ::CC_SHA1_Final)
             WellKnownDigest.SHA256 -> digestTemplate(data, 32, ::CC_SHA256_Init, ::CC_SHA256_Update, ::CC_SHA256_Final)
