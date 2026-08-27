@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
@@ -419,7 +420,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 e = e.magnitude
             )
 
-        else -> TODO("providerize")
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 
 /**

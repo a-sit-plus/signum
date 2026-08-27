@@ -325,15 +325,6 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
         //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
 
-val HMAC.jcaName: String
-    get() = when (this) {
-        HMAC.SHA1 -> "HmacSHA1"
-        HMAC.SHA256 -> "HmacSHA256"
-        HMAC.SHA384 -> "HmacSHA384"
-        HMAC.SHA512 -> "HmacSHA512"
-        else -> TODO("providerize")
-    }
-
 /**
  * An encryption algorithm's JCA name. This is publicly exposed because it could come in handy under _very specific_ circumstances.
  * **Double and triple check before feeding this into `Cipher.getInstance`!**.

@@ -25,10 +25,11 @@ private fun ByteArray.truncateTo(size: BitLength): ByteArray {
 
 object SupremeHMACOperationsProvider : MessageAuthenticationCodeOperationProvider {
     override suspend fun doMAC(mac: MessageAuthenticationCode, key: ByteArray, message: Sequence<ByteArray>) =
-        when(mac) {
+        when (mac) {
             is HMAC -> mac.hmac(key, message)
             is MessageAuthenticationCode.Truncated ->
                 mac.inner.mac(key, message).truncateTo(mac.outputLength)
+            else -> null
         }
 }
 

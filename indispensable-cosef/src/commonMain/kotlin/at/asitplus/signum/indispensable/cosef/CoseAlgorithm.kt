@@ -320,7 +320,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
 
             Digest.SHA1 -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
 
-            else -> TODO("providerize")
+            else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
         }
 
         is RSAAlgorithm -> when (this.parameters) {
@@ -329,7 +329,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 Digest.SHA256 -> CoseAlgorithm.Signature.RS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.RS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.RS512
-                else -> TODO("providerize")
+                else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
 
             is RSAAlgorithm.Parameters.PssPadded -> when (this.digest) {
@@ -337,10 +337,10 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
                 Digest.SHA1 -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
-                else -> TODO("providerize")
+                else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
         }
-        else -> TODO("providerize")
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 }
 
@@ -361,7 +361,7 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
             (inner == HMAC.SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
             else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
         }
-        else -> TODO("providerize")
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 }
 

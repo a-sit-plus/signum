@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
 
-sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
+interface MessageAuthenticationCode : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
     /** output size of MAC */
     val outputLength: BitLength
 
@@ -66,5 +66,5 @@ interface MessageAuthenticationCodeProvider {
 // @Service
 interface MessageAuthenticationCodeOperationProvider {
     /** If the [mac] is recognized, perform the MAC operation with the given [key] and [message] */
-    suspend fun doMAC(mac: MessageAuthenticationCode, key: ByteArray, message: Sequence<ByteArray>): ByteArray
+    suspend fun doMAC(mac: MessageAuthenticationCode, key: ByteArray, message: Sequence<ByteArray>): ByteArray?
 }

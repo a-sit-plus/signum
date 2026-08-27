@@ -121,7 +121,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
             get() = when (algorithm) {
                 is ECDSAAlgorithm -> (algorithm as ECDSAAlgorithm).digest
                 is RSAAlgorithm -> (algorithm as RSAAlgorithm).digest
-                else -> TODO("providerize")
+                else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
 
         companion object : Enumeration<Signature> {
@@ -210,7 +210,7 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
                 Digest.SHA256 -> JwsAlgorithm.Signature.RS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.RS384
                 Digest.SHA512 -> JwsAlgorithm.Signature.RS512
-                else -> TODO("providerize?")
+                else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
 
             is RSAAlgorithm.Parameters.PssPadded -> when (params) {
@@ -221,7 +221,7 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
             }
         }
 
-        else -> TODO("providerize")
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 }
 

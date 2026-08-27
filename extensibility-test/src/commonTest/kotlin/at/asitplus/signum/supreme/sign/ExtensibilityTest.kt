@@ -7,6 +7,7 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.VerifierConfiguration
@@ -22,6 +23,7 @@ import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
@@ -31,7 +33,7 @@ import kotlin.uuid.Uuid
 
 private val Byte.hasHighest get() = (this.countLeadingZeroBits() == 0)
 private val ByteArray.hasHighest get() = get(0).hasHighest
-private fun byteArrayOfHighest(bit: Boolean) = ByteArray(if (bit) 0x80 else 0x00)
+private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte() else 0x00)
 
 
 /**
@@ -52,6 +54,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
     data class Key(private val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
         companion object {
             val OID = ObjectIdentifier(Uuid.parse("01a00ed6-7067-7149-a548-40aa87ed4bbc"))
+            val ALG = X509AlgorithmIdentifier(OID, null)
         }
 
         override val additionalProperties = mutableMapOf<String, String>()
@@ -122,7 +125,7 @@ object CursorySignatureSchemeProvider :
     }
 
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey? {
-        return if (publicKeyInfo.algorithmIdentifier == CursorySignatureScheme.ALG) {
+        return if (publicKeyInfo.algorithmIdentifier == CursorySignatureScheme.Key.ALG) {
             publicKeyInfo.subjectPublicKey
                 .also { require(it.sizeBits == 1L) }
                 .get(0)
@@ -132,7 +135,7 @@ object CursorySignatureSchemeProvider :
 
     override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey? {
         if (privateKeyInfo.version != Pkcs8PrivateKeyInfo.Version.V1) return null
-        if (privateKeyInfo.privateKeyAlgorithm != CursorySignatureScheme.ALG) return null
+        if (privateKeyInfo.privateKeyAlgorithm != CursorySignatureScheme.Key.ALG) return null
         return CursorySignatureScheme.Key(privateKeyInfo.privateKey.content.hasHighest).Private()
     }
 
@@ -168,6 +171,15 @@ val ExtensibilityTest by matrixSuite {
     ServiceLoader.register<PrivateKeyFormatProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureVerifierProvider>(CursorySignatureSchemeProvider)
     ServiceLoader.register<SignatureFormatProvider>(CursorySignatureSchemeProvider)
+
+    "X.509 resolution" {
+        SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
+        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.Key.ALG) }
+
+        val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1Representation.copy(algorithmIdentifier = CursorySignatureScheme.ALG)
+        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.decodeFromTlv(keyWithAlgOid) }
+    }
+
     "Signing" {
         repeat (50) {
             val privateKey = Signer.Ephemeral { cursory {} }

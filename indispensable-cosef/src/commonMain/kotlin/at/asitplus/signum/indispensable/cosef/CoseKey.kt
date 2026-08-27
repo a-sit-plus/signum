@@ -4,8 +4,8 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
@@ -244,7 +244,7 @@ fun CryptoPublicKey.toCoseKey(
                     algorithm = algorithm
                 )
             }
-        else -> TODO("providerize")
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 
 

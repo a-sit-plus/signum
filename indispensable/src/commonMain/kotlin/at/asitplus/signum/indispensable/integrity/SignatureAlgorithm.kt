@@ -1,8 +1,10 @@
 package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
+import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
@@ -22,7 +24,7 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
     /** The signature input format in which this algorithm accepts pre-hashed input, if any */
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
-    companion object {
+    companion object: DerDecodable<X509AlgorithmIdentifier, SignatureAlgorithm> {
         init { Indispensable.init() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
@@ -55,9 +57,13 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
             replaceWith = ReplaceWith("RSAAlgorithm.withSHA512andPSSPadding"))
         val RSAwithSHA512andPSSPadding get() = RSAAlgorithm.withSHA512andPSSPadding
 
-        operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =
+        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der) =
             ServiceLoader.load<SignatureAlgorithmsProvider>()
-                .get(identifier, SignatureAlgorithmsProvider::getAlgorithm)
+                .get(element, SignatureAlgorithmsProvider::getAlgorithm)
+
+        @Deprecated("Use decodeFromTlv", replaceWith = ReplaceWith("decodeFromTlv(identifier)"))
+        operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =
+            decodeFromTlv(identifier)
 
     }
 }

@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.jcaKeySpec
 import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.isAuthenticated
 import at.asitplus.signum.indispensable.symmetric.isIntegrated

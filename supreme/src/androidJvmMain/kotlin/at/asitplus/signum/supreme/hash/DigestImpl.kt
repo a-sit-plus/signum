@@ -4,8 +4,6 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.DigestOperationProvider
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.getJCAMessageDigestInstance
-import at.asitplus.signum.indispensable.jcaName
-import java.security.MessageDigest
 
 object SupremeJVMDigestProvider : DigestOperationProvider {
     override suspend fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray? {
