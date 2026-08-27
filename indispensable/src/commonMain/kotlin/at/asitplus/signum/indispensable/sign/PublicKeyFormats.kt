@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
@@ -33,7 +34,9 @@ import kotlinx.serialization.encodeToByteArray
 class RSAPublicKey private constructor(
     providedAsn1Representation: SubjectPublicKeyInfo?,
     providedContent: Content?,
-) : CryptoPublicKey() {
+) : CryptoPublicKey {
+
+    override val additionalProperties = mutableMapOf<String, String>()
 
     private data class Content(val n: Asn1Integer.Positive, val e: Asn1Integer.Positive) {
         constructor(info: Pkcs1RsaPublicKeyInfo) :
@@ -152,7 +155,9 @@ class RSAPublicKey private constructor(
 class ECDSAPublicKey private constructor(
     providedAsn1Representation: SubjectPublicKeyInfo?,
     providedContent: Content?,
-) : CryptoPublicKey(), KeyAgreementPublicValue.ECDH {
+) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
+
+    override val additionalProperties = mutableMapOf<String, String>()
 
     private data class Content(
         val publicPoint: ECPoint.Normalized,

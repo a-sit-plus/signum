@@ -24,7 +24,7 @@ interface PublicKeyFormatProvider {
 /**
  * Representation of a public key structure
  */
-abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiable {
+interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -32,23 +32,19 @@ abstract class CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifi
      * This is not meant for Algorithm parameters! If an algorithm needs parameters, the implementing classes should be extended
      */
     //must be serializable, therefore <String,String>
-    val additionalProperties = mutableMapOf<String, String>()
+    val additionalProperties: MutableMap<String, String>
 
     /** Representation of the key in DID format */
-    val didEncoded: String by lazy {
+    val didEncoded: String get() =
         PREFIX_DID_KEY +
                 (didCodec.encodeToByteArray() + didKeyBytes).multibaseEncode(MultiBase.Base.BASE58_BTC)
-    }
-    abstract val didCodec: UVarInt
-    abstract val didKeyBytes: ByteArray
+    val didCodec: UVarInt
+    val didKeyBytes: ByteArray
 
     /** Representation of the key in the format used by iOS */
-    open val iosEncoded: ByteArray get() = asn1Representation.subjectPublicKey.also {
+    val iosEncoded: ByteArray get() = asn1Representation.subjectPublicKey.also {
         require (it.numPaddingBits == 0.toByte()) { "SPKI is not full octets, cannot convert to iOS" }
     }.bitCarryingBytes
-
-    fun encodeToTlv(): Asn1Sequence =
-        DER.encodeToTlv(asn1Representation) as Asn1Sequence
 
     override val pemLabel: String get() = canonicalPemLabel
 

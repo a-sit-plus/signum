@@ -1,23 +1,15 @@
 package at.asitplus.signum.indispensable.digest
 
-import at.asitplus.awesn1.Asn1Null
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.hmacWithSHA1
-import at.asitplus.awesn1.hmacWithSHA256
-import at.asitplus.awesn1.hmacWithSHA384
-import at.asitplus.awesn1.hmacWithSHA512
-import at.asitplus.awesn1.sha1
-import at.asitplus.awesn1.sha_256
-import at.asitplus.awesn1.sha_384
-import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodesProvider
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 
@@ -55,12 +47,12 @@ object IndispensableDigestsProvider: DigestProvider {
             if (params != null) require(params == Asn1Null)
         }
     }
-    override fun getDigests(): Iterable<Digest> = WellKnownDigest.entries
-    override fun getRFC2104HMACOID(digest: Digest): ObjectIdentifier? = when(digest) {
-        WellKnownDigest.SHA1 -> KnownOIDs.hmacWithSHA1
-        WellKnownDigest.SHA256 -> KnownOIDs.hmacWithSHA256
-        WellKnownDigest.SHA384 -> KnownOIDs.hmacWithSHA384
-        WellKnownDigest.SHA512 -> KnownOIDs.hmacWithSHA512
-        else -> null
+}
+
+object IndispensableHMACProvider: MessageAuthenticationCodesProvider {
+    override fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode? {
+        if (algorithmIdentifier.parameters != Asn1Null) return null
+        return WellKnownDigest.entries.asSequence().map(HMAC::byDigest)
+            .first { it.oid == algorithmIdentifier.oid }
     }
 }

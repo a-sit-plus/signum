@@ -1,34 +1,28 @@
 package at.asitplus.signum.indispensable.integrity
 
-import at.asitplus.awesn1.Asn1Decodable
-import at.asitplus.awesn1.Asn1Encodable
-import at.asitplus.awesn1.Asn1OidException
-import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.decodeRethrowing
-import at.asitplus.awesn1.encoding.Asn1
-import at.asitplus.awesn1.encoding.Asn1.Null
-import at.asitplus.awesn1.encoding.readNull
-import at.asitplus.awesn1.readOid
+import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
+import at.asitplus.awesn1.hmacWithSHA1
+import at.asitplus.awesn1.hmacWithSHA256
+import at.asitplus.awesn1.hmacWithSHA384
+import at.asitplus.awesn1.hmacWithSHA512
+import at.asitplus.awesn1.runRethrowing
+import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.Enumerable
-import at.asitplus.signum.Enumeration
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.digest.DigestProvider
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.DerDecodable
+import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 
-sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
+sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
     /** output size of MAC */
     val outputLength: BitLength
-
-    companion object : Enumeration<MessageAuthenticationCode> {
-        // lazy due to https://youtrack.jetbrains.com/issue/KT-79161
-        override val entries: Iterable<MessageAuthenticationCode> by lazy { HMAC.entries }
-    }
 
     @ConsistentCopyVisibility
     data class Truncated
@@ -36,6 +30,8 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable 
         : MessageAuthenticationCode
     {
         override fun toString() = "$inner (truncated to $outputLength)"
+        override val asn1Representation: X509AlgorithmIdentifier get() =
+            TODO("figure this out in the COSE refactor")
     }
 
     fun truncatedTo(length: BitLength): MessageAuthenticationCode = when {
@@ -47,50 +43,38 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable 
             else -> throw IllegalArgumentException("Cannot truncate $this to $outputLength bits (its own output length is only ${this.outputLength} bits")
         }
     }
+
+    companion object : DerDecodable<X509AlgorithmIdentifier, MessageAuthenticationCode> {
+        init { Indispensable.init() }
+
+        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MessageAuthenticationCode = runRethrowing {
+            ServiceLoader.load<MessageAuthenticationCodesProvider>()
+                .get(element, MessageAuthenticationCodesProvider::getMAC)
+        }
+    }
 }
+
+suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray =
+    ServiceLoader.load<MessageAuthenticationCodeOperationsProvider>()
+        .get(this@mac) { doMAC(it, key, msg) }
+suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = mac(key, sequenceOf(msg))
+suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = mac(key, msg.asSequence())
+suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>) = algorithm.mac(key, msg)
+suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = algorithm.mac(key, sequenceOf(msg))
+suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = algorithm.mac(key, msg.asSequence())
 
 interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorithm {
     override val algorithm: MessageAuthenticationCode
 }
 
-/**
- * RFC 2104 HMAC
- */
-data class HMAC(val digest: Digest)
-    : MessageAuthenticationCode, Identifiable, Asn1Encodable<Asn1Sequence>
-{
+// @Service
+interface MessageAuthenticationCodesProvider {
+    /** Parse a [MessageAuthenticationCode] from its [X509AlgorithmIdentifier] form */
+    fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode?
+}
 
-    override val oid = ServiceLoader.load<DigestProvider>().get(digest) { getRFC2104HMACOID(it) }
-
-    override fun toString() = "HMAC-$digest"
-
-    override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence {
-        +oid
-        +Null()
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, HMAC>, Enumeration<HMAC> {
-        init { Indispensable.init() }
-        val SHA1 = HMAC(Digest.SHA1)
-        val SHA256 = HMAC(Digest.SHA256)
-        val SHA384 = HMAC(Digest.SHA384)
-        val SHA512 = HMAC(Digest.SHA512)
-
-        fun byOID(oid: ObjectIdentifier): HMAC? = entries.find { it.oid == oid }
-
-        @Deprecated("Use the HMAC() constructor directly", replaceWith = ReplaceWith("HMAC(digest)"))
-        fun byDigest(digest: Digest): HMAC = HMAC(digest)
-
-        override fun doDecode(src: Asn1Sequence): HMAC = src.decodeRethrowing {
-            val oid = next().asPrimitive().readOid()
-            next().asPrimitive().readNull()
-            byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
-        }
-
-        override val entries: Iterable<HMAC> get() = Digest.entries.asSequence().mapNotNull {
-            try { HMAC(it) } catch (_: UnsupportedCryptoException) { null }
-        }.asIterable()
-    }
-
-    override val outputLength: BitLength get() = digest.outputLength
+// @Service
+interface MessageAuthenticationCodeOperationsProvider {
+    /** If the [mac] is recognized, perform the MAC operation with the given [key] and [message] */
+    suspend fun doMAC(mac: MessageAuthenticationCode, key: ByteArray, message: Sequence<ByteArray>): ByteArray
 }

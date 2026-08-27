@@ -10,7 +10,7 @@ import at.asitplus.signum.internals.isPowerOfTwo
  *
  * To obtain an actual [KDF] for key derivation, invoke as `(info = ...)`
  * */
-data class HKDF(val digest: Digest) {
+data class HKDF(val digest: WellKnownDigest) {
 
     companion object {
         val SHA1 = HKDF(WellKnownDigest.SHA1)
@@ -24,7 +24,7 @@ data class HKDF(val digest: Digest) {
      */
     operator fun invoke(info: ByteArray) = WithInfo(info)
 
-    val hmac = HMAC.entries.first { it.digest == digest }
+    val hmac = HMAC.byDigest(digest)
 
     val outputLength: Int get() = digest.outputLength.bytes.toInt()
 
@@ -58,7 +58,7 @@ data class HKDF(val digest: Digest) {
  */
 data class PBKDF2(val prf: HMAC) {
 
-    constructor(digest: Digest) : this(HMAC(digest))
+    constructor(digest: WellKnownDigest) : this(HMAC.byDigest(digest))
 
     operator fun invoke(iterations: Int) = WithIterations(iterations)
 

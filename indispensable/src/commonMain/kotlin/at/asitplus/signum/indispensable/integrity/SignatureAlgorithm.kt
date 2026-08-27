@@ -22,7 +22,7 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
     /** The signature input format in which this algorithm accepts pre-hashed input, if any */
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
-    companion object : Enumeration<SignatureAlgorithm> {
+    companion object {
         init { Indispensable.init() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
@@ -55,10 +55,6 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
             replaceWith = ReplaceWith("RSAAlgorithm.withSHA512andPSSPadding"))
         val RSAwithSHA512andPSSPadding get() = RSAAlgorithm.withSHA512andPSSPadding
 
-        override val entries: Iterable<SignatureAlgorithm> get() =
-            ServiceLoader.load<SignatureAlgorithmsProvider>()
-                .flatMap(SignatureAlgorithmsProvider::getAlgorithms)
-
         operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =
             ServiceLoader.load<SignatureAlgorithmsProvider>()
                 .get(identifier, SignatureAlgorithmsProvider::getAlgorithm)
@@ -71,8 +67,6 @@ interface SpecializedSignatureAlgorithm : SpecializedDataIntegrityAlgorithm {
 }
 
 interface SignatureAlgorithmsProvider {
-    /** A best-effort attempt at a list of algorithms supported by this provider. May be incomplete for, e.g., parametrized algorithms. */
-    fun getAlgorithms() : Iterable<SignatureAlgorithm>
     /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */
     fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
 }

@@ -23,12 +23,12 @@ interface DerEncodable<Serializable> {
     val asn1Representation: Serializable
 
     /**
-     * Encodes the implementing object into an [Asn1Element] through [der] serialization
+     * Encodes the implementing object into an [Asn1Sequence] through [der] serialization
      * @throws SerializationException in case an illegal ASN.1 Object was to be constructed
      */
     @Throws(SerializationException::class)
-    fun encodeToTlv(serializer: KSerializer<Serializable>, der: Der = DER): Asn1Element =
-        der.encodeToTlv(serializer, asn1Representation) as Asn1Element //won't ever be null
+    fun encodeToTlv(serializer: KSerializer<Serializable>, der: Der = DER): Asn1Sequence =
+        der.encodeToTlv(serializer, asn1Representation) as Asn1Sequence //won't ever be null
 }
 
 interface DerPemEncodable<Serializable> : DerEncodable<Serializable>, WithPemLabel

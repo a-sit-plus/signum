@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.kdf
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.encoding.toUnsignedByteArray
+import at.asitplus.signum.indispensable.integrity.mac
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.KDF
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
@@ -14,7 +14,6 @@ import at.asitplus.signum.internals.subview
 import at.asitplus.signum.internals.toLEByteArray
 import at.asitplus.signum.internals.toUIntArrayLE
 import at.asitplus.signum.internals.xor
-import at.asitplus.signum.supreme.mac.mac
 import kotlin.math.min
 
 object SupremeKDFProvider : KDFOperationProvider {

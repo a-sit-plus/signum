@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.integrity
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -9,6 +8,9 @@ import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -51,6 +53,22 @@ suspend fun SignatureVerifier.verify(data: ByteArray, sig: DerEncodable<X509Sign
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: DerEncodable<X509SignatureValue>) =
     verify(SignatureInput(data), sig)
+
+@IgnorableReturnValue
+suspend inline fun <reified T> SignatureVerifier.verify(input: DerEncodable<T>, signature: CryptoSignature) =
+    verify(input.encodeToDer(), signature)
+
+@IgnorableReturnValue
+suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
+    require(this.signatureAlgorithm == input.signatureAlgorithm)
+    return verify(input.tbsCertificate, input.signature)
+}
+
+@IgnorableReturnValue
+suspend fun SignatureVerifier.verify(input: CertificationRequest): SignatureVerifier.Success {
+    require(this.signatureAlgorithm == input.signatureAlgorithm)
+    return verify(input.tbsCsr, input.signature)
+}
 
 // @Service
 interface SignatureVerifierProvider {

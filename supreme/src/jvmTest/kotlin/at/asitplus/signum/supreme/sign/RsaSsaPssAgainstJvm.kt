@@ -4,6 +4,7 @@ import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
@@ -23,8 +24,8 @@ import java.security.spec.PSSParameterSpec
 @OptIn(SecretExposure::class)
 val RsaSsaPssAgainstJvm by matrixSuite {
 
-    Digest.entries.asData("Data Digest") - { dataDigest ->
-        Digest.entries.asData("Data Digest") - { mgfDigest ->
+    WellKnownDigest.entries.asData("Data Digest") - { dataDigest ->
+        WellKnownDigest.entries.asData("Data Digest") - { mgfDigest ->
 
             mapOf(
                 "from ASN.1" to RSAAlgorithm(

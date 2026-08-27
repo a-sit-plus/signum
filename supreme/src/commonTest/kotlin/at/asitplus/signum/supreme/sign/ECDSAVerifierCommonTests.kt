@@ -5,6 +5,7 @@ import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
@@ -39,7 +40,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
         }
         val digest = when (test.dig) {
             "None" -> null
-            else -> Digest.entries.first { it.name == test.dig }
+            else -> WellKnownDigest.entries.first { it.name == test.dig }
         }
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as ECDSAPublicKey
         val b64msg = test.msg
@@ -402,7 +403,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
                             shouldThrowAny { verifier.verify(it.msg, it.sig) }
                         }
                     }
-                    Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
+                    Random.of(WellKnownDigest.entries.filter { it != test.digest }).let { dig ->
                         shouldThrowAny {
                             ECDSAAlgorithm(dig, null)
                                 .verifierFor(test.key).verify(test.msg, test.sig)

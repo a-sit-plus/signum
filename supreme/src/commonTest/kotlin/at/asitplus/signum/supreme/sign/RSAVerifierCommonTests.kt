@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -40,7 +41,7 @@ val RSAVerifierCommonTests by matrixSuite {
     )
 
     class TestInfo(test: RawTestInfo) {
-        val digest = Digest.entries.first { it.name == test.dig }
+        val digest = WellKnownDigest.entries.first { it.name == test.dig }
         val parameters = RSAAlgorithm.Parameters.valueOf(test.pad, digest)
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as RSAPublicKey
         val b64msg = test.msg
@@ -179,7 +180,7 @@ fun main() {
                     }
                 }
                 compact("digest mismatch") { concurrency = CompactConcurrency.Shared(8) } - {
-                    property(Arb.of(Digest.entries.filter { it != test.digest })) test { dig ->
+                    property(Arb.of(WellKnownDigest.entries.filter { it != test.digest })) test { dig ->
                         shouldThrowAny {
                             val verifier = when (test.parameters) {
                                 is RSAAlgorithm.Parameters.PssPadded ->

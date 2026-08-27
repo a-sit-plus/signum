@@ -4,7 +4,9 @@ import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeOperationsProvider
 import at.asitplus.signum.supreme.kdf.SupremeKDFProvider
+import at.asitplus.signum.supreme.mac.SupremeHMACOperationsProvider
 import at.asitplus.signum.supreme.sign.SupremeKotlinVerifierProvider
 
 /** NEVER CALL THIS DIRECTLY -> use [Supreme.init] */
@@ -14,6 +16,7 @@ object Supreme {
         Indispensable.init()
         ServiceLoader.register<SignatureVerifierProvider>(SupremeKotlinVerifierProvider)
         ServiceLoader.register<KDFOperationProvider>(SupremeKDFProvider)
+        ServiceLoader.register<MessageAuthenticationCodeOperationsProvider>(SupremeHMACOperationsProvider)
         supremePlatformInit()
     }
     // this should be replaced by sweetspi

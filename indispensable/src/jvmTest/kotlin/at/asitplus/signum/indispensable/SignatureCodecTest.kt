@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
@@ -51,7 +52,7 @@ val SignatureCodecTest  by matrixSuite {
             CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
-                ECDSAAlgorithm(Digest.entries.first { it.name == digest }, ECCurve.byJcaName(curve))
+                ECDSAAlgorithm(WellKnownDigest.entries.first { it.name == digest }, ECCurve.byJcaName(curve))
             ).jcaSignatureBytes shouldBe sig
 
             Signature.getInstance("${digest}withECDSAinP1363Format").run {

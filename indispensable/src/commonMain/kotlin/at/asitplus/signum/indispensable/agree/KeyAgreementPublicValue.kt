@@ -1,9 +1,11 @@
 package at.asitplus.signum.indispensable.agree
 
-import at.asitplus.awesn1.Asn1Encodable
 import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.awesn1.Asn1Decodable
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.DerPemDecodable
+import at.asitplus.signum.indispensable.DerPemEncodable
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import kotlin.jvm.JvmName
@@ -11,7 +13,7 @@ import kotlin.jvm.JvmName
 /**
  * Key agreement public value. Must be PEM encodable/decodable.
  */
-interface KeyAgreementPublicValue : Asn1Encodable<Asn1Sequence> {
+interface KeyAgreementPublicValue : DerPemEncodable<SubjectPublicKeyInfo> {
     /**
      * ECDH key agreement public value. Is always an EC public key, thus comes with [asCryptoPublicKey]
      */
@@ -21,8 +23,12 @@ interface KeyAgreementPublicValue : Asn1Encodable<Asn1Sequence> {
          */
         fun asCryptoPublicKey(): ECDSAPublicKey
     }
-    companion object : Asn1Decodable<Asn1Sequence, ECDH> {
-        override fun doDecode(src: Asn1Sequence) = CryptoPublicKey.doDecode(src) as CryptoPublicKey.EC
+    companion object : DerPemDecodable<SubjectPublicKeyInfo, KeyAgreementPublicValue> {
+        override fun decodeFromTlv(element: SubjectPublicKeyInfo, der: Der) =
+            CryptoPublicKey.decodeFromTlv(element, der) as KeyAgreementPublicValue
+
+        override val canonicalPemLabel: String
+            get() = CryptoPublicKey.canonicalPemLabel
     }
 }
 

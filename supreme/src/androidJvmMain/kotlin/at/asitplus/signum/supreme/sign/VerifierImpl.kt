@@ -15,19 +15,25 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import java.security.Signature
 
 abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPublicKey, protected val provider: JCAProviderRef) : SignatureVerifier {
-    private val instance = algorithm.getJCASignatureInstance(provider).apply { initVerify(key.toJcaPublicKey()) }
+    private val jcaPublicKey = key.toJcaPublicKey()
+    // fail fast
+    init { algorithm.getJCASignatureInstance(provider).apply { initVerify(jcaPublicKey) } }
     private fun verifyWith(jcaSig: Signature, data: Sequence<ByteArray>, sig: ByteArray): Boolean {
         data.forEach(jcaSig::update)
         return jcaSig.verify(sig)
     }
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
         val success = when {
-            (data.format == null) -> verifyWith(instance, data.data, sig.jcaSignatureBytes)
+            (data.format == null) ->
+                signatureAlgorithm.getJCASignatureInstance(provider)
+                    .apply { initVerify(jcaPublicKey) }
+                    .let { verifyWith(it, data.data, sig.jcaSignatureBytes) }
             (data.format == signatureAlgorithm.preHashedSignatureFormat) ->
                 signatureAlgorithm.getJCASignatureInstancePreHashed(provider)
-                    .apply { initVerify(publicKey.toJcaPublicKey()) }
+                    .apply { initVerify(jcaPublicKey) }
                     .let { verifyWith(it, data.data, sig.jcaSignatureBytes) }
-            else -> throw IllegalArgumentException("Pre-hashed data (format=${data.format}) is incompatible with $signatureAlgorithm")
+            else ->
+                throw IllegalArgumentException("Pre-hashed data (format=${data.format}) is incompatible with $signatureAlgorithm")
         }
         if (success)
             return SignatureVerifier.Success

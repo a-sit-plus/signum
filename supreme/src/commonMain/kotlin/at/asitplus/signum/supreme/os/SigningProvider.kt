@@ -49,8 +49,6 @@ interface PlatformSigningProviderSigner
     suspend fun sign(data: Sequence<ByteArray>, configure: DSLConfigureFn<SigningConfiguration> = null) =
         sign(SignatureInput(data), configure)
     override suspend fun sign(data: SignatureInput) = sign(data, null)
-    override suspend fun sign(data: ByteArray) = sign(SignatureInput(data), null)
-    override suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data), null)
 
     interface ECDSA
     <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>

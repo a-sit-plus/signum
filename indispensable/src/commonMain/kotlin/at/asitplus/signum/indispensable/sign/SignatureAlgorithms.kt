@@ -28,6 +28,7 @@ import at.asitplus.awesn1.sha_224
 import at.asitplus.awesn1.sha_256
 import at.asitplus.awesn1.sha_384
 import at.asitplus.awesn1.sha_512
+import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.DerDecodable
@@ -37,13 +38,12 @@ import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithmsProvider
-import at.asitplus.signum.indispensable.integrity.SignatureInputFormat
 import at.asitplus.signum.internals.orLazy
 
 class ECDSAAlgorithm private constructor(
     private val providedParams: Params?,
     private val providedAsn1: X509AlgorithmIdentifier?,
-) : SignatureAlgorithm {
+) : SignatureAlgorithm, Enumerable {
     constructor(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         digest: Digest?,
@@ -113,7 +113,7 @@ class ECDSAAlgorithm private constructor(
 class RSAAlgorithm private constructor(
     providedParams: Parameters<*>?,
     private val providedAsn1: X509AlgorithmIdentifier?,
-) : SignatureAlgorithm {
+) : SignatureAlgorithm, Enumerable {
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
@@ -375,9 +375,7 @@ class RSAAlgorithm private constructor(
 }
 
 object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
-    override fun getAlgorithms() = (ECDSAAlgorithm.entries + RSAAlgorithm.entries)
-
-    override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) = when (algorithmIdentifier.oid) {
+    override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm? = when (algorithmIdentifier.oid) {
         KnownOIDs.ecdsaWithSHA1,
         KnownOIDs.ecdsaWithSHA256,
         KnownOIDs.ecdsaWithSHA384,

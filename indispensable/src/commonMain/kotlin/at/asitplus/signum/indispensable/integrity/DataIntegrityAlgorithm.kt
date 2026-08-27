@@ -8,12 +8,7 @@ import at.asitplus.signum.Enumeration
  * * Message Authentication Codes ([MessageAuthenticationCode])
  * * Digital Signatures ([SignatureAlgorithm])
  */
-sealed interface DataIntegrityAlgorithm : Enumerable {
-    companion object : Enumeration<DataIntegrityAlgorithm> {
-        override val entries: Iterable<DataIntegrityAlgorithm> by lazy { MessageAuthenticationCode.entries + SignatureAlgorithm.entries }
-    }
-
-}
+sealed interface DataIntegrityAlgorithm
 
 interface SpecializedDataIntegrityAlgorithm {
     val algorithm: DataIntegrityAlgorithm

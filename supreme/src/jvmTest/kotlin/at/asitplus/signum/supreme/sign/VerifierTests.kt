@@ -71,7 +71,7 @@ val VerifierTests by matrixSuite {
                         shouldThrowAny { verifier.verify(data + Random.nextBytes(8), sig) }
                     }
                     verifier.verify(data, sig) shouldBe SignatureVerifier.Success
-                    Random.of(Digest.entries.filter { it != digest }).let { dig ->
+                    Random.of(WellKnownDigest.entries.filter { it != digest }).let { dig ->
                         shouldThrowAny {
                             factory(ECDSAAlgorithm(dig, null), key)
                                 .verify(data, sig)
