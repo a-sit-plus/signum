@@ -18,8 +18,8 @@ import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
 import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
-import at.asitplus.signum.supreme.verify
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.shouldBe
@@ -49,10 +49,12 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val rawByteArray: ByteArray
             get() = byteArrayOfHighest(bit)
     }
-    data class Key(private val bit: Boolean) : CryptoPublicKey(), Signer.WithExportableKey, SignatureVerifier {
+    data class Key(private val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
         companion object {
             val OID = ObjectIdentifier(Uuid.parse("01a00ed6-7067-7149-a548-40aa87ed4bbc"))
         }
+
+        override val additionalProperties = mutableMapOf<String, String>()
         override val oid: ObjectIdentifier get() = OID
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
@@ -103,7 +105,6 @@ object CursorySignatureSchemeProvider :
 {
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
         CursorySignatureScheme.takeIf { algorithmIdentifier == CursorySignatureScheme.ALG }
-    override fun getAlgorithms() = listOf(CursorySignatureScheme)
     override suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration): CursorySignatureScheme.Key? {
         val v = configuration.cursory.v ?: return null
         return CursorySignatureScheme.Key(
