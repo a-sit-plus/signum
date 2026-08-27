@@ -22,10 +22,9 @@ import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.makeVerifier
-import at.asitplus.signum.supreme.sign
+import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.signum.indispensable.sign.signerFor
-import at.asitplus.signum.supreme.verify
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.collections.shouldBeIn

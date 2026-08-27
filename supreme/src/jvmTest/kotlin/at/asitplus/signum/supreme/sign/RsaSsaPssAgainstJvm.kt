@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.integrity.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.signum.indispensable.sign.signerFor
 import at.asitplus.testballoon.matrix.matrixSuite

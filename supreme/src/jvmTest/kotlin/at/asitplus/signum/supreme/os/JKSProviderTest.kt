@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.indispensable.sign.makeVerifier
+import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.indispensable.sign.signature
