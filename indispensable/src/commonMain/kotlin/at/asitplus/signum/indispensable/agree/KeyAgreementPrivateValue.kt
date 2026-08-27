@@ -34,7 +34,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
         is ECDSAPrivateKey.WithPublicKey -> ECDSAAlgorithm.withSHA256.signerFor(this).keyAgreement(publicValue)
 
-        else -> throw IllegalStateException("Type hierarchy failure? Actual type is ${this::class.qualifiedName ?: "<null>"}")
+        else -> throw IllegalStateException("Type hierarchy failure? Actual type is ${this::class.simpleName ?: "<null>"}")
     }
 }
 
