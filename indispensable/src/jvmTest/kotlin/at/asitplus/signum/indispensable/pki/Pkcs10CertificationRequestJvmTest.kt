@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
@@ -94,7 +95,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val csr = CertificationRequest(
             tbsCsr,
             signatureAlgorithm,
-            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+            signatureAlgorithm.parseJCASignature(signed)
         )
 
         val kotlinEncoded = csr.encodeToDer()
@@ -154,7 +155,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val csr = CertificationRequest(
             tbsCsr,
             signatureAlgorithm,
-            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+            signatureAlgorithm.parseJCASignature(signed)
         )
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
@@ -225,7 +226,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val csr = CertificationRequest(
             tbsCsr,
             signatureAlgorithm,
-            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+            signatureAlgorithm.parseJCASignature(signed)
         )
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
@@ -271,7 +272,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val csr = CertificationRequest(
             tbsCsr,
             signatureAlgorithm,
-            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+            signatureAlgorithm.parseJCASignature(signed)
         )
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
@@ -444,22 +445,22 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val csr = CertificationRequest(
             tbsCsr1,
             signatureAlgorithm1,
-            CryptoSignature.parseFromJca(signed, signatureAlgorithm1)
+            signatureAlgorithm1.parseJCASignature(signed)
         )
         val csr1 = CertificationRequest(
             tbsCsr1,
             signatureAlgorithm1,
-            CryptoSignature.parseFromJca(signed1, signatureAlgorithm1)
+            signatureAlgorithm1.parseJCASignature(signed1)
         )
         val csr11 = CertificationRequest(
             tbsCsr1,
             signatureAlgorithm2,
-            CryptoSignature.parseFromJca(signed11, signatureAlgorithm2)
+            signatureAlgorithm2.parseJCASignature(signed11)
         )
         val csr2 = CertificationRequest(
             tbsCsr2,
             signatureAlgorithm1,
-            CryptoSignature.parseFromJca(signed2, signatureAlgorithm1)
+            signatureAlgorithm1.parseJCASignature(signed2)
         )
 
         csr shouldNotBe csr1

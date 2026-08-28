@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -126,7 +127,7 @@ val JKSProviderTest  by matrixSuite {
             } catch (_: UnsupportedOperationException) {
                 return@test
             }
-            CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
+            signer.signatureAlgorithm.parseJCASignature(signature.jcaSignatureBytes) shouldBe signature
             when (signer.signatureAlgorithm) {
                 is RSAAlgorithm ->
                     RSASignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature

@@ -44,22 +44,7 @@ interface CryptoSignature : DerEncodable<X509SignatureValue> {
     }
 }
 
-val CryptoSignature.jcaSignatureBytes: ByteArray get() = asn1Representation.rawBytes
 val CryptoSignature.iosEncoded get() = asn1Representation.rawBytes
-
-fun CryptoSignature.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.decodeFromTlv(X509SignatureValue(input))
-
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SignatureAlgorithm
-): CryptoSignature =
-    CryptoSignature(algorithm, X509SignatureValue(input))
-
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SpecializedSignatureAlgorithm
-) = parseFromJca(input, algorithm.algorithm)
 
 fun DerEncodable<X509SignatureValue>.withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
     ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {

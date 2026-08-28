@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.supreme.succeed
@@ -61,7 +62,7 @@ val VerifierTests by matrixSuite {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(CryptoSignature::parseFromJca)
+                    }.let(algorithm::parseJCASignature)
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
                     val verifier = factory(ECDSAAlgorithm(digest, null), key)

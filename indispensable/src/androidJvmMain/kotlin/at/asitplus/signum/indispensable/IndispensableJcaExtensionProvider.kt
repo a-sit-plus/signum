@@ -8,9 +8,11 @@ import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.ImplementationError
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -72,6 +74,18 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     override fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef) = when (algorithm) {
         is ECDSAAlgorithm ->
             sigGetInstance("NONEwithECDSA", jcaProviderRef)
+        else -> null
+    }
+
+    override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? = when (algorithm) {
+        is ECDSAAlgorithm -> ECDSASignature.parseFromJca(sigBytes)
+        is RSAAlgorithm -> RSASignature.parseFromJca(sigBytes)
+        else -> null
+    }
+
+    override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
+        is ECDSASignature -> signature.asn1Representation.rawBytes
+        is RSASignature -> signature.asn1Representation.rawBytes
         else -> null
     }
 

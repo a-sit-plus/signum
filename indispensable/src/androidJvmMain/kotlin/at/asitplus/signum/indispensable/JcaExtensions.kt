@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
+import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
@@ -114,6 +115,18 @@ interface JcaMappingProvider {
      */
     fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef): Signature? { return null }
 
+    /**
+     * Should take the bytes produced by signing using the instances returned from
+     * [getJCASignatureInstance]/[getJCASignatureInstancePreHashed] and map them to a [CryptoSignature].
+     */
+    fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? { return null }
+
+    /**
+     * Should take a [CryptoSignature] and produce the raw bytes expected for verification using the instances returned
+     * from [getJCASignatureInstance]/[getJCASignatureInstancePreHashed].
+     */
+    fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? { return null }
+
     /** Maps this CryptoPublicKey to a JCA PublicKey instance. */
     fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey): JCAPublicKey? { return null }
 
@@ -189,6 +202,29 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Str
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Provider?) =
     this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
+
+val CryptoSignature.jcaSignatureBytes: ByteArray get() =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::getJCASignatureBytes)
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+fun SignatureAlgorithm.parseJCASignature(sigBytes: ByteArray) =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this) { parseJCASignatureBytes(it, sigBytes) }
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+fun SpecializedSignatureAlgorithm.parseJCASignature(sigBytes: ByteArray) =
+    this.algorithm.parseJCASignature(sigBytes)
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+@Deprecated("Use algorithm.parseJCASignature", replaceWith = ReplaceWith("algorithm.parseJCASignature(input)"))
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: SignatureAlgorithm): CryptoSignature =
+    algorithm.parseJCASignature(input)
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+@Deprecated("Use algorithm.parseJCASignature", replaceWith = ReplaceWith("algorithm.parseJCASignature(input)"))
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: SpecializedSignatureAlgorithm) =
+    algorithm.algorithm.parseJCASignature(input)
 
 internal val WellKnownDigest.jcaName
     get() = when (this) {

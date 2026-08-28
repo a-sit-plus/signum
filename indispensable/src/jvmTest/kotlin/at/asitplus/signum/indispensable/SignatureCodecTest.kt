@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -50,10 +51,10 @@ val SignatureCodecTest  by matrixSuite {
             }
 
             CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            CryptoSignature.parseFromJca(
-                sig,
-                ECDSAAlgorithm(WellKnownDigest.entries.first { it.name == digest }, ECCurve.byJcaName(curve))
-            ).jcaSignatureBytes shouldBe sig
+            ECDSAAlgorithm(
+                WellKnownDigest.entries.first { it.name == digest },
+                ECCurve.byJcaName(curve)
+            ).parseJCASignature(sig).jcaSignatureBytes shouldBe sig
 
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
@@ -83,10 +84,8 @@ val SignatureCodecTest  by matrixSuite {
 
 
             RSASignature.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            CryptoSignature.parseFromJca(
-                sig,
-                signatureAlgorithm
-            ).jcaSignatureBytes shouldBe sig
+            signatureAlgorithm
+                .parseJCASignature(sig).jcaSignatureBytes shouldBe sig
 
             // create certificate with bouncycastle
             val notBeforeDate = Date.from(Instant.now())
@@ -110,10 +109,8 @@ val SignatureCodecTest  by matrixSuite {
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
             RSASignature.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
-            CryptoSignature.parseFromJca(
-                certificateHolder.signature,
-                signatureAlgorithm
-            ).encodeToDer() shouldBe bcSig
+            signatureAlgorithm
+                .parseJCASignature(certificateHolder.signature).encodeToDer() shouldBe bcSig
 
         }
     }

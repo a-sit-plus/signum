@@ -15,7 +15,6 @@ import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.dsl.signer
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.encodeToDer
@@ -23,7 +22,6 @@ import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
@@ -38,6 +36,7 @@ import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.REQUIRED
+import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signerFor
@@ -257,7 +256,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                     initSign(keyPair.private)
                     update(tbsCert.encodeToDer())
                     sign()
-                }.let { Certificate(tbsCert, CryptoSignature.parseFromJca(it, certAlg)) }
+                }.let { Certificate(tbsCert, certAlg.parseJCASignature(it)) }
             }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                 arrayOf(cert.toJcaCertificate()))

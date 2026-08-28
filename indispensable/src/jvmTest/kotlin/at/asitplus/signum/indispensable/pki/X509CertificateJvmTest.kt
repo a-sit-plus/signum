@@ -53,6 +53,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 
@@ -118,7 +119,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                     initSign(keyPair.private)
                     update(tbsCertificate.encodeToTlv().derEncoded)
                 }.sign()
-                val test = CryptoSignature.parseFromJca(signed).withSignatureAlgorithm(signatureAlgorithm)
+                val test = signatureAlgorithm.parseJCASignature(signed)
                 val x509Certificate = Certificate(tbsCertificate, test)
                 val kotlinEncoded = x509Certificate.encodeToDer()
                 val jvmEncoded = certificateHolder.encoded
@@ -170,7 +171,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = CryptoSignature.parseFromJca(signed).withSignatureAlgorithm(signatureAlgorithm)
+        val test = algorithm.parseJCASignature(input).withSignatureAlgorithm(signatureAlgorithm)
         val x509Certificate = Certificate(tbsCertificate, test)
 
         repeat(500) {
