@@ -26,13 +26,13 @@ import kotlinx.serialization.json.Json
 data class JwsSigned<out P : Any>(
     val header: JwsHeader,
     val payload: P,
-    val signature: CryptoSignature.RawByteEncodable,
+    val signature: CryptoSignature,
     val plainSignatureInput: ByteArray,
 ) {
 
     /** Encodes to JWS compact serialization (Base64-URL with dots). */
     fun serialize(): String =
-        "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
+        "${plainSignatureInput.decodeToString()}.${signature.joseBytes.encodeToString(Base64UrlStrict)}"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

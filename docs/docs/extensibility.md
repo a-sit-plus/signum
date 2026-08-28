@@ -81,6 +81,28 @@ For actual operations, implement the following:
         - This extension property should be used by all of your provider integrations.
           This enables seamless platform-specific key creation and usage from common code.
 
+## Platform type conversions
+
+Sometimes, low-level interfacing with the platform types is required.
+Signum Indispensable offers support for this through conversion methods.
+These conversion methods are also themselves extensible by your algorithms.
+
+Additionally, some of Signum Supreme's platform providers (JKS, Android KeyStore, iOS Keychain) also use them.
+
+On Android & JVM, implement `JcaMappingProvider`:
+- `getJCAMessageDigestInstance` to map Signum `Digest` -> JCA `MessageDigest`
+- `getJCASignatureInstance` and `getJCASignatureInstancePreHashed` to map Signum `SignatureAlgorithm` -> JCA `Signature`
+  - `parseJCASignatureBytes` and `getJCASignatureBytes` to map Signum `CryptoSignature` <-> output of this JCA `Signature` instance
+- `cryptoPublicKeyToJcaPublicKey` and `jcaPublicKeyToCryptoPublicKey` to map Signum `CryptoPublicKey` <-> JCA `PublicKey`
+- `cryptoPrivateKeyToJcaPrivateKey` and `jcaPrivateKeyToCryptoPrivateKey` to map Signum `CryptoPrivateKey` <-> JCA `PrivateKey`
+
+On iOS, implement `IosMappingProvider`:
+- `signatureAlgorithmToSecKeyAlgorithm` and `signatureAlgorithmToSecKeyAlgorithmPreHashed` to map Signum `SignatureAlgorithm` -> Security `SecKeyAlgorithm`
+  - `parseSignatureBytes` and `getSignatureBytes` to map Signum `CryptoSignature` <-> Security `SecKeyCreateSignature`/`SecKeyVerifySignature` with the algorithm
+- `secKeyToCryptoPublicKey` and `cryptoPublicKeyToSecKey` to map Signum `CryptoPublicKey` <-> Security `SecKeyRef`
+- `secKeyToCryptoPrivateKey` and `cryptoPrivateKeyToSecKey` to map Signum `CryptoPrivateKey` <-> Security `SecKeyRef`
+
+
 ## DSL Extensibility
 
 Most generic structures in Signum are configured using DSL notation:

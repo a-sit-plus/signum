@@ -64,7 +64,7 @@ sealed class JWS {
     }
 
     companion object {
-        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
+        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature =
             when (algorithm) {
                 is JwsAlgorithm.Signature.EC -> ECDSASignature.fromRawBytes(algorithm.ecCurve, plainSignature)
                 is JwsAlgorithm.Signature.RSA -> RSASignature(plainSignature)

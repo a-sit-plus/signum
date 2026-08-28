@@ -53,7 +53,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
         }
     }
 
-    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
+    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature
 
     open class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                         override val publicKey: ECDSAPublicKey, override val signatureAlgorithm: ECDSAAlgorithm

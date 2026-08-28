@@ -45,11 +45,9 @@ object CursorySignatureScheme : SignatureAlgorithm {
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
     override val asn1Representation get() = ALG
-    data class Signature(private val bit: Boolean) : CryptoSignature.RawByteEncodable {
+    data class Signature(private val bit: Boolean) : CryptoSignature {
         override val asn1Representation: X509SignatureValue
             get() = X509SignatureValue(Asn1BitString(bit))
-        override val rawByteArray: ByteArray
-            get() = byteArrayOfHighest(bit)
     }
     data class Key(private val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
         companion object {
@@ -58,7 +56,6 @@ object CursorySignatureScheme : SignatureAlgorithm {
         }
 
         override val additionalProperties = mutableMapOf<String, String>()
-        override val oid: ObjectIdentifier get() = OID
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
         override val asn1Representation: SubjectPublicKeyInfo get() =
@@ -72,7 +69,6 @@ object CursorySignatureScheme : SignatureAlgorithm {
                 privateKeyAlgorithm = ALG,
                 privateKey = Asn1OctetString(byteArrayOfHighest(bit))
             )
-            override val oid: ObjectIdentifier get() = OID
         }
 
         @SecretExposure

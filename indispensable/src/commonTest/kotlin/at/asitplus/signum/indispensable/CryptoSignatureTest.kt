@@ -66,7 +66,7 @@ val CryptoSignatureTest  by matrixSuite {
         sig1.r shouldBe sig.r
         sig1.s shouldBe sig.s
         sig1.scalarByteLength shouldBe ECCurve.SECP_521_R_1.scalarLength.bytes
-        sig1.rawByteArray shouldBe encoded
+        sig1.p1363Bytes shouldBe encoded
 
         val sig2 = sig.withCurve(ECCurve.SECP_521_R_1)
         sig2 shouldBe sig1
@@ -74,15 +74,15 @@ val CryptoSignatureTest  by matrixSuite {
         sig2.r shouldBe sig.r
         sig2.s shouldBe sig.s
         sig2.scalarByteLength shouldBe sig1.scalarByteLength
-        sig2.rawByteArray shouldBe encoded
+        sig2.p1363Bytes shouldBe encoded
 
-        val sig3 = ECDSASignature.fromRawBytes(encoded)
+        val sig3 = ECDSASignature.fromP1363Bytes(encoded)
         sig3 shouldBe sig2
         sig3 shouldBe sig
         sig3.r shouldBe sig.r
         sig3.s shouldBe sig.s
         sig3.scalarByteLength shouldBe sig1.scalarByteLength
-        sig3.rawByteArray shouldBe encoded
+        sig3.p1363Bytes shouldBe encoded
 
         val r2 = BigInteger.ONE.shl(ECCurve.entries.maxOf { it.scalarLength.bits }.toInt() + 1)
         shouldThrow<IllegalArgumentException> { ECDSASignature.fromRS(r2, s).guessCurve() }

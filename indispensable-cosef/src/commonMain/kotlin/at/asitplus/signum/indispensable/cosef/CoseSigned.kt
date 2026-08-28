@@ -5,16 +5,13 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
-import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -35,7 +32,7 @@ data class CoseSigned<P : Any?> internal constructor(
     val protectedHeader: CoseHeader,
     val unprotectedHeader: CoseHeader? = null,
     val payload: P?,
-    val signature: CryptoSignature.RawByteEncodable,
+    val signature: CryptoSignature,
     val wireFormat: CoseBytes,
 ) {
 
@@ -99,7 +96,7 @@ data class CoseSigned<P : Any?> internal constructor(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,
             payload: P?,
-            signature: CryptoSignature.RawByteEncodable,
+            signature: CryptoSignature,
             payloadSerializer: KSerializer<P>,
         ): CoseSigned<P> = CoseSigned<P>(
             protectedHeader = protectedHeader,
@@ -110,7 +107,7 @@ data class CoseSigned<P : Any?> internal constructor(
                 protectedHeader = protectedHeader,
                 unprotectedHeader = unprotectedHeader,
                 payload = payload.toRawPayload(payloadSerializer),
-                rawAuthBytes = signature.rawByteArray
+                rawAuthBytes = signature.coseBytes
             ),
         )
 

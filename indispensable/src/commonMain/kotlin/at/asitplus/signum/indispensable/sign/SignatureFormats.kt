@@ -17,8 +17,8 @@ import at.asitplus.awesn1.sha384WithRSAEncryption
 import at.asitplus.awesn1.sha512WithRSAEncryption
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toBigInteger
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.CryptoSignature.RawByteEncodable
 import at.asitplus.signum.indispensable.SignatureFormatProvider
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.ECCurve
@@ -97,6 +97,9 @@ sealed class ECDSASignature
             )
         }
 
+        override val joseBytes: ByteArray
+            get() = throw UnsupportedCryptoException("Cannot convert indefinite length ECDSA signature to COSE/JOSE")
+
         companion object : DerDecodable<X509SignatureValue, IndefiniteLength> {
             override fun decodeFromTlv(
                 element: X509SignatureValue,
@@ -111,7 +114,7 @@ sealed class ECDSASignature
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-    ) : ECDSASignature(EcSignatureContent(r, s), null), RawByteEncodable {
+    ) : ECDSASignature(EcSignatureContent(r, s), null) {
         init {
             val max = scalarByteLength.toInt() * 8
 
@@ -124,10 +127,12 @@ sealed class ECDSASignature
             }
         }
 
-        override val rawByteArray by lazy {
+        val p1363Bytes by lazy {
             r.toByteArray().ensureSize(scalarByteLength) +
                     s.toByteArray().ensureSize(scalarByteLength)
         }
+
+        override val joseBytes get() = p1363Bytes
     }
 
     companion object : DerDecodable<X509SignatureValue, IndefiniteLength> {
@@ -136,22 +141,28 @@ sealed class ECDSASignature
             IndefiniteLength(r, s)
 
         @Throws(IllegalArgumentException::class)
-        fun fromRawBytes(input: ByteArray): DefiniteLength {
-            require(input.size.rem(2) == 0) { "Raw signature has odd number of bytes" }
-            val sz = input.size.div(2)
+        fun fromP1363Bytes(sigBytes: ByteArray): DefiniteLength {
+            require(sigBytes.size.rem(2) == 0) { "Raw signature has odd number of bytes" }
+            val sz = sigBytes.size.div(2)
             return DefiniteLength(
                 sz.toUInt(),
-                r = BigInteger.fromByteArray(input.copyOfRange(0, sz), Sign.POSITIVE),
-                s = BigInteger.fromByteArray(input.copyOfRange(sz, 2 * sz), Sign.POSITIVE),
+                r = BigInteger.fromByteArray(sigBytes.copyOfRange(0, sz), Sign.POSITIVE),
+                s = BigInteger.fromByteArray(sigBytes.copyOfRange(sz, 2 * sz), Sign.POSITIVE),
             )
         }
 
-        @Throws(IllegalArgumentException::class)
-        fun fromRawBytes(curve: ECCurve, input: ByteArray): DefiniteLength {
+        @Deprecated("renamed", replaceWith = ReplaceWith("fromP1363Bytes(input)"))
+        fun fromRawBytes(input: ByteArray) = fromP1363Bytes(input)
+
+        fun fromP1363Bytes(curve: ECCurve, input: ByteArray): DefiniteLength {
             val sz = curve.scalarLength.bytes.toInt()
             require(input.size == sz * 2)
-            return fromRawBytes(input)
+            return fromP1363Bytes(input)
         }
+
+        @Throws(IllegalArgumentException::class)
+        @Deprecated("renamed", replaceWith = ReplaceWith("fromP1363Bytes(curve, input)"))
+        fun fromRawBytes(curve: ECCurve, input: ByteArray) = fromP1363Bytes(curve, input)
 
         fun fromRawSignatureValue(sigBytes: ByteArray) =
             decodeFromTlv(X509SignatureValue(sigBytes))
@@ -161,10 +172,10 @@ sealed class ECDSASignature
         fun parseFromJca(input: ByteArray) =
             fromRawSignatureValue(input)
 
-        // TODO: we probably want to rename "raw bytes" (and "rawbyteencodable") to something else
         /** Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm. */
+        @Deprecated("Renamed", replaceWith = ReplaceWith("fromP1363Bytes(input)"))
         fun parseFromJcaP1363(input: ByteArray) =
-            fromRawBytes(input)
+            fromP1363Bytes(input)
 
         override fun decodeFromTlv(element: X509SignatureValue, der: Der): IndefiniteLength =
             IndefiniteLength(element)
@@ -175,25 +186,27 @@ sealed class ECDSASignature
 class RSASignature private constructor(
     providedRawBytes: ByteArray?,
     providedAsn1Representation: X509SignatureValue?,
-) : CryptoSignature, RawByteEncodable {
+) : CryptoSignature {
     constructor(rawBytes: ByteArray) : this(rawBytes, null)
 
     override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
-        X509SignatureValue(rawByteArray)
+        X509SignatureValue(rawBytes)
     }
 
-    override val rawByteArray: ByteArray by providedRawBytes orLazy {
+    val rawBytes: ByteArray by providedRawBytes orLazy {
         asn1Representation.rawBytes
     }
 
-    override fun hashCode(): Int = rawByteArray.contentHashCode()
+    override val joseBytes get() = rawBytes
+
+    override fun hashCode(): Int = rawBytes.contentHashCode()
 
     override fun toString() = humanReadableString
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RSASignature) return false
-        return rawByteArray.contentEquals(other.rawByteArray)
+        return rawBytes.contentEquals(other.rawBytes)
     }
 
     companion object : DerDecodable<X509SignatureValue, RSASignature> {

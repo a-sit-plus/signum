@@ -103,9 +103,9 @@ private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>):
 private fun ByteArray.toSignature(
     protectedHeader: CoseHeader,
     unprotectedHeader: CoseHeader?,
-): CryptoSignature.RawByteEncodable =
+): CryptoSignature =
     if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        ECDSASignature.fromRawBytes(this)
+        ECDSASignature.fromP1363Bytes(this)
     else RSASignature(this)
 
 private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =

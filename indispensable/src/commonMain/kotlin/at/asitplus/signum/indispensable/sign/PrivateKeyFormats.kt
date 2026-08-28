@@ -131,8 +131,6 @@ class RSAPrivateKey private constructor(
         }
     }
 
-    override val oid: ObjectIdentifier get() = Companion.oid
-
     private val content: ContentContainer by providedContent orLazy {
         val source = providedPkcs1Source ?: RsaPkcs1Source(
             Pkcs1RsaPrivateKeyInfo.of(requireNotNull(providedPkcs8Representation)),
@@ -342,8 +340,6 @@ sealed class ECDSAPrivateKey private constructor(
             require(it.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${it.version}" }
         }
     }
-
-    override val oid: ObjectIdentifier get() = Companion.oid
 
     protected val content: ContentContainer by providedContent orLazy {
         val source = providedSec1Source ?: requireNotNull(providedPkcs8Representation).let {

@@ -48,7 +48,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
         return@make parseSignature(signatureBytes)
     }
 
-    protected abstract fun parseSignature(signatureBytes: ByteArray): CryptoSignature.RawByteEncodable
+    protected abstract fun parseSignature(signatureBytes: ByteArray): CryptoSignature
 
     class EC internal constructor(
         privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: ECDSAPublicKey,

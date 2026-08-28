@@ -32,7 +32,7 @@ private fun RSAAlgorithm.Parameters.PssPadded.requireSupportedIosPssParameters()
     }
 }
 
-object IndispensableIosExtensionProvider : IosExtensionProvider {
+object IndispensableIosExtensionProvider : IosMappingProvider {
     override fun signatureAlgorithmToSecKeyAlgorithm(algorithm: SignatureAlgorithm) = when (algorithm) {
         is ECDSAAlgorithm -> {
             when (algorithm.digest) {

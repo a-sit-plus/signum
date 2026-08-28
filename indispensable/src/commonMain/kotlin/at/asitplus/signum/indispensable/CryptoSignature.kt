@@ -15,12 +15,9 @@ import at.asitplus.signum.indispensable.sign.RSASignature
  */
 interface CryptoSignature : DerEncodable<X509SignatureValue> {
 
-    /**
-     * Well-defined signatures that can be encoded into raw bytes.
-     */
-    interface RawByteEncodable : CryptoSignature {
-        val rawByteArray: ByteArray
-    }
+    // TODO: providerize this; the names do not need to be preserved
+    val joseBytes: ByteArray get() = TODO("providerize JOSE/COSE for generic provider-provided signature types")
+    val coseBytes: ByteArray get() = joseBytes
 
     private class X509Unparsed(override val asn1Representation: X509SignatureValue) : DerEncodable<X509SignatureValue>
 

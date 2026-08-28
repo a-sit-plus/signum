@@ -450,7 +450,7 @@ abstract class AndroidKeystoreSigner protected constructor(
         return@make parseSignatureFromJca(jcaSig)
     }}
 
-    abstract fun parseSignatureFromJca(jcaSig: ByteArray): CryptoSignature.RawByteEncodable
+    abstract fun parseSignatureFromJca(jcaSig: ByteArray): CryptoSignature
 
     class ECDSA internal constructor(jcaPrivateKey: PrivateKey,
                                      alias: String,

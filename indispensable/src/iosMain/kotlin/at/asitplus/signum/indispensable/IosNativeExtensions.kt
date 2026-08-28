@@ -26,7 +26,7 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
     }!!
 }
 
-interface IosExtensionProvider {
+interface IosMappingProvider {
     /** Converts a SignatureAlgorithm to its SecKeyAlgorithm equivalent */
     fun signatureAlgorithmToSecKeyAlgorithm(algorithm: SignatureAlgorithm): SecKeyAlgorithm? { return null }
     /** Converts a SignatureAlgorithm to its pre-hashed SecKeyAlgorithm equivalent.
@@ -58,8 +58,8 @@ interface IosExtensionProvider {
  * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this, IosExtensionProvider::signatureAlgorithmToSecKeyAlgorithm)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this, IosMappingProvider::signatureAlgorithmToSecKeyAlgorithm)
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyAlgorithm
 
@@ -72,8 +72,8 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyA
  * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm get() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this, IosExtensionProvider::signatureAlgorithmToSecKeyAlgorithmPreHashed)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this, IosMappingProvider::signatureAlgorithmToSecKeyAlgorithmPreHashed)
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed get() = this.algorithm.secKeyAlgorithmPreHashed
 
@@ -91,15 +91,15 @@ val SignatureAlgorithm.suitableSecKeyAlgAndFormat get(): Pair<SecKeyAlgorithm, S
 
 /** Produces signature bytes that match the algorithms returned by [suitableSecKeyAlgAndFormat] etc. */
 val CryptoSignature.secKeySignature get() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this, IosExtensionProvider::getSignatureBytes)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this, IosMappingProvider::getSignatureBytes)
 
 @Deprecated("Renamed", replaceWith = ReplaceWith("this.secKeySignature"))
 val CryptoSignature.iosEncoded get() = this.secKeySignature
 
 /** Parses the signature bytes produced by the algorithms from [suitableSecKeyAlgAndFormat] etc. */
 fun SignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
-    ServiceLoader.load<IosExtensionProvider>()
+    ServiceLoader.load<IosMappingProvider>()
         .get(this) { parseSignatureBytes(it, sigBytes) }
 
 /** @see SignatureAlgorithm.parseSecKeySignature */
@@ -107,18 +107,18 @@ fun SpecializedSignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
     this.algorithm.parseSecKeySignature(sigBytes)
 
 fun CryptoPublicKey.toSecKey() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this, IosExtensionProvider::cryptoPublicKeyToSecKey)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this, IosMappingProvider::cryptoPublicKeyToSecKey)
 
 fun SecKeyRef?.toCryptoPublicKey() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this!!, IosExtensionProvider::secKeyToCryptoPublicKey)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this!!, IosMappingProvider::secKeyToCryptoPublicKey)
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
 fun CryptoPrivateKey.WithPublicKey.toSecKey() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this, IosExtensionProvider::cryptoPrivateKeyToSecKey)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this, IosMappingProvider::cryptoPrivateKeyToSecKey)
 
 fun SecKeyRef?.toCryptoPrivateKey() =
-    ServiceLoader.load<IosExtensionProvider>()
-        .get(this!!, IosExtensionProvider::secKeyToCryptoPrivateKey)
+    ServiceLoader.load<IosMappingProvider>()
+        .get(this!!, IosMappingProvider::secKeyToCryptoPrivateKey)

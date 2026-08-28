@@ -35,7 +35,7 @@ val JwsJvmTest by matrixSuite {
         val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey() as ECPublicKey)
 
         fun signerFor(signer: Signer): suspend (ByteArray) -> ByteArray = { input ->
-            signer.sign(input).signature.rawByteArray
+            signer.sign(input).signature.joseBytes
         }
     }
 

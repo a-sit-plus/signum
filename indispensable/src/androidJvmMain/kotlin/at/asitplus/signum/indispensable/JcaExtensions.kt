@@ -1,14 +1,11 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.KmmResult
-import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.Certificate
@@ -274,7 +271,9 @@ fun RSAPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
     ) as java.security.interfaces.RSAPublicKey
 
 fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): ECDSAPublicKey {
-    // TODO: don't we have "curve by oid" now?
+    // TODO: this assumes SPKI encoding then uses bouncycastle on it to find the curve
+    // this breaks for non-SPKI encoded ECDSA public keys
+    // leaving it untouched for now but we should revisit it
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
