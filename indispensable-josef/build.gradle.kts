@@ -31,7 +31,7 @@ kotlin {
             dependencies {
                 implementation(libs.jose)
                 implementation(project(":supreme"))
-                gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
+                if (gradle.startParameter.taskNames.any { !it.contains("publish") }) implementation(project(":internals-test"))
             }
 
         }
