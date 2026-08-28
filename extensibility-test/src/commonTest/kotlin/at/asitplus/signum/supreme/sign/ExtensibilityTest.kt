@@ -69,9 +69,8 @@ object CursorySignatureScheme : SignatureAlgorithm {
         inner class Private : CryptoPrivateKey.WithPublicKey {
             override val publicKey = this@Key
             override val asn1Representation = Pkcs8PrivateKeyInfo(
-                Pkcs8PrivateKeyInfo.Version.V1,
-                ALG,
-                Asn1OctetString(byteArrayOfHighest(bit))
+                privateKeyAlgorithm = ALG,
+                privateKey = Asn1OctetString(byteArrayOfHighest(bit))
             )
             override val oid: ObjectIdentifier get() = OID
         }
