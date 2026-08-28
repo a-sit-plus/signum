@@ -17,6 +17,7 @@ import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.catching
 import at.asitplus.io.UVarInt
+import at.asitplus.io.UVarInt.Companion.varint
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
@@ -123,7 +124,7 @@ class RSAPublicKey private constructor(
     override fun toString(): String = "RSA(n=$n, e=$e)"
 
     companion object : Identifiable {
-        val DID_KEY_CODEC = UVarInt(0x1205u)
+        val DID_KEY_CODEC = 0x1205u.varint
         /**
          * decodes a PKCS#1-encoded RSA key
          *
@@ -224,9 +225,9 @@ class ECDSAPublicKey private constructor(
 
     companion object : Identifiable {
 
-        val DID_KEY_CODEC_P256 = UVarInt(0x1200u)
-        val DID_KEY_CODEC_P384 = UVarInt(0x1201u)
-        val DID_KEY_CODEC_P521 = UVarInt(0x1202u)
+        val DID_KEY_CODEC_P256 = 0x1200u.varint
+        val DID_KEY_CODEC_P384 = 0x1201u.varint
+        val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): ECDSAPublicKey {
             return ECDSAPublicKey(null,
