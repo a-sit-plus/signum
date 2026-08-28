@@ -17,6 +17,20 @@ import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
 import java.security.PublicKey
 
+/** This is not semantics-aware, but allows fallback for public key/private key parsing based on DER formats */
+object FallbackToDERFormat : JcaMappingProvider {
+    override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
+        if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
+            CryptoPublicKey.decodeFromDer(publicKey.encoded)
+        else null
+
+    override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
+        if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
+            CryptoPrivateKey.decodeFromDer(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+        else null
+}
+
+/** This provides semantics-aware operations for types supported by Indispensable */
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
     override fun getJCAMessageDigestInstance(digest: Digest, jcaProviderRef: JCAProviderRef): MessageDigest? {
         if (digest !is WellKnownDigest) return null

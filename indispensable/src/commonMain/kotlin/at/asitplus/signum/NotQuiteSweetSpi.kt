@@ -4,15 +4,15 @@ import at.asitplus.nonFatalOrThrow
 import kotlin.reflect.KClass
 
 object ServiceLoader {
-    private val THE_MAP = mutableMapOf<KClass<out Any>, MutableSet<*>>()
+    private val THE_MAP = mutableMapOf<KClass<out Any>, ArrayDeque<*>>()
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> getSetFromMap(clazz: KClass<T>): MutableSet<T> =
-        THE_MAP.getOrPut(clazz) { mutableSetOf<T>() } as MutableSet<T>
+    private fun <T: Any> getStorageFromMap(clazz: KClass<T>): ArrayDeque<T> =
+        THE_MAP.getOrPut(clazz) { ArrayDeque<T>() } as ArrayDeque<T>
 
     // this is what sweetspi would do automatically; it's a bit of a pain right now
     @PublishedApi internal fun <T: Any> register(it: T, clazz: KClass<T>) {
         require(it::class != clazz) { "You should use register<ServiceInterface>(ServiceProviderInstantiation)"}
-        getSetFromMap(clazz).add(it)
+        getStorageFromMap(clazz).addFirst(it)
     }
     inline fun <reified T: Any> register(it: T) { register(it, T::class) }
 
@@ -52,7 +52,7 @@ object ServiceLoader {
         }
     }
     @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =
-        ServiceProviders(clazz.simpleName ?: "<anonymous>", getSetFromMap(clazz))
+        ServiceProviders(clazz.simpleName ?: "<anonymous>", getStorageFromMap(clazz))
     @Suppress("UNCHECKED_CAST")
     inline fun <reified T: Any> load(): ServiceProviders<T> = load(T::class)
 }
