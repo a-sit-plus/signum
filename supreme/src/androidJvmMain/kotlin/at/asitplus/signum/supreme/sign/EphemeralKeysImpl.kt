@@ -99,25 +99,25 @@ internal fun getKPGInstance(alg: String, provider: JCAProviderRef) =
     }
 
 object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {
-    override suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration) : SupremeEphemeralJvmSigner? =
-        when (val alg = DSL.options(configuration.ec, configuration.rsa)) {
+    override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration) : SupremeEphemeralJvmSigner? =
+        when (val alg = DSL.options(config.ec, config.rsa)) {
             is EphemeralECDSAConfiguration ->
-                getKPGInstance("EC", configuration.jvm.v.provider).run {
+                getKPGInstance("EC", config.jvm.v.provider).run {
                     initialize(ECGenParameterSpec(alg.curve.jcaName))
                     generateKeyPair()
                 }.let { pair ->
                     SupremeEphemeralJvmSigner.EC(
-                        privateKey = pair.private, provider = configuration.jvm.v.provider,
+                        privateKey = pair.private, provider = config.jvm.v.provider,
                         publicKey = pair.public.toCryptoPublicKey() as ECDSAPublicKey,
                         signatureAlgorithm = ECDSAAlgorithm(alg.digest, alg.curve))
                 }
             is EphemeralRSAConfiguration ->
-                getKPGInstance("RSA", configuration.jvm.v.provider).run {
+                getKPGInstance("RSA", config.jvm.v.provider).run {
                     initialize(RSAKeyGenParameterSpec(alg.bits, RSAKeyGenParameterSpec.F4))
                     generateKeyPair()
                 }.let { pair ->
                     SupremeEphemeralJvmSigner.RSA(
-                        privateKey = pair.private, provider = configuration.jvm.v.provider,
+                        privateKey = pair.private, provider = config.jvm.v.provider,
                         publicKey = pair.public.toCryptoPublicKey() as RSAPublicKey,
                         signatureAlgorithm = RSAAlgorithm(alg.padding, alg.digest))
                 }
@@ -127,20 +127,20 @@ object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {
     override fun createSignerForKey(
         algorithm: SignatureAlgorithm,
         privateKey: CryptoPrivateKey.WithPublicKey,
-        configuration: InMemorySignerConfiguration
+        config: InMemorySignerConfiguration
     ): Signer.WithExportableKey? =
         when (algorithm) {
             is RSAAlgorithm -> {
                 require(privateKey is at.asitplus.signum.indispensable.sign.RSAPrivateKey)
                     { "Trying to use a non-RSA private key (${privateKey::class.simpleName}) with $algorithm" }
                 return SupremeEphemeralJvmSigner.RSA(
-                    privateKey.toJcaPrivateKey(), configuration.jvm.v.provider, privateKey.publicKey, algorithm)
+                    privateKey.toJcaPrivateKey(), config.jvm.v.provider, privateKey.publicKey, algorithm)
             }
             is ECDSAAlgorithm -> {
                 require(privateKey is ECDSAPrivateKey.WithPublicKey)
                     { "Trying to use a non-ECDSA private key (${privateKey::class.simpleName}) with $algorithm" }
                 return SupremeEphemeralJvmSigner.EC(
-                    privateKey.toJcaPrivateKey(), configuration.jvm.v.provider, privateKey.publicKey, algorithm)
+                    privateKey.toJcaPrivateKey(), config.jvm.v.provider, privateKey.publicKey, algorithm)
             }
             else -> null
         }

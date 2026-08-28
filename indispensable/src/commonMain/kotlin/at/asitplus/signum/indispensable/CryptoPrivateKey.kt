@@ -22,7 +22,7 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable 
         val publicKey: CryptoPublicKey
     }
 
-    val attributes: Set<Asn1Element>?
+    val attributes: Set<Asn1Element>? get() = asn1Representation.attributes
 
     val asPKCS8: DerPemEncodable<Pkcs8PrivateKeyInfo> get() = this
 

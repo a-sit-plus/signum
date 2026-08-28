@@ -21,19 +21,19 @@ import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
 
 // @Service
 interface InMemoryKeysProvider {
-    /** Create a new [Signer.WithExportableKey] given [configuration].
+    /** Create a new [Signer.WithExportableKey] given [config].
      * Implementers may choose to re-use some of Signum's scaffolding:
      * - On JVM, see Signum's `SupremeEphemeralJvmSigner`, which forwards to `JcaMappingProvider`.
      * - On iOS, see Signum's `SupremeEphemeralIOSSigner`.
      */
-    suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration): Signer.WithExportableKey?
+    suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): Signer.WithExportableKey?
 
     /** Create a [Signer.WithExportableKey] using the given [algorithm]/[privateKey] combination.
      * Implementers may choose to re-use some of Signum's scaffolding:
      * - On JVM, see Signum's `SupremeEphemeralSigner`, which forwards to `JcaMappingProvider`.
      * - On iOS, see Signum's `SupremeEphemeralIOSSigner`.
      */
-    fun createSignerForKey(algorithm: SignatureAlgorithm, privateKey: CryptoPrivateKey.WithPublicKey, configuration: InMemorySignerConfiguration): Signer.WithExportableKey?
+    fun createSignerForKey(algorithm: SignatureAlgorithm, privateKey: CryptoPrivateKey.WithPublicKey, config: InMemorySignerConfiguration): Signer.WithExportableKey?
 }
 
 /**

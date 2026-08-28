@@ -87,8 +87,8 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
 }
 
 object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
-    override suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration): Signer.WithExportableKey? {
-        val alg = DSL.options(configuration.ec, configuration.rsa) ?: return null
+    override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): Signer.WithExportableKey? {
+        val alg = DSL.options(config.ec, config.rsa) ?: return null
         memScoped {
             val attr = createCFDictionary {
                 when (alg) {
@@ -138,7 +138,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
     override fun createSignerForKey(
         algorithm: SignatureAlgorithm,
         privateKey: CryptoPrivateKey.WithPublicKey,
-        configuration: InMemorySignerConfiguration
+        config: InMemorySignerConfiguration
     ): Signer.WithExportableKey? =
         when (algorithm) {
             is ECDSAAlgorithm -> {

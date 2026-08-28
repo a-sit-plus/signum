@@ -67,7 +67,6 @@ object CursorySignatureScheme : SignatureAlgorithm {
                 Asn1BitString(bit))
 
         inner class Private : CryptoPrivateKey.WithPublicKey {
-            override val attributes = setOf<Asn1Element>()
             override val publicKey = this@Key
             override val asn1Representation = Pkcs8PrivateKeyInfo(
                 Pkcs8PrivateKeyInfo.Version.V1,
@@ -108,8 +107,8 @@ object CursorySignatureSchemeProvider :
 {
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
         CursorySignatureScheme.takeIf { algorithmIdentifier == CursorySignatureScheme.ALG }
-    override suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration): CursorySignatureScheme.Key? {
-        val v = configuration.cursory.v ?: return null
+    override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): CursorySignatureScheme.Key? {
+        val v = config.cursory.v ?: return null
         return CursorySignatureScheme.Key(
             v.overrideKey ?: CryptoRand.nextBytes(ByteArray(1)).hasHighest)
     }
@@ -117,7 +116,7 @@ object CursorySignatureSchemeProvider :
     override fun createSignerForKey(
         algorithm: SignatureAlgorithm,
         privateKey: CryptoPrivateKey.WithPublicKey,
-        configuration: InMemorySignerConfiguration
+        config: InMemorySignerConfiguration
     ): Signer.WithExportableKey? {
         if (algorithm != CursorySignatureScheme) return null
         require (privateKey is CursorySignatureScheme.Key.Private)

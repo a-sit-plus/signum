@@ -114,7 +114,7 @@ Here is how you do this:
   ``` 
   In your provider implementation (in this case `InMemoryKeysProvider::makeEphemeralSigner`), you can then check if your algorithm was selected:
   ```kotlin
-  override suspend fun makeEphemeralSigner(configuration: EphemeralSignerConfiguration): Signer.WithExportableKey? {
+  override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): Signer.WithExportableKey? {
     val algSpecificConfiguration = configuration.foobar.v
     if (algSpecificConfiguration == null) return null
     /* ... create an ephemeral key as configured, then wrap it in a signer */
