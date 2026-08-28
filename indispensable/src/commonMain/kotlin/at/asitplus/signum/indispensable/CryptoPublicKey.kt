@@ -21,7 +21,7 @@ interface PublicKeyFormatProvider {
 /**
  * Representation of a public key structure
  */
-interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo>, Identifiable {
+interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.

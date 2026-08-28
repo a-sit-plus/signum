@@ -16,7 +16,7 @@ import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import kotlinx.serialization.KSerializer
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
-interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo>, Identifiable {
+interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
 
     interface WithPublicKey : CryptoPrivateKey {
         val publicKey: CryptoPublicKey

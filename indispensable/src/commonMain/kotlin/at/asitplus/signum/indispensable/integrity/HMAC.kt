@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.integrity
 
 import at.asitplus.awesn1.Asn1Null
-import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -15,8 +14,8 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.misc.BitLength
 
 /** RFC 2104 HMAC */
-data class HMAC(val digest: Digest, override val oid: ObjectIdentifier)
-    : MessageAuthenticationCode, Identifiable
+data class HMAC(val digest: Digest, val oid: ObjectIdentifier)
+    : MessageAuthenticationCode
 {
 
     override fun toString() = "HMAC-$digest"

@@ -41,7 +41,8 @@ sealed interface RSAPadding : Enumerable {
 
 }
 
-//TODO extensible, no more sealed
+// TODO extensible, no more sealed
+// TODO DerEncodable<X509AlgorithmIdentifier>
 sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */

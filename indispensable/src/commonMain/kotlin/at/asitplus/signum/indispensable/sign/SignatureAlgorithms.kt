@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.Asn1OctetString
-import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.RsaParams
@@ -323,12 +322,12 @@ class RSAAlgorithm private constructor(
                 return result
             }
 
-            sealed class MaskGenerationFunction(override val oid: ObjectIdentifier) : Identifiable, DerEncodable<X509AlgorithmIdentifier> {
+            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : DerEncodable<X509AlgorithmIdentifier> {
                 data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
                     override val asn1Representation: X509AlgorithmIdentifier
                         get() = X509AlgorithmIdentifier(oid, digest.asn1Representation.element)
-                    companion object : Identifiable {
-                        override val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
+                    companion object {
+                        val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                     }
                 }
 

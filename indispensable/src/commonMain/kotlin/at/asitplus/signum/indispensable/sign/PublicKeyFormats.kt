@@ -2,8 +2,6 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
@@ -81,8 +79,6 @@ class RSAPublicKey private constructor(
     constructor(n: BigInteger, e: BigInteger) : this(n.toAsn1Integer(), e.toAsn1Integer())
     constructor(n: BigInteger, e: UInt) : this(n.toAsn1Integer(), Asn1Integer(e))
 
-    override val oid get() = Companion.oid
-
     /** enum of supported RSA key sizes. For sanity checks! */
     enum class Size(val number: UInt) {
         RSA_512(512u),
@@ -92,10 +88,10 @@ class RSAPublicKey private constructor(
         RSA_4096(4096u),
         RSA_8192(8192u);
 
-        companion object : Identifiable {
+        companion object {
             fun of(numBits: UInt) = entries.find { it.number == numBits }
 
-            override val oid = KnownOIDs.rsaEncryption
+            val oid = KnownOIDs.rsaEncryption
         }
     }
 
@@ -123,7 +119,7 @@ class RSAPublicKey private constructor(
 
     override fun toString(): String = "RSA(n=$n, e=$e)"
 
-    companion object : Identifiable {
+    companion object {
         val DID_KEY_CODEC = 0x1205u.varint
         /**
          * decodes a PKCS#1-encoded RSA key
@@ -143,7 +139,7 @@ class RSAPublicKey private constructor(
         inline operator fun invoke(n: BigInteger, e: Int) =
             RSAPublicKey(n, e.also { require(it > 0) }.toUInt())
 
-        override val oid = KnownOIDs.rsaEncryption
+        val oid = KnownOIDs.rsaEncryption
     }
 }
 
@@ -195,8 +191,6 @@ class ECDSAPublicKey private constructor(
     val yBytes get() = publicPoint.yBytes
     val yCompressed get() = publicPoint.yCompressed
 
-    override val oid get() = Companion.oid
-
     /** ANSI X9.63 encoding (as used in the X.509 signatureValue) */
     fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
         when (useCompressed) {
@@ -223,7 +217,7 @@ class ECDSAPublicKey private constructor(
     override fun hashCode() =
         publicPoint.hashCode()
 
-    companion object : Identifiable {
+    companion object {
 
         val DID_KEY_CODEC_P256 = 0x1200u.varint
         val DID_KEY_CODEC_P384 = 0x1201u.varint
@@ -276,7 +270,7 @@ class ECDSAPublicKey private constructor(
                     ?: throw IllegalArgumentException("Unknown curve in iOS raw key"),
                 src)
 
-        override val oid = KnownOIDs.ecPublicKey
+        val oid = KnownOIDs.ecPublicKey
 
     }
 }

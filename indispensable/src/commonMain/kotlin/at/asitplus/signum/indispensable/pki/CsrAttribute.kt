@@ -9,7 +9,6 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.internals.orLazy
-import kotlinx.serialization.KSerializer
 
 sealed interface CsrAttribute : Identifiable {
 

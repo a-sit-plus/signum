@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.digest
 
-import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.serialization.Der
@@ -10,7 +9,7 @@ import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
-interface Digest : Identifiable, DerEncodable<X509AlgorithmIdentifier> {
+interface Digest : DerEncodable<X509AlgorithmIdentifier> {
     val name: String
     /** The hash function operates by repeatedly ingesting blocks of this length. Used by RFC 9380 et al. */
     val inputBlockSize: BitLength
