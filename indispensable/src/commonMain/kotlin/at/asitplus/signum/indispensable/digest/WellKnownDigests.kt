@@ -17,7 +17,7 @@ import kotlinx.serialization.builtins.serializer
 sealed class WellKnownDigest(
     override val name: String,
     override val inputBlockSize: BitLength, override val outputLength: BitLength,
-    override val oid: ObjectIdentifier
+    val oid: ObjectIdentifier
 ) : Digest, Enumerable {
 
     data object SHA1 : WellKnownDigest("SHA1", 512.bit, 160.bit, KnownOIDs.sha1)
