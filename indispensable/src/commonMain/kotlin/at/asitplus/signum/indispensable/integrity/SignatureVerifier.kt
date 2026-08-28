@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
+import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -37,8 +38,6 @@ interface SignatureVerifier {
     /** Verify the signature. Returns on success. Throws on failure. */
     @IgnorableReturnValue
     suspend fun verify(data: SignatureInput, sig: CryptoSignature): Success
-
-    companion object
 }
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
@@ -66,8 +65,11 @@ suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Succ
     return verify(input.tbsCertificate, input.signature)
 }
 
-suspend fun SignatureVerifier.Companion.verify(input: CertificationRequest) =
-    input.signatureAlgorithm.verifierFor(input.tbsCsr.publicKey).verify(input)
+fun CertificationRequest.verifier() =
+    this.signatureAlgorithm.verifierFor(this.tbsCsr.publicKey)
+
+suspend fun CertificationRequest.verify() =
+    this.verifier().verify(this)
 
 @IgnorableReturnValue
 /** Verify the proof of possession of the contained public key. Asserts that [this] matches the encoded [this.publicKey].
@@ -94,3 +96,9 @@ fun SignatureAlgorithm.verifierFor(key: CryptoPublicKey, configure: DSLConfigure
 }
 
 fun SpecializedSignatureAlgorithm.verifierFor(key: CryptoPublicKey) = this.algorithm.verifierFor(key)
+
+fun TbsCertificate.verifier(configure: DSLConfigureFn<VerifierConfiguration> = null) =
+    this.signatureAlgorithm.verifierFor(this.publicKey, configure)
+
+fun Certificate.verifier(configure: DSLConfigureFn<VerifierConfiguration> = null) =
+    tbsCertificate.verifier(configure)
