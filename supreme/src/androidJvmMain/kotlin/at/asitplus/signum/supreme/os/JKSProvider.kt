@@ -39,6 +39,9 @@ import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.REQUIRED
 import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signerFor
+import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -246,11 +249,16 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 validUntil = Clock.System.now() + config.certificateValidityPeriod,
                 publicKey = publicKey
             )
-            val cert = certAlg.getJCASignatureInstance(provider = config.provider).run {
-                initSign(keyPair.private)
-                update(tbsCert.encodeToDer())
-                sign()
-            }.let { Certificate(tbsCert, CryptoSignature.parseFromJca(it, certAlg)) }
+
+            val cert = try {
+                certAlg.signerFor(keyPair.private.toCryptoPrivateKey()).sign(tbsCert)
+            } catch (x: UnsupportedCryptoException) {
+                certAlg.getJCASignatureInstance(provider = config.provider).run {
+                    initSign(keyPair.private)
+                    update(tbsCert.encodeToDer())
+                    sign()
+                }.let { Certificate(tbsCert, CryptoSignature.parseFromJca(it, certAlg)) }
+            }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                 arrayOf(cert.toJcaCertificate()))
             ctx.markAsDirty()
