@@ -37,6 +37,8 @@ interface SignatureVerifier {
     /** Verify the signature. Returns on success. Throws on failure. */
     @IgnorableReturnValue
     suspend fun verify(data: SignatureInput, sig: CryptoSignature): Success
+
+    companion object
 }
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
@@ -64,9 +66,15 @@ suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Succ
     return verify(input.tbsCertificate, input.signature)
 }
 
+suspend fun SignatureVerifier.Companion.verify(input: CertificationRequest) =
+    input.signatureAlgorithm.verifierFor(input.tbsCsr.publicKey).verify(input)
+
 @IgnorableReturnValue
+/** Verify the proof of possession of the contained public key. Asserts that [this] matches the encoded [this.publicKey].
+ * @see SignatureVerifier.Companion.verify */
 suspend fun SignatureVerifier.verify(input: CertificationRequest): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
+    require(this.publicKey == input.tbsCsr.publicKey)
     return verify(input.tbsCsr, input.signature)
 }
 
