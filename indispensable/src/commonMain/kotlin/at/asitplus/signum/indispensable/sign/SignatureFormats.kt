@@ -153,10 +153,15 @@ sealed class ECDSASignature
             return fromRawBytes(input)
         }
 
-        /** Parses a signature produced by the JCA digestwithECDSA algorithm. */
-        fun parseFromJca(input: ByteArray) =
-            decodeFromTlv(X509SignatureValue(input))
+        fun fromRawSignatureValue(sigBytes: ByteArray) =
+            decodeFromTlv(X509SignatureValue(sigBytes))
 
+        /** Parses a signature produced by the JCA digestwithECDSA algorithm. */
+        @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
+        fun parseFromJca(input: ByteArray) =
+            fromRawSignatureValue(input)
+
+        // TODO: we probably want to rename "raw bytes" (and "rawbyteencodable") to something else
         /** Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm. */
         fun parseFromJcaP1363(input: ByteArray) =
             fromRawBytes(input)
@@ -194,7 +199,9 @@ class RSASignature private constructor(
     companion object : DerDecodable<X509SignatureValue, RSASignature> {
         override fun decodeFromTlv(element: X509SignatureValue, der: Der): RSASignature =
             RSASignature(null, element)
-        fun parseFromJca(input: ByteArray) = RSASignature(input)
+        fun fromRawSignatureValue(input: ByteArray) = RSASignature(input)
+        @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
+        fun parseFromJca(input: ByteArray) = fromRawSignatureValue(input)
     }
 }
 

@@ -45,7 +45,7 @@ abstract class SupremeCCVerifier: SignatureVerifier {
             /** inner takeIf ensures that only true returns, false will throw. see [corecall] */
             val result = corecall {
                 SecKeyVerifySignature(key.value, algorithm,
-                    inputData.toNSData().giveToCF(), sig.iosEncoded.toNSData().giveToCF(), error).takeIf { it }
+                    inputData.toNSData().giveToCF(), sig.secKeySignature.toNSData().giveToCF(), error).takeIf { it }
             }
             if (result == true) return SignatureVerifier.Success
             else error("unreachable")

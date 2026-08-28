@@ -16,14 +16,14 @@ import at.asitplus.signum.indispensable.integrity.SignatureInput
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.indispensable.sign.Signer
 import java.security.KeyPairGenerator
@@ -60,7 +60,8 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
     )
         : SupremeEphemeralJvmSigner(privateKey, provider), Signer.WithExportableKey.ECDSA {
 
-        override fun parseFromJca(bytes: ByteArray) = ECDSASignature.parseFromJca(bytes).withCurve(publicKey.curve)
+        override fun parseFromJca(bytes: ByteArray) =
+            ECDSASignature.fromRawSignatureValue(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
         final override suspend fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
@@ -83,7 +84,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
     )
         : SupremeEphemeralJvmSigner(privateKey, provider), Signer.WithExportableKey.RSA {
 
-        override fun parseFromJca(bytes: ByteArray) = RSASignature.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = RSASignature.fromRawSignatureValue(bytes)
 
         @SecretExposure
         final override suspend fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()

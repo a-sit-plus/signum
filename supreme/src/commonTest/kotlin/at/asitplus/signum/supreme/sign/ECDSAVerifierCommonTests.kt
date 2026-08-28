@@ -1,10 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.matrixSuite
-import at.asitplus.signum.indispensable.decodeFromDer
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
@@ -13,9 +10,7 @@ import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import io.kotest.assertions.throwables.shouldThrowAny
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
@@ -45,7 +40,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
         val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as ECDSAPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
-        val sig = ECDSASignature.parseFromJca(Base64.decode(test.sig))
+        val sig = ECDSASignature.fromRawSignatureValue(Base64.decode(test.sig))
     }
 
     /** Generated on JVM using:

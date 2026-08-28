@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureVerifier
 import at.asitplus.signum.indispensable.integrity.verifierFor
@@ -76,7 +75,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
 
                 "Signum's verifier against JCA signed" {
                     rsaInstance.verifierFor(key.publicKey)
-                        .verify(data, RSASignature.parseFromJca(jvmSigned)) shouldBe SignatureVerifier.Success
+                        .verify(data, RSASignature.fromRawSignatureValue(jvmSigned)) shouldBe SignatureVerifier.Success
                 }
                 val jcaVerifier = Signature.getInstance("RSASSA-PSS").apply {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))

@@ -8,9 +8,11 @@ import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.*
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
@@ -30,7 +32,7 @@ private fun RSAAlgorithm.Parameters.PssPadded.requireSupportedIosPssParameters()
     }
 }
 
-object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
+object IndispensableIosExtensionProvider : IosExtensionProvider {
     override fun signatureAlgorithmToSecKeyAlgorithm(algorithm: SignatureAlgorithm) = when (algorithm) {
         is ECDSAAlgorithm -> {
             when (algorithm.digest) {
@@ -104,6 +106,18 @@ object IndispensableCCExtensionProvider : CommonCryptoExtensionProvider {
 
         else -> throw UnsupportedCryptoException("Algorithm $this is unknown")
     }
+
+    override fun parseSignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray) = when (algorithm) {
+        is ECDSAAlgorithm -> ECDSASignature.fromRawSignatureValue(sigBytes)
+        is RSAAlgorithm -> RSASignature.fromRawSignatureValue(sigBytes)
+        else -> null
+    }
+
+    override fun getSignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
+        is ECDSASignature, is RSASignature -> signature.asn1Representation.rawBytes
+        else -> null
+    }
+
     override fun cryptoPublicKeyToSecKey(key: CryptoPublicKey): OwnedCFValue<SecKeyRef>? {
         val (keyType, keyBytes) = when (key) {
             is ECDSAPublicKey -> Pair(kSecAttrKeyTypeECSECPrimeRandom, key.iosEncoded)

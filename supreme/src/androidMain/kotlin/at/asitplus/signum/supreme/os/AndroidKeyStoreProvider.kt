@@ -483,7 +483,7 @@ abstract class AndroidKeystoreSigner protected constructor(
         }
 
         override fun parseSignatureFromJca(jcaSig: ByteArray) =
-            ECDSASignature.parseFromJca(jcaSig).withCurve(publicKey.curve)
+            ECDSASignature.fromRawSignatureValue(jcaSig).withCurve(publicKey.curve)
     }
 
     class RSA internal constructor(jcaPrivateKey: PrivateKey,
@@ -498,7 +498,7 @@ abstract class AndroidKeystoreSigner protected constructor(
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation), SignerI.RSA
     {
         override fun parseSignatureFromJca(jcaSig: ByteArray) =
-            RSASignature.parseFromJca(jcaSig)
+            RSASignature.fromRawSignatureValue(jcaSig)
     }
 }
 

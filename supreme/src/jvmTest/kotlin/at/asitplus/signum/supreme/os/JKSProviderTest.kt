@@ -130,10 +130,10 @@ val JKSProviderTest  by matrixSuite {
             signer.signatureAlgorithm.parseJCASignature(signature.jcaSignatureBytes) shouldBe signature
             when (signer.signatureAlgorithm) {
                 is RSAAlgorithm ->
-                    RSASignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                    RSASignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
 
                 is ECDSAAlgorithm ->
-                    ECDSASignature.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                    ECDSASignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
             }
 
             signer.signatureAlgorithm.let {

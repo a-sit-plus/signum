@@ -327,11 +327,11 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()
         val signature1 =
-            (ECDSASignature.parseFromJca(signed1)).withCurve(ECCurve.SECP_256_R_1)
+            (ECDSASignature.fromRawSignatureValue(signed1)).withCurve(ECCurve.SECP_256_R_1)
         val signature2 =
-            (ECDSASignature.parseFromJca(signed2)).withCurve(ECCurve.SECP_256_R_1)
+            (ECDSASignature.fromRawSignatureValue(signed2)).withCurve(ECCurve.SECP_256_R_1)
         val signature3 =
-            (ECDSASignature.parseFromJca(signed3)).withCurve(ECCurve.SECP_521_R_1)
+            (ECDSASignature.fromRawSignatureValue(signed3)).withCurve(ECCurve.SECP_521_R_1)
         val x509Certificate1 = Certificate(tbsCertificate1, signature1)
         val x509Certificate2 = Certificate(tbsCertificate2, signature2)
         val x509Certificate3 = Certificate(tbsCertificate3, signature3)

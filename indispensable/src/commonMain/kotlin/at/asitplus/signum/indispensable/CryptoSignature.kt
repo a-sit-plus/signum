@@ -41,10 +41,11 @@ interface CryptoSignature : DerEncodable<X509SignatureValue> {
             decodeFromTlv(asn1Representation, der).withX509Algorithm(x509Algorithm)
         override fun decodeFromTlv(element: X509SignatureValue, der: Der): DerEncodable<X509SignatureValue> =
             X509Unparsed(element)
+        /** Loads the raw signature bytes (the *content* of the X509SignatureValue BIT STRING) */
+        fun fromRawSignatureValue(sigBytes: ByteArray) =
+            decodeFromTlv(X509SignatureValue(sigBytes))
     }
 }
-
-val CryptoSignature.iosEncoded get() = asn1Representation.rawBytes
 
 fun DerEncodable<X509SignatureValue>.withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
     ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {

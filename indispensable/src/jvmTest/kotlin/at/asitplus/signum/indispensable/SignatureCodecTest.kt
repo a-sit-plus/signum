@@ -1,11 +1,10 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.pki.getContentSigner
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.testballoon.matrix.*
@@ -50,7 +49,7 @@ val SignatureCodecTest  by matrixSuite {
                 sign()
             }
 
-            CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            ECDSASignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
             ECDSAAlgorithm(
                 WellKnownDigest.entries.first { it.name == digest },
                 ECCurve.byJcaName(curve)
@@ -59,7 +58,7 @@ val SignatureCodecTest  by matrixSuite {
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(CryptoSignature.EC.parseFromJca(sig).encodeToDer())
+                verify(ECDSASignature.fromRawSignatureValue(sig).encodeToDer())
             }
 
         }
@@ -83,7 +82,7 @@ val SignatureCodecTest  by matrixSuite {
 
 
 
-            RSASignature.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            RSASignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
             signatureAlgorithm
                 .parseJCASignature(sig).jcaSignatureBytes shouldBe sig
 
@@ -108,7 +107,7 @@ val SignatureCodecTest  by matrixSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            RSASignature.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            RSASignature.fromRawSignatureValue(certificateHolder.signature).encodeToDer() shouldBe bcSig
             signatureAlgorithm
                 .parseJCASignature(certificateHolder.signature).encodeToDer() shouldBe bcSig
 

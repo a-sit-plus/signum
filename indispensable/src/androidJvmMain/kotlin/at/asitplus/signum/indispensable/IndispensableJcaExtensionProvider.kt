@@ -78,14 +78,13 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? = when (algorithm) {
-        is ECDSAAlgorithm -> ECDSASignature.parseFromJca(sigBytes)
-        is RSAAlgorithm -> RSASignature.parseFromJca(sigBytes)
+        is ECDSAAlgorithm -> ECDSASignature.fromRawSignatureValue(sigBytes)
+        is RSAAlgorithm -> RSASignature.fromRawSignatureValue(sigBytes)
         else -> null
     }
 
     override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is ECDSASignature -> signature.asn1Representation.rawBytes
-        is RSASignature -> signature.asn1Representation.rawBytes
+        is ECDSASignature, is RSASignature -> signature.asn1Representation.rawBytes
         else -> null
     }
 
