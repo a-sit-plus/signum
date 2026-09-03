@@ -22,7 +22,6 @@ val JwsTypedTest by matrixSuite {
             keyId = "kid-compact",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val expectedProtectedHeader = JwsHeaderWrapped(header).toProtectedHeader()
         var capturedSignatureInput: ByteArray? = null
 
         val typedCompact: JwsCompactTyped<JsonObject> = JwsTyped(
@@ -35,7 +34,7 @@ val JwsTypedTest by matrixSuite {
 
         typedCompact.payload shouldBe payload
         typedCompact.jws.plainPayload shouldBe expectedPayload
-        capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
+        capturedSignatureInput shouldBe JWS.getSignatureInput(typedCompact.jws.plainProtectedHeader, expectedPayload)
         typedCompact.toString() shouldBe typedCompact.jws.toString()
 
         typedCompact.jws.typed<JwsCompact, JsonObject>() shouldBe typedCompact
@@ -95,14 +94,12 @@ val JwsTypedTest by matrixSuite {
             contentType = "application/example+json",
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
-        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val expectedProtectedHeader = wrappedHeader.toProtectedHeader()
-            .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
         var capturedSignatureInput: ByteArray? = null
 
         val typedFlattened: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            wrappedHeader = wrappedHeader,
+            header = header,
             payload = payload,
+            unprotectedMembers = unprotectedMembers,
         ) { signatureInput ->
             capturedSignatureInput = signatureInput
             byteArrayOf(4, 3, 2, 1)
@@ -110,9 +107,9 @@ val JwsTypedTest by matrixSuite {
 
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
-        typedFlattened.jws.unprotectedHeader shouldBe wrappedHeader.toUnprotectedHeader()
-        typedFlattened.jws.wrappedHeader shouldBe wrappedHeader
-        capturedSignatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
+        typedFlattened.jws.wrappedHeader.header shouldBe header
+        typedFlattened.jws.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
+        capturedSignatureInput shouldBe JWS.getSignatureInput(typedFlattened.jws.plainProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
         typedFlattened.jws.typed<JwsFlattened, JsonObject>() shouldBe typedFlattened
@@ -120,28 +117,24 @@ val JwsTypedTest by matrixSuite {
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
         val first: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            wrappedHeader = JwsHeaderWrapped(
-                header = JwsHeader(
-                    algorithm = JwsAlgorithm.Signature.RS256,
-                    type = "application/example+jws",
-                    keyId = "kid-1",
-                ),
-                unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
+            header = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                type = "application/example+jws",
+                keyId = "kid-1",
             ),
             payload = payload,
+            unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
         ) {
             byteArrayOf(1, 1, 1, 1)
         }
         val second: JwsFlattenedTyped<JsonObject> = JwsTyped.flattened(
-            wrappedHeader = JwsHeaderWrapped(
-                header = JwsHeader(
-                    algorithm = JwsAlgorithm.Signature.RS256,
-                    type = "application/example+jws",
-                    keyId = "kid-2",
-                ),
-                unprotectedMembers = setOf(JwsHeader.SerialNames.TYPE),
+            header = JwsHeader(
+                algorithm = JwsAlgorithm.Signature.RS256,
+                type = "application/example+jws",
+                keyId = "kid-2",
             ),
             payload = payload,
+            unprotectedMembers = setOf(JwsHeader.SerialNames.TYPE),
         ) {
             byteArrayOf(2, 2, 2, 2)
         }

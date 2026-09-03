@@ -369,11 +369,11 @@ data class JwsHeader(
     }
 }
 
-internal fun JsonObject.toProtectedHeaderBytes(): ByteArray =
-    joseCompliantSerializer.encodeToString(JsonObject.serializer(), this).encodeToByteArray()
+internal fun JsonObject.toProtectedHeaderBytes(serialFormat: Json = joseCompliantSerializer): ByteArray =
+    serialFormat.encodeToString(JsonObject.serializer(), this).encodeToByteArray()
 
-internal fun ByteArray.toProtectedHeaderJsonObject(): JsonObject =
-    joseCompliantSerializer.decodeFromString(JsonObject.serializer(), decodeToString())
+internal fun ByteArray.toProtectedHeaderJsonObject(serialFormat: Json = joseCompliantSerializer): JsonObject =
+    serialFormat.decodeFromString(JsonObject.serializer(), decodeToString())
 
 internal fun ByteArray?.requireAbsentIfEmptyProtectedHeader() {
     require(this == null || toProtectedHeaderJsonObject().isNotEmpty()) {

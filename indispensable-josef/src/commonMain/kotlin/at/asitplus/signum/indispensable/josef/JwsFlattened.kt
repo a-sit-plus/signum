@@ -2,10 +2,13 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 
 /**
  * Flattened JSON JWS serialization.
@@ -76,20 +79,23 @@ data class JwsFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWS, splitting [JwsHeaderWrapped.header] according to
-         * [JwsHeaderWrapped.unprotectedMembers].
+         * Creates a flattened JWS, placing the serialized [header] members named by [unprotectedMembers] in its
+         * unprotected fragment.
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
-        */
+         */
         suspend operator fun invoke(
-            wrappedHeader: JwsHeaderWrapped,
+            header: JwsHeader,
             payload: ByteArray,
+            unprotectedMembers: Set<String> = emptySet(),
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val plainProtectedHeader = wrappedHeader.toProtectedHeader()
-                .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
-            val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+            val serializedHeader = joseCompliantSerializer.encodeToJsonElement(header).jsonObject
+            val plainProtectedHeader = JsonObject(serializedHeader.filterKeys { it !in unprotectedMembers })
+                .takeUnless { it.isEmpty() }
+                ?.toProtectedHeaderBytes()
+            val unprotectedHeader = JsonObject(serializedHeader.filterKeys { it in unprotectedMembers })
                 .takeUnless { it.isEmpty() }
             return JwsFlattened(
                 plainProtectedHeader,

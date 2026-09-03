@@ -24,10 +24,13 @@ val JwsHeaderPartsTest by matrixSuite {
             contentType = "application/example+json",
             vcTypeMetadata = setOf(metadata),
         )
-        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-
-        val protectedHeader = wrappedHeader.toProtectedHeader().toProtectedHeaderJsonObject()
-        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+        val flattened = JwsFlattened(
+            header = header,
+            payload = byteArrayOf(1),
+            unprotectedMembers = unprotectedMembers,
+        ) { ByteArray(64) { 1 } }
+        val protectedHeader = flattened.protectedHeader
+        val unprotectedHeader = flattened.unprotectedHeader
 
         protectedHeader shouldBe JsonObject(
             mapOf(
@@ -42,7 +45,7 @@ val JwsHeaderPartsTest by matrixSuite {
                 JwsHeader.SerialNames.VC_TYPE_METADATA to JsonArray(listOf(JsonPrimitive(metadata))),
             )
         )
-        protectedHeader.keys.intersect(unprotectedHeader.keys) shouldBe emptySet()
+        protectedHeader!!.keys.intersect(unprotectedHeader!!.keys) shouldBe emptySet()
     }
 
     "encoded fragments reconstruct the header and expose member placement on JWS" {
@@ -59,10 +62,14 @@ val JwsHeaderPartsTest by matrixSuite {
             certificateSha1Thumbprint = byteArrayOf(1, 2, 3),
             certificateSha256Thumbprint = byteArrayOf(4, 5, 6),
         )
-        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val encodedProtectedHeader = wrappedHeader.toProtectedHeader()
+        val flattened = JwsFlattened(
+            header = header,
+            payload = byteArrayOf(1),
+            unprotectedMembers = unprotectedMembers,
+        ) { byteArrayOf(2) }
+        val encodedProtectedHeader = flattened.plainProtectedHeader!!
         val protectedHeader = encodedProtectedHeader.toProtectedHeaderJsonObject()
-        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+        val unprotectedHeader = flattened.unprotectedHeader!!
 
         protectedHeader.keys shouldBe setOf(
             JwsHeader.SerialNames.TYPE,
@@ -74,14 +81,8 @@ val JwsHeaderPartsTest by matrixSuite {
             JwsHeader.SerialNames.CONTENT_TYPE,
             JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
-        val flattened = JwsFlattened(
-            plainProtectedHeader = encodedProtectedHeader,
-            unprotectedHeader = unprotectedHeader,
-            plainPayload = byteArrayOf(1),
-            plainSignature = byteArrayOf(2),
-        )
-
-        flattened.wrappedHeader shouldBe wrappedHeader
+        flattened.wrappedHeader.header shouldBe header
+        flattened.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
     }
 
     "duplicate names across protected and unprotected headers are rejected" {
@@ -101,39 +102,53 @@ val JwsHeaderPartsTest by matrixSuite {
             keyId = "did:example:signer",
             contentType = "application/example+json",
         )
-        val wrappedHeader = JwsHeaderWrapped(
-            header,
-            linkedSetOf(
-                JwsHeader.SerialNames.CONTENT_TYPE,
-                JwsHeader.SerialNames.KEY_ID,
-            ),
+        val unprotectedMembers = linkedSetOf(
+            JwsHeader.SerialNames.CONTENT_TYPE,
+            JwsHeader.SerialNames.KEY_ID,
         )
         val flattened = JwsFlattened(
-            wrappedHeader = wrappedHeader,
+            header = header,
             payload = byteArrayOf(1),
+            unprotectedMembers = unprotectedMembers,
         ) { byteArrayOf(2) }
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened>(
             joseCompliantSerializer.encodeToString(flattened)
         )
 
-        reparsed.wrappedHeader shouldBe wrappedHeader
         reparsed.wrappedHeader.header shouldBe header
+        reparsed.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
     }
 
-    "effective member placement ignores names absent from the modeled header" {
+    "member placement ignores names absent from a newly serialized header" {
         val header = JwsHeader(algorithm = JwsAlgorithm.Signature.RS256)
-        val withAbsentMember = JwsHeaderWrapped(
-            header,
-            setOf(JwsHeader.SerialNames.KEY_ID),
-        )
-        val withoutAbsentMember = JwsHeaderWrapped(header)
+        val withAbsentMember = JwsFlattened(
+            header = header,
+            payload = byteArrayOf(1),
+            unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
+        ) { byteArrayOf(2) }
+        val withoutAbsentMember = JwsFlattened(
+            header = header,
+            payload = byteArrayOf(1),
+        ) { byteArrayOf(2) }
 
-        withAbsentMember.unprotectedMembers shouldBe setOf(JwsHeader.SerialNames.KEY_ID)
-        withAbsentMember.effectiveUnprotectedMembers shouldBe emptySet()
-        withAbsentMember.toProtectedHeader() shouldBe withoutAbsentMember.toProtectedHeader()
-        withAbsentMember.toUnprotectedHeader() shouldBe withoutAbsentMember.toUnprotectedHeader()
-        withAbsentMember shouldBe withoutAbsentMember
-        withAbsentMember.hashCode() shouldBe withoutAbsentMember.hashCode()
+        withAbsentMember.unprotectedHeader shouldBe null
+        withAbsentMember.plainProtectedHeader shouldBe withoutAbsentMember.plainProtectedHeader
+        withAbsentMember.wrappedHeader shouldBe withoutAbsentMember.wrappedHeader
+    }
+
+    "unmodeled unprotected header values survive reconstruction" {
+        val unprotectedHeader = JsonObject(mapOf("nonce" to JsonPrimitive("nonce-value")))
+        val flattened = JwsFlattened(
+            plainProtectedHeader = JsonObject(
+                mapOf(JwsHeader.SerialNames.ALGORITHM to JsonPrimitive("RS256"))
+            ).toProtectedHeaderBytes(),
+            unprotectedHeader = unprotectedHeader,
+            plainPayload = byteArrayOf(1),
+            plainSignature = byteArrayOf(2),
+        )
+
+        flattened.unprotectedHeader shouldBe unprotectedHeader
+        flattened.wrappedHeader.unprotectedMembers shouldBe setOf("nonce")
     }
 
     "fully protected flattened JWS omits the unprotected header" {
@@ -141,14 +156,14 @@ val JwsHeaderPartsTest by matrixSuite {
             algorithm = JwsAlgorithm.Signature.RS256,
             keyId = "did:example:signer",
         )
-        val wrappedHeader = JwsHeaderWrapped(header)
         val flattened = JwsFlattened.invoke(
-            wrappedHeader = wrappedHeader,
+            header = header,
             payload = "payload".encodeToByteArray(),
         ) { byteArrayOf(1) }
         val serialized = joseCompliantSerializer.encodeToJsonElement(flattened).jsonObject
 
-        flattened.wrappedHeader shouldBe wrappedHeader
+        flattened.wrappedHeader.header shouldBe header
+        flattened.wrappedHeader.unprotectedMembers shouldBe emptySet()
         flattened.unprotectedHeader shouldBe null
         (JWS.SerialNames.HEADER in serialized) shouldBe false
     }

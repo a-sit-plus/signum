@@ -63,17 +63,18 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /** Creates a flattened JWS using the member placement carried by [wrappedHeader]. */
+        /** Creates a flattened JWS with the requested [unprotectedMembers]. */
         suspend inline fun <reified P> flattened(
-            wrappedHeader: JwsHeaderWrapped,
+            header: JwsHeader,
             payload: P,
+            unprotectedMembers: Set<String> = emptySet(),
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
             val plainPayload = joseCompliantSerializer.encodeToString(
                 joseCompliantSerializer.serializersModule.serializer(), payload
             ).encodeToByteArray()
             return JwsFlattenedTyped(
-                JwsFlattened(wrappedHeader, plainPayload, signer = signer), payload
+                JwsFlattened(header, plainPayload, unprotectedMembers, signer), payload
             )
         }
     }

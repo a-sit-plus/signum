@@ -58,21 +58,21 @@ val JwsJvmTest by matrixSuite {
 
             parsed.verify(it.verifier1).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
-            compact.wrappedHeader shouldBe JwsHeaderWrapped(header)
+            compact.wrappedHeader.header shouldBe header
+            compact.wrappedHeader.unprotectedMembers shouldBe emptySet()
         }
 
         "flattened JWS can be serialized and verified by Nimbus" { it ->
-            val wrappedHeader = JwsHeaderWrapped(
-                header = JwsHeader(
-                    algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                    type = "application/example+jws",
-                    keyId = "kid-1",
-                ),
-                unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
+            val header = JwsHeader(
+                algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                type = "application/example+jws",
+                keyId = "kid-1",
             )
+            val unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID)
             val flattened = JwsFlattened.invoke(
-                wrappedHeader = wrappedHeader,
+                header = header,
                 payload = it.payload,
+                unprotectedMembers = unprotectedMembers,
                 signer = it.signerFor(it.signer1),
             )
 
@@ -83,30 +83,27 @@ val JwsJvmTest by matrixSuite {
             parsed.signatures.single().verify(it.verifier1).shouldBeTrue()
             parsed.signatures.single().header.keyID shouldBe null
             parsed.signatures.single().unprotectedHeader.keyID shouldBe "kid-1"
-            flattened.wrappedHeader shouldBe wrappedHeader
+            flattened.wrappedHeader.header shouldBe header
+            flattened.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
         }
 
         "general JWS can be serialized and verified by Nimbus" { it ->
             val flattened1 = JwsFlattened.invoke(
-                wrappedHeader = JwsHeaderWrapped(
-                    header = JwsHeader(
-                        algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                        keyId = "kid-1",
-                    ),
-                    unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
+                header = JwsHeader(
+                    algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                    keyId = "kid-1",
                 ),
                 payload = it.payload,
+                unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
                 signer = it.signerFor(it.signer1),
             )
             val flattened2 = JwsFlattened.invoke(
-                wrappedHeader = JwsHeaderWrapped(
-                    header = JwsHeader(
-                        algorithm = it.signer2.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                        keyId = "kid-2",
-                    ),
-                    unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
+                header = JwsHeader(
+                    algorithm = it.signer2.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                    keyId = "kid-2",
                 ),
                 payload = it.payload,
+                unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
                 signer = it.signerFor(it.signer2),
             )
 
