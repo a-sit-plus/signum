@@ -48,7 +48,7 @@ val JwkTest  by matrixSuite {
                 own.shouldNotBeNull()
 
                 own.toCryptoPublicKey().getOrThrow().iosEncoded shouldBe cryptoPubKey.iosEncoded
-                CryptoPublicKey.fromDid(own.keyId!!) shouldBe cryptoPubKey
+                CryptoPublicKey.fromDid(own.keyId.shouldNotBeNull()) shouldBe cryptoPubKey
             }
         }
     }
