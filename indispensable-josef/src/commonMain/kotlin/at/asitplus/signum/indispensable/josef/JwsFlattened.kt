@@ -85,6 +85,7 @@ data class JwsFlattened internal constructor(
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             header: JwsHeader,
             payload: ByteArray,
