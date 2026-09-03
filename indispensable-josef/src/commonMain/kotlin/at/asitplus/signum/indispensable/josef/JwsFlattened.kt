@@ -47,7 +47,7 @@ data class JwsFlattened internal constructor(
     }
 
     @Transient
-    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, unprotectedHeader)
 
     @Transient
     val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)

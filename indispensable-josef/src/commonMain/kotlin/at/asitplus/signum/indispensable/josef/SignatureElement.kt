@@ -49,8 +49,9 @@ data class SignatureElement internal constructor(
     init {
         plainProtectedHeader.requireAbsentIfEmptyProtectedHeader()
     }
+
     @Transient
-    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
+    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, unprotectedHeader)
 
     @Transient
     val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
@@ -70,7 +71,7 @@ data class SignatureElement internal constructor(
     override fun hashCode(): Int {
         var result = plainSignature.contentHashCode()
         result = 31 * result + plainProtectedHeader.contentHashCode()
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
+        result = 31 * result + unprotectedHeader.hashCode()
         return result
     }
 }

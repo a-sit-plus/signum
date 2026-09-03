@@ -342,41 +342,4 @@ data class JwsHeader(
         const val VC_TYPE_METADATA = "vctm"
         const val CLIENT_ID = "client_id"
     }
-
-    companion object {
-        /**
-         * Decodes the protected fragment and merges it with the optional unprotected fragment.
-         *
-         * This is the form used when reading serialized JWS values such as [JwsCompact] or [JwsFlattened].
-         */
-        internal fun fromParts(
-            protectedHeader: ByteArray? = null,
-            unprotectedHeader: JsonObject? = null,
-        ): JwsHeaderWrapped =
-            fromJsonObjects(
-                protectedHeader = protectedHeader?.toProtectedHeaderJsonObject(),
-                unprotectedHeader = unprotectedHeader,
-            )
-
-        internal fun fromJsonObjects(
-            protectedHeader: JsonObject? = null,
-            unprotectedHeader: JsonObject? = null,
-        ): JwsHeaderWrapped = JwsHeaderWrapped(
-            joseCompliantSerializer
-                .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader)),
-            unprotectedHeader?.keys ?: emptySet()
-        )
-    }
-}
-
-internal fun JsonObject.toProtectedHeaderBytes(serialFormat: Json = joseCompliantSerializer): ByteArray =
-    serialFormat.encodeToString(JsonObject.serializer(), this).encodeToByteArray()
-
-internal fun ByteArray.toProtectedHeaderJsonObject(serialFormat: Json = joseCompliantSerializer): JsonObject =
-    serialFormat.decodeFromString(JsonObject.serializer(), decodeToString())
-
-internal fun ByteArray?.requireAbsentIfEmptyProtectedHeader() {
-    require(this == null || toProtectedHeaderJsonObject().isNotEmpty()) {
-        "JWS protected header must be absent when it would otherwise be empty"
-    }
 }

@@ -10,7 +10,6 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -41,7 +40,7 @@ data class JwsCompact internal constructor(
 ) : JWS() {
 
     @Transient
-    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, null)
+    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, null)
 
     @Transient
     val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
@@ -77,7 +76,7 @@ data class JwsCompact internal constructor(
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          * and immediately resolve the payload
          */
-        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching{
+        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching {
             val jws = JwsCompact(base64UrlString)
             val payload = jws.getPayload<P>().getOrThrow()
             jws to payload
@@ -105,7 +104,10 @@ data class JwsCompact internal constructor(
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
                 )
             } catch (e: Throwable) {
-                throw SerializationException("Invalid base64url content in JWS compact serialization", e.nonFatalOrThrow())
+                throw SerializationException(
+                    "Invalid base64url content in JWS compact serialization",
+                    e.nonFatalOrThrow()
+                )
             }
         }
 

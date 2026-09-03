@@ -1,15 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.testballoon.matrix.*
-import io.kotest.matchers.result.shouldBeFailure
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
 
 val JwsHeaderPartsTest by matrixSuite {
     "encoded header fragments form an exact partition and reconstruct member placement" {
@@ -33,7 +29,7 @@ val JwsHeaderPartsTest by matrixSuite {
             payload = byteArrayOf(1),
             unprotectedMembers = unprotectedMembers,
         ) { ByteArray(64) { 1 } }
-        val protectedHeader = flattened.protectedHeader.shouldNotBeNull()
+        val protectedHeader = flattened.plainProtectedHeader?.toProtectedHeaderJsonObject()
         val unprotectedHeader = flattened.unprotectedHeader.shouldNotBeNull()
 
         protectedHeader shouldBe JsonObject(
@@ -57,8 +53,8 @@ val JwsHeaderPartsTest by matrixSuite {
 
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
-            JwsHeader.fromJsonObjects(
-                protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
+            JwsHeaderWrapped(
+                protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))).toProtectedHeaderBytes(),
                 unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
             )
         }
