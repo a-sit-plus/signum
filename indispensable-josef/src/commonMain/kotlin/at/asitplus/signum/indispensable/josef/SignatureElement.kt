@@ -75,3 +75,9 @@ data class SignatureElement internal constructor(
         return result
     }
 }
+
+@Deprecated(
+    "Use plainProtectedHeader for the encoded protected fragment or wrappedHeader for the effective typed header."
+)
+val SignatureElement.protectedHeader: JsonObject?
+    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()

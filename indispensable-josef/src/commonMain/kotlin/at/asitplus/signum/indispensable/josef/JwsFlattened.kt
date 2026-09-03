@@ -107,6 +107,12 @@ data class JwsFlattened internal constructor(
     }
 }
 
+@Deprecated(
+    "Use plainProtectedHeader for the encoded protected fragment or wrappedHeader for the effective typed header."
+)
+val JwsFlattened.protectedHeader: JsonObject?
+    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
+
 /**
  * Converts flattened JSON serialization to compact serialization.
  *

@@ -7,7 +7,8 @@ This is a major refactor!
 * publish javadoc redirect to save space
 * make all provider functions suspend
 * Rework JWS header handling (**breaking**):
-    * Remove `JwsHeader.Part`
+    * Remove `protectedHeader` parameter from `JWS` implementations
+    * Remove `JwsHeader.Part` and associated auxiliary functions
     * Introduce `JwsHeaderWrapped` as a read-only, type-safe view of the effective `JwsHeader` and its unprotected-member placement
     * Expose wrapped headers as `JwsCompact.wrappedHeader`, `JwsFlattened.wrappedHeader`, `SignatureElement.wrappedHeader`, and `JwsGeneral.wrappedHeaders`
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.

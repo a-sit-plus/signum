@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonObject
 
 /**
  * General JSON JWS.
@@ -81,6 +82,12 @@ data class JwsGeneral internal constructor(
         operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
     }
 }
+
+@Deprecated(
+    "Use signatureElements for encoded protected fragments or wrappedHeaders for effective typed headers."
+)
+val JwsGeneral.protectedHeaders: List<JsonObject?>
+    get() = signatureElements.map { it.plainProtectedHeader?.toProtectedHeaderJsonObject() }
 
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.
