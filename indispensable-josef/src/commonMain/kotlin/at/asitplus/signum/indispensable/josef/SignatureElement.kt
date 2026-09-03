@@ -74,6 +74,3 @@ data class SignatureElement internal constructor(
         return result
     }
 }
-
-val SignatureElement.protectedHeader: JsonObject?
-    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()

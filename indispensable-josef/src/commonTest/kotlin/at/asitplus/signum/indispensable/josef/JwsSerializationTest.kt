@@ -108,7 +108,6 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         reparsed shouldBe flattened
         reparsed.wrappedHeader.header shouldBe header
         reparsed.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
-        flattened.protectedHeader shouldBe plainProtectedHeader.toProtectedHeaderJsonObject()
         with(joseCompliantSerializer) {
             decodeFromString<JsonObject>(serialized) shouldBe decodeFromString<JsonObject>(encodeToString(reparsed))
         }
@@ -118,8 +117,6 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         general.wrappedHeaders[0] shouldBe flattened.wrappedHeader
         general.signatures[0] shouldBe flattened.signature
         general.signatureInputs[0] shouldBe flattened.signatureInput
-        general.signatureElements.single().protectedHeader shouldBe flattened.protectedHeader
-        general.protectedHeaders shouldBe listOf(flattened.protectedHeader)
         general.toJwsFlattened() shouldBe listOf(flattened)
     }
 

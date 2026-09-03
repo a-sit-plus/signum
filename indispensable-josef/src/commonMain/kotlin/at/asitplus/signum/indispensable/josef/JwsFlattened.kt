@@ -71,7 +71,7 @@ data class JwsFlattened internal constructor(
 
     override fun hashCode(): Int {
         var result = plainProtectedHeader?.contentHashCode() ?: 0
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
+        result = 31 * result + unprotectedHeader.hashCode()
         result = 31 * result + plainPayload.contentHashCode()
         result = 31 * result + plainSignature.contentHashCode()
         return result
@@ -106,9 +106,6 @@ data class JwsFlattened internal constructor(
         }
     }
 }
-
-val JwsFlattened.protectedHeader: JsonObject?
-        get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
 
 /**
  * Converts flattened JSON serialization to compact serialization.
