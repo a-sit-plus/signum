@@ -1,9 +1,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/josef-light.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/josef-dark.png">
-  <img alt="Indispensable Josef" src="docs/docs/assets/josef-dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/docs/assets/josef-light.png">
+  <source media="(prefers-color-scheme: light)" srcset="../docs/docs/assets/josef-dark.png">
+  <img alt="Indispensable Josef" src="../docs/docs/assets/josef-dark.png">
 </picture>
 
 [![A-SIT Plus Official](https://raw.githubusercontent.com/a-sit-plus/a-sit-plus.github.io/709e802b3e00cb57916cbb254ca5e1a5756ad2a8/A-SIT%20Plus_%20official_opt.svg)](https://plus.a-sit.at/open-source.html)
@@ -112,12 +112,12 @@ keys when decoding typed payloads.
 
 ## Contributing
 
-External contributions are greatly appreciated! Be sure to observe the contribution guidelines (see [CONTRIBUTING.md](CONTRIBUTING.md)).
-In particular, external contributions to this project are subject to the A-SIT Plus Contributor License Agreement (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
+External contributions are greatly appreciated! Be sure to observe the contribution guidelines (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+In particular, external contributions to this project are subject to the A-SIT Plus Contributor License Agreement (see also [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
 ---
 
-| ![eu.svg](docs/docs/assets/eu.svg) <br> Co&#8209;Funded&nbsp;by&nbsp;the<br>European&nbsp;Union |   This project has received funding from the European Union’s <a href="https://digital-strategy.ec.europa.eu/en/activities/digital-programme">Digital Europe Programme (DIGITAL)</a>, Project 101102655 — POTENTIAL.   |
+| ![eu.svg](../docs/docs/assets/eu.svg) <br> Co&#8209;Funded&nbsp;by&nbsp;the<br>European&nbsp;Union |   This project has received funding from the European Union’s <a href="https://digital-strategy.ec.europa.eu/en/activities/digital-programme">Digital Europe Programme (DIGITAL)</a>, Project 101102655 — POTENTIAL.   |
 |:-----------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ---
