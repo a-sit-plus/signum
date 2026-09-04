@@ -1,11 +1,10 @@
 package at.asitplus.signum.supreme.mac
 
 import at.asitplus.signum.indispensable.digest.digest
-import at.asitplus.signum.indispensable.integrity.HMAC
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeOperationProvider
-import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.mac
+import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeOperationProvider
+import at.asitplus.signum.indispensable.mac.mac
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.internals.xor
 import kotlin.experimental.and

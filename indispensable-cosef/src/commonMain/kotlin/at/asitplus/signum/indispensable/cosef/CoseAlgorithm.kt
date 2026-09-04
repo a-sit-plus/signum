@@ -9,10 +9,10 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.HMAC
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.mac.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm

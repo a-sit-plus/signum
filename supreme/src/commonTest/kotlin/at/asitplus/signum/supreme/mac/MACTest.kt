@@ -1,8 +1,8 @@
 
 package at.asitplus.signum.supreme.mac
 
-import at.asitplus.signum.indispensable.integrity.HMAC
-import at.asitplus.signum.indispensable.integrity.mac
+import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.mac.mac
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.supreme.b
 import at.asitplus.testballoon.matrix.*

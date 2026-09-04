@@ -1,8 +1,7 @@
 package at.asitplus.signum.indispensable.kdf
 
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.internals.isPowerOfTwo
 
 /**

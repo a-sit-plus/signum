@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.awesn1.encoding.toUnsignedByteArray
-import at.asitplus.signum.indispensable.integrity.mac
+import at.asitplus.signum.indispensable.mac.mac
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.KDF
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider

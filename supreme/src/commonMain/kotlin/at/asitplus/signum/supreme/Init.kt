@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.Indispensable
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeOperationProvider
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeOperationProvider
 import at.asitplus.signum.supreme.kdf.SupremeKDFProvider
 import at.asitplus.signum.supreme.mac.SupremeHMACOperationsProvider
 import at.asitplus.signum.supreme.sign.SupremeKotlinVerifierProvider

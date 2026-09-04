@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable.symmetric
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.integrity.HMAC
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -311,16 +311,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             class HMAC
             private constructor(
                 override val innerCipher: Unauthenticated,
-                override val mac: at.asitplus.signum.indispensable.integrity.HMAC,
+                override val mac: at.asitplus.signum.indispensable.mac.HMAC,
                 override val macInputCalculation: MacInputCalculation,
                 override val macAuthTagTransform: MacAuthTagTransformation,
                 override val authTagSize: BitLength
-            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.integrity.HMAC, NonceTrait.Required>,
+            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>,
                 SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey>,
                 CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
-                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.integrity.HMAC) : this(
+                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
                     innerCipher,
                     mac,
                     DefaultMacInputCalculation,

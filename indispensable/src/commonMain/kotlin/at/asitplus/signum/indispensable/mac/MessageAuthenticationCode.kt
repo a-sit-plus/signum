@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.integrity
+package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing

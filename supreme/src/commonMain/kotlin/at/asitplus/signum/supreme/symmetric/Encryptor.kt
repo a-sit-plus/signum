@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.internals.ImplementationError
-import at.asitplus.signum.indispensable.integrity.mac
+import at.asitplus.signum.indispensable.mac.mac
 
 /**
  * Additional abstraction layer atop [PlatformCipher]. Currently, this is used to

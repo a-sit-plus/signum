@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.integrity
+package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.KnownOIDs

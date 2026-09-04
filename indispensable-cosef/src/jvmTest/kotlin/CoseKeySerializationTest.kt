@@ -1,4 +1,4 @@
-import at.asitplus.signum.indispensable.integrity.HMAC
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.cosef.*
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict

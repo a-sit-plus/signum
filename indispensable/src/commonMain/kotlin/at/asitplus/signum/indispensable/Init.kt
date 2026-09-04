@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.digest.DigestProvider
 import at.asitplus.signum.indispensable.digest.IndispensableDigestsProvider
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.digest.IndispensableHMACProvider
-import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCodeProvider
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithmsProvider
 import at.asitplus.signum.indispensable.sign.IndispensablePrivateKeyFormatsProvider
 import at.asitplus.signum.indispensable.sign.IndispensablePublicKeyFormatsProvider
