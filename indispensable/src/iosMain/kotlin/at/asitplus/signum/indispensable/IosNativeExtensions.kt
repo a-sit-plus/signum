@@ -7,9 +7,9 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SignatureInputFormat
-import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInputFormat
+import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Security.*
 

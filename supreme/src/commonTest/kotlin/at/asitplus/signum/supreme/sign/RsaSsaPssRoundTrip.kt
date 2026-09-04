@@ -6,9 +6,9 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.verifierFor
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign

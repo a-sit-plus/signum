@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
 
-interface MessageAuthenticationCode : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
+interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
     /** output size of MAC */
     val outputLength: BitLength
 
@@ -53,8 +53,8 @@ suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequen
 suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = algorithm.mac(key, sequenceOf(msg))
 suspend fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = algorithm.mac(key, msg.asSequence())
 
-interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorithm {
-    override val algorithm: MessageAuthenticationCode
+interface SpecializedMessageAuthenticationCode {
+    val algorithm: MessageAuthenticationCode
 }
 
 // @Service

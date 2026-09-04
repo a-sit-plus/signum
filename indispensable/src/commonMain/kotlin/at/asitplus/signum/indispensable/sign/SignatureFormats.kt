@@ -22,7 +22,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureFormatProvider
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.ensureSize

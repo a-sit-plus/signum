@@ -19,7 +19,7 @@ import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.Certificate
@@ -36,6 +36,7 @@ import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.REQUIRED
+import at.asitplus.signum.indispensable.SelfAttestation
 import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
@@ -98,7 +99,7 @@ interface JavaKeyStoreOperationsProvider {
      * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
      * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.
      */
-    fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, certificate: Certificate) : JKSSigner?
+    fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, attestation: SelfAttestation) : JKSSigner?
 }
 
 object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
@@ -148,35 +149,37 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
             else -> null
         }
 
-    override fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, certificate: Certificate): JKSSigner? =
-        when (val publicKey = certificate.publicKey) {
+    override fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, attestation: SelfAttestation): JKSSigner? =
+        when (val publicKey = attestation.certificate.publicKey) {
             is ECDSAPublicKey -> JKSSigner.EC(jcaPrivateKey as ECPrivateKey, config.provider, publicKey,
                 ECDSAAlgorithm(
                     digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                     requiredCurve = publicKey.curve),
-                alias)
+                alias, attestation)
             is RSAPublicKey -> {
                 val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAAlgorithm.Padding.PSS
                 val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
                 JKSSigner.RSA(
                     jcaPrivateKey as RSAPrivateKey, config.provider, publicKey,
-                    RSAAlgorithm(padding, digest), alias
+                    RSAAlgorithm(padding, digest), alias, attestation
                 )
             }
             else -> null
         }
 }
 
-interface JKSSigner: Signer, Signer.WithAlias {
+interface JKSSigner: Signer, Signer.WithAlias, Signer.Attestable<SelfAttestation> {
     class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                    publicKey: ECDSAPublicKey, signatureAlgorithm: ECDSAAlgorithm,
-                                   override val alias: String)
+                                   override val alias: String, override val attestation: SelfAttestation)
         : SupremeEphemeralJvmSigner.EC(privateKey, provider, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                     publicKey: RSAPublicKey, signatureAlgorithm: RSAAlgorithm,
-                                    override val alias: String)
+                                    override val alias: String, override val attestation: SelfAttestation)
         : SupremeEphemeralJvmSigner.RSA(privateKey, provider, publicKey, signatureAlgorithm), JKSSigner
+
+    override val attestation: SelfAttestation
 }
 
 private fun keystoreGetInstance(type: String, provider: JCAProviderRef) = when (provider) {
@@ -268,7 +271,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
 
     private fun getSigner(alias: String, config: JKSSignerConfiguration, privateKey: PrivateKey, certificate: Certificate) =
         ServiceLoader.load<JavaKeyStoreOperationsProvider>()
-            .get(alias) { getJKSSigner(privateKey, alias, config, certificate) }
+            .get(alias) { getJKSSigner(privateKey, alias, config, SelfAttestation(certificate)) }
 
     override suspend fun getSignerForKey(
         alias: String,

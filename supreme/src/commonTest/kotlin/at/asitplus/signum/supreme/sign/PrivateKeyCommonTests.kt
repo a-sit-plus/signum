@@ -6,9 +6,9 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.decodeFromPem
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.verifierFor
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm

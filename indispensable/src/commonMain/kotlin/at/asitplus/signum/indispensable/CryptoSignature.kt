@@ -5,8 +5,8 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.RSASignature
 

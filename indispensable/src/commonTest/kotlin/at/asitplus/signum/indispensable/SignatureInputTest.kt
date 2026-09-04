@@ -1,7 +1,9 @@
+@file:OptIn(HazardousMaterials::class)
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.sequences.shouldContainExactly

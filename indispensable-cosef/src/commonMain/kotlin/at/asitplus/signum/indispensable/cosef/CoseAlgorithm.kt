@@ -9,13 +9,11 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -51,7 +49,7 @@ sealed interface CoseAlgorithm : Enumerable {
     val value get() = coseValue
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
+    sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm {
         companion object : Enumeration<DataIntegrity> {
             override val entries: Collection<DataIntegrity> by lazy { Signature.entries + MAC.entries }
         }
@@ -344,12 +342,6 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
     }
 }
 
-fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
-    when (this) {
-        is SignatureAlgorithm -> toCoseAlgorithm()
-        is MessageAuthenticationCode -> toCoseAlgorithm()
-    }
-
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
 fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {
     when (this) {
@@ -378,10 +370,6 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> =
-    this.algorithm.toCoseAlgorithm()
-
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
-fun SpecializedDataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
     this.algorithm.toCoseAlgorithm()
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */

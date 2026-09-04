@@ -35,8 +35,6 @@ import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithmsProvider
 import at.asitplus.signum.internals.orLazy
 
 class ECDSAAlgorithm private constructor(

@@ -2,8 +2,8 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.dsl.attestation
 import at.asitplus.signum.dsl.hardware
-import at.asitplus.signum.indispensable.integrity.verifierFor
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.signature

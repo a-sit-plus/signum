@@ -1,7 +1,7 @@
 package at.asitplus.signum.provider
 
 import at.asitplus.awesn1.encoding.toUnsignedByteArray
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.os.SigningProviderI
 import at.asitplus.signum.indispensable.sign.makeVerifier

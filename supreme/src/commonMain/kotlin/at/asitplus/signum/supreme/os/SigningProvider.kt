@@ -8,7 +8,7 @@ import at.asitplus.signum.dsl.PlatformSigningProviderSignerSigningConfigurationB
 import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.indispensable.sign.Signer

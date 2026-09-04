@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme
 
-import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
+import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.Indispensable

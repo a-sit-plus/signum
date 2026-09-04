@@ -1,17 +1,13 @@
-package at.asitplus.signum.indispensable.integrity
+package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.signum.Enumeration
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 
-//for now, we just replicate the pattern, but since everything is sealed, we don't actually parse
-interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509AlgorithmIdentifier> {
+interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
 
     @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
         replaceWith = ReplaceWith("ECDSAAlgorithm"))
@@ -68,8 +64,8 @@ interface SignatureAlgorithm : DataIntegrityAlgorithm, DerEncodable<X509Algorith
     }
 }
 
-interface SpecializedSignatureAlgorithm : SpecializedDataIntegrityAlgorithm {
-    override val algorithm: SignatureAlgorithm
+interface SpecializedSignatureAlgorithm {
+    val algorithm: SignatureAlgorithm
 }
 
 interface SignatureAlgorithmsProvider {

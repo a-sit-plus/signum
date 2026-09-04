@@ -7,10 +7,14 @@ import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.integrity.*
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
+import at.asitplus.signum.indispensable.sign.verifierFor
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
 

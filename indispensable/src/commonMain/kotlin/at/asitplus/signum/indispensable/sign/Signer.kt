@@ -5,10 +5,7 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.integrity.verifierFor
 import at.asitplus.signum.indispensable.agree.UsableECDHPrivateValue
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn

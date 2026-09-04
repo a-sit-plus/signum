@@ -3,9 +3,9 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.*
 import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.verifierFor
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature

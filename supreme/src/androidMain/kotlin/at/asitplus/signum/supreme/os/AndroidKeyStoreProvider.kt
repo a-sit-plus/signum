@@ -29,8 +29,8 @@ import at.asitplus.signum.dsl.AndroidSignerSigningConfiguration
 import at.asitplus.signum.dsl.AndroidSigningKeyConfiguration
 import at.asitplus.signum.dsl.AndroidUnlockPromptConfiguration
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.dsl.DISCOURAGED
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn

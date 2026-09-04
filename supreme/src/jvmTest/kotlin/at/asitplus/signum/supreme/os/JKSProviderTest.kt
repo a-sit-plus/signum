@@ -1,9 +1,9 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSASignature

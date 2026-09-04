@@ -1,6 +1,6 @@
-package at.asitplus.signum.indispensable.integrity
+package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.catching
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.digest
 
@@ -12,7 +12,8 @@ class SignatureInput private constructor (
 ){
 
     companion object {
-        /** only use this if you know what you are doing */
+        /** Creates a SignatureInput from pre-hashed bytes. */
+        @HazardousMaterials
         fun unsafeCreate(data: ByteArray, format: SignatureInputFormat): SignatureInput {
             if (format != null)
                 require(data.size == format.outputLength.bytes.toInt())

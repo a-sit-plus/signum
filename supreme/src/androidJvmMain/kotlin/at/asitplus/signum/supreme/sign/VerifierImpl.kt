@@ -4,10 +4,10 @@ import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SignatureInput
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.SignatureVerifierProvider
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm

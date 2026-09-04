@@ -1,23 +1,18 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.SignatureVerifier
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrowAny
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator

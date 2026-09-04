@@ -10,7 +10,7 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.integrity.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
@@ -18,7 +18,7 @@ import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.integrity.verify
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.makeVerifier

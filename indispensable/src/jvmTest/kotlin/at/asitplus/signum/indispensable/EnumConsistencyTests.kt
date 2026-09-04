@@ -42,5 +42,4 @@ inline fun <reified T : Any> MatrixSuiteScope.enumConsistencyTest() {
 //TODO this test does not work any more since we started nesting stuff
 //val EnumConsistencyTests by matrixSuite {
     // enumConsistencyTest<MessageAuthenticationCode>()
-    // enumConsistencyTest<DataIntegrityAlgorithm>()
 //}

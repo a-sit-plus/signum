@@ -9,7 +9,7 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames

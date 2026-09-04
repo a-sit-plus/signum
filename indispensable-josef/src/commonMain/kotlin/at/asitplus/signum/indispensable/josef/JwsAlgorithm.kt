@@ -16,13 +16,11 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA256
 import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA384
 import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA512
-import at.asitplus.signum.indispensable.integrity.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.integrity.HMAC
 import at.asitplus.signum.indispensable.integrity.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.SignatureAlgorithm
-import at.asitplus.signum.indispensable.integrity.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.integrity.SpecializedMessageAuthenticationCode
-import at.asitplus.signum.indispensable.integrity.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.RSAAlgorithm
 import kotlinx.serialization.KSerializer
@@ -39,7 +37,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable(with = JwsAlgorithmSerializer::class)
 sealed class JwsAlgorithm(override val identifier: String) :
-    JsonWebAlgorithm, SpecializedDataIntegrityAlgorithm, Enumerable {
+    JsonWebAlgorithm, Enumerable {
 
     @Serializable(with = JwsAlgorithmSerializer::class)
     sealed class Signature(identifier: String) :
@@ -142,7 +140,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
     }
 
     @Serializable(with = JwsAlgorithmSerializer::class)
-    sealed class MAC(identifier: String, override val algorithm: MessageAuthenticationCode) :
+    sealed class MAC(identifier: String, val algorithm: MessageAuthenticationCode) :
         JwsAlgorithm(identifier) {
 
         @Serializable(with = JwsAlgorithmSerializer::class)
@@ -225,13 +223,6 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     }
 }
 
-fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
-    when (this) {
-        is SignatureAlgorithm -> toJwsAlgorithm().getOrThrow()
-        is MessageAuthenticationCode -> toJwsAlgorithm().getOrThrow()
-    }
-}
-
 fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     when (this) {
         HMAC.SHA1 -> UNOFFICIAL_HS1
@@ -241,10 +232,6 @@ fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catchi
         else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
     }
 }
-
-/** Tries to find a matching JWS algorithm*/
-fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm() =
-    this.algorithm.toJwsAlgorithm()
 
 /** Tries to find a matching JWS algorithm.*/
 fun SpecializedMessageAuthenticationCode.toJwsAlgorithm() =

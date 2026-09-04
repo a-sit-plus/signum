@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.integrity
+package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.indispensable.CryptoPublicKey
@@ -12,10 +12,6 @@ import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.indispensable.withSignatureAlgorithm
 
 interface SignatureVerifier {
