@@ -9,7 +9,7 @@ import at.asitplus.signum.supreme.sign.SupremeJVMInMemoryKeysProvider
 import at.asitplus.signum.supreme.sign.SupremeJVMVerifierProvider
 
 
-/** further delegation to ios/android specifics */
+/** further delegation to jvm/android specifics */
 internal expect fun supremePlatformInit2()
 internal actual fun supremePlatformInit() {
     ServiceLoader.register<DigestOperationProvider>(SupremeJVMDigestProvider)

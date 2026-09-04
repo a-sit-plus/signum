@@ -21,6 +21,7 @@ import at.asitplus.signum.indispensable.sign.RSAPublicKey
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.sign.ExportableECDSASigner
 import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
 import at.asitplus.signum.indispensable.sign.RSASignature
@@ -58,7 +59,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
     open class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                         override val publicKey: ECDSAPublicKey, override val signatureAlgorithm: ECDSAAlgorithm
     )
-        : SupremeEphemeralJvmSigner(privateKey, provider), Signer.WithExportableKey.ECDSA {
+        : SupremeEphemeralJvmSigner(privateKey, provider), ExportableECDSASigner {
 
         override fun parseFromJca(bytes: ByteArray) =
             ECDSASignature.fromRawSignatureValue(bytes).withCurve(publicKey.curve)
@@ -82,7 +83,7 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, p
     open class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
                                          override val publicKey: RSAPublicKey, override val signatureAlgorithm: RSAAlgorithm
     )
-        : SupremeEphemeralJvmSigner(privateKey, provider), Signer.WithExportableKey.RSA {
+        : SupremeEphemeralJvmSigner(privateKey, provider), at.asitplus.signum.indispensable.sign.ExportableRSASigner {
 
         override fun parseFromJca(bytes: ByteArray) = RSASignature.fromRawSignatureValue(bytes)
 

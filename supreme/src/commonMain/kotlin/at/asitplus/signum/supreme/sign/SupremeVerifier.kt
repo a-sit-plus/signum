@@ -7,6 +7,7 @@ import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.sign.ECDSAVerifier
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.signum.indispensable.sign.ECDSASignature
@@ -20,7 +21,7 @@ class InvalidSignature(message: String, cause: Throwable? = null): Throwable(mes
 
 class KotlinECDSAVerifier
     internal constructor (override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)
-    : SignatureVerifier.ECDSA {
+    : ECDSAVerifier {
     override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
         require(sig is ECDSASignature)
             { "Attempted to validate ${sig::class.simpleName} signature using EC public key" }

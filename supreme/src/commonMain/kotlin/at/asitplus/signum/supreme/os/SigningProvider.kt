@@ -52,7 +52,7 @@ interface PlatformSigningProviderSigner
 
     interface ECDSA
     <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
-        : PlatformSigningProviderSigner<SigningConfiguration, AttestationT>, Signer.ECDSA
+        : PlatformSigningProviderSigner<SigningConfiguration, AttestationT>, at.asitplus.signum.indispensable.sign.ECDSASigner
     {
         suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH, configure: DSLConfigureFn<SigningConfiguration> = null): ByteArray
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = keyAgreement(publicValue, null)

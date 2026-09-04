@@ -42,10 +42,10 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPubl
     }
 
     class ECDSA(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey, provider: JCAProviderRef)
-        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), SignatureVerifier.ECDSA
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.ECDSAVerifier
 
     class RSA(override val signatureAlgorithm: RSAAlgorithm, override val publicKey: RSAPublicKey, provider: JCAProviderRef)
-        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), SignatureVerifier.RSA
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.RSAVerifier
 }
 
 object SupremeJVMVerifierProvider : SignatureVerifierProvider {

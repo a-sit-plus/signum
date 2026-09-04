@@ -57,13 +57,13 @@ abstract class SupremeCCVerifier: SignatureVerifier {
     }
 
     class ECDSA(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)
-        : SupremeCCVerifier(), SignatureVerifier.ECDSA
+        : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.ECDSAVerifier
     {
         init { require(signatureAlgorithm.digest != null) }
     }
 
     class ECDSAPreHashed(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)
-        : SignatureVerifier.ECDSA
+        : at.asitplus.signum.indispensable.sign.ECDSAVerifier
     {
         init { require(signatureAlgorithm.digest == null) }
         private val targetDigest = publicKey.curve.nativeDigest
@@ -80,5 +80,5 @@ abstract class SupremeCCVerifier: SignatureVerifier {
     }
 
     class RSA(override val signatureAlgorithm: RSAAlgorithm, override val publicKey: RSAPublicKey)
-        : SupremeCCVerifier(), SignatureVerifier.RSA
+        : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.RSAVerifier
 }

@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.parseJCASignature
+import at.asitplus.signum.indispensable.sign.ECDSAVerifier
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
 import at.asitplus.testballoon.matrix.*
@@ -31,7 +32,7 @@ private fun component(digest: WellKnownDigest?) = when(digest) {
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> SignatureVerifier.ECDSA>(
+    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> ECDSAVerifier>(
         "BC -> PlatformVerifier" to { a, k ->
             val config = VerifierConfiguration::class.java.getDeclaredConstructor().newInstance()
             config.jvm { provider = JCAProviderRef.Of("BC") }

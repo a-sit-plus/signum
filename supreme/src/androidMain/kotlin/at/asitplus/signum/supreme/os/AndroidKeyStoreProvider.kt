@@ -495,7 +495,7 @@ abstract class AndroidKeystoreSigner protected constructor(
                                    attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: RSAAlgorithm
     )
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation), SignerI.RSA
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation), at.asitplus.signum.indispensable.sign.RSASigner
     {
         override fun parseSignatureFromJca(jcaSig: ByteArray) =
             RSASignature.fromRawSignatureValue(jcaSig)

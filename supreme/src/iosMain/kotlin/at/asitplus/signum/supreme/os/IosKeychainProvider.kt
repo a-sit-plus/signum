@@ -17,7 +17,6 @@ import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
-import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.supreme.swiftasync
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
@@ -295,7 +294,7 @@ sealed class IosSigner(final override val alias: String,
 
     class RSA internal constructor
         (alias: String, override val publicKey: RSAPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
-        : IosSigner(alias, metadata, config), Signer.RSA
+        : IosSigner(alias, metadata, config), at.asitplus.signum.indispensable.sign.RSASigner
     {
         override val signatureAlgorithm: RSAAlgorithm
         init {

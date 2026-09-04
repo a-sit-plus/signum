@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.sign.ECDSASigner
 
 /**
  * Generates an ephemeral ECDH private value on the provided [curve].
@@ -12,4 +13,4 @@ suspend fun KeyAgreementPrivateValue.ECDH.Companion.Ephemeral(curve: ECCurve = E
         : KeyAgreementPrivateValue.ECDH =
     Signer.Ephemeral {
         ec { this.curve = curve }
-    } as Signer.ECDSA
+    } as ECDSASigner

@@ -18,15 +18,13 @@ interface SignatureVerifier {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
 
-    interface ECDSA : SignatureVerifier {
-        override val signatureAlgorithm: ECDSAAlgorithm
-        override val publicKey: ECDSAPublicKey
-    }
+    @Deprecated(message = "Concrete algorithm typess migrated out of SignatureVerifier as part of providerization",
+        replaceWith = ReplaceWith("ECDSAVerifier"))
+    typealias ECDSA = ECDSAVerifier
 
-    interface RSA : SignatureVerifier {
-        override val signatureAlgorithm: RSAAlgorithm
-        override val publicKey: RSAPublicKey
-    }
+    @Deprecated(message = "Concrete algorithm typess migrated out of SignatureVerifier as part of providerization",
+        replaceWith = ReplaceWith("RSAVerifier"))
+    typealias RSA = RSAVerifier
 
     /** Make it explicit that we only return on successful validation */
     data object Success

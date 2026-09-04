@@ -23,6 +23,7 @@ import at.asitplus.signum.indispensable.sign.RSASignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.sign.ExportableECDSASigner
 import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
 import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.indispensable.sign.Signer
@@ -53,7 +54,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     class EC internal constructor(
         privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: ECDSAPublicKey,
         override val signatureAlgorithm: ECDSAAlgorithm
-    ) : SupremeIosEphemeralSigner(privateKey), Signer.WithExportableKey.ECDSA {
+    ) : SupremeIosEphemeralSigner(privateKey), ExportableECDSASigner {
         @SecretExposure
         override suspend fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey() as ECDSAPrivateKey.WithPublicKey
@@ -76,7 +77,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     class RSA internal constructor(
         privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: RSAPublicKey,
         override val signatureAlgorithm: RSAAlgorithm
-    ) : SupremeIosEphemeralSigner(privateKey), Signer.WithExportableKey.RSA {
+    ) : SupremeIosEphemeralSigner(privateKey), at.asitplus.signum.indispensable.sign.ExportableRSASigner {
         @SecretExposure
         override suspend fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey() as RSAPrivateKey
