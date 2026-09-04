@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.ECDSAVerifier
 import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
 import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.ECDSASignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
@@ -58,7 +59,7 @@ val VerifierTests by matrixSuite {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(algorithm::parseJCASignature)
+                    }.let(ECDSASignature.Companion::fromRawSignatureValue)
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
                     val verifier = factory(ECDSAAlgorithm(digest, null), key)

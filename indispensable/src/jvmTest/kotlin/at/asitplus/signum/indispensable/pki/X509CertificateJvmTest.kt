@@ -171,7 +171,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = algorithm.parseJCASignature(input).withSignatureAlgorithm(signatureAlgorithm)
+        val test = signatureAlgorithm.parseJCASignature(signed).withSignatureAlgorithm(signatureAlgorithm)
         val x509Certificate = Certificate(tbsCertificate, test)
 
         repeat(500) {

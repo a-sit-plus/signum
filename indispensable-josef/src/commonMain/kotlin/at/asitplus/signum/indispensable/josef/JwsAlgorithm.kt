@@ -140,8 +140,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
     }
 
     @Serializable(with = JwsAlgorithmSerializer::class)
-    sealed class MAC(identifier: String, val algorithm: MessageAuthenticationCode) :
-        JwsAlgorithm(identifier) {
+    sealed class MAC(identifier: String, override val algorithm: MessageAuthenticationCode) :
+        JwsAlgorithm(identifier), SpecializedMessageAuthenticationCode {
 
         @Serializable(with = JwsAlgorithmSerializer::class)
         data object HS256 : MAC("HS256", HMAC.SHA256)

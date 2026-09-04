@@ -21,12 +21,18 @@ val ConversionTests by matrixSuite {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
-            data(CoseAlgorithm.DataIntegrity.entries) test {
+            data(CoseAlgorithm.Signature.entries) test {
+                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+            }
+            data(CoseAlgorithm.MAC.entries) test {
                 it.algorithm.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {
-            data(CoseAlgorithm.DataIntegrity.entries) test {
+            data(CoseAlgorithm.Signature.entries) test {
+                it.toCoseAlgorithm() shouldSucceedWith it
+            }
+            data(CoseAlgorithm.MAC.entries) test {
                 it.toCoseAlgorithm() shouldSucceedWith it
             }
         }
