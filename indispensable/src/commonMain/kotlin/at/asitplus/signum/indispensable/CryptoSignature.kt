@@ -7,8 +7,8 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaSignature
 
 /**
  * Parsed signature value. Unparsed values are [DerEncodable]<[X509SignatureValue]>.
@@ -24,11 +24,11 @@ interface CryptoSignature : DerEncodable<X509SignatureValue> {
     val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
 
     @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
-        replaceWith = ReplaceWith("ECDSASignature"))
-    typealias EC = ECDSASignature
+        replaceWith = ReplaceWith("EcdsaSignature"))
+    typealias EC = EcdsaSignature
     @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
-        replaceWith = ReplaceWith("RSASignature"))
-    typealias RSA = RSASignature
+        replaceWith = ReplaceWith("RsaSignature"))
+    typealias RSA = RsaSignature
 
     companion object : DerDecodable<X509SignatureValue, DerEncodable<X509SignatureValue>> {
         init { Indispensable.init() }

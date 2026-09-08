@@ -3,10 +3,10 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.ASN1Sequence
@@ -49,8 +49,8 @@ val SignatureCodecTest  by matrixSuite {
                 sign()
             }
 
-            ECDSASignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
-            ECDSAAlgorithm(
+            EcdsaSignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
+            EcdsaAlgorithm(
                 WellKnownDigest.entries.first { it.name == digest },
                 ECCurve.byJcaName(curve)
             ).parseJCASignature(sig).jcaSignatureBytes shouldBe sig
@@ -58,7 +58,7 @@ val SignatureCodecTest  by matrixSuite {
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(ECDSASignature.fromRawSignatureValue(sig).encodeToDer())
+                verify(EcdsaSignature.fromRawSignatureValue(sig).encodeToDer())
             }
 
         }
@@ -68,7 +68,7 @@ val SignatureCodecTest  by matrixSuite {
 
         val digest = ("SHA256")
         val signatureAlgorithm =
-            if (Random.nextBoolean()) RSAAlgorithm.withSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
+            if (Random.nextBoolean()) RsaAlgorithm.withSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
 
         // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
@@ -82,7 +82,7 @@ val SignatureCodecTest  by matrixSuite {
 
 
 
-            RSASignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
+            RsaSignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
             signatureAlgorithm
                 .parseJCASignature(sig).jcaSignatureBytes shouldBe sig
 
@@ -107,7 +107,7 @@ val SignatureCodecTest  by matrixSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            RSASignature.fromRawSignatureValue(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            RsaSignature.fromRawSignatureValue(certificateHolder.signature).encodeToDer() shouldBe bcSig
             signatureAlgorithm
                 .parseJCASignature(certificateHolder.signature).encodeToDer() shouldBe bcSig
 

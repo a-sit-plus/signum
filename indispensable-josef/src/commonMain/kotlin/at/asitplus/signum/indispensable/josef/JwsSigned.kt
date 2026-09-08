@@ -7,8 +7,8 @@ import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.DeserializationStrategy
@@ -77,8 +77,8 @@ data class JwsSigned<out P : Any>(
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
                 when (val alg = header.algorithm) {
-                    is JwsAlgorithm.Signature.EC -> ECDSASignature.fromRawBytes(alg.ecCurve, this)
-                    is JwsAlgorithm.Signature.RSA -> RSASignature(this)
+                    is JwsAlgorithm.Signature.EC -> EcdsaSignature.fromRawBytes(alg.ecCurve, this)
+                    is JwsAlgorithm.Signature.RSA -> RsaSignature(this)
                     else -> throw IllegalArgumentException("unsupported algorithm: $alg")
                 }
 

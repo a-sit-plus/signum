@@ -8,10 +8,10 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import java.security.Signature
 
 abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPublicKey, protected val provider: JCAProviderRef) : SignatureVerifier {
@@ -41,25 +41,25 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPubl
             throw InvalidSignature("Signature is cryptographically invalid")
     }
 
-    class ECDSA(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey, provider: JCAProviderRef)
-        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.ECDSAVerifier
+    class Ecdsa(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey, provider: JCAProviderRef)
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.EcdsaVerifier
 
-    class RSA(override val signatureAlgorithm: RSAAlgorithm, override val publicKey: RSAPublicKey, provider: JCAProviderRef)
-        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.RSAVerifier
+    class Rsa(override val signatureAlgorithm: RsaAlgorithm, override val publicKey: RsaPublicKey, provider: JCAProviderRef)
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.RsaVerifier
 }
 
 object SupremeJVMVerifierProvider : SignatureVerifierProvider {
     override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration) =
         when (algorithm) {
-            is ECDSAAlgorithm -> {
-                require(key is ECDSAPublicKey)
+            is EcdsaAlgorithm -> {
+                require(key is EcdsaPublicKey)
                     { "Cannot instantiate ECDSA ($algorithm) verifier using non-ECDSA public key $key" }
-                SupremeJVMVerifier.ECDSA(algorithm, key, config.jvm.v.provider)
+                SupremeJVMVerifier.Ecdsa(algorithm, key, config.jvm.v.provider)
             }
-            is RSAAlgorithm -> {
-                require(key is RSAPublicKey)
+            is RsaAlgorithm -> {
+                require(key is RsaPublicKey)
                     { "Cannot instantiate RSA ($algorithm) verifier using non-RSA public key $key" }
-                SupremeJVMVerifier.RSA(algorithm, key, config.jvm.v.provider)
+                SupremeJVMVerifier.Rsa(algorithm, key, config.jvm.v.provider)
             }
             else -> null
         }

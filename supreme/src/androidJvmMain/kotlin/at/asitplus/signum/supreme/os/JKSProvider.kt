@@ -26,10 +26,10 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.internals.ImplementationError
@@ -106,7 +106,7 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
     override fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, KeyPair>? =
         when (val algSpec = DSL.options(config.ec, config.rsa)) {
             is SigningKeyConfiguration.ECConfiguration -> Pair(
-                ECDSAAlgorithm(when {
+                EcdsaAlgorithm(when {
                     algSpec.digests.contains(algSpec.curve.nativeDigest) -> algSpec.curve.nativeDigest
                     algSpec.digests.contains(Digest.SHA256) -> Digest.SHA256
                     algSpec.digests.contains(Digest.SHA384) -> Digest.SHA384
@@ -124,18 +124,18 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
                 }
                 return Pair(
                     sequenceOf(
-                        Pair(RSAAlgorithm.Padding.PSS, Digest.SHA512),
-                        Pair(RSAAlgorithm.Padding.PSS, Digest.SHA384),
-                        Pair(RSAAlgorithm.Padding.PSS, Digest.SHA256),
-                        Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA512),
-                        Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA384),
-                        Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA256),
-                        Pair(RSAAlgorithm.Padding.PSS, Digest.SHA1),
-                        Pair(RSAAlgorithm.Padding.PKCS1, Digest.SHA1),
-                        Pair(RSAAlgorithm.Padding.PSS, algSpec.digests.first()),
-                        Pair(RSAAlgorithm.Padding.PKCS1, algSpec.digests.first()),
+                        Pair(RsaAlgorithm.Padding.PSS, Digest.SHA512),
+                        Pair(RsaAlgorithm.Padding.PSS, Digest.SHA384),
+                        Pair(RsaAlgorithm.Padding.PSS, Digest.SHA256),
+                        Pair(RsaAlgorithm.Padding.PKCS1, Digest.SHA512),
+                        Pair(RsaAlgorithm.Padding.PKCS1, Digest.SHA384),
+                        Pair(RsaAlgorithm.Padding.PKCS1, Digest.SHA256),
+                        Pair(RsaAlgorithm.Padding.PSS, Digest.SHA1),
+                        Pair(RsaAlgorithm.Padding.PKCS1, Digest.SHA1),
+                        Pair(RsaAlgorithm.Padding.PSS, algSpec.digests.first()),
+                        Pair(RsaAlgorithm.Padding.PKCS1, algSpec.digests.first()),
                     ).firstNotNullOfOrNull { (padding, digest) ->
-                        RSAAlgorithm(padding, digest).takeIf {
+                        RsaAlgorithm(padding, digest).takeIf {
                             algSpec.digests.contains(digest) &&
                                     algSpec.paddings.contains(padding) &&
                                     (it.minimumKeySize <= keySizeBytes)
@@ -151,17 +151,17 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
 
     override fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, attestation: SelfAttestation): JKSSigner? =
         when (val publicKey = attestation.certificate.publicKey) {
-            is ECDSAPublicKey -> JKSSigner.EC(jcaPrivateKey as ECPrivateKey, config.provider, publicKey,
-                ECDSAAlgorithm(
+            is EcdsaPublicKey -> JKSSigner.EC(jcaPrivateKey as ECPrivateKey, config.provider, publicKey,
+                EcdsaAlgorithm(
                     digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                     requiredCurve = publicKey.curve),
                 alias, attestation)
-            is RSAPublicKey -> {
-                val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAAlgorithm.Padding.PSS
+            is RsaPublicKey -> {
+                val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RsaAlgorithm.Padding.PSS
                 val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256
                 JKSSigner.RSA(
                     jcaPrivateKey as RSAPrivateKey, config.provider, publicKey,
-                    RSAAlgorithm(padding, digest), alias, attestation
+                    RsaAlgorithm(padding, digest), alias, attestation
                 )
             }
             else -> null
@@ -170,12 +170,12 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
 
 interface JKSSigner: Signer, Signer.WithAlias, Signer.Attestable<SelfAttestation> {
     class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
-                                   publicKey: ECDSAPublicKey, signatureAlgorithm: ECDSAAlgorithm,
+                                   publicKey: EcdsaPublicKey, signatureAlgorithm: EcdsaAlgorithm,
                                    override val alias: String, override val attestation: SelfAttestation)
         : SupremeEphemeralJvmSigner.EC(privateKey, provider, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
-                                    publicKey: RSAPublicKey, signatureAlgorithm: RSAAlgorithm,
+                                    publicKey: RsaPublicKey, signatureAlgorithm: RsaAlgorithm,
                                     override val alias: String, override val attestation: SelfAttestation)
         : SupremeEphemeralJvmSigner.RSA(privateKey, provider, publicKey, signatureAlgorithm), JKSSigner
 

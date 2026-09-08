@@ -21,8 +21,8 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.mac.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -44,15 +44,15 @@ sealed class JwsAlgorithm(override val identifier: String) :
         JwsAlgorithm(identifier),
         SpecializedSignatureAlgorithm {
 
-        sealed class EC(identifier: String, override val algorithm: ECDSAAlgorithm) : Signature(identifier) {
+        sealed class EC(identifier: String, override val algorithm: EcdsaAlgorithm) : Signature(identifier) {
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES256 : EC("ES256", ECDSAAlgorithm(SHA256, SECP_256_R_1))
+            data object ES256 : EC("ES256", EcdsaAlgorithm(SHA256, SECP_256_R_1))
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES384 : EC("ES384", ECDSAAlgorithm(SHA384, SECP_384_R_1))
+            data object ES384 : EC("ES384", EcdsaAlgorithm(SHA384, SECP_384_R_1))
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES512 : EC("ES512", ECDSAAlgorithm(SHA512, SECP_521_R_1))
+            data object ES512 : EC("ES512", EcdsaAlgorithm(SHA512, SECP_521_R_1))
 
             /** The curve to create signatures on.
              * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
@@ -70,32 +70,32 @@ sealed class JwsAlgorithm(override val identifier: String) :
             }
         }
 
-        sealed class RSA(identifier: String, override val algorithm: RSAAlgorithm) : Signature(identifier) {
+        sealed class RSA(identifier: String, override val algorithm: RsaAlgorithm) : Signature(identifier) {
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object PS256 : RSA("PS256", RSAAlgorithm.withSHA256andPSSPadding)
+            data object PS256 : RSA("PS256", RsaAlgorithm.withSHA256andPSSPadding)
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object PS384 : RSA("PS384", RSAAlgorithm.withSHA384andPSSPadding)
+            data object PS384 : RSA("PS384", RsaAlgorithm.withSHA384andPSSPadding)
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object PS512 : RSA("PS512", RSAAlgorithm.withSHA512andPSSPadding)
+            data object PS512 : RSA("PS512", RsaAlgorithm.withSHA512andPSSPadding)
 
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object RS256 : RSA("RS256", RSAAlgorithm.withSHA256andPKCS1Padding)
+            data object RS256 : RSA("RS256", RsaAlgorithm.withSHA256andPKCS1Padding)
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object RS384 : RSA("RS384", RSAAlgorithm.withSHA384andPKCS1Padding)
+            data object RS384 : RSA("RS384", RsaAlgorithm.withSHA384andPKCS1Padding)
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object RS512 : RSA("RS512", RSAAlgorithm.withSHA512andPKCS1Padding)
+            data object RS512 : RSA("RS512", RsaAlgorithm.withSHA512andPKCS1Padding)
 
             /** The one exception, which is not a valid JWS algorithm identifier */
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", RSAAlgorithm(
-                RSAAlgorithm.Parameters.Pkcs1Padded(
+            data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", RsaAlgorithm(
+                RsaAlgorithm.Parameters.Pkcs1Padded(
                 Digest.SHA1))
             )
             companion object : Enumeration<RSA> {
@@ -117,8 +117,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
         open val digest: Digest?
             get() = when (algorithm) {
-                is ECDSAAlgorithm -> (algorithm as ECDSAAlgorithm).digest
-                is RSAAlgorithm -> (algorithm as RSAAlgorithm).digest
+                is EcdsaAlgorithm -> (algorithm as EcdsaAlgorithm).digest
+                is RsaAlgorithm -> (algorithm as RsaAlgorithm).digest
                 else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
 
@@ -191,7 +191,7 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     when (this) {
-        is ECDSAAlgorithm -> when (this.digest) {
+        is EcdsaAlgorithm -> when (this.digest) {
             Digest.SHA256 -> JwsAlgorithm.Signature.ES256
             Digest.SHA384 -> JwsAlgorithm.Signature.ES384
             Digest.SHA512 -> JwsAlgorithm.Signature.ES512
@@ -202,8 +202,8 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
                 { "ECDSA with ${this.digest} and ${this.requiredCurve} does not map to JWS (${it.ecCurve} is required)" }
         }
 
-        is RSAAlgorithm -> when (val params = this.parameters) {
-            is RSAAlgorithm.Parameters.Pkcs1Padded -> when (params.digest) {
+        is RsaAlgorithm -> when (val params = this.parameters) {
+            is RsaAlgorithm.Parameters.Pkcs1Padded -> when (params.digest) {
                 Digest.SHA1 -> JwsAlgorithm.Signature.NON_JWS_SHA1_WITH_RSA
                 Digest.SHA256 -> JwsAlgorithm.Signature.RS256
                 Digest.SHA384 -> JwsAlgorithm.Signature.RS384
@@ -211,10 +211,10 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
                 else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
 
-            is RSAAlgorithm.Parameters.PssPadded -> when (params) {
-                RSAAlgorithm.Parameters.PssPadded.DEFAULT_SHA256 -> JwsAlgorithm.Signature.PS256
-                RSAAlgorithm.Parameters.PssPadded.DEFAULT_SHA384 -> JwsAlgorithm.Signature.PS384
-                RSAAlgorithm.Parameters.PssPadded.DEFAULT_SHA512 -> JwsAlgorithm.Signature.PS512
+            is RsaAlgorithm.Parameters.PssPadded -> when (params) {
+                RsaAlgorithm.Parameters.PssPadded.DEFAULT_SHA256 -> JwsAlgorithm.Signature.PS256
+                RsaAlgorithm.Parameters.PssPadded.DEFAULT_SHA384 -> JwsAlgorithm.Signature.PS384
+                RsaAlgorithm.Parameters.PssPadded.DEFAULT_SHA512 -> JwsAlgorithm.Signature.PS512
                 else -> throw IllegalArgumentException("RSA-PSS with ${params} is unsupported by JWS")
             }
         }

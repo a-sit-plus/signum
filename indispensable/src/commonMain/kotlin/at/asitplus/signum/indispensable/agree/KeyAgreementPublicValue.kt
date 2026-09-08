@@ -1,13 +1,12 @@
 package at.asitplus.signum.indispensable.agree
 
-import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.DerPemDecodable
 import at.asitplus.signum.indispensable.DerPemEncodable
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import kotlin.jvm.JvmName
 
 /**
@@ -19,9 +18,9 @@ interface KeyAgreementPublicValue : DerPemEncodable<SubjectPublicKeyInfo> {
      */
     interface ECDH: KeyAgreementPublicValue {
         /**
-         * Returns this value as an [ECDSAPublicKey]
+         * Returns this value as an [EcdsaPublicKey]
          */
-        fun asCryptoPublicKey(): ECDSAPublicKey
+        fun asCryptoPublicKey(): EcdsaPublicKey
     }
     companion object : DerPemDecodable<SubjectPublicKeyInfo, KeyAgreementPublicValue> {
         override fun decodeFromTlv(element: SubjectPublicKeyInfo, der: Der) =
@@ -38,5 +37,5 @@ suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPriva
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @kotlin.internal.LowPriorityInOverloadResolution
 @JvmName("keyAgreementECDH")
-suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: ECDSAPrivateKey) =
+suspend fun KeyAgreementPublicValue.ECDH.keyAgreement(privateValue: EcdsaPrivateKey) =
     privateValue.keyAgreement(this)

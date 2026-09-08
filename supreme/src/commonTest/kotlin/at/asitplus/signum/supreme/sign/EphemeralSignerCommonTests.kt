@@ -7,19 +7,19 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.dsl.SigningKeyConfiguration
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.makeVerifier
 import at.asitplus.signum.indispensable.sign.sign
@@ -141,8 +141,8 @@ val EphemeralSignerCommonTests by matrixSuite {
                 } catch (_: UnsupportedOperationException) {
                     return@test
                 }
-                signer.signatureAlgorithm.shouldBeInstanceOf<RSAAlgorithm>().let {
-                    it.parameters shouldBe RSAAlgorithm.Parameters(padding, digest)
+                signer.signatureAlgorithm.shouldBeInstanceOf<RsaAlgorithm>().let {
+                    it.parameters shouldBe RsaAlgorithm.Parameters(padding, digest)
                 }
 
                 val secondSig = signer.exportPrivateKey()
@@ -159,7 +159,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 val data = Random.Default.nextBytes(64)
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; this.digest = digest } }
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().let {
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
@@ -186,13 +186,13 @@ val EphemeralSignerCommonTests by matrixSuite {
             "No digest specified (defaults to native)" {
                 val curve = Random.of(ECCurve.entries)
                 val signer = Signer.Ephemeral { ec { this.curve = curve } }
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldBe curve.nativeDigest
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().digest shouldBe curve.nativeDigest
 
                 shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
             "Null digest should work if explicitly specified" {
                 val signer = Signer.Ephemeral { ec { digest = null } }
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().digest shouldBe null
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().digest shouldBe null
 
                 shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
@@ -200,7 +200,7 @@ val EphemeralSignerCommonTests by matrixSuite {
         "RSA" - {
             "No digest specified" {
                 val signer = Signer.Ephemeral { rsa {} }
-                signer.signatureAlgorithm.shouldBeInstanceOf<RSAAlgorithm>()
+                signer.signatureAlgorithm.shouldBeInstanceOf<RsaAlgorithm>()
 
                 shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
@@ -273,7 +273,7 @@ val EphemeralSignerCommonTests by matrixSuite {
             data(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) test { (crv, digest, _) ->
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; this.digest = digest } }
-                signer.signatureAlgorithm.shouldBeInstanceOf<ECDSAAlgorithm>().let {
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }

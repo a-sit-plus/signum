@@ -4,8 +4,8 @@ import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.withClue
@@ -42,7 +42,7 @@ val X509SignatureAlgorithmTest by matrixSuite {
         data(certsSupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = Certificate.decodeFromTlv(src)
-            decoded.signatureAlgorithm shouldBeIn (ECDSAAlgorithm.entries + RSAAlgorithm.entries)
+            decoded.signatureAlgorithm shouldBeIn (EcdsaAlgorithm.entries + RsaAlgorithm.entries)
             shouldNotThrow<Throwable> { decoded.signature.toString() }
         }
     }

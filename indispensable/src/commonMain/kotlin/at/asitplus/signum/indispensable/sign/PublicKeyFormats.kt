@@ -30,10 +30,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
-class RSAPublicKey private constructor(
+class RsaPublicKey private constructor(
     providedAsn1Representation: SubjectPublicKeyInfo?,
     providedContent: Content?,
 ) : CryptoPublicKey {
+    init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
     override val additionalProperties = mutableMapOf<String, String>()
 
@@ -107,7 +108,7 @@ class RSAPublicKey private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is RSAPublicKey) return false
+        if (other !is RsaPublicKey) return false
         return n == other.n && e == other.e
     }
 
@@ -127,8 +128,8 @@ class RSAPublicKey private constructor(
          * @throws Asn1Exception all sorts of exceptions on invalid input
          */
         @Throws(Asn1Exception::class)
-        fun fromPKCS1encoded(input: ByteArray): RSAPublicKey =
-            RSAPublicKey(null,
+        fun fromPKCS1encoded(input: ByteArray): RsaPublicKey =
+            RsaPublicKey(null,
                 Content(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)))
 
         @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
@@ -137,7 +138,7 @@ class RSAPublicKey private constructor(
         // on companion to prevent platform signature clashes with JVM
         @Suppress("NOTHING_TO_INLINE")
         inline operator fun invoke(n: BigInteger, e: Int) =
-            RSAPublicKey(n, e.also { require(it > 0) }.toUInt())
+            RsaPublicKey(n, e.also { require(it > 0) }.toUInt())
 
         val oid = KnownOIDs.rsaEncryption
     }
@@ -149,10 +150,11 @@ class RSAPublicKey private constructor(
  * @see Companion.asPublicKey
  */
 @SerialName("EC")
-class ECDSAPublicKey private constructor(
+class EcdsaPublicKey private constructor(
     providedAsn1Representation: SubjectPublicKeyInfo?,
     providedContent: Content?,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
+    init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
     override val additionalProperties = mutableMapOf<String, String>()
 
@@ -209,7 +211,7 @@ class ECDSAPublicKey private constructor(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as ECDSAPublicKey
+        other as EcdsaPublicKey
 
         return (this.publicPoint == other.publicPoint)
     }
@@ -223,8 +225,8 @@ class ECDSAPublicKey private constructor(
         val DID_KEY_CODEC_P384 = 0x1201u.varint
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
-        fun ECPoint.asPublicKey(preferCompressed: Boolean = false): ECDSAPublicKey {
-            return ECDSAPublicKey(null,
+        fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
+            return EcdsaPublicKey(null,
                 Content(this.normalize(), preferCompressed))
         }
 
@@ -245,7 +247,7 @@ class ECDSAPublicKey private constructor(
 
         /** Decodes a key from its ANSI X9.63 representation */
         @Throws(Throwable::class)
-        fun fromAnsiX963Bytes(curve: ECCurve, src: ByteArray): ECDSAPublicKey {
+        fun fromAnsiX963Bytes(curve: ECCurve, src: ByteArray): EcdsaPublicKey {
             val numBytes = curve.coordinateLength.bytes.toInt()
 
             val prefix = catching { ANSIECPrefix.fromPrefixByte(src[0]) }
@@ -277,20 +279,20 @@ class ECDSAPublicKey private constructor(
 
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
-        ECDSAPublicKey.oid -> ECDSAPublicKey(publicKeyInfo)
-        RSAPublicKey.oid -> RSAPublicKey(publicKeyInfo)
+        EcdsaPublicKey.oid -> EcdsaPublicKey(publicKeyInfo)
+        RsaPublicKey.oid -> RsaPublicKey(publicKeyInfo)
         else -> null
     }
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = when(codec) {
-        RSAPublicKey.DID_KEY_CODEC ->
-            RSAPublicKey.fromPKCS1encoded(keyBytes)
-        ECDSAPublicKey.DID_KEY_CODEC_P256, UVarInt(0x1290u) ->
-            ECDSAPublicKey.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
-        ECDSAPublicKey.DID_KEY_CODEC_P384, UVarInt(0x1291u), UVarInt(8u) ->
-            ECDSAPublicKey.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
-        ECDSAPublicKey.DID_KEY_CODEC_P521, UVarInt(0x1292u) ->
-            ECDSAPublicKey.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
+        RsaPublicKey.DID_KEY_CODEC ->
+            RsaPublicKey.fromPKCS1encoded(keyBytes)
+        EcdsaPublicKey.DID_KEY_CODEC_P256, UVarInt(0x1290u) ->
+            EcdsaPublicKey.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
+        EcdsaPublicKey.DID_KEY_CODEC_P384, UVarInt(0x1291u), UVarInt(8u) ->
+            EcdsaPublicKey.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
+        EcdsaPublicKey.DID_KEY_CODEC_P521, UVarInt(0x1292u) ->
+            EcdsaPublicKey.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
         else -> null
     }
 }

@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -19,9 +19,6 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
 val CoseSerializationTest by matrixSuite {
@@ -33,7 +30,7 @@ val CoseSerializationTest by matrixSuite {
                 protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = RSASignature(byteArrayOf()),
+                signature = RsaSignature(byteArrayOf()),
                 payloadSerializer = ByteStringWrapper.serializer(String.serializer())
             )
         }
@@ -58,7 +55,7 @@ val CoseSerializationTest by matrixSuite {
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = RSASignature("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         )
 
@@ -84,7 +81,7 @@ val CoseSerializationTest by matrixSuite {
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = RSASignature("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         )
 
@@ -110,7 +107,7 @@ val CoseSerializationTest by matrixSuite {
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = RSASignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = RsaSignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -148,7 +145,7 @@ val CoseSerializationTest by matrixSuite {
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = null,
-            signature = RSASignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = RsaSignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -233,7 +230,7 @@ val CoseSerializationTest by matrixSuite {
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = RSASignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = RsaSignature("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = DataClass.serializer(),
         )
         val serialized = cose.serialize(DataClass.serializer())
@@ -341,7 +338,7 @@ val CoseSerializationTest by matrixSuite {
         val inputObjectSignature = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = RSASignature("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
@@ -386,7 +383,7 @@ val CoseSerializationTest by matrixSuite {
         val inputObjectSignature = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = RSASignature("bar".encodeToByteArray()),
+            signature = RsaSignature("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())

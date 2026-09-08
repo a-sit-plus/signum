@@ -37,10 +37,12 @@ import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.internals.orLazy
 
-class ECDSAAlgorithm private constructor(
-    private val providedParams: Params?,
+class EcdsaAlgorithm private constructor(
+    providedParams: Params?,
     private val providedAsn1: X509AlgorithmIdentifier?,
 ) : SignatureAlgorithm, Enumerable {
+    init { require((providedParams != null) != (providedAsn1 != null)) }
+
     constructor(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         digest: Digest?,
@@ -86,31 +88,32 @@ class ECDSAAlgorithm private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is ECDSAAlgorithm) return false
+        if (other !is EcdsaAlgorithm) return false
         return params == other.params
     }
 
     override fun hashCode() = params.hashCode()
 
-    companion object : Enumeration<ECDSAAlgorithm>, DerDecodable<X509AlgorithmIdentifier, ECDSAAlgorithm> {
+    companion object : Enumeration<EcdsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, EcdsaAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
 
-        val withSHA256 = ECDSAAlgorithm(Digest.SHA256)
-        val withSHA384 = ECDSAAlgorithm(Digest.SHA384)
-        val withSHA512 = ECDSAAlgorithm(Digest.SHA512)
+        val withSHA256 = EcdsaAlgorithm(Digest.SHA256)
+        val withSHA384 = EcdsaAlgorithm(Digest.SHA384)
+        val withSHA512 = EcdsaAlgorithm(Digest.SHA512)
 
         override fun decodeFromTlv(
             element: X509AlgorithmIdentifier,
             der: Der
-        ) = ECDSAAlgorithm(element)
+        ) = EcdsaAlgorithm(element)
 
     }
 }
 
-class RSAAlgorithm private constructor(
+class RsaAlgorithm private constructor(
     providedParams: Parameters<*>?,
     private val providedAsn1: X509AlgorithmIdentifier?,
 ) : SignatureAlgorithm, Enumerable {
+    init { require((providedParams != null) != (providedAsn1 != null)) }
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
@@ -197,7 +200,7 @@ class RSAAlgorithm private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is RSAAlgorithm) return false
+        if (other !is RsaAlgorithm) return false
         return (parameters == other.parameters)
     }
 
@@ -209,13 +212,13 @@ class RSAAlgorithm private constructor(
         PSS
     }
 
-    companion object : Enumeration<RSAAlgorithm>, DerDecodable<X509AlgorithmIdentifier, RSAAlgorithm> {
-        val withSHA256andPKCS1Padding = RSAAlgorithm(Parameters.Pkcs1Padded(Digest.SHA256))
-        val withSHA384andPKCS1Padding = RSAAlgorithm(Parameters.Pkcs1Padded(Digest.SHA384))
-        val withSHA512andPKCS1Padding = RSAAlgorithm(Parameters.Pkcs1Padded(Digest.SHA512))
-        val withSHA256andPSSPadding = RSAAlgorithm(Parameters.PssPadded(Digest.SHA256))
-        val withSHA384andPSSPadding = RSAAlgorithm(Parameters.PssPadded(Digest.SHA384))
-        val withSHA512andPSSPadding = RSAAlgorithm(Parameters.PssPadded(Digest.SHA512))
+    companion object : Enumeration<RsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, RsaAlgorithm> {
+        val withSHA256andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA256))
+        val withSHA384andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA384))
+        val withSHA512andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA512))
+        val withSHA256andPSSPadding = RsaAlgorithm(Parameters.PssPadded(Digest.SHA256))
+        val withSHA384andPSSPadding = RsaAlgorithm(Parameters.PssPadded(Digest.SHA384))
+        val withSHA512andPSSPadding = RsaAlgorithm(Parameters.PssPadded(Digest.SHA512))
         override val entries by lazy {
             listOf(withSHA256andPKCS1Padding, withSHA384andPKCS1Padding, withSHA512andPKCS1Padding,
                    withSHA256andPSSPadding,   withSHA384andPSSPadding,   withSHA512andPSSPadding)
@@ -224,7 +227,7 @@ class RSAAlgorithm private constructor(
         override fun decodeFromTlv(
             element: X509AlgorithmIdentifier,
             der: Der
-        ) = RSAAlgorithm(element)
+        ) = RsaAlgorithm(element)
     }
 
 
@@ -376,13 +379,13 @@ object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
         KnownOIDs.ecdsaWithSHA1,
         KnownOIDs.ecdsaWithSHA256,
         KnownOIDs.ecdsaWithSHA384,
-        KnownOIDs.ecdsaWithSHA512 -> ECDSAAlgorithm(algorithmIdentifier)
+        KnownOIDs.ecdsaWithSHA512 -> EcdsaAlgorithm(algorithmIdentifier)
 
         KnownOIDs.sha1WithRSAEncryption,
         KnownOIDs.sha256WithRSAEncryption,
         KnownOIDs.sha384WithRSAEncryption,
         KnownOIDs.sha512WithRSAEncryption,
-        KnownOIDs.rsaPSS -> RSAAlgorithm(algorithmIdentifier)
+        KnownOIDs.rsaPSS -> RsaAlgorithm(algorithmIdentifier)
 
         else -> null
     }

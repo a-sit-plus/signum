@@ -9,9 +9,9 @@ import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.parseJCASignature
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.withClue
@@ -75,7 +75,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
+        val signatureAlgorithm = EcdsaAlgorithm.withSHA256
 
 
         val tbsCsr = TbsCertificationRequest(
@@ -121,7 +121,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
+        val signatureAlgorithm = EcdsaAlgorithm.withSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -182,7 +182,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
+        val signatureAlgorithm = EcdsaAlgorithm.withSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -246,7 +246,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
+        val signatureAlgorithm = EcdsaAlgorithm.withSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
 
@@ -294,7 +294,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = ECDSAAlgorithm.withSHA256
+        val signatureAlgorithm = EcdsaAlgorithm.withSHA256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
@@ -347,8 +347,8 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         val csr = CertificationRequest(
             tbsCsr,
-            RSAAlgorithm.withSHA256andPKCS1Padding,
-            RSASignature(byteArrayOf(1, 2, 3, 4))
+            RsaAlgorithm.withSHA256andPKCS1Padding,
+            RsaSignature(byteArrayOf(1, 2, 3, 4))
         )
         val decodedCsr = CertificationRequest.decodeFromDer(csr.encodeToDer())
         decodedCsr shouldBe csr
@@ -422,7 +422,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         /*
             Pkcs10CertificationRequest
         */
-        val signatureAlgorithm1 = ECDSAAlgorithm.withSHA256
+        val signatureAlgorithm1 = EcdsaAlgorithm.withSHA256
         val signatureAlgorithm2 = SignatureAlgorithm.ECDSAwithSHA512
 
         val signed = signatureAlgorithm1.getJCASignatureInstance().apply {

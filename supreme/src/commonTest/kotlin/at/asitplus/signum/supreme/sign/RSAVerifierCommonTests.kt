@@ -5,9 +5,9 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.testballoon.matrix.CompactConcurrency
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
@@ -21,9 +21,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 
-private fun RSAAlgorithm.Parameters.Companion.valueOf(name: String, digest: Digest) = when (name) {
-    "PSS" -> RSAAlgorithm.Parameters.PssPadded(digest)
-    "PKCS1" -> RSAAlgorithm.Parameters.Pkcs1Padded(digest)
+private fun RsaAlgorithm.Parameters.Companion.valueOf(name: String, digest: Digest) = when (name) {
+    "PSS" -> RsaAlgorithm.Parameters.PssPadded(digest)
+    "PKCS1" -> RsaAlgorithm.Parameters.Pkcs1Padded(digest)
     else -> {
         TODO()
     }
@@ -38,11 +38,11 @@ val RSAVerifierCommonTests by matrixSuite {
 
     class TestInfo(test: RawTestInfo) {
         val digest = WellKnownDigest.entries.first { it.name == test.dig }
-        val parameters = RSAAlgorithm.Parameters.valueOf(test.pad, digest)
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as RSAPublicKey
+        val parameters = RsaAlgorithm.Parameters.valueOf(test.pad, digest)
+        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as RsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
-        val sig = RSASignature(Base64.decode(test.sig))
+        val sig = RsaSignature(Base64.decode(test.sig))
     }
 
     /*
@@ -165,7 +165,7 @@ fun main() {
             data(byDigest, nameFn = { it.b64msg }) - { test ->
                 "basic verification" {
                     val verifier =
-                        RSAAlgorithm(test.parameters).verifierFor(test.key)
+                        RsaAlgorithm(test.parameters).verifierFor(test.key)
                     shouldNotThrowAny { verifier.verify(test.msg, test.sig) }
                     shouldThrowAny { verifier.verify(test.msg.copyOfRange(0, test.msg.size / 2), test.sig) }
                     Random.of(byDigest).let {
@@ -179,11 +179,11 @@ fun main() {
                     property(Arb.of(WellKnownDigest.entries.filter { it != test.digest })) test { dig ->
                         shouldThrowAny {
                             val verifier = when (test.parameters) {
-                                is RSAAlgorithm.Parameters.PssPadded ->
-                                    RSAAlgorithm(RSAAlgorithm.Parameters.PssPadded(dig))
+                                is RsaAlgorithm.Parameters.PssPadded ->
+                                    RsaAlgorithm(RsaAlgorithm.Parameters.PssPadded(dig))
                                         .verifierFor(test.key)
                                 else ->
-                                    RSAAlgorithm(RSAAlgorithm.Parameters.Pkcs1Padded(dig))
+                                    RsaAlgorithm(RsaAlgorithm.Parameters.Pkcs1Padded(dig))
                                         .verifierFor(test.key)
                             }
                             verifier.verify(test.msg, test.sig)
@@ -191,8 +191,8 @@ fun main() {
                     }
                 }
                 compact("parameter mismatch") { concurrency = CompactConcurrency.Shared(8) } - {
-                    property(Arb.of(RSAAlgorithm.Parameters.entries.filter { it != test.parameters })) test { pad ->
-                        shouldThrowAny { RSAAlgorithm(pad).verifierFor(test.key).verify(test.msg, test.sig) }
+                    property(Arb.of(RsaAlgorithm.Parameters.entries.filter { it != test.parameters })) test { pad ->
+                        shouldThrowAny { RsaAlgorithm(pad).verifierFor(test.key).verify(test.msg, test.sig) }
                     }
                 }
             }

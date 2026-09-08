@@ -36,7 +36,7 @@ import platform.Security.*
 import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.TimeSource
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
 
 @OptIn(DelicateCoroutinesApi::class)
 private val dispatcher = Dispatchers.IO.limitedParallelism(1, "iOS Keychain Operations")
@@ -256,22 +256,22 @@ sealed class IosSigner(final override val alias: String,
     }
 
     class ECDSA internal constructor
-        (alias: String, override val publicKey: ECDSAPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
+        (alias: String, override val publicKey: EcdsaPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config),
             PlatformSigningProviderSigner.ECDSA<IosSignerSigningConfiguration, IosHomebrewAttestation>
     {
-        override val signatureAlgorithm: ECDSAAlgorithm
+        override val signatureAlgorithm: EcdsaAlgorithm
         init {
             val algMetadata = Json.decodeFromJsonElement<IosKeyAlgSpecificMetadata.ECDSA>(metadata.algSpecific!!)
             signatureAlgorithm = when (
                 val digest = resolveOption("digest", algMetadata.supportedDigests, config.ec.v.digestSpecified, { config.ec.v.digest })
             ){
-                Digest.SHA256, Digest.SHA384, Digest.SHA512 -> ECDSAAlgorithm(digest, publicKey.curve)
+                Digest.SHA256, Digest.SHA384, Digest.SHA512 -> EcdsaAlgorithm(digest, publicKey.curve)
                 else -> throw UnsupportedCryptoException("ECDSA with $digest is not supported on iOS")
             }
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            ECDSASignature.decodeFromTlv(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.decodeFromTlv(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
@@ -293,20 +293,20 @@ sealed class IosSigner(final override val alias: String,
     }
 
     class RSA internal constructor
-        (alias: String, override val publicKey: RSAPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
+        (alias: String, override val publicKey: RsaPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config), at.asitplus.signum.indispensable.sign.RSASigner
     {
-        override val signatureAlgorithm: RSAAlgorithm
+        override val signatureAlgorithm: RsaAlgorithm
         init {
             val algMetadata = Json.decodeFromJsonElement<IosKeyAlgSpecificMetadata.RSA>(metadata.algSpecific!!)
 
-            signatureAlgorithm = RSAAlgorithm(
+            signatureAlgorithm = RsaAlgorithm(
                 digest = resolveOption("digest", algMetadata.supportedDigests, config.rsa.v.digestSpecified, { config.rsa.v.digest }),
                 padding = resolveOption("padding", algMetadata.supportedPaddings, config.rsa.v.paddingSpecified, { config.rsa.v.padding })
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            RSASignature.decodeFromTlv(X509SignatureValue(sigBytes))
+            RsaSignature.decodeFromTlv(X509SignatureValue(sigBytes))
     }
 
 }
@@ -433,8 +433,8 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
 
     override fun makeIosSigner(alias: String, publicKey: CryptoPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner? =
         when (publicKey) {
-            is ECDSAPublicKey -> IosSigner.ECDSA(alias, publicKey, metadata, config)
-            is RSAPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
+            is EcdsaPublicKey -> IosSigner.ECDSA(alias, publicKey, metadata, config)
+            is RsaPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
             else -> null
         }
 }

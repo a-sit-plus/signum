@@ -3,7 +3,7 @@ package at.asitplus.signum.dsl
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
 /** DSL for configuring a signing key.
@@ -39,8 +39,8 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
         /** The digests supported by the key. If not specified, defaults to [SHA384][Digest.Companion.SHA384]. */
         open var digests: Set<Digest> = setOf(Digest.SHA384)
 
-        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding.PSS]. */
-        open var paddings: Set<RSAAlgorithm.Padding> = setOf(RSAAlgorithm.Padding.PSS)
+        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding.PSS]. */
+        open var paddings: Set<RsaAlgorithm.Padding> = setOf(RsaAlgorithm.Padding.PSS)
 
         /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
         var bits: Int = 3072

@@ -16,11 +16,11 @@ import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPrivateKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.internals.ImplementationError
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
@@ -51,9 +51,9 @@ import javax.crypto.spec.PSource
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-internal val RSAAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec get() {
+internal val RsaAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec get() {
     val mgfAlgorithm = mgfAlgorithm
-    if (mgfAlgorithm !is RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1)
+    if (mgfAlgorithm !is RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1)
         throw UnsupportedCryptoException("Only Pkcs1MGF1 is supported")
     val outerDigest = digest
     if (outerDigest !is WellKnownDigest)
@@ -254,7 +254,7 @@ fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find {
 fun CryptoPublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
 
-fun ECDSAPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
+fun EcdsaPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
     val y = y.residue.toJavaBigInteger()
@@ -265,12 +265,12 @@ fun ECDSAPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-fun RSAPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
+fun RsaPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as java.security.interfaces.RSAPublicKey
 
-fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): ECDSAPublicKey {
+fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): EcdsaPublicKey {
     // TODO: this assumes SPKI encoding then uses bouncycastle on it to find the curve
     // this breaks for non-SPKI encoded ECDSA public keys
     // leaving it untouched for now but we should revisit it
@@ -281,15 +281,15 @@ fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): ECDSAPublicKey {
             ).algorithm.parameters as ASN1ObjectIdentifier
         )
     ) ?: throw SerializationException("Unknown Jca name")
-    return ECDSAPublicKey.fromUncompressed(
+    return EcdsaPublicKey.fromUncompressed(
         curve,
         w.affineX.toByteArray(),
         w.affineY.toByteArray()
     )
 }
 
-fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RSAPublicKey =
-    RSAPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
+fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RsaPublicKey =
+    RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
 
 fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
     ServiceLoader.load<JcaMappingProvider>()
@@ -320,12 +320,12 @@ fun CryptoPrivateKey.toJcaPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
         .get(this, JcaMappingProvider::cryptoPrivateKeyToJcaPrivateKey)
 
-fun ECDSAPrivateKey.toJcaPrivateKey() =
+fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
         .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
             as java.security.interfaces.ECPrivateKey
 
-fun RSAPrivateKey.toJcaPrivateKey() =
+fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
         .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
             as java.security.interfaces.RSAPrivateKey
@@ -334,11 +334,11 @@ fun JCAPrivateKey.toCryptoPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
         .get(this, JcaMappingProvider::jcaPrivateKeyToCryptoPrivateKey)
 
-fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): ECDSAPrivateKey.WithPublicKey =
-    ECDSAPrivateKey.decodeFromDer(encoded) as ECDSAPrivateKey.WithPublicKey
+fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =
+    EcdsaPrivateKey.decodeFromDer(encoded) as EcdsaPrivateKey.WithPublicKey
 
-fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RSAPrivateKey =
-    RSAPrivateKey.decodeFromDer(encoded)
+fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
+    RsaPrivateKey.decodeFromDer(encoded)
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
@@ -428,7 +428,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
         }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
-fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RSAPublicKey, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RsaPublicKey, provider: String? = null) =
     catching {
         (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
             init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey(), jcaParameterSpec)
@@ -436,7 +436,7 @@ fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RSAPublicKe
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
-fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RSAPrivateKey, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RsaPrivateKey, provider: String? = null) =
     catching {
         (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
             init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey(), jcaParameterSpec)

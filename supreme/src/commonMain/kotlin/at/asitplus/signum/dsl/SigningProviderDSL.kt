@@ -2,7 +2,7 @@ package at.asitplus.signum.dsl
 
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -45,7 +45,7 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
      *
      * @see SigningKeyConfiguration.RSAConfiguration.paddings
      */
-    lateinit var padding: RSAAlgorithm.Padding
+    lateinit var padding: RsaAlgorithm.Padding
     internal val paddingSpecified get() = this::padding.isInitialized
 
 

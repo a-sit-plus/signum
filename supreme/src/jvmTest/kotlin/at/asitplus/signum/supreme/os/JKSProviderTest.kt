@@ -5,10 +5,10 @@ import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.parseJCASignature
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.sign.makeVerifier
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.supreme.azString
@@ -129,11 +129,11 @@ val JKSProviderTest  by matrixSuite {
             }
             signer.signatureAlgorithm.parseJCASignature(signature.jcaSignatureBytes) shouldBe signature
             when (signer.signatureAlgorithm) {
-                is RSAAlgorithm ->
-                    RSASignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
+                is RsaAlgorithm ->
+                    RsaSignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
 
-                is ECDSAAlgorithm ->
-                    ECDSASignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
+                is EcdsaAlgorithm ->
+                    EcdsaSignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
             }
 
             signer.signatureAlgorithm.let {

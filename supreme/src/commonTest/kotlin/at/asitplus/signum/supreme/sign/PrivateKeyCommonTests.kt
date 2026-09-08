@@ -9,9 +9,9 @@ import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
@@ -44,7 +44,7 @@ val PrivateKeyCommonTests by matrixSuite {
 
         val key = CryptoPrivateKey.decodeFromPem(rsa) as CryptoPrivateKey.WithPublicKey
 
-        val signer: Signer = RSAAlgorithm.withSHA256andPSSPadding.signerFor(key)
+        val signer: Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
         val data = Random.nextBytes(384)
         val signature = signer.sign(data).signature
@@ -64,10 +64,10 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as ECDSAPrivateKey.WithPublicKey
+        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as EcdsaPrivateKey.WithPublicKey
 
 
-        val signer: Signer = ECDSAAlgorithm.withSHA256.signerFor(privateKey)
+        val signer: Signer = EcdsaAlgorithm.withSHA256.signerFor(privateKey)
 
         val data = Random.Default.nextBytes(1024)
         val signature = signer.sign(data).signature

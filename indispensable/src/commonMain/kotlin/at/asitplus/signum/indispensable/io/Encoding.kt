@@ -7,8 +7,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -123,9 +123,9 @@ object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, 
     //  but it needs to stay in sync with clients (cycle type identifier etc)
     decodeAs = { when (it[0].toUByte()) {
         ANSIECPrefix.UNCOMPRESSED.prefixUByte ->
-            ECDSAPublicKey.fromIosEncoded(it)
+            EcdsaPublicKey.fromIosEncoded(it)
         (BERTags.SEQUENCE or BERTags.CONSTRUCTED) ->
-            RSAPublicKey.fromIosEncoded(it)
+            RsaPublicKey.fromIosEncoded(it)
         else -> throw IllegalArgumentException("Unknown iOS Key type")
     }})
 

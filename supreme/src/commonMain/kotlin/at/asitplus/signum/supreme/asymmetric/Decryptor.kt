@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 
@@ -19,7 +19,7 @@ sealed interface Decryptor {
 
     sealed class RSA(
         final override val algorithm: AsymmetricEncryptionAlgorithm.RSA,
-        final override val privateKey: at.asitplus.signum.indispensable.sign.RSAPrivateKey
+        final override val privateKey: at.asitplus.signum.indispensable.sign.RsaPrivateKey
     ) : Decryptor
 }
 
@@ -32,14 +32,14 @@ typealias ConfigurePlatformEncryptor = DSLConfigureFn<PlatformEncryptorConfigura
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect suspend fun decryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: RSAPrivateKey,
+    privateKey: RsaPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray
 
 class PlatformRSADecryptor
 internal constructor(
-    algorithm: AsymmetricEncryptionAlgorithm.RSA, privateKey: RSAPrivateKey,
+    algorithm: AsymmetricEncryptionAlgorithm.RSA, privateKey: RsaPrivateKey,
     configure: ConfigurePlatformDecryptor
 ) : Decryptor.RSA(algorithm, privateKey) {
 
@@ -68,7 +68,7 @@ private fun AsymmetricEncryptionAlgorithm.decryptorForImpl(
     when (this) {
         is AsymmetricEncryptionAlgorithm.RSA -> PlatformRSADecryptor(
             this,
-            privateKey.let { require(it is RSAPrivateKey);it },
+            privateKey.let { require(it is RsaPrivateKey);it },
             configure
         )
     }
@@ -78,6 +78,6 @@ private fun AsymmetricEncryptionAlgorithm.decryptorForImpl(
  * @see PlatformDecryptorConfiguration
  */
 fun AsymmetricEncryptionAlgorithm.RSA.decryptorFor(
-    privateKey: RSAPrivateKey,
+    privateKey: RsaPrivateKey,
     configure: ConfigurePlatformDecryptor = null
 ) = decryptorForImpl(privateKey, configure)

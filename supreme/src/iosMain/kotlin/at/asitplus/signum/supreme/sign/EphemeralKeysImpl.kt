@@ -3,8 +3,8 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.crypto.X509SignatureValue
-import at.asitplus.signum.dsl.EphemeralECDSAConfiguration
-import at.asitplus.signum.dsl.EphemeralRSAConfiguration
+import at.asitplus.signum.dsl.EphemeralEcdsaConfiguration
+import at.asitplus.signum.dsl.EphemeralRsaConfiguration
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.ec
@@ -12,14 +12,14 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureInput
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPrivateKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
@@ -52,15 +52,15 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     protected abstract fun parseSignature(signatureBytes: ByteArray): CryptoSignature
 
     class EC internal constructor(
-        privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: ECDSAPublicKey,
-        override val signatureAlgorithm: ECDSAAlgorithm
+        privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: EcdsaPublicKey,
+        override val signatureAlgorithm: EcdsaAlgorithm
     ) : SupremeIosEphemeralSigner(privateKey), ExportableECDSASigner {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey() as ECDSAPrivateKey.WithPublicKey
+            privateKey.value.toCryptoPrivateKey() as EcdsaPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            ECDSASignature.decodeFromTlv(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.decodeFromTlv(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
             corecall {
@@ -75,15 +75,15 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     }
 
     class RSA internal constructor(
-        privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: RSAPublicKey,
-        override val signatureAlgorithm: RSAAlgorithm
+        privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: RsaPublicKey,
+        override val signatureAlgorithm: RsaAlgorithm
     ) : SupremeIosEphemeralSigner(privateKey), at.asitplus.signum.indispensable.sign.ExportableRSASigner {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey() as RSAPrivateKey
+            privateKey.value.toCryptoPrivateKey() as RsaPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            RSASignature.decodeFromTlv(X509SignatureValue(signatureBytes))
+            RsaSignature.decodeFromTlv(X509SignatureValue(signatureBytes))
     }
 }
 
@@ -93,12 +93,12 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
         memScoped {
             val attr = createCFDictionary {
                 when (alg) {
-                    is EphemeralECDSAConfiguration -> {
+                    is EphemeralEcdsaConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                         kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
                     }
 
-                    is EphemeralRSAConfiguration -> {
+                    is EphemeralRsaConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo alg.bits
                     }
@@ -117,18 +117,18 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
                 }.takeFromCF<NSData>().toByteArray()
 
             return when (alg) {
-                is EphemeralECDSAConfiguration ->
+                is EphemeralEcdsaConfiguration ->
                     SupremeIosEphemeralSigner.EC(
                         privateKey = privateKey,
-                        publicKey = ECDSAPublicKey.fromAnsiX963Bytes(alg.curve, pubkeyBytes),
-                        signatureAlgorithm = ECDSAAlgorithm(alg.digest, alg.curve)
+                        publicKey = EcdsaPublicKey.fromAnsiX963Bytes(alg.curve, pubkeyBytes),
+                        signatureAlgorithm = EcdsaAlgorithm(alg.digest, alg.curve)
                     )
 
-                is EphemeralRSAConfiguration ->
+                is EphemeralRsaConfiguration ->
                     SupremeIosEphemeralSigner.RSA(
                         privateKey = privateKey,
-                        publicKey = RSAPublicKey.fromPKCS1encoded(pubkeyBytes),
-                        signatureAlgorithm = RSAAlgorithm(alg.padding, alg.digest)
+                        publicKey = RsaPublicKey.fromPKCS1encoded(pubkeyBytes),
+                        signatureAlgorithm = RsaAlgorithm(alg.padding, alg.digest)
                     )
 
                 else -> error("unreachable")
@@ -142,13 +142,13 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
         config: InMemorySignerConfiguration
     ): Signer.WithExportableKey? =
         when (algorithm) {
-            is ECDSAAlgorithm -> {
-                require(privateKey is ECDSAPrivateKey.WithPublicKey)
+            is EcdsaAlgorithm -> {
+                require(privateKey is EcdsaPrivateKey.WithPublicKey)
                     { "Trying to use a non-ECDSA private key (${privateKey::class.simpleName}) with $algorithm" }
                 SupremeIosEphemeralSigner.EC(privateKey.toSecKey(), privateKey.publicKey, algorithm)
             }
-            is RSAAlgorithm -> {
-                require(privateKey is RSAPrivateKey)
+            is RsaAlgorithm -> {
+                require(privateKey is RsaPrivateKey)
                     { "Trying to use a non-RSA private key (${privateKey::class.simpleName}) with $algorithm" }
                 SupremeIosEphemeralSigner.RSA(privateKey.toSecKey(), privateKey.publicKey, algorithm)
             }

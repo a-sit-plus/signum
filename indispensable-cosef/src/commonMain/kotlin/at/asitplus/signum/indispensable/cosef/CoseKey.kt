@@ -10,9 +10,9 @@ import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -196,8 +196,8 @@ fun CryptoPublicKey.toCoseKey(
     keyId: ByteArray? = this.coseKid
 ): KmmResult<CoseKey> =
     when (this) {
-        is ECDSAPublicKey ->
-            if ((algorithm != null) && (algorithm.algorithm !is ECDSAAlgorithm))
+        is EcdsaPublicKey ->
+            if ((algorithm != null) && (algorithm.algorithm !is EcdsaAlgorithm))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.preferCompressedRepresentation) {
@@ -222,7 +222,7 @@ fun CryptoPublicKey.toCoseKey(
                 }
             }
 
-        is RSAPublicKey ->
+        is RsaPublicKey ->
             if ((algorithm != null) && (algorithm !in listOf(
                     CoseAlgorithm.Signature.PS256,
                     CoseAlgorithm.Signature.PS384,

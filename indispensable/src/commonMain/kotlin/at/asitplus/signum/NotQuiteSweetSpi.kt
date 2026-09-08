@@ -14,6 +14,7 @@ object ServiceLoader {
         require(it::class != clazz) { "You should use register<ServiceInterface>(ServiceProviderInstantiation)"}
         getStorageFromMap(clazz).addFirst(it)
     }
+    /** This needs the same exact class as [get] will use. You cannot register for intermediate interfaces! */
     inline fun <reified T: Any> register(it: T) { register(it, T::class) }
 
     class ServiceProviders<out T: Any>(@PublishedApi internal val className: String, private val inner: Iterable<T>): Iterable<T> by inner {

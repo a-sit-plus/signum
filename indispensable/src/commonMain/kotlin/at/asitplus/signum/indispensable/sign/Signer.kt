@@ -61,11 +61,11 @@ interface Signer {
     val mayRequireUserUnlock: Boolean get() = true
 
     @Deprecated(message = "Concrete algorithm types migrated out of Signer as part of providerization",
-        replaceWith = ReplaceWith("ECDSASigner"))
+        replaceWith = ReplaceWith("EcdsaSigner"))
     typealias ECDSA = ECDSASigner
 
     @Deprecated(message = "Concrete algorithm types migrated out of Signer as part of providerization",
-        replaceWith = ReplaceWith("RSASigner"))
+        replaceWith = ReplaceWith("RsaSigner"))
     typealias RSA = RSASigner
 
     interface WithExportableKey : Signer {

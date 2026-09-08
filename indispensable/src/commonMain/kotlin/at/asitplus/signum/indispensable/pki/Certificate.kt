@@ -31,8 +31,7 @@ class TbsCertificate private constructor(
     providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     private val providedAsn1Representation: X509TbsCertificate?, /*TODO EXTENSIBILITY THIS SHOULD NOT BE A VAL but we need it for temp PFUSCH equals*/
 ) : DerEncodable<X509TbsCertificate> {
-
-
+    init { require((providedContent != null) && (providedAsn1Representation != null)) }
 
     private data class ContentContainer(
         val serialNumber: Asn1Integer,
@@ -239,6 +238,8 @@ class Certificate private constructor(
     providedContent: TbsCertificate?, /*TODO EXTENSIBILITY private val*/
     providedSignature: CryptoSignature? /*TODO EXTENSIBILITY private val*/
 ) : DerPemEncodable<X509Certificate> {
+    init { require((providedContent != null) == (providedSignature != null)) }
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     override val pemLabel: String get() = canonicalPemLabel
 

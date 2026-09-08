@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.agree
 
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.signerFor
 import kotlin.jvm.JvmName
 
@@ -32,12 +32,12 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
         throw IllegalArgumentException("Expected KeyAgreementPublicValue.ECDH, got ${publicValue::class.simpleName}")
     return when (this) {
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue)
-        is ECDSAPrivateKey.WithPublicKey -> ECDSAAlgorithm.withSHA256.signerFor(this).keyAgreement(publicValue)
+        is EcdsaPrivateKey.WithPublicKey -> EcdsaAlgorithm.withSHA256.signerFor(this).keyAgreement(publicValue)
 
         else -> throw IllegalStateException("Type hierarchy failure? Actual type is ${this::class.simpleName ?: "<null>"}")
     }
 }
 
 @JvmName("keyAgreementEC")
-suspend fun ECDSAPrivateKey.keyAgreement(publicValue: KeyAgreementPublicValue) =
+suspend fun EcdsaPrivateKey.keyAgreement(publicValue: KeyAgreementPublicValue) =
     (this as KeyAgreementPrivateValue.ECDH).keyAgreement(publicValue)

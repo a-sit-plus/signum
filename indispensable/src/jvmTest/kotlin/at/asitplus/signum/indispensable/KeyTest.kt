@@ -5,13 +5,12 @@ import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.encoding.encodeToDer
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -68,7 +67,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 withClue("Compressed Test") {
                     val compressedPresentation = own.toAnsiX963Encoded(useCompressed = true)
-                    val fromCompressed = ECDSAPublicKey.fromAnsiX963Bytes(own.curve, compressedPresentation)
+                    val fromCompressed = EcdsaPublicKey.fromAnsiX963Bytes(own.curve, compressedPresentation)
 
                     // bouncy castle compressed representation is calculated by exposing public coordinate from key and then encode that
                     compressedPresentation shouldBe (pubKey as BCECPublicKey).q.getEncoded(true)
@@ -109,7 +108,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 } e: ${it.second.publicExponent.toInt()})"
             }) test { (privKey, pubKey) ->
 
-                val own = RSAPublicKey(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
+                val own = RsaPublicKey(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
                 val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey
                 ownPrivate.publicKey shouldBe own
@@ -117,7 +116,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
 
 
-                val own1 = RSAPublicKey(
+                val own1 = RsaPublicKey(
                     Asn1Integer.fromUnsignedByteArray(ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray()),
                     Asn1Integer.fromUnsignedByteArray(pubKey.publicExponent.toByteArray())
                 )

@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.dsl.VerifierConfiguration
@@ -8,10 +9,10 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSOSStatusErrorDomain
 import platform.Security.SecKeyVerifySignature
@@ -19,18 +20,18 @@ import platform.Security.errSecVerifyFailed
 
 object SupremeCCVerifierProvider : SignatureVerifierProvider {
     override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration) = when(algorithm) {
-        is ECDSAAlgorithm -> {
-            require (key is ECDSAPublicKey)
+        is EcdsaAlgorithm -> {
+            require (key is EcdsaPublicKey)
                 { "Attempt to create ECDSA ($algorithm) verifier using non-ECDSA public key ($key)"}
             when (algorithm.digest) {
-                null -> SupremeCCVerifier.ECDSAPreHashed(algorithm, key)
-                else -> SupremeCCVerifier.ECDSA(algorithm, key)
+                null -> SupremeCCVerifier.EcdsaPreHashed(algorithm, key)
+                else -> SupremeCCVerifier.Ecdsa(algorithm, key)
             }
         }
-        is RSAAlgorithm -> {
-            require (key is RSAPublicKey)
+        is RsaAlgorithm -> {
+            require (key is RsaPublicKey)
                 { "Attempt to create RSA ($algorithm) verifier using non-RSA public key ($key)" }
-            SupremeCCVerifier.RSA(algorithm, key)
+            SupremeCCVerifier.Rsa(algorithm, key)
         }
         else -> null
     }
@@ -56,21 +57,22 @@ abstract class SupremeCCVerifier: SignatureVerifier {
         }
     }
 
-    class ECDSA(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)
-        : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.ECDSAVerifier
+    class Ecdsa(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey)
+        : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.EcdsaVerifier
     {
         init { require(signatureAlgorithm.digest != null) }
     }
 
-    class ECDSAPreHashed(override val signatureAlgorithm: ECDSAAlgorithm, override val publicKey: ECDSAPublicKey)
-        : at.asitplus.signum.indispensable.sign.ECDSAVerifier
+    class EcdsaPreHashed(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey)
+        : at.asitplus.signum.indispensable.sign.EcdsaVerifier
     {
         init { require(signatureAlgorithm.digest == null) }
         private val targetDigest = publicKey.curve.nativeDigest
-        private val inner = ECDSA(ECDSAAlgorithm(targetDigest, null), publicKey)
+        private val inner = Ecdsa(EcdsaAlgorithm(targetDigest, null), publicKey)
 
         override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
             check(publicKey.curve.scalarLength == targetDigest.outputLength)
+            @OptIn(HazardousMaterials::class)
             val fakeInput = SignatureInput.unsafeCreate(
                 data.asECDSABigInteger(targetDigest.outputLength).toByteArray().ensureSize(targetDigest.outputLength.bytes),
                 targetDigest
@@ -79,6 +81,6 @@ abstract class SupremeCCVerifier: SignatureVerifier {
         }
     }
 
-    class RSA(override val signatureAlgorithm: RSAAlgorithm, override val publicKey: RSAPublicKey)
-        : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.RSAVerifier
+    class Rsa(override val signatureAlgorithm: RsaAlgorithm, override val publicKey: RsaPublicKey)
+        : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.RsaVerifier
 }

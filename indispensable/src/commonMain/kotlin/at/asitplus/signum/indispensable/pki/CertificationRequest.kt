@@ -24,6 +24,7 @@ class TbsCertificationRequest private constructor(
     providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     providedAsn1Representation: Pkcs10CertificationRequestInfo?,
 ) : DerEncodable<Pkcs10CertificationRequestInfo> {
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     private data class ContentContainer(
         val subjectName: Name,
@@ -155,6 +156,7 @@ class CertificationRequest private constructor(
     providedContent: CertificationRequestContent?, /*TODO EXTENSIBILITY private val */
     providedAsn1Representation: Pkcs10CertificationRequest?,
 ) : DerPemEncodable<Pkcs10CertificationRequest> {
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     override val pemLabel: String get() = canonicalPemLabel
 

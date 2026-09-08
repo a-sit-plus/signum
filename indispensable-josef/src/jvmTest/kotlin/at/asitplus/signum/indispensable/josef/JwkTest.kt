@@ -9,8 +9,8 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -154,12 +154,12 @@ private fun randomCertificate() = Certificate(
         issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey(),
-        signatureAlgorithm = ECDSAAlgorithm.withSHA256,
+        signatureAlgorithm = EcdsaAlgorithm.withSHA256,
         subjectName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         validFrom = (Clock.System.now()),
         validUntil = (Clock.System.now()),
     ),
-    ECDSASignature.fromRS(
+    EcdsaSignature.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)
     )

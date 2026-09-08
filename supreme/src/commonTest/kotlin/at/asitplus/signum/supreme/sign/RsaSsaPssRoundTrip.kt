@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
@@ -29,17 +29,17 @@ val RsaSsaPssRoundTripTest by matrixSuite {
         WellKnownDigest.entries.asData("Data Digest") - { mgfDigest ->
 
             mapOf(
-                "from ASN.1" to RSAAlgorithm(
-                    RSAAlgorithm.Parameters.PssPadded(
+                "from ASN.1" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
                         RsaSsaPssParams(
                             hashAlgorithm = dataDigest.asn1Representation,
-                            maskGenAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                            maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                         )
                     )),
-                "from Signum" to RSAAlgorithm(
-                    RSAAlgorithm.Parameters.PssPadded(
+                "from Signum" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
                         digest = dataDigest,
-                        mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
+                        mgfAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
                             mgfDigest
                         )
                     )
@@ -50,7 +50,7 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                 val key = runBlocking {
                     Signer.Ephemeral {
                         rsa {
-                            this.padding = RSAAlgorithm.Padding.PSS
+                            this.padding = RsaAlgorithm.Padding.PSS
                             this.digest = Digest.SHA256
                         }
                     }

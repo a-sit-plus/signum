@@ -7,11 +7,10 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.parseJCASignature
-import at.asitplus.signum.indispensable.sign.ECDSAVerifier
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaVerifier
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
@@ -33,18 +32,18 @@ private fun component(digest: WellKnownDigest?) = when(digest) {
 val VerifierTests by matrixSuite {
     Security.addProvider(BouncyCastleProvider())
 
-    mapOf<String, (ECDSAAlgorithm, ECDSAPublicKey) -> ECDSAVerifier>(
+    mapOf<String, (EcdsaAlgorithm, EcdsaPublicKey) -> EcdsaVerifier>(
         "BC -> PlatformVerifier" to { a, k ->
             val config = VerifierConfiguration::class.java.getDeclaredConstructor().newInstance()
             config.jvm { provider = JCAProviderRef.Of("BC") }
             SupremeJVMVerifierProvider.verifierFor(a, k, config)
-                .shouldBeInstanceOf<SupremeJVMVerifier.ECDSA>()
+                .shouldBeInstanceOf<SupremeJVMVerifier.Ecdsa>()
         },
         "BC -> KotlinVerifier" to { a, k ->
             // hack past the internal
             val emptyConfig = VerifierConfiguration::class.java.getDeclaredConstructor().newInstance()
             SupremeKotlinVerifierProvider.verifierFor(a, k, emptyConfig)
-                .shouldBeInstanceOf<KotlinECDSAVerifier>()
+                .shouldBeInstanceOf<KotlinEcdsaVerifier>()
         }
     ).asData(nameFn = { it.first }) - { (_, factory) ->
         data(ECCurve.entries) - { curve ->
@@ -53,16 +52,16 @@ val VerifierTests by matrixSuite {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
-                    val publicKey = keypair.public.toCryptoPublicKey() as ECDSAPublicKey
+                    val publicKey = keypair.public.toCryptoPublicKey() as EcdsaPublicKey
                     val data = Random.nextBytes(256)
                     val sig = Signature.getInstance("${component(digest)}withECDSA", "BC").run {
                         initSign(keypair.private)
                         update(data)
                         sign()
-                    }.let(ECDSASignature.Companion::fromRawSignatureValue)
+                    }.let(EcdsaSignature.Companion::fromRawSignatureValue)
                     Triple(publicKey, data, sig)
                 }.take(5), nameFn = { (key, _, _) -> key.publicPoint.toString() }) test { (key, data, sig) ->
-                    val verifier = factory(ECDSAAlgorithm(digest, null), key)
+                    val verifier = factory(EcdsaAlgorithm(digest, null), key)
                     shouldThrowAny { verifier.verify(byteArrayOf(), sig) }
                     if (digest != null) {
                         shouldThrowAny { verifier.verify(data.copyOfRange(0, 128), sig) }
@@ -71,7 +70,7 @@ val VerifierTests by matrixSuite {
                     verifier.verify(data, sig) shouldBe SignatureVerifier.Success
                     Random.of(WellKnownDigest.entries.filter { it != digest }).let { dig ->
                         shouldThrowAny {
-                            factory(ECDSAAlgorithm(dig, null), key)
+                            factory(EcdsaAlgorithm(dig, null), key)
                                 .verify(data, sig)
                         }
                     }

@@ -72,6 +72,7 @@ private class X509AlternativeNames(
     providedGeneralNames: List<GeneralName>?,
     providedAsn1Representation: X509GeneralNames?,
 ) : AlternativeNames.X509Representable {
+    init { require((providedGeneralNames != null) != (providedAsn1Representation != null)) }
 
     override val asn1Representation: X509GeneralNames by providedAsn1Representation orLazy {
         X509GeneralNames(generalNames.map { it.requireX509().asn1Representation })

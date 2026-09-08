@@ -7,8 +7,8 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
@@ -28,17 +28,17 @@ val RsaSsaPssAgainstJvm by matrixSuite {
         WellKnownDigest.entries.asData("Data Digest") - { mgfDigest ->
 
             mapOf(
-                "from ASN.1" to RSAAlgorithm(
-                    RSAAlgorithm.Parameters.PssPadded(
+                "from ASN.1" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
                     RsaSsaPssParams(
                         hashAlgorithm = dataDigest.asn1Representation,
-                        maskGenAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                        maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                     )
                 )),
-                "from Signum" to RSAAlgorithm(
-                    RSAAlgorithm.Parameters.PssPadded(
+                "from Signum" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
                         digest = dataDigest,
-                        mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
+                        mgfAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
                             mgfDigest
                         )
                     )
@@ -49,7 +49,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 val key = runBlocking {
                     Signer.Ephemeral {
                         rsa {
-                            this.padding = RSAAlgorithm.Padding.PSS
+                            this.padding = RsaAlgorithm.Padding.PSS
                         }
                     }
                 }
@@ -75,7 +75,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
 
                 "Signum's verifier against JCA signed" {
                     rsaInstance.verifierFor(key.publicKey)
-                        .verify(data, RSASignature.fromRawSignatureValue(jvmSigned)) shouldBe SignatureVerifier.Success
+                        .verify(data, RsaSignature.fromRawSignatureValue(jvmSigned)) shouldBe SignatureVerifier.Success
                 }
                 val jcaVerifier = Signature.getInstance("RSASSA-PSS").apply {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))

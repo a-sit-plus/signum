@@ -19,12 +19,12 @@ interface SignatureVerifier {
     val publicKey: CryptoPublicKey
 
     @Deprecated(message = "Concrete algorithm typess migrated out of SignatureVerifier as part of providerization",
-        replaceWith = ReplaceWith("ECDSAVerifier"))
-    typealias ECDSA = ECDSAVerifier
+        replaceWith = ReplaceWith("EcdsaVerifier"))
+    typealias ECDSA = EcdsaVerifier
 
     @Deprecated(message = "Concrete algorithm typess migrated out of SignatureVerifier as part of providerization",
-        replaceWith = ReplaceWith("RSAVerifier"))
-    typealias RSA = RSAVerifier
+        replaceWith = ReplaceWith("RsaVerifier"))
+    typealias RSA = RsaVerifier
 
     /** Make it explicit that we only return on successful validation */
     data object Success

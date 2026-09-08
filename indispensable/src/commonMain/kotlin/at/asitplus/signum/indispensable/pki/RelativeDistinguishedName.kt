@@ -28,6 +28,7 @@ class RelativeDistinguishedName private constructor(
     providedAsn1Representation: X500RelativeDistinguishedName?,
     performValidation: Boolean,
 ) : DerEncodable<X500RelativeDistinguishedName> {
+    init { require((providedAttrsAndValues != null) != (providedAsn1Representation != null)) }
 
     constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this(attrsAndValues, null, true)
 

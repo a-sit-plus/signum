@@ -20,7 +20,7 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.indispensable.sign.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
@@ -49,12 +49,12 @@ import at.asitplus.signum.dsl.unlockPrompt
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
 import at.asitplus.signum.indispensable.sign.Signer as SignerI
@@ -194,10 +194,10 @@ interface AndroidKeyStoreOperationsProvider {
                                  attestation: AndroidKeystoreAttestation?): AndroidKeystoreSigner?
 }
 
-private fun getAndroidKeystoreRSAParams(digest: Digest): RSAAlgorithm.Parameters<*> =
-    RSAAlgorithm.Parameters.PssPadded(
+private fun getAndroidKeystoreRSAParams(digest: Digest): RsaAlgorithm.Parameters<*> =
+    RsaAlgorithm.Parameters.PssPadded(
         digest = digest,
-        mgfAlgorithm = RSAAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(digest),
+        mgfAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(digest),
         saltLength = digest.outputLength.bytes,
         trailerField = 1,
     )
@@ -238,9 +238,9 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
         null -> KeyProperties.DIGEST_NONE
         else -> throw UnsupportedCryptoException("Unknown digest $digest")
     }
-    private fun keyProperty(padding: RSAAlgorithm.Padding) = when (padding) {
-        RSAAlgorithm.Padding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
-        RSAAlgorithm.Padding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
+    private fun keyProperty(padding: RsaAlgorithm.Padding) = when (padding) {
+        RsaAlgorithm.Padding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+        RsaAlgorithm.Padding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
     }
     private fun jcaComponent(digest: WellKnownDigest?) = when (digest) {
         null -> "NONE"
@@ -249,24 +249,24 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
         WellKnownDigest.SHA384 -> "SHA384"
         WellKnownDigest.SHA512 -> "SHA512"
     }
-    private fun jcaComponent(padding: RSAAlgorithm.Padding) = when (padding) {
-        RSAAlgorithm.Padding.PSS -> "RSA/PSS"
-        RSAAlgorithm.Padding.PKCS1 -> "RSA"
+    private fun jcaComponent(padding: RsaAlgorithm.Padding) = when (padding) {
+        RsaAlgorithm.Padding.PSS -> "RSA/PSS"
+        RsaAlgorithm.Padding.PKCS1 -> "RSA"
     }
     override fun getAndroidKeystoreSigner(
         jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo, config: AndroidSignerConfiguration,
         publicKey: CryptoPublicKey, attestation: AndroidKeystoreAttestation?
     ): AndroidKeystoreSigner? = when (publicKey) {
-        is ECDSAPublicKey -> {
+        is EcdsaPublicKey -> {
             val ecConfig = config.ec.v
             val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }, ::keyProperty)
             AndroidKeystoreSigner.ECDSA(
                 jcaPrivateKey, alias, keyInfo, "${jcaComponent(digest)}withECDSA",
                 config, publicKey, attestation,
-                ECDSAAlgorithm(digest, publicKey.curve)
+                EcdsaAlgorithm(digest, publicKey.curve)
             )
         }
-        is RSAPublicKey -> {
+        is RsaPublicKey -> {
             val rsaConfig = config.rsa.v
             val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, ::keyProperty)
             val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }, ::keyProperty)
@@ -274,8 +274,8 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
                 jcaPrivateKey, alias, keyInfo, "${jcaComponent(digest)}with${jcaComponent(padding)}",
                 config, publicKey, attestation,
                 when (padding) {
-                    RSAPadding.PKCS1 -> RSAAlgorithm(RSAPadding.PKCS1, digest)
-                    RSAPadding.PSS -> RSAAlgorithm(getAndroidKeystoreRSAParams(digest))
+                    RSAPadding.PKCS1 -> RsaAlgorithm(RSAPadding.PKCS1, digest)
+                    RSAPadding.PSS -> RsaAlgorithm(getAndroidKeystoreRSAParams(digest))
                 })
         }
         else -> throw UnsupportedCryptoException("Unknown public key type")
@@ -457,9 +457,9 @@ abstract class AndroidKeystoreSigner protected constructor(
                                      keyInfo: KeyInfo,
                                      algorithmString: String,
                                      config: AndroidSignerConfiguration,
-                                     override val publicKey: ECDSAPublicKey,
+                                     override val publicKey: EcdsaPublicKey,
                                      attestation: AndroidKeystoreAttestation?,
-                                     override val signatureAlgorithm: ECDSAAlgorithm
+                                     override val signatureAlgorithm: EcdsaAlgorithm
     )
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation),
         PlatformSigningProviderSigner.ECDSA<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation>
@@ -483,7 +483,7 @@ abstract class AndroidKeystoreSigner protected constructor(
         }
 
         override fun parseSignatureFromJca(jcaSig: ByteArray) =
-            ECDSASignature.fromRawSignatureValue(jcaSig).withCurve(publicKey.curve)
+            EcdsaSignature.fromRawSignatureValue(jcaSig).withCurve(publicKey.curve)
     }
 
     class RSA internal constructor(jcaPrivateKey: PrivateKey,
@@ -491,14 +491,14 @@ abstract class AndroidKeystoreSigner protected constructor(
                                    keyInfo: KeyInfo,
                                    algorithmString: String,
                                    config: AndroidSignerConfiguration,
-                                   override val publicKey: RSAPublicKey,
+                                   override val publicKey: RsaPublicKey,
                                    attestation: AndroidKeystoreAttestation?,
-                                   override val signatureAlgorithm: RSAAlgorithm
+                                   override val signatureAlgorithm: RsaAlgorithm
     )
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation), at.asitplus.signum.indispensable.sign.RSASigner
     {
         override fun parseSignatureFromJca(jcaSig: ByteArray) =
-            RSASignature.fromRawSignatureValue(jcaSig)
+            RsaSignature.fromRawSignatureValue(jcaSig)
     }
 }
 

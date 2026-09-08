@@ -1,18 +1,15 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.Version
 import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.catching
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.RSAPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import kotlinx.serialization.KSerializer
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
@@ -46,8 +43,8 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
             der: Der,
         ): CryptoPrivateKey =
             when (src.pemLabel) {
-                Pkcs1RsaPrivateKeyInfo.PEM_LABEL -> RSAPrivateKey.FromPKCS1.decodeFromDer(src.payload, der)
-                Sec1EcPrivateKeyInfo.PEM_LABEL -> ECDSAPrivateKey.FromSEC1.decodeFromDer(src.payload, der)
+                Pkcs1RsaPrivateKeyInfo.PEM_LABEL -> RsaPrivateKey.FromPKCS1.decodeFromDer(src.payload, der)
+                Sec1EcPrivateKeyInfo.PEM_LABEL -> EcdsaPrivateKey.FromSEC1.decodeFromDer(src.payload, der)
                 Pkcs8PrivateKeyInfo.PEM_LABEL_PRIVATE_KEY -> decodeFromDer(serializer, src.payload, limit, der)
                 else -> error("Label ${src.pemLabel} for private key is invalid")
             }
@@ -55,18 +52,18 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
         @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
         fun fromIosEncoded(keyBytes: ByteArray): CryptoPrivateKey.WithPublicKey =
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
-                ECDSAPrivateKey.iosDecodeInternal(keyBytes)
+                EcdsaPrivateKey.iosDecodeInternal(keyBytes)
             } else {
-                RSAPrivateKey.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey
+                RsaPrivateKey.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey
             }
     }
 
     @Deprecated(message = "Private key types migrated out of CryptoPrivateKey as part of providerization",
-        replaceWith = ReplaceWith("ECDSAPrivateKey"))
-    typealias EC = ECDSAPrivateKey
+        replaceWith = ReplaceWith("EcdsaPrivateKey"))
+    typealias EC = EcdsaPrivateKey
     @Deprecated(message = "Private key types migrated out of CryptoPrivateKey as part of providerization",
-        replaceWith = ReplaceWith("RSAPrivateKey"))
-    typealias RSA = RSAPrivateKey
+        replaceWith = ReplaceWith("RsaPrivateKey"))
+    typealias RSA = RsaPrivateKey
 }
 
 // @Service

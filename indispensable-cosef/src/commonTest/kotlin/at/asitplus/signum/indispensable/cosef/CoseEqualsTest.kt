@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -20,14 +20,14 @@ val CoseEqualsTest by matrixSuite {
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = bytes,
-                signature = RSASignature(bytes),
+                signature = RsaSignature(bytes),
                 payloadSerializer = ByteArraySerializer(),
             )
             val bytesSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = bytes,
-                signature = RSASignature(bytes),
+                signature = RsaSignature(bytes),
                 payloadSerializer = ByteArraySerializer(),
             )
 
@@ -41,14 +41,14 @@ val CoseEqualsTest by matrixSuite {
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = RSASignature(reversed),
+                signature = RsaSignature(reversed),
                 payloadSerializer = ByteArraySerializer(),
             )
             val reversedSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = RSASignature(reversed),
+                signature = RsaSignature(reversed),
                 payloadSerializer = ByteArraySerializer(),
             )
 
@@ -79,14 +79,14 @@ val CoseEqualsTest by matrixSuite {
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = RSASignature(bytes),
+                signature = RsaSignature(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
             val bytesSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = RSASignature(bytes),
+                signature = RsaSignature(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
 
@@ -101,14 +101,14 @@ val CoseEqualsTest by matrixSuite {
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = RSASignature(bytes),
+                signature = RsaSignature(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
             val reversedSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = RSASignature(bytes),
+                signature = RsaSignature(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
 

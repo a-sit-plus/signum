@@ -9,8 +9,8 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import kotlinx.serialization.KSerializer
 
 interface PublicKeyFormatProvider {
@@ -85,7 +85,7 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
             der: Der,
         ): CryptoPublicKey =
             when (src.pemLabel) {
-                Pkcs1RsaPublicKeyInfo.PEM_LABEL -> RSAPublicKey.fromPKCS1encoded(src.payload)
+                Pkcs1RsaPublicKeyInfo.PEM_LABEL -> RsaPublicKey.fromPKCS1encoded(src.payload)
                 else -> decodeFromDer(serializer, src.payload, limit, der)
             }
 
@@ -101,11 +101,11 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
     }
 
     @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
-        replaceWith = ReplaceWith("ECDSAPublicKey"))
-    typealias EC = ECDSAPublicKey
+        replaceWith = ReplaceWith("EcdsaPublicKey"))
+    typealias EC = EcdsaPublicKey
     @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
-        replaceWith = ReplaceWith("RSAPublicKey"))
-    typealias RSA = RSAPublicKey
+        replaceWith = ReplaceWith("RsaPublicKey"))
+    typealias RSA = RsaPublicKey
 }
 
 interface SpecializedCryptoPublicKey {

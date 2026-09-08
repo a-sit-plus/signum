@@ -6,9 +6,9 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
@@ -37,10 +37,10 @@ val ECDSAVerifierCommonTests by matrixSuite {
             "None" -> null
             else -> WellKnownDigest.entries.first { it.name == test.dig }
         }
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as ECDSAPublicKey
+        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as EcdsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
-        val sig = ECDSASignature.fromRawSignatureValue(Base64.decode(test.sig))
+        val sig = EcdsaSignature.fromRawSignatureValue(Base64.decode(test.sig))
     }
 
     /** Generated on JVM using:
@@ -390,7 +390,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
         tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
             byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
                 data(byDigest, nameFn = { it.b64msg }) test { test ->
-                    val verifier = ECDSAAlgorithm(test.digest, null).verifierFor(test.key)
+                    val verifier = EcdsaAlgorithm(test.digest, null).verifierFor(test.key)
                     verifier.verify(test.msg, test.sig) shouldBe SignatureVerifier.Success
                     Random.of(byDigest).let {
                         if (it !== test) {
@@ -400,7 +400,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
                     }
                     Random.of(WellKnownDigest.entries.filter { it != test.digest }).let { dig ->
                         shouldThrowAny {
-                            ECDSAAlgorithm(dig, null)
+                            EcdsaAlgorithm(dig, null)
                                 .verifierFor(test.key).verify(test.msg, test.sig)
                         }
                     }

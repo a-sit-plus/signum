@@ -5,14 +5,14 @@ import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAAlgorithm
-import at.asitplus.signum.indispensable.sign.ECDSAPrivateKey
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.ECDSASignature
-import at.asitplus.signum.indispensable.sign.RSAAlgorithm
-import at.asitplus.signum.indispensable.sign.RSAPrivateKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.internals.ImplementationError
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -45,17 +45,17 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef) = when (algorithm) {
-        is ECDSAAlgorithm -> when (val digest = algorithm.digest) {
+        is EcdsaAlgorithm -> when (val digest = algorithm.digest) {
             is WellKnownDigest? -> sigGetInstance("${digest.jcaAlgorithmComponent}withECDSA", jcaProviderRef)
             else -> null
         }
-        is RSAAlgorithm -> when (val params = algorithm.parameters) {
-            is RSAAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
+        is RsaAlgorithm -> when (val params = algorithm.parameters) {
+            is RsaAlgorithm.Parameters.Pkcs1Padded -> when (val digest = params.digest) {
                 is WellKnownDigest -> sigGetInstance("${digest.jcaAlgorithmComponent}withRSA", jcaProviderRef)
                 else -> null
             }
 
-            is RSAAlgorithm.Parameters.PssPadded -> {
+            is RsaAlgorithm.Parameters.PssPadded -> {
                 val jcaParams = params.jcaPSSParams
                 try {
                     sigGetInstance("RSASSA-PSS", jcaProviderRef)
@@ -72,25 +72,25 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef) = when (algorithm) {
-        is ECDSAAlgorithm ->
+        is EcdsaAlgorithm ->
             sigGetInstance("NONEwithECDSA", jcaProviderRef)
         else -> null
     }
 
     override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? = when (algorithm) {
-        is ECDSAAlgorithm -> ECDSASignature.fromRawSignatureValue(sigBytes)
-        is RSAAlgorithm -> RSASignature.fromRawSignatureValue(sigBytes)
+        is EcdsaAlgorithm -> EcdsaSignature.fromRawSignatureValue(sigBytes)
+        is RsaAlgorithm -> RsaSignature.fromRawSignatureValue(sigBytes)
         else -> null
     }
 
     override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is ECDSASignature, is RSASignature -> signature.asn1Representation.rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
         else -> null
     }
 
     override fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey) = when(publicKey) {
-        is ECDSAPublicKey -> publicKey.toJcaPublicKey()
-        is RSAPublicKey -> publicKey.toJcaPublicKey()
+        is EcdsaPublicKey -> publicKey.toJcaPublicKey()
+        is RsaPublicKey -> publicKey.toJcaPublicKey()
         else -> null
     }
 
@@ -102,8 +102,8 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
 
     override fun cryptoPrivateKeyToJcaPrivateKey(privateKey: CryptoPrivateKey) =
         when (privateKey) {
-            is RSAPrivateKey -> privateKey.toJcaPrivateKey()
-            is ECDSAPrivateKey -> privateKey.toJcaPrivateKey()
+            is RsaPrivateKey -> privateKey.toJcaPrivateKey()
+            is EcdsaPrivateKey -> privateKey.toJcaPrivateKey()
             else -> null
         }
 

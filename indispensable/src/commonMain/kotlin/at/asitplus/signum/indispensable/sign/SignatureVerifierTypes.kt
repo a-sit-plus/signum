@@ -1,11 +1,11 @@
 package at.asitplus.signum.indispensable.sign
 
-interface ECDSAVerifier : SignatureVerifier {
-    override val signatureAlgorithm: ECDSAAlgorithm
-    override val publicKey: ECDSAPublicKey
+interface EcdsaVerifier : SignatureVerifier {
+    override val signatureAlgorithm: EcdsaAlgorithm
+    override val publicKey: EcdsaPublicKey
 }
 
-interface RSAVerifier : SignatureVerifier {
-    override val signatureAlgorithm: RSAAlgorithm
-    override val publicKey: RSAPublicKey
+interface RsaVerifier : SignatureVerifier {
+    override val signatureAlgorithm: RsaAlgorithm
+    override val publicKey: RsaPublicKey
 }

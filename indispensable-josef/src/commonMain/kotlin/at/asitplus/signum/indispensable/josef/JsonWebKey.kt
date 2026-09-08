@@ -17,8 +17,8 @@ import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.io.sha256
 import at.asitplus.signum.indispensable.pki.CertificateChain
-import at.asitplus.signum.indispensable.sign.ECDSAPublicKey
-import at.asitplus.signum.indispensable.sign.RSAPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
@@ -298,7 +298,7 @@ data class JsonWebKey(
     override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
         when (type) {
             JwkType.EC -> {
-                ECDSAPublicKey.fromUncompressed(
+                EcdsaPublicKey.fromUncompressed(
                     curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -306,7 +306,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                RSAPublicKey(
+                RsaPublicKey(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")
                     ),
@@ -346,7 +346,7 @@ data class JsonWebKey(
             catching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
 
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            catching { ECDSAPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
+            catching { EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
     }
 
     /**
@@ -402,7 +402,7 @@ val SymmetricKey<*, *, *>.jsonWebKeyBytes
  */
 fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
-        is ECDSAPublicKey ->
+        is EcdsaPublicKey ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = keyId,
@@ -412,7 +412,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
 
 
-        is RSAPublicKey ->
+        is RsaPublicKey ->
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,
