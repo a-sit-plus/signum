@@ -2,11 +2,12 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.nonFatalOrThrow
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import io.matthewnelson.encoding.core.EncodingException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
@@ -85,9 +86,10 @@ data class JwsCompact internal constructor(
         /**
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          */
+        @Throws(SerializationException::class)
         operator fun invoke(
             base64UrlString: String,
-        ): JwsCompact {
+        ): JwsCompact = catchingUnwrappedAs(::SerializationException) {
             require(!base64UrlString.contains("=")) { "Trailing = are not supported. See RFC 7515" }
             val parts = base64UrlString.split('.')
 
@@ -97,19 +99,12 @@ data class JwsCompact internal constructor(
                 )
             }
 
-            return try {
-                JwsCompact(
-                    plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
-                    plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
-                    plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
-                )
-            } catch (e: Throwable) {
-                throw SerializationException(
-                    "Invalid base64url content in JWS compact serialization",
-                    e.nonFatalOrThrow()
-                )
-            }
-        }
+            JwsCompact(
+                plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
+                plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
+                plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
+            )
+        }.getOrThrow()
 
         /**
          * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
