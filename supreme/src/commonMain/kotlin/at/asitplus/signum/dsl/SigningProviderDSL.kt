@@ -125,7 +125,7 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     open class SecureHardwareConfiguration: DSL.Data() {
         /** Whether to use hardware-backed storage, such as Android Keymaster or Apple's Secure Enclave.
          * @see FeaturePreference */
-        var backing: FeaturePreference = REQUIRED
+        var backing: FeaturePreference = PREFERRED
         override fun validate() {
             super.validate()
             require((backing != DISCOURAGED) || (attestation.v == null))

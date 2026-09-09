@@ -5,7 +5,6 @@ import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509GeneralNames
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.issuerAltName_2_5_29_18
@@ -15,7 +14,6 @@ import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.internals.orLazy
-import kotlinx.serialization.KSerializer
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
