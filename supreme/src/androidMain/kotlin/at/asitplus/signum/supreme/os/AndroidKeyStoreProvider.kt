@@ -16,6 +16,7 @@ import androidx.fragment.app.FragmentActivity
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
@@ -302,6 +303,20 @@ object AndroidKeyStoreProvider:
             generateKeyPair(it, config)
         }
         return@withContext getSignerForKey(alias, config.signer.v)
+            .also { signer -> config.hardware.v?.let { hw ->
+                if (hw.strongBox == REQUIRED) {
+                    if (signer.isStrongBoxBacked == false) {
+                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
+                        throw UnsupportedCryptoException("Generated key is not backed by StrongBox")
+                    }
+                }
+                if (hw.backing == REQUIRED || hw.strongBox == REQUIRED) {
+                    if (!signer.isInsideSecureHardware) {
+                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
+                        throw UnsupportedCryptoException("Generated key is not backed by secure hardware")
+                    }
+                }
+            }}
     }
 
     override suspend fun getSignerForKey(

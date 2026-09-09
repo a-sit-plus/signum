@@ -80,7 +80,7 @@ val AndroidKeyStorePreferenceTests by matrixSuite {
                                 (hardwareBacking.value != REQUIRED || expectedHardwareBacking)
                     val alias = "signum-preferences-${UUID.randomUUID()}"
 
-                    ("device=${Build.MANUFACTURER}" +
+                    ("device=${Build.MANUFACTURER}, " +
                             "SB=$hasStrongBox, default seclevel=$defaultSecurityLevel, ") - {
                         try {
                             val result = catching { runBlocking {
