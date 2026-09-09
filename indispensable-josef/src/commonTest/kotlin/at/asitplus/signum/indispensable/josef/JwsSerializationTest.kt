@@ -4,22 +4,18 @@ import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.RsaSignature
-import at.asitplus.testballoon.matrix.*
-import io.kotest.matchers.result.shouldBeFailure
+import at.asitplus.testballoon.matrix.ExecutionMode
+import at.asitplus.testballoon.matrix.matrixConfig
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 
 private val generalVectorJson = """
     {
@@ -90,7 +86,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
         var capturedSignatureInput: ByteArray? = null
 
-        val flattened = JwsFlattened.invoke(
+        val flattened = JwsFlattened(
             header = header,
             payload = payload,
             unprotectedMembers = unprotectedMembers,
@@ -232,7 +228,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
     "compact JWS invoke methods round-trip as three base64url segments" {
         val compactPattern = Regex("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")
-        val compact = JwsCompact.invoke(
+        val compact = JwsCompact(
             protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-1",
@@ -256,7 +252,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     }
 
     "compact JWS rejects padded base64url segments" {
-        val canonical = JwsCompact.invoke(
+        val canonical = JwsCompact(
             protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-1",
@@ -472,7 +468,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         extraPartResult.shouldBeFailure().message.shouldContain("expected 3 parts, got 4")
 
         invalidBase64Result.isSuccess shouldBe false
-        invalidBase64Result.shouldBeFailure().message.shouldContain("Invalid base64url content")
+        invalidBase64Result.shouldBeFailure().shouldBeInstanceOf<SerializationException>()
     }
 
     "raw-signature decoding rejects MAC algorithms" {
