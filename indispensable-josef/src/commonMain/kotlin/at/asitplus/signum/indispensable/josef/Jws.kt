@@ -33,13 +33,14 @@ sealed class JWS {
      */
     abstract val plainPayload: ByteArray
 
-    fun <P> getPayload(serializer: KSerializer<P>, serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> = runCatching {
-        when (serialFormat) {
-            is StringFormat -> serialFormat.decodeFromString(serializer, plainPayload.decodeToString())
-            is BinaryFormat -> serialFormat.decodeFromByteArray(serializer, plainPayload)
-            else -> throw NotImplementedError("Unknown serial format $serialFormat")
-        }
-    }.wrap()
+    fun <P> getPayload(serializer: KSerializer<P>, serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
+        runCatching {
+            when (serialFormat) {
+                is StringFormat -> serialFormat.decodeFromString(serializer, plainPayload.decodeToString())
+                is BinaryFormat -> serialFormat.decodeFromByteArray(serializer, plainPayload)
+                else -> throw NotImplementedError("Unknown serial format $serialFormat")
+            }
+        }.wrap()
 
     /**
      * Find correct serializer at compile time
@@ -81,7 +82,7 @@ sealed class JWS {
             "${getEncodedProtectedHeader(protectedHeader)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
 
-    object JwsSerializer: KSerializer<JWS> {
+    object JwsSerializer : KSerializer<JWS> {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
             element(SerialNames.COMPACT, JwsCompactStringSerializer.descriptor)
@@ -103,9 +104,8 @@ sealed class JWS {
 
         override fun deserialize(decoder: Decoder): JWS {
             require(decoder is JsonDecoder) { "JWS deserialization requires a JsonDecoder" }
-            val jsonElement = decoder.decodeJsonElement()
 
-            return when (jsonElement) {
+            return when (val jsonElement = decoder.decodeJsonElement()) {
                 is JsonPrimitive -> decoder.json.decodeFromJsonElement(JwsCompactStringSerializer, jsonElement)
                 is JsonObject -> {
                     val hasGeneralSignatures = SerialNames.SIGNATURES in jsonElement
@@ -115,7 +115,7 @@ sealed class JWS {
                         hasGeneralSignatures && hasFlattenedSignature ->
                             throw SerializationException(
                                 "Invalid JWS JSON serialization: object must not contain both " +
-                                    "'${SerialNames.SIGNATURE}' and '${SerialNames.SIGNATURES}'"
+                                        "'${SerialNames.SIGNATURE}' and '${SerialNames.SIGNATURES}'"
                             )
 
                         hasGeneralSignatures ->
@@ -127,7 +127,7 @@ sealed class JWS {
                         else ->
                             throw SerializationException(
                                 "Invalid JWS JSON serialization: object must contain " +
-                                    "'${SerialNames.SIGNATURE}' or '${SerialNames.SIGNATURES}'"
+                                        "'${SerialNames.SIGNATURE}' or '${SerialNames.SIGNATURES}'"
                             )
                     }
                 }
@@ -151,3 +151,18 @@ internal fun JsonObject?.strictUnion(other: JsonObject?): JsonObject {
 
     return JsonObject(this + other)
 }
+
+internal fun ByteArray?.requireAbsentIfEmptyProtectedHeader() {
+    require(this == null || !isEmptyJsonObject()) {
+        "JWS protected header must be absent when it would otherwise be empty"
+    }
+}
+
+@PublishedApi
+internal fun JsonObject.toProtectedHeaderBytes(): ByteArray =
+    joseCompliantSerializer.encodeToString(JsonObject.serializer(), this).encodeToByteArray()
+
+private val EMPTY_JSON_OBJECT_PATTERN = Regex("""\s*\{\s*\}\s*""")
+
+private fun ByteArray.isEmptyJsonObject(): Boolean =
+    EMPTY_JSON_OBJECT_PATTERN.matches(decodeToString())

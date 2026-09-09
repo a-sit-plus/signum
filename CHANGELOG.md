@@ -6,6 +6,11 @@ This is a major refactor!
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
+* Rework JWS header handling (**breaking**):
+    * Remove `protectedHeader` parameter from `JWS` implementations
+    * Remove `JwsHeader.Part` and associated auxiliary functions
+    * Introduce `JwsHeaderWrapped` as a read-only, type-safe view of the effective `JwsHeader` and its unprotected-member placement
+    * Expose wrapped headers as `JwsCompact.wrappedHeader`, `JwsFlattened.wrappedHeader`, `SignatureElement.wrappedHeader`, and `JwsGeneral.wrappedHeaders`
 * Dependency Updates:
     * Bouncy Castle 1.85
     * multibase 1.3.0

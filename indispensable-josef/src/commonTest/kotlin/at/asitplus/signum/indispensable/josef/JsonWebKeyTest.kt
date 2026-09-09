@@ -6,6 +6,7 @@ import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlin.random.Random
 
@@ -79,8 +80,8 @@ val JsonWebKeyTest by matrixSuite {
                 n = Asn1Integer.fromUnsignedByteArray(("80".repeat(256)).hexToByteArray()), // high bit is set
                 e = Asn1Integer(65537u) // explicit example from RFC7518 6.3.1.2
             ).toJsonWebKey()
-            key.n!!.size shouldBe 256
-            key.e!! shouldBe byteArrayOf(0x01, 0x00, 0x01)
+            key.n.shouldNotBeNull().size shouldBe 256
+            key.e.shouldNotBeNull() shouldBe byteArrayOf(0x01, 0x00, 0x01)
         }
 
     }

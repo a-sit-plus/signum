@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
@@ -64,23 +63,19 @@ data class JwsTyped<out J : JWS, out P>(
             )
         }
 
-        /**
-         * Creates a flattened JWS from protected and unprotected header fragments.
-         * The fragments may be partial, but their merged content must form a valid [JwsHeader].
-         */
-        suspend inline operator fun <reified P> invoke(
-            protectedHeader: JwsHeader.Part?,
-            unprotectedHeader: JwsHeader.Part?,
+        /** Creates a flattened JWS with the requested [unprotectedMembers]. */
+        suspend inline fun <reified P> flattened(
+            header: JwsHeader,
             payload: P,
+            /** Set of serial names which should not be in the protected header */
+            unprotectedMembers: Set<String> = emptySet(),
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
             val plainPayload = joseCompliantSerializer.encodeToString(
                 joseCompliantSerializer.serializersModule.serializer(), payload
             ).encodeToByteArray()
             return JwsFlattenedTyped(
-                JwsFlattened(
-                    protectedHeader, unprotectedHeader, plainPayload, signer = signer
-                ), payload
+                JwsFlattened(header, plainPayload, unprotectedMembers, signer), payload
             )
         }
     }

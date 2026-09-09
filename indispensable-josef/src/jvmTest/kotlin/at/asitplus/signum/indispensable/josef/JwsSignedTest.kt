@@ -1,10 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
@@ -13,11 +10,8 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.json.JsonElement
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
-val JwsSignedTest  by matrixSuite {
+val JwsSignedTest by matrixSuite {
 
     compact("JWS can be parsed and verified") - {
         val testvec = javaClass.classLoader.getResourceAsStream("JwsTestVectors.txt")?.reader()?.readLines()
@@ -37,20 +31,4 @@ val JwsSignedTest  by matrixSuite {
         }
     }
 
-    "JWS example" {
-        val signer = Signer.Ephemeral {
-            ec { curve = ECCurve.SECP_256_R_1 }
-        }.getOrThrow() //TODO handle error
-
-        val header = JwsHeader(
-            algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-            jsonWebKey = signer.publicKey.toJsonWebKey()
-        )
-        val payload = byteArrayOf(1, 3, 3, 7)
-
-        val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, payload)
-
-        val signature = signer.sign(plainSignatureInput).signature //TODO: handle error
-        println(JwsSigned(header, payload, signature, plainSignatureInput).serialize())// this we can verify on jwt.io
-    }
 }

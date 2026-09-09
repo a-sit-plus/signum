@@ -43,7 +43,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         jsonWebKey.keyId shouldHaveMinLength 32
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId!!).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId.shouldNotBeNull()).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jsonWebKey.keyId
             recreatedJwk.x shouldBe jsonWebKey.x
@@ -78,7 +78,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         }
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId!!).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId.shouldNotBeNull()).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jwk.keyId
             recreatedJwk.n shouldBe jwk.n
