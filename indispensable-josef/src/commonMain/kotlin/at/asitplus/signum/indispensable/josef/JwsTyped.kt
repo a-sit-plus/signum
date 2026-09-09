@@ -67,6 +67,7 @@ data class JwsTyped<out J : JWS, out P>(
         suspend inline fun <reified P> flattened(
             header: JwsHeader,
             payload: P,
+            /** Set of serial names which should not be in the protected header */
             unprotectedMembers: Set<String> = emptySet(),
             noinline signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattenedTyped<P> {
