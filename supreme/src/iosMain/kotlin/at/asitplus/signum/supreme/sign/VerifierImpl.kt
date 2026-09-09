@@ -71,7 +71,6 @@ abstract class SupremeCCVerifier: SignatureVerifier {
         private val inner = Ecdsa(EcdsaAlgorithm(targetDigest, null), publicKey)
 
         override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
-            check(publicKey.curve.scalarLength == targetDigest.outputLength)
             @OptIn(HazardousMaterials::class)
             val fakeInput = SignatureInput.unsafeCreate(
                 data.asECDSABigInteger(targetDigest.outputLength).toByteArray().ensureSize(targetDigest.outputLength.bytes),
