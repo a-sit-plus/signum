@@ -1,0 +1,95 @@
+package at.asitplus.signum.indispensable
+import at.asitplus.awesn1.*
+import at.asitplus.awesn1.encoding.parse
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.Sign
+import at.asitplus.testballoon.matrix.*
+import io.kotest.common.Platform
+import io.kotest.common.platform
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.*
+import org.kotlincrypto.random.CryptoRand
+import kotlin.random.Random
+
+val Asn1AddonsTest by matrixSuite {
+   
+    "BigInteger Encoding: Negative" {
+        val result =
+            BigInteger(-20).encodeToAsn1Primitive()
+        result.toDerHexString() shouldBe "02 01 EC".replace(" ", "")
+    }
+    "BigInteger Encoding: Large Positive" {
+        val result =
+            BigInteger(0xEC).encodeToAsn1Primitive()
+        result.toDerHexString() shouldBe "02 02 00 EC".replace(" ", "")
+    }
+    "BigInteger Decoding: Negative" {
+        val result =
+            (Asn1Element.parse(ubyteArrayOf(0x02u, 0x01u, 0xECu).toByteArray()) as Asn1Primitive)
+                .decodeToBigInteger()
+        result shouldBe BigInteger(-20)
+    }
+    "BigInteger Decoding: Large Positive" {
+        val result =
+            (Asn1Element.parse(ubyteArrayOf(0x02u, 0x02u, 0x00u, 0xECu).toByteArray()) as Asn1Primitive)
+                .decodeToBigInteger()
+        result shouldBe BigInteger(0xEC)
+    }
+
+    if (!listOf(Platform.JS, Platform.WasmJs).contains(platform)) {
+        "BigInteger from and to Asn1Integer conversion" - {
+            "Specific values" - {
+                data(sequenceOf(
+                        Triple("Zero", BigInteger.ZERO, Asn1Integer(0)),
+                        Triple("Zero from ULong", BigInteger.fromULong(0uL), Asn1Integer(0uL)),
+                        Triple("One", BigInteger.ONE, Asn1Integer(1)),
+                        Triple("Negative One", BigInteger.ONE.unaryMinus(), Asn1Integer(-1))
+                    ), nameFn = { it.first }) test { (_, bigint, asn1int) ->
+                    bigint.toAsn1Integer() shouldBe asn1int
+                    asn1int.toBigInteger() shouldBe bigint
+                }
+            }
+            compact("Generic values") - {
+                property(Arb.uLong(), iterations = 2500) test {
+                    val bigint = BigInteger.fromULong(it)
+                    val asn1int = Asn1Integer(it)
+                    asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
+                    bigint.toAsn1Integer() shouldBe asn1int
+                    asn1int.toBigInteger() shouldBe bigint
+                }
+                property(Arb.nonPositiveLong(), iterations = 2500) test {
+                    val bigint = BigInteger.fromLong(it)
+                    val asn1int = Asn1Integer(it)
+                    if (it < 0)
+                        asn1int.shouldBeTypeOf<Asn1Integer.Negative>()
+                    bigint.toAsn1Integer() shouldBe asn1int
+                    asn1int.toBigInteger() shouldBe bigint
+                }
+                property(Arb.byteArray(Arb.int(1500..2500), Arb.byte()), iterations = 500) test {
+                    val bigint = BigInteger.fromByteArray(it, Sign.NEGATIVE)
+                    val asn1int = Asn1Integer.fromByteArray(it, Asn1Integer.Sign.NEGATIVE)
+                    if (!asn1int.isZero())
+                        asn1int.shouldBeTypeOf<Asn1Integer.Negative>()
+                    bigint.toAsn1Integer() shouldBe asn1int
+                    asn1int.toBigInteger() shouldBe bigint
+                }
+                property(Arb.byteArray(Arb.int(1500..2500), Arb.byte()), iterations = 1000) test {
+                    val bigint = BigInteger.fromByteArray(it, Sign.POSITIVE)
+                    val asn1int = Asn1Integer.fromUnsignedByteArray(it)
+                    asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
+                    bigint.toAsn1Integer() shouldBe asn1int
+                    asn1int.toBigInteger() shouldBe bigint
+                }
+            }
+        }
+    }
+}
+
+
+
+object InsecureRandom: CryptoRand() {
+    override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+    fun nextBytes(size: Int) = Random.nextBytes(size)
+}

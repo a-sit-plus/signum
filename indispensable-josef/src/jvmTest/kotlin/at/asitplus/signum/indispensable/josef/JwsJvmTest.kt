@@ -1,10 +1,13 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.supreme.Supreme
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSObjectJSON
 import com.nimbusds.jose.crypto.ECDSAVerifier
@@ -14,24 +17,25 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import java.security.interfaces.ECPublicKey
 
+val none = Supreme.init()
 val JwsJvmTest by matrixSuite {
 
     class Context {
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
 
-        val signer1 = runBlocking {   Signer.Ephemeral {
+        val signer1 = runBlocking { Signer.Ephemeral {
             ec { curve = ECCurve.SECP_256_R_1 }
-        }.getOrThrow()}
+        }}
 
         val signer2 = runBlocking {  Signer.Ephemeral {
             ec { curve = ECCurve.SECP_256_R_1 }
-        }.getOrThrow()}
+        }}
 
         val verifier1 = ECDSAVerifier(signer1.publicKey.toJcaPublicKey() as ECPublicKey)
         val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey() as ECPublicKey)
 
         fun signerFor(signer: Signer): suspend (ByteArray) -> ByteArray = { input ->
-            signer.sign(input).signature.rawByteArray
+            signer.sign(input).signature.joseBytes
         }
     }
 

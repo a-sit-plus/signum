@@ -5,11 +5,11 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
@@ -17,6 +17,8 @@ import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.io.sha256
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
@@ -296,7 +298,7 @@ data class JsonWebKey(
     override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
         when (type) {
             JwkType.EC -> {
-                fromUncompressed(
+                EcdsaPublicKey.fromUncompressed(
                     curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -304,7 +306,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                CryptoPublicKey.RSA(
+                RsaPublicKey(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")
                     ),
@@ -343,11 +345,8 @@ data class JsonWebKey(
         fun fromDid(input: String): KmmResult<JsonWebKey> =
             catching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
 
-        fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
-            catching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }
-
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            catching { fromUncompressed(curve, x, y).toJsonWebKey() }
+            catching { EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
     }
 
     /**
@@ -403,7 +402,7 @@ val SymmetricKey<*, *, *>.jsonWebKeyBytes
  */
 fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
-        is CryptoPublicKey.EC ->
+        is EcdsaPublicKey ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = keyId,
@@ -413,13 +412,15 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
 
 
-        is CryptoPublicKey.RSA ->
+        is RsaPublicKey ->
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,
                 n = n.magnitude,
                 e = e.magnitude
             )
+
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 
 /**

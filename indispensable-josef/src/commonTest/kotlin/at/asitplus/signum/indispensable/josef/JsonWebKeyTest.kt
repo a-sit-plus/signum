@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -75,7 +75,7 @@ val JsonWebKeyTest by matrixSuite {
         }
 
         "RSA Key should properly encode n and e (RFC 7518 sample)" {
-            val key = CryptoPublicKey.RSA(
+            val key = RsaPublicKey(
                 n = Asn1Integer.fromUnsignedByteArray(("80".repeat(256)).hexToByteArray()), // high bit is set
                 e = Asn1Integer(65537u) // explicit example from RFC7518 6.3.1.2
             ).toJsonWebKey()

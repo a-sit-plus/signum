@@ -1,11 +1,32 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
+import at.asitplus.signum.dsl.EphemeralEcdsaConfiguration
+import at.asitplus.signum.dsl.EphemeralRsaConfiguration
+import at.asitplus.signum.dsl.EphemeralSignerConfiguration
+import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.JCAProviderRefO
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.jvm
+import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.supreme.signCatching
-import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
-import java.security.KeyPair
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.internals.ImplementationError
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.sign.ExportableECDSASigner
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.Signer
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPrivateKey
@@ -14,19 +35,9 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.KeyAgreement
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase() {
-    var provider: String? = null
-}
-interface JvmEphemeralSignerCompatibleConfiguration {
-    var provider: String?
-}
-actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
-    override var provider: String? = null
-}
-
-sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val provider: String?) : Signer {
+abstract class SupremeEphemeralJvmSigner (internal val privateKey: PrivateKey, protected val provider: JCAProviderRef) : Signer.WithExportableKey {
     override val mayRequireUserUnlock = false
-    override suspend fun sign(data: SignatureInput) = signCatching {
+    override suspend fun sign(data: SignatureInput) = SignatureResult.make {
         val preHashed = (data.format != null)
         if (preHashed) {
             require (data.format == signatureAlgorithm.preHashedSignatureFormat)
@@ -36,82 +47,103 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
             signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider)
         else
             signatureAlgorithm.getJCASignatureInstance(provider = provider))
-            .run {
-                initSign(privateKey)
-                data.data.forEach { update(it) }
-                sign().let(::parseFromJca)
-            }
+        .run {
+            initSign(privateKey)
+            data.data.forEach { update(it) }
+            sign().let(::parseFromJca)
+        }
     }
 
-    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
+    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature
 
-    open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
+    open class EC internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
+                                        override val publicKey: EcdsaPublicKey, override val signatureAlgorithm: EcdsaAlgorithm
+    )
+        : SupremeEphemeralJvmSigner(privateKey, provider), ExportableECDSASigner {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+        override fun parseFromJca(bytes: ByteArray) =
+            EcdsaSignature.fromRawSignatureValue(bytes).withCurve(publicKey.curve)
 
         @SecretExposure
         final override suspend fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
 
-        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
-            KeyAgreement.getInstance("ECDH").let {
-                it.init(privateKey)
-                it.doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
-                it.generateSecret()
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
+            when (provider) {
+                is JCAProviderRef.ByName -> KeyAgreement.getInstance("ECDH", provider.provider)
+                is JCAProviderRefO -> KeyAgreement.getInstance("ECDH", provider.provider)
+                is JCAProviderRef.None -> KeyAgreement.getInstance("ECDH")
+                else -> throw ImplementationError("invalid JCAProvider ref")
+            }.run {
+                init(privateKey)
+                doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
+                generateSecret()
             }
-        }
     }
 
-    open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                         override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : EphemeralSigner(privateKey, config.provider), Signer.RSA {
+    open class RSA internal constructor (privateKey: PrivateKey, provider: JCAProviderRef,
+                                         override val publicKey: RsaPublicKey, override val signatureAlgorithm: RsaAlgorithm
+    )
+        : SupremeEphemeralJvmSigner(privateKey, provider), at.asitplus.signum.indispensable.sign.ExportableRSASigner {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = RsaSignature.fromRawSignatureValue(bytes)
 
         @SecretExposure
         final override suspend fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()
     }
 }
 
-internal fun getKPGInstance(alg: String, provider: String? = null) =
+internal fun getKPGInstance(alg: String, provider: JCAProviderRef) =
     when (provider) {
-        null -> KeyPairGenerator.getInstance(alg)
-        else -> KeyPairGenerator.getInstance(alg, provider)
+        is JCAProviderRef.ByName -> KeyPairGenerator.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> KeyPairGenerator.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> KeyPairGenerator.getInstance(alg)
+        else -> throw ImplementationError("invalid JCAProvider ref")
     }
 
-internal sealed interface JVMEphemeralKey {
-    class EC(pair: KeyPair, digests: Set<Digest?>)
-        : EphemeralKeyBase.EC<ECPrivateKey, EphemeralSigner.EC>(EphemeralSigner::EC,
-        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
-        digests = digests)
-    {
-        @SecretExposure
-        override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
-    }
+object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {
+    override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration) : SupremeEphemeralJvmSigner? =
+        when (val alg = DSL.options(config.ec, config.rsa)) {
+            is EphemeralEcdsaConfiguration ->
+                getKPGInstance("EC", config.jvm.v.provider).run {
+                    initialize(ECGenParameterSpec(alg.curve.jcaName))
+                    generateKeyPair()
+                }.let { pair ->
+                    SupremeEphemeralJvmSigner.EC(
+                        privateKey = pair.private, provider = config.jvm.v.provider,
+                        publicKey = pair.public.toCryptoPublicKey() as EcdsaPublicKey,
+                        signatureAlgorithm = EcdsaAlgorithm(alg.digest, alg.curve))
+                }
+            is EphemeralRsaConfiguration ->
+                getKPGInstance("RSA", config.jvm.v.provider).run {
+                    initialize(RSAKeyGenParameterSpec(alg.bits, RSAKeyGenParameterSpec.F4))
+                    generateKeyPair()
+                }.let { pair ->
+                    SupremeEphemeralJvmSigner.RSA(
+                        privateKey = pair.private, provider = config.jvm.v.provider,
+                        publicKey = pair.public.toCryptoPublicKey() as RsaPublicKey,
+                        signatureAlgorithm = RsaAlgorithm(alg.padding, alg.digest))
+                }
+            else -> null
+        }
 
-    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<SignatureAlgorithm.RSA.Padding>)
-        : EphemeralKeyBase.RSA<RSAPrivateKey, EphemeralSigner.RSA>(EphemeralSigner::RSA,
-        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
-        digests = digests, paddings = paddings)
-    {
-        @SecretExposure
-        override suspend fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
-    }
+    override fun createSignerForKey(
+        algorithm: SignatureAlgorithm,
+        privateKey: CryptoPrivateKey.WithPublicKey,
+        config: InMemorySignerConfiguration
+    ): Signer.WithExportableKey? =
+        when (algorithm) {
+            is RsaAlgorithm -> {
+                require(privateKey is at.asitplus.signum.indispensable.sign.RsaPrivateKey)
+                    { "Trying to use a non-RSA private key (${privateKey::class.simpleName}) with $algorithm" }
+                return SupremeEphemeralJvmSigner.RSA(
+                    privateKey.toJcaPrivateKey(), config.jvm.v.provider, privateKey.publicKey, algorithm)
+            }
+            is EcdsaAlgorithm -> {
+                require(privateKey is EcdsaPrivateKey.WithPublicKey)
+                    { "Trying to use a non-ECDSA private key (${privateKey::class.simpleName}) with $algorithm" }
+                return SupremeEphemeralJvmSigner.EC(
+                    privateKey.toJcaPrivateKey(), config.jvm.v.provider, privateKey.publicKey, algorithm)
+            }
+            else -> null
+        }
 }
-
-internal actual suspend fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
-    when (val alg = configuration._algSpecific.v) {
-        is SigningKeyConfiguration.ECConfiguration -> {
-            getKPGInstance("EC", configuration.provider).run {
-                initialize(ECGenParameterSpec(alg.curve.jcaName))
-                generateKeyPair()
-            }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
-        }
-        is SigningKeyConfiguration.RSAConfiguration -> {
-            getKPGInstance("RSA", configuration.provider).run {
-                initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
-                generateKeyPair()
-            }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
-        }
-    }

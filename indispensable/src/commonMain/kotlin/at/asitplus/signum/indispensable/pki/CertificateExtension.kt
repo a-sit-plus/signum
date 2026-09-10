@@ -88,11 +88,10 @@ sealed interface CertificateExtension : Identifiable {
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<Awesn1X509CertificateExtension>,
-            src: Asn1Element,
+            element: Awesn1X509CertificateExtension,
             der: Der,
         ): X509Representable =
-            fromAsn1Representation(der.decodeFromTlv(serializer, src))
+            fromAsn1Representation(element)
     }
 }
 

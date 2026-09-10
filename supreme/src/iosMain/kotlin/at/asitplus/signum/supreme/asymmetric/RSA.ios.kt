@@ -1,12 +1,12 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.internals.*
-import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.dsl.DSL
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSData
 import platform.Security.SecKeyCreateEncryptedData
@@ -20,23 +20,23 @@ actual class PlatformEncryptorConfiguration internal actual constructor() : DSL.
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun encryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    publicKey: CryptoPublicKey.RSA,
+    publicKey: RsaPublicKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
 ): ByteArray =
     corecall {
-        val k = publicKey.toSecKey().getOrThrow()
-        SecKeyCreateEncryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().let(::giveToCF), error)
+        val k = publicKey.toSecKey()
+        SecKeyCreateEncryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().giveToCF(), error)
     }.takeFromCF<NSData>().toByteArray()
 
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual suspend fun decryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
-    privateKey: CryptoPrivateKey.RSA,
+    privateKey: RsaPrivateKey,
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray=  corecall {
-    val k = privateKey.toSecKey().getOrThrow()
-    SecKeyCreateDecryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().let(::giveToCF), error)
+    val k = privateKey.toSecKey()
+    SecKeyCreateDecryptedData(k.value, algorithm.secKeyAlgorithm, data.toNSData().giveToCF(), error)
 }.takeFromCF<NSData>().toByteArray()

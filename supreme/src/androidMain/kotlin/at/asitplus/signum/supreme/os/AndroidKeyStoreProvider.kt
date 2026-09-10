@@ -5,6 +5,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
+import android.security.keystore.StrongBoxUnavailableException
 import android.security.keystore.UserNotAuthenticatedException
 import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.AuthenticationResult
@@ -12,30 +13,52 @@ import androidx.biometric.BiometricPrompt.CryptoObject
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.nonFatalOrThrow
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
-import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
-import at.asitplus.signum.supreme.SignatureResult
-import at.asitplus.signum.supreme.UnlockFailed
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.UnlockFailed
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.supreme.dsl.DISCOURAGED
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.dsl.FeaturePreference
-import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.sign.SignatureInput
-import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
-import at.asitplus.signum.supreme.signCatching
+import at.asitplus.signum.dsl.AndroidSignerConfiguration
+import at.asitplus.signum.dsl.AndroidSignerSigningConfiguration
+import at.asitplus.signum.dsl.AndroidSigningKeyConfiguration
+import at.asitplus.signum.dsl.AndroidUnlockPromptConfiguration
+import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.dsl.DISCOURAGED
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.dsl.DSLConfigureFn
+import at.asitplus.signum.dsl.PREFERRED
+import at.asitplus.signum.dsl.REQUIRED
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl.UnlockPromptConfiguration
+import at.asitplus.signum.dsl.attestation
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.factors
+import at.asitplus.signum.dsl.hardware
+import at.asitplus.signum.dsl.protection
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
-import at.asitplus.signum.supreme.sign.Signer as SignerI
+import at.asitplus.signum.indispensable.sign.Signer as SignerI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -43,6 +66,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.KeyFactory
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
@@ -62,65 +86,13 @@ internal sealed interface FragmentContext {
 
 private val dispatcher = Dispatchers.IO.limitedParallelism(1, "Android Keystore Operations")
 
-class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
-    /** Whether a StrongBox TPM is required. */
-    var strongBox: FeaturePreference = PREFERRED
-}
-class AndroidSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<AndroidSignerConfiguration>() {
-    override val hardware = childOrNull(::AndroidKeymasterConfiguration)
-}
-
-class AndroidUnlockPromptConfiguration internal constructor(): UnlockPromptConfiguration() {
-    /** Explicitly specify the FragmentActivity to use for authentication prompts.
-     * You will not need to set this in most cases; the default is the current activity. */
-    lateinit var activity: FragmentActivity
-
-    /** Explicitly set the Fragment to base authentication prompts on.
-     * You will not need to set this in most cases; the default is the current activity.*/
-    lateinit var fragment: Fragment
-
-    internal val explicitContext: FragmentContext get() = when {
-        this::fragment.isInitialized -> FragmentContext.OfFragment(fragment)
-        else                         -> FragmentContext.OfActivity(activity)
-    }
-    internal val hasExplicitContext get() =
-        (this::fragment.isInitialized || this::activity.isInitialized)
-
-    internal val _subtitle = Stackable<String?>()
-    /** @see [BiometricPrompt.PromptInfo.Builder.setSubtitle] */
-    var subtitle by _subtitle
-
-    internal val _description = Stackable<String?>()
-    /** @see [BiometricPrompt.PromptInfo.Builder.setDescription] */
-    var description by _description
-
-    internal val _confirmationRequired = Stackable<Boolean?>()
-    /** @see [BiometricPrompt.PromptInfo.Builder.setConfirmationRequired] */
-    var confirmationRequired by _confirmationRequired
-
-    internal val _allowedAuthenticators = Stackable<Int?>()
-    /** @see [BiometricPrompt.PromptInfo.Builder.setAllowedAuthenticators] */
-    var allowedAuthenticators by _allowedAuthenticators
-
-    /** if the provided fingerprint could not be matched, but the user will be allowed to retry */
-    var invalidBiometryCallback: (()->Unit)? = null
-}
-
-class AndroidSignerConfiguration: PlatformSignerConfigurationBase() {
-    override val unlockPrompt = childOrDefault(::AndroidUnlockPromptConfiguration)
-}
-
-class AndroidSignerSigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase() {
-    override val unlockPrompt = childOrDefault(::AndroidUnlockPromptConfiguration)
-}
-
 /**
  * Resolve [what] differently based on whether the [vA]lue was [spec]ified.
  *
  * * [spec] = `true`: Check if [valid] contains [nameMap] applied to [vA()][vA], return [vA()][vA] if yes, throw otherwise
  * * [spec] = `false`: Check if [valid] contains exactly one element, if yes, return the [E] from [possible] for which [nameMap] returns that element, throw otherwise
  */
-internal inline fun <reified E> resolveOption(what: String, valid: Array<String>, possible: Sequence<E>, spec: Boolean, vA: ()->E, crossinline nameMap: (E)->String): E =
+private inline fun <reified E> resolveOption(what: String, valid: Array<String>, possible: Sequence<E>, spec: Boolean, vA: ()->E, crossinline nameMap: (E)->String): E =
     when (spec) {
         true -> {
             val v = vA()
@@ -135,59 +107,25 @@ internal inline fun <reified E> resolveOption(what: String, valid: Array<String>
             val only = valid.first()
             possible.find {
                 nameMap(it).equals(only, ignoreCase=true)
-            } ?: throw UnsupportedCryptoException("Unsupported $what $only")
+            } ?: throw UnsupportedCryptoException("Unsupported $what $only; supported: ${valid.joinToString(", ")}")
         }
     }
 
-/** A provider that manages keys in the [Android Key Store](https://developer.android.com/privacy-and-security/keystore). */
-object AndroidKeyStoreProvider:
-    PlatformSigningProviderI<AndroidKeystoreSigner, AndroidSignerConfiguration, AndroidSigningKeyConfiguration>
-{
-
-    private val ks: KeyStore get() =
-        KeyStore.getInstance("AndroidKeyStore").apply { load(null, null) }
-
-    @SuppressLint("WrongConstant")
-    override suspend fun createSigningKey(
-        alias: String,
-        configure: DSLConfigureFn<AndroidSigningKeyConfiguration>
-    ) = withContext(dispatcher) { catching {
-        if (ks.containsAlias(alias)) {
-            throw NoSuchElementException("Key with alias $alias already exists")
-        }
-        val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        val spec = KeyGenParameterSpec.Builder(
-            alias,
-            config._algSpecific.v.let {
-                (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
-                (if (it.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
-            }
-        ).apply {
-            when(val algSpec = config._algSpecific.v) {
-                is SigningKeyConfiguration.RSAConfiguration -> {
-                    setAlgorithmParameterSpec(
-                        RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
-                    setDigests(*algSpec.digests.map(Digest::jcaName).toTypedArray())
-                    setSignaturePaddings(*algSpec.paddings.map {
-                        when (it) {
-                            RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
-                            RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
-                        }
-                    }.toTypedArray())
-                }
-                is SigningKeyConfiguration.ECConfiguration -> {
-                    setAlgorithmParameterSpec(ECGenParameterSpec(algSpec.curve.jcaName))
-                    setDigests(*algSpec.digests.map { it?.jcaName ?: KeyProperties.DIGEST_NONE }.toTypedArray())
-                }
-            }
+// @Service
+interface AndroidKeyStoreOperationsProvider {
+    /**
+     * Allows overriding the entire key pair generation process if desired.
+     * You will need to handle the entire [config] object, including attestation settings.
+     * **This is likely not what you want to override**. A default implementation that forwards to [initKeyGenSpec] is provided.
+     *
+     * If you override this function, [initKeyGenSpec] becomes unused and can be dummied out
+     */
+    fun generateKeyPair(alias: String, config: AndroidSigningKeyConfiguration): KeyPair? {
+        val (algorithm, builder) = initKeyGenSpec(alias, config) ?: return null
+        builder.apply {
             setCertificateNotBefore(Date.from(Instant.now()))
             setCertificateSubject(X500Principal("CN=$alias")) // TODO
             config.hardware.v?.let { hw ->
-                setIsStrongBoxBacked(when (hw.strongBox) {
-                    REQUIRED -> true
-                    PREFERRED -> false // TODO
-                    DISCOURAGED -> false
-                })
                 hw.attestation.v?.let {
                     setAttestationChallenge(it.challenge)
                 }
@@ -198,7 +136,7 @@ object AndroidKeyStoreProvider:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         setUserAuthenticationParameters(it.timeout.inWholeSeconds.toInt(),
                             (if (it.factors.v.biometry) KeyProperties.AUTH_BIOMETRIC_STRONG else 0) or
-                            (if (it.factors.v.deviceLock) KeyProperties.AUTH_DEVICE_CREDENTIAL else 0))
+                                    (if (it.factors.v.deviceLock) KeyProperties.AUTH_DEVICE_CREDENTIAL else 0))
                     } else {
                         it.factors.v.let { factors -> when {
                             factors.biometry && !factors.deviceLock -> {
@@ -213,20 +151,178 @@ object AndroidKeyStoreProvider:
                     }
                 }
             }
-        }.build()
-        KeyPairGenerator.getInstance(when(config._algSpecific.v) {
-            is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
-            is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
-        }, "AndroidKeyStore").apply {
-            initialize(spec)
-        }.generateKeyPair()
-        return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
-    }}
+        }
+        fun generate(useStrongBox: Boolean) =
+            KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore")
+                .apply { initialize(builder.apply { setIsStrongBoxBacked(useStrongBox) }.build()) }
+                .generateKeyPair()
+        return when (config.hardware.v?.strongBox) {
+            REQUIRED ->
+                generate(true)
+            PREFERRED ->
+                try { generate(true) }
+                catch (_: StrongBoxUnavailableException) { generate(false) }
+            DISCOURAGED, null ->
+                generate(false)
+        }
+    }
+
+    /**
+     * Set up a [KeyGenParameterSpec.Builder] for the configured algorithm-specific key configuration, if supported.
+     * Returns the `algorithm` string for [KeyPairGenerator.getInstance] and the partially-built `Builder`.
+     * If unsupported, should throw or return `null`.
+     *
+     * Implementations should only handle algorithm-specific setup, i.e., [java.security.spec.AlgorithmParameterSpec],
+     * digests, paddings, etc., as appropriate for the implemented algorithm. Certificate/attestation setup is handled
+     * by Signum.
+     *
+     * If full control over the key construction (including certificates, attestations, etc.) is desired, override
+     * [generateKeyPair] and dummy this function out.
+     * (This function is only used in [generateKeyPair]'s default implementation.)
+     */
+    fun initKeyGenSpec(alias: String, config: AndroidSigningKeyConfiguration): Pair<String, KeyGenParameterSpec.Builder>?
+
+    /**
+     * Construct an [AndroidKeystoreSigner] for the given values.
+     * Implementers likely only need to determine the [SignatureAlgorithm] to expose, and have their subclass
+     * implement the relevant [SignerI] marker interface (if applicable).
+     *
+     * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
+     * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.
+     */
+    fun getAndroidKeystoreSigner(jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo,
+                                 config: AndroidSignerConfiguration, publicKey: CryptoPublicKey,
+                                 attestation: AndroidKeystoreAttestation?): AndroidKeystoreSigner?
+}
+
+private fun getAndroidKeystoreRSAParams(digest: Digest): RsaAlgorithm.Parameters<*> =
+    RsaAlgorithm.Parameters.PssPadded(
+        digest = digest,
+        mgfAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(digest),
+        saltLength = digest.outputLength.bytes,
+        trailerField = 1,
+    )
+
+object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvider {
+    @SuppressLint("WrongConstant")
+    override fun initKeyGenSpec(
+        alias: String,
+        config: AndroidSigningKeyConfiguration
+    ): Pair<String, KeyGenParameterSpec.Builder>? {
+        val algSpec = DSL.options(config.ec, config.rsa)
+            ?: throw UnsupportedCryptoException("Unknown chosen key type")
+        val builder = KeyGenParameterSpec.Builder(alias,
+                (if (algSpec.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
+                    (if (algSpec.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0))
+        return when (algSpec) {
+            is SigningKeyConfiguration.RSAConfiguration ->
+                Pair(KeyProperties.KEY_ALGORITHM_RSA, builder.apply {
+                    setAlgorithmParameterSpec(
+                        RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
+                    setDigests(*algSpec.digests.map(::keyProperty).toTypedArray())
+                    setSignaturePaddings(*algSpec.paddings.map(::keyProperty).toTypedArray())
+                })
+            is SigningKeyConfiguration.ECConfiguration ->
+                Pair(KeyProperties.KEY_ALGORITHM_EC, builder.apply {
+                    setAlgorithmParameterSpec(ECGenParameterSpec(algSpec.curve.jcaName))
+                    setDigests(*algSpec.digests.map(::keyProperty).toTypedArray())
+                })
+            else -> throw UnsupportedCryptoException("Unknown algorithm is configured")
+        }
+    }
+
+    private fun keyProperty(digest: Digest?) = when (digest) {
+        WellKnownDigest.SHA1 -> KeyProperties.DIGEST_SHA1
+        WellKnownDigest.SHA256 -> KeyProperties.DIGEST_SHA256
+        WellKnownDigest.SHA384 -> KeyProperties.DIGEST_SHA384
+        WellKnownDigest.SHA512 -> KeyProperties.DIGEST_SHA512
+        null -> KeyProperties.DIGEST_NONE
+        else -> throw UnsupportedCryptoException("Unknown digest $digest")
+    }
+    private fun keyProperty(padding: RsaAlgorithm.Padding) = when (padding) {
+        RsaAlgorithm.Padding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
+        RsaAlgorithm.Padding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
+    }
+    private fun jcaComponent(digest: WellKnownDigest?) = when (digest) {
+        null -> "NONE"
+        WellKnownDigest.SHA1 -> "SHA1"
+        WellKnownDigest.SHA256 -> "SHA256"
+        WellKnownDigest.SHA384 -> "SHA384"
+        WellKnownDigest.SHA512 -> "SHA512"
+    }
+    private fun jcaComponent(padding: RsaAlgorithm.Padding) = when (padding) {
+        RsaAlgorithm.Padding.PSS -> "RSA/PSS"
+        RsaAlgorithm.Padding.PKCS1 -> "RSA"
+    }
+    override fun getAndroidKeystoreSigner(
+        jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo, config: AndroidSignerConfiguration,
+        publicKey: CryptoPublicKey, attestation: AndroidKeystoreAttestation?
+    ): AndroidKeystoreSigner? = when (publicKey) {
+        is EcdsaPublicKey -> {
+            val ecConfig = config.ec.v
+            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }, ::keyProperty)
+            AndroidKeystoreSigner.ECDSA(
+                jcaPrivateKey, alias, keyInfo, "${jcaComponent(digest)}withECDSA",
+                config, publicKey, attestation,
+                EcdsaAlgorithm(digest, publicKey.curve)
+            )
+        }
+        is RsaPublicKey -> {
+            val rsaConfig = config.rsa.v
+            val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest as WellKnownDigest }, ::keyProperty)
+            val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }, ::keyProperty)
+            AndroidKeystoreSigner.RSA(
+                jcaPrivateKey, alias, keyInfo, "${jcaComponent(digest)}with${jcaComponent(padding)}",
+                config, publicKey, attestation,
+                when (padding) {
+                    RSAPadding.PKCS1 -> RsaAlgorithm(RSAPadding.PKCS1, digest)
+                    RSAPadding.PSS -> RsaAlgorithm(getAndroidKeystoreRSAParams(digest))
+                })
+        }
+        else -> throw UnsupportedCryptoException("Unknown public key type")
+    }
+}
+
+/** A provider that manages keys in the [Android Key Store](https://developer.android.com/privacy-and-security/keystore). */
+object AndroidKeyStoreProvider:
+    PlatformSigningProviderI<AndroidKeystoreSigner, AndroidSignerConfiguration, AndroidSigningKeyConfiguration>
+{
+
+    private val ks: KeyStore get() =
+        KeyStore.getInstance("AndroidKeyStore").apply { load(null, null) }
+
+    override suspend fun createSigningKey(
+        alias: String,
+        configure: DSLConfigureFn<AndroidSigningKeyConfiguration>
+    ) = withContext(dispatcher) {
+        if (ks.containsAlias(alias)) {
+            throw NoSuchElementException("Key with alias $alias already exists")
+        }
+        val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
+        val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
+            generateKeyPair(it, config)
+        }
+        return@withContext getSignerForKey(alias, config.signer.v)
+            .also { signer -> config.hardware.v?.let { hw ->
+                if (hw.strongBox == REQUIRED) {
+                    if (signer.isStrongBoxBacked == false) {
+                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
+                        throw UnsupportedCryptoException("Generated key is not backed by StrongBox")
+                    }
+                }
+                if (hw.backing == REQUIRED || hw.strongBox == REQUIRED) {
+                    if (!signer.isInsideSecureHardware) {
+                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
+                        throw UnsupportedCryptoException("Generated key is not backed by secure hardware")
+                    }
+                }
+            }}
+    }
 
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSignerConfiguration>
-    ): KmmResult<AndroidKeystoreSigner> = withContext(dispatcher) { catching {
+    ): AndroidKeystoreSigner = withContext(dispatcher) {
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
             ?: throw NoSuchElementException("No key for alias $alias exists")
@@ -245,7 +341,7 @@ object AndroidKeyStoreProvider:
                         Napier.v { "Correcting Android 10 AKS signature bug" }
                         publicKey = CertificateFactory.getInstance("X.509")
                             .generateCertificate(chain.first().encoded.inputStream())
-                            .publicKey.toCryptoPublicKey().getOrThrow()
+                            .publicKey.toCryptoPublicKey()
                         attestation = null
                     } else throw it
                 }
@@ -254,52 +350,26 @@ object AndroidKeyStoreProvider:
 
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
-        val algorithm = when (publicKey) {
-            is CryptoPublicKey.EC -> {
-                val ecConfig = config.ec.v
-                val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
-                SignatureAlgorithm.ECDSA(digest, publicKey.curve)
-            }
-            is CryptoPublicKey.RSA -> {
-                val rsaConfig = config.rsa.v
-                val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
-                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
-                    when (it) {
-                        RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
-                        RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
-                    }
-                }
-                SignatureAlgorithm.RSA(padding, digest)
-            }
-        }
 
-        return@catching when (publicKey) {
-            is CryptoPublicKey.EC ->
-                AndroidKeystoreSigner.ECDSA(
-                    jcaPrivateKey, alias, keyInfo, config, publicKey,
-                    attestation, algorithm as SignatureAlgorithm.ECDSA)
-            is CryptoPublicKey.RSA ->
-                AndroidKeystoreSigner.RSA(
-                    jcaPrivateKey, alias, keyInfo, config, publicKey,
-                    attestation, algorithm as SignatureAlgorithm.RSA)
+        return@withContext ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
+            getAndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, it, attestation)
         }
-    }}
+    }
 
-    override suspend fun deleteSigningKey(alias: String) = catching { withContext(dispatcher) {
+    override suspend fun deleteSigningKey(alias: String) { withContext(dispatcher) {
         ks.deleteEntry(alias)
-    }}
+    } }
 }
 
-sealed class AndroidKeystoreSigner private constructor(
+abstract class AndroidKeystoreSigner protected constructor(
     internal val jcaPrivateKey: PrivateKey,
     final override val alias: String,
     val keyInfo: KeyInfo,
+    /** The Android KeyStore does not support setParams or similar. Each algorithm has a string identifier. */
+    private val algorithmString: String,
     protected val config: AndroidSignerConfiguration,
     final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
-
-    @SecretExposure
-    override suspend fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 
@@ -310,7 +380,8 @@ sealed class AndroidKeystoreSigner private constructor(
 
     protected suspend fun attemptBiometry(config: DSL.ConfigStack<AndroidUnlockPromptConfiguration>, forSpecificKey: CryptoObject?) {
         val channel = Channel<AuthResult>(capacity = Channel.RENDEZVOUS)
-        val effectiveContext = config.getProperty(AndroidUnlockPromptConfiguration::explicitContext,
+        val effectiveContext = config.getProperty(
+            AndroidUnlockPromptConfiguration::explicitContext,
             checker = AndroidUnlockPromptConfiguration::hasExplicitContext, default = {
                 (AppLifecycleMonitor.currentActivity as? FragmentActivity)?.let(FragmentContext::OfActivity)
                     ?: throw UnsupportedOperationException("The requested key with alias $alias requires unlock, but the current activity is not a FragmentActivity or could not be determined. " +
@@ -322,9 +393,11 @@ sealed class AndroidKeystoreSigner private constructor(
         }
         executor.asCoroutineDispatcher().let(::CoroutineScope).launch {
             val promptInfo = BiometricPrompt.PromptInfo.Builder().apply {
-                setTitle(config.getProperty(AndroidUnlockPromptConfiguration::_message,
+                setTitle(config.getProperty(
+                    AndroidUnlockPromptConfiguration::_message,
                     default = UnlockPromptConfiguration.defaultMessage))
-                setNegativeButtonText(config.getProperty(AndroidUnlockPromptConfiguration::_cancelText,
+                setNegativeButtonText(config.getProperty(
+                    AndroidUnlockPromptConfiguration::_cancelText,
                     default = UnlockPromptConfiguration.defaultCancelText))
                 config.getProperty(AndroidUnlockPromptConfiguration::_subtitle,null)?.let(this::setSubtitle)
                 config.getProperty(AndroidUnlockPromptConfiguration::_description,null)?.let(this::setDescription)
@@ -361,7 +434,7 @@ sealed class AndroidKeystoreSigner private constructor(
     }
 
     internal suspend fun getJCASignature(signingConfig: AndroidSignerSigningConfiguration): Signature =
-        signatureAlgorithm.getJCASignatureInstance().also {
+        Signature.getInstance(algorithmString).also {
             if (needsAuthenticationForEveryUse) {
                 it.initSign(jcaPrivateKey)
                 attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), CryptoObject(it))
@@ -375,40 +448,41 @@ sealed class AndroidKeystoreSigner private constructor(
             }
         }
 
-    final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<AndroidSignerSigningConfiguration>) = catching {
+    override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<AndroidSignerSigningConfiguration>) {
         if (needsAuthentication && !needsAuthenticationForEveryUse) {
             withContext(dispatcher) { getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure)) }
         }
     }
 
-    final override suspend fun sign(
+    override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-    ): SignatureResult<*> = withContext(dispatcher) { signCatching {
+    ): SignatureResult<*> = withContext(dispatcher) { SignatureResult.make {
         require(data.format == null)
         val jcaSig = getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
             .let { data.data.forEach(it::update); it.sign() }
 
-        return@signCatching when (this@AndroidKeystoreSigner) {
-            is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
-            is RSA -> CryptoSignature.RSA.parseFromJca(jcaSig)
-        }
+        return@make parseSignatureFromJca(jcaSig)
     }}
+
+    abstract fun parseSignatureFromJca(jcaSig: ByteArray): CryptoSignature
 
     class ECDSA internal constructor(jcaPrivateKey: PrivateKey,
                                      alias: String,
                                      keyInfo: KeyInfo,
+                                     algorithmString: String,
                                      config: AndroidSignerConfiguration,
-                                     override val publicKey: CryptoPublicKey.EC,
+                                     override val publicKey: EcdsaPublicKey,
                                      attestation: AndroidKeystoreAttestation?,
-                                     override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation),
+                                     override val signatureAlgorithm: EcdsaAlgorithm
+    )
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation),
         PlatformSigningProviderSigner.ECDSA<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation>
     {
         override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-        ) = catching {
+        ) : ByteArray {
             val signingConfig = DSL.resolve(::AndroidSignerSigningConfiguration, configure)
             javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").run {
                 //Android bug here: impossible to do for auth-on-every use keys. Earliest possible fix: Android 16, if ever
@@ -419,19 +493,28 @@ sealed class AndroidKeystoreSigner private constructor(
                     init(jcaPrivateKey)
                 }
                 doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
-                generateSecret()
+                return generateSecret()
             }
         }
+
+        override fun parseSignatureFromJca(jcaSig: ByteArray) =
+            EcdsaSignature.fromRawSignatureValue(jcaSig).withCurve(publicKey.curve)
     }
 
     class RSA internal constructor(jcaPrivateKey: PrivateKey,
                                    alias: String,
                                    keyInfo: KeyInfo,
+                                   algorithmString: String,
                                    config: AndroidSignerConfiguration,
-                                   override val publicKey: CryptoPublicKey.RSA,
+                                   override val publicKey: RsaPublicKey,
                                    attestation: AndroidKeystoreAttestation?,
-                                   override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA
+                                   override val signatureAlgorithm: RsaAlgorithm
+    )
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, algorithmString, config, attestation), at.asitplus.signum.indispensable.sign.RSASigner
+    {
+        override fun parseSignatureFromJca(jcaSig: ByteArray) =
+            RsaSignature.fromRawSignatureValue(jcaSig)
+    }
 }
 
 val AndroidKeystoreSigner.needsAuthentication inline get() =
@@ -439,6 +522,34 @@ val AndroidKeystoreSigner.needsAuthentication inline get() =
 val AndroidKeystoreSigner.needsAuthenticationForEveryUse inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds <= 0)
+
+/**
+ * The Keymaster security level backing this key: one of [KeyProperties.SECURITY_LEVEL_STRONGBOX],
+ * [KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT], [KeyProperties.SECURITY_LEVEL_SOFTWARE] or
+ * [KeyProperties.SECURITY_LEVEL_UNKNOWN]. Requires API 31+; on older devices returns
+ * [KeyProperties.SECURITY_LEVEL_UNKNOWN] (use [isStrongBoxBacked] / `keyInfo.isInsideSecureHardware` there).
+ */
+val AndroidKeystoreSigner.securityLevel: Int get() = when {
+    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> keyInfo.securityLevel
+    else -> KeyProperties.SECURITY_LEVEL_UNKNOWN
+}
+
+/** Whether this key is actually backed by a StrongBox secure element (precise on API 31+; null on older devices). */
+val AndroidKeystoreSigner.isStrongBoxBacked: Boolean? get() = when {
+    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> (securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX)
+    else -> null
+}
+
+/** Whether this key is inside any secure hardware (TEE or StrongBox). */
+@Suppress("DEPRECATION")
+val AndroidKeystoreSigner.isInsideSecureHardware: Boolean get() = when {
+    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> (
+            securityLevel == KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT ||
+                    securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX ||
+                    securityLevel == KeyProperties.SECURITY_LEVEL_UNKNOWN_SECURE)
+
+    else -> keyInfo.isInsideSecureHardware
+}
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     AndroidKeyStoreProvider

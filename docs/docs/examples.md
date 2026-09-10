@@ -65,7 +65,7 @@ require(jwsAlgorithm is JwsAlgorithm.Signature) { "Algorithm not supported: $jws
 val publicKey = trustedPublicKeys[jwsObject.header.keyId] ?: TODO("Fail on untrusted key")
 
 //Create  verifier instance
-val verifier = jwsAlgorithm.verifierFor(publicKey).getOrThrow()
+val verifier = jwsAlgorithm.verifierFor(publicKey)
 
 //Verify cryptographically
 val verified = verifier.verify(jwsObject.plainSignatureInput, jwsObject.signature).isSuccess
@@ -304,7 +304,6 @@ val csr = signer.sign(tbsCSR).getOrElse { TODO("handle error") }
 7. The back-end verifies the signature of the CSR, and validates the challenge and attestation information
 ```kotlin
 X509SignatureAlgorithm.ES256.verifierFor(csr.tbsCsr.publicKey)
-  .getOrElse { TODO("Handle error") }
   .verify(
     csr.tbsCsr.encodeToDer(),
     csr.decodedSignature.getOrElse { TODO("unrecognized signature format?") }

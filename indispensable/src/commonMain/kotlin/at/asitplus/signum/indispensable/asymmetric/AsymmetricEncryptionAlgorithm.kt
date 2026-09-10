@@ -4,7 +4,7 @@ import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.rsaEncryption
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 
@@ -41,7 +41,8 @@ sealed interface RSAPadding : Enumerable {
 
 }
 
-//TODO extensible, no more sealed
+// TODO extensible, no more sealed
+// TODO DerEncodable<X509AlgorithmIdentifier>
 sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */

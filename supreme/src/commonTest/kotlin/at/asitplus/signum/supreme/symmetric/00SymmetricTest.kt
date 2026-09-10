@@ -3,7 +3,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.awesn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.misc.bit
@@ -294,7 +294,7 @@ val SymmetricTest by matrixSuite {
                     withClue(
                         "KEY: ${
                             key.secretKey.getOrThrow().toHexString()
-                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
+                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce.toHexString()}"
                     ) {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed

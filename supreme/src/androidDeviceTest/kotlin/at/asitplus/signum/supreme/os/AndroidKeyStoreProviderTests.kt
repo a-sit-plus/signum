@@ -1,11 +1,12 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.shouldSucceed
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.supreme.sign.verifierFor
-import at.asitplus.signum.supreme.sign.verify
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.dsl.attestation
+import at.asitplus.signum.dsl.hardware
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -26,16 +27,15 @@ val AndroidKeyStoreProviderTests by matrixSuite {
                     challenge = attestChallenge
                 }
             }
-        }.getOrThrow()
+        }
         val publicKey = hardwareSigner.publicKey
-        publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        publicKey.shouldBeInstanceOf<EcdsaPublicKey>()
 
         val plaintext = Random.nextBytes(64)
         val signature = hardwareSigner.sign(plaintext).signature
 
         //@formatter:off
-        SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).transform {
-            it.verify(plaintext, signature) }.shouldSucceed()
+        EcdsaAlgorithm.withSHA256.verifierFor(publicKey).verify(plaintext, signature)
         //@formatter:on
 
     }

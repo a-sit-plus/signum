@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.internals.ImplementationError
-import at.asitplus.signum.supreme.mac.mac
+import at.asitplus.signum.indispensable.mac.mac
 
 /**
  * Additional abstraction layer atop [PlatformCipher]. Currently, this is used to
@@ -76,7 +76,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
                 )
 
             val outputTransform = algorithm.macAuthTagTransform
-            val authTag = algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput).getOrThrow())
+            val authTag = algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput))
 
             @Suppress("UNCHECKED_CAST")
             return (

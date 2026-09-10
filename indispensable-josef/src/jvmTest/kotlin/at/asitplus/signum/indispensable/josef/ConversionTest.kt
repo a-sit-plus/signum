@@ -1,11 +1,12 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
 //somehow including kmmresult-test makes this fail
+@IgnorableReturnValue
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
@@ -13,12 +14,18 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
 val ConversionTest by matrixSuite {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
-            data(JwsAlgorithm.entries) test {
+            data(JwsAlgorithm.Signature.entries) test {
+                it.algorithm.toJwsAlgorithm() shouldSucceedWith it
+            }
+            data(JwsAlgorithm.MAC.entries) test {
                 it.algorithm.toJwsAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized SignatureAlgorithm" - {
-            data(JwsAlgorithm.entries) test {
+            data(JwsAlgorithm.Signature.entries) test {
+                it.toJwsAlgorithm() shouldSucceedWith it
+            }
+            data(JwsAlgorithm.MAC.entries) test {
                 it.toJwsAlgorithm() shouldSucceedWith it
             }
         }

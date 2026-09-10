@@ -5,6 +5,8 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PolymorphicKind
@@ -62,10 +64,10 @@ sealed class JWS {
     }
 
     companion object {
-        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature.RawByteEncodable =
+        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature =
             when (algorithm) {
-                is JwsAlgorithm.Signature.EC -> CryptoSignature.EC.fromRawBytes(algorithm.ecCurve, plainSignature)
-                is JwsAlgorithm.Signature.RSA -> CryptoSignature.RSA(plainSignature)
+                is JwsAlgorithm.Signature.EC -> EcdsaSignature.fromRawBytes(algorithm.ecCurve, plainSignature)
+                is JwsAlgorithm.Signature.RSA -> RsaSignature(plainSignature)
                 else -> throw SerializationException("Unsupported algorithm for JWS signature element: $algorithm")
             }
 

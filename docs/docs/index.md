@@ -173,7 +173,7 @@ Any unspecified parameters use sensible, secure defaults.
 
 ### Signature Verification (Supreme)
 
-To verify a signature, obtain a `Verifier` instance using `verifierFor(k: PublicKey)`, either directly on a
+To verify a signature, obtain a `SupremeVerifier` instance using `verifierFor(k: PublicKey)`, either directly on a
 `SignatureAlgorithm`, or on one of the specialized algorithms (`X509SignatureAlgorithm`, `CoseAlgorithm`, ...).
 A variety of constants, resembling the well-known JCA names, are also available in `SignatureAlgorithm`'s companion.
 
@@ -183,7 +183,7 @@ As an example, here's how to verify a basic signature using a public key:
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
-val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
+val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
 ```

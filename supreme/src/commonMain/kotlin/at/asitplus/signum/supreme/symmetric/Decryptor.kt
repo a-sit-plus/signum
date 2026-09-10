@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.indispensable.symmetric.*
-import at.asitplus.signum.supreme.mac.mac
+import at.asitplus.signum.indispensable.mac.mac
 
 //needs no generics, because decrypt goes from bytes to bytes
 internal class Decryptor(
@@ -41,7 +41,7 @@ internal class Decryptor(
                 platformCipher.aad!!
             )
             val macAuthTagTransform = algorithm.macAuthTagTransform
-            if (!algorithm.macAuthTagTransform(algorithm.mac.mac(macKey!!, hmacInput).getOrThrow()).contentEquals(authTag))
+            if (!algorithm.macAuthTagTransform(algorithm.mac.mac(macKey!!, hmacInput)).contentEquals(authTag))
                 throw IllegalArgumentException("Auth Tag mismatch!")
         }
         return platformCipher.doDecrypt(encryptedData, authTag)

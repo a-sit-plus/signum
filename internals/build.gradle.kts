@@ -32,10 +32,6 @@ kotlin {
 exportXCFramework(
     "Internals",
     transitiveExports = false,
-    static = false,
-    serialization("json"),
-    datetime(),
-    kmmresult()
-
+    static = false
 )
 

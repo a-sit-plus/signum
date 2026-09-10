@@ -1,6 +1,12 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.ASN1Sequence
@@ -21,9 +27,6 @@ import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
 val SignatureCodecTest  by matrixSuite {
@@ -39,23 +42,23 @@ val SignatureCodecTest  by matrixSuite {
                 it.initialize(ECGenParameterSpec(curve))
             }.generateKeyPair()
         }
-        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().didEncoded }) test { keys ->
             val sig = Signature.getInstance("${digest}withECDSA").run {
                 initSign(keys.private)
                 update(data)
                 sign()
             }
 
-            CryptoSignature.EC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            CryptoSignature.parseFromJca(
-                sig,
-                SignatureAlgorithm.ECDSA(Digest.valueOf(digest), ECCurve.byJcaName(curve))
-            ).jcaSignatureBytes shouldBe sig
+            EcdsaSignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
+            EcdsaAlgorithm(
+                WellKnownDigest.entries.first { it.name == digest },
+                ECCurve.byJcaName(curve)
+            ).parseJCASignature(sig).jcaSignatureBytes shouldBe sig
 
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(CryptoSignature.EC.parseFromJca(sig).encodeToDer())
+                verify(EcdsaSignature.fromRawSignatureValue(sig).encodeToDer())
             }
 
         }
@@ -65,11 +68,11 @@ val SignatureCodecTest  by matrixSuite {
 
         val digest = ("SHA256")
         val signatureAlgorithm =
-            if (Random.nextBoolean()) SignatureAlgorithm.RSAwithSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
+            if (Random.nextBoolean()) RsaAlgorithm.withSHA256andPSSPadding else SignatureAlgorithm.RSAwithSHA256andPKCS1Padding
 
         // BC does not allow shorter keys for SHA-256 PSS with 32-byte salt.
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair() }
-        data(preGen, nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }) test { keys ->
+        data(preGen, nameFn = { it.public.toCryptoPublicKey().didEncoded }) test { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
                 initSign(keys.private)
@@ -79,11 +82,9 @@ val SignatureCodecTest  by matrixSuite {
 
 
 
-            CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
-            CryptoSignature.parseFromJca(
-                sig,
-                signatureAlgorithm
-            ).jcaSignatureBytes shouldBe sig
+            RsaSignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
+            signatureAlgorithm
+                .parseJCASignature(sig).jcaSignatureBytes shouldBe sig
 
             // create certificate with bouncycastle
             val notBeforeDate = Date.from(Instant.now())
@@ -106,11 +107,9 @@ val SignatureCodecTest  by matrixSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
-            CryptoSignature.parseFromJca(
-                certificateHolder.signature,
-                signatureAlgorithm
-            ).encodeToDer() shouldBe bcSig
+            RsaSignature.fromRawSignatureValue(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            signatureAlgorithm
+                .parseJCASignature(certificateHolder.signature).encodeToDer() shouldBe bcSig
 
         }
     }

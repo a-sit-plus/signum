@@ -1,0 +1,15 @@
+package at.asitplus.signum.supreme.hash
+
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.DigestOperationProvider
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.getJCAMessageDigestInstance
+
+object SupremeJVMDigestProvider : DigestOperationProvider {
+    override suspend fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray? {
+        if (digest !is WellKnownDigest) return null
+        return digest.getJCAMessageDigestInstance().apply {
+            data.forEach { update(it) }
+        }.digest()
+    }
+}

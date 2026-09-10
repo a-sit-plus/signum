@@ -17,7 +17,6 @@ import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.kotlincrypto.random.CryptoRand
-import org.kotlincrypto.random.DelicateCryptoRandApi
 import java.net.URI
 import javax.crypto.KeyGenerator
 import kotlin.random.Random
@@ -80,7 +79,7 @@ val JweEncryptedTest by matrixSuite {
         parsed.header.agreementPartyUInfo shouldBe apu
         parsed.header.agreementPartyVInfo shouldBe apv
         parsed.header.jsonWebKeyUrl shouldBe jku
-        val ourJwk = jwk.toECPublicKey().toCryptoPublicKey().getOrThrow().toJsonWebKey()
+        val ourJwk = jwk.toECPublicKey().toCryptoPublicKey().toJsonWebKey()
         parsed.header.jsonWebKey shouldBe ourJwk
         parsed.header.keyId shouldBe kid
         parsed.header.type shouldBe typ

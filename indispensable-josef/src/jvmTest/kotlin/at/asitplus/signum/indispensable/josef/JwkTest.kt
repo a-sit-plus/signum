@@ -1,16 +1,16 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.nextPositiveAsn1Integer
-import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -42,7 +42,7 @@ val JwkTest  by matrixSuite {
                         it.w.affineX.toByteArray().encodeToString(Base64Strict)
                     } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})" }) test { pubKey ->
 
-                val cryptoPubKey = pubKey.toCryptoPublicKey().getOrThrow().also { it.jwkId = it.didEncoded }
+                val cryptoPubKey = pubKey.toCryptoPublicKey().also { it.jwkId = it.didEncoded }
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
@@ -153,13 +153,13 @@ private fun randomCertificate() = Certificate(
         serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
         issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-            .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
-        signatureAlgorithm = SignatureAlgorithm.ECDSAwithSHA256,
+            .genKeyPair().public.toCryptoPublicKey(),
+        signatureAlgorithm = EcdsaAlgorithm.withSHA256,
         subjectName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         validFrom = (Clock.System.now()),
         validUntil = (Clock.System.now()),
     ),
-    CryptoSignature.EC.fromRS(
+    EcdsaSignature.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)
     )

@@ -1,13 +1,27 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.KmmResult
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.JCAProviderRefO
+import at.asitplus.signum.dsl.Of
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.internals.ImplementationError
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -20,15 +34,14 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
+import java.security.MessageDigest
 import java.security.KeyFactory
-import java.security.PrivateKey
-import java.security.PublicKey
+import java.security.NoSuchAlgorithmException
+import java.security.Provider
+import java.security.PrivateKey as JCAPrivateKey
+import java.security.PublicKey as JCAPublicKey
 import java.security.Signature
 import java.security.cert.CertificateFactory
-import java.security.interfaces.ECPrivateKey
-import java.security.interfaces.ECPublicKey
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
 import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
@@ -38,74 +51,194 @@ import javax.crypto.spec.PSource
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val SignatureAlgorithm.RSA.Parameters.PssPadded.jcaPSSParams
-    get() = if (mgfAlgorithm !is SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1) throw UnsupportedOperationException(
-        "Only Pkcs1MGF1 is supported"
-    ) else
-        PSSParameterSpec(
-            digest.jcaName,
-            "MGF1",
-            when ((mgfAlgorithm as SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1).digest) {
-                Digest.SHA1 -> MGF1ParameterSpec.SHA1
-                Digest.SHA256 -> MGF1ParameterSpec.SHA256
-                Digest.SHA384 -> MGF1ParameterSpec.SHA384
-                Digest.SHA512 -> MGF1ParameterSpec.SHA512
-                else -> throw UnsupportedOperationException("Only SHA1, SHA256, SHA384, SHA512 are supported") //important for extenisbility
-            },
-            saltLength.toInt(),
-            trailerField
-        )
+internal val RsaAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec get() {
+    val mgfAlgorithm = mgfAlgorithm
+    if (mgfAlgorithm !is RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1)
+        throw UnsupportedCryptoException("Only Pkcs1MGF1 is supported")
+    val outerDigest = digest
+    if (outerDigest !is WellKnownDigest)
+        throw UnsupportedCryptoException("Unknown outer digest")
+    val innerDigest = mgfAlgorithm.digest
+    if (innerDigest !is WellKnownDigest)
+        throw UnsupportedCryptoException("Unknown inner digest")
+    return PSSParameterSpec(
+        outerDigest.jcaName,
+        "MGF1",
+        when (innerDigest) {
+            WellKnownDigest.SHA1 -> MGF1ParameterSpec.SHA1
+            WellKnownDigest.SHA256 -> MGF1ParameterSpec.SHA256
+            WellKnownDigest.SHA384 -> MGF1ParameterSpec.SHA384
+            WellKnownDigest.SHA512 -> MGF1ParameterSpec.SHA512
+        },
+        saltLength.toInt(),
+        trailerField
+    )
+}
 
-
-internal fun sigGetInstance(alg: String, provider: String?): Signature =
+internal fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
     when (provider) {
-        null -> Signature.getInstance(alg)
-        else -> Signature.getInstance(alg, provider)
+        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> Signature.getInstance(alg)
+        else -> throw ImplementationError("invalid JCAProvider ref")
     }
+
+interface JcaMappingProvider {
+    /**
+     * Should return a pre-configured JCA [MessageDigest] instance for this recognized digest, ready for
+     * [MessageDigest.update]/[MessageDigest.digest]. This also powers `.digest` on JVM targets if Supreme is loaded.
+     */
+    fun getJCAMessageDigestInstance(digest: Digest, jcaProviderRef: JCAProviderRef): MessageDigest? { return null }
+
+    /**
+     * Should return a pre-configured JCA [Signature] instance for this recognized algorithm, ready for
+     * [Signature.initSign]/[Signature.initVerify]. This allows integration into Supreme's signer providers.
+     * - If the algorithm is not recognized, the provider should return `null`.
+     * - If the algorithm is recognized but its particular configuration is unsupported by the JCA, the provider should throw [UnsupportedCryptoException].
+     * - If the provider does not wish to implement mapping this algorithm for the JCA, it can choose to return `null`, allowing fall-through.
+     *
+     * The [jcaProviderRef], if non-`null`, should be respected and passed to the JCA.
+     * If the provided algorithm is unsupported by the provider in question, the JCA may then throw [NoSuchAlgorithmException].
+     * This is intended. The [SignatureAlgorithm.getJCASignatureInstance] wrapper will map this to [UnsupportedCryptoException].
+     */
+    fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef): Signature? { return null }
+
+    /**
+     * Should return a pre-configured JCA [Signature] instance for this algorithm, ready for [Signature.initSign]/[Signature.initVerify].
+     * This instance should accept pre-hashed input data. Its output should be identical to providing the pre-image to [getJCASignatureInstance].
+     * If this is impossible for the algorithm, for example because the pre-hashed version uses different domain separators, [UnsupportedCryptoException] should be thrown.
+     *
+     * All other implementor notes from [getJCASignatureInstance] also apply.
+     */
+    fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef): Signature? { return null }
+
+    /**
+     * Should take the bytes produced by signing using the instances returned from
+     * [getJCASignatureInstance]/[getJCASignatureInstancePreHashed] and map them to a [CryptoSignature].
+     */
+    fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? { return null }
+
+    /**
+     * Should take a [CryptoSignature] and produce the raw bytes expected for verification using the instances returned
+     * from [getJCASignatureInstance]/[getJCASignatureInstancePreHashed].
+     */
+    fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? { return null }
+
+    /** Maps this CryptoPublicKey to a JCA PublicKey instance. */
+    fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey): JCAPublicKey? { return null }
+
+    /** Maps this JCA PublicKey instance to a CryptoPublicKey. */
+    fun jcaPublicKeyToCryptoPublicKey(publicKey: JCAPublicKey): CryptoPublicKey? { return null }
+
+    /** Maps this CryptoPrivateKey to a JCA PrivateKey instance. */
+    fun cryptoPrivateKeyToJcaPrivateKey(privateKey: CryptoPrivateKey): JCAPrivateKey? { return null }
+
+    /** Maps this JCA PrivateKey instance to a CryptoPrivateKey. */
+    fun jcaPrivateKeyToCryptoPrivateKey(privateKey: JCAPrivateKey): CryptoPrivateKey.WithPublicKey? { return null }
+}
+
+/** Get a pre-configured JCA [MessageDigest] instance for this digest */
+fun Digest.getJCAMessageDigestInstance(provider: JCAProviderRef) =
+    ServiceLoader.load<JcaMappingProvider>().get(this)
+        { getJCAMessageDigestInstance(it, provider) }
+
+/** Get a pre-configured JCA [MessageDigest] instance for this digest */
+fun Digest.getJCAMessageDigestInstance(provider: String? = null) =
+    getJCAMessageDigestInstance(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA [MessageDigest] instance for this digest */
+fun Digest.getJCAMessageDigestInstance(provider: Provider?) =
+    getJCAMessageDigestInstance(JCAProviderRef.Of(provider))
 
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): Signature =
-    when (this) {
-        is SignatureAlgorithm.ECDSA ->
-            sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
+fun SignatureAlgorithm.getJCASignatureInstance(provider: JCAProviderRef) =
+    ServiceLoader.load<JcaMappingProvider>().get(this)
+        { getJCASignatureInstance(it, provider) }
 
-        is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
-    }
+/** Get a pre-configured JCA instance for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+    getJCASignatureInstance(JCAProviderRef.Of(provider))
 
-internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature
+/** Get a pre-configured JCA instance for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstance(provider: Provider?) =
+    getJCASignatureInstance(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: JCAProviderRef) =
+    this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
 
+/** Get a pre-configured JCA instance for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: Provider?) =
+    this.algorithm.getJCASignatureInstance(provider)
+
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): Signature =
-    when (this) {
-        is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
-        is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
-    }
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: JCAProviderRef) =
+    ServiceLoader.load<JcaMappingProvider>().get(this)
+        { getJCASignatureInstancePreHashed(it, provider) }
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+    getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Provider?) =
+    getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: JCAProviderRef) =
+    this.algorithm.getJCASignatureInstancePreHashed(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
-    this.algorithm.getJCASignatureInstancePreHashed(provider)
+    this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
 
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Provider?) =
+    this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
 
-val Digest.jcaName
+val CryptoSignature.jcaSignatureBytes: ByteArray get() =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::getJCASignatureBytes)
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+fun SignatureAlgorithm.parseJCASignature(sigBytes: ByteArray) =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this) { parseJCASignatureBytes(it, sigBytes) }
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+fun SpecializedSignatureAlgorithm.parseJCASignature(sigBytes: ByteArray) =
+    this.algorithm.parseJCASignature(sigBytes)
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+@Deprecated("Use algorithm.parseJCASignature", replaceWith = ReplaceWith("algorithm.parseJCASignature(input)"))
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: SignatureAlgorithm): CryptoSignature =
+    algorithm.parseJCASignature(input)
+
+/** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
+@Deprecated("Use algorithm.parseJCASignature", replaceWith = ReplaceWith("algorithm.parseJCASignature(input)"))
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: SpecializedSignatureAlgorithm) =
+    algorithm.algorithm.parseJCASignature(input)
+
+internal val WellKnownDigest.jcaName
     get() = when (this) {
-        Digest.SHA256 -> "SHA-256"
-        Digest.SHA384 -> "SHA-384"
-        Digest.SHA512 -> "SHA-512"
-        Digest.SHA1 -> "SHA-1"
+        WellKnownDigest.SHA1 -> "SHA-1"
+        WellKnownDigest.SHA256 -> "SHA-256"
+        WellKnownDigest.SHA384 -> "SHA-384"
+        WellKnownDigest.SHA512 -> "SHA-512"
     }
 
 
-val Digest?.jcaAlgorithmComponent
+internal val WellKnownDigest?.jcaAlgorithmComponent
     get() = when (this) {
         null -> "NONE"
-        Digest.SHA1 -> "SHA1"
-        Digest.SHA256 -> "SHA256"
-        Digest.SHA384 -> "SHA384"
-        Digest.SHA512 -> "SHA512"
+        WellKnownDigest.SHA1 -> "SHA1"
+        WellKnownDigest.SHA256 -> "SHA256"
+        WellKnownDigest.SHA384 -> "SHA384"
+        WellKnownDigest.SHA512 -> "SHA512"
     }
 
 val ECCurve.jcaName
@@ -118,16 +251,10 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.getJcaPublicKey() = toJcaPublicKey()
-fun CryptoPublicKey.toJcaPublicKey() = when (this) {
-    is CryptoPublicKey.EC -> toJcaPublicKey()
-    is CryptoPublicKey.RSA -> toJcaPublicKey()
-}
+fun CryptoPublicKey.toJcaPublicKey() =
+    ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.EC.getJcaPublicKey() = toJcaPublicKey()
-fun CryptoPublicKey.EC.toJcaPublicKey(): ECPublicKey {
+fun EcdsaPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
     val y = y.residue.toJavaBigInteger()
@@ -138,18 +265,15 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): ECPublicKey {
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.getJcaPublicKey() = toJcaPublicKey()
-fun CryptoPublicKey.RSA.toJcaPublicKey(): RSAPublicKey =
+fun RsaPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
-    ) as RSAPublicKey
+    ) as java.security.interfaces.RSAPublicKey
 
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> =
-    publicKey.toCryptoPublicKey()
-
-fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
+fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): EcdsaPublicKey {
+    // TODO: this assumes SPKI encoding then uses bouncycastle on it to find the curve
+    // this breaks for non-SPKI encoded ECDSA public keys
+    // leaving it untouched for now but we should revisit it
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
@@ -157,46 +281,33 @@ fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
             ).algorithm.parameters as ASN1ObjectIdentifier
         )
     ) ?: throw SerializationException("Unknown Jca name")
-    CryptoPublicKey.EC.fromUncompressed(
+    return EcdsaPublicKey.fromUncompressed(
         curve,
         w.affineX.toByteArray(),
         w.affineY.toByteArray()
     )
 }
 
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> =
-    publicKey.toCryptoPublicKey()
+fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RsaPublicKey =
+    RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
 
-fun RSAPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.RSA> =
-    catching { CryptoPublicKey.RSA(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
-
-
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
-    publicKey.toCryptoPublicKey()
-
-fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-    when (this) {
-        is RSAPublicKey -> toCryptoPublicKey()
-        is ECPublicKey -> toCryptoPublicKey()
-        else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
-    }
+fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::jcaPublicKeyToCryptoPublicKey)
 
 /**
  * Converts this [Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
+suspend fun Certificate.toJcaCertificate(): java.security.cert.X509Certificate =
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
-}
 
 /**
  * blocking implementation of [toJcaCertificate]
  */
-fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+fun Certificate.toJcaCertificateBlocking(): java.security.cert.X509Certificate =
     runBlocking { toJcaCertificate() }
 
 /**
@@ -205,29 +316,29 @@ fun Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Cer
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { Certificate.decodeFromDer(encoded) }
 
-fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
-    val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
-    val kf = when (this) {
-        is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
-        is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
-    }
-    kf.generatePrivate(spec)!!
-}
+fun CryptoPrivateKey.toJcaPrivateKey() =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::cryptoPrivateKeyToJcaPrivateKey)
 
-fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
-    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as ECPrivateKey }
+fun EcdsaPrivateKey.toJcaPrivateKey() =
+    KeyFactory.getInstance("EC")
+        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+            as java.security.interfaces.ECPrivateKey
 
-fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
-    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
+fun RsaPrivateKey.toJcaPrivateKey() =
+    KeyFactory.getInstance("RSA")
+        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+            as java.security.interfaces.RSAPrivateKey
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
-    catching { CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*> }
+fun JCAPrivateKey.toCryptoPrivateKey() =
+    ServiceLoader.load<JcaMappingProvider>()
+        .get(this, JcaMappingProvider::jcaPrivateKeyToCryptoPrivateKey)
 
-fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
-    catching { CryptoPrivateKey.EC.decodeFromDer(encoded) as CryptoPrivateKey.EC.WithPublicKey }
+fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =
+    EcdsaPrivateKey.decodeFromDer(encoded) as EcdsaPrivateKey.WithPublicKey
 
-fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
-    catching { CryptoPrivateKey.RSA.decodeFromDer(encoded) }
+fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
+    RsaPrivateKey.decodeFromDer(encoded)
 
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
@@ -239,22 +350,14 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING -> "AES/ECB/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        else -> TODO("$this is unsupported")
+        //else -> TODO("$this is unsupported")
     }
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
-        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
-    }
-
-val HMAC.jcaName: String
-    get() = when (this) {
-        HMAC.SHA1 -> "HmacSHA1"
-        HMAC.SHA256 -> "HmacSHA256"
-        HMAC.SHA384 -> "HmacSHA384"
-        HMAC.SHA512 -> "HmacSHA512"
+        //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
 
 /**
@@ -325,7 +428,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
         }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
-fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: CryptoPublicKey.RSA, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RsaPublicKey, provider: String? = null) =
     catching {
         (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
             init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey(), jcaParameterSpec)
@@ -333,9 +436,9 @@ fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: CryptoPubli
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
-fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: CryptoPrivateKey.RSA, provider: String? = null) =
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RsaPrivateKey, provider: String? = null) =
     catching {
         (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
-            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), jcaParameterSpec)
+            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey(), jcaParameterSpec)
         }
     }

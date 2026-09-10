@@ -1,11 +1,16 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.matrixSuite
-import at.asitplus.signum.indispensable.decodeFromDer
-import io.kotest.matchers.should
-import io.kotest.matchers.shouldNot
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
@@ -30,12 +35,12 @@ val ECDSAVerifierCommonTests by matrixSuite {
         }
         val digest = when (test.dig) {
             "None" -> null
-            else -> Digest.valueOf(test.dig)
+            else -> WellKnownDigest.entries.first { it.name == test.dig }
         }
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.EC
+        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as EcdsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
-        val sig = CryptoSignature.EC.decodeFromDer(Base64.decode(test.sig))
+        val sig = EcdsaSignature.fromRawSignatureValue(Base64.decode(test.sig))
     }
 
     /** Generated on JVM using:
@@ -385,17 +390,19 @@ val ECDSAVerifierCommonTests by matrixSuite {
         tests.asData(nameFn = { (name, _) -> name }) - { (_, byDigestByName) ->
             byDigestByName.asData(nameFn = { (name, _) -> name }) - { (_, byDigest) ->
                 data(byDigest, nameFn = { it.b64msg }) test { test ->
-                    val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key).getOrThrow()
-                    verifier.verify(test.msg, test.sig) should succeed
+                    val verifier = EcdsaAlgorithm(test.digest, null).verifierFor(test.key)
+                    verifier.verify(test.msg, test.sig) shouldBe SignatureVerifier.Success
                     Random.of(byDigest).let {
                         if (it !== test) {
-                            verifier.verify(it.msg, test.sig) shouldNot succeed
-                            verifier.verify(it.msg, it.sig) shouldNot succeed
+                            shouldThrowAny { verifier.verify(it.msg, test.sig) }
+                            shouldThrowAny { verifier.verify(it.msg, it.sig) }
                         }
                     }
-                    Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
-                        SignatureAlgorithm.ECDSA(dig, null).verifierFor(test.key)
-                            .transform { it.verify(test.msg, test.sig) } shouldNot succeed
+                    Random.of(WellKnownDigest.entries.filter { it != test.digest }).let { dig ->
+                        shouldThrowAny {
+                            EcdsaAlgorithm(dig, null)
+                                .verifierFor(test.key).verify(test.msg, test.sig)
+                        }
                     }
                 }
             }

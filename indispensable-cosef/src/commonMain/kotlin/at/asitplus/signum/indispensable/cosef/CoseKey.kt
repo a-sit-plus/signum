@@ -4,11 +4,15 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -122,14 +126,6 @@ data class CoseKey(
                 CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow()
             }
 
-        /**
-         * iOS encoded is currently only supporting uncompressed keys. Might change in the future
-         */
-        fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
-            catching {
-                CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow()
-            }
-
         fun fromCoordinates(
             curve: CoseEllipticCurve,
             x: ByteArray,
@@ -200,8 +196,8 @@ fun CryptoPublicKey.toCoseKey(
     keyId: ByteArray? = this.coseKid
 ): KmmResult<CoseKey> =
     when (this) {
-        is CryptoPublicKey.EC ->
-            if ((algorithm != null) && (algorithm.algorithm !is SignatureAlgorithm.ECDSA))
+        is EcdsaPublicKey ->
+            if ((algorithm != null) && (algorithm.algorithm !is EcdsaAlgorithm))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.preferCompressedRepresentation) {
@@ -226,7 +222,7 @@ fun CryptoPublicKey.toCoseKey(
                 }
             }
 
-        is CryptoPublicKey.RSA ->
+        is RsaPublicKey ->
             if ((algorithm != null) && (algorithm !in listOf(
                     CoseAlgorithm.Signature.PS256,
                     CoseAlgorithm.Signature.PS384,
@@ -248,6 +244,7 @@ fun CryptoPublicKey.toCoseKey(
                     algorithm = algorithm
                 )
             }
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 
 

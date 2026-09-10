@@ -1,75 +1,66 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catchingUnwrappedAs
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.VerifierConfiguration
+import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.UnsupportedCryptoException
-import kotlin.sequences.forEach
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import java.security.Signature
 
-/**
- * Configures JVM-specific properties.
- * @see provider
- */
-actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data() {
-    /** The JCA provider to use, or none. */
-    var provider: String? = null
-}
-
-@Throws(UnsupportedCryptoException::class)
-internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             config: PlatformVerifierConfiguration)
-{
-    catchingUnwrappedAs(a=::UnsupportedCryptoException) {
-        signatureAlgorithm.getJCASignatureInstance(config.provider)
-            .initVerify(publicKey.toJcaPublicKey())
-    }.getOrThrow()
-}
-
-@JvmSynthetic
-internal actual suspend fun verifyECDSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             data: SignatureInput, signature: CryptoSignature.EC,
-             config: PlatformVerifierConfiguration)
-{
-    val (input, sig) = when {
-        (data.format == null) -> /* input data is not hashed, let JCA do hashing */
-            Pair(data, signatureAlgorithm.getJCASignatureInstance(config.provider))
-        else -> /* input data is already hashed, request raw sig from JCA */
-            Pair(
-                data.convertTo(signatureAlgorithm.digest).getOrThrow(),
-                signatureAlgorithm.getJCASignatureInstancePreHashed(config.provider))
+abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPublicKey, protected val provider: JCAProviderRef) : SignatureVerifier {
+    private val jcaPublicKey = key.toJcaPublicKey()
+    // fail fast
+    init { algorithm.getJCASignatureInstance(provider).apply { initVerify(jcaPublicKey) } }
+    private fun verifyWith(jcaSig: Signature, data: Sequence<ByteArray>, sig: ByteArray): Boolean {
+        data.forEach(jcaSig::update)
+        return jcaSig.verify(sig)
     }
-    sig.run {
-        initVerify(publicKey.toJcaPublicKey())
-        input.data.forEach(this::update)
-        val success = verify(signature.jcaSignatureBytes)
-        if (!success)
+    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
+        val success = when {
+            (data.format == null) ->
+                signatureAlgorithm.getJCASignatureInstance(provider)
+                    .apply { initVerify(jcaPublicKey) }
+                    .let { verifyWith(it, data.data, sig.jcaSignatureBytes) }
+            (data.format == signatureAlgorithm.preHashedSignatureFormat) ->
+                signatureAlgorithm.getJCASignatureInstancePreHashed(provider)
+                    .apply { initVerify(jcaPublicKey) }
+                    .let { verifyWith(it, data.data, sig.jcaSignatureBytes) }
+            else ->
+                throw IllegalArgumentException("Pre-hashed data (format=${data.format}) is incompatible with $signatureAlgorithm")
+        }
+        if (success)
+            return SignatureVerifier.Success
+        else
             throw InvalidSignature("Signature is cryptographically invalid")
     }
+
+    class Ecdsa(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey, provider: JCAProviderRef)
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.EcdsaVerifier
+
+    class Rsa(override val signatureAlgorithm: RsaAlgorithm, override val publicKey: RsaPublicKey, provider: JCAProviderRef)
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.RsaVerifier
 }
 
-@Throws(UnsupportedCryptoException::class)
-internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             config: PlatformVerifierConfiguration) {
-    catchingUnwrappedAs(a=::UnsupportedCryptoException) {
-        signatureAlgorithm.getJCASignatureInstance(config.provider)
-            .initVerify(publicKey.toJcaPublicKey())
-    }.getOrThrow()
-}
-
-@JvmSynthetic
-internal actual suspend fun verifyRSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSA,
-             config: PlatformVerifierConfiguration)
-{
-    signatureAlgorithm.getJCASignatureInstance(config.provider).run {
-        initVerify(publicKey.toJcaPublicKey())
-        data.data.forEach(this::update)
-        val success = verify(signature.jcaSignatureBytes)
-        if (!success)
-            throw InvalidSignature("Signature is cryptographically invalid")
-    }
+object SupremeJVMVerifierProvider : SignatureVerifierProvider {
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration) =
+        when (algorithm) {
+            is EcdsaAlgorithm -> {
+                require(key is EcdsaPublicKey)
+                    { "Cannot instantiate ECDSA ($algorithm) verifier using non-ECDSA public key $key" }
+                SupremeJVMVerifier.Ecdsa(algorithm, key, config.jvm.v.provider)
+            }
+            is RsaAlgorithm -> {
+                require(key is RsaPublicKey)
+                    { "Cannot instantiate RSA ($algorithm) verifier using non-RSA public key $key" }
+                SupremeJVMVerifier.Rsa(algorithm, key, config.jvm.v.provider)
+            }
+            else -> null
+        }
 }

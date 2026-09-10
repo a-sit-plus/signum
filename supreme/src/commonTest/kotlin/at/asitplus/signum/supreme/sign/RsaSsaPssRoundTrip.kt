@@ -1,15 +1,19 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.encoding.Asn1
-import at.asitplus.shouldSucceed
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.signerFor
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
@@ -21,57 +25,47 @@ import io.kotest.property.arbitrary.int
 @OptIn(SecretExposure::class)
 val RsaSsaPssRoundTripTest by matrixSuite {
 
-    Digest.entries.asData("Data Digest") - { dataDigest ->
-        Digest.entries.asData("Data Digest") - { mgfDigest ->
+    WellKnownDigest.entries.asData("Data Digest") - { dataDigest ->
+        WellKnownDigest.entries.asData("Data Digest") - { mgfDigest ->
 
             mapOf(
-                "from ASN.1" to SignatureAlgorithm.RSA(
-                    SignatureAlgorithm.RSA.Parameters.PssPadded(
+                "from ASN.1" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
                         RsaSsaPssParams(
-                            hashAlgorithm = X509AlgorithmIdentifier(
-                                dataDigest.oid,
-                                listOf(Asn1Null),
-                            ),
-                            maskGenAlgorithm = X509AlgorithmIdentifier(
-                                SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1.oid,
-                                listOf(
-                                    Asn1.Sequence {
-                                        +mgfDigest.oid
-                                        +Asn1Null
-                                    }
-                                ),
-                            ),
+                            hashAlgorithm = dataDigest.asn1Representation,
+                            maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
                         )
                     )),
-                "from Signum" to SignatureAlgorithm.RSA(
-                    SignatureAlgorithm.RSA.Parameters.PssPadded(
+                "from Signum" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
                         digest = dataDigest,
-                        mgfAlgorithm = SignatureAlgorithm.RSA.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
+                        mgfAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
                             mgfDigest
                         )
                     )
-                )).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
+                )
+            ).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
 
 
                 val key = runBlocking {
-                    EphemeralKey {
+                    Signer.Ephemeral {
                         rsa {
-                            this.paddings = setOf(SignatureAlgorithm.RSA.Padding.PSS)
-                            this.digests = Digest.entries.toSet()
+                            this.padding = RsaAlgorithm.Padding.PSS
+                            this.digest = Digest.SHA256
                         }
                     }
-                }.getOrThrow()
+                }
 
-                val privateKey = runBlocking { key.exportPrivateKey().getOrThrow() }
-                val signer = rsaInstance.signerFor(privateKey).getOrThrow()
+                val privateKey = runBlocking { key.exportPrivateKey() }
+                val signer = rsaInstance.signerFor(privateKey)
                 signer.signatureAlgorithm shouldBe rsaInstance
 
                 compact("random payloads for RSA-PSS") - {
                     property(Arb.byteArray(Arb.int(1, 1000), Arb.byte()), iterations = 128) test { data ->
                         try {
                             val signumSigned = signer.sign(data).signature
-                            rsaInstance.verifierFor(key.publicKey).getOrThrow()
-                                .verify(data, signumSigned).shouldSucceed()
+                            rsaInstance.verifierFor(key.publicKey)
+                                .verify(data, signumSigned) shouldBe SignatureVerifier.Success
                         } catch (_: UnsupportedCryptoException) { /* pass */ }
                     }
                 }

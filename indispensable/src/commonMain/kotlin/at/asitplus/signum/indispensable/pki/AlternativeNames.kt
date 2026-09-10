@@ -14,7 +14,6 @@ import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.internals.orLazy
-import kotlinx.serialization.KSerializer
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
@@ -42,12 +41,8 @@ sealed interface AlternativeNames {
             X509AlternativeNames(generalNames, null)
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            serializer: KSerializer<X509GeneralNames>,
-            src: Asn1Element,
-            der: Der,
-        ): X509Representable =
-            X509AlternativeNames(null, der.decodeFromTlv(serializer, src))
+        override fun decodeFromTlv(element: X509GeneralNames, der: Der): X509Representable =
+            X509AlternativeNames(null, element)
 
         @Throws(Asn1Exception::class)
         fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {
@@ -75,6 +70,7 @@ private class X509AlternativeNames(
     providedGeneralNames: List<GeneralName>?,
     providedAsn1Representation: X509GeneralNames?,
 ) : AlternativeNames.X509Representable {
+    init { require((providedGeneralNames != null) != (providedAsn1Representation != null)) }
 
     override val asn1Representation: X509GeneralNames by providedAsn1Representation orLazy {
         X509GeneralNames(generalNames.map { it.requireX509().asn1Representation })

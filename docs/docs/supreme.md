@@ -36,7 +36,7 @@ implementation("at.asitplus.signum:supreme:$supreme_version")
 
 ## Key Design Principles
 The Supreme KMP crypto provider works differently than the JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
-and a `Verifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
+and a `SupremeVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
 In addition, creating ephemeral keys is a dedicated operation, decoupled from a `Provider`.
 The actual implementation of cryptographic functionality is delegated to platform-native implementations.
 
@@ -314,7 +314,7 @@ signer.sign(data) {
 
 ## Signature Verification
 
-To verify a signature, obtain a `Verifier` instance using `verifierFor(k: PublicKey)`, either directly on a
+To verify a signature, obtain a `SupremeVerifier` instance using `verifierFor(k: PublicKey)`, either directly on a
 `SignatureAlgorithm`, or on one of the specialized algorithms (`X509SignatureAlgorithm`, `CoseAlgorithm`, ...).
 A variety of constants, resembling the well-known JCA names, are also available in `SignatureAlgorithm`'s companion.
 
@@ -324,16 +324,10 @@ As an example, here's how to verify a basic signature using a public key:
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
-val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
+val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
 ```
-
-!!! tip
-    Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
-    If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.  
-    If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
-    That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
 
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.

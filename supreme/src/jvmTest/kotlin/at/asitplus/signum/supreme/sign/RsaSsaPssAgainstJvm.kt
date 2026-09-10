@@ -1,0 +1,92 @@
+package at.asitplus.signum.supreme.sign
+
+import at.asitplus.awesn1.crypto.RsaSsaPssParams
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.signerFor
+import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.engine.runBlocking
+import io.kotest.matchers.shouldBe
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import java.security.AlgorithmParameters
+import java.security.Signature
+import java.security.spec.PSSParameterSpec
+
+@OptIn(SecretExposure::class)
+val RsaSsaPssAgainstJvm by matrixSuite {
+
+    WellKnownDigest.entries.asData("Data Digest") - { dataDigest ->
+        WellKnownDigest.entries.asData("Data Digest") - { mgfDigest ->
+
+            mapOf(
+                "from ASN.1" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
+                    RsaSsaPssParams(
+                        hashAlgorithm = dataDigest.asn1Representation,
+                        maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                    )
+                )),
+                "from Signum" to RsaAlgorithm(
+                    RsaAlgorithm.Parameters.PssPadded(
+                        digest = dataDigest,
+                        mgfAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(
+                            mgfDigest
+                        )
+                    )
+                )
+            ).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
+
+
+                val key = runBlocking {
+                    Signer.Ephemeral {
+                        rsa {
+                            this.padding = RsaAlgorithm.Padding.PSS
+                        }
+                    }
+                }
+
+                val privateKey = runBlocking { key.exportPrivateKey() }
+                val signer = rsaInstance.signerFor(privateKey)
+                signer.signatureAlgorithm shouldBe rsaInstance
+
+                val data = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+                val signumSigned = runBlocking { signer.sign(data).signature }
+
+                val jvmParameters = AlgorithmParameters.getInstance("RSASSA-PSS").apply {
+                    init(AlgorithmIdentifier.getInstance(rsaInstance.encodeToDer()).parameters.toASN1Primitive().encoded)
+                }
+                val jvmSigned = Signature.getInstance("RSASSA-PSS").run {
+                    setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))
+                    initSign(privateKey.toJcaPrivateKey())
+                    update(data)
+                    sign()
+                }
+
+
+                "Signum's verifier against JCA signed" {
+                    rsaInstance.verifierFor(key.publicKey)
+                        .verify(data, RsaSignature.fromRawSignatureValue(jvmSigned)) shouldBe SignatureVerifier.Success
+                }
+                val jcaVerifier = Signature.getInstance("RSASSA-PSS").apply {
+                    setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))
+                    initVerify(key.publicKey.toJcaPublicKey())
+                    update(data)
+                }
+
+                "JCA verifier against Signum signed" {
+                    jcaVerifier.verify(signumSigned.jcaSignatureBytes) shouldBe true
+                }
+            }
+        }
+    }
+}

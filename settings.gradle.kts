@@ -41,12 +41,28 @@ if (awesn1.resolve("build.gradle.kts").isFile) {
         includeBuild(awesn1)
     }
 }
+val multibase = file("../multibase")
+if (multibase.resolve("build.gradle.kts").isFile) {
+    val localVersion = java.util.Properties().apply {
+        multibase.resolve("gradle.properties").inputStream().use(::load)
+    }.getProperty("artifactVersion")
+    val catalogVersion = file("gradle/libs.versions.toml").useLines { lines ->
+        lines.firstNotNullOf { Regex("""^multibase\s*=\s*"(.+)"""").find(it)?.groupValues?.get(1) }
+    }
+    if (org.gradle.util.internal.VersionNumber.parse(localVersion) >= org.gradle.util.internal.VersionNumber.parse(catalogVersion)) {
+        logger.lifecycle("Including multibase $localVersion as composite build")
+        includeBuild(multibase)
+    }
+}
 
 include(":internals")
 include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
 include(":supreme")
-gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?: include(":internals-test")
+if (gradle.startParameter.taskNames.none { it.contains("publish") }) {
+    include(":internals-test")
+    include(":extensibility-test")
+}
 rootProject.name = "Signum"
 include("cinterop")

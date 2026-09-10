@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.allDistinctByOids
@@ -10,8 +9,8 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.internals.orLazy
-import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 /**
  * The meat of a Certification Request:
@@ -25,6 +24,7 @@ class TbsCertificationRequest private constructor(
     providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     providedAsn1Representation: Pkcs10CertificationRequestInfo?,
 ) : DerEncodable<Pkcs10CertificationRequestInfo> {
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     private data class ContentContainer(
         val subjectName: Name,
@@ -75,7 +75,7 @@ class TbsCertificationRequest private constructor(
         Pkcs10CertificationRequestInfo(
             subjectName = providedContent.subjectName.requireX509().asn1Representation,
             publicKey = providedContent.publicKey.asn1Representation,
-            attributes = providedContent.attributes.map { it.requireX509().asn1Representation },
+            attributes = providedContent.attributes.mapTo(mutableSetOf()) { it.requireX509().asn1Representation },
         )
     }
 
@@ -128,11 +128,10 @@ class TbsCertificationRequest private constructor(
     companion object : DerDecodable<Pkcs10CertificationRequestInfo, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<Pkcs10CertificationRequestInfo>,
-            src: Asn1Element,
+            element: Pkcs10CertificationRequestInfo,
             der: Der,
         ): TbsCertificationRequest =
-            TbsCertificationRequest(der.decodeFromTlv(serializer, src))
+            TbsCertificationRequest(element)
     }
 }
 
@@ -145,7 +144,7 @@ private data class CertificationRequestContent(
     constructor(asn1Representation: Pkcs10CertificationRequest) : this(
         tbsCsr = TbsCertificationRequest(asn1Representation.certificationRequestInfo),
         signatureAlgorithm = SignatureAlgorithm(asn1Representation.signatureAlgorithm),
-        signature = CryptoSignature(asn1Representation.signatureAlgorithm.oid, asn1Representation.signatureValue)
+        signature = CryptoSignature(asn1Representation.signatureAlgorithm, asn1Representation.signatureValue)
     )
 }
 
@@ -157,6 +156,7 @@ class CertificationRequest private constructor(
     providedContent: CertificationRequestContent?, /*TODO EXTENSIBILITY private val */
     providedAsn1Representation: Pkcs10CertificationRequest?,
 ) : DerPemEncodable<Pkcs10CertificationRequest> {
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     override val pemLabel: String get() = canonicalPemLabel
 
@@ -220,11 +220,10 @@ class CertificationRequest private constructor(
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<Pkcs10CertificationRequest>,
-            src: Asn1Element,
+            element: Pkcs10CertificationRequest,
             der: Der,
         ): CertificationRequest =
-            CertificationRequest(der.decodeFromTlv(serializer, src))
+            CertificationRequest(element)
     }
 }
 

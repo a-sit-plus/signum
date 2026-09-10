@@ -1,10 +1,13 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.supreme.Supreme
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
@@ -13,10 +16,8 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.json.JsonElement
 import java.security.interfaces.RSAPublicKey
-import de.infix.testBalloon.framework.core.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.core.testScope
 
+val none_ = Supreme.init()
 val JwsSignedTest  by matrixSuite {
 
     compact("JWS can be parsed and verified") - {
@@ -40,7 +41,7 @@ val JwsSignedTest  by matrixSuite {
     "JWS example" {
         val signer = Signer.Ephemeral {
             ec { curve = ECCurve.SECP_256_R_1 }
-        }.getOrThrow() //TODO handle error
+        }
 
         val header = JwsHeader(
             algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),

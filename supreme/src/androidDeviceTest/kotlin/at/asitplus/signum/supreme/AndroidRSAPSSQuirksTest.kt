@@ -1,0 +1,24 @@
+package at.asitplus.signum.supreme
+
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.Of
+import at.asitplus.signum.dsl.jvm
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldNotThrowAny
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import kotlin.random.Random
+
+val AndroidRSAPSSQuirksTest by matrixSuite {
+    "Specific provider (not AndroidKeyStore)" {
+        val signer = Signer.Ephemeral {
+            rsa { padding = RsaAlgorithm.Padding.PKCS1 }
+            jvm { provider = JCAProviderRef.Of(BouncyCastleProvider()) }
+        }
+        shouldNotThrowAny { val _ = signer.sign(Random.nextBytes(16)).signature }
+    }
+}

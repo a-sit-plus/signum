@@ -144,7 +144,7 @@ The following functions provide interop functionality with platform types.
 * `CryptoPrivateKey.WihtPublicKey<*>.toJcaPublicKey()` returns the JCA-representation of the private key
 * `CryptoPrivateKey.EC.WithPublicKey.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
 * `CryptoPrivateKey.RSA.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
-* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.WithPublicKey<*>` from a JCA Public Key
+* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.WithPublicKey` from a JCA Public Key
 * `ECPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.EC.WithPublicKey` from a JCA EC Public Key
 * `RSAPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.RSA` from a JCA RSA Public Key
 

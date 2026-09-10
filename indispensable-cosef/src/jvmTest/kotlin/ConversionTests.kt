@@ -1,8 +1,9 @@
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -12,6 +13,7 @@ import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 
 //somehow including kmmresult-test makes this fail
+@IgnorableReturnValue
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
@@ -19,12 +21,18 @@ val ConversionTests by matrixSuite {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
-            data(CoseAlgorithm.DataIntegrity.entries) test {
+            data(CoseAlgorithm.Signature.entries) test {
+                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+            }
+            data(CoseAlgorithm.MAC.entries) test {
                 it.algorithm.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {
-            data(CoseAlgorithm.DataIntegrity.entries) test {
+            data(CoseAlgorithm.Signature.entries) test {
+                it.toCoseAlgorithm() shouldSucceedWith it
+            }
+            data(CoseAlgorithm.MAC.entries) test {
                 it.toCoseAlgorithm() shouldSucceedWith it
             }
         }
@@ -32,7 +40,7 @@ val ConversionTests by matrixSuite {
     "COSE -> SigAlg -> COSE" - {
         data(CoseAlgorithm.Signature.entries) - {
             it.algorithm.asn1Representation.let { x509 ->
-                if (it.algorithm is SignatureAlgorithm.ECDSA && (it.algorithm as SignatureAlgorithm.ECDSA).requiredCurve != null) {
+                if (it.algorithm is EcdsaAlgorithm && (it.algorithm as EcdsaAlgorithm).requiredCurve != null) {
                     "Curve information is lost" {
                         val algorithm = SignatureAlgorithm(x509).toCoseAlgorithm().getOrThrow()
                         algorithm shouldNotBe it
@@ -60,4 +68,4 @@ val ConversionTests by matrixSuite {
 
 private fun randomPublicKey() =
     (KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-        .genKeyPair().public as ECPublicKey).toCryptoPublicKey().getOrThrow()
+        .genKeyPair().public as ECPublicKey).toCryptoPublicKey()

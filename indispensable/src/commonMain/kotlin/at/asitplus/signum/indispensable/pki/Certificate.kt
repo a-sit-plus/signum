@@ -9,6 +9,7 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -16,7 +17,6 @@ import at.asitplus.signum.internals.orLazy
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Transient
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -31,8 +31,7 @@ class TbsCertificate private constructor(
     providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     private val providedAsn1Representation: X509TbsCertificate?, /*TODO EXTENSIBILITY THIS SHOULD NOT BE A VAL but we need it for temp PFUSCH equals*/
 ) : DerEncodable<X509TbsCertificate> {
-
-
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     private data class ContentContainer(
         val serialNumber: Asn1Integer,
@@ -224,11 +223,10 @@ class TbsCertificate private constructor(
     companion object : DerDecodable<X509TbsCertificate, TbsCertificate> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<X509TbsCertificate>,
-            src: Asn1Element,
+            element: X509TbsCertificate,
             der: Der,
         ): TbsCertificate =
-            TbsCertificate(der.decodeFromTlv(serializer, src))
+            TbsCertificate(element)
     }
 }
 
@@ -240,6 +238,8 @@ class Certificate private constructor(
     providedContent: TbsCertificate?, /*TODO EXTENSIBILITY private val*/
     providedSignature: CryptoSignature? /*TODO EXTENSIBILITY private val*/
 ) : DerPemEncodable<X509Certificate> {
+    init { require((providedContent != null) == (providedSignature != null)) }
+    init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     override val pemLabel: String get() = canonicalPemLabel
 
@@ -271,7 +271,7 @@ class Certificate private constructor(
     }
 
     val signature: CryptoSignature by providedSignature orLazy {
-        CryptoSignature(asn1Representation.signatureAlgorithm.oid, asn1Representation.signatureValue)
+        CryptoSignature(asn1Representation.signatureAlgorithm, asn1Representation.signatureValue)
     }
 
     /*TODO EXTENSIBILITY delete, cuz replaced with private val in ctor*/
@@ -393,11 +393,10 @@ class Certificate private constructor(
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
-            serializer: KSerializer<X509Certificate>,
-            src: Asn1Element,
+            element: X509Certificate,
             der: Der,
         ): Certificate =
-            Certificate(der.decodeFromTlv(serializer, src))
+            Certificate(element)
 
         @Throws(Asn1Exception::class)
         fun decodeFromTlv(src: Asn1Element): Certificate =

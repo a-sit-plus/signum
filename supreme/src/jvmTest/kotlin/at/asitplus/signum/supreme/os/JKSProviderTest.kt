@@ -1,14 +1,24 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.sign.SignatureInput
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.parseJCASignature
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.makeVerifier
+import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
-import at.asitplus.signum.supreme.signature
-import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.testballoon.matrix.*
-import io.kotest.matchers.should
+import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
 import io.kotest.property.arbitrary.Codepoint
@@ -21,15 +31,15 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 val JKSProviderTest  by matrixSuite {
     "Ephemeral" {
-        val ks = JKSProvider.Ephemeral().getOrThrow()
+        val ks = JKSProvider.Ephemeral()
         val alias = "Elfenbeinschloss"
-        ks.getSignerForKey(alias) shouldNot succeed
-        val signer = ks.createSigningKey(alias).getOrThrow()
-        val otherSigner = ks.getSignerForKey(alias).getOrThrow()
+        shouldThrow<NoSuchElementException> { ks.getSignerForKey(alias) }
+        val signer = ks.createSigningKey(alias)
+        val otherSigner = ks.getSignerForKey(alias)
 
         val data = Random.Default.nextBytes(64)
         val signature = signer.sign(data).signature
-        otherSigner.makeVerifier().getOrThrow().verify(data, signature) should succeed
+        otherSigner.makeVerifier().verify(data, signature) shouldBe SignatureVerifier.Success
     }
     "Key With Password" {
         val ks = JKSProvider {
@@ -40,13 +50,13 @@ val JKSProviderTest  by matrixSuite {
                 /* test auto-detection */
                 storeType shouldBe "pkcs12"
             }
-        }.getOrThrow()
+        }
         val alias = "Moria"
         val correctKeyPassword = "Mellon".toCharArray()
         val wrongKeyPassword = "Edro".toCharArray()
-        ks.getSignerForKey(alias) shouldNot succeed
-        ks.getSignerForKey(alias) { privateKeyPassword = wrongKeyPassword } shouldNot succeed
-        val signer = ks.getSignerForKey(alias) { privateKeyPassword = correctKeyPassword }.getOrThrow()
+        shouldThrowAny { ks.getSignerForKey(alias) }
+        shouldThrowAny { ks.getSignerForKey(alias) { privateKeyPassword = wrongKeyPassword }}
+        val signer = ks.getSignerForKey(alias) { privateKeyPassword = correctKeyPassword }
         signer.publicKey.encodeToDer().toHexString(HexFormat.UpperCase) shouldBe
                 "3059301306072A8648CE3D020106082A8648CE3D030107034200046EEDD7DCE99AA264797906CE55BC158E4" +
                 "22EA9722E7EB0F0A6C7C9AB53F4B0D09176D8D169F52872BE2ED31D33C9ABD5785BB1DF96F53213BA659636" +
@@ -64,14 +74,14 @@ val JKSProviderTest  by matrixSuite {
                     file = tempfile
                     password = correctPassword
                 }
-            }.getOrThrow().also {
-                it.getSignerForKey(alias) shouldNot succeed
-                it.createSigningKey(alias) should succeed
-                it.createSigningKey(alias) shouldNot succeed
-                it.getSignerForKey(alias) should succeed
-                it.deleteSigningKey(alias)
-                it.getSignerForKey(alias) shouldNot succeed
-                it.createSigningKey(alias) should succeed
+            }.also {
+                shouldThrow<NoSuchElementException> { it.getSignerForKey(alias) }
+                shouldNotThrowAny { it.createSigningKey(alias) }
+                shouldThrow<NoSuchElementException> { it.createSigningKey(alias) }
+                shouldNotThrowAny { it.getSignerForKey(alias) }
+                shouldNotThrowAny { it.deleteSigningKey(alias) }
+                shouldThrow<NoSuchElementException> { it.getSignerForKey(alias) }
+                shouldNotThrowAny { val _ = it.createSigningKey(alias) }
             }
 
             JKSProvider {
@@ -79,9 +89,9 @@ val JKSProviderTest  by matrixSuite {
                     file = tempfile
                     password = wrongPassword
                 }
-            }.getOrThrow().let {
+            }.let {
                 // wrong password should fail
-                it.getSignerForKey(alias) shouldNot succeed
+                shouldThrowAny { it.getSignerForKey(alias) }
             }
 
             JKSProvider {
@@ -89,13 +99,13 @@ val JKSProviderTest  by matrixSuite {
                     file = tempfile
                     password = correctPassword
                 }
-            }.getOrThrow().let {
-                it.getSignerForKey(alias) should succeed
+            }.let {
+                shouldNotThrowAny { it.getSignerForKey(alias) }
                 it.deleteSigningKey(alias)
             }
 
             // check that ks1 "sees" the deletion that was made by ks3
-            ks1.getSignerForKey(alias) shouldNot succeed
+            shouldThrow<NoSuchElementException> { ks1.getSignerForKey(alias) }
         } finally {
             Files.deleteIfExists(tempfile)
         }
@@ -103,27 +113,27 @@ val JKSProviderTest  by matrixSuite {
     "Certificate encoding" - {
         data(TestSuites.ALL) test { test ->
             val alias = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(RandomSource.default()).value
-            val ks = JKSProvider().getOrThrow()
+            val ks = JKSProvider()
             val signer = ks.createSigningKey(alias) {
                 test.configure(this)
-            }.getOrThrow()
+            }
 
             val data = SignatureInput(Random.nextBytes(1200)).let {
-                if (test.isPreHashed) it.convertTo(signer.signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
+                if (test.isPreHashed) it.convertTo(signer.signatureAlgorithm.preHashedSignatureFormat)
                 else it
             }
             val signature = try {
                 signer.sign(data).signature
-            } catch (x: UnsupportedOperationException) {
+            } catch (_: UnsupportedOperationException) {
                 return@test
             }
-            CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
+            signer.signatureAlgorithm.parseJCASignature(signature.jcaSignatureBytes) shouldBe signature
             when (signer.signatureAlgorithm) {
-                is SignatureAlgorithm.RSA ->
-                    CryptoSignature.RSA.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                is RsaAlgorithm ->
+                    RsaSignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
 
-                is SignatureAlgorithm.ECDSA ->
-                    CryptoSignature.EC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                is EcdsaAlgorithm ->
+                    EcdsaSignature.fromRawSignatureValue(signature.jcaSignatureBytes) shouldBe signature
             }
 
             signer.signatureAlgorithm.let {

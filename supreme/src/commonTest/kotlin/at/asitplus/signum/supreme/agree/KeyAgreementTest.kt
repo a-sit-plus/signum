@@ -2,15 +2,18 @@ package at.asitplus.signum.supreme.agree
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.keyAgreement
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 val KeyAgreementTest by matrixSuite {
 
     "000 Key Agreement Simple Equality Test" {
-        val self = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
+        val self = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1)
 
 
         val pkcs8 = """
@@ -23,8 +26,8 @@ val KeyAgreementTest by matrixSuite {
         val other =
             CryptoPrivateKey.decodeFromPem(pkcs8) as KeyAgreementPrivateValue.ECDH
 
-        val symmetric1 = self.keyAgreement(other.publicValue).getOrThrow()
-        val symmetric2 = other.keyAgreement(self.publicValue).getOrThrow()
+        val symmetric1 = self.keyAgreement(other.publicValue)
+        val symmetric2 = other.keyAgreement(self.publicValue)
 
         symmetric1 shouldBe symmetric2
 
@@ -33,18 +36,20 @@ val KeyAgreementTest by matrixSuite {
     "Key Agreement Failure Test" - {
         repeat(100) {
             listOf(ECCurve.SECP_384_R_1 to false, ECCurve.SECP_521_R_1 to false, ECCurve.SECP_256_R_1 to true).asData() test { (crv, success) ->
-                val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
-                val other = KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
-                other.keyAgreement(base.publicValue).isSuccess shouldBe success
-                base.keyAgreement(other.publicValue).isSuccess shouldBe success
+                val base = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1)
+                val other = KeyAgreementPrivateValue.ECDH.Ephemeral(crv)
 
                 if (success) {
-                    val agreed = other.keyAgreement(base.publicValue).getOrThrow()
-                    agreed shouldBe base.keyAgreement(other.publicValue).getOrThrow()
-                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
-                        .keyAgreement(base.publicValue) shouldNotBe agreed
-                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
-                        .keyAgreement(other.publicValue) shouldNotBe agreed
+                    val key1 = shouldNotThrowAny { other.keyAgreement(base.publicValue) }
+                    val key2 = shouldNotThrowAny { base.keyAgreement(other.publicValue) }
+                    key1 shouldBe key2
+                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv)
+                        .keyAgreement(base.publicValue) shouldNotBe key1
+                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv)
+                        .keyAgreement(other.publicValue) shouldNotBe key2
+                } else {
+                    shouldThrowAny { other.keyAgreement(base.publicValue) }
+                    shouldThrowAny { base.keyAgreement(other.publicValue) }
                 }
             }
         }

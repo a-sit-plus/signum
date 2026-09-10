@@ -8,7 +8,15 @@ import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.mac.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
@@ -41,7 +49,7 @@ sealed interface CoseAlgorithm : Enumerable {
     val value get() = coseValue
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
+    sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm {
         companion object : Enumeration<DataIntegrity> {
             override val entries: Collection<DataIntegrity> by lazy { Signature.entries + MAC.entries }
         }
@@ -88,29 +96,29 @@ sealed interface CoseAlgorithm : Enumerable {
 
         // ECDSA with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object ES256 : Signature(-7, SignatureAlgorithm.ECDSAwithSHA256)
+        data object ES256 : Signature(-7, EcdsaAlgorithm.withSHA256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP256 :
-            Signature(-9, SignatureAlgorithm.ECDSA(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1))
+            Signature(-9, EcdsaAlgorithm(Digest.SHA256, requiredCurve = ECCurve.SECP_256_R_1))
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ES384 : Signature(-35, SignatureAlgorithm.ECDSAwithSHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP384 :
-            Signature(-51, SignatureAlgorithm.ECDSA(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1))
+            Signature(-51, EcdsaAlgorithm(Digest.SHA384, requiredCurve = ECCurve.SECP_384_R_1))
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ES512 : Signature(-36, SignatureAlgorithm.ECDSAwithSHA512)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ESP512 :
-            Signature(-52, SignatureAlgorithm.ECDSA(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1))
+            Signature(-52, EcdsaAlgorithm(Digest.SHA512, requiredCurve = ECCurve.SECP_521_R_1))
 
         // RSASSA-PSS with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object PS256 : Signature(-37, SignatureAlgorithm.RSAwithSHA256andPSSPadding)
+        data object PS256 : Signature(-37, RsaAlgorithm.withSHA256andPSSPadding)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object PS384 : Signature(-38, SignatureAlgorithm.RSAwithSHA384andPSSPadding)
@@ -130,7 +138,7 @@ sealed interface CoseAlgorithm : Enumerable {
 
         // RSASSA-PKCS1-v1_5 using SHA-1
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(SignatureAlgorithm.RSA.Parameters.Pkcs1Padded(Digest.SHA1)))
+        data object RS1 : Signature(-65535, RsaAlgorithm(RsaAlgorithm.Parameters.Pkcs1Padded(Digest.SHA1)))
 
         companion object : Enumeration<Signature> {
             override val entries: Collection<Signature> by lazy {
@@ -289,7 +297,7 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+        is EcdsaAlgorithm -> when (this.digest) {
             Digest.SHA256 -> when (this.requiredCurve) {
                 ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
                 null -> CoseAlgorithm.Signature.ES256
@@ -308,32 +316,31 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
             }
 
-            else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
+            Digest.SHA1 -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
+
+            else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
         }
 
-        is SignatureAlgorithm.RSA -> when (this.parameters) {
-            is SignatureAlgorithm.RSA.Parameters.Pkcs1Padded -> when (this.digest) {
+        is RsaAlgorithm -> when (this.parameters) {
+            is RsaAlgorithm.Parameters.Pkcs1Padded -> when (this.digest) {
                 Digest.SHA1 -> CoseAlgorithm.Signature.RS1
                 Digest.SHA256 -> CoseAlgorithm.Signature.RS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.RS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.RS512
+                else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
 
-            is SignatureAlgorithm.RSA.Parameters.PssPadded -> when (this.digest) {
+            is RsaAlgorithm.Parameters.PssPadded -> when (this.digest) {
                 Digest.SHA256 -> CoseAlgorithm.Signature.PS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
-                else -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
+                Digest.SHA1 -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
+                else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
             }
         }
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 }
-
-fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
-    when (this) {
-        is SignatureAlgorithm -> toCoseAlgorithm()
-        is MessageAuthenticationCode -> toCoseAlgorithm()
-    }
 
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
 fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {
@@ -346,6 +353,7 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
             (inner == HMAC.SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
             else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
         }
+        else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 }
 
@@ -362,10 +370,6 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> =
-    this.algorithm.toCoseAlgorithm()
-
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
-fun SpecializedDataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
     this.algorithm.toCoseAlgorithm()
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */

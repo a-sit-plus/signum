@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.dsl
 
+import at.asitplus.signum.dsl.DSL
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -16,15 +17,14 @@ private class Settings: DSL.Data() {
         var nBerries = 5
     }
     /* we define a holder that can hold any flavor */
-    /* "internal" because the generic accessor shouldn't be visible to users */
     /* this is null by default; a default could be explicitly specified, making this non-nullable */
-    internal val _flavor = subclassOf<SmoothieFlavor>()
+    val _flavor = subclassOf<SmoothieFlavor>("FLAVOR")
     /* and then we define user-visible accessors for the different flavors */
-    val banana = _flavor.option(::BananaFlavor)
-    val strawberry = _flavor.option(::StrawberryFlavor)
+    val banana get() = _flavor.option("BANANA", ::BananaFlavor)
+    val strawberry get() = _flavor.option("STRAWBERRY", ::StrawberryFlavor)
 
     override fun validate() {
-        require(_flavor.v != null)
+        require(_flavor.isSet)
             { "You need to choose a flavor!" }
     }
 }
@@ -54,14 +54,15 @@ val DSLVarianceDemonstration  by matrixSuite {
 private fun doWithConfiguration(configure: (Settings.()->Unit)? = null) {
     val config = DSL.resolve(::Settings, configure)
 
-    // we can access the result through the generic accessor
-    // non-null was checked in the validator already
-    when (val flavor = config._flavor.v!!) {
+    // we can access the result through the accessors, or use the helper
+    when (val flavor = DSL.options(config.banana, config.strawberry)) {
         is Settings.BananaFlavor -> {
             flavor.preparation shouldBe Preparation.SHAKEN
         }
         is Settings.StrawberryFlavor -> {
             flavor.nBerries shouldBe 202
         }
+        // non-null was checked in the validator already
+        null -> error("unreachable")
     }
 }

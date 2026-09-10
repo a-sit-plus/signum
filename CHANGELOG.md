@@ -6,6 +6,8 @@ This is a major refactor!
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
+* `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
+* `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Dependency Updates:
     * Bouncy Castle 1.85
     * multibase 1.3.0
@@ -626,7 +628,7 @@ The full list of changes is:
 
 **Fixes**
 
-* Standardize class names: `Ec` -> `EC` everywhere
+* Standardize class names: `Ec` -> `EcdsaVerifier` everywhere
 * Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
 * Remove bogus ASN.1 encoding from JWS Algorithms
     * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes

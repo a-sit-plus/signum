@@ -4,22 +4,31 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.indispensable.SignatureAlgorithm.RSA.Padding as RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.dsl.SigningKeyConfiguration
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.supreme.os.SignerConfiguration
-import at.asitplus.signum.supreme.sign
-import at.asitplus.signum.supreme.signature
-import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.dsl.SignerConfiguration
+import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.makeVerifier
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.signerFor
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.collections.shouldBeIn
-import io.kotest.matchers.collections.shouldNotBeIn
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -31,7 +40,7 @@ interface SignatureTestSuite {
     fun configure(it: SignerConfiguration)
 }
 
-data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val isPreHashed: Boolean) :
+data class ECDSATestSuite(val curve: ECCurve, val digest: WellKnownDigest, override val isPreHashed: Boolean) :
     SignatureTestSuite {
     override fun toString() = "ECDSA/$curve/$digest${if (isPreHashed) "/pre" else ""}"
     override fun configure(it: SigningKeyConfiguration) {
@@ -53,7 +62,7 @@ data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val i
 
 data class RSATestSuite(
     val padding: RSAPadding,
-    val digest: Digest,
+    val digest: WellKnownDigest,
     val keySize: Int,
     override val isPreHashed: Boolean
 ) : SignatureTestSuite {
@@ -82,7 +91,7 @@ object TestSuites {
     val ECDSA
         get() = sequence {
             ECCurve.entries.forEach { curve ->
-                Digest.entries.forEach { digest ->
+                WellKnownDigest.entries.forEach { digest ->
                     yield(ECDSATestSuite(curve, digest, false))
                     yield(ECDSATestSuite(curve, digest, true))
                 }
@@ -91,7 +100,7 @@ object TestSuites {
     val RSA
         get() = sequence {
             RSAPadding.entries.forEach { padding ->
-                Digest.entries.forEach { digest ->
+                WellKnownDigest.entries.forEach { digest ->
                     when {
                         digest == Digest.SHA512 && padding == RSAPadding.PSS
                             -> listOf(2048, 3072, 4096)
@@ -120,49 +129,55 @@ val EphemeralSignerCommonTests by matrixSuite {
                 val signature = try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
+                            this.digest = digest; this.padding = padding; bits = keySize
                         }
-                    }.getOrThrow()
-                    signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(digest).getOrThrow() else it
+                    }
+                    val delimiter = Random.nextInt(1, data.size-1)
+                    val data1 = data.copyOfRange(0, delimiter)
+                    val data2 = data.copyOfRange(delimiter, data.size)
+                    signer.sign(SignatureInput(sequenceOf(data1, byteArrayOf(), data2)).let {
+                        if (preHashed) it.convertTo(digest) else it
                     }).signature
-                } catch (x: UnsupportedOperationException) {
+                } catch (_: UnsupportedOperationException) {
                     return@test
                 }
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
-                    it.parameters shouldBe SignatureAlgorithm.RSA.Parameters(padding, digest)
+                signer.signatureAlgorithm.shouldBeInstanceOf<RsaAlgorithm>().let {
+                    it.parameters shouldBe RsaAlgorithm.Parameters(padding, digest)
                 }
 
                 val secondSig = signer.exportPrivateKey()
-                    .transform { signer.signatureAlgorithm.signerFor(it) }.getOrThrow()
+                    .let { signer.signatureAlgorithm.signerFor(it) }
                     .sign(data).signature
 
-                val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(data, signature) should succeed
-                verifier.verify(data, secondSig) should succeed
+                val verifier = signer.makeVerifier()
+                shouldNotThrowAny { verifier.verify(data, signature) }
+                shouldNotThrowAny { verifier.verify(data, secondSig) }
             }
         }
         "ECDSA" - {
             data(TestSuites.ECDSA) test { (crv, digest, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer =
-                    Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
+                    Signer.Ephemeral { ec { curve = crv; this.digest = digest } }
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
-                val signature = signer.sign(SignatureInput(data).let {
-                    if (preHashed) it.convertTo(digest).getOrThrow() else it
+                val delimiter = Random.nextInt(1, data.size-1)
+                val data1 = data.copyOfRange(0, delimiter)
+                val data2 = data.copyOfRange(delimiter, data.size)
+                val signature = signer.sign(SignatureInput(sequenceOf(data1, byteArrayOf(), data2)).let {
+                    if (preHashed) it.convertTo(digest) else it
                 }).signature
 
 
                 val secondSig = signer.exportPrivateKey()
-                    .transform { signer.signatureAlgorithm.signerFor(it) }.getOrThrow()
+                    .let { signer.signatureAlgorithm.signerFor(it) }
                     .sign(data).signature
 
-                val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(data, signature) should succeed
-                verifier.verify(data, secondSig) should succeed
+                val verifier = signer.makeVerifier()
+                shouldNotThrowAny { verifier.verify(data, signature) }
+                shouldNotThrowAny { verifier.verify(data, secondSig) }
             }
         }
     }
@@ -170,71 +185,24 @@ val EphemeralSignerCommonTests by matrixSuite {
         "ECDSA" - {
             "No digest specified (defaults to native)" {
                 val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey { ec { this.curve = curve } }.getOrThrow()
-                val signer = key.signer().getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe curve.nativeDigest
+                val signer = Signer.Ephemeral { ec { this.curve = curve } }
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().digest shouldBe curve.nativeDigest
 
-                key.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it) } should succeed
-            }
-            "No digest specified, native disallowed, still succeeds" {
-                val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey {
-                    ec {
-                        this.curve = curve; digests = Digest.entries.filter { it != curve.nativeDigest }.toSet()
-                    }
-                }.getOrThrow()
-                val signer = key.signer().getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldNotBeIn setOf(
-                    curve.nativeDigest,
-                    null
-                )
-
-                key.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it) } should succeed
-            }
-            "All digests legal by default" {
-                val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey { ec { this.curve = curve } }.getOrThrow()
-                val nonNativeDigest = Random.of(Digest.entries.filter { it != curve.nativeDigest })
-                val signer = key.signer { ec { digest = nonNativeDigest } }.getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe nonNativeDigest
-
-                key.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it) } should succeed
-            }
-            "Illegal digests should fail" {
-                val curve = Random.of(ECCurve.entries)
-                val key = EphemeralKey {
-                    ec {
-                        this.curve = curve; digests = Digest.entries.filter { it != curve.nativeDigest }.toSet()
-                    }
-                }.getOrThrow()
-                key.signer { ec { digest = curve.nativeDigest } } shouldNot succeed
-            }
-            "Null digest should work as a default" {
-                val key = EphemeralKey {
-                    ec {
-                        this.curve = Random.of(ECCurve.entries); digests = setOf<Digest?>(null)
-                    }
-                }.getOrThrow()
-                val signer = key.signer().getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe null
-
-                key.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it) } should succeed
+                shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
             "Null digest should work if explicitly specified" {
-                val key = EphemeralKey { ec {} }.getOrThrow()
-                val signer = key.signer { ec { digest = null } }.getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe null
+                val signer = Signer.Ephemeral { ec { digest = null } }
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().digest shouldBe null
 
-                key.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it) } should succeed
+                shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
         }
         "RSA" - {
             "No digest specified" {
-                val key = EphemeralKey { rsa {} }.getOrThrow()
-                val signer = key.signer().getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>()
+                val signer = Signer.Ephemeral { rsa {} }
+                signer.signatureAlgorithm.shouldBeInstanceOf<RsaAlgorithm>()
 
-                key.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it) } should succeed
+                shouldNotThrowAny { signer.exportPrivateKey().let { signer.signatureAlgorithm.signerFor(it) } }
             }
         }
     }
@@ -248,13 +216,13 @@ val EphemeralSignerCommonTests by matrixSuite {
                 try {
                     signer = Signer.Ephemeral {
                         rsa {
-                            digests = setOf(digest); paddings = setOf(padding); bits = keySize
+                            this.digest = digest; this.padding = padding; bits = keySize
                         }
-                    }.getOrThrow()
+                    }
                     signer.sign(SignatureInput(data).let {
-                        if (preHashed) it.convertTo(digest).getOrThrow() else it
+                        if (preHashed) it.convertTo(digest) else it
                     }).signature
-                } catch (x: UnsupportedOperationException) {
+                } catch (_: UnsupportedOperationException) {
                     return@test
                 }
 
@@ -271,11 +239,11 @@ val EphemeralSignerCommonTests by matrixSuite {
                     )
                 )
                 if (digest == Digest.SHA1 && padding == RSAPadding.PSS) return@test
-                val signedCSR = signer.sign(csr).getOrThrow()
+                val signedCSR = signer.sign(csr)
 
 
-                val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
+                val verifier = signer.makeVerifier()
+                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr, signedCSR.signature) }
 
 
                 val tbsCrt = TbsCertificate(
@@ -294,9 +262,9 @@ val EphemeralSignerCommonTests by matrixSuite {
                         )
                     )
                 )
-                val cert = signer.sign(tbsCrt).getOrThrow()
+                val cert = signer.sign(tbsCrt)
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
+                shouldNotThrowAny { verifier.verify(cert.tbsCertificate, cert.signature) }
 
             }
         }
@@ -304,8 +272,8 @@ val EphemeralSignerCommonTests by matrixSuite {
         "ECDSA" - {
             data(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) test { (crv, digest, _) ->
                 val signer =
-                    Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
-                signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
+                    Signer.Ephemeral { ec { curve = crv; this.digest = digest } }
+                signer.signatureAlgorithm.shouldBeInstanceOf<EcdsaAlgorithm>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
@@ -321,11 +289,11 @@ val EphemeralSignerCommonTests by matrixSuite {
                         )
                     )
                 )
-                val signedCSR = signer.sign(csr).getOrThrow()
+                val signedCSR = signer.sign(csr)
 
 
-                val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
+                val verifier = signer.makeVerifier()
+                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr, signedCSR.signature) }
 
 
                 val tbsCrt = TbsCertificate(
@@ -344,9 +312,9 @@ val EphemeralSignerCommonTests by matrixSuite {
                         )
                     )
                 )
-                val cert = signer.sign(tbsCrt).getOrThrow()
+                val cert = signer.sign(tbsCrt)
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
+                shouldNotThrowAny { verifier.verify(cert.tbsCertificate, cert.signature) }
             }
         }
     }

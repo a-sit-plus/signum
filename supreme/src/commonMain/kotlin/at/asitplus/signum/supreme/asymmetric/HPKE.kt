@@ -1,15 +1,15 @@
 package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
-import at.asitplus.signum.indispensable.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.NonceTrait
@@ -22,14 +22,13 @@ import at.asitplus.signum.indispensable.symmetric.nonceSize
 import at.asitplus.signum.indispensable.symmetric.sealedBox
 import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.agree.Ephemeral
-import at.asitplus.signum.supreme.agree.keyAgreement
+import at.asitplus.signum.indispensable.agree.keyAgreement
 import at.asitplus.signum.supreme.kdf.expandStep
 import at.asitplus.signum.supreme.kdf.extractStep
 import at.asitplus.signum.supreme.symmetric.Encryptor
 import at.asitplus.signum.supreme.symmetric.decrypt
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import kotlinx.coroutines.runBlocking
 import kotlin.experimental.and
 
 /** I2OSP (Integer To Octet String Primitive) for case len = 1 only */
@@ -50,12 +49,13 @@ private inline fun i2ospForLen2(value: Int): ByteArray {
     return byteArrayOf(((value shr 8) and 0xff).toByte(), (value and 0xff).toByte())
 }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun os2ip(value: ByteArray): BigInteger = BigInteger.fromByteArray(value, Sign.POSITIVE)
 
 private fun concat(vararg datas: ByteArray): ByteArray {
     val totalSize = datas.sumOf { it.size }
     val result = ByteArray(totalSize)
-    datas.fold(0, { offset, data ->
+    val _ = datas.fold(0, { offset, data ->
         data.copyInto(result, destinationOffset = offset)
         return@fold offset+data.size
     })
@@ -134,10 +134,10 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                     get() = BitLength.fromBytes(hkdf.outputLength)
 
                 override suspend fun Expand(prk: ByteArray, info: ByteArray, L: BitLength) =
-                    hkdf.expandStep(prk, info, L).getOrThrow()
+                    hkdf.expandStep(prk, info, L)
 
                 override suspend fun Extract(salt: ByteArray?, ikm: ByteArray) =
-                    hkdf.extractStep(salt, ikm).getOrThrow()
+                    hkdf.extractStep(salt, ikm)
             }
 
             /** well-known KDFs as referenced in RFC9180 section 7.2 */
@@ -331,7 +331,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
     {
         override val suiteId = concat("KEM".encodeToByteArray(), i2ospForLen2(kemId))
         private suspend fun DH(sk: KeyAgreementPrivateValue.ECDH, pk: KeyAgreementPublicValue.ECDH) =
-              sk.keyAgreement(pk).getOrThrow()
+              sk.keyAgreement(pk)
 
         override val Nsecret get() = dhGroup.nativeDigest.outputLength
         override val Nenc get() = Npk
@@ -342,7 +342,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         override suspend fun GenerateKeyPair(): KeyPair<KeyAgreementPrivateValue.ECDH, KeyAgreementPublicValue.ECDH> {
             // ECDH.Ephemeral is suspend; bridge it the same way DH() does just above (runBlocking),
             // rather than rippling `suspend` through the entire sender-side KEM/Seal public API.
-            val it =  KeyAgreementPrivateValue.ECDH.Ephemeral(curve = dhGroup).getOrThrow()
+            val it =  KeyAgreementPrivateValue.ECDH.Ephemeral(curve = dhGroup)
             return KeyPair(it, it.publicValue)
         }
 
@@ -357,14 +357,14 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                 sk = os2ip(bytes)
                 counter += 1
             }
-            val key = CryptoPrivateKey.EC.WithPublicKey(sk, dhGroup, true, true)
+            val key = EcdsaPrivateKey.WithPublicKey(sk, dhGroup, true, true)
             return KeyPair(key, key.publicValue)
         }
 
         override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asCryptoPublicKey().toAnsiX963Encoded(useCompressed = false)
-        override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = CryptoPublicKey.EC.fromAnsiX963Bytes(dhGroup, pkXm)
-        override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as CryptoPrivateKey.EC.WithPublicKey).privateKeyBytes
-        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = CryptoPrivateKey.EC.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)
+        override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = EcdsaPublicKey.fromAnsiX963Bytes(dhGroup, pkXm)
+        override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as EcdsaPrivateKey.WithPublicKey).privateKeyBytes
+        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EcdsaPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)
 
         private suspend fun ExtractAndExpand(dh: ByteArray, kem_context: ByteArray): ByteArray {
             val eae_prk = LabeledExtract(byteArrayOf(), "eae_prk".encodeToByteArray(), dh)
