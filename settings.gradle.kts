@@ -30,7 +30,7 @@ develocity {
 
 
 // Include the local build logic as a composite build
-includeBuild("buildlogic")
+includeBuild("buildlogic")/*
 val awesn1 = file("../awesn1")
 if (awesn1.resolve("build.gradle.kts").isFile) {
     val localVersion = java.util.Properties().apply {
@@ -56,7 +56,7 @@ if (multibase.resolve("build.gradle.kts").isFile) {
         logger.lifecycle("Including multibase $localVersion as composite build")
         includeBuild(multibase)
     }
-}
+}*/
 
 include(":internals")
 include(":indispensable")
