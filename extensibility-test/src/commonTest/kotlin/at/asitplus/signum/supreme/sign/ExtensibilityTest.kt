@@ -116,7 +116,7 @@ object CursorySignatureSchemeProvider :
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey? {
         return if (publicKeyInfo.algorithmIdentifier == CursorySignatureScheme.Key.ALG) {
             publicKeyInfo.subjectPublicKey
-                .also { require(it.sizeBits == 1L) }
+                .also { require(it.logicalBitCount == 1L) }
                 .get(0)
                 .let(CursorySignatureScheme::Key)
         } else null
@@ -140,7 +140,7 @@ object CursorySignatureSchemeProvider :
     ): CryptoSignature? {
         if (signatureAlgorithm != CursorySignatureScheme) return null
         return signature.rawBitString
-                .also { require(it.sizeBits == 1L) }
+                .also { require(it.logicalBitCount == 1L) }
                 .let { CursorySignatureScheme.Signature(it[0]) }
     }
 
