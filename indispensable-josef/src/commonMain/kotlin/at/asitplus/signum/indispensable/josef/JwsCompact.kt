@@ -2,10 +2,12 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.nonFatalOrThrow
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import io.matthewnelson.encoding.core.EncodingException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
@@ -39,10 +41,10 @@ data class JwsCompact internal constructor(
 ) : JWS() {
 
     @Transient
-    val jwsHeader = JwsHeader.fromParts(plainProtectedHeader, null)
+    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, null)
 
     @Transient
-    val signature = getSignature(jwsHeader.algorithm, plainSignature)
+    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
 
     @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
@@ -75,7 +77,7 @@ data class JwsCompact internal constructor(
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          * and immediately resolve the payload
          */
-        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching{
+        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching {
             val jws = JwsCompact(base64UrlString)
             val payload = jws.getPayload<P>().getOrThrow()
             jws to payload
@@ -84,9 +86,10 @@ data class JwsCompact internal constructor(
         /**
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          */
+        @Throws(SerializationException::class)
         operator fun invoke(
             base64UrlString: String,
-        ): JwsCompact {
+        ): JwsCompact = catchingUnwrappedAs(::SerializationException) {
             require(!base64UrlString.contains("=")) { "Trailing = are not supported. See RFC 7515" }
             val parts = base64UrlString.split('.')
 
@@ -96,16 +99,12 @@ data class JwsCompact internal constructor(
                 )
             }
 
-            return try {
-                JwsCompact(
-                    plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
-                    plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
-                    plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
-                )
-            } catch (e: Throwable) {
-                throw SerializationException("Invalid base64url content in JWS compact serialization", e.nonFatalOrThrow())
-            }
-        }
+            JwsCompact(
+                plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
+                plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
+                plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
+            )
+        }.getOrThrow()
 
         /**
          * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
@@ -114,12 +113,13 @@ data class JwsCompact internal constructor(
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * compact serialization and signing input construction apply base64url encoding internally.
          */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             protectedHeader: JwsHeader,
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsCompact {
-            val plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
+            val plainProtectedHeader = joseCompliantSerializer.encodeToString(protectedHeader).encodeToByteArray()
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 plainPayload = payload,

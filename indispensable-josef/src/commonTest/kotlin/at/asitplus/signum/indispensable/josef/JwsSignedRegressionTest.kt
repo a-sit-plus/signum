@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 val JwsSignedRegressionTest by matrixSuite {
-    "JwsCompact.invoke signs the protected-header bytes derived from JwsHeader.toPart" {
+    "JwsCompact.invoke signs the protected-header bytes derived from JwsHeader" {
         val header = JwsHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
@@ -29,7 +29,7 @@ val JwsSignedRegressionTest by matrixSuite {
             byteArrayOf(1, 2, 3, 4)
         }
 
-        val expectedProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(header.toPart())
+        val expectedProtectedHeader = joseCompliantSerializer.encodeToString(header).encodeToByteArray()
 
         compact.plainProtectedHeader shouldBe expectedProtectedHeader
         capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
@@ -38,7 +38,7 @@ val JwsSignedRegressionTest by matrixSuite {
 
     "legacy compact serialization matches JwsCompact for RS256" {
         val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader.Part(
+            protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "JWT",
                 keyId = "kid-rs256",
@@ -47,7 +47,7 @@ val JwsSignedRegressionTest by matrixSuite {
             plainSignature = byteArrayOf(5, 4, 3, 2, 1),
         )
 
-        regressionCase.legacy.header shouldBe regressionCase.compact.jwsHeader
+        regressionCase.legacy.header shouldBe regressionCase.compact.wrappedHeader.header
         regressionCase.legacy.signature shouldBe regressionCase.compact.signature
         regressionCase.legacy.plainSignatureInput shouldBe regressionCase.compact.signatureInput
 
@@ -69,7 +69,7 @@ val JwsSignedRegressionTest by matrixSuite {
             )
         )
         val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader.Part(
+            protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "JWT",
             ),
@@ -81,7 +81,7 @@ val JwsSignedRegressionTest by matrixSuite {
             .getOrThrow()
 
         parsedCompact shouldBe regressionCase.compact
-        parsedCompact.jwsHeader shouldBe regressionCase.compact.jwsHeader
+        parsedCompact.wrappedHeader shouldBe regressionCase.compact.wrappedHeader
         parsedPayload shouldBe typedPayload
     }
 
@@ -95,7 +95,7 @@ val JwsSignedRegressionTest by matrixSuite {
         )
         val payload = joseCompliantSerializer.encodeToString(JsonObject.serializer(), typedPayload).encodeToByteArray()
         val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader.Part(
+            protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jwt",
             ),
@@ -109,7 +109,7 @@ val JwsSignedRegressionTest by matrixSuite {
             json = joseCompliantSerializer,
         ).getOrThrow()
 
-        legacyTyped.header shouldBe regressionCase.compact.jwsHeader
+        legacyTyped.header shouldBe regressionCase.compact.wrappedHeader.header
         legacyTyped.payload shouldBe regressionCase.compact.getPayload(JsonObject.serializer()).getOrThrow()
         legacyTyped.signature shouldBe regressionCase.compact.signature
         legacyTyped.plainSignatureInput shouldBe regressionCase.compact.signatureInput
@@ -117,7 +117,7 @@ val JwsSignedRegressionTest by matrixSuite {
 
     "single-signature conversion path preserves the JwsSigned view" {
         val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader.Part(
+            protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-general",
             ),
@@ -128,18 +128,20 @@ val JwsSignedRegressionTest by matrixSuite {
         val flattened = regressionCase.compact.toJwsFlattened()
         val general = listOf(flattened).toJwsGeneral()
 
-        flattened.jwsHeader shouldBe regressionCase.legacy.header
+        flattened.wrappedHeader.header shouldBe regressionCase.legacy.header
+        flattened.wrappedHeader.unprotectedMembers shouldBe emptySet()
         flattened.signature shouldBe regressionCase.legacy.signature
         flattened.signatureInput shouldBe regressionCase.legacy.plainSignatureInput
 
-        general.jwsHeaders[0] shouldBe regressionCase.legacy.header
+        general.wrappedHeaders[0].header shouldBe regressionCase.legacy.header
+        general.wrappedHeaders[0].unprotectedMembers shouldBe emptySet()
         general.signatures[0] shouldBe regressionCase.legacy.signature
         general.signatureInputs[0] shouldBe regressionCase.legacy.plainSignatureInput
     }
 
     "empty payload keeps the compact separator for both APIs" {
         val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader.Part(
+            protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
             ),
             payload = byteArrayOf(),
@@ -156,7 +158,7 @@ val JwsSignedRegressionTest by matrixSuite {
     "ES256 compact signatures are decoded as EC signatures in both APIs" {
         val plainSignature = ByteArray(64) { (it + 1).toByte() }
         val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader.Part(
+            protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.ES256,
                 type = "application/example+jws",
             ),
@@ -180,13 +182,13 @@ private data class CompactRegressionCase(
 )
 
 private fun compactRegressionCase(
-    protectedHeader: JwsHeader.Part,
+    protectedHeader: JwsHeader,
     payload: ByteArray,
     plainSignature: ByteArray,
 ): CompactRegressionCase {
-    val header = JwsHeader.fromParts(protectedHeader, null)
+    val header = protectedHeader
     val compact = JwsCompact(
-        plainProtectedHeader = JwsProtectedHeaderSerializer.encodeToByteArray(protectedHeader),
+        plainProtectedHeader = joseCompliantSerializer.encodeToString(protectedHeader).encodeToByteArray(),
         plainPayload = payload,
         plainSignature = plainSignature,
     )
