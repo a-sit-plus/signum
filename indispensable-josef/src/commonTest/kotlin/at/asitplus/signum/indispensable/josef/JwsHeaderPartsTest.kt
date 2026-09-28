@@ -6,8 +6,33 @@ import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.put
 
 val JwsHeaderPartsTest by matrixSuite {
+    "verifier_info survives compact, flattened and general JWS serialization" {
+        val verifierInfo = buildJsonArray {
+            addJsonObject {
+                put("format", "registration_cert")
+                put("data", "attestation")
+            }
+        }
+        val header = JwsHeader(
+            algorithm = JwsAlgorithm.Signature.ES256,
+            clientId = "x509_hash:example",
+            verifierInfo = verifierInfo,
+        )
+
+        val compact = JwsCompact(header, "payload".encodeToByteArray()) { validEs256SignatureFixture }
+        JwsCompact(compact.toString()).jwsHeader.verifierInfo shouldBe verifierInfo
+
+        val general = listOf(compact.toJwsFlattened()).toJwsGeneral()
+        general.protectedHeaders.single()!!.verifierInfo shouldBe verifierInfo
+        joseCompliantSerializer.decodeFromString<JwsGeneral>(joseCompliantSerializer.encodeToString(general))
+            .jwsHeaders.single().verifierInfo shouldBe verifierInfo
+    }
+
     "full JWS header can be converted to a typed header part" {
         val header = JwsHeader(
             keyId = "did:example:signer",
