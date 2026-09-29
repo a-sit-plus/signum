@@ -12,6 +12,33 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
+private data class TypedAttributeCase(
+    val descriptor: AttributeTypeAndValue.Descriptor,
+    val names: Set<String>,
+    val expected: (String) -> AttributeTypeAndValue,
+)
+
+private val typedAttributes = listOf(
+    TypedAttributeCase(CommonName, setOf("CN", "COMMONNAME"), ::CommonName),
+    TypedAttributeCase(Country, setOf("C", "COUNTRY", "COUNTRYNAME"), ::Country),
+    TypedAttributeCase(Locality, setOf("L", "LOCALITY", "LOCALITYNAME"), ::Locality),
+    TypedAttributeCase(StateOrProvince, setOf("ST", "S", "STATEORPROVINCENAME"), ::StateOrProvince),
+    TypedAttributeCase(Street, setOf("STREET", "STREETADDRESS"), ::Street),
+    TypedAttributeCase(Organization, setOf("O", "ORGANIZATION", "ORGANIZATIONNAME"), ::Organization),
+    TypedAttributeCase(OrganizationalUnit, setOf("OU", "ORGANIZATIONALUNIT", "ORGANIZATIONALUNITNAME"), ::OrganizationalUnit),
+    TypedAttributeCase(Title, setOf("T", "TITLE"), ::Title),
+    TypedAttributeCase(TelephoneNumber, setOf("TELEPHONENUMBER"), ::TelephoneNumber),
+    TypedAttributeCase(Surname, setOf("SURNAME"), ::Surname),
+    TypedAttributeCase(SerialNumber, setOf("SERIALNUMBER"), ::SerialNumber),
+    TypedAttributeCase(GivenName, setOf("GIVENNAME"), ::GivenName),
+    TypedAttributeCase(Initials, setOf("INITIALS"), ::Initials),
+    TypedAttributeCase(Generation, setOf("GENERATION"), ::Generation),
+    TypedAttributeCase(DistinguishedNameQualifier, setOf("DNQUALIFIER", "DNQ"), ::DistinguishedNameQualifier),
+    TypedAttributeCase(DomainComponent, setOf("DC"), ::DomainComponent),
+    TypedAttributeCase(UserId, setOf("UID"), ::UserId),
+    TypedAttributeCase(EmailAddress, setOf("EMAILADDRESS", "EMAIL"), ::EmailAddress),
+)
+
 val DistinguishedNameTest by matrixSuite {
     SignumPkix.install()
     compact("DistinguishedName test equals and hashCode") - {
@@ -168,9 +195,41 @@ val DistinguishedNameTest by matrixSuite {
 
     "AttributeTypeAndValue registry parses aliases" {
         AttributeTypeAndValue.fromString("S", "Vienna") shouldBe StateOrProvince("Vienna")
+        AttributeTypeAndValue.fromString("Title", "Dr") shouldBe Title("Dr")
         AttributeTypeAndValue.fromString("DNQ", "dnq") shouldBe DistinguishedNameQualifier("dnq")
         AttributeTypeAndValue.fromString("EMAIL", "jane@example.test") shouldBe
                 EmailAddress("jane@example.test")
+    }
+
+    compact("PKIX descriptors replace construction but retain core aliases") - {
+        data(typedAttributes, nameFn = { it.descriptor.canonicalName }) - { case ->
+            data(case.names) test { name ->
+                val parsed = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
+
+                parsed shouldBe case.expected("Test")
+                parsed?.oid shouldBe case.descriptor.oid
+                AttributeTypeAndValue.Registry.oidFor(name) shouldBe case.descriptor.oid
+            }
+        }
+    }
+
+    data(typedAttributes, nameFn = { "non-canonical ${it.descriptor.canonicalName}" }) test { case ->
+        val canonical = case.expected("Test") as AttributeTypeAndValue.X509Representable
+        val nonCanonicalValue = when (Asn1String.decodeFromTlv(canonical.value.asPrimitive())) {
+            is Asn1String.UTF8 -> Asn1String.Printable("Test")
+            is Asn1String.Printable, is Asn1String.IA5 -> Asn1String.UTF8("Test")
+            else -> error("unexpected canonical X.500 string type")
+        }.encodeToTlv()
+        val original = RelativeDistinguishedName(
+            AttributeTypeAndValue(case.descriptor.oid, nonCanonicalValue)
+        )
+        val encoded = original.encodeToDer()
+        val decoded = RelativeDistinguishedName.decodeFromDer(encoded)
+        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue.X509Representable
+
+        attribute::class shouldBe case.expected("Test")::class
+        attribute.value shouldBe nonCanonicalValue
+        decoded.encodeToDer() shouldBe encoded
     }
 
     "AttributeTypeAndValue RFC2253 string escaping"  {

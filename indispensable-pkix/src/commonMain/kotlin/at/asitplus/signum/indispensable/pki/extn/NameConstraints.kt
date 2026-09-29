@@ -141,7 +141,7 @@ class NameConstraints internal constructor(
             // the constraint must be enforced on the emailAddress attribute within the subject DN
             val fallbackEmails = subject.relativeDistinguishedNames
                 .flatMap { it.attrsAndValues }
-                .filter { it.oid == KnownOIDs.emailAddress_1_2_840_113549_1_9_1 }
+                .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
                     val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.X509Representable)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
                     str?.let {
@@ -255,8 +255,6 @@ private class NameConstraintsBody(
     @Asn1Tag(1u) val excluded: List<GeneralSubtree>? = null,
 )
 
-private val commonNameOid = ObjectIdentifier("2.5.4.3")
-
 /**
  * The most specific (leaf-most) `commonName` (OID 2.5.4.3) attribute in this [Name]'s RDN sequence, or
  * `null` if it carries none. RFC 5280 orders the RDNSequence most-general-first, so the last CN wins.
@@ -265,5 +263,4 @@ private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue.X509Represe
     relativeDistinguishedNames.asReversed()
         .flatMap { it.attrsAndValues }
         .filterIsInstance<AttributeTypeAndValue.X509Representable>()
-        .firstOrNull { it.oid == commonNameOid }
-
+        .firstOrNull { it.oid == AttributeTypeAndValue.Descriptor.OID.commonName }
