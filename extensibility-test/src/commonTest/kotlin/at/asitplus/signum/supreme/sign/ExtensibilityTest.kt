@@ -1,6 +1,9 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -40,7 +43,7 @@ private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte(
 object CursorySignatureScheme : SignatureAlgorithm {
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
-    override val asn1Representation get() = ALG
+    override val representations: Map<Encodable.Representation, Any> = mapOf(at.asitplus.signum.indispensable.pki.X509 to ALG)
     data class Signature(private val bit: Boolean) : CryptoSignature {
         override val asn1Representation: X509SignatureValue
             get() = X509SignatureValue(Asn1BitString(bit))
@@ -54,10 +57,8 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val additionalProperties = mutableMapOf<String, String>()
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
-        override val asn1Representation: SubjectPublicKeyInfo get() =
-            SubjectPublicKeyInfo(
-                ALG,
-                Asn1BitString(bit))
+        override val representations: Map<Encodable.Representation, Any> = mapOf(at.asitplus.signum.indispensable.pki.X509 to
+            SubjectPublicKeyInfo(ALG, Asn1BitString(bit)))
 
         inner class Private : CryptoPrivateKey.WithPublicKey {
             override val publicKey = this@Key
@@ -163,6 +164,10 @@ val ExtensibilityTest by matrixSuite {
     ServiceLoader.register<SignatureFormatProvider>(CursorySignatureSchemeProvider)
 
     "X.509 resolution" {
+        val algorithm: SignatureAlgorithm = CursorySignatureScheme
+        DER.decodeFromByteArray<SignatureAlgorithm>(DER.encodeToByteArray(algorithm)) shouldBe algorithm
+        val key: CryptoPublicKey = CursorySignatureScheme.Key(true)
+        DER.decodeFromByteArray<CryptoPublicKey>(DER.encodeToByteArray(key)) shouldBe key
         SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
         shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.Key.ALG) }
 

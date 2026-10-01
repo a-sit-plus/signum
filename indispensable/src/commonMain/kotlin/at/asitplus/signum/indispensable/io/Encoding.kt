@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.io
+import at.asitplus.signum.indispensable.iosEncoded
 
 import at.asitplus.awesn1.BERTags
 import at.asitplus.awesn1.serialization.DER

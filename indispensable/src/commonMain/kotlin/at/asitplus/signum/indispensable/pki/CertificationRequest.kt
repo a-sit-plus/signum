@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.signum.indispensable.sign.asn1Representation
+import at.asitplus.signum.indispensable.sign.invoke
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException

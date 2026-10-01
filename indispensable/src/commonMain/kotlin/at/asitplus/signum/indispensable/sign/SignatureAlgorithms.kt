@@ -30,6 +30,9 @@ import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.ECCurve
@@ -54,6 +57,9 @@ class EcdsaAlgorithm private constructor(
 
     private data class Params(val digest: Digest?, val curve: ECCurve?)
 
+    override val representations: Map<Encodable.Representation, Any> =
+        providedAsn1?.let { mapOf(X509 to it) } ?: emptyMap()
+
     private val params by providedParams orLazy {
         Params(when(providedAsn1!!.oid) {
             KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
@@ -73,19 +79,6 @@ class EcdsaAlgorithm private constructor(
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
     val requiredCurve get() = params.curve
 
-    override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
-        X509AlgorithmIdentifier(
-            oid = when (digest) {
-                Digest.SHA1 -> KnownOIDs.ecdsaWithSHA1
-                Digest.SHA256 -> KnownOIDs.ecdsaWithSHA256
-                Digest.SHA384 -> KnownOIDs.ecdsaWithSHA384
-                Digest.SHA512 -> KnownOIDs.ecdsaWithSHA512
-                else -> throw IllegalArgumentException("Unsupported digest: $digest")
-            },
-            parameters = null
-        )
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EcdsaAlgorithm) return false
@@ -94,17 +87,12 @@ class EcdsaAlgorithm private constructor(
 
     override fun hashCode() = params.hashCode()
 
-    companion object : Enumeration<EcdsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, EcdsaAlgorithm> {
+    companion object : Enumeration<EcdsaAlgorithm>, Decodable<EcdsaAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
 
         val withSHA256 = EcdsaAlgorithm(Digest.SHA256)
         val withSHA384 = EcdsaAlgorithm(Digest.SHA384)
         val withSHA512 = EcdsaAlgorithm(Digest.SHA512)
-
-        override fun decodeFromTlv(
-            element: X509AlgorithmIdentifier,
-            der: Der
-        ) = EcdsaAlgorithm(element)
 
     }
 }
@@ -114,6 +102,9 @@ class RsaAlgorithm private constructor(
     private val providedAsn1: X509AlgorithmIdentifier?,
 ) : SignatureAlgorithm, Enumerable {
     init { require((providedParams != null) != (providedAsn1 != null)) }
+
+    override val representations: Map<Encodable.Representation, Any> =
+        providedAsn1?.let { mapOf(X509 to it) } ?: emptyMap()
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
@@ -180,24 +171,6 @@ class RsaAlgorithm private constructor(
         }
     }
 
-    override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
-        when (val currentParameters = parameters) {
-            is Parameters.Pkcs1Padded -> X509AlgorithmIdentifier(
-                when (currentParameters.digest) {
-                    Digest.SHA1 -> KnownOIDs.sha1WithRSAEncryption
-                    Digest.SHA256 -> KnownOIDs.sha256WithRSAEncryption
-                    Digest.SHA384 -> KnownOIDs.sha384WithRSAEncryption
-                    Digest.SHA512 -> KnownOIDs.sha512WithRSAEncryption
-                    else -> throw UnsupportedCryptoException("Unknown RSA digest ${currentParameters.digest}")
-                },
-                Asn1Null
-            )
-
-            is Parameters.PssPadded ->
-                X509AlgorithmIdentifier(currentParameters.asn1Representation)
-        }
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RsaAlgorithm) return false
@@ -206,13 +179,12 @@ class RsaAlgorithm private constructor(
 
     override fun hashCode() = parameters.hashCode()
 
-
     enum class Padding {
         PKCS1,
         PSS
     }
 
-    companion object : Enumeration<RsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, RsaAlgorithm> {
+    companion object : Enumeration<RsaAlgorithm>, Decodable<RsaAlgorithm> {
         val withSHA256andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA256))
         val withSHA384andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA384))
         val withSHA512andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA512))
@@ -224,12 +196,7 @@ class RsaAlgorithm private constructor(
                    withSHA256andPSSPadding,   withSHA384andPSSPadding,   withSHA512andPSSPadding)
         }
 
-        override fun decodeFromTlv(
-            element: X509AlgorithmIdentifier,
-            der: Der
-        ) = RsaAlgorithm(element)
     }
-
 
     sealed interface Parameters<T : RsaParams> : DerEncodable<T> {
 
