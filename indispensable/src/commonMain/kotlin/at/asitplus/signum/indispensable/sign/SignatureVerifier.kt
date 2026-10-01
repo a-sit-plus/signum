@@ -54,9 +54,13 @@ suspend inline fun <reified T> SignatureVerifier.verify(input: DerEncodable<T>, 
     verify(input.encodeToDer(), signature)
 
 @IgnorableReturnValue
+suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
+    verify(input.encodeToDer(), signature)
+
+@IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
-    return verify(input.tbsCertificate, input.signature)
+    return verify(input.tbsCertificate.encodeToDer(), input.signature)
 }
 
 fun CertificationRequest.verifier() =

@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.decodeFromByteArray
+import at.asitplus.signum.indispensable.decodeFromTlv
+
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.InternalAwesn1Api
