@@ -276,4 +276,6 @@ class GeneralSubtrees(
         return newExcluded?.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
     }
 
+    fun copy(): GeneralSubtrees = GeneralSubtrees(trees.toList())
+
 }
