@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.indispensable.decodeFromByteArray
+
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer

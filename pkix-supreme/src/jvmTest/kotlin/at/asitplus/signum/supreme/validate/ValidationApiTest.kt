@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.decodeFromByteArray
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.signum.supreme.shouldBeValid

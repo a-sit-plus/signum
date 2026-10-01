@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.CertificateDerCodec
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.TbsCertificateDerCodec
 import kotlin.reflect.KClass
@@ -15,7 +17,10 @@ interface DerCodec<T : Encodable> {
 
 /** Default codecs are available automatically. Register additional codecs at startup. */
 object DerCodecs {
-    private val codecs = mutableMapOf<Decodable<*>, DerCodec<*>>(TbsCertificate to TbsCertificateDerCodec)
+    private val codecs = mutableMapOf<Decodable<*>, DerCodec<*>>(
+        TbsCertificate to TbsCertificateDerCodec,
+        Certificate to CertificateDerCodec,
+    )
 
     fun <T : Encodable> register(target: Decodable<T>, codec: DerCodec<T>) {
         codecs[target] = codec
