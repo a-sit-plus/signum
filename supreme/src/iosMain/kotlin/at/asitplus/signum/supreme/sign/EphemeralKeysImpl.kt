@@ -60,7 +60,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as EcdsaPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            EcdsaSignature.decodeFromTlv(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
             corecall {
@@ -83,7 +83,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as RsaPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            RsaSignature.decodeFromTlv(X509SignatureValue(signatureBytes))
+            RsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes))
     }
 }
 

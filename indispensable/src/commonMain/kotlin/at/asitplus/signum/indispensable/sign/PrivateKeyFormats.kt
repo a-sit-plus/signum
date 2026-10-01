@@ -1,4 +1,7 @@
 package at.asitplus.signum.indispensable.sign
+import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
+import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.iosEncoded
 
 import at.asitplus.awesn1.Asn1BitString
@@ -8,34 +11,25 @@ import at.asitplus.awesn1.Asn1Primitive
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.PemBlock
 import at.asitplus.awesn1.crypto.Pkcs1RsaOtherPrimeInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.asAsn1BitString
-import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.rsaEncryption
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.DerPemDecodable
-import at.asitplus.signum.indispensable.DerPemEncodable
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.PrivateKeyFormatProvider
-import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.equalsCryptographically
 import at.asitplus.signum.indispensable.fromIosEncodedPrivateKeyLength
 import at.asitplus.signum.indispensable.iosEncodedPublicKeyLength
@@ -44,7 +38,6 @@ import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import kotlinx.serialization.KSerializer
 
 class RsaPrivateKey private constructor(
     private val providedContent: ContentContainer?,
@@ -146,18 +139,18 @@ class RsaPrivateKey private constructor(
             ?: providedPkcs1Source?.attributes
     }
 
-    val pkcs1Representation: Pkcs1RsaPrivateKeyInfo by providedPkcs1Source?.pkcs1Representation orLazy {
+    internal val pkcs1Representation: Pkcs1RsaPrivateKeyInfo by providedPkcs1Source?.pkcs1Representation orLazy {
         providedPkcs8Representation?.let { Pkcs1RsaPrivateKeyInfo.of(it) } ?: content.toPkcs1Representation()
     }
 
-    override val asn1Representation: Pkcs8PrivateKeyInfo by providedPkcs8Representation orLazy {
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: Pkcs8PrivateKeyInfo by providedPkcs8Representation orLazy {
         Pkcs8PrivateKeyInfo.Companion(pkcs1Representation, attributes)
     }
 
-    val asPKCS1: DerPemEncodable<Pkcs1RsaPrivateKeyInfo> = object : DerPemEncodable<Pkcs1RsaPrivateKeyInfo> {
-        override val pemLabel: String get() = Pkcs1RsaPrivateKeyInfo.canonicalPemLabel
-        override val asn1Representation: Pkcs1RsaPrivateKeyInfo get() = pkcs1Representation
-    }
 
     override val publicKey: RsaPublicKey get() = content.publicKey
     val privateKey: BigInteger get() = content.privateKey
@@ -181,19 +174,20 @@ class RsaPrivateKey private constructor(
         val prime: BigInteger,
         val exponent: BigInteger,
         val coefficient: BigInteger,
-    ) : DerEncodable<Pkcs1RsaOtherPrimeInfo> {
-        override val asn1Representation: Pkcs1RsaOtherPrimeInfo
+    ) : Encodable {
+        override val representations: Map<Encodable.Representation, Any>
+            get() = mapOf(X509 to x509Model)
+
+        internal val x509Model: Pkcs1RsaOtherPrimeInfo
             get() = Pkcs1RsaOtherPrimeInfo(
                 prime = positive(prime),
                 exponent = positive(exponent),
                 coefficient = positive(coefficient),
             )
 
-        companion object : DerDecodable<Pkcs1RsaOtherPrimeInfo, PrimeInfo> {
-            override fun decodeFromTlv(
-                element: Pkcs1RsaOtherPrimeInfo,
-                der: Der,
-            ): PrimeInfo =
+        companion object : Decodable<PrimeInfo> {
+            fun fromAsn1Representation(
+                element: Pkcs1RsaOtherPrimeInfo): PrimeInfo =
                 PrimeInfo(
                     element.prime.toBigInteger(),
                     element.exponent.toBigInteger(),
@@ -201,40 +195,19 @@ class RsaPrivateKey private constructor(
         }
     }
 
-    companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, RsaPrivateKey> {
-        override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
-        override val alternativePemLabels: Set<String> = setOf(Pkcs1RsaPrivateKeyInfo.canonicalPemLabel)
+    companion object : Decodable<RsaPrivateKey> {
+        fun fromAsn1Representation(element: Pkcs1RsaPrivateKeyInfo): RsaPrivateKey = RsaPrivateKey(element)
+
         val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
 
-        override fun decodeFromTlv(
-            element: Pkcs8PrivateKeyInfo,
-            der: Der,
-        ): RsaPrivateKey = runRethrowing {
+        fun fromAsn1Representation(
+            element: Pkcs8PrivateKeyInfo): RsaPrivateKey = runRethrowing {
             require(element.algorithmOid == oid) { "Expected RSA private key, got ${element.algorithmOid}" }
             return RsaPrivateKey(element)
         }
 
-        override fun decodeFromPemBlockPayload(
-            serializer: KSerializer<Pkcs8PrivateKeyInfo>,
-            src: PemBlock,
-            limit: Long,
-            der: Der,
-        ): RsaPrivateKey =
-            when (src.pemLabel) {
-                Pkcs1RsaPrivateKeyInfo.canonicalPemLabel -> FromPKCS1.decodeFromDer(src.payload, der)
-                else -> decodeFromDer(serializer, src.payload, limit, der)
-            }
     }
 
-    object FromPKCS1 {
-        fun decodeFromTlv(
-            src: Asn1Element,
-            der: Der = DER,
-        ): RsaPrivateKey = RsaPrivateKey(der.decodeFromTlv<Pkcs1RsaPrivateKeyInfo>(src))
-
-        fun decodeFromDer(bytes: ByteArray, der: Der = DER): RsaPrivateKey =
-            decodeFromTlv(Asn1Element.parse(bytes), der)
-    }
 }
 
 private fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?): RsaPrivateKey.ContentContainer =
@@ -359,18 +332,18 @@ sealed class EcdsaPrivateKey private constructor(
 
     abstract val privateKeyBytes: ByteArray
 
-    val sec1Representation: Sec1EcPrivateKeyInfo by providedSec1Source?.sec1Representation orLazy {
+    internal val sec1Representation: Sec1EcPrivateKeyInfo by providedSec1Source?.sec1Representation orLazy {
         providedPkcs8Representation?.let { Sec1EcPrivateKeyInfo.of(it) } ?: content.toSec1Representation()
     }
 
-    override val asn1Representation: Pkcs8PrivateKeyInfo by providedPkcs8Representation orLazy {
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: Pkcs8PrivateKeyInfo by providedPkcs8Representation orLazy {
         Pkcs8PrivateKeyInfo.Companion(sec1Representation, curveOidForPkcs8(), attributes)
     }
 
-    val asSEC1: DerPemEncodable<Sec1EcPrivateKeyInfo> = object : DerPemEncodable<Sec1EcPrivateKeyInfo> {
-        override val pemLabel: String get() = Sec1EcPrivateKeyInfo.canonicalPemLabel
-        override val asn1Representation: Sec1EcPrivateKeyInfo get() = sec1Representation
-    }
 
     protected abstract fun curveOidForPkcs8(): ObjectIdentifier?
 
@@ -517,29 +490,23 @@ sealed class EcdsaPrivateKey private constructor(
             throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
     }
 
-    companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, EcdsaPrivateKey> {
-        override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
-        override val alternativePemLabels: Set<String> = setOf(Sec1EcPrivateKeyInfo.canonicalPemLabel)
+    companion object : Decodable<EcdsaPrivateKey> {
+        fun fromAsn1Representation(
+            representation: Sec1EcPrivateKeyInfo,
+            attributes: Set<Asn1Element>? = null,
+        ): EcdsaPrivateKey {
+            val source = EcSec1Source(representation, representation.parameters?.let(ECCurve::withOid), attributes)
+            return if (source.curveFromPkcs8 != null) WithPublicKey(source) else WithoutPublicKey(source)
+        }
+
+
         val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
-        override fun decodeFromTlv(
-            element: Pkcs8PrivateKeyInfo,
-            der: Der,
-        ): EcdsaPrivateKey {
+        fun fromAsn1Representation(
+            element: Pkcs8PrivateKeyInfo): EcdsaPrivateKey {
             require(element.algorithmOid == oid) { "Expected EC private key, got ${element.algorithmOid}" }
             return fromPkcs8Representation(element)
         }
-
-        override fun decodeFromPemBlockPayload(
-            serializer: KSerializer<Pkcs8PrivateKeyInfo>,
-            src: PemBlock,
-            limit: Long,
-            der: Der,
-        ): EcdsaPrivateKey =
-            when (src.pemLabel) {
-                Sec1EcPrivateKeyInfo.canonicalPemLabel -> FromSEC1.decodeFromDer(src.payload, der)
-                else -> decodeFromDer(serializer, src.payload, limit, der)
-            }
 
         private fun fromPkcs8Representation(representation: Pkcs8PrivateKeyInfo): EcdsaPrivateKey {
             val curve = representation.algorithmParameters?.let(::decodeEcCurve)
@@ -573,23 +540,7 @@ sealed class EcdsaPrivateKey private constructor(
         }
     }
 
-    object FromSEC1 {
-        fun decodeFromTlv(
-            src: Asn1Element,
-            der: Der = DER,
-        ): EcdsaPrivateKey = fromSec1(der.decodeFromTlv(Sec1EcPrivateKeyInfo.serializer(), src), null)
 
-        fun decodeFromDer(bytes: ByteArray, der: Der = DER): EcdsaPrivateKey =
-            decodeFromTlv(Asn1Element.parse(bytes), der)
-
-        fun fromSec1(
-            representation: Sec1EcPrivateKeyInfo,
-            attributes: Set<Asn1Element>? = null,
-        ): EcdsaPrivateKey {
-            val source = EcSec1Source(representation, representation.parameters?.let(ECCurve::withOid), attributes)
-            return if (source.curveFromPkcs8 != null) WithPublicKey(source) else WithoutPublicKey(source)
-        }
-    }
 }
 
 data class RsaPkcs1Source(
@@ -610,8 +561,8 @@ object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
     override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {
-            RsaPrivateKey.oid -> RsaPrivateKey.decodeFromTlv(privateKeyInfo)
-            EcdsaPrivateKey.oid -> EcdsaPrivateKey.decodeFromTlv(privateKeyInfo)
+            RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1Representation(privateKeyInfo)
+            EcdsaPrivateKey.oid -> EcdsaPrivateKey.fromAsn1Representation(privateKeyInfo)
             else -> null
         }
     }

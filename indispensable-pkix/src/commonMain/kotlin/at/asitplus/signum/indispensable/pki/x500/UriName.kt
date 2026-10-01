@@ -9,7 +9,7 @@ import com.eygraber.uri.Uri
 import kotlinx.io.IOException
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `uniformResourceIdentifier` GeneralName CHOICE `[6]`. */
 class UriName private constructor(

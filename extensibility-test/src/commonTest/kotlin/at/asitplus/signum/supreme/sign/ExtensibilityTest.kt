@@ -1,9 +1,10 @@
 package at.asitplus.signum.supreme.sign
-
-import at.asitplus.awesn1.*
 import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
+
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -16,6 +17,7 @@ import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.value
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
@@ -34,7 +36,6 @@ private val Byte.hasHighest get() = (this.countLeadingZeroBits() == 0)
 private val ByteArray.hasHighest get() = get(0).hasHighest
 private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte() else 0x00)
 
-
 /**
  * We implement our own custom signature scheme! We call it the "cursory signature scheme", because it looks
  * no further than the first bit of the input, and the first bit of the private key (which is only one bit!)
@@ -45,8 +46,8 @@ object CursorySignatureScheme : SignatureAlgorithm {
     val ALG = X509AlgorithmIdentifier(OID, null)
     override val representations: Map<Encodable.Representation, Any> = mapOf(at.asitplus.signum.indispensable.pki.X509 to ALG)
     data class Signature(private val bit: Boolean) : CryptoSignature {
-        override val asn1Representation: X509SignatureValue
-            get() = X509SignatureValue(Asn1BitString(bit))
+        override val representations: Map<Encodable.Representation, Any>
+            get() = mapOf(at.asitplus.signum.indispensable.pki.X509 to X509SignatureValue(Asn1BitString(bit)))
     }
     data class Key(private val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
         companion object {
@@ -62,10 +63,10 @@ object CursorySignatureScheme : SignatureAlgorithm {
 
         inner class Private : CryptoPrivateKey.WithPublicKey {
             override val publicKey = this@Key
-            override val asn1Representation = Pkcs8PrivateKeyInfo(
+            override val representations: Map<Encodable.Representation, Any> = mapOf(at.asitplus.signum.indispensable.pki.X509 to Pkcs8PrivateKeyInfo(
                 privateKeyAlgorithm = ALG,
                 privateKey = Asn1OctetString(byteArrayOfHighest(bit))
-            )
+            ))
         }
 
         @SecretExposure
@@ -168,11 +169,11 @@ val ExtensibilityTest by matrixSuite {
         DER.decodeFromByteArray<SignatureAlgorithm>(DER.encodeToByteArray(algorithm)) shouldBe algorithm
         val key: CryptoPublicKey = CursorySignatureScheme.Key(true)
         DER.decodeFromByteArray<CryptoPublicKey>(DER.encodeToByteArray(key)) shouldBe key
-        SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
-        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.Key.ALG) }
+        SignatureAlgorithm.fromAsn1Representation(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
+        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.fromAsn1Representation(CursorySignatureScheme.Key.ALG) }
 
         val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1Representation.copy(algorithmIdentifier = CursorySignatureScheme.ALG)
-        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.decodeFromTlv(keyWithAlgOid) }
+        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.fromAsn1Representation(keyWithAlgOid) }
     }
 
     "Signing" {
@@ -189,7 +190,7 @@ val ExtensibilityTest by matrixSuite {
         repeat(50) {
             val data = Random.nextBytes(1)
             val privateKey = Signer.Ephemeral { cursory {} }
-            val theSignature = privateKey.sign(data).signature.encodeToDer()
+            val theSignature = DER.encodeToByteArray(privateKey.sign(data).signature)
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
                 val certificateName = X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
@@ -202,18 +203,18 @@ val ExtensibilityTest by matrixSuite {
                     issuerName = certificateName,
                     subjectName = certificateName,
                 )
-                val signature = privateKey.sign(tbsCertificate.encodeToDer()).signature
-                Certificate(tbsCertificate, signature).encodeToDer()
+                val signature = privateKey.sign(DER.encodeToByteArray(tbsCertificate)).signature
+                DER.encodeToByteArray(Certificate(tbsCertificate, signature))
             }
 
-            val parsedCertificate = Certificate.decodeFromDer(theCertificate)
+            val parsedCertificate = DER.decodeFromByteArray<Certificate>(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
             val nameAttributes = (parsedCertificate.tbsCertificate.subjectName as X500Name)
                 .relativeDistinguishedNames
                 .flatMap { it.attrsAndValues }
                 .associateBy { it.oid }
             fun encodedValue(oid: String) =
-                (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue.X509Representable)
+                (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue)
                     .value.asPrimitive()
             fun stringValue(oid: String) = Asn1String.decodeFromTlv(encodedValue(oid)).value
             encodedValue("2.5.4.41").tag shouldBe Asn1Element.Tag.STRING_UTF8
@@ -224,7 +225,7 @@ val ExtensibilityTest by matrixSuite {
             stringValue("2.5.4.6") shouldBe "Austria"
             val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
             verifier.verify(parsedCertificate) shouldBe SignatureVerifier.Success
-            val parsedSignature = CryptoSignature.decodeFromDer(theSignature)
+            val parsedSignature = DER.decodeFromByteArray<SignatureValue>(theSignature)
             verifier.verify(data, parsedSignature) shouldBe SignatureVerifier.Success
         }
     }

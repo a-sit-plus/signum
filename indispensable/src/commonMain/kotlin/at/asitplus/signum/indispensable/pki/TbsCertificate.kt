@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.runRethrowing
@@ -60,7 +61,6 @@ class TbsCertificate internal constructor(
             return result
         }
     }
-
 
     constructor(
         serialNumber: Asn1Integer.Positive,

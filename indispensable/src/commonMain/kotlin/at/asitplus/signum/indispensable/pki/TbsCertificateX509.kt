@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.asn1Representation
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation
@@ -23,10 +23,10 @@ val TbsCertificate.asn1Representation: X509TbsCertificate
         X509TbsCertificate(
             serialNumber = serialNumber,
             signatureAlgorithm = signatureAlgorithm.asn1Representation,
-            issuerName = issuerName.requireX509().asn1Representation,
+            issuerName = requireNotNull(issuerName.asn1Representation) { "Issuer has no X.509 representation" },
             validFrom = Asn1Time.SecondsCapped(validFrom),
             validUntil = Asn1Time.SecondsCapped(validUntil),
-            subjectName = subjectName.requireX509().asn1Representation,
+            subjectName = requireNotNull(subjectName.asn1Representation) { "Subject has no X.509 representation" },
             subjectPublicKeyInfo = publicKey.asn1Representation,
             issuerUniqueID = issuerUniqueID?.let { Asn1BitString(BitSet(it)) },
             subjectUniqueID = subjectUniqueID?.let { Asn1BitString(BitSet(it)) },
@@ -54,7 +54,3 @@ fun TbsCertificate.Companion.fromAsn1Representation(
         subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
         extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
     ) }, mapOf(X509 to src))
-
-/** Existing X.509 consumers can still request the structural TLV directly. */
-fun TbsCertificate.encodeToTlv(der: Der = DER): Asn1Element =
-    der.encodeToTlv(TbsCertificateX509Serializer, this)

@@ -2,10 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.CertificateExtensionX509Serializer
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 /** Returns null when this extension has no X.509 representation. */
@@ -17,25 +14,12 @@ val X509CertificateExtension.asn1Representation: Awesn1X509CertificateExtension
     get() = representations[X509] as? Awesn1X509CertificateExtension
         ?: Awesn1X509CertificateExtension(oid, critical, derEncodedValue)
 
-// Compatibility while remaining consumers migrate to format operations.
-fun CertificateExtension.encodeToDer(der: Der = DER): ByteArray =
-    der.encodeToByteArray(CertificateExtensionX509Serializer, this)
-fun CertificateExtension.encodeToTlv(der: Der = DER): Asn1Element =
-    der.encodeToTlv(CertificateExtensionX509Serializer, this)
-fun CertificateExtension.Companion.decodeFromTlv(src: Awesn1X509CertificateExtension, der: Der = DER): CertificateExtension =
-    fromAsn1Representation(src)
-fun CertificateExtension.Companion.decodeFromTlv(src: Asn1Element, der: Der = DER): CertificateExtension =
-    der.decodeFromTlv(CertificateExtensionX509Serializer, src)
-fun CertificateExtension.Companion.decodeFromDer(src: ByteArray, der: Der = DER): CertificateExtension =
-    der.decodeFromByteArray(CertificateExtensionX509Serializer, src)
-
 open class X509CertificateExtension private constructor(
     providedAsn1Representation: Awesn1X509CertificateExtension?,
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
     val derEncodedValue: ByteArray,
 ) : CertificateExtension {
-
 
     constructor(
         oid: ObjectIdentifier,

@@ -45,7 +45,7 @@ import at.asitplus.signum.indispensable.pki.x500.X400AddressName
  *
  * The `indispensable` core parses every certificate extension and X.500 attribute
  * *generically* (via awesn1) and keeps its [CertificateExtension.Registry] /
- * [GeneralName.X509Representable.Registry] **empty** by default. [AttributeTypeAndValue.Registry]
+ * [GeneralName.Registry] **empty** by default. [AttributeTypeAndValue.Registry]
  * contains generic descriptors for standard X.500 attributes so RFC 4514 shorthands work without
  * this module. This module supplies the typed counterparts (e.g. [KeyUsage], [CommonName]) and
  * registers or replaces their descriptors here.
@@ -122,7 +122,6 @@ object SignumPkix {
         DirectoryName.register()
     }
 }
-
 
 /** The chain ordered from trust anchor to leaf (reverse of the conventional leaf-first order). */
 val CertificateChain.validationPath: CertificateChain get() = reversed()

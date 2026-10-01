@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.signum.indispensable.pki.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
@@ -10,7 +11,6 @@ import at.asitplus.signum.indispensable.pki.Name
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validationPath
-import at.asitplus.signum.indispensable.sign.SignatureResult
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
@@ -57,7 +57,7 @@ class ChainValidator: CertificateChainValidator {
         isLeaf: Boolean,
     ) {
         val verifier = cert.signatureAlgorithm.verifierFor(issuer.publicKey)
-        if (verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) != SignatureVerifier.Success) {
+        if (verifier.verify(DER.encodeToByteArray(cert.tbsCertificate), cert.signature) != SignatureVerifier.Success) {
             throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
         }
     }

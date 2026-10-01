@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.signum.indispensable.sign.asn1Representation
 import at.asitplus.signum.indispensable.sign.invoke
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.sign.asn1Representation
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
@@ -9,7 +10,6 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.internals.orLazy
@@ -25,7 +25,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 class TbsCertificationRequest private constructor(
     providedContent: ContentContainer?, /*TODO EXTENSIBILITY private val*/
     providedAsn1Representation: Pkcs10CertificationRequestInfo?,
-) : DerEncodable<Pkcs10CertificationRequestInfo> {
+) : Encodable {
     init { require((providedContent != null) != (providedAsn1Representation != null)) }
 
     private data class ContentContainer(
@@ -39,7 +39,6 @@ class TbsCertificationRequest private constructor(
             attributes = asn1Representation.attributes.map { CsrAttribute(it) }
         )
     }
-
 
     constructor(
         subjectName: Name,
@@ -71,13 +70,16 @@ class TbsCertificationRequest private constructor(
         asn1Representation
     )
 
+    override val representations: Map<Encodable.Representation, Any>
 
-    override val asn1Representation: Pkcs10CertificationRequestInfo by providedAsn1Representation orLazy {
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: Pkcs10CertificationRequestInfo by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         Pkcs10CertificationRequestInfo(
-            subjectName = providedContent.subjectName.requireX509().asn1Representation,
+            subjectName = requireNotNull(providedContent.subjectName.asn1Representation) { "Subject has no X.509 representation" },
             publicKey = providedContent.publicKey.asn1Representation,
-            attributes = providedContent.attributes.mapTo(mutableSetOf()) { it.requireX509().asn1Representation },
+            attributes = providedContent.attributes.mapTo(mutableSetOf()) { requireNotNull(it.asn1Representation) { "Value has no X.509 representation" } },
         )
     }
 
@@ -96,7 +98,7 @@ class TbsCertificationRequest private constructor(
         attributes.filter { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
             when (extensionAttributes.size) {
                 0 -> emptyList()
-                1 -> extensionAttributes.single().requireX509().value.single().asSequence().map {
+                1 -> requireNotNull(extensionAttributes.single().asn1Representation).value.single().asSequence().map {
                     CertificateExtension(DER.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
                 }
 
@@ -104,7 +106,6 @@ class TbsCertificationRequest private constructor(
             }
         }
     }
-
 
     /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun equals(other: Any?): Boolean {
@@ -114,7 +115,6 @@ class TbsCertificationRequest private constructor(
                 publicKey == other.publicKey &&
                 attributes == other.attributes
     }
-
 
     /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun hashCode(): Int {
@@ -127,16 +127,13 @@ class TbsCertificationRequest private constructor(
     override fun toString(): String =
         "TbsCertificationRequest(subjectName=$subjectName, publicKey=$publicKey, attributes=$attributes)"
 
-    companion object : DerDecodable<Pkcs10CertificationRequestInfo, TbsCertificationRequest> {
+    companion object : Decodable<TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            element: Pkcs10CertificationRequestInfo,
-            der: Der,
-        ): TbsCertificationRequest =
+        fun fromAsn1Representation(
+            element: Pkcs10CertificationRequestInfo): TbsCertificationRequest =
             TbsCertificationRequest(element)
     }
 }
-
 
 private data class CertificationRequestContent(
     val tbsCsr: TbsCertificationRequest,
@@ -150,17 +147,14 @@ private data class CertificationRequestContent(
     )
 }
 
-
 /**
  * Very simple implementation of a PKCS#10 Certification Request.
  */
 class CertificationRequest private constructor(
     providedContent: CertificationRequestContent?, /*TODO EXTENSIBILITY private val */
     providedAsn1Representation: Pkcs10CertificationRequest?,
-) : DerPemEncodable<Pkcs10CertificationRequest> {
+) : Encodable {
     init { require((providedContent != null) != (providedAsn1Representation != null)) }
-
-    override val pemLabel: String get() = canonicalPemLabel
 
     constructor(
         tbsCsr: TbsCertificationRequest,
@@ -173,8 +167,11 @@ class CertificationRequest private constructor(
         asn1Representation
     )
 
+    override val representations: Map<Encodable.Representation, Any>
 
-    override val asn1Representation: Pkcs10CertificationRequest by providedAsn1Representation orLazy {
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: Pkcs10CertificationRequest by providedAsn1Representation orLazy {
         requireNotNull(providedContent)
         Pkcs10CertificationRequest(
             certificationRequestInfo = providedContent.tbsCsr.asn1Representation,
@@ -193,7 +190,6 @@ class CertificationRequest private constructor(
     val tbsCsr: TbsCertificationRequest get() = providedContent.tbsCsr
     val signatureAlgorithm: SignatureAlgorithm get() = providedContent.signatureAlgorithm
     val signature: CryptoSignature get() = providedContent.signature
-
 
     /*TODO EXTENSIBILITY temp PFUSCH good enough for regression tests*/
     override fun equals(other: Any?): Boolean {
@@ -215,16 +211,11 @@ class CertificationRequest private constructor(
     override fun toString(): String =
         "Pkcs10CertificationRequest(tbsCsr=$tbsCsr, signatureAlgorithm=$signatureAlgorithm, signature=$signature)"
 
-    companion object : DerPemDecodable<Pkcs10CertificationRequest, CertificationRequest> {
-
-        override val canonicalPemLabel: String get() = Pkcs10CertificationRequest.canonicalPemLabel
-        override val alternativePemLabels: Set<String> get() = Pkcs10CertificationRequest.alternativePemLabels
+    companion object : Decodable<CertificationRequest> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            element: Pkcs10CertificationRequest,
-            der: Der,
-        ): CertificationRequest =
+        fun fromAsn1Representation(
+            element: Pkcs10CertificationRequest): CertificationRequest =
             CertificationRequest(element)
     }
 }

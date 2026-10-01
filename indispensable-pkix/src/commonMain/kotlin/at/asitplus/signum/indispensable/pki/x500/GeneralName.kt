@@ -6,18 +6,16 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable
 import at.asitplus.signum.indispensable.pki.tag
+import at.asitplus.signum.indispensable.pki.asn1Representation as genericAsn1Representation
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 abstract class AbstractX509GeneralName(
-    final override val asn1Representation: X509GeneralName,
-) : GeneralName.X509Representable {
-
-    final override val tag: Asn1Element.Tag get() = asn1Representation.tag
+    model: X509GeneralName,
+) : GeneralName {
+    final override val representations: Map<at.asitplus.signum.indispensable.Encodable.Representation, Any> =
+        mapOf(at.asitplus.signum.indispensable.pki.X509 to model)
 
     /**
      * Constraint relation of this name against [input]. The base implementation only distinguishes
@@ -33,8 +31,8 @@ abstract class AbstractX509GeneralName(
         )
 
     override fun equals(other: Any?): Boolean =
-        other is GeneralName.X509Representable &&
-                 asn1Representation == other.asn1Representation
+        other is GeneralName &&
+                 asn1Representation == other.genericAsn1Representation
 
     override fun hashCode(): Int = 31 + asn1Representation.hashCode()
 }
@@ -66,31 +64,22 @@ private fun GeneralName.fallbackConstrains(input: GeneralName?): ConstraintResul
     }
 }
 
-private fun GeneralName.hasSameNameType(other: GeneralName): Boolean =
-    if (this is X509Representable && other is X509Representable) {
-        asn1Representation::class == other.asn1Representation::class
-    } else {
-        this::class == other::class
-    }
+private fun GeneralName.hasSameNameType(other: GeneralName): Boolean {
+    val first = genericAsn1Representation
+    val second = other.genericAsn1Representation
+    return if (first != null && second != null) first::class == second::class else this::class == other::class
+}
 
 /**
  * Serializes a [GeneralName] by delegating to awesn1's [X509GeneralName] CHOICE serializer and routing
- * decode through the [GeneralName.X509Representable] registry (typed alternative when registered, generic
+ * decode through the [GeneralName] registry (typed alternative when registered, generic
  * [at.asitplus.signum.indispensable.pki.BaseX509GeneralName] otherwise).
  */
-internal object GeneralNameSerializer : KSerializer<GeneralName> {
-    private val delegate = X509GeneralName.serializer()
-    override val descriptor = delegate.descriptor
-
-    override fun serialize(encoder: Encoder, value: GeneralName) =
-        encoder.encodeSerializableValue(
-            delegate,
-            (value as? GeneralName.X509Representable
-                ?: throw Asn1Exception("GeneralName has no X.509/DER representation")).asn1Representation,
-        )
-
-    override fun deserialize(decoder: Decoder): GeneralName =
-        GeneralName.X509Representable.fromAsn1Representation(decoder.decodeSerializableValue(delegate))
-}
+internal object GeneralNameSerializer : KSerializer<GeneralName> by at.asitplus.signum.indispensable.GeneralNameX509Serializer
 
 internal object GeneralNameListSerializer : KSerializer<List<GeneralName>> by ListSerializer(GeneralNameSerializer)
+
+val AbstractX509GeneralName.asn1Representation: X509GeneralName
+    get() = representations[at.asitplus.signum.indispensable.pki.X509] as X509GeneralName
+
+val AbstractX509GeneralName.tag: Asn1Element.Tag get() = asn1Representation.tag

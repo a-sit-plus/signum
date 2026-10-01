@@ -1,4 +1,7 @@
 package at.asitplus.signum.supreme.os
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveAsn1Integer
@@ -15,9 +18,7 @@ import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.dsl.signer
-import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.jcaName
@@ -257,7 +258,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)
-                    update(tbsCert.encodeToDer())
+                    update(DER.encodeToByteArray(tbsCert))
                     sign()
                 }.let { Certificate(tbsCert, certAlg.parseJCASignature(it)) }
             }
@@ -281,7 +282,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
+            val certificateChain = ctx.ks.getCertificateChain(alias).map { DER.decodeFromByteArray<Certificate>(it.encoded) }
             return getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

@@ -6,7 +6,7 @@ import at.asitplus.cidre.*
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `iPAddress` GeneralName CHOICE `[7]`. */
 class IPAddressName internal constructor(

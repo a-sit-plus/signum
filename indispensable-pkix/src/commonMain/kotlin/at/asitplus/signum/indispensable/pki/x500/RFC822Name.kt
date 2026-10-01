@@ -6,7 +6,7 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `rfc822Name` GeneralName CHOICE `[1]`. */
 class RFC822Name private constructor(

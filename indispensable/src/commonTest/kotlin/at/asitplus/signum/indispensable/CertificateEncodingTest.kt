@@ -1,4 +1,11 @@
 package at.asitplus.signum.indispensable
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.serialization.encodeToTlv
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
+import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.encodeToPem
 
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Time
@@ -6,15 +13,10 @@ import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
-import at.asitplus.awesn1.serialization.DER
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
 import at.asitplus.awesn1.io.encodeToSink
 import at.asitplus.awesn1.io.decodeFromSource
-import at.asitplus.awesn1.serialization.decodeFromTlv
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
@@ -100,9 +102,9 @@ val CertificateEncodingTest by matrixSuite {
 
     "Existing PEM helpers use the certificate bridge and respect input limits" {
         val source = certificate()
-        val pem = source.encodeToPem()
-        Certificate.decodeFromPem(pem) shouldBe source
-        shouldThrowAny { Certificate.decodeFromPem(pem, limit = 1) }
-        shouldThrowAny { Certificate.decodeFromPem(pem, der = DER { maxInputLength = 1 }) }
+        val pem = certificateDer.encodeToPem(source)
+        DER.decodeFromPem<Certificate>(pem) shouldBe source
+        shouldThrowAny { DER.decodeFromPem<Certificate>(pem, limit = 1) }
+        shouldThrowAny { DER { serializersModule = signumX509Serializers; maxInputLength = 1 }.decodeFromPem<Certificate>(pem) }
     }
 }

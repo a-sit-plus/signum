@@ -1,13 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.serialization.Der
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
-import kotlinx.serialization.KSerializer
 import at.asitplus.awesn1.crypto.pki.X500Name as Asn1X500Name
 
 /**
@@ -15,25 +12,17 @@ import at.asitplus.awesn1.crypto.pki.X500Name as Asn1X500Name
  * `RDNSequence`), modeled independently of any concrete encoding.
  *
  * The logical content — an ordered list of [RelativeDistinguishedName]s — is shared across
- * encodings. The DER/X.509 serialization is [X509Representable] (implemented by
+ * encodings. The DER/X.509 serialization is [Name] (implemented by
  * [X500Name]); a future C509/CBOR serialization
  * would add a sibling representation carrying the same [relativeDistinguishedNames]. This mirrors
  * the [CsrAttribute]/[AlternativeNames] pattern: the data classes stay encoding-agnostic, and the
  * X.509 specialization carries the awesn1 backing.
  */
-interface Name {
+interface Name : Encodable {
 
     val relativeDistinguishedNames: List<RelativeDistinguishedName>
 
-    /**
-     * A [Name] that has a DER/X.509 representation, backed by awesn1's [Asn1X500Name].
-     */
-    interface X509Representable : Name, DerEncodable<Asn1X500Name>
 }
-
-internal fun Name.requireX509(): Name.X509Representable =
-    this as? Name.X509Representable
-        ?: throw Asn1Exception("Name has no X.509/DER representation")
 
 /**
  * The DER/X.509 specialization of [Name] (an X.500 directory name) — a certificate issuer/subject.
@@ -42,9 +31,13 @@ internal fun Name.requireX509(): Name.X509Representable =
 class X500Name(
     override val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean,
-) : Name.X509Representable {
+) : Name {
 
-    override val asn1Representation: Asn1X500Name
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: Asn1X500Name
         get() = Asn1X500Name(relativeDistinguishedNames.map { it.asn1Representation })
 
     val isValid: Boolean by lazy {
@@ -64,15 +57,11 @@ class X500Name(
     @Throws(Asn1Exception::class)
     constructor(singleAttribute: X500AttributeTypeAndValue) : this(RelativeDistinguishedName(singleAttribute))
 
-    companion object : DerDecodable<Asn1X500Name, X500Name> {
+    companion object : Decodable<X500Name> {
         val EMPTY = X500Name(emptyList(), false)
-        /** The RDNSequence serializer (`SEQUENCE OF RelativeDistinguishedName`). */
-        val serializer: KSerializer<Asn1X500Name> = Asn1X500Name.serializer()
 
-        override fun decodeFromTlv(
-            element: Asn1X500Name,
-            der: Der,
-        ): X500Name = X500Name(
+        fun fromAsn1Representation(
+            element: Asn1X500Name): X500Name = X500Name(
             element
                 .map { RelativeDistinguishedName(it) }, false)
 
