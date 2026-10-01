@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.signum.indispensable.sign.encodeToDer
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo

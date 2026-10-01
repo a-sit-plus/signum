@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.sign
+import at.asitplus.signum.indispensable.iosEncoded
 
 import at.asitplus.awesn1.Asn1BitString
 import at.asitplus.awesn1.Asn1Element

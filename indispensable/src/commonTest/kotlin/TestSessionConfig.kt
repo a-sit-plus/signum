@@ -1,3 +1,5 @@
+import at.asitplus.awesn1.serialization.DefaultDer
+import at.asitplus.signum.indispensable.signumX509Serializers
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -11,4 +13,6 @@ class ModuleTestSession : TestSession(
             execution = ExecutionMode.Concurrent(64)
         }
     }
-)
+) {
+    init { DefaultDer.register(signumX509Serializers) }
+}

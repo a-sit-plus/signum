@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.josef
+import at.asitplus.signum.indispensable.iosEncoded
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
