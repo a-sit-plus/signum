@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
@@ -256,6 +257,16 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
+
+    /**
+     * OpenID4VP: Attestations about the verifier, i.e. the `verifier_info` request parameter. In a multisigned DC API
+     * request, it MUST only be present in the protected header of the signature it belongs to, see OpenID4VP 1.0
+     * Appendix A.3.2.2.
+     *
+     * Kept as JSON, as its structure is defined by OpenID4VP rather than JOSE.
+     */
+    @SerialName(SerialNames.VERIFIER_INFO)
+    val verifierInfo: JsonArray? = null,
 ) {
     /**
      * Typed representation of either the protected or unprotected JWS header fragment.
@@ -307,6 +318,8 @@ data class JwsHeader(
         val vcTypeMetadata: Set<String>? = null,
         @SerialName(SerialNames.CLIENT_ID)
         val clientId: String? = null,
+        @SerialName(SerialNames.VERIFIER_INFO)
+        val verifierInfo: JsonArray? = null,
     ) {
         fun toJsonObject(): JsonObject =
             joseCompliantSerializer.encodeToJsonElement(serializer(), this).jsonObject
@@ -334,6 +347,7 @@ data class JwsHeader(
             if (keyAttestation != other.keyAttestation) return false
             if (vcTypeMetadata != other.vcTypeMetadata) return false
             if (clientId != other.clientId) return false
+            if (verifierInfo != other.verifierInfo) return false
 
             return true
         }
@@ -356,6 +370,7 @@ data class JwsHeader(
             result = 31 * result + (keyAttestation?.hashCode() ?: 0)
             result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
             result = 31 * result + (clientId?.hashCode() ?: 0)
+            result = 31 * result + (verifierInfo?.hashCode() ?: 0)
             return result
         }
 
@@ -384,6 +399,7 @@ data class JwsHeader(
         if (keyAttestation != other.keyAttestation) return false
         if (vcTypeMetadata != other.vcTypeMetadata) return false
         if (clientId != other.clientId) return false
+        if (verifierInfo != other.verifierInfo) return false
         if (publicKey != other.publicKey) return false
         if (keyAttestationParsed != other.keyAttestationParsed) return false
         if (verifierAttestationParsed != other.verifierAttestationParsed) return false
@@ -409,6 +425,7 @@ data class JwsHeader(
         result = 31 * result + (keyAttestation?.hashCode() ?: 0)
         result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
         result = 31 * result + (clientId?.hashCode() ?: 0)
+        result = 31 * result + (verifierInfo?.hashCode() ?: 0)
         result = 31 * result + (publicKey?.hashCode() ?: 0)
         result = 31 * result + (keyAttestationParsed?.hashCode() ?: 0)
         result = 31 * result + (verifierAttestationParsed?.hashCode() ?: 0)
@@ -451,6 +468,7 @@ data class JwsHeader(
         const val KEY_ATTESTATION = "key_attestation"
         const val VC_TYPE_METADATA = "vctm"
         const val CLIENT_ID = "client_id"
+        const val VERIFIER_INFO = "verifier_info"
     }
 
     companion object {
@@ -513,4 +531,5 @@ fun JwsHeader.toPart(): JwsHeader.Part = JwsHeader.Part(
     keyAttestation = keyAttestation,
     vcTypeMetadata = vcTypeMetadata,
     clientId = clientId,
+    verifierInfo = verifierInfo,
 )

@@ -3,6 +3,7 @@
 ## 3.26.0 / 0.16.0
 * Fix StrongBox `PREFERRED` actually preferring strongbox, which is now the default for HW-backed keys on Android
 * Fix AndroidKeyStore not verifying security level
+* Add `JwsHeader.verifierInfo` for the OpenID4VP `verifier_info` header parameter of multisigned requests
 * Dependency Updates:
     * Kotlin 2.4.10
     * AGP 9.1.1
