@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
-import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.digest.Digest
@@ -21,7 +22,6 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
-
 private fun RsaAlgorithm.Parameters.Companion.valueOf(name: String, digest: Digest) = when (name) {
     "PSS" -> RsaAlgorithm.Parameters.PssPadded(digest)
     "PKCS1" -> RsaAlgorithm.Parameters.Pkcs1Padded(digest)
@@ -40,7 +40,7 @@ val RSAVerifierCommonTests by matrixSuite {
     class TestInfo(test: RawTestInfo) {
         val digest = WellKnownDigest.entries.first { it.name == test.dig }
         val parameters = RsaAlgorithm.Parameters.valueOf(test.pad, digest)
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as RsaPublicKey
+        val key = DER.decodeFromByteArray<CryptoPublicKey>(Base64.decode(test.key)) as RsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = RsaSignature(Base64.decode(test.sig))
@@ -49,7 +49,6 @@ val RSAVerifierCommonTests by matrixSuite {
     /*
     Generated on JVM using:
 import kotlin.random.*
-import kotlin.io.encoding.Base64
 import java.security.*
 import java.security.spec.*
 

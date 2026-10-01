@@ -10,15 +10,12 @@ import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.internals.orLazy
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlinx.serialization.KSerializer
-
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -27,7 +24,7 @@ class RelativeDistinguishedName private constructor(
     providedAttrsAndValues: Set<AttributeTypeAndValue>?,
     providedAsn1Representation: X500RelativeDistinguishedName?,
     performValidation: Boolean,
-) : DerEncodable<X500RelativeDistinguishedName> {
+) : Encodable {
     init { require((providedAttrsAndValues != null) != (providedAsn1Representation != null)) }
 
     constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this(attrsAndValues, null, true)
@@ -47,8 +44,12 @@ class RelativeDistinguishedName private constructor(
         performValidation: Boolean = false,
     ) : this(null, asn1Representation, performValidation)
 
-    override val asn1Representation: X500RelativeDistinguishedName by providedAsn1Representation orLazy {
-        X500RelativeDistinguishedName(attrsAndValues.map { it.requireX509().asn1Representation }.toSet())
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: X500RelativeDistinguishedName by providedAsn1Representation orLazy {
+        X500RelativeDistinguishedName(attrsAndValues.map { requireNotNull(it.asn1Representation) { "Attribute has no X.509 representation" } }.toSet())
     }
 
     val attrsAndValues: Set<AttributeTypeAndValue> by providedAttrsAndValues orLazy {
@@ -74,12 +75,10 @@ class RelativeDistinguishedName private constructor(
 
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
-    companion object : DerDecodable<X500RelativeDistinguishedName, RelativeDistinguishedName> {
+    companion object : Decodable<RelativeDistinguishedName> {
 
-        override fun decodeFromTlv(
-            element: X500RelativeDistinguishedName,
-            der: Der,
-        ): RelativeDistinguishedName =
+        fun fromAsn1Representation(
+            element: X500RelativeDistinguishedName): RelativeDistinguishedName =
             RelativeDistinguishedName(element, performValidation = false)
 
         /**
@@ -140,8 +139,7 @@ class RelativeDistinguishedName private constructor(
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
-
-sealed interface AttributeTypeAndValue : Identifiable {
+sealed interface AttributeTypeAndValue : Identifiable, Encodable {
     val displayName: String?
     val isValid: Boolean?
 
@@ -150,17 +148,13 @@ sealed interface AttributeTypeAndValue : Identifiable {
      * that conforms to the RFC 2253 standard for Distinguished Names (DNs).
      *
      * @return A string representation of the attribute's type and value in RFC 2253 format.
-     * @throws Asn1Exception if the attribute has no X.509 representation (i.e. if it does not implement [X509Representable]),
+     * @throws Asn1Exception if the attribute has no X.509 representation (i.e. if it does not implement [AttributeTypeAndValue]),
      * as the RFC only defines string canonicalization for X.509
      */
-    fun toRfc2253String(): String = requireX509().toRfc2253String()
-
-    interface X509Representable : AttributeTypeAndValue, DerEncodable<X500AttributeTypeAndValue> {
-        val value: Asn1Element
-
-        override fun toRfc2253String(): String {
+    fun toRfc2253String(): String {
             // The stored value is raw (unescaped); re-escape per RFC 4514 for output. Non-string or
             // undecodable values fall back to the hexstring form.
+            val value = requireNotNull(asn1Representation) { "Attribute has no X.509 representation" }.value
             val attrValue = (value as? Asn1Primitive)?.let { prim ->
                 catchingUnwrapped { canonicalizeRfc2253String(Asn1String.decodeFromTlv(prim).value) }
                     .getOrElse { "#" + prim.toDerHexString() }
@@ -169,7 +163,6 @@ sealed interface AttributeTypeAndValue : Identifiable {
             // RFC 2253 canonical form for case-insensitive matching: fold the value to lower case too
             return "${Registry.nameFor(oid)?.lowercase() ?: oid}=${attrValue.lowercase()}"
         }
-    }
 
     interface Descriptor : Identifiable {
         val canonicalName: String
@@ -197,7 +190,7 @@ sealed interface AttributeTypeAndValue : Identifiable {
         }
 
         fun fromString(value: String): AttributeTypeAndValue
-        fun fromAsn1Representation(src: X500AttributeTypeAndValue): X509Representable
+        fun fromAsn1Representation(src: X500AttributeTypeAndValue): AttributeTypeAndValue
 
         fun register(): Descriptor = Registry.register(this)
     }
@@ -261,20 +254,13 @@ sealed interface AttributeTypeAndValue : Identifiable {
             sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
     }
 
+    companion object : Decodable<AttributeTypeAndValue> {
 
-    companion object : DerDecodable<X500AttributeTypeAndValue, X509Representable> {
-
-        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): X509Representable =
+        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
             fromAsn1Representation(X500AttributeTypeAndValue(oid, value))
 
-        operator fun invoke(asn1Representation: X500AttributeTypeAndValue): X509Representable =
+        operator fun invoke(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
             fromAsn1Representation(asn1Representation)
-
-        override fun decodeFromTlv(
-            element: X500AttributeTypeAndValue,
-            der: Der,
-        ): X509Representable =
-            fromAsn1Representation(element)
 
         @OptIn(ExperimentalStdlibApi::class)
         fun fromString(type: String, value: String): AttributeTypeAndValue? {
@@ -298,7 +284,7 @@ sealed interface AttributeTypeAndValue : Identifiable {
             return invoke(oid, Asn1String.UTF8(raw).encodeToTlv())
         }
 
-        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): X509Representable =
+        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
             Registry.descriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
                 ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }
@@ -356,8 +342,6 @@ private val standardX500AttributeAliases = mapOf(
     "EMAIL" to AttributeTypeAndValue.Descriptor.OID.emailAddress,
 )
 
-
-
 abstract class BaseAttributeTypeAndValue(
     override val oid: ObjectIdentifier,
 ) : AttributeTypeAndValue {
@@ -369,9 +353,9 @@ abstract class BaseAttributeTypeAndValue(
 open class BaseX509AttributeTypeAndValue protected constructor(
     providedAsn1Representation: X500AttributeTypeAndValue?,
     oid: ObjectIdentifier,
-    override val value: Asn1Element,
+    val value: Asn1Element,
     validateValue: Boolean,
-) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue.X509Representable {
+) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue {
 
     constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid, value, false)
 
@@ -381,7 +365,11 @@ open class BaseX509AttributeTypeAndValue protected constructor(
     constructor(asn1Representation: X500AttributeTypeAndValue) :
             this(asn1Representation, asn1Representation.oid, asn1Representation.value, false)
 
-    override val asn1Representation: X500AttributeTypeAndValue by providedAsn1Representation orLazy {
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: X500AttributeTypeAndValue by providedAsn1Representation orLazy {
         X500AttributeTypeAndValue(oid, value)
     }
 
@@ -448,7 +436,3 @@ private fun canonicalizeRfc2253String(input: String): String {
         }
     }.trim()
 }
-
-private fun AttributeTypeAndValue.requireX509(): AttributeTypeAndValue.X509Representable =
-    this as? AttributeTypeAndValue.X509Representable
-        ?: throw Asn1Exception("Attribute $oid has no X.509/DER representation")

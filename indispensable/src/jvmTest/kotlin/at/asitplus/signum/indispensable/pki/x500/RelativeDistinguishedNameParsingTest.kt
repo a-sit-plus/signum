@@ -63,10 +63,10 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         rdn.attrsAndValues.size shouldBe 2
         // attrsAndValues is a Set; look up by displayName instead of positional index
         val cn =
-            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue.X509Representable
+            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue
         Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "John Doe"
         val o =
-            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue.X509Representable
+            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue
         Asn1String.decodeFromTlv(o.value.asPrimitive()).value shouldBe "Company"
     }
 
@@ -122,13 +122,13 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "parsed value accessor holds the raw, unescaped, case-preserved content" {
         // toRfc2253String would lowercase and re-escape this; the stored value must not.
         val atv = AttributeTypeAndValue.fromString("2.5.4.3", """Foo\, Bar""")
-                as AttributeTypeAndValue.X509Representable
+                as AttributeTypeAndValue
         Asn1String.decodeFromTlv(atv.value.asPrimitive()).value shouldBe "Foo, Bar"
     }
 
     "parsed value accessor strips surrounding quotes" {
         val rdn = RelativeDistinguishedName.fromString("""2.5.4.3="Foo+Bar"""")
-        val cn = rdn.attrsAndValues.single() as AttributeTypeAndValue.X509Representable
+        val cn = rdn.attrsAndValues.single() as AttributeTypeAndValue
         // '+' inside quotes is part of the value, not an ATV separator, and the quotes are dropped.
         Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "Foo+Bar"
     }
@@ -136,7 +136,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "hexstring form populates value with the exact DER element and preserves the string type" {
         // "#13025553" == PrintableString "US" (tag 0x13, len 2). toRfc2253String would obscure the tag.
         val atv = AttributeTypeAndValue.fromString("2.5.4.6", "#13025553")
-                as AttributeTypeAndValue.X509Representable
+                as AttributeTypeAndValue
         val decoded = Asn1String.decodeFromTlv(atv.value.asPrimitive())
         decoded.value shouldBe "US"
         (decoded is Asn1String.Printable) shouldBe true
@@ -173,7 +173,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "GeneralName should retain the typed X.509 representation" {
         val dnsName = X509GeneralName.Dns("example.com")
 
-        GeneralName.X509Representable.fromAsn1Representation(dnsName).asn1Representation shouldBe dnsName
+        GeneralName.fromAsn1Representation(dnsName).asn1Representation shouldBe dnsName
     }
 
     /**
@@ -204,7 +204,6 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
             recombined shouldBe dn
         }
     }
-
 
     val hexExamples = listOf(
         "\\20Test\\20X",

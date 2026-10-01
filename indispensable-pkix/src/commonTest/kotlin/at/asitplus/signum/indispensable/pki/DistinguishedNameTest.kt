@@ -1,12 +1,14 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.serialization.encodeToTlv
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.pki.attributes.*
 import at.asitplus.signum.indispensable.pki.SignumPkix
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.indispensable.decodeFromDer
-import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
@@ -125,7 +127,7 @@ val DistinguishedNameTest by matrixSuite {
             )
         )
 
-        val decoded = RelativeDistinguishedName.decodeFromDer(rdn.encodeToDer())
+        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(DER.encodeToByteArray(rdn))
 
         decoded shouldBe rdn
         decoded.attrsAndValues.size shouldBe 5
@@ -139,14 +141,14 @@ val DistinguishedNameTest by matrixSuite {
             )
         )
 
-        val encoded = rdn.encodeToDer()
-        val decoded = RelativeDistinguishedName.decodeFromDer(encoded)
+        val encoded = DER.encodeToByteArray(rdn)
+        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(encoded)
         val attr = decoded.attrsAndValues.single()
 
         attr::class shouldBe BaseX509AttributeTypeAndValue::class
         attr.oid shouldBe ObjectIdentifier("1.2.3.4.5.6.7")
-        (attr is AttributeTypeAndValue.X509Representable) shouldBe true
-        decoded.encodeToDer() shouldBe encoded
+        (attr.asn1Representation != null) shouldBe true
+        DER.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "AttributeTypeAndValue oid factory returns known subtype" {
@@ -214,7 +216,7 @@ val DistinguishedNameTest by matrixSuite {
     }
 
     data(typedAttributes, nameFn = { "non-canonical ${it.descriptor.canonicalName}" }) test { case ->
-        val canonical = case.expected("Test") as AttributeTypeAndValue.X509Representable
+        val canonical = case.expected("Test") as AttributeTypeAndValue
         val nonCanonicalValue = when (Asn1String.decodeFromTlv(canonical.value.asPrimitive())) {
             is Asn1String.UTF8 -> Asn1String.Printable("Test")
             is Asn1String.Printable, is Asn1String.IA5 -> Asn1String.UTF8("Test")
@@ -223,13 +225,13 @@ val DistinguishedNameTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(case.descriptor.oid, nonCanonicalValue)
         )
-        val encoded = original.encodeToDer()
-        val decoded = RelativeDistinguishedName.decodeFromDer(encoded)
-        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue.X509Representable
+        val encoded = DER.encodeToByteArray(original)
+        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
 
         attribute::class shouldBe case.expected("Test")::class
         attribute.value shouldBe nonCanonicalValue
-        decoded.encodeToDer() shouldBe encoded
+        DER.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "AttributeTypeAndValue RFC2253 string escaping"  {

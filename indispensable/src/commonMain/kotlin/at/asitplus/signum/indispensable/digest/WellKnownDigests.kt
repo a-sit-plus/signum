@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.digest
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -10,10 +12,8 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 
-@Serializable(with = WellKnownDigest.Serializer::class)
 sealed class WellKnownDigest(
     override val name: String,
     override val inputBlockSize: BitLength, override val outputLength: BitLength,
@@ -25,7 +25,11 @@ sealed class WellKnownDigest(
     data object SHA384 : WellKnownDigest("SHA384", 1024.bit, 384.bit, KnownOIDs.sha_384)
     data object SHA512 : WellKnownDigest("SHA512", 1024.bit, 512.bit, KnownOIDs.sha_512)
 
-    override val asn1Representation: X509AlgorithmIdentifier
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: X509AlgorithmIdentifier
         get() = X509AlgorithmIdentifier(oid, null)
 
     companion object : Enumeration<WellKnownDigest> {

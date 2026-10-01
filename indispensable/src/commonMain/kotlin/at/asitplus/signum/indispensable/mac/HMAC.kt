@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.mac
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.KnownOIDs
@@ -20,7 +22,11 @@ data class HMAC(val digest: Digest, val oid: ObjectIdentifier)
 
     override fun toString() = "HMAC-$digest"
 
-    override val asn1Representation: X509AlgorithmIdentifier
+    override val representations: Map<Encodable.Representation, Any>
+
+        get() = mapOf(X509 to x509Model)
+
+    internal val x509Model: X509AlgorithmIdentifier
         get() = X509AlgorithmIdentifier(oid, Asn1Null)
 
     companion object {

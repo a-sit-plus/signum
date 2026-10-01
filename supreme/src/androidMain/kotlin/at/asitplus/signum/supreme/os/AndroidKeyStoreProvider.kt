@@ -1,4 +1,6 @@
 package at.asitplus.signum.supreme.os
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.decodeFromByteArray
 
 import android.annotation.SuppressLint
 import android.os.Build
@@ -329,7 +331,7 @@ object AndroidKeyStoreProvider:
         val publicKey: CryptoPublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-            catching { chain.map { Certificate.decodeFromDer(it.encoded) } }.let { r ->
+            catching { chain.map { DER.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
                     publicKey = it.leaf.publicKey
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null

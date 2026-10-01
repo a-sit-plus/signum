@@ -20,8 +20,31 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.io.Buffer
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.digest.WellKnownDigest
+
+@Serializable
+private data class DigestMetadata(
+    val supportedDigests: Set<@Serializable(with = WellKnownDigest.Serializer::class) WellKnownDigest?>,
+)
 
 val AlgorithmPublicKeyEncodingTest by matrixSuite {
+    "Digest JSON metadata stays names while DER uses contextual algorithm identifiers" {
+        val metadata = DigestMetadata(linkedSetOf(WellKnownDigest.SHA256, null))
+        val json = "{\"supportedDigests\":[\"SHA256\",null]}"
+        Json.encodeToString(metadata) shouldBe json
+        Json.decodeFromString<DigestMetadata>(json) shouldBe metadata
+        val der = DER { serializersModule = signumX509Serializers }
+        val digest: WellKnownDigest = WellKnownDigest.SHA256
+        val bytes = der.encodeToByteArray(digest)
+        der.decodeFromByteArray<WellKnownDigest>(bytes) shouldBe digest
+        der.decodeFromByteArray<Digest>(bytes) shouldBe digest
+        shouldThrowAny { DER {}.encodeToByteArray(digest) }
+    }
     "Contextual signature algorithms work through interface and concrete types" {
         for (source in EcdsaAlgorithm.entries + RsaAlgorithm.entries) {
             val algorithm: SignatureAlgorithm = source

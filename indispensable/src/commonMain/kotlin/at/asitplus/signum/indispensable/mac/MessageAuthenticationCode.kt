@@ -2,15 +2,14 @@ package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.Indispensable
 
-interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
+interface MessageAuthenticationCode : Encodable {
     /** output size of MAC */
     val outputLength: BitLength
 
@@ -20,8 +19,8 @@ interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
         : MessageAuthenticationCode
     {
         override fun toString() = "$inner (truncated to $outputLength)"
-        override val asn1Representation: X509AlgorithmIdentifier get() =
-            TODO("figure this out in the COSE refactor")
+        override val representations: Map<Encodable.Representation, Any> = emptyMap()
+
     }
 
     fun truncatedTo(length: BitLength): MessageAuthenticationCode = when {
@@ -34,10 +33,10 @@ interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
         }
     }
 
-    companion object : DerDecodable<X509AlgorithmIdentifier, MessageAuthenticationCode> {
+    companion object : Decodable<MessageAuthenticationCode> {
         init { Indispensable.init() }
 
-        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MessageAuthenticationCode = runRethrowing {
+        fun fromAsn1Representation(element: X509AlgorithmIdentifier): MessageAuthenticationCode = runRethrowing {
             ServiceLoader.load<MessageAuthenticationCodeProvider>()
                 .get(element, MessageAuthenticationCodeProvider::getMAC)
         }
