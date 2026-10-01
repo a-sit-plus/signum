@@ -61,9 +61,12 @@ data class GeneralSubtree private constructor(
  * merge/minimize logic. (De)serialization is handled at the containing [NameConstraints] as a
  * `List<GeneralSubtree>` under its `[0]`/`[1]` field, so this type carries no ASN.1 (de)coding of its own.
  */
-data class GeneralSubtrees(
-    var trees: MutableList<GeneralSubtree>
+class GeneralSubtrees(
+    trees: List<GeneralSubtree>
 ) {
+
+    var trees: List<GeneralSubtree> = trees.toMutableList()
+    private set
 
     /**
      * Removes all redundant entries
@@ -118,8 +121,8 @@ data class GeneralSubtrees(
 
     @ExperimentalPkiApi
     fun unionWith(other: GeneralSubtrees) {
-        trees.addAll(other.trees)
-        minimize()
+        (trees as MutableList).addAll(other.trees)
+        val _ = minimize()
     }
 
     /**
@@ -148,14 +151,13 @@ data class GeneralSubtrees(
      */
     @ExperimentalPkiApi
     fun intersectAndReturnExclusions(other: GeneralSubtrees): GeneralSubtrees? {
-        require(other.trees != null) { "other GeneralSubtrees must not be null" }
 
         val newThis = mutableListOf<GeneralSubtree>()
         var newExcluded: MutableList<GeneralSubtree>? = null
 
         // Step 1: If this is empty, just add everything in other
         if (trees.isEmpty()) {
-            this.trees.addAll(other.trees)
+            (this.trees as MutableList).addAll(other.trees)
             return null
         }
 
@@ -246,8 +248,7 @@ data class GeneralSubtrees(
         for (entry in secondary) {
             val entryName = entry.base
             var diffType = false
-            for (thisEntryGS in primary) {
-                val thisEntry = thisEntryGS.base
+            for ((thisEntry) in primary) {
                 when (thisEntry.constrains(entryName)) {
                     GeneralName.ConstraintResult.DIFF_TYPE -> {
                         diffType = true
@@ -261,7 +262,6 @@ data class GeneralSubtrees(
                         break
                     }
                 }
-                break
             }
             if (diffType) {
                 primary += entry
@@ -269,8 +269,8 @@ data class GeneralSubtrees(
         }
 
         // Update this.trees
-        this.trees.clear()
-        this.trees.addAll(primary)
+        (this.trees as MutableList).clear()
+        (this.trees as MutableList).addAll(primary)
 
         // Step 6: return exclusions
         return newExcluded?.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
