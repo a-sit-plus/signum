@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.pki.extn
+import at.asitplus.signum.indispensable.pki.asn1Representation
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.*

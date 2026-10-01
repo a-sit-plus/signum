@@ -55,12 +55,12 @@ sealed interface AlternativeNames {
         }
 
         private fun List<CertificateExtension>.find(oid: ObjectIdentifier): X509GeneralNames? {
-            val matches = filterIsInstance<CertificateExtension.X509Representable>().filter { it.oid == oid }
+            val matches = mapNotNull { it.asn1Representation }.filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
             else decodeFromTlv(
                 X509GeneralNames.serializer(),
-                Asn1Element.parse(matches.first().derEncodedValue),
+                Asn1Element.parse(matches.first().value),
             ).asn1Representation
         }
     }
