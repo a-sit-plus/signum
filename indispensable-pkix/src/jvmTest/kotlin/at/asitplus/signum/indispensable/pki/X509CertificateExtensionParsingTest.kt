@@ -52,7 +52,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
             +Asn1EncapsulatingOctetString(listOf())
         }
 
-        val ext = runCatching { CertificateExtension.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), seq) }.getOrNull()
+        val ext = runCatching { CertificateExtension.decodeFromTlv(seq) }.getOrNull()
         ext!!::class shouldBe X509CertificateExtension::class
     }
 
@@ -63,7 +63,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
             +Asn1EncapsulatingOctetString(listOf())
         }
 
-        val ext = runCatching { CertificateExtension.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), seq) }.getOrNull()
+        val ext = runCatching { CertificateExtension.decodeFromTlv(seq) }.getOrNull()
         ext!!::class shouldBe X509CertificateExtension::class
     }
 

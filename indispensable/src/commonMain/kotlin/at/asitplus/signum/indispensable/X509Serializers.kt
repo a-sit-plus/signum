@@ -5,6 +5,9 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.CertificateExtension
+import at.asitplus.signum.indispensable.pki.X509CertificateExtension
+import kotlinx.serialization.SerializationException
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.asn1Representation
 import at.asitplus.signum.indispensable.pki.fromAsn1Representation
@@ -50,10 +53,22 @@ val RsaPublicKeyX509Serializer: KSerializer<RsaPublicKey> = X509Serializer(
     SubjectPublicKeyInfo.serializer(), { it.asn1Representation }, { RsaPublicKey(it) },
 )
 
+val CertificateExtensionX509Serializer: KSerializer<CertificateExtension> = X509Serializer(
+    at.asitplus.awesn1.crypto.pki.X509CertificateExtension.serializer(),
+    { it.asn1Representation ?: throw SerializationException("Certificate extension ${it.oid} has no X.509 representation") },
+    { CertificateExtension.fromAsn1Representation(it) },
+)
+val X509CertificateExtensionSerializer: KSerializer<X509CertificateExtension> = X509Serializer(
+    at.asitplus.awesn1.crypto.pki.X509CertificateExtension.serializer(),
+    { it.asn1Representation }, { X509CertificateExtension(it) },
+)
+
 /** Register with DefaultDer before its first use, or include in a configured Der's serializersModule. */
 val signumX509Serializers: SerializersModule = SerializersModule {
     contextual(TbsCertificate::class, TbsCertificateX509Serializer)
     contextual(Certificate::class, CertificateX509Serializer)
+    contextual(CertificateExtension::class, CertificateExtensionX509Serializer)
+    contextual(X509CertificateExtension::class, X509CertificateExtensionSerializer)
     contextual(SignatureAlgorithm::class, SignatureAlgorithmX509Serializer)
     contextual(EcdsaAlgorithm::class, EcdsaAlgorithmX509Serializer)
     contextual(RsaAlgorithm::class, RsaAlgorithmX509Serializer)
