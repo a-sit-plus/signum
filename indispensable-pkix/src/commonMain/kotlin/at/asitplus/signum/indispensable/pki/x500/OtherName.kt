@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `otherName` GeneralName CHOICE `[0]`. Carries the awesn1 [X509GeneralName.Other] verbatim. */
 class OtherName private constructor(

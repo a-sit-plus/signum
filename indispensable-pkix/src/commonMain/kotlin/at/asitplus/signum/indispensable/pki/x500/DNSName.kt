@@ -8,7 +8,7 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `dNSName` GeneralName CHOICE `[2]`. */
 class DNSName private constructor(

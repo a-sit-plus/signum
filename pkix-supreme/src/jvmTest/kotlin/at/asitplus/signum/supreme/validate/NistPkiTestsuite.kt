@@ -1,10 +1,11 @@
 package at.asitplus.signum.supreme.validate
+import at.asitplus.awesn1.serialization.DER
 
-import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.decodeFromPem
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.signum.indispensable.pki.TrustAnchor
+import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -28,9 +29,9 @@ val NistPkitsPathTests by matrixSuite {
     val cases = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
 
     cases.asData(nameFn = { it.name }) test { testCase ->
-        val trustAnchor = TrustAnchor.Certificate(X509Certificate.decodeFromPem(testCase.root))
-        val intermediates = testCase.intermediates.map { X509Certificate.decodeFromPem(it) }
-        val leaf = X509Certificate.decodeFromPem(testCase.leaf)
+        val trustAnchor = TrustAnchor.Certificate(DER.decodeFromPem<X509Certificate>(testCase.root))
+        val intermediates = testCase.intermediates.map { DER.decodeFromPem<X509Certificate>(it) }
+        val leaf = DER.decodeFromPem<X509Certificate>(testCase.leaf)
         val chain = AnchoredCertificateChain(listOf(leaf) + intermediates.reversed(), trustAnchor)
         val context = CertificateValidationContext(
             // Reproducible time inside the ordinary fixture validity periods (2010-2030).

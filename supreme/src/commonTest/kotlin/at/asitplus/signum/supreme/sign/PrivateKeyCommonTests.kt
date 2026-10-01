@@ -1,11 +1,12 @@
 package at.asitplus.signum.supreme.sign
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.decodeFromByteArray
+import at.asitplus.signum.indispensable.decodeFromPem
 
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.decodeFromDer
-import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
 import at.asitplus.signum.indispensable.sign.verify
@@ -42,14 +43,12 @@ val PrivateKeyCommonTests by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = CryptoPrivateKey.decodeFromPem(rsa) as CryptoPrivateKey.WithPublicKey
+        val key = DER.decodeFromPem<CryptoPrivateKey>(rsa) as CryptoPrivateKey.WithPublicKey
 
         val signer: Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
         val data = Random.nextBytes(384)
         val signature = signer.sign(data).signature
-
-
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey)
             .verify(data, signature) shouldBe SignatureVerifier.Success
@@ -64,15 +63,12 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8) as EcdsaPrivateKey.WithPublicKey
-
+        val privateKey = DER.decodeFromPem<CryptoPrivateKey>(pkcs8) as EcdsaPrivateKey.WithPublicKey
 
         val signer: Signer = EcdsaAlgorithm.withSHA256.signerFor(privateKey)
 
         val data = Random.Default.nextBytes(1024)
         val signature = signer.sign(data).signature
-
-
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey)
             .verify(data, signature) shouldBe SignatureVerifier.Success
@@ -102,7 +98,7 @@ val PrivateKeyCommonTests by matrixSuite {
 
     "Regressions" - {
         "#233" {
-            CryptoPrivateKey.decodeFromDer("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
+            DER.decodeFromByteArray<CryptoPrivateKey>("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
         }
     }
 }

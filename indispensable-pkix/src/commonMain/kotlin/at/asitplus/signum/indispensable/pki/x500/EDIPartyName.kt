@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki.x500
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `ediPartyName` GeneralName CHOICE `[5]`. Carries the awesn1 [X509GeneralName.EdiParty] verbatim. */
 class EDIPartyName private constructor(

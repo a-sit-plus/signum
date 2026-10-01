@@ -1,4 +1,5 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.Asn1StructuralException
@@ -42,7 +43,6 @@ class Certificate internal constructor(
      */
     val isSelfIssued: Boolean
         get() = tbsCertificate.subjectName == tbsCertificate.issuerName
-
 
     /** Whether this certificate is expired at [date].
      *

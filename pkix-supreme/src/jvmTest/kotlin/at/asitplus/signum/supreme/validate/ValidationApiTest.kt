@@ -1,8 +1,9 @@
 package at.asitplus.signum.supreme.validate
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.decodeFromPem
-import at.asitplus.signum.indispensable.decodeFromByteArray
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.signum.supreme.shouldBeValid
@@ -12,7 +13,6 @@ import io.kotest.matchers.shouldBe
 import java.util.*
 import kotlin.time.Instant
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
-
 
 @OptIn(ExperimentalPkiApi::class)
 val ValidationApiTest by matrixSuite {
@@ -30,14 +30,14 @@ val ValidationApiTest by matrixSuite {
         }
         onlineTests.asData(nameFn = { "Saved path: ${it.id} (${it.expected_result})" }) test {
             val trustAnchors = it.trusted_certs.map { pem ->
-                X509Certificate.decodeFromPem(pem)
+                DER.decodeFromPem<X509Certificate>(pem)
             }
 
             val intermediates = it.untrusted_intermediates.map { pem ->
-                X509Certificate.decodeFromPem(pem)
+                DER.decodeFromPem<X509Certificate>(pem)
             }
 
-            val leaf = X509Certificate.decodeFromPem(it.peer_certificate)
+            val leaf = DER.decodeFromPem<X509Certificate>(it.peer_certificate)
 
             val chain: CertificateChain = listOf(leaf) + intermediates.reversed() + trustAnchors.reversed()
             val validationTime = Instant.parse(requireNotNull(it.validation_time) { "Snapshot needs a recorded validation time: ${it.id}" })
@@ -112,7 +112,7 @@ val ValidationApiTest by matrixSuite {
         )
 
         val chain: CertificateChain = attestationProofB64.map {
-            X509Certificate.decodeFromByteArray(
+            DER.decodeFromByteArray<X509Certificate>(
                 Base64.getMimeDecoder()
                     .decode(it)
             )!!

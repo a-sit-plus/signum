@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.sign
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
 
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.Asn1OctetString
@@ -17,7 +19,7 @@ import at.asitplus.awesn1.ecdsaWithSHA512
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.rsaPSS
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
+import at.asitplus.signum.indispensable.digest.asn1Representation
 import at.asitplus.awesn1.sha1
 import at.asitplus.awesn1.sha1WithRSAEncryption
 import at.asitplus.awesn1.sha256WithRSAEncryption
@@ -33,10 +35,7 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.pki.X509
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.internals.orLazy
 
@@ -198,7 +197,7 @@ class RsaAlgorithm private constructor(
 
     }
 
-    sealed interface Parameters<T : RsaParams> : DerEncodable<T> {
+    sealed interface Parameters<out T : RsaParams> : Encodable {
 
         val type: Padding
         val digest: Digest
@@ -206,7 +205,10 @@ class RsaAlgorithm private constructor(
         class Pkcs1Padded(override val digest: Digest) :
             Parameters<RsaPkcs1PaddingParams> //TODO: do we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
         {
-            override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
+            override val representations: Map<Encodable.Representation, Any>
+                get() = mapOf(X509 to x509Model)
+
+            internal val x509Model: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
             override val type: Padding get() = Padding.PKCS1
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -247,7 +249,11 @@ class RsaAlgorithm private constructor(
                 val trailerField: Int,
             )
 
-            override val asn1Representation: RsaSsaPssParams by rsaSsaPssParams orLazy {
+            override val representations: Map<Encodable.Representation, Any>
+
+                get() = mapOf(X509 to x509Model)
+
+            internal val x509Model: RsaSsaPssParams by rsaSsaPssParams orLazy {
                 requireNotNull(providedParams)
                 RsaSsaPssParams(
                     hashAlgorithm = providedParams.digest.asn1Representation,
@@ -260,8 +266,8 @@ class RsaAlgorithm private constructor(
 
             private val params by providedParams orLazy {
                 Content(
-                    Digest.decodeFromTlv(rsaSsaPssParams!!.hashAlgorithm),
-                    MaskGenerationFunction.decodeFromTlv(rsaSsaPssParams.maskGenAlgorithm),
+                    Digest.fromAsn1Representation(rsaSsaPssParams!!.hashAlgorithm),
+                    MaskGenerationFunction.fromAsn1Representation(rsaSsaPssParams.maskGenAlgorithm),
                     rsaSsaPssParams.saltLength.let { require(it >= 0); it.toUInt() },
                     rsaSsaPssParams.trailerField
                 )
@@ -290,35 +296,36 @@ class RsaAlgorithm private constructor(
                 return result
             }
 
-            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : DerEncodable<X509AlgorithmIdentifier> {
+            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : Encodable {
                 data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
-                    override val asn1Representation: X509AlgorithmIdentifier
+                    override val representations: Map<Encodable.Representation, Any>
+                        get() = mapOf(X509 to x509Model)
+
+                    internal val x509Model: X509AlgorithmIdentifier
                         get() = X509AlgorithmIdentifier(oid, digest.asn1Representation.element)
                     companion object {
                         val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                     }
                 }
 
-                companion object : DerDecodable<X509AlgorithmIdentifier, MaskGenerationFunction> {
-                    override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MaskGenerationFunction =
+                companion object : Decodable<MaskGenerationFunction> {
+                    fun fromAsn1Representation(element: X509AlgorithmIdentifier): MaskGenerationFunction =
                         runRethrowing {
                             when (element.oid) {
                                 Pkcs1Mgf1.oid ->
-                                    Pkcs1Mgf1(Digest.decodeFromTlv(element.parameters!!, der))
+                                    Pkcs1Mgf1(Digest.fromAsn1Representation(DER.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
                                 else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
                             }
                         }
                 }
             }
 
-            companion object : DerDecodable<RsaSsaPssParams, PssPadded> {
+            companion object : Decodable<PssPadded> {
                 val DEFAULT_SHA256 = PssPadded(digest = Digest.SHA256)
                 val DEFAULT_SHA384 = PssPadded(digest = Digest.SHA384)
                 val DEFAULT_SHA512 = PssPadded(digest = Digest.SHA512)
-                override fun decodeFromTlv(
-                    element: RsaSsaPssParams,
-                    der: Der
-                ) = PssPadded(element)
+                fun fromAsn1Representation(
+                    element: RsaSsaPssParams) = PssPadded(element)
             }
         }
 

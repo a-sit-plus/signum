@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.pki.extn
+import at.asitplus.signum.indispensable.pki.value
 import at.asitplus.signum.indispensable.pki.asn1Representation
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.Serializable
@@ -149,7 +149,7 @@ class NameConstraints internal constructor(
                 .flatMap { it.attrsAndValues }
                 .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
-                    val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.X509Representable)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
+                    val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
                     str?.let {
                         runCatching {
                             RFC822Name(Asn1String.IA5(it))

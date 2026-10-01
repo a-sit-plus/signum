@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
@@ -9,20 +8,15 @@ import at.asitplus.awesn1.ecdsaWithSHA1
 import at.asitplus.awesn1.ecdsaWithSHA256
 import at.asitplus.awesn1.ecdsaWithSHA384
 import at.asitplus.awesn1.ecdsaWithSHA512
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.sha1WithRSAEncryption
 import at.asitplus.awesn1.sha256WithRSAEncryption
 import at.asitplus.awesn1.sha384WithRSAEncryption
 import at.asitplus.awesn1.sha512WithRSAEncryption
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignatureAlgorithmX509Serializer
-import at.asitplus.signum.indispensable.EcdsaAlgorithmX509Serializer
-import at.asitplus.signum.indispensable.RsaAlgorithmX509Serializer
 import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.digest.Digest
 
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.awesn1.serialization.DER
 
 /** Original model first; fresh values are converted only when X.509 is requested. */
 val SignatureAlgorithm.asn1Representation: X509AlgorithmIdentifier
@@ -73,23 +67,6 @@ val RsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
                 X509AlgorithmIdentifier(currentParameters.asn1Representation)
         }
     }
-
-// Compatibility while the remaining consumers migrate to format operations.
-fun SignatureAlgorithm.encodeToDer(der: Der = DER) =
-    der.encodeToByteArray(SignatureAlgorithmX509Serializer, this)
-fun SignatureAlgorithm.encodeToTlv(der: Der = DER) =
-    der.encodeToTlv(SignatureAlgorithmX509Serializer, this)
-fun SignatureAlgorithm.Companion.decodeFromTlv(src: X509AlgorithmIdentifier, der: Der = DER) = fromAsn1Representation(src)
-fun SignatureAlgorithm.Companion.decodeFromTlv(src: Asn1Element, der: Der = DER) =
-    der.decodeFromTlv(SignatureAlgorithmX509Serializer, src)
-fun SignatureAlgorithm.Companion.decodeFromDer(src: ByteArray, der: Der = DER) =
-    der.decodeFromByteArray(SignatureAlgorithmX509Serializer, src)
-fun EcdsaAlgorithm.Companion.decodeFromTlv(src: X509AlgorithmIdentifier, der: Der = DER) = fromAsn1Representation(src)
-fun EcdsaAlgorithm.Companion.decodeFromTlv(src: Asn1Element, der: Der = DER) =
-    der.decodeFromTlv(EcdsaAlgorithmX509Serializer, src)
-fun RsaAlgorithm.Companion.decodeFromTlv(src: X509AlgorithmIdentifier, der: Der = DER) = fromAsn1Representation(src)
-fun RsaAlgorithm.Companion.decodeFromTlv(src: Asn1Element, der: Der = DER) =
-    der.decodeFromTlv(RsaAlgorithmX509Serializer, src)
 
 interface SignatureAlgorithmsProvider {
     /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */

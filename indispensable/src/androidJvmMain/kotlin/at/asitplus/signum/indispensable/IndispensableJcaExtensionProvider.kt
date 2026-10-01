@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
@@ -23,12 +25,12 @@ import java.security.PublicKey
 object FallbackToDERFormat : JcaMappingProvider {
     override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
         if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
-            CryptoPublicKey.decodeFromDer(publicKey.encoded)
+            DER.decodeFromByteArray<CryptoPublicKey>(publicKey.encoded)
         else null
 
     override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            CryptoPrivateKey.decodeFromDer(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+            DER.decodeFromByteArray<CryptoPrivateKey>(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
         else null
 }
 
@@ -114,4 +116,3 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
             else -> null
         }
 }
-
