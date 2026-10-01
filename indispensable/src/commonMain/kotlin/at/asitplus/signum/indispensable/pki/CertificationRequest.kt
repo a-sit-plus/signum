@@ -247,7 +247,8 @@ private fun mergeAttributesWithExtensions(
         attributes?.let { addAll(it) }
         extensions?.let {
             add(CsrAttribute(Pkcs10CsrAttribute.ExtensionRequest(it.map { extension ->
-                extension.requireX509().asn1Representation
+                extension.asn1Representation
+                    ?: throw Asn1Exception("Certificate extension ${extension.oid} has no X.509/DER representation")
             })))
         }
     }

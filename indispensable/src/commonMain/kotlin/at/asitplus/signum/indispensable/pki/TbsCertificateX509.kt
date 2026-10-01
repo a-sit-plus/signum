@@ -30,7 +30,8 @@ val TbsCertificate.asn1Representation: X509TbsCertificate
             subjectPublicKeyInfo = publicKey.asn1Representation,
             issuerUniqueID = issuerUniqueID?.let { Asn1BitString(BitSet(it)) },
             subjectUniqueID = subjectUniqueID?.let { Asn1BitString(BitSet(it)) },
-            extensions = extensions.map { it.requireX509().asn1Representation },
+            extensions = extensions.map { it.asn1Representation
+                ?: throw Asn1Exception("Certificate extension ${it.oid} has no X.509/DER representation") },
         )
     }
 

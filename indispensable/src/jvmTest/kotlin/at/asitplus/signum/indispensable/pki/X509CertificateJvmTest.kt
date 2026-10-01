@@ -1,6 +1,9 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 import at.asitplus.awesn1.nextPositiveAsn1Integer
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.parse
@@ -422,17 +425,14 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             value = extnValue,
         )
 
-        val encoded = extension.encodeToDer(Awesn1X509CertificateExtension.serializer())
-        val decoded = CertificateExtension.decodeFromDer(
-            Awesn1X509CertificateExtension.serializer(),
-            encoded,
-        )
+        val encoded = DER.encodeToByteArray(extension)
+        val decoded = DER.decodeFromByteArray<CertificateExtension>(encoded)
 
         decoded shouldBe extension
         decoded.oid shouldBe KnownOIDs.keyUsage
         decoded.critical shouldBe true
-        decoded.derEncodedValue shouldBe extnValue.content
-        decoded.encodeToDer(Awesn1X509CertificateExtension.serializer()) shouldBe encoded
+        decoded.asn1Representation.shouldNotBeNull().value shouldBe extnValue.content
+        DER.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "CertificateExtension preserves raw false critical" {
@@ -443,14 +443,11 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             0x04, 0x03, 0x01, 0x02, 0x03,
         )
 
-        val decoded = CertificateExtension.decodeFromDer(
-            Awesn1X509CertificateExtension.serializer(),
-            encoded,
-        )
+        val decoded = DER.decodeFromByteArray<CertificateExtension>(encoded)
 
         decoded.critical shouldBe false
-        decoded.asn1Representation.rawCritical shouldBe 0x00.toByte()
-        decoded.encodeToDer(Awesn1X509CertificateExtension.serializer()) shouldBe encoded
+        decoded.asn1Representation.shouldNotBeNull().rawCritical shouldBe 0x00.toByte()
+        DER.encodeToByteArray(decoded) shouldBe encoded
     }
 
 }
