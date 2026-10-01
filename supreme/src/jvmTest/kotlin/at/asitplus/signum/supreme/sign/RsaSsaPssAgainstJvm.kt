@@ -1,4 +1,5 @@
 package at.asitplus.signum.supreme.sign
+import at.asitplus.signum.indispensable.sign.encodeToDer
 
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.dsl.rsa

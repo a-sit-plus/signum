@@ -16,6 +16,9 @@ import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
+import at.asitplus.signum.indispensable.asn1Representation
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
@@ -36,6 +39,9 @@ class RsaPublicKey private constructor(
 ) : CryptoPublicKey {
     init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
+    override val representations: Map<Encodable.Representation, Any> =
+        providedAsn1Representation?.let { mapOf(X509 to it) } ?: emptyMap()
+
     override val additionalProperties = mutableMapOf<String, String>()
 
     private data class Content(val n: Asn1Integer.Positive, val e: Asn1Integer.Positive) {
@@ -53,10 +59,6 @@ class RsaPublicKey private constructor(
     ) : this(null, Content(n, e))
 
     constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
-
-    override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.rsa(n, e)
-    }
 
     private val content: Content by providedContent orLazy {
         Content(Pkcs1RsaPublicKeyInfo.of(asn1Representation))
@@ -156,6 +158,9 @@ class EcdsaPublicKey private constructor(
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
     init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
+    override val representations: Map<Encodable.Representation, Any> =
+        providedAsn1Representation?.let { mapOf(X509 to it) } ?: emptyMap()
+
     override val additionalProperties = mutableMapOf<String, String>()
 
     private data class Content(
@@ -166,10 +171,6 @@ class EcdsaPublicKey private constructor(
     constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
 
     override fun asCryptoPublicKey() = this
-
-    override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
-    }
 
     private val content: Content by providedContent orLazy {
         val parsed = Sec1EcPublicKeyInfo.of(asn1Representation)

@@ -6,11 +6,12 @@ import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.sign.asn1Representation
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 
-//Internal for testing
 /** The X.509 structural representation retained by this prototype. */
-internal object X509 : Encodable.Representation
+object X509 : Encodable.Representation
 
 val TbsCertificate.asn1Representation: X509TbsCertificate
     get() = representations[X509] as? X509TbsCertificate ?: run {
@@ -33,21 +34,21 @@ val TbsCertificate.asn1Representation: X509TbsCertificate
         )
     }
 
-operator fun TbsCertificate.Companion.invoke(src: X509TbsCertificate, der: Der = DER): TbsCertificate =
-    fromAsn1Representation(src, der)
+operator fun TbsCertificate.Companion.invoke(src: X509TbsCertificate): TbsCertificate =
+    fromAsn1Representation(src)
 
-/** Retains the original model; DER-dependent interpretation is deferred until semantic access. */
+/** Retains the original model; interpretation is deferred until semantic access. */
 fun TbsCertificate.Companion.fromAsn1Representation(
-    src: X509TbsCertificate, der: Der? = null,
+    src: X509TbsCertificate,
 ): TbsCertificate =
     TbsCertificate({ TbsCertificate.ContentContainer(
         serialNumber = src.serialNumber,
-        signatureAlgorithm = SignatureAlgorithm.decodeFromTlv(src.signatureAlgorithm, der ?: DER),
+        signatureAlgorithm = SignatureAlgorithm.fromAsn1Representation(src.signatureAlgorithm),
         issuerName = X500Name(src.issuerName.map(::RelativeDistinguishedName), false),
         validFrom = src.validity.validFrom.instant,
         validUntil = src.validity.validUntil.instant,
         subjectName = X500Name(src.subjectName.map(::RelativeDistinguishedName), false),
-        publicKey = CryptoPublicKey.decodeFromTlv(src.subjectPublicKeyInfo, der ?: DER),
+        publicKey = CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo),
         issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
         subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
         extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
