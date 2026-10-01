@@ -5,7 +5,6 @@ import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 
@@ -35,14 +34,20 @@ val TbsCertificate.asn1Representation: X509TbsCertificate
     }
 
 operator fun TbsCertificate.Companion.invoke(src: X509TbsCertificate, der: Der = DER): TbsCertificate =
+    fromAsn1Representation(src, der)
+
+/** Retains the original model; DER-dependent interpretation is deferred until semantic access. */
+fun TbsCertificate.Companion.fromAsn1Representation(
+    src: X509TbsCertificate, der: Der? = null,
+): TbsCertificate =
     TbsCertificate({ TbsCertificate.ContentContainer(
         serialNumber = src.serialNumber,
-        signatureAlgorithm = SignatureAlgorithm.decodeFromTlv(src.signatureAlgorithm, der),
+        signatureAlgorithm = SignatureAlgorithm.decodeFromTlv(src.signatureAlgorithm, der ?: DER),
         issuerName = X500Name(src.issuerName.map(::RelativeDistinguishedName), false),
         validFrom = src.validity.validFrom.instant,
         validUntil = src.validity.validUntil.instant,
         subjectName = X500Name(src.subjectName.map(::RelativeDistinguishedName), false),
-        publicKey = CryptoPublicKey.decodeFromTlv(src.subjectPublicKeyInfo, der),
+        publicKey = CryptoPublicKey.decodeFromTlv(src.subjectPublicKeyInfo, der ?: DER),
         issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
         subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
         extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
@@ -50,12 +55,4 @@ operator fun TbsCertificate.Companion.invoke(src: X509TbsCertificate, der: Der =
 
 /** Existing X.509 consumers can still request the structural TLV directly. */
 fun TbsCertificate.encodeToTlv(der: Der = DER): Asn1Element =
-    der.encodeToTlv(X509TbsCertificate.serializer(), asn1Representation)
-
-internal object TbsCertificateDerCodec : DerCodec<TbsCertificate> {
-    override val type = TbsCertificate::class
-    override fun encode(value: TbsCertificate, der: Der): ByteArray =
-        value.encodeToTlv(der).derEncoded
-    override fun decode(bytes: ByteArray, der: Der): TbsCertificate =
-        TbsCertificate(der.decodeFromDer<X509TbsCertificate>(bytes), der)
-}
+    der.encodeToTlv(TbsCertificateX509Serializer, this)

@@ -7,6 +7,13 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
+import at.asitplus.awesn1.io.encodeToSink
+import at.asitplus.awesn1.io.decodeFromSource
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
@@ -33,21 +40,30 @@ private fun certificate() = Certificate(
     EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO),
 )
 
+private val certificateDer = DER { serializersModule = signumX509Serializers }
+
 val CertificateEncodingTest by matrixSuite {
-    "Registry dispatch distinguishes Certificate and TbsCertificate" {
+    "Contextual serializers distinguish Certificate and TbsCertificate" {
         val source = certificate()
-        val outer: Encodable = source
-        val inner: Encodable = source.tbsCertificate
-        val target: Decodable<Certificate> = Certificate
-        val bytes = outer.encode(DER)
-        bytes shouldNotBe inner.encode(DER)
-        val decoded = target.decode(bytes, DER)
-        decoded.encode(DER) shouldBe bytes
-        decoded.tbsCertificate.encode(DER) shouldBe inner.encode(DER)
+        val outer = source
+        val inner = source.tbsCertificate
+        val bytes = certificateDer.encodeToByteArray(outer)
+        bytes shouldNotBe certificateDer.encodeToByteArray(inner)
+        val decoded = certificateDer.decodeFromByteArray<Certificate>(bytes)
+        certificateDer.encodeToByteArray(decoded) shouldBe bytes
+        certificateDer.encodeToByteArray(decoded.tbsCertificate) shouldBe certificateDer.encodeToByteArray(inner)
         decoded shouldBe source
         decoded.hashCode() shouldBe source.hashCode()
+        val tlv = certificateDer.encodeToTlv(source)
+        tlv.derEncoded shouldBe bytes
+        certificateDer.decodeFromTlv<Certificate>(tlv) shouldBe source
+        val buffer = Buffer()
+        certificateDer.encodeToSink(source, buffer)
+        buffer.peek().readByteArray() shouldBe bytes
+        certificateDer.decodeFromSource<Certificate>(buffer) shouldBe source
+        shouldThrowAny { certificateDer.decodeFromSource<Certificate>(Buffer().apply { write(bytes) }, limit = 1) }
         decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
-        shouldThrowAny { target.decode(bytes, DER { maxInputLength = 1 }) }
+        shouldThrowAny { DER { serializersModule = signumX509Serializers; maxInputLength = 1 }.decodeFromByteArray<Certificate>(bytes) }
     }
 
     "Retained outer and signed TBS models do not require supported algorithms" {
@@ -65,9 +81,9 @@ val CertificateEncodingTest by matrixSuite {
         )
         val original = X509Certificate(tbs, unknown, template.signatureValue)
         val bytes = DER.encodeToTlv(original).derEncoded
-        val decoded = Certificate.decode(bytes, DER)
-        decoded.encode(DER) shouldBe bytes
-        decoded.tbsCertificate.encode(DER) shouldBe DER.encodeToTlv(tbs).derEncoded
+        val decoded = certificateDer.decodeFromByteArray<Certificate>(bytes)
+        certificateDer.encodeToByteArray(decoded) shouldBe bytes
+        certificateDer.encodeToByteArray(decoded.tbsCertificate) shouldBe DER.encodeToTlv(tbs).derEncoded
         Certificate(original).asn1Representation shouldBeSameInstanceAs original
         shouldThrowAny { decoded.signatureAlgorithm }
     }
@@ -79,10 +95,10 @@ val CertificateEncodingTest by matrixSuite {
             X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null),
             source.signatureValue,
         )
-        shouldThrowAny { Certificate.decode(DER.encodeToTlv(mismatched).derEncoded, DER) }
+        shouldThrowAny { certificateDer.decodeFromByteArray<Certificate>(certificateDer.encodeToTlv(mismatched).derEncoded) }
     }
 
-    "Existing PEM helpers use the certificate codec and respect input limits" {
+    "Existing PEM helpers use the certificate bridge and respect input limits" {
         val source = certificate()
         val pem = source.encodeToPem()
         Certificate.decodeFromPem(pem) shouldBe source

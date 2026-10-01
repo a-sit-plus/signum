@@ -9,26 +9,26 @@ import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.asn1Representation
-import at.asitplus.signum.indispensable.pki.invoke
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
 /** Existing certificate consumers retain their DER/PEM convenience functions. */
-fun Certificate.encodeToDer(der: Der = DER): ByteArray = encode(der)
+fun Certificate.encodeToDer(der: Der = DER): ByteArray =
+    der.encodeToByteArray(CertificateX509Serializer, this)
 
 fun Certificate.encodeToTlv(der: Der = DER): Asn1Element =
-    der.encodeToTlv(X509Certificate.serializer(), asn1Representation)
+    der.encodeToTlv(CertificateX509Serializer, this)
 
 fun Certificate.encodeToPemBlock(der: Der = DER): PemBlock =
-    PemBlock(X509Certificate.canonicalPemLabel, payload = encode(der))
+    PemBlock(X509Certificate.canonicalPemLabel, payload = encodeToDer(der))
 
 fun Certificate.encodeToPem(der: Der = DER): String = encodeToPemBlock(der).encodeToPem()
 
-fun Certificate.Companion.decodeFromDer(bytes: ByteArray, der: Der = DER): Certificate = decode(bytes, der)
+fun Certificate.Companion.decodeFromDer(bytes: ByteArray, der: Der = DER): Certificate =
+    der.decodeFromByteArray(CertificateX509Serializer, bytes)
 
 fun Certificate.Companion.decodeFromTlv(src: Asn1Element, der: Der = DER): Certificate =
-    Certificate(der.decodeFromTlv(X509Certificate.serializer(), src), der)
+    der.decodeFromTlv(CertificateX509Serializer, src)
 
 fun Certificate.Companion.decodeFromPemBlock(
     src: PemBlock, limit: Long = src.payload.size.toLong(), der: Der = DER,
@@ -36,7 +36,7 @@ fun Certificate.Companion.decodeFromPemBlock(
     X509Certificate.validate(src)
     require(!src.headers.any()) { "Unexpected PEM headers are present in the data" }
     require(src.payload.size.toLong() <= limit) { "Certificate exceeds input limit" }
-    return decode(src.payload, der)
+    return decodeFromDer(src.payload, der)
 }
 
 fun Certificate.Companion.decodeFromPem(src: String, limit: Long? = null, der: Der = DER): Certificate =
@@ -47,7 +47,7 @@ fun Certificate.Companion.decodeFromByteArray(
 ): Certificate? {
     fun decodeLimited(bytes: ByteArray): Certificate {
         require(bytes.size.toLong() <= limit) { "Certificate exceeds input limit" }
-        return decode(bytes, der)
+        return decodeFromDer(bytes, der)
     }
     return catchingUnwrapped { decodeLimited(src) }.getOrNull()
         ?: catchingUnwrapped { decodeLimited(src.decodeToByteArray(Base64())) }.getOrNull()
