@@ -104,7 +104,7 @@ class IPAddressName internal constructor(
         }
     }
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<IPAddressName>{
         override val tag = X509GeneralName.Tags.ipAddress
 
         override fun fromAsn1Representation(src: X509GeneralName): IPAddressName {

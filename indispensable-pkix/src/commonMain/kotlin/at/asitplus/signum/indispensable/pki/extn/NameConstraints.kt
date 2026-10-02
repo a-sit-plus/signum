@@ -68,7 +68,7 @@ class NameConstraints internal constructor(
         allTrees.none { it.isInvalid() }
     }
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<NameConstraints>{
         override val oid get() = KnownOIDs.nameConstraints_2_5_29_30
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): NameConstraints {

@@ -8,6 +8,7 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
 interface CryptoPrivateKey : Encodable {
@@ -17,7 +18,6 @@ interface CryptoPrivateKey : Encodable {
     }
 
     val attributes: Set<Asn1Element>? get() = asn1Representation.attributes
-
 
     companion object : Decodable<CryptoPrivateKey> {
         init { Indispensable.init() }

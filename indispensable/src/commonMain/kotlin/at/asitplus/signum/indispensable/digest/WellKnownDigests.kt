@@ -1,6 +1,4 @@
 package at.asitplus.signum.indispensable.digest
-import at.asitplus.signum.indispensable.pki.X509
-import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -24,13 +22,6 @@ sealed class WellKnownDigest(
     data object SHA256 : WellKnownDigest("SHA256", 512.bit, 256.bit, KnownOIDs.sha_256)
     data object SHA384 : WellKnownDigest("SHA384", 1024.bit, 384.bit, KnownOIDs.sha_384)
     data object SHA512 : WellKnownDigest("SHA512", 1024.bit, 512.bit, KnownOIDs.sha_512)
-
-    override val representations: Map<Encodable.Representation, Any>
-
-        get() = mapOf(X509 to x509Model)
-
-    internal val x509Model: X509AlgorithmIdentifier
-        get() = X509AlgorithmIdentifier(oid, null)
 
     companion object : Enumeration<WellKnownDigest> {
         override val entries: Iterable<WellKnownDigest> by lazy { setOf(SHA1, SHA256, SHA384, SHA512) }

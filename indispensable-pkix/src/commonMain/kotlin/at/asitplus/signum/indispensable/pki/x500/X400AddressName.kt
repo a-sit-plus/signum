@@ -22,7 +22,7 @@ class X400AddressName private constructor(
 
     override fun toString(): String = x400Address.toString()
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<X400AddressName>{
         override val tag = X509GeneralName.Tags.x400Address
         override fun fromAsn1Representation(src: X509GeneralName): X400AddressName = X400AddressName(src as X509GeneralName.X400Address)
     }

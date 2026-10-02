@@ -46,7 +46,7 @@ class AuthorityKeyIdentifier internal constructor(
         authorityCertSerialNumber?.encodeToTlv()?.content,
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<AuthorityKeyIdentifier>{
         override val oid get() = KnownOIDs.authorityKeyIdentifier_2_5_29_35
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): AuthorityKeyIdentifier {

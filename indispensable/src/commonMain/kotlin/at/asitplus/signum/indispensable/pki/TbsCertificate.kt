@@ -73,7 +73,6 @@ class TbsCertificate internal constructor(
         issuerUniqueID: ByteArray? = null,
         subjectUniqueID: ByteArray? = null,
         extensions: List<CertificateExtension> = emptyList(),
-        representations: Map<Encodable.Representation, Any> = emptyMap(),
     ) : this(
         ContentContainer(
             serialNumber = serialNumber,
@@ -86,7 +85,7 @@ class TbsCertificate internal constructor(
             issuerUniqueID = issuerUniqueID,
             subjectUniqueID = subjectUniqueID,
             extensions = extensions,
-        ), representations
+        ), emptyMap()
     ) {
         runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
         validateExtensions(extensions)
