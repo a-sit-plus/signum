@@ -34,42 +34,24 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.internals.orLazy
 
-class EcdsaAlgorithm private constructor(
-    providedParams: Params?,
-    private val providedAsn1: X509AlgorithmIdentifier?,
+class EcdsaAlgorithm internal constructor(
+    paramsProvider: () -> Params,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : SignatureAlgorithm, Enumerable {
-    init { require((providedParams != null) != (providedAsn1 != null)) }
 
     constructor(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         requiredCurve: ECCurve? = null
-    ) : this(Params(digest, requiredCurve), null)
+    ) : this({ Params(digest, requiredCurve) }, emptyMap())
 
-    constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+    internal data class Params(val digest: Digest?, val curve: ECCurve?)
 
-    private data class Params(val digest: Digest?, val curve: ECCurve?)
-
-    override val representations: Map<Encodable.Representation, Any> =
-        providedAsn1?.let { mapOf(X509 to it) } ?: emptyMap()
-
-    private val params by providedParams orLazy {
-        Params(when(providedAsn1!!.oid) {
-            KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
-            KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
-            KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
-            KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
-            else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-        }, null).also {
-            require(providedAsn1.parameters == null)
-        }
-    }
+    private val params by lazy(paramsProvider)
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
     val digest get() = params.digest
@@ -96,21 +78,15 @@ class EcdsaAlgorithm private constructor(
     }
 }
 
-class RsaAlgorithm private constructor(
-    providedParams: Parameters<*>?,
-    private val providedAsn1: X509AlgorithmIdentifier?,
+class RsaAlgorithm internal constructor(
+    paramsProvider: () -> Parameters<*>,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : SignatureAlgorithm, Enumerable {
-    init { require((providedParams != null) != (providedAsn1 != null)) }
-
-    override val representations: Map<Encodable.Representation, Any> =
-        providedAsn1?.let { mapOf(X509 to it) } ?: emptyMap()
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
         parameters: Parameters<*>
-    ) : this(parameters, null)
-
-    constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+    ) : this({ parameters }, emptyMap())
 
     /**
      * Convenience Ctor to use defaults aside digest
@@ -118,23 +94,7 @@ class RsaAlgorithm private constructor(
     constructor(padding: Padding, digest: Digest) : this(Parameters(padding, digest))
 
     /** The RSA signature parameters to apply to the data. */
-    val parameters: Parameters<*> by providedParams orLazy {
-        val oid = providedAsn1!!.oid
-        if (oid == KnownOIDs.rsaPSS) {
-            Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1))
-        } else {
-            when (oid) {
-                KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
-                KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
-                KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
-                KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-                else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-            }.let { digest ->
-                require(providedAsn1.parameters == Asn1Null)
-                Parameters.Pkcs1Padded(digest)
-            }
-        }
-    }
+    val parameters by lazy(paramsProvider)
 
     /** The digest to apply to the data. */
     val digest get() = parameters.digest
@@ -205,10 +165,6 @@ class RsaAlgorithm private constructor(
         class Pkcs1Padded(override val digest: Digest) :
             Parameters<RsaPkcs1PaddingParams> //TODO: do we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
         {
-            override val representations: Map<Encodable.Representation, Any>
-                get() = mapOf(X509 to x509Model)
-
-            internal val x509Model: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
             override val type: Padding get() = Padding.PKCS1
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -229,49 +185,25 @@ class RsaAlgorithm private constructor(
             }
         }
 
-        class PssPadded private constructor(
-            private val providedParams: Content?,
-            private val rsaSsaPssParams: RsaSsaPssParams?
+        class PssPadded internal constructor(
+            paramsProvider: () -> Content,
+            override val representations: Map<Encodable.Representation, Any>,
         ) : Parameters<RsaSsaPssParams> {
-            constructor(
-                digest: Digest = Digest.SHA1,
-                mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
-                saltLength: UInt = digest.outputLength.bytes,
-                trailerField: Int = DEFAULT_TRAILER_FIELD
-            ) : this(Content(digest, mgfAlgorithm, saltLength, trailerField), null)
-
-            constructor(asn1Representation: RsaSsaPssParams) : this(null, asn1Representation)
-
-            private data class Content(
+            internal data class Content(
                 val digest: Digest,
                 val mgfAlgorithm: MaskGenerationFunction,
                 val saltLength: UInt,
                 val trailerField: Int,
             )
 
-            override val representations: Map<Encodable.Representation, Any>
+            constructor(
+                digest: Digest = Digest.SHA1,
+                mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
+                saltLength: UInt = digest.outputLength.bytes,
+                trailerField: Int = DEFAULT_TRAILER_FIELD,
+            ) : this({ Content(digest, mgfAlgorithm, saltLength, trailerField) }, emptyMap())
 
-                get() = mapOf(X509 to x509Model)
-
-            internal val x509Model: RsaSsaPssParams by rsaSsaPssParams orLazy {
-                requireNotNull(providedParams)
-                RsaSsaPssParams(
-                    hashAlgorithm = providedParams.digest.asn1Representation,
-                    maskGenAlgorithm = providedParams.mgfAlgorithm.asn1Representation,
-                    saltLength = providedParams.saltLength.also { require(it <= Int.MAX_VALUE.toUInt()) }.toInt(),
-                    trailerField = providedParams.trailerField
-                )
-
-            }
-
-            private val params by providedParams orLazy {
-                Content(
-                    Digest.fromAsn1Representation(rsaSsaPssParams!!.hashAlgorithm),
-                    MaskGenerationFunction.fromAsn1Representation(rsaSsaPssParams.maskGenAlgorithm),
-                    rsaSsaPssParams.saltLength.let { require(it >= 0); it.toUInt() },
-                    rsaSsaPssParams.trailerField
-                )
-            }
+            private val params by lazy(paramsProvider)
 
             override val type: Padding get() = Padding.PSS
             override val digest: Digest get() = params.digest
@@ -298,11 +230,6 @@ class RsaAlgorithm private constructor(
 
             sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : Encodable {
                 data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
-                    override val representations: Map<Encodable.Representation, Any>
-                        get() = mapOf(X509 to x509Model)
-
-                    internal val x509Model: X509AlgorithmIdentifier
-                        get() = X509AlgorithmIdentifier(oid, digest.asn1Representation.element)
                     companion object {
                         val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                     }
@@ -324,8 +251,6 @@ class RsaAlgorithm private constructor(
                 val DEFAULT_SHA256 = PssPadded(digest = Digest.SHA256)
                 val DEFAULT_SHA384 = PssPadded(digest = Digest.SHA384)
                 val DEFAULT_SHA512 = PssPadded(digest = Digest.SHA512)
-                fun fromAsn1Representation(
-                    element: RsaSsaPssParams) = PssPadded(element)
             }
         }
 

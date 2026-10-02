@@ -28,17 +28,14 @@ interface Name : Encodable {
  * The DER/X.509 specialization of [Name] (an X.500 directory name) — a certificate issuer/subject.
  * RFC 2253 parsing/printing remains in Signum, while the structural representation comes from awesn1.
  */
-class X500Name(
+class X500Name internal constructor(
     override val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : Name {
 
-    override val representations: Map<Encodable.Representation, Any>
-
-        get() = mapOf(X509 to x509Model)
-
-    internal val x509Model: Asn1X500Name
-        get() = Asn1X500Name(relativeDistinguishedNames.map { it.asn1Representation })
+    constructor(relativeDistinguishedNames: List<RelativeDistinguishedName>, performValidation: Boolean) :
+        this(relativeDistinguishedNames, performValidation, emptyMap())
 
     val isValid: Boolean by lazy {
         relativeDistinguishedNames.all { it.isValid }
@@ -63,7 +60,7 @@ class X500Name(
         fun fromAsn1Representation(
             element: Asn1X500Name): X500Name = X500Name(
             element
-                .map { RelativeDistinguishedName(it) }, false)
+                .map { RelativeDistinguishedName(it) }, false, mapOf(X509 to element))
 
         /** Parse an RFC 2253 string (e.g., `CN=John Doe,O=Company,C=US`). */
         fun fromString(value: String): X500Name {

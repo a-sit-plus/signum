@@ -19,8 +19,7 @@ class Certificate internal constructor(
     constructor(
         tbsCertificate: TbsCertificate,
         signature: CryptoSignature,
-        representations: Map<Encodable.Representation, Any> = emptyMap(),
-    ) : this({ tbsCertificate }, { signature }, representations) {
+    ) : this({ tbsCertificate }, { signature }, emptyMap()) {
         require(tbsCertificate.extensions.allDistinctByOids()) { "Multiple extensions with the same OID found" }
     }
 

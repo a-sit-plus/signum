@@ -22,7 +22,7 @@ class OtherName private constructor(
 
     override fun toString(): String = other.toString()
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<OtherName>{
         override val tag = X509GeneralName.Tags.otherName
         override fun fromAsn1Representation(src: X509GeneralName): OtherName = OtherName(src as X509GeneralName.Other)
     }

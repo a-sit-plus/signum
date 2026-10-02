@@ -30,6 +30,7 @@ private fun tbsCertificate(
     validFrom: Instant = Instant.fromEpochSeconds(1_700_000_000),
     subjectName: Name = X500Name.EMPTY,
 ) = TbsCertificate(
+    { TbsCertificate.ContentContainer(
     serialNumber = Asn1Integer.ONE,
     signatureAlgorithm = EcdsaAlgorithm.withSHA256,
     issuerName = X500Name.EMPTY,
@@ -37,7 +38,10 @@ private fun tbsCertificate(
     validFrom = validFrom,
     validUntil = Instant.fromEpochSeconds(1_800_000_000),
     publicKey = ECCurve.SECP_256_R_1.generator.asPublicKey(),
-    representations = mapOf(ExtraRepresentation to "metadata"),
+    issuerUniqueID = null,
+    subjectUniqueID = null,
+    extensions = emptyList(),
+    ) }, mapOf(ExtraRepresentation to "metadata"),
 )
 
 private val tbsDer = DER { serializersModule = signumX509Serializers }

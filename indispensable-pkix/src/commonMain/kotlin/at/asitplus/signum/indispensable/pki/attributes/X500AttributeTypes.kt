@@ -16,7 +16,7 @@ import at.asitplus.signum.indispensable.pki.BaseX509AttributeTypeAndValue
 class CommonName : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<CommonName>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.commonName
         override val canonicalName = "CN"
         override fun fromString(value: String) = CommonName(value)
@@ -27,7 +27,7 @@ class CommonName : BaseX509AttributeTypeAndValue {
 class Country : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Country>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.countryName
         override val canonicalName = "C"
         override fun fromString(value: String) = Country(value)
@@ -38,7 +38,7 @@ class Country : BaseX509AttributeTypeAndValue {
 class Locality : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Locality>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.localityName
         override val canonicalName = "L"
         override fun fromString(value: String) = Locality(value)
@@ -49,7 +49,7 @@ class Locality : BaseX509AttributeTypeAndValue {
 class StateOrProvince : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<StateOrProvince>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName
         override val canonicalName = "ST"
         override fun fromString(value: String) = StateOrProvince(value)
@@ -60,7 +60,7 @@ class StateOrProvince : BaseX509AttributeTypeAndValue {
 class Organization : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Organization>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.organizationName
         override val canonicalName = "O"
         override fun fromString(value: String) = Organization(value)
@@ -71,7 +71,7 @@ class Organization : BaseX509AttributeTypeAndValue {
 class OrganizationalUnit : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<OrganizationalUnit>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.organizationalUnitName
         override val canonicalName = "OU"
         override fun fromString(value: String) = OrganizationalUnit(value)
@@ -82,7 +82,7 @@ class OrganizationalUnit : BaseX509AttributeTypeAndValue {
 class Title : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Title>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.title
         override val canonicalName = "T"
         override fun fromString(value: String) = Title(value)
@@ -93,7 +93,7 @@ class Title : BaseX509AttributeTypeAndValue {
 class Street : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Street>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.streetAddress
         override val canonicalName = "STREET"
         override fun fromString(value: String) = Street(value)
@@ -104,7 +104,7 @@ class Street : BaseX509AttributeTypeAndValue {
 class DomainComponent : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.IA5(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<DomainComponent>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.domainComponent
         override val canonicalName = "DC"
         override fun fromString(value: String) = DomainComponent(value)
@@ -115,7 +115,7 @@ class DomainComponent : BaseX509AttributeTypeAndValue {
 class DistinguishedNameQualifier : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<DistinguishedNameQualifier>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.dnQualifier
         override val canonicalName = "DNQUALIFIER"
         override fun fromString(value: String) = DistinguishedNameQualifier(value)
@@ -126,7 +126,7 @@ class DistinguishedNameQualifier : BaseX509AttributeTypeAndValue {
 class Surname : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Surname>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.surname
         override val canonicalName = "SURNAME"
         override fun fromString(value: String) = Surname(value)
@@ -137,7 +137,7 @@ class Surname : BaseX509AttributeTypeAndValue {
 class GivenName : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<GivenName>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.givenName
         override val canonicalName = "GIVENNAME"
         override fun fromString(value: String) = GivenName(value)
@@ -148,7 +148,7 @@ class GivenName : BaseX509AttributeTypeAndValue {
 class Initials : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Initials>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.initials
         override val canonicalName = "INITIALS"
         override fun fromString(value: String) = Initials(value)
@@ -159,7 +159,7 @@ class Initials : BaseX509AttributeTypeAndValue {
 class Generation : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<Generation>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.generationQualifier
         override val canonicalName = "GENERATION"
         override fun fromString(value: String) = Generation(value)
@@ -170,7 +170,7 @@ class Generation : BaseX509AttributeTypeAndValue {
 class EmailAddress : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.IA5(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<EmailAddress>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.emailAddress
         override val canonicalName = "EMAILADDRESS"
         override fun fromString(value: String) = EmailAddress(value)
@@ -181,7 +181,7 @@ class EmailAddress : BaseX509AttributeTypeAndValue {
 class UserId : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.UTF8(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<UserId>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.userId
         override val canonicalName = "UID"
         override fun fromString(value: String) = UserId(value)
@@ -192,7 +192,7 @@ class UserId : BaseX509AttributeTypeAndValue {
 class SerialNumber : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<SerialNumber>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.serialNumber
         override val canonicalName = "SERIALNUMBER"
         override fun fromString(value: String) = SerialNumber(value)
@@ -203,7 +203,7 @@ class SerialNumber : BaseX509AttributeTypeAndValue {
 class TelephoneNumber : BaseX509AttributeTypeAndValue {
     constructor(str: String) : super(Companion.oid, Asn1String.Printable(str))
     internal constructor(asn1Representation: X500AttributeTypeAndValue) : super(asn1Representation)
-    companion object : AttributeTypeAndValue.Descriptor {
+    companion object : AttributeTypeAndValue.Descriptor , at.asitplus.signum.indispensable.Decodable<TelephoneNumber>{
         override val oid = AttributeTypeAndValue.Descriptor.OID.telephoneNumber
         override val canonicalName = "TELEPHONENUMBER"
         override fun fromString(value: String) = TelephoneNumber(value)

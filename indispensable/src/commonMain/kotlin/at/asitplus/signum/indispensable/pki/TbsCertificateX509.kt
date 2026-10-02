@@ -45,10 +45,10 @@ fun TbsCertificate.Companion.fromAsn1Representation(
     TbsCertificate({ TbsCertificate.ContentContainer(
         serialNumber = src.serialNumber,
         signatureAlgorithm = SignatureAlgorithm.fromAsn1Representation(src.signatureAlgorithm),
-        issuerName = X500Name(src.issuerName.map(::RelativeDistinguishedName), false),
+        issuerName = X500Name(src.issuerName.map { RelativeDistinguishedName(it) }, false),
         validFrom = src.validity.validFrom.instant,
         validUntil = src.validity.validUntil.instant,
-        subjectName = X500Name(src.subjectName.map(::RelativeDistinguishedName), false),
+        subjectName = X500Name(src.subjectName.map { RelativeDistinguishedName(it) }, false),
         publicKey = CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo),
         issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
         subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),

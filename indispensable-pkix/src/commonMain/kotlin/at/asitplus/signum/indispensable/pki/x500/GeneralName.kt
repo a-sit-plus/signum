@@ -34,7 +34,7 @@ abstract class AbstractX509GeneralName(
         other is GeneralName &&
                  asn1Representation == other.genericAsn1Representation
 
-    override fun hashCode(): Int = 31 + asn1Representation.hashCode()
+    override fun hashCode(): Int = asn1Representation.hashCode()
 }
 
 /**

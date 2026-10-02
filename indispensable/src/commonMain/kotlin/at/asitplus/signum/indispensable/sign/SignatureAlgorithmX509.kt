@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.Asn1Null
+import at.asitplus.awesn1.crypto.RsaSsaPssParams
+import at.asitplus.awesn1.rsaPSS
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -31,9 +33,6 @@ fun SignatureAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdenti
 
 operator fun SignatureAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): SignatureAlgorithm =
     fromAsn1Representation(src)
-
-fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier) = EcdsaAlgorithm(src)
-fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier) = RsaAlgorithm(src)
 
 val EcdsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
     get() = representations[X509] as? X509AlgorithmIdentifier ?: run {
@@ -72,3 +71,39 @@ interface SignatureAlgorithmsProvider {
     /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */
     fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
 }
+
+fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): EcdsaAlgorithm =
+    EcdsaAlgorithm({
+        EcdsaAlgorithm.Params(when (src.oid) {
+            KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
+            KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
+            KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
+            KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
+            else -> throw IllegalArgumentException("Unsupported algorithm ${src.oid}")
+        }, null).also {
+            require(src.parameters == null)
+        }
+    }, mapOf(X509 to src))
+
+operator fun EcdsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): EcdsaAlgorithm = fromAsn1Representation(src)
+
+fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): RsaAlgorithm =
+    RsaAlgorithm({
+        val oid = src.oid
+        if (oid == KnownOIDs.rsaPSS) {
+            RsaAlgorithm.Parameters.PssPadded(RsaSsaPssParams.of(src))
+        } else {
+            when (oid) {
+                KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
+                KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
+                KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
+                KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
+                else -> throw IllegalArgumentException("Unsupported algorithm ${src.oid}")
+            }.let { digest ->
+                require(src.parameters == Asn1Null)
+                RsaAlgorithm.Parameters.Pkcs1Padded(digest)
+            }
+        }
+    }, mapOf(X509 to src))
+
+operator fun RsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): RsaAlgorithm = fromAsn1Representation(src)

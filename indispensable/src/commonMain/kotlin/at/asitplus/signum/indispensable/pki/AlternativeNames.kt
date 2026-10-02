@@ -12,7 +12,6 @@ import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.internals.orLazy
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
@@ -32,14 +31,14 @@ sealed interface AlternativeNames : Encodable {
     companion object : Decodable<AlternativeNames> {
 
         operator fun invoke(asn1Representation: X509GeneralNames): AlternativeNames =
-            X509AlternativeNames(null, asn1Representation)
+            X509AlternativeNames({ asn1Representation.entries.map { GeneralName.fromAsn1Representation(it) } }, mapOf(X509 to asn1Representation))
 
         fun fromGeneralNames(generalNames: List<GeneralName>): AlternativeNames =
-            X509AlternativeNames(generalNames, null)
+            X509AlternativeNames({ generalNames }, emptyMap())
 
         @Throws(Asn1Exception::class)
         fun fromAsn1Representation(element: X509GeneralNames): AlternativeNames =
-            X509AlternativeNames(null, element)
+            invoke(element)
 
         @Throws(Asn1Exception::class)
         fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {
@@ -64,30 +63,18 @@ sealed interface AlternativeNames : Encodable {
 }
 
 private class X509AlternativeNames(
-    providedGeneralNames: List<GeneralName>?,
-    providedAsn1Representation: X509GeneralNames?,
+    generalNamesProvider: () -> List<GeneralName>,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : AlternativeNames {
-    init { require((providedGeneralNames != null) != (providedAsn1Representation != null)) }
-
-    override val representations: Map<Encodable.Representation, Any>
-
-        get() = mapOf(X509 to x509Model)
-
-    internal val x509Model: X509GeneralNames by providedAsn1Representation orLazy {
-        X509GeneralNames(generalNames.map { requireNotNull(it.asn1Representation) { "GeneralName has no X.509 representation" } })
-    }
-
-    override val generalNames: List<GeneralName> by providedGeneralNames orLazy {
-        x509Model.entries.map { GeneralName.fromAsn1Representation(it) }
-    }
+    override val generalNames by lazy(generalNamesProvider)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is AlternativeNames) return false
-        return x509Model == other.asn1Representation
+        return generalNames == other.generalNames
     }
 
-    override fun hashCode(): Int = x509Model.hashCode()
+    override fun hashCode(): Int = generalNames.hashCode()
 
     override fun toString(): String =
         "AlternativeNames(" + "\nGeneralNames=${generalNames.joinToString()}".prependIndent("  ") + "\n)"
