@@ -62,7 +62,7 @@ class DNSName private constructor(
         }
     }
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<DNSName>{
         override val tag = X509GeneralName.Tags.dnsName
 
         override fun fromAsn1Representation(src: X509GeneralName): DNSName = runRethrowing {

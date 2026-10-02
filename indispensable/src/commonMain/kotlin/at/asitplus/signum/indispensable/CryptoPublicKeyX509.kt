@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
@@ -35,3 +36,25 @@ interface PublicKeyFormatProvider {
     fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
     fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
 }
+
+fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): RsaPublicKey =
+    RsaPublicKey({
+        RsaPublicKey.Content(Pkcs1RsaPublicKeyInfo.of(src))
+    }, mapOf(X509 to src))
+
+operator fun RsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): RsaPublicKey = fromAsn1Representation(src)
+
+fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): EcdsaPublicKey =
+    EcdsaPublicKey({
+        val parsed = Sec1EcPublicKeyInfo.of(src)
+        val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
+            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
+        when (parsed) {
+            is Sec1EcPublicKeyInfo.Compressed ->
+                EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
+            is Sec1EcPublicKeyInfo.Uncompressed ->
+                EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
+        }.let { EcdsaPublicKey.Content(it.publicPoint, it.preferCompressedRepresentation) }
+    }, mapOf(X509 to src))
+
+operator fun EcdsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): EcdsaPublicKey = fromAsn1Representation(src)

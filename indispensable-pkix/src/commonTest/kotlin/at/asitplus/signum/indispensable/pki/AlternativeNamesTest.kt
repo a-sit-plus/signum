@@ -29,6 +29,15 @@ private fun List<GeneralName>.tags() = map { it.tag }
 val AlternativeNamesTest by matrixSuite {
     SignumPkix.install()
 
+    test("Generic and typed names agree on equality and hash codes") {
+        val typed: GeneralName = DNSName(Asn1String.IA5("example.com"))
+        val generic: GeneralName = BaseX509GeneralName(X509GeneralName.Dns("example.com"))
+        typed shouldBe generic
+        generic shouldBe typed
+        typed.hashCode() shouldBe generic.hashCode()
+        setOf(typed, generic).size shouldBe 1
+    }
+
     // Kotlin-built names must encode with the proper GeneralName CHOICE tags (implicit [n] for the
     // primitives, explicit [4] for the directoryName/X500Name) so they decode back — the regression
     // this guards against produced untagged universal elements that failed to re-decode.

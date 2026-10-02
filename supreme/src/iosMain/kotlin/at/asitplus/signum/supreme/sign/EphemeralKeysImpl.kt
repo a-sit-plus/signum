@@ -20,6 +20,7 @@ import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue

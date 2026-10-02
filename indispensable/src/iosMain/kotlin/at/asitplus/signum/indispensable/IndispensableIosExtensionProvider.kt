@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.sign.asPKCS1
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray

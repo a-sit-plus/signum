@@ -7,7 +7,6 @@ import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.internals.orLazy
 
 sealed interface CsrAttribute : Identifiable, Encodable {
 
@@ -31,25 +30,17 @@ sealed interface CsrAttribute : Identifiable, Encodable {
 }
 
 class X509CsrAttribute private constructor(
-    providedAsn1Representation: Pkcs10CsrAttribute?,
+    override val representations: Map<Encodable.Representation, Any>,
     override val oid: ObjectIdentifier,
     val value: Set<Asn1Element>,
 ) : CsrAttribute {
 
-    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(null, oid, value)
+    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(emptyMap(), oid, value)
 
     constructor(oid: ObjectIdentifier, singleValue: Asn1Element) : this(oid, setOf(singleValue))
 
     constructor(asn1Representation: Pkcs10CsrAttribute) :
-            this(asn1Representation, asn1Representation.oid, asn1Representation.value)
-
-    override val representations: Map<Encodable.Representation, Any>
-
-        get() = mapOf(X509 to x509Model)
-
-    internal val x509Model: Pkcs10CsrAttribute by providedAsn1Representation orLazy {
-        Pkcs10CsrAttribute(oid, value)
-    }
+            this(mapOf(X509 to asn1Representation), asn1Representation.oid, asn1Representation.value)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -15,7 +15,7 @@ val X509CertificateExtension.asn1Representation: Awesn1X509CertificateExtension
         ?: Awesn1X509CertificateExtension(oid, critical, derEncodedValue)
 
 open class X509CertificateExtension private constructor(
-    providedAsn1Representation: Awesn1X509CertificateExtension?,
+    override val representations: Map<Encodable.Representation, Any>,
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
     val derEncodedValue: ByteArray,
@@ -25,7 +25,7 @@ open class X509CertificateExtension private constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: ByteArray,
-    ) : this(null, oid, critical, value)
+    ) : this(emptyMap(), oid, critical, value)
 
     constructor(
         oid: ObjectIdentifier,
@@ -34,14 +34,11 @@ open class X509CertificateExtension private constructor(
     ) : this(oid, critical, value.content)
 
     constructor(asn1Representation: Awesn1X509CertificateExtension) : this(
-        asn1Representation,
+        mapOf(X509 to asn1Representation),
         asn1Representation.oid,
         asn1Representation.critical,
         asn1Representation.value,
     )
-
-    override val representations: Map<Encodable.Representation, Any> =
-        providedAsn1Representation?.let { mapOf(X509 to it) } ?: emptyMap()
 
     /**
      * The (parsed) ASN.1 structure carried inside this extension's `extnValue` OCTET STRING,

@@ -9,25 +9,22 @@ import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.internals.orLazy
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-class RelativeDistinguishedName private constructor(
-    providedAttrsAndValues: Set<AttributeTypeAndValue>?,
-    providedAsn1Representation: X500RelativeDistinguishedName?,
+class RelativeDistinguishedName internal constructor(
+    attrsAndValuesProvider: () -> Set<AttributeTypeAndValue>,
+    override val representations: Map<Encodable.Representation, Any>,
     performValidation: Boolean,
 ) : Encodable {
-    init { require((providedAttrsAndValues != null) != (providedAsn1Representation != null)) }
 
-    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this(attrsAndValues, null, true)
+    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this({ attrsAndValues }, emptyMap(), true)
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
@@ -39,22 +36,7 @@ class RelativeDistinguishedName private constructor(
      */
     constructor(singleItem: X500AttributeTypeAndValue) : this(AttributeTypeAndValue(singleItem))
 
-    internal constructor(
-        asn1Representation: X500RelativeDistinguishedName,
-        performValidation: Boolean = false,
-    ) : this(null, asn1Representation, performValidation)
-
-    override val representations: Map<Encodable.Representation, Any>
-
-        get() = mapOf(X509 to x509Model)
-
-    internal val x509Model: X500RelativeDistinguishedName by providedAsn1Representation orLazy {
-        X500RelativeDistinguishedName(attrsAndValues.map { requireNotNull(it.asn1Representation) { "Attribute has no X.509 representation" } }.toSet())
-    }
-
-    val attrsAndValues: Set<AttributeTypeAndValue> by providedAttrsAndValues orLazy {
-        asn1Representation.attrsAndValues.map(AttributeTypeAndValue::fromAsn1Representation).toSet()
-    }
+    val attrsAndValues by lazy(attrsAndValuesProvider)
 
     val isValid: Boolean by lazy {
         attrsAndValues.isStructurallyValid() &&
@@ -76,10 +58,6 @@ class RelativeDistinguishedName private constructor(
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
     companion object : Decodable<RelativeDistinguishedName> {
-
-        fun fromAsn1Representation(
-            element: X500RelativeDistinguishedName): RelativeDistinguishedName =
-            RelativeDistinguishedName(element, performValidation = false)
 
         /**
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company").
@@ -351,27 +329,19 @@ abstract class BaseAttributeTypeAndValue(
 }
 
 open class BaseX509AttributeTypeAndValue protected constructor(
-    providedAsn1Representation: X500AttributeTypeAndValue?,
+    override val representations: Map<Encodable.Representation, Any>,
     oid: ObjectIdentifier,
     val value: Asn1Element,
     validateValue: Boolean,
 ) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue {
 
-    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid, value, false)
+    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(emptyMap(), oid, value, false)
 
     @Throws(Asn1Exception::class)
-    constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid, value.encodeToTlv(), true)
+    constructor(oid: ObjectIdentifier, value: Asn1String) : this(emptyMap(), oid, value.encodeToTlv(), true)
 
     constructor(asn1Representation: X500AttributeTypeAndValue) :
-            this(asn1Representation, asn1Representation.oid, asn1Representation.value, false)
-
-    override val representations: Map<Encodable.Representation, Any>
-
-        get() = mapOf(X509 to x509Model)
-
-    internal val x509Model: X500AttributeTypeAndValue by providedAsn1Representation orLazy {
-        X500AttributeTypeAndValue(oid, value)
-    }
+            this(mapOf(X509 to asn1Representation), asn1Representation.oid, asn1Representation.value, false)
 
     override val isValid: Boolean? by lazy {
         catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrElse { false }
