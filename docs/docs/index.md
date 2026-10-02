@@ -217,30 +217,42 @@ recovered shouldBe payload //success!
 
 ### ASN.1 Parsing and Encoding
 
-Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
-implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
+Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` implement
+`Encodable`; their companions implement `Decodable`. DER uses contextual serializers that bridge
+to awesn1 models. Register `signumX509Serializers` with `DefaultDer` once, before its first use,
+or include it in a configured `DER { serializersModule = signumX509Serializers }` instance.
 Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
 material.
 Parsing and re-encoding an X.509 certificate works as follows:
 
 ```kotlin
-val cert = X509Certificate.decodeFromDer(certBytes)
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.DefaultDer
+import at.asitplus.signum.indispensable.signumX509Serializers
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
+
+DefaultDer.register(signumX509Serializers) // once at application startup
+val cert = DER.decodeFromByteArray<Certificate>(certBytes)
 
 when (val pk = cert.publicKey) {
-    is CryptoPublicKey.EC -> println(
+    is EcdsaPublicKey -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains an EC public key using curve ${pk.curve}"
     )
 
-    is CryptoPublicKey.RSA -> println(
+    is RsaPublicKey -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains a ${pk.bits.number} bit RSA public key"
     )
 }
 
-println("Re-encoding it produces the same bytes? ${cert.encodeToDer() contentEquals certBytes}")
+println("Re-encoding it produces the same bytes? ${DER.encodeToByteArray(cert) contentEquals certBytes}")
 ```
 
 Which produces the following output:

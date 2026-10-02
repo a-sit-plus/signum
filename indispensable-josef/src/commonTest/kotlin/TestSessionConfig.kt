@@ -1,3 +1,5 @@
+import at.asitplus.awesn1.serialization.DefaultDer
+import at.asitplus.signum.indispensable.signumX509Serializers
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -13,6 +15,7 @@ class ModuleTestSession : TestSession(
 // CryptRand != Random, see https://github.com/KotlinCrypto/random/issues/50
 @OptIn(DelicateCryptoRandApi::class)
 object InsecureRandom : CryptoRand() {
+    init { DefaultDer.register(signumX509Serializers) }
     override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
     fun nextBytes(n: Int) = ByteArray(n).also { nextBytes(it) }
 }

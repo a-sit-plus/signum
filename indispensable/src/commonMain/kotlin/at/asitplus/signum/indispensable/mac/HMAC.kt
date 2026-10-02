@@ -1,9 +1,7 @@
 package at.asitplus.signum.indispensable.mac
 
-import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.hmacWithSHA1
 import at.asitplus.awesn1.hmacWithSHA256
 import at.asitplus.awesn1.hmacWithSHA384
@@ -19,9 +17,6 @@ data class HMAC(val digest: Digest, val oid: ObjectIdentifier)
 {
 
     override fun toString() = "HMAC-$digest"
-
-    override val asn1Representation: X509AlgorithmIdentifier
-        get() = X509AlgorithmIdentifier(oid, Asn1Null)
 
     companion object {
         init { Indispensable.init() }

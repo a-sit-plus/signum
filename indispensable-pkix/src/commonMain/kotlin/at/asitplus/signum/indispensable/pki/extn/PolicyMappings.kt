@@ -34,7 +34,7 @@ class PolicyMappings internal constructor(
         policyMappings,
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<PolicyMappings>{
         override val oid get() = KnownOIDs.policyMappings
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): PolicyMappings {

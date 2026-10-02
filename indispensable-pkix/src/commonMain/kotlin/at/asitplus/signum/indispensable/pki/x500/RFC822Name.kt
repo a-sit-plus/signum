@@ -6,7 +6,7 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `rfc822Name` GeneralName CHOICE `[1]`. */
 class RFC822Name private constructor(
@@ -70,7 +70,7 @@ class RFC822Name private constructor(
         }
     }
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<RFC822Name>{
         override val tag = X509GeneralName.Tags.rfc822Name
         override fun fromAsn1Representation(src: X509GeneralName): RFC822Name =
             RFC822Name((src as X509GeneralName.Rfc822).rawValue, src)

@@ -6,7 +6,7 @@ import at.asitplus.cidre.*
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `iPAddress` GeneralName CHOICE `[7]`. */
 class IPAddressName internal constructor(
@@ -104,7 +104,7 @@ class IPAddressName internal constructor(
         }
     }
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<IPAddressName>{
         override val tag = X509GeneralName.Tags.ipAddress
 
         override fun fromAsn1Representation(src: X509GeneralName): IPAddressName {

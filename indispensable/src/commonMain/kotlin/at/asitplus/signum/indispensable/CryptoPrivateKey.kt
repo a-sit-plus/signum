@@ -3,17 +3,15 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.serialization.Der
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import kotlinx.serialization.KSerializer
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
-interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
+interface CryptoPrivateKey : Encodable {
 
     interface WithPublicKey : CryptoPrivateKey {
         val publicKey: CryptoPublicKey
@@ -21,41 +19,22 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
 
     val attributes: Set<Asn1Element>? get() = asn1Representation.attributes
 
-    val asPKCS8: DerPemEncodable<Pkcs8PrivateKeyInfo> get() = this
-
-    override val pemLabel: String get() = Companion.canonicalPemLabel
-
-    companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
+    companion object : Decodable<CryptoPrivateKey> {
         init { Indispensable.init() }
-        override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
-        override val alternativePemLabels: Set<String> get() = Pkcs8PrivateKeyInfo.alternativePemLabels
-        override fun decodeFromTlv(
-            element: Pkcs8PrivateKeyInfo,
-            der: Der,
-        ): CryptoPrivateKey =
+
+        fun fromAsn1Representation(
+            element: Pkcs8PrivateKeyInfo): CryptoPrivateKey =
             ServiceLoader.load<PrivateKeyFormatProvider>()
                 .get(element, PrivateKeyFormatProvider::decodeFromAsn1)
-
-        override fun decodeFromPemBlockPayload(
-            serializer: KSerializer<Pkcs8PrivateKeyInfo>,
-            src: PemBlock,
-            limit: Long,
-            der: Der,
-        ): CryptoPrivateKey =
-            when (src.pemLabel) {
-                Pkcs1RsaPrivateKeyInfo.PEM_LABEL -> RsaPrivateKey.FromPKCS1.decodeFromDer(src.payload, der)
-                Sec1EcPrivateKeyInfo.PEM_LABEL -> EcdsaPrivateKey.FromSEC1.decodeFromDer(src.payload, der)
-                Pkcs8PrivateKeyInfo.PEM_LABEL_PRIVATE_KEY -> decodeFromDer(serializer, src.payload, limit, der)
-                else -> error("Label ${src.pemLabel} for private key is invalid")
-            }
 
         @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
         fun fromIosEncoded(keyBytes: ByteArray): CryptoPrivateKey.WithPublicKey =
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 EcdsaPrivateKey.iosDecodeInternal(keyBytes)
             } else {
-                RsaPrivateKey.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes)) as CryptoPrivateKey.WithPublicKey
+                RsaPrivateKey.fromAsn1Representation(DER.decodeFromByteArray(Pkcs1RsaPrivateKeyInfo.serializer(), keyBytes))
             }
+
     }
 
     @Deprecated(message = "Private key types migrated out of CryptoPrivateKey as part of providerization",

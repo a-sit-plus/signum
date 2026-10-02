@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `registeredID` GeneralName CHOICE `[8]`. */
 class RegisteredIDName private constructor(
@@ -17,7 +17,7 @@ class RegisteredIDName private constructor(
 
     override fun toString(): String = value.toString()
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<RegisteredIDName>{
         override val tag = X509GeneralName.Tags.registeredID
         override fun fromAsn1Representation(src: X509GeneralName): RegisteredIDName =
             RegisteredIDName((src as X509GeneralName.RegisteredId).oid, src)

@@ -1,10 +1,12 @@
 package at.asitplus.signum.indispensable.io
+import at.asitplus.signum.indispensable.pki.invoke
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
+import at.asitplus.signum.indispensable.iosEncoded
 
 import at.asitplus.awesn1.BERTags
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -32,7 +34,6 @@ val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
     isLenient = true
     padEncoded = false
 }.build())
-
 
 /** Strict Base64 encoder */
 val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
@@ -110,7 +111,7 @@ object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certific
     decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
 )
 
-private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = certificate.encodeToDer()
+private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = DER.encodeToByteArray(certificate)
 
 private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
     Certificate(DER.decodeFromDer<Awesn1X509Certificate>(src))

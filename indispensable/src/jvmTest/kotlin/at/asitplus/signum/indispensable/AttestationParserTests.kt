@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
@@ -73,7 +75,7 @@ val CustomParserTests by matrixSuite {
             attestationCertChain.forEachIndexed { index, certificate ->
 
                 withClue(index.toString()) {
-                    certificate.toKmpCertificate().getOrThrow().encodeToDer() shouldBe certificate.encoded
+                    DER.encodeToByteArray(certificate.toKmpCertificate().getOrThrow()) shouldBe certificate.encoded
                 }
             }
         }

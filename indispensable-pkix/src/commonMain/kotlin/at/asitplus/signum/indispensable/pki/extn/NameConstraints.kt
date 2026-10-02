@@ -1,8 +1,9 @@
 package at.asitplus.signum.indispensable.pki.extn
+import at.asitplus.signum.indispensable.pki.value
+import at.asitplus.signum.indispensable.pki.asn1Representation
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.Serializable
@@ -67,7 +68,7 @@ class NameConstraints internal constructor(
         allTrees.none { it.isInvalid() }
     }
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<NameConstraints>{
         override val oid get() = KnownOIDs.nameConstraints_2_5_29_30
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): NameConstraints {
@@ -143,7 +144,7 @@ class NameConstraints internal constructor(
                 .flatMap { it.attrsAndValues }
                 .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
-                    val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.X509Representable)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
+                    val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
                     str?.let {
                         runCatching {
                             RFC822Name(Asn1String.IA5(it))
@@ -153,7 +154,6 @@ class NameConstraints internal constructor(
 
             alternativeNames.addAll(fallbackEmails)
         }
-
 
         // If subjectAlternativeNames does not contain an IPAddressName or DNSName,
         // check whether the last CN in the subjectName can be used
@@ -259,8 +259,8 @@ private class NameConstraintsBody(
  * The most specific (leaf-most) `commonName` (OID 2.5.4.3) attribute in this [Name]'s RDN sequence, or
  * `null` if it carries none. RFC 5280 orders the RDNSequence most-general-first, so the last CN wins.
  */
-private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue.X509Representable? =
+private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue? =
     relativeDistinguishedNames.asReversed()
         .flatMap { it.attrsAndValues }
-        .filterIsInstance<AttributeTypeAndValue.X509Representable>()
+        .filterIsInstance<AttributeTypeAndValue>()
         .firstOrNull { it.oid == AttributeTypeAndValue.Descriptor.OID.commonName }

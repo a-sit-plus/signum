@@ -1,4 +1,9 @@
 package at.asitplus.signum.supreme.sign
+import at.asitplus.signum.indispensable.digest.asn1Representation
+import at.asitplus.signum.indispensable.sign.asn1Representation
+import at.asitplus.signum.indispensable.sign.invoke
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.dsl.rsa
@@ -45,7 +50,6 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 )
             ).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
 
-
                 val key = runBlocking {
                     Signer.Ephemeral {
                         rsa {
@@ -63,7 +67,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 val signumSigned = runBlocking { signer.sign(data).signature }
 
                 val jvmParameters = AlgorithmParameters.getInstance("RSASSA-PSS").apply {
-                    init(AlgorithmIdentifier.getInstance(rsaInstance.encodeToDer()).parameters.toASN1Primitive().encoded)
+                    init(AlgorithmIdentifier.getInstance(DER.encodeToByteArray(rsaInstance)).parameters.toASN1Primitive().encoded)
                 }
                 val jvmSigned = Signature.getInstance("RSASSA-PSS").run {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))
@@ -71,7 +75,6 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                     update(data)
                     sign()
                 }
-
 
                 "Signum's verifier against JCA signed" {
                     rsaInstance.verifierFor(key.publicKey)

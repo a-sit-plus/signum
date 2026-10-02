@@ -28,7 +28,7 @@ class SubjectKeyIdentifier internal constructor(
         keyIdentifier,
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<SubjectKeyIdentifier>{
         override val oid get() = KnownOIDs.subjectKeyIdentifier
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): SubjectKeyIdentifier {

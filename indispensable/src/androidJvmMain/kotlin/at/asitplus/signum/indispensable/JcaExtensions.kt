@@ -1,4 +1,7 @@
 package at.asitplus.signum.indispensable
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
@@ -46,7 +49,6 @@ import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
-
 
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
@@ -231,7 +233,6 @@ internal val WellKnownDigest.jcaName
         WellKnownDigest.SHA512 -> "SHA-512"
     }
 
-
 internal val WellKnownDigest?.jcaAlgorithmComponent
     get() = when (this) {
         null -> "NONE"
@@ -249,7 +250,6 @@ val ECCurve.jcaName
     }
 
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
-
 
 fun CryptoPublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
@@ -301,7 +301,7 @@ fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
  */
 suspend fun Certificate.toJcaCertificate(): java.security.cert.X509Certificate =
     certificateFactoryMutex.withLock {
-        certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
+        certFactory.generateCertificate(DER.encodeToByteArray(this).inputStream()) as java.security.cert.X509Certificate
     }
 
 /**
@@ -314,7 +314,7 @@ fun Certificate.toJcaCertificateBlocking(): java.security.cert.X509Certificate =
  * Converts this [java.security.cert.X509Certificate] to an [Certificate]
  */
 fun java.security.cert.X509Certificate.toKmpCertificate() =
-    catching { Certificate.decodeFromDer(encoded) }
+    catching { DER.decodeFromByteArray<Certificate>(encoded) }
 
 fun CryptoPrivateKey.toJcaPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
@@ -322,12 +322,12 @@ fun CryptoPrivateKey.toJcaPrivateKey() =
 
 fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+        .generatePrivate(PKCS8EncodedKeySpec(DER.encodeToByteArray(asPKCS8)))
             as java.security.interfaces.ECPrivateKey
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
-        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+        .generatePrivate(PKCS8EncodedKeySpec(DER.encodeToByteArray(asPKCS8)))
             as java.security.interfaces.RSAPrivateKey
 
 fun JCAPrivateKey.toCryptoPrivateKey() =
@@ -335,11 +335,10 @@ fun JCAPrivateKey.toCryptoPrivateKey() =
         .get(this, JcaMappingProvider::jcaPrivateKeyToCryptoPrivateKey)
 
 fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =
-    EcdsaPrivateKey.decodeFromDer(encoded) as EcdsaPrivateKey.WithPublicKey
+    DER.decodeFromByteArray<EcdsaPrivateKey>(encoded) as EcdsaPrivateKey.WithPublicKey
 
 fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
-    RsaPrivateKey.decodeFromDer(encoded)
-
+    DER.decodeFromByteArray<RsaPrivateKey>(encoded)
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
     @OptIn(HazardousMaterials::class)

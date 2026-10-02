@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
@@ -11,17 +10,15 @@ import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.RsaSignature
 
 /**
- * Parsed signature value. Unparsed values are [DerEncodable]<[X509SignatureValue]>.
+ * Parsed signature value. Unparsed values are [SignatureValue].
  */
-interface CryptoSignature : DerEncodable<X509SignatureValue> {
+interface CryptoSignature : Encodable {
 
     // TODO: providerize this; the names do not need to be preserved
     val joseBytes: ByteArray get() = TODO("providerize JOSE/COSE for generic provider-provided signature types")
     val coseBytes: ByteArray get() = joseBytes
 
-    private class X509Unparsed(override val asn1Representation: X509SignatureValue) : DerEncodable<X509SignatureValue>
-
-    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
+    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${at.asitplus.awesn1.serialization.DER.encodeToTlv(X509SignatureValue.serializer(), asn1Representation).prettyPrint()})"
 
     @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
         replaceWith = ReplaceWith("EcdsaSignature"))
@@ -30,29 +27,29 @@ interface CryptoSignature : DerEncodable<X509SignatureValue> {
         replaceWith = ReplaceWith("RsaSignature"))
     typealias RSA = RsaSignature
 
-    companion object : DerDecodable<X509SignatureValue, DerEncodable<X509SignatureValue>> {
+    companion object : Decodable<SignatureValue> {
         init { Indispensable.init() }
-        operator fun invoke(signatureAlgorithm: SignatureAlgorithm, asn1Representation: X509SignatureValue, der: Der = DER) =
-            decodeFromTlv(asn1Representation, der).withSignatureAlgorithm(signatureAlgorithm)
-        operator fun invoke(x509Algorithm: X509AlgorithmIdentifier, asn1Representation: X509SignatureValue, der: Der = DER) =
-            decodeFromTlv(asn1Representation, der).withX509Algorithm(x509Algorithm)
-        override fun decodeFromTlv(element: X509SignatureValue, der: Der): DerEncodable<X509SignatureValue> =
-            X509Unparsed(element)
+        operator fun invoke(signatureAlgorithm: SignatureAlgorithm, asn1Representation: X509SignatureValue) =
+            fromAsn1Representation(asn1Representation).withSignatureAlgorithm(signatureAlgorithm)
+        operator fun invoke(x509Algorithm: X509AlgorithmIdentifier, asn1Representation: X509SignatureValue) =
+            fromAsn1Representation(asn1Representation).withX509Algorithm(x509Algorithm)
+        fun fromAsn1Representation(element: X509SignatureValue): SignatureValue =
+            SignatureValue(element)
         /** Loads the raw signature bytes (the *content* of the X509SignatureValue BIT STRING) */
         fun fromRawSignatureValue(sigBytes: ByteArray) =
-            decodeFromTlv(X509SignatureValue(sigBytes))
+            fromAsn1Representation(X509SignatureValue(sigBytes))
     }
 }
 
-fun DerEncodable<X509SignatureValue>.withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
+fun SignatureValue.withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
     ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {
         parseCryptoSignature(it, this@withSignatureAlgorithm.asn1Representation)
     }
 
-fun DerEncodable<X509SignatureValue>.withSignatureAlgorithm(signatureAlgorithm: SpecializedSignatureAlgorithm) =
+fun SignatureValue.withSignatureAlgorithm(signatureAlgorithm: SpecializedSignatureAlgorithm) =
     withSignatureAlgorithm(signatureAlgorithm.algorithm)
 
-fun DerEncodable<X509SignatureValue>.withX509Algorithm(x509Algorithm: X509AlgorithmIdentifier) =
+fun SignatureValue.withX509Algorithm(x509Algorithm: X509AlgorithmIdentifier) =
     ServiceLoader.load<SignatureFormatProvider>().get(x509Algorithm) {
         parseCryptoSignature(it, this@withX509Algorithm.asn1Representation)
     }
@@ -70,4 +67,12 @@ interface SignatureFormatProvider {
      * If the [X509AlgorithmIdentifier] is unknown, `null` should be returned.
      */
     fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue): CryptoSignature?
+}
+
+/** An uninterpreted BIT STRING; supply an algorithm before verification. */
+class SignatureValue internal constructor(model: X509SignatureValue) : Encodable {
+    override val representations: Map<Encodable.Representation, Any> = mapOf(at.asitplus.signum.indispensable.pki.X509 to model)
+    companion object : Decodable<SignatureValue> {
+        fun fromAsn1Representation(model: X509SignatureValue) = SignatureValue(model)
+    }
 }

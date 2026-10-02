@@ -9,11 +9,9 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralNames
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.issuerAltName_2_5_29_18
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.subjectAltName_2_5_29_17
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.internals.orLazy
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
@@ -26,23 +24,21 @@ import at.asitplus.signum.internals.orLazy
  *
  * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6).
  */
-sealed interface AlternativeNames {
+sealed interface AlternativeNames : Encodable {
 
     val generalNames: List<GeneralName>
 
-    sealed interface X509Representable : AlternativeNames, DerEncodable<X509GeneralNames>
+    companion object : Decodable<AlternativeNames> {
 
-    companion object : DerDecodable<X509GeneralNames, X509Representable> {
+        operator fun invoke(asn1Representation: X509GeneralNames): AlternativeNames =
+            X509AlternativeNames({ asn1Representation.entries.map { GeneralName.fromAsn1Representation(it) } }, mapOf(X509 to asn1Representation))
 
-        operator fun invoke(asn1Representation: X509GeneralNames): X509Representable =
-            X509AlternativeNames(null, asn1Representation)
-
-        fun fromGeneralNames(generalNames: List<GeneralName>): X509Representable =
-            X509AlternativeNames(generalNames, null)
+        fun fromGeneralNames(generalNames: List<GeneralName>): AlternativeNames =
+            X509AlternativeNames({ generalNames }, emptyMap())
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(element: X509GeneralNames, der: Der): X509Representable =
-            X509AlternativeNames(null, element)
+        fun fromAsn1Representation(element: X509GeneralNames): AlternativeNames =
+            invoke(element)
 
         @Throws(Asn1Exception::class)
         fun List<CertificateExtension>.findSubjectAltNames() = runRethrowing {
@@ -55,38 +51,30 @@ sealed interface AlternativeNames {
         }
 
         private fun List<CertificateExtension>.find(oid: ObjectIdentifier): X509GeneralNames? {
-            val matches = filterIsInstance<CertificateExtension.X509Representable>().filter { it.oid == oid }
+            val matches = mapNotNull { it.asn1Representation }.filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else decodeFromTlv(
+            else at.asitplus.awesn1.serialization.DER.decodeFromTlv(
                 X509GeneralNames.serializer(),
-                Asn1Element.parse(matches.first().derEncodedValue),
-            ).asn1Representation
+                Asn1Element.parse(matches.first().value),
+            )
         }
     }
 }
 
 private class X509AlternativeNames(
-    providedGeneralNames: List<GeneralName>?,
-    providedAsn1Representation: X509GeneralNames?,
-) : AlternativeNames.X509Representable {
-    init { require((providedGeneralNames != null) != (providedAsn1Representation != null)) }
-
-    override val asn1Representation: X509GeneralNames by providedAsn1Representation orLazy {
-        X509GeneralNames(generalNames.map { it.requireX509().asn1Representation })
-    }
-
-    override val generalNames: List<GeneralName> by providedGeneralNames orLazy {
-        asn1Representation.entries.map { GeneralName.X509Representable.fromAsn1Representation(it) }
-    }
+    generalNamesProvider: () -> List<GeneralName>,
+    override val representations: Map<Encodable.Representation, Any>,
+) : AlternativeNames {
+    override val generalNames by lazy(generalNamesProvider)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is AlternativeNames.X509Representable) return false
-        return asn1Representation == other.asn1Representation
+        if (other !is AlternativeNames) return false
+        return generalNames == other.generalNames
     }
 
-    override fun hashCode(): Int = asn1Representation.hashCode()
+    override fun hashCode(): Int = generalNames.hashCode()
 
     override fun toString(): String =
         "AlternativeNames(" + "\nGeneralNames=${generalNames.joinToString()}".prependIndent("  ") + "\n)"

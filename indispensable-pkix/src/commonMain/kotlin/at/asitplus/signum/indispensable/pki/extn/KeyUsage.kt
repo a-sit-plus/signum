@@ -26,7 +26,7 @@ class KeyUsage internal constructor(
         keyUsage = usageBits.toSet()
     )
 
-    companion object : CertificateExtension.Descriptor, at.asitplus.awesn1.serialization.OidProvider<KeyUsage> {
+    companion object : CertificateExtension.Descriptor, at.asitplus.awesn1.serialization.OidProvider<KeyUsage> , at.asitplus.signum.indispensable.Decodable<KeyUsage>{
         override val oid get() = KnownOIDs.keyUsage
 
 

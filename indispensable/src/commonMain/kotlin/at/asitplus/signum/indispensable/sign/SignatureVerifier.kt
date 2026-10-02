@@ -1,14 +1,14 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.VerifierConfiguration
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.encodeToDer
+import kotlinx.serialization.encodeToByteArray
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
@@ -40,23 +40,27 @@ suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
 suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: SignatureInput, sig: DerEncodable<X509SignatureValue>) =
-    verify(data, sig as? CryptoSignature ?: sig.withSignatureAlgorithm(signatureAlgorithm))
+suspend fun SignatureVerifier.verify(data: SignatureInput, sig: at.asitplus.signum.indispensable.SignatureValue) =
+    verify(data, sig.withSignatureAlgorithm(signatureAlgorithm))
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: ByteArray, sig: DerEncodable<X509SignatureValue>) =
+suspend fun SignatureVerifier.verify(data: ByteArray, sig: at.asitplus.signum.indispensable.SignatureValue) =
     verify(SignatureInput(data), sig)
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: DerEncodable<X509SignatureValue>) =
+suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: at.asitplus.signum.indispensable.SignatureValue) =
     verify(SignatureInput(data), sig)
 
 @IgnorableReturnValue
-suspend inline fun <reified T> SignatureVerifier.verify(input: DerEncodable<T>, signature: CryptoSignature) =
-    verify(input.encodeToDer(), signature)
+suspend inline fun <reified T : Encodable> SignatureVerifier.verify(input: T, signature: CryptoSignature) =
+    verify(DER.encodeToByteArray(input), signature)
+
+@IgnorableReturnValue
+suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
+    verify(DER.encodeToByteArray(input), signature)
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
-    return verify(input.tbsCertificate, input.signature)
+    return verify(DER.encodeToByteArray(input.tbsCertificate), input.signature)
 }
 
 fun CertificationRequest.verifier() =
