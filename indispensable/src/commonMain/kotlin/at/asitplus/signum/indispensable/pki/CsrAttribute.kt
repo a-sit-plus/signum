@@ -5,56 +5,42 @@ import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
-import at.asitplus.awesn1.serialization.Der
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.internals.orLazy
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 
-sealed interface CsrAttribute : Identifiable {
+sealed interface CsrAttribute : Identifiable, Encodable {
 
-    //prepare for c509, we need a marker
-    sealed interface X509Representable : CsrAttribute, DerEncodable<Pkcs10CsrAttribute> {
-        val value: Set<Asn1Element>
-    }
-
-    companion object : DerDecodable<Pkcs10CsrAttribute, X509Representable> {
-        operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): X509Representable =
+    companion object : Decodable<CsrAttribute> {
+        operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): CsrAttribute =
             X509CsrAttribute(oid, value)
 
-        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): X509Representable =
+        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): CsrAttribute =
             invoke(oid, setOf(value))
 
-        operator fun invoke(asn1Representation: Pkcs10CsrAttribute): X509Representable =
+        operator fun invoke(asn1Representation: Pkcs10CsrAttribute): CsrAttribute =
             X509CsrAttribute(asn1Representation)
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            element: Pkcs10CsrAttribute,
-            der: Der,
-        ): X509Representable =
+        fun fromAsn1Representation(
+            element: Pkcs10CsrAttribute): CsrAttribute =
             X509CsrAttribute(element)
 
         val EXTENSION_REQUEST_OID: ObjectIdentifier = Pkcs10CsrAttribute.EXTENSION_REQUEST_OID
     }
 }
 
-
 class X509CsrAttribute private constructor(
-    providedAsn1Representation: Pkcs10CsrAttribute?,
+    override val representations: Map<Encodable.Representation, Any>,
     override val oid: ObjectIdentifier,
-    override val value: Set<Asn1Element>,
-) : CsrAttribute.X509Representable {
+    val value: Set<Asn1Element>,
+) : CsrAttribute {
 
-    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(null, oid, value)
+    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(emptyMap(), oid, value)
 
     constructor(oid: ObjectIdentifier, singleValue: Asn1Element) : this(oid, setOf(singleValue))
 
     constructor(asn1Representation: Pkcs10CsrAttribute) :
-            this(asn1Representation, asn1Representation.oid, asn1Representation.value)
-
-    override val asn1Representation: Pkcs10CsrAttribute by providedAsn1Representation orLazy {
-        Pkcs10CsrAttribute(oid, value)
-    }
+            this(mapOf(X509 to asn1Representation), asn1Representation.oid, asn1Representation.value)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -70,7 +56,3 @@ class X509CsrAttribute private constructor(
 
     override fun toString(): String = "X509CsrAttribute(oid=$oid, value=$value)"
 }
-
-internal fun CsrAttribute.requireX509(): CsrAttribute.X509Representable =
-    this as? CsrAttribute.X509Representable
-        ?: throw Asn1Exception("CSR attribute $oid has no X.509/DER representation")

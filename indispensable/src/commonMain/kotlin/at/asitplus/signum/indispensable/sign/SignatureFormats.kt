@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.sign
+import kotlin.getValue
+import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.crypto.EcdsaSigValue
-import at.asitplus.awesn1.crypto.EcdsaSigValue.Companion.toEcdsaSigValue
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.ecdsaWithSHA1
@@ -10,27 +10,22 @@ import at.asitplus.awesn1.ecdsaWithSHA256
 import at.asitplus.awesn1.ecdsaWithSHA384
 import at.asitplus.awesn1.ecdsaWithSHA512
 import at.asitplus.awesn1.rsaPSS
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.awesn1.sha1WithRSAEncryption
 import at.asitplus.awesn1.sha256WithRSAEncryption
 import at.asitplus.awesn1.sha384WithRSAEncryption
 import at.asitplus.awesn1.sha512WithRSAEncryption
-import at.asitplus.awesn1.toAsn1Integer
-import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureFormatProvider
-import at.asitplus.signum.indispensable.DerDecodable
+import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.ensureSize
-import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import kotlin.getValue
 
-private data class EcSignatureContent(
+internal data class EcSignatureContent(
     val r: BigInteger,
     val s: BigInteger,
 ) {
@@ -42,23 +37,14 @@ private data class EcSignatureContent(
 
 sealed class EcdsaSignature
 @Throws(IllegalArgumentException::class) private constructor(
-    providedContent: EcSignatureContent?,
-    private val providedAsn1Representation: X509SignatureValue?,
+    contentProvider: () -> EcSignatureContent,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : CryptoSignature {
-    init { require((providedContent != null) != (providedAsn1Representation != null)) }
-
-    private val content: EcSignatureContent by providedContent orLazy {
-        providedAsn1Representation!!.toEcdsaSigValue()
-            .let { (r,s) -> EcSignatureContent(r.toBigInteger(), s.toBigInteger()) }
-    }
+    private val content by lazy(contentProvider)
 
     val r: BigInteger get() = content.r
 
     val s: BigInteger get() = content.s
-
-    override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
-        EcdsaSigValue(r.toAsn1Integer(), s.toAsn1Integer()).toX509SignatureValue()
-    }
 
     override fun equals(other: Any?): Boolean {
         if (other !is EcdsaSignature) return false
@@ -69,14 +55,12 @@ sealed class EcdsaSignature
 
     override fun hashCode() = 31 * s.hashCode() + r.hashCode()
 
-    class IndefiniteLength private constructor(
-        providedContent: EcSignatureContent?,
-        providedAsn1Representation: X509SignatureValue?,
-    ) : EcdsaSignature(providedContent, providedAsn1Representation) {
+    class IndefiniteLength internal constructor(
+        contentProvider: () -> EcSignatureContent,
+        representations: Map<Encodable.Representation, Any>,
+    ) : EcdsaSignature(contentProvider, representations) {
 
-        internal constructor(r: BigInteger, s: BigInteger) : this(EcSignatureContent(r, s), null)
-
-        internal constructor(asn1Representation: X509SignatureValue) : this(null, asn1Representation)
+        internal constructor(r: BigInteger, s: BigInteger) : this({ EcSignatureContent(r, s) }, emptyMap())
 
         fun withScalarByteLength(l: UInt) =
             DefiniteLength(l, r, s)
@@ -100,12 +84,7 @@ sealed class EcdsaSignature
         override val joseBytes: ByteArray
             get() = throw UnsupportedCryptoException("Cannot convert indefinite length ECDSA signature to COSE/JOSE")
 
-        companion object : DerDecodable<X509SignatureValue, IndefiniteLength> {
-            override fun decodeFromTlv(
-                element: X509SignatureValue,
-                der: Der
-            ): IndefiniteLength = EcdsaSignature.decodeFromTlv(element, der)
-
+        companion object : Decodable<IndefiniteLength> {
             private val curvesByScalarLength by lazy { ECCurve.entries.sortedBy { it.scalarLength } }
         }
     }
@@ -114,7 +93,7 @@ sealed class EcdsaSignature
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-    ) : EcdsaSignature(EcSignatureContent(r, s), null) {
+    ) : EcdsaSignature({ EcSignatureContent(r, s) }, emptyMap()) {
         init {
             val max = scalarByteLength.toInt() * 8
 
@@ -135,7 +114,7 @@ sealed class EcdsaSignature
         override val joseBytes get() = p1363Bytes
     }
 
-    companion object : DerDecodable<X509SignatureValue, IndefiniteLength> {
+    companion object : Decodable<IndefiniteLength> {
 
         fun fromRS(r: BigInteger, s: BigInteger) =
             IndefiniteLength(r, s)
@@ -165,7 +144,7 @@ sealed class EcdsaSignature
         fun fromRawBytes(curve: ECCurve, input: ByteArray) = fromP1363Bytes(curve, input)
 
         fun fromRawSignatureValue(sigBytes: ByteArray) =
-            decodeFromTlv(X509SignatureValue(sigBytes))
+            fromAsn1Representation(X509SignatureValue(sigBytes))
 
         /** Parses a signature produced by the JCA digestwithECDSA algorithm. */
         @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
@@ -177,26 +156,15 @@ sealed class EcdsaSignature
         fun parseFromJcaP1363(input: ByteArray) =
             fromP1363Bytes(input)
 
-        override fun decodeFromTlv(element: X509SignatureValue, der: Der): IndefiniteLength =
-            IndefiniteLength(element)
-
     }
 }
 
-class RsaSignature private constructor(
-    providedRawBytes: ByteArray?,
-    providedAsn1Representation: X509SignatureValue?,
+class RsaSignature internal constructor(
+    rawBytesProvider: () -> ByteArray,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : CryptoSignature {
-    init { require((providedRawBytes != null) != (providedAsn1Representation != null)) }
-    constructor(rawBytes: ByteArray) : this(rawBytes, null)
-
-    override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
-        X509SignatureValue(rawBytes)
-    }
-
-    val rawBytes: ByteArray by providedRawBytes orLazy {
-        asn1Representation.rawBytes
-    }
+    constructor(rawBytes: ByteArray) : this({ rawBytes }, emptyMap())
+    val rawBytes by lazy(rawBytesProvider)
 
     override val joseBytes get() = rawBytes
 
@@ -210,9 +178,7 @@ class RsaSignature private constructor(
         return rawBytes.contentEquals(other.rawBytes)
     }
 
-    companion object : DerDecodable<X509SignatureValue, RsaSignature> {
-        override fun decodeFromTlv(element: X509SignatureValue, der: Der): RsaSignature =
-            RsaSignature(null, element)
+    companion object : Decodable<RsaSignature> {
         fun fromRawSignatureValue(input: ByteArray) = RsaSignature(input)
         @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
         fun parseFromJca(input: ByteArray) = fromRawSignatureValue(input)
@@ -222,13 +188,13 @@ class RsaSignature private constructor(
 object IndispensableSignatureFormats : SignatureFormatProvider {
     override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
         is EcdsaAlgorithm -> {
-            val parsedSig = EcdsaSignature.decodeFromTlv(signature)
+            val parsedSig = EcdsaSignature.fromAsn1Representation(signature)
             when (val crv = signatureAlgorithm.requiredCurve) {
                 null -> parsedSig
                 else -> parsedSig.withCurve(crv)
             }
         }
-        is RsaAlgorithm -> RsaSignature.decodeFromTlv(signature)
+        is RsaAlgorithm -> RsaSignature.fromAsn1Representation(signature)
         else -> null
     }
 
@@ -237,10 +203,10 @@ object IndispensableSignatureFormats : SignatureFormatProvider {
 
             KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,
             KnownOIDs.sha512WithRSAEncryption, KnownOIDs.rsaPSS
-                -> RsaSignature.decodeFromTlv(signature)
+                -> RsaSignature.fromAsn1Representation(signature)
 
             KnownOIDs.ecdsaWithSHA1, KnownOIDs.ecdsaWithSHA256, KnownOIDs.ecdsaWithSHA384, KnownOIDs.ecdsaWithSHA512
-                -> EcdsaSignature.decodeFromTlv(signature)
+                -> EcdsaSignature.fromAsn1Representation(signature)
 
             else -> null
         }

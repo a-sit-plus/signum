@@ -1,4 +1,6 @@
 import at.asitplus.KmmResult
+import at.asitplus.signum.indispensable.sign.asn1Representation
+import at.asitplus.signum.indispensable.sign.invoke
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm

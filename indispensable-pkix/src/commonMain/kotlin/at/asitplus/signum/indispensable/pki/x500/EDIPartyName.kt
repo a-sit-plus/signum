@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki.x500
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `ediPartyName` GeneralName CHOICE `[5]`. Carries the awesn1 [X509GeneralName.EdiParty] verbatim. */
 class EDIPartyName private constructor(
@@ -22,7 +22,7 @@ class EDIPartyName private constructor(
 
     override fun toString(): String = ediParty.toString()
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<EDIPartyName>{
         override val tag = X509GeneralName.Tags.ediPartyName
         override fun fromAsn1Representation(src: X509GeneralName): EDIPartyName = EDIPartyName(src as X509GeneralName.EdiParty)
     }

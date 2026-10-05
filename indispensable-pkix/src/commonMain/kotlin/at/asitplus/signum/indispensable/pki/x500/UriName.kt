@@ -9,7 +9,7 @@ import com.eygraber.uri.Uri
 import kotlinx.io.IOException
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `uniformResourceIdentifier` GeneralName CHOICE `[6]`. */
 class UriName private constructor(
@@ -96,7 +96,7 @@ class UriName private constructor(
         }
     }
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<UriName>{
         override val tag = X509GeneralName.Tags.uniformResourceIdentifier
 
         override fun fromAsn1Representation(src: X509GeneralName): UriName = runRethrowing {

@@ -1,4 +1,8 @@
 package at.asitplus.signum.indispensable
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import kotlinx.serialization.encodeToByteArray
+import at.asitplus.signum.indispensable.encodeToPem
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
@@ -24,16 +28,15 @@ val X509SignatureAlgorithmTest by matrixSuite {
     compact("!OK certs with DSA signature algorithms, should parse") - {
         data(certsUnsupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = Certificate.decodeFromTlv(src)
+            val decoded = DER.decodeFromTlv<Certificate>(src)
 
             shouldThrowAny {
 
                 decoded.signatureAlgorithm.toString()
             }
 
-
-            withClue(decoded.encodeToPem()) {
-                decoded.encodeToDer() shouldBe it.second
+            withClue(DER.encodeToPem(decoded)) {
+                DER.encodeToByteArray(decoded) shouldBe it.second
             }
         }
     }
@@ -41,12 +44,11 @@ val X509SignatureAlgorithmTest by matrixSuite {
     compact("OK certs with supported signature algorithms") - {
         data(certsSupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = Certificate.decodeFromTlv(src)
+            val decoded = DER.decodeFromTlv<Certificate>(src)
             decoded.signatureAlgorithm shouldBeIn (EcdsaAlgorithm.entries + RsaAlgorithm.entries)
             shouldNotThrow<Throwable> { decoded.signature.toString() }
         }
     }
-
 
 }
 

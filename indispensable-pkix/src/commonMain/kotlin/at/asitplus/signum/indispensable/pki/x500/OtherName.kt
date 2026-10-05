@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `otherName` GeneralName CHOICE `[0]`. Carries the awesn1 [X509GeneralName.Other] verbatim. */
 class OtherName private constructor(
@@ -22,7 +22,7 @@ class OtherName private constructor(
 
     override fun toString(): String = other.toString()
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<OtherName>{
         override val tag = X509GeneralName.Tags.otherName
         override fun fromAsn1Representation(src: X509GeneralName): OtherName = OtherName(src as X509GeneralName.Other)
     }

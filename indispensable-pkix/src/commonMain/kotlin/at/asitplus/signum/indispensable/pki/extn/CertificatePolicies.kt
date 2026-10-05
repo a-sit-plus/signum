@@ -45,7 +45,7 @@ class CertificatePolicies internal constructor(
         certificatePolicies,
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<CertificatePolicies>{
         override val oid get() = KnownOIDs.certificatePolicies_2_5_29_32
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): CertificatePolicies {

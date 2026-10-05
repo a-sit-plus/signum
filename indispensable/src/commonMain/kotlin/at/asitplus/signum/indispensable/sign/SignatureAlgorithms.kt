@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.sign
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
 
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.Asn1OctetString
@@ -17,7 +19,7 @@ import at.asitplus.awesn1.ecdsaWithSHA512
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.rsaPSS
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
+import at.asitplus.signum.indispensable.digest.asn1Representation
 import at.asitplus.awesn1.sha1
 import at.asitplus.awesn1.sha1WithRSAEncryption
 import at.asitplus.awesn1.sha256WithRSAEncryption
@@ -30,41 +32,26 @@ import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.internals.orLazy
 
-class EcdsaAlgorithm private constructor(
-    providedParams: Params?,
-    private val providedAsn1: X509AlgorithmIdentifier?,
+class EcdsaAlgorithm internal constructor(
+    paramsProvider: () -> Params,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : SignatureAlgorithm, Enumerable {
-    init { require((providedParams != null) != (providedAsn1 != null)) }
 
     constructor(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         requiredCurve: ECCurve? = null
-    ) : this(Params(digest, requiredCurve), null)
+    ) : this({ Params(digest, requiredCurve) }, emptyMap())
 
-    constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+    internal data class Params(val digest: Digest?, val curve: ECCurve?)
 
-    private data class Params(val digest: Digest?, val curve: ECCurve?)
-
-    private val params by providedParams orLazy {
-        Params(when(providedAsn1!!.oid) {
-            KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
-            KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
-            KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
-            KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
-            else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-        }, null).also {
-            require(providedAsn1.parameters == null)
-        }
-    }
+    private val params by lazy(paramsProvider)
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
     val digest get() = params.digest
@@ -72,19 +59,6 @@ class EcdsaAlgorithm private constructor(
 
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
     val requiredCurve get() = params.curve
-
-    override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
-        X509AlgorithmIdentifier(
-            oid = when (digest) {
-                Digest.SHA1 -> KnownOIDs.ecdsaWithSHA1
-                Digest.SHA256 -> KnownOIDs.ecdsaWithSHA256
-                Digest.SHA384 -> KnownOIDs.ecdsaWithSHA384
-                Digest.SHA512 -> KnownOIDs.ecdsaWithSHA512
-                else -> throw IllegalArgumentException("Unsupported digest: $digest")
-            },
-            parameters = null
-        )
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -94,33 +68,25 @@ class EcdsaAlgorithm private constructor(
 
     override fun hashCode() = params.hashCode()
 
-    companion object : Enumeration<EcdsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, EcdsaAlgorithm> {
+    companion object : Enumeration<EcdsaAlgorithm>, Decodable<EcdsaAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
 
         val withSHA256 = EcdsaAlgorithm(Digest.SHA256)
         val withSHA384 = EcdsaAlgorithm(Digest.SHA384)
         val withSHA512 = EcdsaAlgorithm(Digest.SHA512)
 
-        override fun decodeFromTlv(
-            element: X509AlgorithmIdentifier,
-            der: Der
-        ) = EcdsaAlgorithm(element)
-
     }
 }
 
-class RsaAlgorithm private constructor(
-    providedParams: Parameters<*>?,
-    private val providedAsn1: X509AlgorithmIdentifier?,
+class RsaAlgorithm internal constructor(
+    paramsProvider: () -> Parameters<*>,
+    override val representations: Map<Encodable.Representation, Any>,
 ) : SignatureAlgorithm, Enumerable {
-    init { require((providedParams != null) != (providedAsn1 != null)) }
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
         parameters: Parameters<*>
-    ) : this(parameters, null)
-
-    constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+    ) : this({ parameters }, emptyMap())
 
     /**
      * Convenience Ctor to use defaults aside digest
@@ -128,23 +94,7 @@ class RsaAlgorithm private constructor(
     constructor(padding: Padding, digest: Digest) : this(Parameters(padding, digest))
 
     /** The RSA signature parameters to apply to the data. */
-    val parameters: Parameters<*> by providedParams orLazy {
-        val oid = providedAsn1!!.oid
-        if (oid == KnownOIDs.rsaPSS) {
-            Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1))
-        } else {
-            when (oid) {
-                KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
-                KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
-                KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
-                KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-                else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-            }.let { digest ->
-                require(providedAsn1.parameters == Asn1Null)
-                Parameters.Pkcs1Padded(digest)
-            }
-        }
-    }
+    val parameters by lazy(paramsProvider)
 
     /** The digest to apply to the data. */
     val digest get() = parameters.digest
@@ -180,24 +130,6 @@ class RsaAlgorithm private constructor(
         }
     }
 
-    override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
-        when (val currentParameters = parameters) {
-            is Parameters.Pkcs1Padded -> X509AlgorithmIdentifier(
-                when (currentParameters.digest) {
-                    Digest.SHA1 -> KnownOIDs.sha1WithRSAEncryption
-                    Digest.SHA256 -> KnownOIDs.sha256WithRSAEncryption
-                    Digest.SHA384 -> KnownOIDs.sha384WithRSAEncryption
-                    Digest.SHA512 -> KnownOIDs.sha512WithRSAEncryption
-                    else -> throw UnsupportedCryptoException("Unknown RSA digest ${currentParameters.digest}")
-                },
-                Asn1Null
-            )
-
-            is Parameters.PssPadded ->
-                X509AlgorithmIdentifier(currentParameters.asn1Representation)
-        }
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RsaAlgorithm) return false
@@ -206,13 +138,12 @@ class RsaAlgorithm private constructor(
 
     override fun hashCode() = parameters.hashCode()
 
-
     enum class Padding {
         PKCS1,
         PSS
     }
 
-    companion object : Enumeration<RsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, RsaAlgorithm> {
+    companion object : Enumeration<RsaAlgorithm>, Decodable<RsaAlgorithm> {
         val withSHA256andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA256))
         val withSHA384andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA384))
         val withSHA512andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA512))
@@ -224,14 +155,9 @@ class RsaAlgorithm private constructor(
                    withSHA256andPSSPadding,   withSHA384andPSSPadding,   withSHA512andPSSPadding)
         }
 
-        override fun decodeFromTlv(
-            element: X509AlgorithmIdentifier,
-            der: Der
-        ) = RsaAlgorithm(element)
     }
 
-
-    sealed interface Parameters<T : RsaParams> : DerEncodable<T> {
+    sealed interface Parameters<out T : RsaParams> : Encodable {
 
         val type: Padding
         val digest: Digest
@@ -239,7 +165,6 @@ class RsaAlgorithm private constructor(
         class Pkcs1Padded(override val digest: Digest) :
             Parameters<RsaPkcs1PaddingParams> //TODO: do we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
         {
-            override val asn1Representation: RsaPkcs1PaddingParams get() = RsaPkcs1PaddingParams
             override val type: Padding get() = Padding.PKCS1
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -260,45 +185,25 @@ class RsaAlgorithm private constructor(
             }
         }
 
-        class PssPadded private constructor(
-            private val providedParams: Content?,
-            private val rsaSsaPssParams: RsaSsaPssParams?
+        class PssPadded internal constructor(
+            paramsProvider: () -> Content,
+            override val representations: Map<Encodable.Representation, Any>,
         ) : Parameters<RsaSsaPssParams> {
-            constructor(
-                digest: Digest = Digest.SHA1,
-                mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
-                saltLength: UInt = digest.outputLength.bytes,
-                trailerField: Int = DEFAULT_TRAILER_FIELD
-            ) : this(Content(digest, mgfAlgorithm, saltLength, trailerField), null)
-
-            constructor(asn1Representation: RsaSsaPssParams) : this(null, asn1Representation)
-
-            private data class Content(
+            internal data class Content(
                 val digest: Digest,
                 val mgfAlgorithm: MaskGenerationFunction,
                 val saltLength: UInt,
                 val trailerField: Int,
             )
 
-            override val asn1Representation: RsaSsaPssParams by rsaSsaPssParams orLazy {
-                requireNotNull(providedParams)
-                RsaSsaPssParams(
-                    hashAlgorithm = providedParams.digest.asn1Representation,
-                    maskGenAlgorithm = providedParams.mgfAlgorithm.asn1Representation,
-                    saltLength = providedParams.saltLength.also { require(it <= Int.MAX_VALUE.toUInt()) }.toInt(),
-                    trailerField = providedParams.trailerField
-                )
+            constructor(
+                digest: Digest = Digest.SHA1,
+                mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
+                saltLength: UInt = digest.outputLength.bytes,
+                trailerField: Int = DEFAULT_TRAILER_FIELD,
+            ) : this({ Content(digest, mgfAlgorithm, saltLength, trailerField) }, emptyMap())
 
-            }
-
-            private val params by providedParams orLazy {
-                Content(
-                    Digest.decodeFromTlv(rsaSsaPssParams!!.hashAlgorithm),
-                    MaskGenerationFunction.decodeFromTlv(rsaSsaPssParams.maskGenAlgorithm),
-                    rsaSsaPssParams.saltLength.let { require(it >= 0); it.toUInt() },
-                    rsaSsaPssParams.trailerField
-                )
-            }
+            private val params by lazy(paramsProvider)
 
             override val type: Padding get() = Padding.PSS
             override val digest: Digest get() = params.digest
@@ -323,35 +228,29 @@ class RsaAlgorithm private constructor(
                 return result
             }
 
-            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : DerEncodable<X509AlgorithmIdentifier> {
+            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : Encodable {
                 data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
-                    override val asn1Representation: X509AlgorithmIdentifier
-                        get() = X509AlgorithmIdentifier(oid, digest.asn1Representation.element)
                     companion object {
                         val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                     }
                 }
 
-                companion object : DerDecodable<X509AlgorithmIdentifier, MaskGenerationFunction> {
-                    override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MaskGenerationFunction =
+                companion object : Decodable<MaskGenerationFunction> {
+                    fun fromAsn1Representation(element: X509AlgorithmIdentifier): MaskGenerationFunction =
                         runRethrowing {
                             when (element.oid) {
                                 Pkcs1Mgf1.oid ->
-                                    Pkcs1Mgf1(Digest.decodeFromTlv(element.parameters!!, der))
+                                    Pkcs1Mgf1(Digest.fromAsn1Representation(DER.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
                                 else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
                             }
                         }
                 }
             }
 
-            companion object : DerDecodable<RsaSsaPssParams, PssPadded> {
+            companion object : Decodable<PssPadded> {
                 val DEFAULT_SHA256 = PssPadded(digest = Digest.SHA256)
                 val DEFAULT_SHA384 = PssPadded(digest = Digest.SHA384)
                 val DEFAULT_SHA512 = PssPadded(digest = Digest.SHA512)
-                override fun decodeFromTlv(
-                    element: RsaSsaPssParams,
-                    der: Der
-                ) = PssPadded(element)
             }
         }
 

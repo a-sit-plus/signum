@@ -1,9 +1,12 @@
 package at.asitplus.signum.indispensable.pki
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.serialization.encodeToTlv
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.decodeFromDer
-import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
@@ -42,7 +45,7 @@ val X500AttributeRegistryTest by matrixSuite {
         data(standardAttributes, nameFn = { it.names.first() }) - { case ->
             data(case.names) test { name ->
                 val attribute = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
-                    as AttributeTypeAndValue.X509Representable
+                    as AttributeTypeAndValue
                 val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
 
                 attribute::class shouldBe BaseX509AttributeTypeAndValue::class
@@ -65,18 +68,18 @@ val X500AttributeRegistryTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue)
         )
-        val encoded = original.encodeToDer()
-        val decoded = RelativeDistinguishedName.decodeFromDer(encoded)
-        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue.X509Representable
+        val encoded = DER.encodeToByteArray(original)
+        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
 
         attribute::class shouldBe BaseX509AttributeTypeAndValue::class
         attribute.value shouldBe nonCanonicalValue
-        decoded.encodeToDer() shouldBe encoded
+        DER.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "unknown dotted OID falls back to UTF8" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
-            as AttributeTypeAndValue.X509Representable
+            as AttributeTypeAndValue
         val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")

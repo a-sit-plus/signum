@@ -1,8 +1,8 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
 package at.asitplus.signum.indispensable.pki
-
-import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.awesn1.serialization.DER
+import kotlinx.serialization.decodeFromByteArray
 
 /**
  * A portable, build-time-embedded set of CA trust anchors, available on **every** platform that
@@ -31,6 +31,6 @@ import at.asitplus.signum.indispensable.decodeFromDer
  */
 object BundledTrustStore : TrustStore {
     override val anchors: Set<TrustAnchor> by lazy {
-        bundledRoots.map { TrustAnchor.Certificate(Certificate.decodeFromDer(it.hexToByteArray())) }.toSet()
+        bundledRoots.map { TrustAnchor.Certificate(DER.decodeFromByteArray<Certificate>(it.hexToByteArray())) }.toSet()
     }
 }

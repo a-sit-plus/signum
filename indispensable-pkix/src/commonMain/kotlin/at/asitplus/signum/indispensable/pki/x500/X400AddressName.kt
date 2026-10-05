@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki.x500
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `x400Address` GeneralName CHOICE `[3]`. Carries the awesn1 [X509GeneralName.X400Address] verbatim. */
 class X400AddressName private constructor(
@@ -22,7 +22,7 @@ class X400AddressName private constructor(
 
     override fun toString(): String = x400Address.toString()
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<X400AddressName>{
         override val tag = X509GeneralName.Tags.x400Address
         override fun fromAsn1Representation(src: X509GeneralName): X400AddressName = X400AddressName(src as X509GeneralName.X400Address)
     }

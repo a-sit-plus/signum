@@ -48,7 +48,7 @@ class PolicyConstraints internal constructor(
         inhibitPolicyMapping?.let { Asn1Integer(it) } ?: Asn1Integer.fromDecimalString("-1"),
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<PolicyConstraints>{
         override val oid get() = KnownOIDs.policyConstraints_2_5_29_36
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): PolicyConstraints {

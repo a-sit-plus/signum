@@ -1,4 +1,5 @@
 package at.asitplus.signum.supreme.validate
+import at.asitplus.awesn1.serialization.DER
 
 import at.asitplus.signum.indispensable.pki.TrustAnchor
 
@@ -286,14 +287,14 @@ fun resourceText(path: String): String {
 @Throws(Asn1Exception::class)
 suspend fun validate(testcase: LimboTestcase): CertificateValidationResult {
     val trustAnchors = testcase.trusted_certs.map { pem ->
-        TrustAnchor.Certificate(X509Certificate.decodeFromPem(pem))
+        TrustAnchor.Certificate(DER.decodeFromPem<X509Certificate>(pem))
     }
 
     val intermediates = testcase.untrusted_intermediates.map { pem ->
-        X509Certificate.decodeFromPem(pem)
+        DER.decodeFromPem<X509Certificate>(pem)
     }
 
-    val leaf = X509Certificate.decodeFromPem(testcase.peer_certificate)
+    val leaf = DER.decodeFromPem<X509Certificate>(testcase.peer_certificate)
 
     val chain = AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchors.first())
     val validationTime = testcase.validation_time?.let(Instant::parse) ?: Clock.System.now()

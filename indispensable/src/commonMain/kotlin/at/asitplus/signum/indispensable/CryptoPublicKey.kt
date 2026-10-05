@@ -1,27 +1,16 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
-import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
-import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import kotlinx.serialization.KSerializer
-
-interface PublicKeyFormatProvider {
-    fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
-    fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
-}
 
 /**
  * Representation of a public key structure
  */
-interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
+interface CryptoPublicKey : Encodable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -38,17 +27,8 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
     val didCodec: UVarInt
     val didKeyBytes: ByteArray
 
-    /** Representation of the key in the format used by iOS */
-    val iosEncoded: ByteArray get() = asn1Representation.subjectPublicKey.also {
-        require (it.numPaddingBits == 0.toByte()) { "SPKI is not full octets, cannot convert to iOS" }
-    }.bitCarryingBytes
-
-    override val pemLabel: String get() = canonicalPemLabel
-
-    companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
+    companion object : Decodable<CryptoPublicKey> {
         init { Indispensable.init() }
-        override val canonicalPemLabel: String get() = SubjectPublicKeyInfo.canonicalPemLabel
-        override val alternativePemLabels: Set<String> get() = SubjectPublicKeyInfo.alternativePemLabels
 
         /**
          * Parses a DID representation of a public key and
@@ -68,36 +48,6 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
             }
         }
 
-        operator fun invoke(asn1Representation: SubjectPublicKeyInfo) =
-            ServiceLoader.load<PublicKeyFormatProvider>()
-                .get(asn1Representation, PublicKeyFormatProvider::decodeFromAsn1)
-
-        @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            element: SubjectPublicKeyInfo,
-            der: Der,
-        ): CryptoPublicKey = CryptoPublicKey(element)
-
-        override fun decodeFromPemBlockPayload(
-            serializer: KSerializer<SubjectPublicKeyInfo>,
-            src: PemBlock,
-            limit: Long,
-            der: Der,
-        ): CryptoPublicKey =
-            when (src.pemLabel) {
-                Pkcs1RsaPublicKeyInfo.PEM_LABEL -> RsaPublicKey.fromPKCS1encoded(src.payload)
-                else -> decodeFromDer(serializer, src.payload, limit, der)
-            }
-
-        @Throws(Asn1Exception::class)
-        fun decodeFromDer(src: ByteArray): CryptoPublicKey =
-            decodeFromTlv(Asn1Element.parse(src))
-
-        @Throws(Asn1Exception::class)
-        fun doDecode(src: Asn1Sequence): CryptoPublicKey =
-            decodeFromTlv(src)
-
-        fun fromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo) = CryptoPublicKey(spki)
     }
 
     @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
@@ -127,7 +77,6 @@ fun SpecializedCryptoPublicKey.equalsCryptographically(other: SpecializedCryptoP
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
     other.equalsCryptographically(this)
-
 
 private const val PREFIX_DID_KEY = "did:key:"
 

@@ -45,7 +45,7 @@ class BasicConstraints internal constructor(
         pathLenConstraint,
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<BasicConstraints>{
         override val oid get() = KnownOIDs.basicConstraints_2_5_29_19
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): BasicConstraints {

@@ -8,7 +8,7 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
-import at.asitplus.signum.indispensable.pki.GeneralName.X509Representable.Descriptor
+import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 
 /** RFC 5280 `dNSName` GeneralName CHOICE `[2]`. */
 class DNSName private constructor(
@@ -62,7 +62,7 @@ class DNSName private constructor(
         }
     }
 
-    companion object : Descriptor {
+    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<DNSName>{
         override val tag = X509GeneralName.Tags.dnsName
 
         override fun fromAsn1Representation(src: X509GeneralName): DNSName = runRethrowing {

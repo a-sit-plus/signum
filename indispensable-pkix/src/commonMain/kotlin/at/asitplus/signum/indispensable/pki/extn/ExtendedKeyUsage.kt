@@ -28,7 +28,7 @@ class ExtendedKeyUsage internal constructor(
         keyUsages,
     )
 
-    companion object : CertificateExtension.Descriptor {
+    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<ExtendedKeyUsage>{
         override val oid get() = KnownOIDs.extKeyUsage
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): ExtendedKeyUsage =
