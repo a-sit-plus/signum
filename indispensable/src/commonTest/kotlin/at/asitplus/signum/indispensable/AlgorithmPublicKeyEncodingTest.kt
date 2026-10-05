@@ -21,8 +21,6 @@ import kotlinx.io.Buffer
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
@@ -38,7 +36,7 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val json = "{\"supportedDigests\":[\"SHA256\",null]}"
         Json.encodeToString(metadata) shouldBe json
         Json.decodeFromString<DigestMetadata>(json) shouldBe metadata
-        val der = DER { serializersModule = signumX509Serializers }
+        val der = DER { serializersModule = signumAsn1Serializers }
         val digest: WellKnownDigest = WellKnownDigest.SHA256
         val bytes = der.encodeToByteArray(digest)
         der.decodeFromByteArray<WellKnownDigest>(bytes) shouldBe digest
@@ -98,10 +96,10 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val empty = DER {}
         shouldThrowAny { empty.encodeToByteArray(algorithm) }
         shouldThrowAny { empty.encodeToByteArray(key) }
-        val registered = DER { serializersModule = signumX509Serializers }
+        val registered = DER { serializersModule = signumAsn1Serializers }
         registered.decodeFromByteArray<SignatureAlgorithm>(registered.encodeToByteArray(algorithm)) shouldBe algorithm
         registered.decodeFromByteArray<CryptoPublicKey>(registered.encodeToByteArray(key)) shouldBe key
-        val limited = DER { serializersModule = signumX509Serializers; maxInputLength = 1 }
+        val limited = DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }
         shouldThrowAny { limited.decodeFromByteArray<SignatureAlgorithm>(registered.encodeToByteArray(algorithm)) }
         shouldThrowAny { limited.decodeFromByteArray<CryptoPublicKey>(registered.encodeToByteArray(key)) }
     }
