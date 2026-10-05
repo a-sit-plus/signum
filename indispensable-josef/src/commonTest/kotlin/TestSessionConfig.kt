@@ -10,12 +10,15 @@ import kotlin.random.Random
 //Supercharge tests with concurrency!
 class ModuleTestSession : TestSession(
     testConfig = DefaultConfiguration.apply { MatrixTestDefaults { execution = ExecutionMode.Concurrent(64) } }
-)
+){
+    init {
+        DefaultDer.register(signumX509Serializers)
+    }
+}
 
 // CryptRand != Random, see https://github.com/KotlinCrypto/random/issues/50
 @OptIn(DelicateCryptoRandApi::class)
 object InsecureRandom : CryptoRand() {
-    init { DefaultDer.register(signumX509Serializers) }
     override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
     fun nextBytes(n: Int) = ByteArray(n).also { nextBytes(it) }
 }

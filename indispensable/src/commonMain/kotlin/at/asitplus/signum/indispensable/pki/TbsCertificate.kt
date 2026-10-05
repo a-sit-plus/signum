@@ -3,6 +3,7 @@ import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.runRethrowing
+import at.asitplus.awesn1.secondsCapped
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -78,8 +79,8 @@ class TbsCertificate internal constructor(
             serialNumber = serialNumber,
             signatureAlgorithm = signatureAlgorithm,
             issuerName = issuerName,
-            validFrom = validFrom,
-            validUntil = validUntil,
+            validFrom = validFrom.secondsCapped(),
+            validUntil = validUntil.secondsCapped(),
             subjectName = subjectName,
             publicKey = publicKey,
             issuerUniqueID = issuerUniqueID,
