@@ -29,7 +29,7 @@ import at.asitplus.awesn1.crypto.pki.X509Certificate as Awesn1X509Certificate
 val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
     lineBreakInterval = 0
     encodeToUrlSafe = true
-    isLenient = true
+    isLenient = false
     padEncoded = false
 }.build())
 
@@ -38,7 +38,7 @@ val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
 val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
     lineBreakInterval = 0
     encodeToUrlSafe = false
-    isLenient = true
+    isLenient = false
     padEncoded = true
 }.build())
 

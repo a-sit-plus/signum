@@ -13,6 +13,7 @@ This is a major refactor!
     * Expose wrapped headers as `JwsCompact.wrappedHeader`, `JwsFlattened.wrappedHeader`, `SignatureElement.wrappedHeader`, and `JwsGeneral.wrappedHeaders`
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
+* Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
 * Dependency Updates:
     * Bouncy Castle 1.85
     * multibase 1.3.0
