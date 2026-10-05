@@ -23,7 +23,7 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
 val RemainingEncodingTest by matrixSuite {
-    val der = DER { serializersModule = signumX509Serializers }
+    val der = DER { serializersModule = signumAsn1Serializers }
 
     "Signatures use contextual DER and retain raw values until an algorithm is supplied" {
         val rsa = RsaSignature.fromRawSignatureValue(byteArrayOf(1, 2, 3))

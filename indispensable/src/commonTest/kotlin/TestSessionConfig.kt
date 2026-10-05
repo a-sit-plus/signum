@@ -1,10 +1,8 @@
 import at.asitplus.awesn1.serialization.DefaultDer
-import at.asitplus.signum.indispensable.signumX509Serializers
+import at.asitplus.signum.indispensable.signumAsn1Serializers
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
-import de.infix.testBalloon.framework.core.testScope
-import kotlin.time.Duration.Companion.minutes
 
 //Supercharge tests with concurrency!
 class ModuleTestSession : TestSession(
@@ -14,5 +12,5 @@ class ModuleTestSession : TestSession(
         }
     }
 ) {
-    init { DefaultDer.register(signumX509Serializers) }
+    init { DefaultDer.register(signumAsn1Serializers) }
 }

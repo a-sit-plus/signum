@@ -51,7 +51,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
         extension.asn1Representation shouldBeSameInstanceAs original
         // Interface-typed lookup selects the registered bridge, including for user-defined implementations.
         val value: CertificateExtension = extension
-        val der = DER { serializersModule = signumX509Serializers }
+        val der = DER { serializersModule = signumAsn1Serializers }
         val bytes = der.encodeToByteArray(value)
         val decoded = der.decodeFromByteArray<CertificateExtension>(bytes)
         decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]

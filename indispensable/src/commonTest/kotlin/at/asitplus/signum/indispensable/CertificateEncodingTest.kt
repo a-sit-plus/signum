@@ -4,8 +4,6 @@ import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
-import at.asitplus.signum.indispensable.decodeFromPem
-import at.asitplus.signum.indispensable.encodeToPem
 
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Time
@@ -42,7 +40,7 @@ private fun certificate() = Certificate(
     EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO),
 )
 
-private val certificateDer = DER { serializersModule = signumX509Serializers }
+private val certificateDer = DER { serializersModule = signumAsn1Serializers }
 
 val CertificateEncodingTest by matrixSuite {
     "Contextual serializers distinguish Certificate and TbsCertificate" {
@@ -65,7 +63,7 @@ val CertificateEncodingTest by matrixSuite {
         certificateDer.decodeFromSource<Certificate>(buffer) shouldBe source
         shouldThrowAny { certificateDer.decodeFromSource<Certificate>(Buffer().apply { write(bytes) }, limit = 1) }
         decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
-        shouldThrowAny { DER { serializersModule = signumX509Serializers; maxInputLength = 1 }.decodeFromByteArray<Certificate>(bytes) }
+        shouldThrowAny { DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }.decodeFromByteArray<Certificate>(bytes) }
     }
 
     "Retained outer and signed TBS models do not require supported algorithms" {
@@ -105,6 +103,6 @@ val CertificateEncodingTest by matrixSuite {
         val pem = certificateDer.encodeToPem(source)
         DER.decodeFromPem<Certificate>(pem) shouldBe source
         shouldThrowAny { DER.decodeFromPem<Certificate>(pem, limit = 1) }
-        shouldThrowAny { DER { serializersModule = signumX509Serializers; maxInputLength = 1 }.decodeFromPem<Certificate>(pem) }
+        shouldThrowAny { DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }.decodeFromPem<Certificate>(pem) }
     }
 }

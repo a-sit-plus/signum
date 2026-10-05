@@ -3,7 +3,7 @@
 ## NEXT
 This is a major refactor!
 
-* awesn1 instead of indispensable-asn1
+* awesn1 instead of indispensable-asn1 (requires explicitly registering seriliazers)
 * publish javadoc redirect to save space
 * make all provider functions suspend
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
