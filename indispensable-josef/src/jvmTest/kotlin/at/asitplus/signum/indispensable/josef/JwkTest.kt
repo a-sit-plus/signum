@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.awesn1.secondsCapped
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
@@ -19,6 +20,7 @@ import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
 import io.kotest.property.arbitrary.Codepoint
@@ -29,6 +31,7 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 val JwkTest  by matrixSuite {
     "EC" - {
@@ -72,6 +75,7 @@ val JwkTest  by matrixSuite {
         val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(serialized)
 
         parsed shouldBe jwk
+        parsed.hashCode() shouldBe jwk.hashCode()
     }
 
     "Deserialize BP keys" {
@@ -116,6 +120,7 @@ val JwkTest  by matrixSuite {
             val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(serialized)
 
             parsed shouldBe jwk
+            parsed.hashCode() shouldBe jwk.hashCode()
         }
     }
 
@@ -135,6 +140,7 @@ val JwkTest  by matrixSuite {
         val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(joseCompliantSerializer.encodeToString(jwk))
 
         parsed shouldBe jwk
+        parsed.hashCode() shouldBe jwk.hashCode()
     }
 
     "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
