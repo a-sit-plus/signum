@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509Certificate
@@ -21,7 +22,19 @@ import at.asitplus.signum.indispensable.digest.asn1Representation
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.reflect.KClass
+import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.modules.SerializersModule
+
+/** Register a contextual Signum serializer that delegates encoding to an awesn1 model. */
+fun <T : Encodable, Model : Any> SerializersModuleBuilder.contextualAsn1(
+    type: KClass<T>,
+    modelSerializer: KSerializer<Model>,
+    toModel: (T) -> Model,
+    fromModel: (Model) -> T,
+) {
+    contextual(type, X509Serializer(modelSerializer, toModel, fromModel))
+}
 
 private class X509Serializer<T, Model>(
     private val delegate: KSerializer<Model>,
@@ -172,7 +185,7 @@ val CertificationRequestAsn1Serializer: KSerializer<CertificationRequest> = X509
     at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest.serializer(), { it.asn1Representation }, { CertificationRequest.fromAsn1Representation(it) },
 )
 
-/** Register with DefaultDer before its first use, or include in a configured Der's serializersModule. */
+/** Core contextual X.509 serializers, included automatically by Signum.Der; see docs/docs/default-der.md. */
 val signumAsn1Serializers: SerializersModule = SerializersModule {
     contextual(TbsCertificate::class, TbsCertificateAsn1Serializer)
     contextual(Certificate::class, CertificateAsn1Serializer)

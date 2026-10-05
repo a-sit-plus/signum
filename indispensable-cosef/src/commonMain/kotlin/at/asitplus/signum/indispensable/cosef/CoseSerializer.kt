@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -130,7 +131,8 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-        ?.let { DER.decodeFromByteArray<Certificate>(it) }
+        // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+        ?.let { Signum.Der.decodeFromByteArray<Certificate>(it) }
         ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
     is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
     else -> false

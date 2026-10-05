@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.policyConstraints_2_5_29_36
 import at.asitplus.awesn1.serialization.Asn1Tag
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import kotlinx.serialization.Serializable
@@ -36,7 +37,8 @@ class PolicyConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.policyConstraints_2_5_29_36,
             critical,
-            DER.encodeToByteArray(
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(
                 PolicyConstraintsBody.serializer(),
                 PolicyConstraintsBody(
                     requireExplicitPolicy?.let { Asn1Integer(it) },
@@ -48,11 +50,12 @@ class PolicyConstraints internal constructor(
         inhibitPolicyMapping?.let { Asn1Integer(it) } ?: Asn1Integer.fromDecimalString("-1"),
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<PolicyConstraints>{
+    companion object : CertificateExtension.Descriptor<PolicyConstraints>{
         override val oid get() = KnownOIDs.policyConstraints_2_5_29_36
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): PolicyConstraints {
-            val body = DER.decodeFromByteArray(PolicyConstraintsBody.serializer(), src.value)
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            val body = Signum.Der.decodeFromByteArray(PolicyConstraintsBody.serializer(), src.value)
             return PolicyConstraints(
                 src,
                 body.requireExplicitPolicy ?: Asn1Integer.fromDecimalString("-1"),

@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
@@ -40,7 +41,7 @@ val RSAVerifierCommonTests by matrixSuite {
     class TestInfo(test: RawTestInfo) {
         val digest = WellKnownDigest.entries.first { it.name == test.dig }
         val parameters = RsaAlgorithm.Parameters.valueOf(test.pad, digest)
-        val key = DER.decodeFromByteArray<CryptoPublicKey>(Base64.decode(test.key)) as RsaPublicKey
+        val key = Signum.Der.decodeFromByteArray<CryptoPublicKey>(Base64.decode(test.key)) as RsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = RsaSignature(Base64.decode(test.sig))

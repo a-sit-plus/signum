@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.crypto.*
 import at.asitplus.awesn1.crypto.EcdsaSigValue.Companion.toEcdsaSigValue
 import at.asitplus.awesn1.crypto.pki.*
@@ -54,11 +56,13 @@ internal object SEC1 : Encodable.Representation
 
 val RsaPrivateKey.asPKCS1: Pkcs1RsaPrivateKeyInfo
     get() = representations[PKCS1] as? Pkcs1RsaPrivateKeyInfo
-        ?: (representations[X509] as? Pkcs8PrivateKeyInfo)?.let { Pkcs1RsaPrivateKeyInfo.of(it) }
+        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+        ?: (representations[X509] as? Pkcs8PrivateKeyInfo)?.let { Pkcs1RsaPrivateKeyInfo.of(it, Signum.Der) }
         ?: content.toPkcs1Representation()
 val EcdsaPrivateKey.asSEC1: Sec1EcPrivateKeyInfo
     get() = representations[SEC1] as? Sec1EcPrivateKeyInfo
-        ?: (representations[X509] as? Pkcs8PrivateKeyInfo)?.let { Sec1EcPrivateKeyInfo.of(it) }
+        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+        ?: (representations[X509] as? Pkcs8PrivateKeyInfo)?.let { Sec1EcPrivateKeyInfo.of(it, Signum.Der) }
         ?: content.toSec1Representation()
 
 internal fun Pkcs1RsaPrivateKeyInfo.toSignumContent(attributes: Set<Asn1Element>?): RsaPrivateKey.ContentContainer =
@@ -158,7 +162,8 @@ operator fun PssPadded.Companion.invoke(src: RsaSsaPssParams): PssPadded = fromA
 fun RsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): RsaPrivateKey = runRethrowing {
     require(src.algorithmOid == oid) { "Expected RSA private key, got ${src.algorithmOid}" }
     require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
-    RsaPrivateKey({ Pkcs1RsaPrivateKeyInfo.of(src).toSignumContent(src.attributes) }, mapOf(X509 to src), src.attributes)
+    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+    RsaPrivateKey({ Pkcs1RsaPrivateKeyInfo.of(src, Signum.Der).toSignumContent(src.attributes) }, mapOf(X509 to src), src.attributes)
 }
 
 fun RsaPrivateKey.Companion.fromAsn1Representation(
@@ -190,11 +195,14 @@ fun EcdsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): 
     require(src.algorithmOid == oid) { "Expected EC private key, got ${src.algorithmOid}" }
     require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
     val curve = src.algorithmParameters?.let(::decodeEcCurve)
-    val hasCurve = curve != null || Sec1EcPrivateKeyInfo.of(src).parameters != null
-    val content = { Sec1EcPrivateKeyInfo.of(src).toSignumContent(curve, src.attributes) }
+    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+    val hasCurve = curve != null || Sec1EcPrivateKeyInfo.of(src, Signum.Der).parameters != null
+    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+    val content = { Sec1EcPrivateKeyInfo.of(src, Signum.Der).toSignumContent(curve, src.attributes) }
     return if (hasCurve) EcdsaPrivateKey.WithPublicKey(content, mapOf(X509 to src), src.attributes)
     else {
-        require(Sec1EcPrivateKeyInfo.of(src).version == Sec1EcPrivateKeyInfo.Version.V1)
+        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+        require(Sec1EcPrivateKeyInfo.of(src, Signum.Der).version == Sec1EcPrivateKeyInfo.Version.V1)
         EcdsaPrivateKey.WithoutPublicKey(content, mapOf(X509 to src), src.attributes)
     }
 }

@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.serialization.DER
@@ -36,9 +38,9 @@ val CertificateExtensionEncodingTest by matrixSuite {
         )
         val certificate = Certificate(tbs, EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO))
         certificate.tbsCertificate.extensions.single() shouldBeSameInstanceAs extension
-        catchingUnwrapped { DER.encodeToByteArray(extension) }.isFailure shouldBe true
-        catchingUnwrapped { DER.encodeToByteArray(tbs) }.isFailure shouldBe true
-        catchingUnwrapped { DER.encodeToByteArray(certificate) }.isFailure shouldBe true
+        catchingUnwrapped { Signum.Der.encodeToByteArray(extension) }.isFailure shouldBe true
+        catchingUnwrapped { Signum.Der.encodeToByteArray(tbs) }.isFailure shouldBe true
+        catchingUnwrapped { Signum.Der.encodeToByteArray(certificate) }.isFailure shouldBe true
     }
 
     "Representation maps work without an X.509 marker or base class" {

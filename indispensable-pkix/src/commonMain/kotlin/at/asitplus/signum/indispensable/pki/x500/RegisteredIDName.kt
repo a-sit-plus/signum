@@ -17,7 +17,7 @@ class RegisteredIDName private constructor(
 
     override fun toString(): String = value.toString()
 
-    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<RegisteredIDName>{
+    companion object : Descriptor<RegisteredIDName>{
         override val tag = X509GeneralName.Tags.registeredID
         override fun fromAsn1Representation(src: X509GeneralName): RegisteredIDName =
             RegisteredIDName((src as X509GeneralName.RegisteredId).oid, src)

@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.signum.indispensable.pki.X500Name
 
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -11,7 +12,7 @@ import io.kotest.matchers.shouldBe
  * https://github.com/bcgit/bc-java/blob/main/core/src/test/java/org/bouncycastle/asn1/test/X500NameTest.java
  */
 val X500NameParsingTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     fun assertCanonical(input: String, expected: String) {
         val name = X500Name.fromString(input)

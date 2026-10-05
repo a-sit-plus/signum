@@ -1,11 +1,12 @@
 package at.asitplus.signum.indispensable.pki
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
@@ -65,7 +66,8 @@ class TbsCertificationRequest internal constructor(
             when (extensionAttributes.size) {
                 0 -> emptyList()
                 1 -> requireNotNull(extensionAttributes.single().asn1Representation).value.single().asSequence().map {
-                    CertificateExtension(DER.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
+                    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                    CertificateExtension(Signum.Der.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
                 }
 
                 else -> throw Asn1StructuralException("Multiple extensionRequest attributes found")

@@ -31,7 +31,7 @@ class InhibitAnyPolicy internal constructor(
         skipCerts,
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<InhibitAnyPolicy>{
+    companion object : CertificateExtension.Descriptor<InhibitAnyPolicy>{
         override val oid get() = KnownOIDs.inhibitAnyPolicy
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): InhibitAnyPolicy {

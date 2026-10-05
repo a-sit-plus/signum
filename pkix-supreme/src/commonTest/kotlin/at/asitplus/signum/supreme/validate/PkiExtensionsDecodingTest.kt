@@ -1,6 +1,9 @@
 package at.asitplus.signum.supreme.validate
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
@@ -8,7 +11,7 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.TagClass
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.pki.findExtension
 
@@ -33,7 +36,7 @@ import kotlinx.serialization.builtins.ListSerializer
 private fun GeneralName.choiceTag() = (this as GeneralName).tag
 
 val PkiExtensionsDecodingTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     "User Notice Decoding" {
         val certUserNoticeQualifierPem = "-----BEGIN CERTIFICATE-----\n" +
@@ -61,7 +64,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "wnOpVqmDrMivVvLaqUozgsX6\n" +
                 "-----END CERTIFICATE-----"
 
-        val cert = DER.decodeFromPem<X509Certificate>(certUserNoticeQualifierPem)
+        val cert = Signum.Der.decodeFromPem<X509Certificate>(certUserNoticeQualifierPem)
         val ext = cert.findExtension<CertificatePolicies>()
         val policyInfo = ext?.certificatePolicies?.get(0)
 
@@ -73,7 +76,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
 
         // encode round-trip: re-encoding the typed structure (PolicyInformation + UserNotice/DisplayText,
         // via the custom PolicyQualifierInfo serializer) must reproduce the original extension body byte-for-byte.
-        DER.encodeToByteArray(ListSerializer(PolicyInformation.serializer()), ext!!.certificatePolicies) shouldBe
+        Signum.Der.encodeToByteArray(ListSerializer(PolicyInformation.serializer()), ext!!.certificatePolicies) shouldBe
                 ext.derEncodedValue
     }
 
@@ -103,7 +106,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "eB2G\n" +
                 "-----END CERTIFICATE-----"
 
-        val cert = DER.decodeFromPem<X509Certificate>(certCPSQualifierPem)
+        val cert = Signum.Der.decodeFromPem<X509Certificate>(certCPSQualifierPem)
         val ext = cert.findExtension<CertificatePolicies>()
         val policyInfo = ext?.certificatePolicies?.get(0)
 
@@ -115,7 +118,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
 
         // encode round-trip: the CPSUri branch of the custom PolicyQualifierInfo serializer must reproduce
         // the original extension body byte-for-byte.
-        DER.encodeToByteArray(ListSerializer(PolicyInformation.serializer()), ext!!.certificatePolicies) shouldBe
+        Signum.Der.encodeToByteArray(ListSerializer(PolicyInformation.serializer()), ext!!.certificatePolicies) shouldBe
                 ext.derEncodedValue
     }
 
@@ -140,7 +143,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "ZLL0a0t1JexOoqEvUORZXAFL\n" +
                 "-----END CERTIFICATE-----"
 
-        var cert = DER.decodeFromPem<X509Certificate>(sanRFC822namesPem)
+        var cert = Signum.Der.decodeFromPem<X509Certificate>(sanRFC822namesPem)
         var generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 5
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.rfc822Name }
@@ -168,7 +171,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "-----END CERTIFICATE-----"
 
         cert = shouldNotThrowAny {
-            DER.decodeFromPem<X509Certificate>(sanEmailDnsIpDirnameUriPem)
+            Signum.Der.decodeFromPem<X509Certificate>(sanEmailDnsIpDirnameUriPem)
         }
         println(cert.tbsCertificate.subjectAlternativeNames)
 
@@ -207,7 +210,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "cHZkH9okuLpO5zNsYPEWjg1NoF4wwxw=\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanEmptyHostPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanEmptyHostPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
@@ -231,7 +234,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "+5nh4BPuL/buvsLb0SOoKbnHZZYyBKFcdIf6iejsHpZ0lYmeBRqf0HlLUva1zWoM\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanOtherName)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanOtherName)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.otherName }
@@ -254,7 +257,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "ZuIUw9ZOtEByVZgu6BY0xseGOTEhvA==\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanRegisteredIdPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanRegisteredIdPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.registeredID }
@@ -277,7 +280,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "y8yxbrI+KusEVq6eAo/xWN4aT9MxG3ZfxOYoajKotXurp1yhTBWNV8Lw8S0T5UWn\n" +
                 "AI2linN6ki9dRgpCZ0/74PlKkMcV9bdu\n" +
                 "-----END CERTIFICATE-----"
-        cert = DER.decodeFromPem<X509Certificate>(sanWildcardIdnaPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanWildcardIdnaPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
@@ -301,7 +304,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "jT8yAu85NvHtnHXYGl4nsE7/HndFZSU8GQHYsTAr1kJUfU3CZfoLSRvjlHnNFwWn\n" +
                 "ddn9wNOpNYiILGwg1FFtGUuqi9z/rZb3zZlA3g==\n" +
                 "-----END CERTIFICATE-----"
-        cert = DER.decodeFromPem<X509Certificate>(sanIdnaNamesPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanIdnaNamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.count { it.choiceTag() == X509GeneralName.Tags.dnsName } shouldBe 1
         generalNames?.count { it.choiceTag() == X509GeneralName.Tags.rfc822Name } shouldBe 1
@@ -324,7 +327,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "/WvYRvniEUYxGZ/q1fRmf+gGIacVTJtzpTxSDdSJugfhbm2wRQaXlSojRL+wO5Kg\n" +
                 "rDGwi9y5y+zWOFtQQCDEdhFLsw0ae3HPBQxxv85PzpuQD3EDgO0UolhAdZlIZg==\n" +
                 "-----END CERTIFICATE-----"
-        cert = DER.decodeFromPem<X509Certificate>(sanIdna2003DNSPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanIdna2003DNSPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
@@ -349,7 +352,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "ZLL0a0t1JexOoqEvUORZXAFL\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanRFC822NamesPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanRFC822NamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.rfc822Name }
 
@@ -373,7 +376,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "vpZ0upM8Tx81CkAGf/3m\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanURINamesPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanURINamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.uniformResourceIdentifier }
 
@@ -396,7 +399,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "fHN31Q==\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanIPAddrPem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanIPAddrPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 2
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.ipAddress }
@@ -420,7 +423,7 @@ val PkiExtensionsDecodingTest by matrixSuite {
                 "LmOZzeKe+aDRDPoQSObFlOiHAxz/myd0QtWDYi8=\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<X509Certificate>(sanDirNamePem)
+        cert = Signum.Der.decodeFromPem<X509Certificate>(sanDirNamePem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.directoryName }
     }
@@ -432,8 +435,8 @@ val PkiExtensionsDecodingTest by matrixSuite {
         val base = DNSName(Asn1String.IA5("example.com"))
         val subtree = GeneralSubtree(base, minimum = Asn1Integer(1), maximum = Asn1Integer(5))
 
-        val encoded = DER.encodeToByteArray(GeneralSubtree.serializer(), subtree)
-        DER.decodeFromByteArray(GeneralSubtree.serializer(), encoded) shouldBe subtree
+        val encoded = Signum.Der.encodeToByteArray(subtree)
+        Signum.Der.decodeFromByteArray<GeneralSubtree>(encoded) shouldBe subtree
 
         // minimum/maximum must carry IMPLICIT context tags [0]/[1] — guards the previous decode that keyed
         // on the tag value alone (a UNIVERSAL tag 0/1 would have been mis-accepted).
@@ -446,9 +449,9 @@ val PkiExtensionsDecodingTest by matrixSuite {
 
         // minimum DEFAULT 0 is omitted on encode and recovered on decode; maximum stays absent.
         val defaulted = GeneralSubtree(base)
-        val defEncoded = DER.encodeToByteArray(GeneralSubtree.serializer(), defaulted)
+        val defEncoded = Signum.Der.encodeToByteArray(defaulted)
         Asn1Element.parse(defEncoded).asSequence().children shouldHaveSize 1
-        val defDecoded = DER.decodeFromByteArray(GeneralSubtree.serializer(), defEncoded)
+        val defDecoded = Signum.Der.decodeFromByteArray<GeneralSubtree>(defEncoded)
         defDecoded.minimum shouldBe Asn1Integer(0)
         defDecoded.maximum shouldBe null
     }
@@ -461,6 +464,6 @@ val PkiExtensionsDecodingTest by matrixSuite {
             )
         )
         val serializer = ListSerializer(CertificatePolicyMap.serializer())
-        DER.decodeFromByteArray(serializer, DER.encodeToByteArray(serializer, maps)) shouldBe maps
+        Signum.Der.decodeFromByteArray(serializer, Signum.Der.encodeToByteArray(serializer, maps)) shouldBe maps
     }
 }

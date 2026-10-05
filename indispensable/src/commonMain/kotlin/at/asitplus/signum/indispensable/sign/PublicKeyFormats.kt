@@ -1,14 +1,16 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.rsaEncryption
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.catching
@@ -93,7 +95,8 @@ class RsaPublicKey internal constructor(
      * PKCS#1 encoded RSA Public Key
      */
     val pkcsEncoded by lazy {
-        DER.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
+        // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+        Signum.Der.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
     }
 
     override fun equals(other: Any?): Boolean {
@@ -119,7 +122,7 @@ class RsaPublicKey internal constructor(
          */
         @Throws(Asn1Exception::class)
         fun fromPKCS1encoded(input: ByteArray): RsaPublicKey =
-            RsaPublicKey({ Content(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)) }, emptyMap())
+            RsaPublicKey({ Content(Signum.Der.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)) }, emptyMap())
 
         @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
         fun fromIosEncoded(input: ByteArray) = fromPKCS1encoded(input)
@@ -249,6 +252,12 @@ class EcdsaPublicKey internal constructor(
 }
 
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
+    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
+        is RsaPublicKey -> SubjectPublicKeyInfo.rsa(value.n, value.e, Signum.Der)
+        is EcdsaPublicKey -> SubjectPublicKeyInfo.from(at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Uncompressed(value.curve.oid, value.xBytes, value.yBytes))
+        else -> null
+    }
+
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
         EcdsaPublicKey.oid -> EcdsaPublicKey(publicKeyInfo)
         RsaPublicKey.oid -> RsaPublicKey(publicKeyInfo)

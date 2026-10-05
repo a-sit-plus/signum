@@ -1,9 +1,10 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 
 import at.asitplus.signum.indispensable.pki.TrustAnchor
 
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.catchingUnwrapped
@@ -22,21 +23,21 @@ import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
  * Certification Path Validation
  */
 val NistPkiTestSuite by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     val testSuite = json.decodeFromString<List<NistTestCase>>(resourceText("NIST-PKITS.json"))
 
     testSuite.asData(nameFn = { it.name }) test { testCase ->
         catchingUnwrapped {
             val trustAnchor = TrustAnchor.Certificate(
-                DER.decodeFromPem<X509Certificate>(testCase.root)
+                Signum.Der.decodeFromPem<X509Certificate>(testCase.root)
             )
 
             val intermediates = testCase.intermediates.map {
-                DER.decodeFromPem<X509Certificate>(it)
+                Signum.Der.decodeFromPem<X509Certificate>(it)
             }
 
-            val leaf = DER.decodeFromPem<X509Certificate>(testCase.leaf)
+            val leaf = Signum.Der.decodeFromPem<X509Certificate>(testCase.leaf)
 
             val chain = AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchor)
 

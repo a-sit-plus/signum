@@ -1,27 +1,24 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
-import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.io.UVarInt
-import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 
 val CryptoPublicKey.asn1Representation: SubjectPublicKeyInfo
-    get() = representations[X509] as? SubjectPublicKeyInfo ?: when (this) {
-        is RsaPublicKey -> SubjectPublicKeyInfo.rsa(n, e)
-        is EcdsaPublicKey -> SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
-        else -> throw UnsupportedCryptoException("No X.509 representation for ${this::class.simpleName}")
+    get() = representations[X509] as? SubjectPublicKeyInfo ?: run {
+        Signum.installIndispensable()
+        Signum.load<PublicKeyFormatProvider>().get(this, PublicKeyFormatProvider::encodeToAsn1)
     }
 
 fun CryptoPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): CryptoPublicKey =
-    ServiceLoader.load<PublicKeyFormatProvider>().get(src, PublicKeyFormatProvider::decodeFromAsn1)
+    Signum.load<PublicKeyFormatProvider>().get(src, PublicKeyFormatProvider::decodeFromAsn1)
 
 operator fun CryptoPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): CryptoPublicKey =
     fromAsn1Representation(src)
@@ -33,20 +30,25 @@ val CryptoPublicKey.iosEncoded: ByteArray
     }.bitCarryingBytes
 
 interface PublicKeyFormatProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = null
+
     fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
     fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
 }
 
 fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): RsaPublicKey =
     RsaPublicKey({
-        RsaPublicKey.Content(Pkcs1RsaPublicKeyInfo.of(src))
+        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+        RsaPublicKey.Content(Pkcs1RsaPublicKeyInfo.of(src, Signum.Der))
     }, mapOf(X509 to src))
 
 operator fun RsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): RsaPublicKey = fromAsn1Representation(src)
 
 fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): EcdsaPublicKey =
     EcdsaPublicKey({
-        val parsed = Sec1EcPublicKeyInfo.of(src)
+        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+        val parsed = Sec1EcPublicKeyInfo.of(src, Signum.Der)
         val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
             ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
         when (parsed) {

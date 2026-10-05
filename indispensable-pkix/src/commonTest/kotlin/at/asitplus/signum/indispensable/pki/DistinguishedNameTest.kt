@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.pki
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
@@ -6,7 +8,7 @@ import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.pki.attributes.*
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 
 import at.asitplus.awesn1.*
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -15,7 +17,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 private data class TypedAttributeCase(
-    val descriptor: AttributeTypeAndValue.Descriptor,
+    val descriptor: AttributeTypeAndValue.Descriptor<*>,
     val names: Set<String>,
     val expected: (String) -> AttributeTypeAndValue,
 )
@@ -42,7 +44,7 @@ private val typedAttributes = listOf(
 )
 
 val DistinguishedNameTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
     compact("DistinguishedName test equals and hashCode") - {
         val oids = listOf(
             KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,
@@ -127,7 +129,7 @@ val DistinguishedNameTest by matrixSuite {
             )
         )
 
-        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(DER.encodeToByteArray(rdn))
+        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(Signum.Der.encodeToByteArray(rdn))
 
         decoded shouldBe rdn
         decoded.attrsAndValues.size shouldBe 5
@@ -141,14 +143,14 @@ val DistinguishedNameTest by matrixSuite {
             )
         )
 
-        val encoded = DER.encodeToByteArray(rdn)
-        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val encoded = Signum.Der.encodeToByteArray(rdn)
+        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(encoded)
         val attr = decoded.attrsAndValues.single()
 
         attr::class shouldBe BaseX509AttributeTypeAndValue::class
         attr.oid shouldBe ObjectIdentifier("1.2.3.4.5.6.7")
         (attr.asn1Representation != null) shouldBe true
-        DER.encodeToByteArray(decoded) shouldBe encoded
+        Signum.Der.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "AttributeTypeAndValue oid factory returns known subtype" {
@@ -210,7 +212,7 @@ val DistinguishedNameTest by matrixSuite {
 
                 parsed shouldBe case.expected("Test")
                 parsed?.oid shouldBe case.descriptor.oid
-                AttributeTypeAndValue.Registry.oidFor(name) shouldBe case.descriptor.oid
+                Signum.attributeOidFor(name) shouldBe case.descriptor.oid
             }
         }
     }
@@ -225,13 +227,13 @@ val DistinguishedNameTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(case.descriptor.oid, nonCanonicalValue)
         )
-        val encoded = DER.encodeToByteArray(original)
-        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val encoded = Signum.Der.encodeToByteArray(original)
+        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
 
         attribute::class shouldBe case.expected("Test")::class
         attribute.value shouldBe nonCanonicalValue
-        DER.encodeToByteArray(decoded) shouldBe encoded
+        Signum.Der.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "AttributeTypeAndValue RFC2253 string escaping"  {

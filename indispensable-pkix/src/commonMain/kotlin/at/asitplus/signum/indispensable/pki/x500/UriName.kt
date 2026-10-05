@@ -96,7 +96,7 @@ class UriName private constructor(
         }
     }
 
-    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<UriName>{
+    companion object : Descriptor<UriName>{
         override val tag = X509GeneralName.Tags.uniformResourceIdentifier
 
         override fun fromAsn1Representation(src: X509GeneralName): UriName = runRethrowing {
