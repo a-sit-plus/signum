@@ -4,7 +4,7 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.signumX509Serializers
+import at.asitplus.signum.indispensable.signumAsn1Serializers
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
 import at.asitplus.signum.indispensable.pki.extn.KeyUsage
 import at.asitplus.signum.indispensable.pki.extn.UsageBit
@@ -15,7 +15,7 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.modules.plus
 
-private val pkixDer = DER { serializersModule = signumX509Serializers + signumPkixX509Serializers }
+private val pkixDer = DER { serializersModule = signumAsn1Serializers + signumPkixX509Serializers }
 
 private inline fun <reified T : Encodable> checkRoundTrip(target: Decodable<T>, source: T): T {
     val bytes = pkixDer.encodeToByteArray(source)

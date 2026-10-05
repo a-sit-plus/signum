@@ -75,7 +75,7 @@ private fun GeneralName.hasSameNameType(other: GeneralName): Boolean {
  * decode through the [GeneralName] registry (typed alternative when registered, generic
  * [at.asitplus.signum.indispensable.pki.BaseX509GeneralName] otherwise).
  */
-internal object GeneralNameSerializer : KSerializer<GeneralName> by at.asitplus.signum.indispensable.GeneralNameX509Serializer
+internal object GeneralNameSerializer : KSerializer<GeneralName> by at.asitplus.signum.indispensable.GeneralNameAsn1Serializer
 
 internal object GeneralNameListSerializer : KSerializer<List<GeneralName>> by ListSerializer(GeneralNameSerializer)
 

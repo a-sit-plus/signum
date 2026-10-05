@@ -44,7 +44,7 @@ private fun tbsCertificate(
     ) }, mapOf(ExtraRepresentation to "metadata"),
 )
 
-private val tbsDer = DER { serializersModule = signumX509Serializers }
+private val tbsDer = DER { serializersModule = signumAsn1Serializers }
 
 val TbsCertificateEncodingTest by matrixSuite {
     "Contextual serializer dispatch and retained original" {
@@ -66,7 +66,7 @@ val TbsCertificateEncodingTest by matrixSuite {
         decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
         val original = source.asn1Representation
         TbsCertificate(original).asn1Representation shouldBeSameInstanceAs original
-        shouldThrowAny { DER { serializersModule = signumX509Serializers; maxInputLength = 1 }.decodeFromByteArray<TbsCertificate>(bytes) }
+        shouldThrowAny { DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }.decodeFromByteArray<TbsCertificate>(bytes) }
     }
 
     "Unsupported original algorithms can round-trip without semantic decoding" {

@@ -219,7 +219,7 @@ recovered shouldBe payload //success!
 
 Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` implement
 `Encodable`; their companions implement `Decodable`. DER uses contextual serializers that bridge
-to awesn1 models. Register `signumX509Serializers` with `DefaultDer` once, before its first use,
+to awesn1 models. Register `signumAsn1Serializers` with `DefaultDer` once, before its first use,
 or include it in a configured `DER { serializersModule = signumX509Serializers }` instance.
 Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
 material.

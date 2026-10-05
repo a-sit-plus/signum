@@ -1,7 +1,7 @@
 import at.asitplus.signum.indispensable.pki.signumPkixX509Serializers
 import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.awesn1.serialization.DefaultDer
-import at.asitplus.signum.indispensable.signumX509Serializers
+import at.asitplus.signum.indispensable.signumAsn1Serializers
 import at.asitplus.signum.supreme.Supreme
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
@@ -14,7 +14,7 @@ class ModuleTestSession : TestSession(
     }
 ) {
     init {
-        DefaultDer.register(signumX509Serializers)
+        DefaultDer.register(signumAsn1Serializers)
         DefaultDer.register(signumPkixX509Serializers)
         SignumPkix.install()
     }
