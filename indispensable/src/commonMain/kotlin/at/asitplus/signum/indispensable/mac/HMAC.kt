@@ -1,12 +1,13 @@
 package at.asitplus.signum.indispensable.mac
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.hmacWithSHA1
 import at.asitplus.awesn1.hmacWithSHA256
 import at.asitplus.awesn1.hmacWithSHA384
 import at.asitplus.awesn1.hmacWithSHA512
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -19,7 +20,7 @@ data class HMAC(val digest: Digest, val oid: ObjectIdentifier)
     override fun toString() = "HMAC-$digest"
 
     companion object {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
         val SHA1 = HMAC(Digest.SHA1, KnownOIDs.hmacWithSHA1)
         val SHA256 = HMAC(Digest.SHA256, KnownOIDs.hmacWithSHA256)
         val SHA384 = HMAC(Digest.SHA384, KnownOIDs.hmacWithSHA384)

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.sign
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.decodeFromTlv
 
 import at.asitplus.awesn1.Asn1Null
@@ -240,7 +241,8 @@ class RsaAlgorithm internal constructor(
                         runRethrowing {
                             when (element.oid) {
                                 Pkcs1Mgf1.oid ->
-                                    Pkcs1Mgf1(Digest.fromAsn1Representation(DER.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
+                                    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                                    Pkcs1Mgf1(Digest.fromAsn1Representation(Signum.Der.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
                                 else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
                             }
                         }
@@ -274,6 +276,12 @@ class RsaAlgorithm internal constructor(
 }
 
 object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
+    override fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = when (value) {
+        is EcdsaAlgorithm -> value.asn1Representation
+        is RsaAlgorithm -> value.asn1Representation
+        else -> null
+    }
+
     override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm? = when (algorithmIdentifier.oid) {
         KnownOIDs.ecdsaWithSHA1,
         KnownOIDs.ecdsaWithSHA256,

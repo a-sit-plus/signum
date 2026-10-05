@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.Asn1Exception
@@ -12,8 +13,6 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -139,10 +138,10 @@ sealed interface AttributeTypeAndValue : Identifiable, Encodable {
             } ?: ("#" + value.derEncoded.toHexString())
 
             // RFC 2253 canonical form for case-insensitive matching: fold the value to lower case too
-            return "${Registry.nameFor(oid)?.lowercase() ?: oid}=${attrValue.lowercase()}"
+            return "${Signum.attributeNameFor(oid)?.lowercase() ?: oid}=${attrValue.lowercase()}"
         }
 
-    interface Descriptor : Identifiable {
+    interface Descriptor<out T : AttributeTypeAndValue> : Decodable<T>, Identifiable {
         val canonicalName: String
 
         object OID {
@@ -167,70 +166,11 @@ sealed interface AttributeTypeAndValue : Identifiable, Encodable {
             val emailAddress = ObjectIdentifier("1.2.840.113549.1.9.1")
         }
 
-        fun fromString(value: String): AttributeTypeAndValue
-        fun fromAsn1Representation(src: X500AttributeTypeAndValue): AttributeTypeAndValue
+        fun fromString(value: String): T
+        fun fromAsn1Representation(src: X500AttributeTypeAndValue): T
 
-        fun register(): Descriptor = Registry.register(this)
     }
 
-    /**
-     * Maps attribute OIDs to [Descriptor]s and powers RFC 4514 keyword lookup. Standard attributes
-     * are available as generic structural descriptors without `indispensable-pkix`; that module may
-     * replace them with typed descriptors during startup.
-     *
-     * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
-     * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
-     * lookup — after that it is immutable and reads are lock-free; later [register] calls throw. This
-     * mirrors the `DefaultDer.register` contract and removes the former runtime-mutable machinery.
-     */
-    @OptIn(ExperimentalAtomicApi::class)
-    object Registry {
-        private val descriptors: MutableMap<ObjectIdentifier, Descriptor> = standardX500AttributeDescriptors
-            .associateByTo(mutableMapOf()) { it.oid }
-        private val aliases = standardX500AttributeAliases.toMutableMap()
-        private val sealed = AtomicReference<Map<ObjectIdentifier, Descriptor>?>(null)
-
-        fun register(descriptor: Descriptor): Descriptor {
-            check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
-            }
-            descriptors[descriptor.oid] = descriptor
-            return descriptor
-        }
-
-        fun registerAlias(alias: String, oid: ObjectIdentifier) {
-            check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
-            }
-            require(descriptors.containsKey(oid)) { "No AttributeTypeAndValue descriptor registered for $oid." }
-            val normalizedAlias = alias.uppercase()
-            check(descriptors.values.none { it.canonicalName.uppercase() == normalizedAlias }) {
-                "AttributeTypeAndValue alias '$alias' conflicts with a canonical name."
-            }
-            check(aliases[normalizedAlias].let { it == null || it == oid }) {
-                "AttributeTypeAndValue alias '$alias' is already registered for ${aliases[normalizedAlias]}."
-            }
-            aliases[normalizedAlias] = oid
-        }
-
-        fun oidFor(name: String): ObjectIdentifier? =
-            descriptorForName(name)?.oid
-
-        fun nameFor(oid: ObjectIdentifier): String? =
-            descriptorFor(oid)?.canonicalName
-
-        fun descriptorFor(oid: ObjectIdentifier): Descriptor? = view()[oid]
-
-        fun descriptorForName(name: String): Descriptor? {
-            val normalizedName = name.uppercase()
-            val descriptors = view()
-            return aliases[normalizedName]?.let { descriptors[it] }
-                ?: descriptors.values.firstOrNull { it.canonicalName.uppercase() == normalizedName }
-        }
-
-        private fun view(): Map<ObjectIdentifier, Descriptor> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
-    }
 
     companion object : Decodable<AttributeTypeAndValue> {
 
@@ -247,7 +187,7 @@ sealed interface AttributeTypeAndValue : Identifiable, Encodable {
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
             if (v.length > 1 && v.first() == '#' &&  isHexString(v.substring(1))) {
                 catchingUnwrapped { Asn1Element.parse(v.substring(1).hexToByteArray()) }.getOrNull()?.let { element ->
-                    val oid = Registry.descriptorForName(key)?.oid
+                    val oid = Signum.attributeDescriptorForName(key)?.oid
                         ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
                     return invoke(oid, element)
                 }
@@ -256,14 +196,14 @@ sealed interface AttributeTypeAndValue : Identifiable, Encodable {
             // and toRfc2253String re-escapes on output (RFC 4514). This keeps the stored value correct
             // (no escape backslashes in the DER) and works for PrintableString/IA5 attributes too.
             val raw = unescapeRfc2253(v)
-            Registry.descriptorForName(key)?.let { return it.fromString(raw) }
+            Signum.attributeDescriptorForName(key)?.let { return it.fromString(raw) }
             // Fall back to a raw dotted-OID attribute type (e.g. "1.2.3.4.5"); value carried as a UTF8String.
             val oid = catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
             return invoke(oid, Asn1String.UTF8(raw).encodeToTlv())
         }
 
         fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
-            Registry.descriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
+            Signum.attributeDescriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
                 ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }
 }
@@ -272,15 +212,15 @@ private class StandardX500AttributeDescriptor(
     override val oid: ObjectIdentifier,
     override val canonicalName: String,
     private val stringFactory: (String) -> Asn1String,
-) : AttributeTypeAndValue.Descriptor {
-    override fun fromString(value: String): AttributeTypeAndValue =
+) : AttributeTypeAndValue.Descriptor<BaseX509AttributeTypeAndValue> {
+    override fun fromString(value: String): BaseX509AttributeTypeAndValue =
         BaseX509AttributeTypeAndValue(oid, stringFactory(value))
 
     override fun fromAsn1Representation(src: X500AttributeTypeAndValue) =
         BaseX509AttributeTypeAndValue(src)
 }
 
-private val standardX500AttributeDescriptors = listOf(
+internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.commonName, "CN", Asn1String::UTF8),
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.countryName, "C", Asn1String::Printable),
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.localityName, "L", Asn1String::UTF8),
@@ -302,7 +242,7 @@ private val standardX500AttributeDescriptors = listOf(
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.emailAddress, "EMAILADDRESS", Asn1String::IA5),
 )
 
-private val standardX500AttributeAliases = mapOf(
+internal val standardX500AttributeAliases = mapOf(
     "COMMONNAME" to AttributeTypeAndValue.Descriptor.OID.commonName,
     "COUNTRY" to AttributeTypeAndValue.Descriptor.OID.countryName,
     "COUNTRYNAME" to AttributeTypeAndValue.Descriptor.OID.countryName,
@@ -323,7 +263,7 @@ private val standardX500AttributeAliases = mapOf(
 abstract class BaseAttributeTypeAndValue(
     override val oid: ObjectIdentifier,
 ) : AttributeTypeAndValue {
-    override val displayName: String? get() = AttributeTypeAndValue.Registry.nameFor(oid)
+    override val displayName: String? get() = Signum.attributeNameFor(oid)
     override val isValid: Boolean? = null
 
 }

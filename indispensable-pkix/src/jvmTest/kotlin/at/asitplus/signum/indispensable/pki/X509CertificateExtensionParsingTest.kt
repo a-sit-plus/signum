@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.indispensable.decodeFromPem
@@ -32,27 +33,27 @@ import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.pki.extn.UsageBit
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 val X509CertificateExtensionParsingTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     "valid keyUsage extension should parse as KeyUsageExtension" {
         val keyUsage = KeyUsage(UsageBit.DIGITAL_SIGNATURE)
-        val ext = runCatching { DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(keyUsage)) }.getOrNull()
+        val ext = runCatching { Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(keyUsage)) }.getOrNull()
         ext!!::class shouldBe KeyUsage::class
     }
 
-    "invalid keyUsage extension should parse as InvalidCertificateExtension" {
+    "invalid keyUsage extension should propagate its decode error" {
         val seq = Asn1.Sequence {
             +KnownOIDs.keyUsage
             +Bool(true)
             +Asn1EncapsulatingOctetString(listOf())
         }
 
-        val ext = runCatching { DER.decodeFromTlv<CertificateExtension>(seq) }.getOrNull()
-        ext!!::class shouldBe X509CertificateExtension::class
+        shouldThrowAny { Signum.Der.decodeFromTlv<CertificateExtension>(seq) }
     }
 
     "unknown extension should parse as X509CertificateExtension" {
@@ -62,7 +63,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
             +Asn1EncapsulatingOctetString(listOf())
         }
 
-        val ext = runCatching { DER.decodeFromTlv<CertificateExtension>(seq) }.getOrNull()
+        val ext = runCatching { Signum.Der.decodeFromTlv<CertificateExtension>(seq) }.getOrNull()
         ext!!::class shouldBe X509CertificateExtension::class
     }
 
@@ -87,7 +88,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
                 "dTOX3iw0+BPy3s2jtnCW1PLpc74kvSTaBwhg74sq39EXfIKax00=\n" +
                 "-----END CERTIFICATE-----"
 
-        val cert = DER.decodeFromPem<Certificate>(pem)
+        val cert = Signum.Der.decodeFromPem<Certificate>(pem)
 
         val aki = cert.findExtension<AuthorityKeyIdentifier>()
         aki shouldNotBe null
@@ -116,7 +117,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
                 "H+YTYavijRApH5hccJBXyoIM0x9ZtKdcrV0h+J2KOFGEyHp3FXViFEB2IZUpJNA/\n" +
                 "aduVbH8gZy5Y+cHzenwzBg==\n" +
                 "-----END CERTIFICATE-----"
-        val cert = DER.decodeFromPem<Certificate>(pem)
+        val cert = Signum.Der.decodeFromPem<Certificate>(pem)
 
         val aki = cert.findExtension<AuthorityKeyIdentifier>()
         aki shouldNotBe null
@@ -130,61 +131,61 @@ val X509CertificateExtensionParsingTest by matrixSuite {
     // same typed fields (build -> encodeToTlv -> CertificateExtension.decodeFromTlv -> typed again).
 
     "BasicConstraints constructed programmatically round-trips" {
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(BasicConstraints(ca = true, pathLenConstraint = 3u))) as BasicConstraints
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(BasicConstraints(ca = true, pathLenConstraint = 3u))) as BasicConstraints
         decoded.ca shouldBe true
         decoded.pathLenConstraint shouldBe 3u
 
         // cA DEFAULT FALSE is omitted; a non-CA has no path length.
-        val leaf = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(BasicConstraints(ca = false))) as BasicConstraints
+        val leaf = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(BasicConstraints(ca = false))) as BasicConstraints
         leaf.ca shouldBe false
         leaf.pathLenConstraint shouldBe null
     }
 
     "PolicyConstraints constructed programmatically round-trips" {
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(PolicyConstraints(requireExplicitPolicy = 0, inhibitPolicyMapping = 1))) as PolicyConstraints
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(PolicyConstraints(requireExplicitPolicy = 0, inhibitPolicyMapping = 1))) as PolicyConstraints
         decoded.requireExplicitPolicy shouldBe Asn1Integer(0)
         decoded.inhibitPolicyMapping shouldBe Asn1Integer(1)
 
         // both absent -> the -1 sentinel
-        val empty = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(PolicyConstraints())) as PolicyConstraints
+        val empty = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(PolicyConstraints())) as PolicyConstraints
         empty.requireExplicitPolicy shouldBe Asn1Integer.fromDecimalString("-1")
         empty.inhibitPolicyMapping shouldBe Asn1Integer.fromDecimalString("-1")
     }
 
     "InhibitAnyPolicy constructed programmatically round-trips" {
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(InhibitAnyPolicy(2))) as InhibitAnyPolicy
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(InhibitAnyPolicy(2))) as InhibitAnyPolicy
         decoded.skipCerts shouldBe 2
     }
 
     "SubjectKeyIdentifier constructed programmatically round-trips" {
         val keyId = byteArrayOf(1, 2, 3, 4, 5)
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(SubjectKeyIdentifier(keyId))) as SubjectKeyIdentifier
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(SubjectKeyIdentifier(keyId))) as SubjectKeyIdentifier
         (decoded.keyIdentifier?.contentEquals(keyId)) shouldBe true
     }
 
     "ExtendedKeyUsage constructed programmatically round-trips" {
         val oids = setOf(ObjectIdentifier("1.3.6.1.5.5.7.3.1"), ObjectIdentifier("1.3.6.1.5.5.7.3.2"))
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(ExtendedKeyUsage(oids))) as ExtendedKeyUsage
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(ExtendedKeyUsage(oids))) as ExtendedKeyUsage
         decoded.keyUsages shouldBe oids
     }
 
     "AuthorityKeyIdentifier constructed programmatically round-trips" {
         val keyId = byteArrayOf(9, 8, 7, 6)
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(AuthorityKeyIdentifier(keyIdentifier = keyId, authorityCertSerialNumber = Asn1Integer(42)))) as AuthorityKeyIdentifier
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(AuthorityKeyIdentifier(keyIdentifier = keyId, authorityCertSerialNumber = Asn1Integer(42)))) as AuthorityKeyIdentifier
         (decoded.keyIdentifier?.contentEquals(keyId)) shouldBe true
         decoded.authorityCertSerialNumber?.let { Asn1Integer.decodeFromAsn1ContentBytes(it) } shouldBe Asn1Integer(42)
     }
 
     "NameConstraints constructed programmatically round-trips" {
         val permitted = GeneralSubtrees(mutableListOf(GeneralSubtree(DNSName(Asn1String.IA5("example.com")))))
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(NameConstraints(permitted = permitted))) as NameConstraints
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(NameConstraints(permitted = permitted))) as NameConstraints
         decoded.permitted?.trees?.size shouldBe 1
         (decoded.permitted?.trees?.first()?.base as? GeneralName)?.tag shouldBe X509GeneralName.Tags.dnsName
         decoded.excluded shouldBe null
     }
 
     "CertificatePolicies constructed programmatically round-trips" {
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(CertificatePolicies(listOf(PolicyInformation(ObjectIdentifier("2.5.29.32.0")))))) as CertificatePolicies
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(CertificatePolicies(listOf(PolicyInformation(ObjectIdentifier("2.5.29.32.0")))))) as CertificatePolicies
         decoded.certificatePolicies.map { it.oid } shouldBe listOf(ObjectIdentifier("2.5.29.32.0"))
     }
 
@@ -193,7 +194,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
             ObjectIdentifier("2.16.840.1.101.3.2.1.48.1"),
             ObjectIdentifier("2.16.840.1.101.3.2.1.48.2"),
         )
-        val decoded = DER.decodeFromTlv<CertificateExtension>(DER.encodeToTlv<CertificateExtension>(PolicyMappings(listOf(mapping)))) as PolicyMappings
+        val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(PolicyMappings(listOf(mapping)))) as PolicyMappings
         decoded.policyMappings shouldBe listOf(mapping)
     }
 }

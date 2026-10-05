@@ -115,12 +115,14 @@ class TbsCertificate internal constructor(
      * Contains `SubjectAlternativeName`s parsed from extensions.
      */
     @Transient
+    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
     val subjectAlternativeNames: AlternativeNames? by lazy { extensions.findSubjectAltNames() }
 
     /**
      * Contains `IssuerAlternativeName`s parsed from extensions.
      */
     @Transient
+    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
     val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
     override fun equals(other: Any?): Boolean = this === other || catchingUnwrapped {

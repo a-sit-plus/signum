@@ -35,6 +35,9 @@ sealed class WellKnownDigest(
 }
 
 object IndispensableDigestsProvider: DigestProvider {
+    override fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? =
+        (value as? WellKnownDigest)?.let { X509AlgorithmIdentifier(it.oid, null) }
+
     override fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest? {
         return WellKnownDigest.entries.firstOrNull { it.oid == algorithmIdentifier.oid }?.also {
             val params = algorithmIdentifier.parameters
@@ -45,6 +48,9 @@ object IndispensableDigestsProvider: DigestProvider {
 }
 
 object IndispensableHMACProvider: MessageAuthenticationCodeProvider {
+    override fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? =
+        (value as? HMAC)?.let { X509AlgorithmIdentifier(it.oid, Asn1Null) }
+
     override fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode? {
         if (algorithmIdentifier.parameters != Asn1Null) return null
         return WellKnownDigest.entries.asSequence().map(HMAC::byDigest)

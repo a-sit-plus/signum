@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.io
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.invoke
-import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.encodeToByteArray
 import at.asitplus.signum.indispensable.iosEncoded
 
@@ -111,10 +112,12 @@ object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certific
     decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
 )
 
-private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = DER.encodeToByteArray(certificate)
+// Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = Signum.Der.encodeToByteArray(certificate)
 
 private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
-    Certificate(DER.decodeFromDer<Awesn1X509Certificate>(src))
+    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+    Certificate(Signum.Der.decodeFromDer<Awesn1X509Certificate>(src))
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
 object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(

@@ -1,8 +1,9 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.BundledTrustStore
 
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -10,7 +11,7 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 
 @OptIn(ExperimentalPkiApi::class)
 val systemTruststoreTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
     "Trust stores" - {
         // The bundled store is build-time embedded and must be present on every platform.
         "bundled store is not empty" {

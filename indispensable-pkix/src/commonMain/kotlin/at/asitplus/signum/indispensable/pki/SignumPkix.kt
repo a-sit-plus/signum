@@ -1,5 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.contextualAsn1
+import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
+import kotlinx.serialization.modules.SerializersModule
+
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
@@ -40,87 +45,64 @@ import at.asitplus.signum.indispensable.pki.x500.RegisteredIDName
 import at.asitplus.signum.indispensable.pki.x500.UriName
 import at.asitplus.signum.indispensable.pki.x500.X400AddressName
 
-/**
- * Entry point for the `indispensable-pkix` typed PKIX layer.
- *
- * The `indispensable` core parses every certificate extension and X.500 attribute
- * *generically* (via awesn1) and keeps its [CertificateExtension.Registry] /
- * [GeneralName.Registry] **empty** by default. [AttributeTypeAndValue.Registry]
- * contains generic descriptors for standard X.500 attributes so RFC 4514 shorthands work without
- * this module. This module supplies the typed counterparts (e.g. [KeyUsage], [CommonName]) and
- * registers or replaces their descriptors here.
- *
- * Call [install] once at startup (it is idempotent, but it **must** run before the first (de)serialization
- * of a certificate/RDN/GeneralName) The registries seal on first lookup, after which they are
- * immutable and [register][CertificateExtension.Descriptor.register] throws. After installation,
- * certificate parsing upgrades the generic extensions/attributes to their typed forms and the RFC
- * 4514 codec renders friendly keywords (`CN=`, `O=`, …) instead of dotted-OID forms.
- *
- * `pkix-supreme`'s validator entry points call [install] internally, so chain validation never runs
- * against an unpopulated registry. Third-party typed extensions/attributes use the very same registry
- * SPI ([CertificateExtension.Descriptor]/[AttributeTypeAndValue.Descriptor] + `register()`), registered
- * before the first (de)serialization.
- *
- * TODO: replace the explicit [install] call with a reliable multiplatform auto-trigger
- *  (e.g. `@EagerInitialization`) once one exists that fires dependably on every Kotlin target.
- */
 @OptIn(ExperimentalAtomicApi::class)
-object SignumPkix {
+private val installed = AtomicBoolean(false)
 
-    private val installed = AtomicBoolean(false)
+/** Install the PKIX descriptors and their contextual serializers once during startup. */
+@OptIn(ExperimentalAtomicApi::class)
+fun Signum.installPkix() {
+    if (!installed.compareAndSet(expectedValue = false, newValue = true)) return
 
-    /**
-     * Registers all typed extension/attribute/general-name descriptors shipped with this module.
-     * Idempotent and concurrency-safe: only the first caller performs registration (compare-and-set
-     * guard), every subsequent call is a no-op. Registration must happen here — before the first
-     * (de)serialization — because the registries seal on their first lookup.
-     */
-    fun install() {
-        if (!installed.compareAndSet(expectedValue = false, newValue = true)) return
+    registerAsn1Serializers(SerializersModule {
+        contextualAsn1(
+            GeneralSubtree::class,
+            X509GeneralSubtree.serializer(), { it.asn1Representation },
+            { GeneralSubtree.fromAsn1Representation(it) },
+        )
+    })
 
-        // Typed certificate extensions
-        BasicConstraints.register()
-        NameConstraints.register()
-        PolicyConstraints.register()
-        CertificatePolicies.register()
-        PolicyMappings.register()
-        InhibitAnyPolicy.register()
-        KeyUsage.register()
-        AuthorityKeyIdentifier.register()
-        ExtendedKeyUsage.register()
-        SubjectKeyIdentifier.register()
+    // Typed certificate extensions
+    register(BasicConstraints)
+    register(NameConstraints)
+    register(PolicyConstraints)
+    register(CertificatePolicies)
+    register(PolicyMappings)
+    register(InhibitAnyPolicy)
+    register(KeyUsage)
+    register(AuthorityKeyIdentifier)
+    register(ExtendedKeyUsage)
+    register(SubjectKeyIdentifier)
 
-        // Typed X.500 attribute types
-        CommonName.register()
-        Country.register()
-        Locality.register()
-        StateOrProvince.register()
-        Organization.register()
-        OrganizationalUnit.register()
-        Title.register()
-        Street.register()
-        DomainComponent.register()
-        DistinguishedNameQualifier.register()
-        Surname.register()
-        GivenName.register()
-        Initials.register()
-        Generation.register()
-        EmailAddress.register()
-        UserId.register()
-        SerialNumber.register()
-        TelephoneNumber.register()
+    // Typed X.500 attribute types
+    register(CommonName)
+    register(Country)
+    register(Locality)
+    register(StateOrProvince)
+    register(Organization)
+    register(OrganizationalUnit)
+    register(Title)
+    register(Street)
+    register(DomainComponent)
+    register(DistinguishedNameQualifier)
+    register(Surname)
+    register(GivenName)
+    register(Initials)
+    register(Generation)
+    register(EmailAddress)
+    register(UserId)
+    register(SerialNumber)
+    register(TelephoneNumber)
 
-        // Typed GeneralName CHOICE alternatives
-        DNSName.register()
-        RFC822Name.register()
-        UriName.register()
-        IPAddressName.register()
-        RegisteredIDName.register()
-        OtherName.register()
-        EDIPartyName.register()
-        X400AddressName.register()
-        DirectoryName.register()
-    }
+    // Typed GeneralName CHOICE alternatives
+    register(DNSName)
+    register(RFC822Name)
+    register(UriName)
+    register(IPAddressName)
+    register(RegisteredIDName)
+    register(OtherName)
+    register(EDIPartyName)
+    register(X400AddressName)
+    register(DirectoryName)
 }
 
 /** The chain ordered from trust anchor to leaf (reverse of the conventional leaf-first order). */

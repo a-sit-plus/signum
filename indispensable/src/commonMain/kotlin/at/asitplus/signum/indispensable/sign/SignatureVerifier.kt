@@ -1,13 +1,13 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.VerifierConfiguration
 import kotlinx.serialization.encodeToByteArray
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
@@ -51,16 +51,16 @@ suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: at.asitplus
 
 @IgnorableReturnValue
 suspend inline fun <reified T : Encodable> SignatureVerifier.verify(input: T, signature: CryptoSignature) =
-    verify(DER.encodeToByteArray(input), signature)
+    verify(Signum.Der.encodeToByteArray(input), signature)
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
-    verify(DER.encodeToByteArray(input), signature)
+    verify(Signum.Der.encodeToByteArray(input), signature)
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
-    return verify(DER.encodeToByteArray(input.tbsCertificate), input.signature)
+    return verify(Signum.Der.encodeToByteArray(input.tbsCertificate), input.signature)
 }
 
 fun CertificationRequest.verifier() =
@@ -90,7 +90,7 @@ interface SignatureVerifierProvider {
 
 fun SignatureAlgorithm.verifierFor(key: CryptoPublicKey, configure: DSLConfigureFn<VerifierConfiguration> = null): SignatureVerifier {
     val config = DSL.resolve(::VerifierConfiguration, configure)
-    return ServiceLoader.load<SignatureVerifierProvider>().get(this) { verifierFor(it, key, config) }
+    return Signum.load<SignatureVerifierProvider>().get(this) { verifierFor(it, key, config) }
 }
 
 fun SpecializedSignatureAlgorithm.verifierFor(key: CryptoPublicKey) = this.algorithm.verifierFor(key)

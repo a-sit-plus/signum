@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
@@ -54,9 +56,9 @@ sealed interface AlternativeNames : Encodable {
             val matches = mapNotNull { it.asn1Representation }.filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else at.asitplus.awesn1.serialization.DER.decodeFromTlv(
+            else Signum.Der.decodeFromByteArray(
                 X509GeneralNames.serializer(),
-                Asn1Element.parse(matches.first().value),
+                matches.first().value,
             )
         }
     }

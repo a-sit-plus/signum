@@ -1,13 +1,16 @@
-import at.asitplus.signum.indispensable.pki.signumPkixX509Serializers
-import at.asitplus.signum.indispensable.pki.SignumPkix
-import at.asitplus.awesn1.serialization.DefaultDer
-import at.asitplus.signum.indispensable.signumAsn1Serializers
+import at.asitplus.signum.indispensable.pki.installPkix
+import at.asitplus.signum.indispensable.pki.pkixDerTemplate
+import at.asitplus.signum.indispensable.pki.RegisteredCertificateExtension
+import at.asitplus.signum.indispensable.pki.attributes.CommonName
+import at.asitplus.signum.Signum
 import de.infix.testBalloon.framework.core.TestSession
 
 class ModuleTestSession : TestSession() {
     init {
-        DefaultDer.register(signumAsn1Serializers)
-        DefaultDer.register(signumPkixX509Serializers)
-        SignumPkix.install()
+        Signum.setDer(pkixDerTemplate)
+        Signum.installPkix()
+        Signum.register(RegisteredCertificateExtension)
+        Signum.registerAttributeAlias("CUSTOMCN", CommonName.oid)
+        Signum.Der
     }
 }

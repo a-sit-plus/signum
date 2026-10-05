@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.signumAsn1Serializers
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
 import at.asitplus.signum.indispensable.pki.extn.KeyUsage
 import at.asitplus.signum.indispensable.pki.extn.UsageBit
@@ -13,17 +13,12 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.modules.plus
-
-private val pkixDer = DER { serializersModule = signumAsn1Serializers + signumPkixX509Serializers }
 
 private inline fun <reified T : Encodable> checkRoundTrip(target: Decodable<T>, source: T): T {
-    val bytes = pkixDer.encodeToByteArray(source)
-    val decoded = pkixDer.decodeFromByteArray<T>(bytes)
+    val bytes = Signum.Der.encodeToByteArray(source)
+    val decoded = Signum.Der.decodeFromByteArray<T>(bytes)
     decoded shouldBe source
-    pkixDer.encodeToByteArray(decoded) shouldBe bytes
-    // Direct concrete dispatch must also be installed on DefaultDer at test-session startup.
-    DER.decodeFromByteArray<T>(DER.encodeToByteArray(source)) shouldBe decoded
+    Signum.Der.encodeToByteArray(decoded) shouldBe bytes
     requireNotNull(decoded.representations[X509])
     return decoded
 }

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef.io
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
 
@@ -9,6 +10,8 @@ import at.asitplus.signum.indispensable.pki.Certificate
 
 object JwsCertificateSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    encodeAs = { DER.encodeToByteArray(it) },
-    decodeAs = { DER.decodeFromByteArray<Certificate>(it) } //workaround iOS compilation bug KT-71498
+    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+    encodeAs = { Signum.Der.encodeToByteArray(it) },
+    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+    decodeAs = { Signum.Der.decodeFromByteArray<Certificate>(it) } //workaround iOS compilation bug KT-71498
 )

@@ -1,10 +1,11 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.decodeFromPem
 
 import at.asitplus.signum.indispensable.pki.TrustAnchor
 
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.findExtension
 
@@ -20,7 +21,7 @@ import io.kotest.matchers.shouldBe
 
 @OptIn(ExperimentalPkiApi::class)
 val PolicyQualifierTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     val NISTTestPolicyOne = "2.16.840.1.101.3.2.1.48.1"
     val NISTTestPolicyTwo = "2.16.840.1.101.3.2.1.48.2"
@@ -46,7 +47,7 @@ val PolicyQualifierTest by matrixSuite {
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val trustAnchorRootCert = DER.decodeFromPem<Certificate>(trustAnchorRootCertificate)
+    val trustAnchorRootCert = Signum.Der.decodeFromPem<Certificate>(trustAnchorRootCertificate)
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
     val defaultContext =
         CertificateValidationContext(trustAnchors = setOf(trustAnchor), allowIncludedTrustAnchor = false)
@@ -129,7 +130,7 @@ val PolicyQualifierTest by matrixSuite {
                 "wnOpVqmDrMivVvLaqUozgsX6\n" +
                 "-----END CERTIFICATE-----"
 
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain = AnchoredCertificateChain(listOf(leaf), trustAnchor)
 
         var result = chain.validate(defaultContext)
@@ -165,8 +166,8 @@ val PolicyQualifierTest by matrixSuite {
                 "IyTErE6J6vUrWZ2ycgmrf8Apd62mBopcR48xY9X3acE7QcdtgEe5/Uk=\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(goodCACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(goodCACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val result = chain.validate(defaultContext)
@@ -210,8 +211,8 @@ val PolicyQualifierTest by matrixSuite {
                 "jZua3QQF\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(goodCACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(goodCACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
         val result = chain.validate(defaultContext)
 
@@ -282,8 +283,8 @@ val PolicyQualifierTest by matrixSuite {
                 "IUC2I3sFck92TKZsdnYQHv3NuCl758S7O3cXnF436gqP31KGAzgcVA==\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(policiesP12CACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(policiesP12CACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         var context = CertificateValidationContext(
@@ -356,7 +357,7 @@ val PolicyQualifierTest by matrixSuite {
                 "8NBTUeL4fQnsCosYSygC\n" +
                 "-----END CERTIFICATE-----"
 
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf), trustAnchor)
         val result = chain.validate(defaultContext)
         result.shouldBeValid()
@@ -399,8 +400,8 @@ val PolicyQualifierTest by matrixSuite {
                 "eB2G\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(goodCACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(goodCACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val context = CertificateValidationContext(
@@ -479,8 +480,8 @@ val PolicyQualifierTest by matrixSuite {
                 "N4ZkwYg0No52Fiue+ymxwvF5R6P36fDEP0phyjh6qv6NYxsdXwd97AfS9g==\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(p12Mapping1to3CACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(p12Mapping1to3CACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         var context = CertificateValidationContext(
@@ -546,8 +547,8 @@ val PolicyQualifierTest by matrixSuite {
                 "UHjkzxIW2sNziGzljpb8+As=\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(p1anyPolicyMapping1to2CACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(p1anyPolicyMapping1to2CACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val result = chain.validate(defaultContext)
@@ -589,8 +590,8 @@ val PolicyQualifierTest by matrixSuite {
                 "C0bZ/GDrvAwewPgQM54j7lM=\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<Certificate>(p1anyPolicyMapping1to2CACert)
-        val leaf = DER.decodeFromPem<Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<Certificate>(p1anyPolicyMapping1to2CACert)
+        val leaf = Signum.Der.decodeFromPem<Certificate>(leafPem)
         val chain: AnchoredCertificateChain = AnchoredCertificateChain(listOf(leaf, ca), trustAnchor)
 
         val result = chain.validate(defaultContext)

@@ -1,11 +1,12 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 
 import at.asitplus.signum.indispensable.pki.BundledTrustStore
 
 import at.asitplus.signum.indispensable.pki.TrustAnchor
 
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.signum.indispensable.decodeFromPem
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
@@ -17,7 +18,7 @@ import io.kotest.matchers.shouldNotBe
 
 @OptIn(ExperimentalPkiApi::class)
 val AllowIncludedTrustAnchorTest by matrixSuite{
-    SignumPkix.install()
+    Signum.installPkix()
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -39,7 +40,7 @@ val AllowIncludedTrustAnchorTest by matrixSuite{
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val trustAnchorRootCert = DER.decodeFromPem<X509Certificate>(trustAnchorRootCertificate)
+    val trustAnchorRootCert = Signum.Der.decodeFromPem<X509Certificate>(trustAnchorRootCertificate)
     val trustAnchor = TrustAnchor.Certificate(trustAnchorRootCert)
     val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor) + (systemTrustStore ?: BundledTrustStore).anchors)
     val contextNotAllowedRoot = CertificateValidationContext(trustAnchors = setOf(trustAnchor) + (systemTrustStore ?: BundledTrustStore).anchors, allowIncludedTrustAnchor = false)
@@ -161,11 +162,11 @@ val AllowIncludedTrustAnchorTest by matrixSuite{
                 "8KDP6+hPJxVKCLApWqbmGqJE8b6swlhRomACaA==\n" +
                 "-----END CERTIFICATE-----"
 
-        val ca = DER.decodeFromPem<X509Certificate>(pathLenConstraint6CACert)
-        val subCa = DER.decodeFromPem<X509Certificate>(pathLenConstraintsubCA1Cert)
-        val subSubCa = DER.decodeFromPem<X509Certificate>(pathLenConstraintsubsubCA11Cert)
-        val subSubSubCa = DER.decodeFromPem<X509Certificate>(pathLenConstraintsubsubsubCA11XCert)
-        val leaf = DER.decodeFromPem<X509Certificate>(leafPem)
+        val ca = Signum.Der.decodeFromPem<X509Certificate>(pathLenConstraint6CACert)
+        val subCa = Signum.Der.decodeFromPem<X509Certificate>(pathLenConstraintsubCA1Cert)
+        val subSubCa = Signum.Der.decodeFromPem<X509Certificate>(pathLenConstraintsubsubCA11Cert)
+        val subSubSubCa = Signum.Der.decodeFromPem<X509Certificate>(pathLenConstraintsubsubsubCA11XCert)
+        val leaf = Signum.Der.decodeFromPem<X509Certificate>(leafPem)
         val chain = AnchoredCertificateChain(listOf(leaf, subSubSubCa, subSubCa, subCa, ca), trustAnchor)
         val chainWithRoot = AnchoredCertificateChain(listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRootCert), trustAnchor)
         val result = chain.validate(context)

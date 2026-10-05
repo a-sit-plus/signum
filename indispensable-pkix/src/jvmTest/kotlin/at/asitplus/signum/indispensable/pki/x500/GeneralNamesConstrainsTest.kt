@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.location
@@ -7,7 +8,7 @@ import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
-import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.attributes.*
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -19,7 +20,7 @@ import io.kotest.matchers.shouldBe
  */
 @OptIn(ExperimentalPkiApi::class)
 val GeneralNamesConstrainsTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     fun <T : GeneralName> testGeneralNameConstraints(
         name: String,

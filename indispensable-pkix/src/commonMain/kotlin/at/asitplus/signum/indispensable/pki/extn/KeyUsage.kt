@@ -20,13 +20,13 @@ class KeyUsage internal constructor(
         asn1Representation = Awesn1X509CertificateExtension(
             oid = KnownOIDs.keyUsage, critical = true,
             // extnValue is the DER of a BIT STRING (what fromAsn1Representation parses back) — NOT the
-            // raw BitSet bytes, which would fail to re-decode and silently fall back to generic.
+            // raw BitSet bytes, which would fail to re-decode.
             value = Asn1BitString(BitSet().apply { usageBits.forEach { this.set(it.index) } }).encodeToTlv().derEncoded
         ),
         keyUsage = usageBits.toSet()
     )
 
-    companion object : CertificateExtension.Descriptor, at.asitplus.awesn1.serialization.OidProvider<KeyUsage> , at.asitplus.signum.indispensable.Decodable<KeyUsage>{
+    companion object : CertificateExtension.Descriptor<KeyUsage>, at.asitplus.awesn1.serialization.OidProvider<KeyUsage>{
         override val oid get() = KnownOIDs.keyUsage
 
 

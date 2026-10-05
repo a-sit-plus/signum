@@ -1,8 +1,9 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.installIndispensable
 
 interface SignatureAlgorithm : Encodable {
 
@@ -18,7 +19,7 @@ interface SignatureAlgorithm : Encodable {
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
     companion object: Decodable<SignatureAlgorithm> {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
             replaceWith = ReplaceWith("EcdsaAlgorithm.withSHA256"))

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
@@ -60,7 +61,7 @@ val SignatureCodecTest  by matrixSuite {
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(DER.encodeToByteArray(EcdsaSignature.fromRawSignatureValue(sig)))
+                verify(Signum.Der.encodeToByteArray(EcdsaSignature.fromRawSignatureValue(sig)))
             }
 
         }
@@ -107,8 +108,8 @@ val SignatureCodecTest  by matrixSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            DER.encodeToByteArray(RsaSignature.fromRawSignatureValue(certificateHolder.signature)) shouldBe bcSig
-            DER.encodeToByteArray(signatureAlgorithm
+            Signum.Der.encodeToByteArray(RsaSignature.fromRawSignatureValue(certificateHolder.signature)) shouldBe bcSig
+            Signum.Der.encodeToByteArray(signatureAlgorithm
                 .parseJCASignature(certificateHolder.signature)) shouldBe bcSig
 
         }

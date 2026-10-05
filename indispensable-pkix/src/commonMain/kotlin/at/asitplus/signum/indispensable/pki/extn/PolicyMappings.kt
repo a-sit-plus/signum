@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.policyMappings
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import kotlinx.serialization.Serializable
@@ -29,18 +30,19 @@ class PolicyMappings internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.policyMappings,
             critical,
-            DER.encodeToByteArray(ListSerializer(CertificatePolicyMap.serializer()), policyMappings),
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(ListSerializer(CertificatePolicyMap.serializer()), policyMappings),
         ),
         policyMappings,
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<PolicyMappings>{
+    companion object : CertificateExtension.Descriptor<PolicyMappings>{
         override val oid get() = KnownOIDs.policyMappings
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): PolicyMappings {
-            val policyMappings = runCatching {
-                DER.decodeFromByteArray(ListSerializer(CertificatePolicyMap.serializer()), src.value)
-            }.getOrDefault(emptyList())
+            val policyMappings =
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                Signum.Der.decodeFromByteArray(ListSerializer(CertificatePolicyMap.serializer()), src.value)
             return PolicyMappings(src, policyMappings)
         }
     }

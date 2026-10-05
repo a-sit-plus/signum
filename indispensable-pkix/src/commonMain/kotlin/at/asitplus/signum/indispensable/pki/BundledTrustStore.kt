@@ -1,7 +1,8 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.decodeFromByteArray
 
 /**
@@ -31,6 +32,7 @@ import kotlinx.serialization.decodeFromByteArray
  */
 object BundledTrustStore : TrustStore {
     override val anchors: Set<TrustAnchor> by lazy {
-        bundledRoots.map { TrustAnchor.Certificate(DER.decodeFromByteArray<Certificate>(it.hexToByteArray())) }.toSet()
+        // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+        bundledRoots.map { TrustAnchor.Certificate(Signum.Der.decodeFromByteArray<Certificate>(it.hexToByteArray())) }.toSet()
     }
 }

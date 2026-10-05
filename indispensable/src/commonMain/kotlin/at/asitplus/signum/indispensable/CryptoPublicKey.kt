@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 
@@ -28,7 +28,7 @@ interface CryptoPublicKey : Encodable {
     val didKeyBytes: ByteArray
 
     companion object : Decodable<CryptoPublicKey> {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
 
         /**
          * Parses a DID representation of a public key and
@@ -43,7 +43,7 @@ interface CryptoPublicKey : Encodable {
             val (codec, codecLength) = UVarInt.fromByteArrayPermissive(decoded)
             val keyBytes = decoded.copyOfRange(codecLength, decoded.size)
 
-            return ServiceLoader.load<PublicKeyFormatProvider>().get(codec) {
+            return Signum.load<PublicKeyFormatProvider>().get(codec) {
                 decodeFromDidKey(it, keyBytes)
             }
         }

@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.pki
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import kotlinx.serialization.encodeToByteArray
@@ -27,7 +29,7 @@ private fun serializer() = X509GeneralNames.serializer()
 private fun List<GeneralName>.tags() = map { it.tag }
 
 val AlternativeNamesTest by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
 
     test("Generic and typed names agree on equality and hash codes") {
         val typed: GeneralName = DNSName(Asn1String.IA5("example.com"))
@@ -49,14 +51,14 @@ val AlternativeNamesTest by matrixSuite {
         )
 
         val built = AlternativeNames.fromGeneralNames(generalNames)
-        val encoded = built.let { DER.encodeToByteArray(it) }
-        val decoded = DER.decodeFromByteArray<AlternativeNames>(encoded)
+        val encoded = built.let { Signum.Der.encodeToByteArray(it) }
+        val decoded = Signum.Der.decodeFromByteArray<AlternativeNames>(encoded)
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.registeredID, X509GeneralName.Tags.directoryName,
         )
         (decoded.generalNames[2] as DirectoryName).name.toRfc2253String() shouldBe "cn=directory" // RFC 2253 canonical: type + value lower-cased
-        decoded.let { DER.encodeToByteArray(it) } shouldBe encoded
+        decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
     }
 
     test("asn1-built alternative names preserve original DER") {
@@ -66,18 +68,18 @@ val AlternativeNamesTest by matrixSuite {
             0x87.toByte(), 0x04, 0x7f, 0x00, 0x00, 0x01,                                            // [7] 127.0.0.1
             0x88.toByte(), 0x03, 0x2a, 0x03, 0x04,                                                  // [8] 1.2.3.4
         )
-        val decoded = DER.decodeFromTlv<AlternativeNames>(Asn1Element.parse(encoded))
+        val decoded = Signum.Der.decodeFromTlv<AlternativeNames>(Asn1Element.parse(encoded))
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.ipAddress, X509GeneralName.Tags.registeredID,
         )
-        decoded.let { DER.encodeToByteArray(it) } shouldBe encoded
+        decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
     }
 
     test("duplicate subject alternative name extension rejected") {
         val encoded = AlternativeNames
             .fromGeneralNames(listOf(DNSName(Asn1String.IA5("example.com"))))
-            .let { DER.encodeToByteArray(it) }
+            .let { Signum.Der.encodeToByteArray(it) }
         val extensions = listOf(
             CertificateExtension(KnownOIDs.subjectAltName_2_5_29_17, value = encoded),
             CertificateExtension(KnownOIDs.subjectAltName_2_5_29_17, value = encoded),

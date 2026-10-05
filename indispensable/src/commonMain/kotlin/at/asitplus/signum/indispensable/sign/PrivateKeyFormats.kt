@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable.sign
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
 
@@ -315,6 +317,12 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
     value.toAsn1Integer() as Asn1Integer.Positive
 
 object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
+    override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
+        is RsaPrivateKey -> Pkcs8PrivateKeyInfo.Companion(value.asPKCS1, value.attributes, Signum.Der)
+        is EcdsaPrivateKey -> Pkcs8PrivateKeyInfo.Companion(value.asSEC1, value.curveOidForPkcs8(), value.attributes, Signum.Der)
+        else -> null
+    }
+
     override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {

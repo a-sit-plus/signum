@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
 import kotlinx.serialization.encodeToByteArray
@@ -68,13 +69,13 @@ val X500AttributeRegistryTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue)
         )
-        val encoded = DER.encodeToByteArray(original)
-        val decoded = DER.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val encoded = Signum.Der.encodeToByteArray(original)
+        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
 
         attribute::class shouldBe BaseX509AttributeTypeAndValue::class
         attribute.value shouldBe nonCanonicalValue
-        DER.encodeToByteArray(decoded) shouldBe encoded
+        Signum.Der.encodeToByteArray(decoded) shouldBe encoded
     }
 
     "unknown dotted OID falls back to UTF8" {

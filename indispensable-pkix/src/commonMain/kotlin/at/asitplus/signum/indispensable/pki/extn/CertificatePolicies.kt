@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1String
@@ -8,7 +10,6 @@ import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.certificatePolicies_2_5_29_32
 import at.asitplus.awesn1.cps
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.unotice
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -40,18 +41,19 @@ class CertificatePolicies internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.certificatePolicies_2_5_29_32,
             critical,
-            DER.encodeToByteArray(ListSerializer(PolicyInformation.serializer()), certificatePolicies),
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(ListSerializer(PolicyInformation.serializer()), certificatePolicies),
         ),
         certificatePolicies,
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<CertificatePolicies>{
+    companion object : CertificateExtension.Descriptor<CertificatePolicies>{
         override val oid get() = KnownOIDs.certificatePolicies_2_5_29_32
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): CertificatePolicies {
-            val policies = runCatching {
-                DER.decodeFromByteArray(ListSerializer(PolicyInformation.serializer()), src.value)
-            }.getOrDefault(emptyList())
+            val policies =
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                Signum.Der.decodeFromByteArray(ListSerializer(PolicyInformation.serializer()), src.value)
             return CertificatePolicies(src, policies)
         }
     }
@@ -97,8 +99,10 @@ data class PolicyQualifierInfo(
         override fun deserialize(decoder: Decoder): PolicyQualifierInfo {
             val wire = decoder.decodeSerializableValue(Wire.serializer())
             val qualifier: Qualifier = when (wire.oid) {
-                KnownOIDs.cps -> Qualifier.CPSUri(DER.decodeFromTlv(Asn1String.IA5.serializer(), wire.qualifier))
-                KnownOIDs.unotice -> DER.decodeFromTlv(Qualifier.UserNotice.serializer(), wire.qualifier)
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                KnownOIDs.cps -> Qualifier.CPSUri(Signum.Der.decodeFromTlv(Asn1String.IA5.serializer(), wire.qualifier))
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                KnownOIDs.unotice -> Signum.Der.decodeFromTlv(Qualifier.UserNotice.serializer(), wire.qualifier)
                 else -> throw SerializationException("Unsupported PolicyQualifierInfo OID: ${wire.oid}")
             }
             return PolicyQualifierInfo(wire.oid, qualifier)
@@ -106,8 +110,10 @@ data class PolicyQualifierInfo(
 
         override fun serialize(encoder: Encoder, value: PolicyQualifierInfo) {
             val qualifierElement: Asn1Element = when (val q = value.qualifier) {
-                is Qualifier.CPSUri -> DER.encodeToTlv(Asn1String.IA5.serializer(), q.uri)
-                is Qualifier.UserNotice -> DER.encodeToTlv(Qualifier.UserNotice.serializer(), q)
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                is Qualifier.CPSUri -> Signum.Der.encodeToTlv(Asn1String.IA5.serializer(), q.uri)
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                is Qualifier.UserNotice -> Signum.Der.encodeToTlv(Qualifier.UserNotice.serializer(), q)
             }
             encoder.encodeSerializableValue(Wire.serializer(), Wire(value.oid, qualifierElement))
         }

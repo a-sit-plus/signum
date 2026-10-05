@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
@@ -20,11 +20,11 @@ interface CryptoPrivateKey : Encodable {
     val attributes: Set<Asn1Element>? get() = asn1Representation.attributes
 
     companion object : Decodable<CryptoPrivateKey> {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
 
         fun fromAsn1Representation(
             element: Pkcs8PrivateKeyInfo): CryptoPrivateKey =
-            ServiceLoader.load<PrivateKeyFormatProvider>()
+            Signum.load<PrivateKeyFormatProvider>()
                 .get(element, PrivateKeyFormatProvider::decodeFromAsn1)
 
         @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
@@ -32,7 +32,7 @@ interface CryptoPrivateKey : Encodable {
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 EcdsaPrivateKey.iosDecodeInternal(keyBytes)
             } else {
-                RsaPrivateKey.fromAsn1Representation(DER.decodeFromByteArray(Pkcs1RsaPrivateKeyInfo.serializer(), keyBytes))
+                RsaPrivateKey.fromAsn1Representation(Signum.Der.decodeFromByteArray(Pkcs1RsaPrivateKeyInfo.serializer(), keyBytes))
             }
 
     }
@@ -47,5 +47,8 @@ interface CryptoPrivateKey : Encodable {
 
 // @Service
 interface PrivateKeyFormatProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = null
+
     fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey?
 }

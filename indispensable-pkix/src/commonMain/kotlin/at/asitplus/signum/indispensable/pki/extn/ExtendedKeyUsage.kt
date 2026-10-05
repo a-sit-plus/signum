@@ -1,9 +1,10 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.extKeyUsage
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import kotlinx.serialization.builtins.ListSerializer
@@ -23,18 +24,20 @@ class ExtendedKeyUsage internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.extKeyUsage,
             critical,
-            DER.encodeToByteArray(ListSerializer(ObjectIdentifier.serializer()), keyUsages.toList()),
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(ListSerializer(ObjectIdentifier.serializer()), keyUsages.toList()),
         ),
         keyUsages,
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<ExtendedKeyUsage>{
+    companion object : CertificateExtension.Descriptor<ExtendedKeyUsage>{
         override val oid get() = KnownOIDs.extKeyUsage
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): ExtendedKeyUsage =
             ExtendedKeyUsage(
                 src,
-                DER.decodeFromByteArray(ListSerializer(ObjectIdentifier.serializer()), src.value).toSet(),
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                Signum.Der.decodeFromByteArray(ListSerializer(ObjectIdentifier.serializer()), src.value).toSet(),
             )
     }
 }

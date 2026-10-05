@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.*
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
@@ -15,8 +17,10 @@ import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 import kotlin.reflect.typeOf
 
-/** PEM framing around the same contextual DER encoding used for bytes, TLVs and streams. */
+/** PEM framing for Signum.Der; see docs/docs/default-der.md. */
 inline fun <reified T : Encodable> Der.encodeToPemBlock(value: T): PemBlock {
+    // Nested codecs use Signum.Der, so PEM must use that same instance (docs/docs/default-der.md).
+    require(this === Signum.Der) { "Use Signum.Der for Signum PEM serialization" }
     val model = when (value) {
         is Certificate -> value.asn1Representation
         is CertificationRequest -> value.asn1Representation
@@ -34,7 +38,11 @@ inline fun <reified T : Encodable> Der.encodeToPem(value: T): String = encodeToP
 inline fun <reified T : Encodable> Der.decodeFromPemBlock(
     source: PemBlock,
     limit: Long = source.payload.size.toLong(),
-): T = decodeSignumPem(T::class, configuration.serializersModule.serializer(typeOf<T>()) as KSerializer<T>, source, limit)
+): T {
+    // Nested codecs use Signum.Der, so PEM must use that same instance (docs/docs/default-der.md).
+    require(this === Signum.Der) { "Use Signum.Der for Signum PEM serialization" }
+    return decodeSignumPem(T::class, configuration.serializersModule.serializer(typeOf<T>()) as KSerializer<T>, source, limit)
+}
 
 inline fun <reified T : Encodable> Der.decodeFromPem(source: String, limit: Long? = null): T =
     PemBlock.decodeFromPem(source).let { decodeFromPemBlock(it, limit ?: it.payload.size.toLong()) }

@@ -3,15 +3,14 @@ package at.asitplus.signum.indispensable.pki.extn
 import at.asitplus.cidre.IpAddress
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.encoding.Asn1
-import at.asitplus.awesn1.serialization.Asn1Tag
-import kotlinx.serialization.Serializable
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
-import at.asitplus.signum.indispensable.pki.x500.GeneralNameSerializer
 import at.asitplus.signum.indispensable.pki.x500.constrains
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
 import at.asitplus.signum.indispensable.pki.x500.RFC822Name
@@ -20,46 +19,32 @@ import at.asitplus.signum.indispensable.pki.x500.X400AddressName
 import kotlinx.io.IOException
 
 
-/**
- * ```
- * GeneralSubtree ::= SEQUENCE {
- *   base     GeneralName,
- *   minimum  [0] BaseDistance DEFAULT 0,
- *   maximum  [1] BaseDistance OPTIONAL }
- * BaseDistance ::= INTEGER (0..MAX)
- * ```
- * `minimum`/`maximum` are IMPLICIT context-tagged INTEGERs. The declarative [Asn1Tag]s let the DER format
- * match them by tag *class* + number — the previous hand-rolled decode keyed on the tag value alone and
- * would have accepted, e.g., a UNIVERSAL tag 0/1 in their place.
- */
+/** A name subtree with semantic distance bounds, independent of its wire representation. */
 @ConsistentCopyVisibility
-@Serializable
-data class GeneralSubtree private constructor(
-    @Serializable(with = GeneralNameSerializer::class) val base: GeneralName,
-    @Asn1Tag(0u) private val taggedMinimum: Asn1Integer? = null,
-    @Asn1Tag(1u) private val taggedMaximum: Asn1Integer? = null,
-) {
-    /** Effective `minimum`, defaulting to 0 when absent per RFC 5280. */
-    val minimum: Asn1Integer get() = taggedMinimum ?: Asn1Integer(0)
+data class GeneralSubtree internal constructor(
+    val base: GeneralName,
+    val minimum: Asn1Integer,
+    val maximum: Asn1Integer?,
+    override val representations: Map<Encodable.Representation, Any>,
+) : Encodable {
+    constructor(
+        base: GeneralName,
+        minimum: Asn1Integer = Asn1Integer(0),
+        maximum: Asn1Integer? = null,
+    ) : this(base, minimum, maximum, emptyMap())
 
-    /** `maximum`, or `null` when the subtree imposes no upper bound. */
-    val maximum: Asn1Integer? get() = taggedMaximum
+    override fun equals(other: Any?): Boolean = this === other ||
+        other is GeneralSubtree && base == other.base && minimum == other.minimum && maximum == other.maximum
 
-    companion object {
-        // A factory (not a secondary constructor) because the tagged backing fields erase to the same
-        // JVM signature as (base, minimum, maximum). Call sites keep using GeneralSubtree(...) unchanged.
-        operator fun invoke(
-            base: GeneralName,
-            minimum: Asn1Integer = Asn1Integer(0),
-            maximum: Asn1Integer? = null,
-        ): GeneralSubtree = GeneralSubtree(base, minimum.takeIf { it != Asn1Integer(0) }, maximum)
-    }
+    override fun hashCode(): Int = 31 * (31 * base.hashCode() + minimum.hashCode()) + (maximum?.hashCode() ?: 0)
+
+    companion object : Decodable<GeneralSubtree>
 }
 
 /**
  * A `GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree` plus the RFC 5280 name-constraint
  * merge/minimize logic. (De)serialization is handled at the containing [NameConstraints] as a
- * `List<GeneralSubtree>` under its `[0]`/`[1]` field, so this type carries no ASN.1 (de)coding of its own.
+ * format-specific subtree wire model under its `[0]`/`[1]` fields.
  */
 class GeneralSubtrees(
     trees: List<GeneralSubtree>

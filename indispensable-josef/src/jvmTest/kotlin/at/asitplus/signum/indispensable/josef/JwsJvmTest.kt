@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.Supreme
+import at.asitplus.signum.supreme.installSupreme
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
@@ -17,7 +18,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import java.security.interfaces.ECPublicKey
 
-val none = Supreme.init()
+val none = Signum.installSupreme()
 val JwsJvmTest by matrixSuite {
 
     class Context {

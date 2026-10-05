@@ -1,6 +1,5 @@
-import at.asitplus.awesn1.serialization.DefaultDer
-import at.asitplus.signum.indispensable.signumAsn1Serializers
-import at.asitplus.signum.supreme.Supreme
+import at.asitplus.signum.Signum
+import at.asitplus.signum.supreme.installSupreme
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -11,6 +10,6 @@ class ModuleTestSession : TestSession(
         MatrixTestDefaults { execution = ExecutionMode.Concurrent(64) }
     }
 ) {
-    init { DefaultDer.register(signumAsn1Serializers) }
-    init { Supreme.init() }
+    init { Signum.Der }
+    init { Signum.installSupreme() }
 }

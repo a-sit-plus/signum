@@ -1,7 +1,8 @@
 package at.asitplus.signum
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.sign.asSEC1
 import at.asitplus.awesn1.serialization.encodeToPem
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 
@@ -33,8 +34,8 @@ val PemTest  by matrixSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val cert = DER.decodeFromPem<Certificate>(pemEC)
-        DER.encodeToPem(cert) shouldBe pemEC
+        val cert = Signum.Der.decodeFromPem<Certificate>(pemEC)
+        Signum.Der.encodeToPem(cert) shouldBe pemEC
         val pemRSA = """
             -----BEGIN CERTIFICATE-----
             MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
@@ -69,8 +70,8 @@ val PemTest  by matrixSuite {
             -----END CERTIFICATE-----
         """.trimIndent()
 
-        val certRSA = DER.decodeFromPem<Certificate>(pemRSA)
-        DER.encodeToPem(certRSA) shouldBe pemRSA
+        val certRSA = Signum.Der.decodeFromPem<Certificate>(pemRSA)
+        Signum.Der.encodeToPem(certRSA) shouldBe pemRSA
     }
 
     "EC Public Key" {
@@ -81,7 +82,7 @@ val PemTest  by matrixSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val key = DER.decodeFromPem<CryptoPublicKey>(pem)
+        val key = Signum.Der.decodeFromPem<CryptoPublicKey>(pem)
         key.shouldBeInstanceOf<EcdsaPublicKey>()
     }
     "CSR" {
@@ -94,7 +95,7 @@ val PemTest  by matrixSuite {
         -----END CERTIFICATE REQUEST-----
         """.trimIndent()
 
-        val csr = DER.decodeFromPem<CertificationRequest>(pem)
+        val csr = Signum.Der.decodeFromPem<CertificationRequest>(pem)
             .shouldBeInstanceOf<CertificationRequest>()
         csr.tbsCsr.publicKey.shouldBeInstanceOf<EcdsaPublicKey>()
     }
@@ -117,7 +118,7 @@ val PemTest  by matrixSuite {
             -----END PUBLIC KEY-----
         """.trimIndent()
 
-        val rsa = DER.decodeFromPem<CryptoPublicKey>(pem)
+        val rsa = Signum.Der.decodeFromPem<CryptoPublicKey>(pem)
         rsa.shouldBeInstanceOf<RsaPublicKey>()
 
         //the old test was borked and should never have worked
@@ -141,7 +142,7 @@ val PemTest  by matrixSuite {
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
-        DER.decodeFromPem<CryptoPublicKey>(pkcs1).shouldBeInstanceOf<RsaPublicKey>()
+        Signum.Der.decodeFromPem<CryptoPublicKey>(pkcs1).shouldBeInstanceOf<RsaPublicKey>()
     }
 
     val rnd = Random.nextBytes(35).toHexString() + "\n                  "
@@ -154,11 +155,11 @@ val PemTest  by matrixSuite {
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        DER.decodeFromPem<CryptoPrivateKey>(rnd + sec1).let {
+        Signum.Der.decodeFromPem<CryptoPrivateKey>(rnd + sec1).let {
             it.shouldBeInstanceOf<EcdsaPrivateKey>()
-            DER.decodeFromPem<EcdsaPrivateKey>(sec1) shouldBe it
+            Signum.Der.decodeFromPem<EcdsaPrivateKey>(sec1) shouldBe it
             kotlin.runCatching {
-                DER.decodeFromPem<RsaPrivateKey>(sec1)
+                Signum.Der.decodeFromPem<RsaPrivateKey>(sec1)
             }.isSuccess shouldBe false
 
             it.asSEC1.encodeToPem().lines() shouldBe sec1.lines()
@@ -174,12 +175,12 @@ val PemTest  by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        DER.decodeFromPem<CryptoPrivateKey>(rnd + pkcs8).let {
-            DER.decodeFromPem<EcdsaPrivateKey>(pkcs8) shouldBe it
+        Signum.Der.decodeFromPem<CryptoPrivateKey>(rnd + pkcs8).let {
+            Signum.Der.decodeFromPem<EcdsaPrivateKey>(pkcs8) shouldBe it
             kotlin.runCatching {
-                DER.decodeFromPem<RsaPrivateKey>(pkcs8)
+                Signum.Der.decodeFromPem<RsaPrivateKey>(pkcs8)
             }.isSuccess shouldBe false
-            DER.encodeToPem(it).lines() shouldBe pkcs8.lines()
+            Signum.Der.encodeToPem(it).lines() shouldBe pkcs8.lines()
         }
     }
 
@@ -518,7 +519,7 @@ val PemTest  by matrixSuite {
             """.trimIndent()
         )
         rsa.forEach {
-            DER.decodeFromPem<CryptoPrivateKey>(it)
+            Signum.Der.decodeFromPem<CryptoPrivateKey>(it)
         }
     }
 }

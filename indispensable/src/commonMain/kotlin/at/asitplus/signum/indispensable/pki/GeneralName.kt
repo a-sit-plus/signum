@@ -1,11 +1,11 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /** An encoding-independent RFC 5280/C509 `GeneralName`. */
 interface GeneralName : Encodable {
@@ -13,41 +13,14 @@ interface GeneralName : Encodable {
     /**
      * Describes a typed [GeneralName] `GeneralName` alternative and knows how to construct it from
      * its generic awesn1 [X509GeneralName] representation. Mirrors [CertificateExtension.Descriptor];
-     * register custom alternatives via [register].
+     * register custom alternatives via [Signum.register].
      */
-    interface Descriptor {
+    interface Descriptor<out T : GeneralName> : Decodable<T> {
         /** The CHOICE alternative this descriptor handles, e.g. [X509GeneralName.Tags.dnsName]. */
         val tag: Asn1Element.Tag
-        fun fromAsn1Representation(src: X509GeneralName): GeneralName
-        fun register(): Descriptor = Registry.register(this)
+        fun fromAsn1Representation(src: X509GeneralName): T
     }
 
-    /**
-     * Maps `GeneralName` CHOICE tags to their typed [Descriptor]s for the decode upgrade path.
-     *
-     * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
-     * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
-     * lookup — after that it is immutable and reads are lock-free; later [register] calls throw. This
-     * mirrors [CertificateExtension.Registry] and the `DefaultDer.register` contract.
-     */
-    @OptIn(ExperimentalAtomicApi::class)
-    object Registry {
-        private val descriptors = mutableMapOf<Asn1Element.Tag, Descriptor>()
-        private val sealed = AtomicReference<Map<Asn1Element.Tag, Descriptor>?>(null)
-
-        fun register(descriptor: Descriptor): Descriptor {
-            check(sealed.load() == null) {
-                "GeneralName registry is sealed; register before the first (de)serialization."
-            }
-            descriptors[descriptor.tag] = descriptor
-            return descriptor
-        }
-
-        fun descriptorFor(tag: Asn1Element.Tag): Descriptor? = view()[tag]
-
-        private fun view(): Map<Asn1Element.Tag, Descriptor> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
-    }
 
     companion object /*for extension functions and properties*/ {
         /**
@@ -57,7 +30,7 @@ interface GeneralName : Encodable {
          * alternative also fall back to the generic representation rather than throwing.
          */
         fun fromAsn1Representation(src: X509GeneralName): GeneralName =
-            Registry.descriptorFor(src.tag)?.let { descriptor ->
+            Signum.generalNameDescriptorFor(src.tag)?.let { descriptor ->
                 catchingUnwrapped { descriptor.fromAsn1Representation(src) }.getOrNull()
             } ?: BaseX509GeneralName(src)
 

@@ -1,9 +1,10 @@
 @file:OptIn(ExperimentalForeignApi::class)
 
 package at.asitplus.signum.indispensable
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.sign.asPKCS1
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation
-import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
 
@@ -145,7 +146,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
             }.getAndTake<String>(kSecAttrKeyType)
             val ctor = when (keyType) {
-                kSecAttrKeyTypeRSA.toKotlinString() -> RsaPublicKey::fromPKCS1encoded
+                kSecAttrKeyTypeRSA.toKotlinString() -> { bytes: ByteArray -> RsaPublicKey.fromPKCS1encoded(bytes) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() -> { bytes ->
                     EcdsaPublicKey.fromAnsiX963Bytes(
                         src = bytes,
@@ -166,7 +167,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 is EcdsaPrivateKey.WithPublicKey ->
                     Triple(kSecAttrKeyTypeECSECPrimeRandom, key.curve.coordinateLength.bits.toInt(), key.publicKey.iosEncoded+key.privateKeyBytes)
                 is RsaPrivateKey ->
-                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), DER.encodeToByteArray(key.asPKCS1))
+                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), Signum.Der.encodeToByteArray(key.asPKCS1))
                 else -> return null
             }
             val attr = createCFDictionary {
@@ -188,7 +189,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
             }.getAndTake<String>(kSecAttrKeyType)
             val ctor: ((ByteArray)-> CryptoPrivateKey.WithPublicKey) = when (keyType) {
                 kSecAttrKeyTypeRSA.toKotlinString() ->
-                    { bytes: ByteArray -> RsaPrivateKey.fromAsn1Representation(at.asitplus.awesn1.serialization.DER.decodeFromByteArray(at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.serializer(), bytes)) }
+                    { bytes: ByteArray -> RsaPrivateKey.fromAsn1Representation(Signum.Der.decodeFromByteArray(at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.serializer(), bytes)) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() ->
                     EcdsaPrivateKey::iosDecodeInternal
                 else -> return null

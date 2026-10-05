@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
 import kotlinx.serialization.encodeToByteArray
@@ -42,7 +43,7 @@ val X509CertParserTest by matrixSuite {
         //ok-uniqueid-incomplete-byte.der
         val derBytes =
             javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
-        DER.decodeFromByteArray<Certificate>(derBytes)
+        Signum.Der.decodeFromByteArray<Certificate>(derBytes)
 
         val garbage = Random.nextBytes(Random.nextInt(0..128))
         val input = (derBytes + garbage).wrapInUnsafeSource()
@@ -58,14 +59,14 @@ val X509CertParserTest by matrixSuite {
             val jcaCert = CertificateFactory.getInstance("X.509")
                 .generateCertificate(ByteArrayInputStream(certBytes)) as JcaCertificate
 
-            val cert = DER.decodeFromByteArray<Certificate>(certBytes)
+            val cert = Signum.Der.decodeFromByteArray<Certificate>(certBytes)
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
-                        "Actual: ${DER.encodeToByteArray(cert).encodeToString(Base16)}"
+                        "Actual: ${Signum.Der.encodeToByteArray(cert).encodeToString(Base16)}"
             ) {
-                DER.encodeToByteArray(cert) shouldBe jcaCert.encoded
+                Signum.Der.encodeToByteArray(cert) shouldBe jcaCert.encoded
 
-                cert shouldBe DER.decodeFromByteArray<Certificate>(certBytes)
+                cert shouldBe Signum.Der.decodeFromByteArray<Certificate>(certBytes)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (certBytes + garbage).wrapInUnsafeSource()
@@ -117,8 +118,8 @@ val X509CertParserTest by matrixSuite {
                 else name
             }
         }) test { crt ->
-            val parsed = DER.decodeFromTlv<Certificate>(Asn1Element.parse(crt.encoded) as Asn1Sequence)
-            val own = DER.encodeToByteArray(parsed)
+            val parsed = Signum.Der.decodeFromTlv<Certificate>(Asn1Element.parse(crt.encoded) as Asn1Sequence)
+            val own = Signum.Der.encodeToByteArray(parsed)
             withClue(
                 "Expect: ${kotlin.io.encoding.Base64.Mime.encode(crt.encoded)}\n" + "Actual: ${
                     kotlin.io.encoding.Base64.Mime.encode(
@@ -127,7 +128,7 @@ val X509CertParserTest by matrixSuite {
                 }"
             ) {
                 own shouldBe crt.encoded
-                parsed shouldBe DER.decodeFromByteArray<Certificate>(crt.encoded)
+                parsed shouldBe Signum.Der.decodeFromByteArray<Certificate>(crt.encoded)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val bytes = (crt.encoded + garbage).wrapInUnsafeSource()
@@ -148,11 +149,11 @@ val X509CertParserTest by matrixSuite {
                     .filterNot { it.first == "ok-inherited-keyparams.leaf.der"/*DSA not yet supported*/ },
                 nameFn = { it.first }) test {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
-                val decoded = DER.decodeFromTlv<Certificate>(src)
-                decoded shouldBe DER.decodeFromByteArray<Certificate>(it.second)
+                val decoded = Signum.Der.decodeFromTlv<Certificate>(src)
+                decoded shouldBe Signum.Der.decodeFromByteArray<Certificate>(it.second)
 
-                withClue(DER.encodeToPem(decoded)) {
-                    DER.encodeToByteArray(decoded) shouldBe it.second
+                withClue(Signum.Der.encodeToPem(decoded)) {
+                    Signum.Der.encodeToByteArray(decoded) shouldBe it.second
                 }
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
@@ -166,7 +167,7 @@ val X509CertParserTest by matrixSuite {
             data(faulty, nameFn = { it.first }) test { crt ->
                 runCatching {
                     shouldThrow<Throwable> {
-                        DER.decodeFromTlv<Certificate>(Asn1Element.parse(crt.second) as Asn1Sequence)
+                        Signum.Der.decodeFromTlv<Certificate>(Asn1Element.parse(crt.second) as Asn1Sequence)
                     }
                 }.getOrElse { println("W: ${crt.first} parsed too leniently") }
             }
@@ -191,10 +192,10 @@ val X509CertParserTest by matrixSuite {
                     .getInstance("X509")
                     .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
 
-                val cert = DER.decodeFromByteArray<Certificate>(encodedSrc)
+                val cert = Signum.Der.decodeFromByteArray<Certificate>(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
-                DER.encodeToTlv(cert).derEncoded shouldBe encodedSrc
+                Signum.Der.encodeToTlv(cert).derEncoded shouldBe encodedSrc
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
