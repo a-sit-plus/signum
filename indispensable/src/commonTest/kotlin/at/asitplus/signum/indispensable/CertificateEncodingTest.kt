@@ -1,4 +1,6 @@
 package at.asitplus.signum.indispensable
+
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
@@ -80,10 +82,10 @@ val CertificateEncodingTest by matrixSuite {
             subjectPublicKeyInfo = template.tbsCertificate.subjectPublicKeyInfo,
         )
         val original = X509Certificate(tbs, unknown, template.signatureValue)
-        val bytes = DER.encodeToTlv(original).derEncoded
+        val bytes = Signum.Der.encodeToTlv(original).derEncoded
         val decoded = certificateDer.decodeFromByteArray<Certificate>(bytes)
         certificateDer.encodeToByteArray(decoded) shouldBe bytes
-        certificateDer.encodeToByteArray(decoded.tbsCertificate) shouldBe DER.encodeToTlv(tbs).derEncoded
+        certificateDer.encodeToByteArray(decoded.tbsCertificate) shouldBe Signum.Der.encodeToTlv(tbs).derEncoded
         Certificate(original).asn1Representation shouldBeSameInstanceAs original
         shouldThrowAny { decoded.signatureAlgorithm }
     }
@@ -100,9 +102,9 @@ val CertificateEncodingTest by matrixSuite {
 
     "Existing PEM helpers use the certificate bridge and respect input limits" {
         val source = certificate()
-        val pem = certificateDer.encodeToPem(source)
-        DER.decodeFromPem<Certificate>(pem) shouldBe source
-        shouldThrowAny { DER.decodeFromPem<Certificate>(pem, limit = 1) }
+        val pem = Signum.Der.encodeToPem(source)
+        Signum.Der.decodeFromPem<Certificate>(pem) shouldBe source
+        shouldThrowAny { Signum.Der.decodeFromPem<Certificate>(pem, limit = 1) }
         shouldThrowAny { DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }.decodeFromPem<Certificate>(pem) }
     }
 }

@@ -1,9 +1,10 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.basicConstraints_2_5_29_19
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.toInt
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -31,7 +32,8 @@ class BasicConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.basicConstraints_2_5_29_19,
             critical,
-            DER.encodeToByteArray(
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(
                 BasicConstraintsBody.serializer(),
                 BasicConstraintsBody(
                     // DER: cA DEFAULT FALSE is omitted when false; pathLen only meaningful (and encoded) for a
@@ -45,11 +47,12 @@ class BasicConstraints internal constructor(
         pathLenConstraint,
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<BasicConstraints>{
+    companion object : CertificateExtension.Descriptor<BasicConstraints>{
         override val oid get() = KnownOIDs.basicConstraints_2_5_29_19
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): BasicConstraints {
-            val body = DER.decodeFromByteArray(BasicConstraintsBody.serializer(), src.value)
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            val body = Signum.Der.decodeFromByteArray(BasicConstraintsBody.serializer(), src.value)
             val ca = body.cA ?: false
             val pathLenConstraint = body.pathLenConstraint?.toInt()?.toUInt()
                 ?: if (ca) UInt.MAX_VALUE else null

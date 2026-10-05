@@ -1,17 +1,21 @@
 package at.asitplus.signum.indispensable.pki.extn
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.value
 import at.asitplus.signum.indispensable.pki.asn1Representation
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.serialization.Asn1Tag
-import at.asitplus.awesn1.serialization.DER
 import kotlinx.serialization.Serializable
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.Name
+import at.asitplus.signum.indispensable.pki.X509GeneralSubtree
+import at.asitplus.signum.indispensable.pki.fromAsn1Representation
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
@@ -44,9 +48,10 @@ class NameConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.nameConstraints_2_5_29_30,
             critical,
-            DER.encodeToByteArray(
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(
                 NameConstraintsBody.serializer(),
-                NameConstraintsBody(permitted?.trees, excluded?.trees),
+                NameConstraintsBody(permitted?.trees?.map { it.asn1Representation }, excluded?.trees?.map { it.asn1Representation }),
             ),
         ),
         permitted,
@@ -70,7 +75,7 @@ class NameConstraints internal constructor(
         allTrees.none { it.isInvalid() }
     }
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<NameConstraints>{
+    companion object : CertificateExtension.Descriptor<NameConstraints>{
         override val oid get() = KnownOIDs.nameConstraints_2_5_29_30
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): NameConstraints {
@@ -78,13 +83,13 @@ class NameConstraints internal constructor(
             // extensions this must eventually reject, not silently waive the constraint (RFC 5280
             // 4.2). PkixDerRegressionTest pins this with an active failing regression.
             // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2
-            val body = runCatching {
-                DER.decodeFromByteArray(NameConstraintsBody.serializer(), src.value)
-            }.getOrNull() ?: return NameConstraints(src)
+            val body =
+                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+                Signum.Der.decodeFromByteArray(NameConstraintsBody.serializer(), src.value)
             return NameConstraints(
                 src,
-                permitted = body.permitted?.let { GeneralSubtrees(it.toMutableList()) },
-                excluded = body.excluded?.let { GeneralSubtrees(it.toMutableList()) },
+                permitted = body.permitted?.let { GeneralSubtrees(it.map { subtree -> GeneralSubtree.fromAsn1Representation(subtree) }) },
+                excluded = body.excluded?.let { GeneralSubtrees(it.map { subtree -> GeneralSubtree.fromAsn1Representation(subtree) }) },
             )
         }
     }
@@ -243,6 +248,6 @@ class NameConstraints internal constructor(
  */
 @Serializable
 internal class NameConstraintsBody(
-    @Asn1Tag(0u) val permitted: List<GeneralSubtree>? = null,
-    @Asn1Tag(1u) val excluded: List<GeneralSubtree>? = null,
+    @Asn1Tag(0u) val permitted: List<X509GeneralSubtree>? = null,
+    @Asn1Tag(1u) val excluded: List<X509GeneralSubtree>? = null,
 )

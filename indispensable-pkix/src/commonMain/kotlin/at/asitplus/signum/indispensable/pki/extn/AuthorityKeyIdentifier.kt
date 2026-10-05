@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.authorityKeyIdentifier_2_5_29_35
 import at.asitplus.awesn1.serialization.Asn1Tag
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.GeneralName
@@ -32,7 +33,8 @@ class AuthorityKeyIdentifier internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.authorityKeyIdentifier_2_5_29_35,
             critical,
-            DER.encodeToByteArray(
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            Signum.Der.encodeToByteArray(
                 AuthorityKeyIdentifierBody.serializer(),
                 AuthorityKeyIdentifierBody(
                     keyIdentifier = keyIdentifier,
@@ -46,11 +48,12 @@ class AuthorityKeyIdentifier internal constructor(
         authorityCertSerialNumber?.encodeToTlv()?.content,
     )
 
-    companion object : CertificateExtension.Descriptor , at.asitplus.signum.indispensable.Decodable<AuthorityKeyIdentifier>{
+    companion object : CertificateExtension.Descriptor<AuthorityKeyIdentifier>{
         override val oid get() = KnownOIDs.authorityKeyIdentifier_2_5_29_35
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): AuthorityKeyIdentifier {
-            val body = DER.decodeFromByteArray(AuthorityKeyIdentifierBody.serializer(), src.value)
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            val body = Signum.Der.decodeFromByteArray(AuthorityKeyIdentifierBody.serializer(), src.value)
             return AuthorityKeyIdentifier(
                 src,
                 keyIdentifier = body.keyIdentifier,

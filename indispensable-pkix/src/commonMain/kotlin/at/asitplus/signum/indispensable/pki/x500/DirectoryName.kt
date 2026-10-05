@@ -44,7 +44,7 @@ class DirectoryName private constructor(
         }
     }
 
-    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<DirectoryName>{
+    companion object : Descriptor<DirectoryName>{
         override val tag = X509GeneralName.Tags.directoryName
 
         override fun fromAsn1Representation(src: X509GeneralName): DirectoryName {

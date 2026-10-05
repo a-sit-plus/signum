@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
@@ -46,17 +48,17 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
     "Contextual signature algorithms work through interface and concrete types" {
         for (source in EcdsaAlgorithm.entries + RsaAlgorithm.entries) {
             val algorithm: SignatureAlgorithm = source
-            val bytes = DER.encodeToByteArray(algorithm)
-            DER.decodeFromByteArray<SignatureAlgorithm>(bytes) shouldBe source
-            DER.decodeFromTlv<SignatureAlgorithm>(DER.encodeToTlv(algorithm)) shouldBe source
+            val bytes = Signum.Der.encodeToByteArray(algorithm)
+            Signum.Der.decodeFromByteArray<SignatureAlgorithm>(bytes) shouldBe source
+            Signum.Der.decodeFromTlv<SignatureAlgorithm>(Signum.Der.encodeToTlv(algorithm)) shouldBe source
             val sink = Buffer()
-            DER.encodeToSink(algorithm, sink)
-            DER.decodeFromSource<SignatureAlgorithm>(sink) shouldBe source
+            Signum.Der.encodeToSink(algorithm, sink)
+            Signum.Der.decodeFromSource<SignatureAlgorithm>(sink) shouldBe source
         }
         val ec = EcdsaAlgorithm.withSHA256
-        DER.decodeFromByteArray<EcdsaAlgorithm>(DER.encodeToByteArray(ec)) shouldBe ec
+        Signum.Der.decodeFromByteArray<EcdsaAlgorithm>(Signum.Der.encodeToByteArray(ec)) shouldBe ec
         val rsa = RsaAlgorithm.withSHA256andPSSPadding
-        DER.decodeFromByteArray<RsaAlgorithm>(DER.encodeToByteArray(rsa)) shouldBe rsa
+        Signum.Der.decodeFromByteArray<RsaAlgorithm>(Signum.Der.encodeToByteArray(rsa)) shouldBe rsa
     }
 
     "Absent RSA signature parameters survive structural and byte conversion" {
@@ -65,8 +67,8 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val algorithm = SignatureAlgorithm.fromAsn1Representation(original)
         algorithm.asn1Representation shouldBe original
         algorithm.representations[X509] shouldBe original
-        val bytes = DER.encodeToByteArray(original)
-        DER.encodeToByteArray(DER.decodeFromByteArray<SignatureAlgorithm>(bytes)) shouldBe bytes
+        val bytes = Signum.Der.encodeToByteArray(original)
+        Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<SignatureAlgorithm>(bytes)) shouldBe bytes
     }
 
     "Public key interface and concrete serializers preserve compressed SPKI" {
@@ -74,20 +76,20 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val original = SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Compressed(ec.curve.oid, ec.xBytes, true))
         val key: CryptoPublicKey = CryptoPublicKey.fromAsn1Representation(original)
         key.asn1Representation shouldBeSameInstanceAs original
-        val bytes = DER.encodeToByteArray(original)
-        DER.encodeToByteArray(key) shouldBe bytes
-        val decoded = DER.decodeFromByteArray<CryptoPublicKey>(bytes)
+        val bytes = Signum.Der.encodeToByteArray(original)
+        Signum.Der.encodeToByteArray(key) shouldBe bytes
+        val decoded = Signum.Der.decodeFromByteArray<CryptoPublicKey>(bytes)
         decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
-        DER.encodeToByteArray(decoded) shouldBe bytes
-        DER.encodeToByteArray(DER.decodeFromByteArray<EcdsaPublicKey>(bytes)) shouldBe bytes
-        DER.decodeFromByteArray<EcdsaPublicKey>(DER.encodeToByteArray(ec)) shouldBe ec
+        Signum.Der.encodeToByteArray(decoded) shouldBe bytes
+        Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<EcdsaPublicKey>(bytes)) shouldBe bytes
+        Signum.Der.decodeFromByteArray<EcdsaPublicKey>(Signum.Der.encodeToByteArray(ec)) shouldBe ec
         val buffer = Buffer()
-        DER.encodeToSink(key, buffer)
-        DER.encodeToByteArray(DER.decodeFromSource<CryptoPublicKey>(buffer)) shouldBe bytes
+        Signum.Der.encodeToSink(key, buffer)
+        Signum.Der.encodeToByteArray(Signum.Der.decodeFromSource<CryptoPublicKey>(buffer)) shouldBe bytes
         val rsa = RsaPublicKey(Asn1Integer.fromUnsignedByteArray(ByteArray(64).apply { this[0] = 0x80.toByte() }), Asn1Integer(65537))
-        DER.decodeFromByteArray<RsaPublicKey>(DER.encodeToByteArray(rsa)) shouldBe rsa
+        Signum.Der.decodeFromByteArray<RsaPublicKey>(Signum.Der.encodeToByteArray(rsa)) shouldBe rsa
         val rsaInterface: CryptoPublicKey = rsa
-        DER.decodeFromByteArray<CryptoPublicKey>(DER.encodeToByteArray(rsaInterface)) shouldBe rsa
+        Signum.Der.decodeFromByteArray<CryptoPublicKey>(Signum.Der.encodeToByteArray(rsaInterface)) shouldBe rsa
     }
 
     "Contextual registration and limits are local to a configured Der" {

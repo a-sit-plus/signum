@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.rsaPSS
@@ -18,18 +20,17 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.digest.Digest
 
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.installIndispensable
 
 /** Original model first; fresh values are converted only when X.509 is requested. */
 val SignatureAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = representations[X509] as? X509AlgorithmIdentifier ?: when (this) {
-        is EcdsaAlgorithm -> asn1Representation
-        is RsaAlgorithm -> asn1Representation
-        else -> throw UnsupportedCryptoException("No X.509 representation for ${this::class.simpleName}")
+    get() = representations[X509] as? X509AlgorithmIdentifier ?: run {
+        Signum.installIndispensable()
+        Signum.load<SignatureAlgorithmsProvider>().get(this, SignatureAlgorithmsProvider::encodeToAsn1)
     }
 
 fun SignatureAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): SignatureAlgorithm =
-    ServiceLoader.load<SignatureAlgorithmsProvider>().get(src, SignatureAlgorithmsProvider::getAlgorithm)
+    Signum.load<SignatureAlgorithmsProvider>().get(src, SignatureAlgorithmsProvider::getAlgorithm)
 
 operator fun SignatureAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): SignatureAlgorithm =
     fromAsn1Representation(src)
@@ -63,11 +64,15 @@ val RsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
             )
 
             is RsaAlgorithm.Parameters.PssPadded ->
-                X509AlgorithmIdentifier(currentParameters.asn1Representation)
+                // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+                X509AlgorithmIdentifier(currentParameters.asn1Representation, Signum.Der)
         }
     }
 
 interface SignatureAlgorithmsProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = null
+
     /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */
     fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
 }
@@ -91,7 +96,8 @@ fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier):
     RsaAlgorithm({
         val oid = src.oid
         if (oid == KnownOIDs.rsaPSS) {
-            RsaAlgorithm.Parameters.PssPadded(RsaSsaPssParams.of(src))
+            // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
+            RsaAlgorithm.Parameters.PssPadded(RsaSsaPssParams.of(src, Signum.Der))
         } else {
             when (oid) {
                 KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1

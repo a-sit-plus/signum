@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.signum.indispensable.pki.CertificateChainValidatorException
@@ -57,7 +58,7 @@ class ChainValidator: CertificateChainValidator {
         isLeaf: Boolean,
     ) {
         val verifier = cert.signatureAlgorithm.verifierFor(issuer.publicKey)
-        if (verifier.verify(DER.encodeToByteArray(cert.tbsCertificate), cert.signature) != SignatureVerifier.Success) {
+        if (verifier.verify(Signum.Der.encodeToByteArray(cert.tbsCertificate), cert.signature) != SignatureVerifier.Success) {
             throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
         }
     }

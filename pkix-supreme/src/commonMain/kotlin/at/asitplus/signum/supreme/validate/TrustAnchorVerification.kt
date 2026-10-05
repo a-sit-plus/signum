@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.encodeToByteArray
 
 import at.asitplus.catchingUnwrapped
@@ -28,7 +29,7 @@ suspend fun TrustAnchor.isIssuerOf(cert: X509Certificate): Boolean {
     val verifier = catchingUnwrapped {   cert.signatureAlgorithm.verifierFor(publicKey)}.getOrElse { return false }
 
     return verifier.verify(
-        DER.encodeToByteArray(cert.tbsCertificate),
+        Signum.Der.encodeToByteArray(cert.tbsCertificate),
         cert.signature
     ) == SignatureVerifier.Success
 }

@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.Supreme
+import at.asitplus.signum.supreme.installSupreme
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
@@ -17,7 +18,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.json.JsonElement
 import java.security.interfaces.RSAPublicKey
 
-val none_ = Supreme.init()
+val none_ = Signum.installSupreme()
 val JwsSignedTest  by matrixSuite {
 
     compact("JWS can be parsed and verified") - {

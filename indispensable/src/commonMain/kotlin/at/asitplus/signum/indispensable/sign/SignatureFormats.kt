@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.sign
 import kotlin.getValue
 import at.asitplus.signum.indispensable.Encodable
 
+import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
@@ -186,6 +187,12 @@ class RsaSignature internal constructor(
 }
 
 object IndispensableSignatureFormats : SignatureFormatProvider {
+    override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? = when (value) {
+        is EcdsaSignature -> at.asitplus.awesn1.crypto.EcdsaSigValue(value.r.toAsn1Integer(), value.s.toAsn1Integer()).toX509SignatureValue()
+        is RsaSignature -> X509SignatureValue(value.rawBytes)
+        else -> null
+    }
+
     override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
         is EcdsaAlgorithm -> {
             val parsedSig = EcdsaSignature.fromAsn1Representation(signature)

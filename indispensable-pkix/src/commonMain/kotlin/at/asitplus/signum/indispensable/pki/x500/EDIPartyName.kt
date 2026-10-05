@@ -22,7 +22,7 @@ class EDIPartyName private constructor(
 
     override fun toString(): String = ediParty.toString()
 
-    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<EDIPartyName>{
+    companion object : Descriptor<EDIPartyName>{
         override val tag = X509GeneralName.Tags.ediPartyName
         override fun fromAsn1Representation(src: X509GeneralName): EDIPartyName = EDIPartyName(src as X509GeneralName.EdiParty)
     }

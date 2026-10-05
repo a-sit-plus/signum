@@ -1,5 +1,10 @@
 package at.asitplus.signum.supreme.validate
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
+
+import at.asitplus.signum.indispensable.pki.TrustAnchor
+
+import at.asitplus.signum.indispensable.pki.installPkix
 
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.decodeFromPem
@@ -26,7 +31,7 @@ val json = Json { ignoreUnknownKeys = true }
  */
 @OptIn(ExperimentalPkiApi::class)
 val LimboRfc5280PathTests by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
     val suite = json.decodeFromString<LimboSuite>(resourceText("limbo.json"))
     val candidates = suite.testcases.filter {
         it.id.startsWith("rfc5280::") || it.id.startsWith("pathlen::") || it.id.startsWith("online::")
@@ -168,14 +173,14 @@ suspend fun validate(
     validatorFactory: ValidatorFactory = ValidatorFactory.RFC5280,
 ): CertificateValidationResult {
     val trustAnchors = testcase.trusted_certs.map { pem ->
-        TrustAnchor.Certificate(DER.decodeFromPem<X509Certificate>(pem))
+        TrustAnchor.Certificate(Signum.Der.decodeFromPem<X509Certificate>(pem))
     }
 
     val intermediates = testcase.untrusted_intermediates.map { pem ->
-        DER.decodeFromPem<X509Certificate>(pem)
+        Signum.Der.decodeFromPem<X509Certificate>(pem)
     }
 
-    val leaf = DER.decodeFromPem<X509Certificate>(testcase.peer_certificate)
+    val leaf = Signum.Der.decodeFromPem<X509Certificate>(testcase.peer_certificate)
 
     val chain = AnchoredCertificateChain((listOf(leaf) + intermediates.reversed()), trustAnchors.first())
     val validationTime = testcase.validation_time?.let(Instant::parse) ?: Instant.parse("2025-01-01T00:00:00Z")

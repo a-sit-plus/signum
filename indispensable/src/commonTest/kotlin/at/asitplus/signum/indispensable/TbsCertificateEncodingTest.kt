@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Time
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
@@ -80,7 +82,7 @@ val TbsCertificateEncodingTest by matrixSuite {
             subjectName = template.subjectName,
             subjectPublicKeyInfo = template.subjectPublicKeyInfo,
         )
-        val bytes = DER.encodeToTlv(original).derEncoded
+        val bytes = Signum.Der.encodeToTlv(original).derEncoded
         val decoded = tbsDer.decodeFromByteArray<TbsCertificate>(bytes)
         tbsDer.encodeToByteArray(decoded) shouldBe bytes
         shouldThrowAny { decoded.signatureAlgorithm }

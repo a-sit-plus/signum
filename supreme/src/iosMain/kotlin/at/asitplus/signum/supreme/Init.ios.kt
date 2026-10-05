@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme
 
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.digest.DigestOperationProvider
 import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import at.asitplus.signum.supreme.hash.SupremeIosDigestProvider
@@ -11,8 +11,8 @@ import at.asitplus.signum.supreme.sign.SupremeCCVerifierProvider
 import at.asitplus.signum.supreme.sign.SupremeIosInMemoryKeysProvider
 
 internal actual fun supremePlatformInit() {
-    ServiceLoader.register<DigestOperationProvider>(SupremeIosDigestProvider)
-    ServiceLoader.register<InMemoryKeysProvider>(SupremeIosInMemoryKeysProvider)
-    ServiceLoader.register<SignatureVerifierProvider>(SupremeCCVerifierProvider)
-    ServiceLoader.register<IosKeychainOperationsProvider>(SupremeIosKeychainOperationsProvider)
+    Signum.registerProvider<DigestOperationProvider>(SupremeIosDigestProvider)
+    Signum.registerProvider<InMemoryKeysProvider>(SupremeIosInMemoryKeysProvider)
+    Signum.registerProvider<SignatureVerifierProvider>(SupremeCCVerifierProvider)
+    Signum.registerProvider<IosKeychainOperationsProvider>(SupremeIosKeychainOperationsProvider)
 }

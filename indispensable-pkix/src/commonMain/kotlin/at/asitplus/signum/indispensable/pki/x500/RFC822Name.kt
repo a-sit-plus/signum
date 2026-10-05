@@ -70,7 +70,7 @@ class RFC822Name private constructor(
         }
     }
 
-    companion object : Descriptor , at.asitplus.signum.indispensable.Decodable<RFC822Name>{
+    companion object : Descriptor<RFC822Name>{
         override val tag = X509GeneralName.Tags.rfc822Name
         override fun fromAsn1Representation(src: X509GeneralName): RFC822Name =
             RFC822Name((src as X509GeneralName.Rfc822).rawValue, src)

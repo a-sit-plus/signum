@@ -4,10 +4,10 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.installIndispensable
 
 interface MessageAuthenticationCode : Encodable {
     /** output size of MAC */
@@ -34,17 +34,17 @@ interface MessageAuthenticationCode : Encodable {
     }
 
     companion object : Decodable<MessageAuthenticationCode> {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
 
         fun fromAsn1Representation(element: X509AlgorithmIdentifier): MessageAuthenticationCode = runRethrowing {
-            ServiceLoader.load<MessageAuthenticationCodeProvider>()
+            Signum.load<MessageAuthenticationCodeProvider>()
                 .get(element, MessageAuthenticationCodeProvider::getMAC)
         }
     }
 }
 
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray =
-    ServiceLoader.load<MessageAuthenticationCodeOperationProvider>()
+    Signum.load<MessageAuthenticationCodeOperationProvider>()
         .get(this@mac) { doMAC(it, key, msg) }
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = mac(key, sequenceOf(msg))
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = mac(key, msg.asSequence())
@@ -58,6 +58,9 @@ interface SpecializedMessageAuthenticationCode {
 
 // @Service
 interface MessageAuthenticationCodeProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? = null
+
     /** Parse a [MessageAuthenticationCode] from its [X509AlgorithmIdentifier] form */
     fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode?
 }

@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.os
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import kotlinx.serialization.decodeFromByteArray
 
 import android.annotation.SuppressLint
@@ -19,7 +20,6 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.nonFatalOrThrow
-import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
@@ -301,7 +301,7 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
+        val _ = Signum.load<AndroidKeyStoreOperationsProvider>().get(alias) {
             generateKeyPair(it, config)
         }
         return@withContext getSignerForKey(alias, config.signer.v)
@@ -331,7 +331,8 @@ object AndroidKeyStoreProvider:
         val publicKey: CryptoPublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-            catching { chain.map { DER.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
+            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
+            catching { chain.map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
                     publicKey = it.leaf.publicKey
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null
@@ -353,7 +354,7 @@ object AndroidKeyStoreProvider:
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
 
-        return@withContext ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
+        return@withContext Signum.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
             getAndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, it, attestation)
         }
     }

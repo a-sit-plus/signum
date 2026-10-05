@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.asymmetric
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.encodeToPem
 
@@ -57,11 +58,11 @@ class RsaTestData(
                 encoder: Encoder,
                 value: CryptoPrivateKey
             ) {
-                encoder.encodeString(DER.encodeToPem(value))
+                encoder.encodeString(Signum.Der.encodeToPem(value))
             }
 
             override fun deserialize(decoder: Decoder) =
-                DER.decodeFromPem<CryptoPrivateKey>(decoder.decodeString())
+                Signum.Der.decodeFromPem<CryptoPrivateKey>(decoder.decodeString())
         }
 
         object PaddingSerializer : KSerializer<RSAPadding> {

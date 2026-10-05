@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.asn1Representation
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation

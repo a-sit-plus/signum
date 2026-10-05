@@ -1,5 +1,6 @@
 package at.asitplus.signum
-import at.asitplus.awesn1.serialization.DER
+
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
@@ -37,7 +38,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "ZLL0a0t1JexOoqEvUORZXAFL\n" +
                 "-----END CERTIFICATE-----"
 
-        var cert = DER.decodeFromPem<Certificate>(sanRFC822namesPem)
+        var cert = Signum.Der.decodeFromPem<Certificate>(sanRFC822namesPem)
         var generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 5
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.rfc822Name }
@@ -65,7 +66,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "-----END CERTIFICATE-----"
 
         cert = shouldNotThrowAny {
-            DER.decodeFromPem<Certificate>(sanEmailDnsIpDirnameUriPem)
+            Signum.Der.decodeFromPem<Certificate>(sanEmailDnsIpDirnameUriPem)
         }
         println(cert.tbsCertificate.subjectAlternativeNames)
 
@@ -90,7 +91,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "+5nh4BPuL/buvsLb0SOoKbnHZZYyBKFcdIf6iejsHpZ0lYmeBRqf0HlLUva1zWoM\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<Certificate>(sanOtherName)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanOtherName)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.otherName }
@@ -113,7 +114,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "ZuIUw9ZOtEByVZgu6BY0xseGOTEhvA==\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<Certificate>(sanRegisteredIdPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanRegisteredIdPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.registeredID }
@@ -136,7 +137,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "y8yxbrI+KusEVq6eAo/xWN4aT9MxG3ZfxOYoajKotXurp1yhTBWNV8Lw8S0T5UWn\n" +
                 "AI2linN6ki9dRgpCZ0/74PlKkMcV9bdu\n" +
                 "-----END CERTIFICATE-----"
-        cert = DER.decodeFromPem<Certificate>(sanWildcardIdnaPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanWildcardIdnaPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
@@ -160,7 +161,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "jT8yAu85NvHtnHXYGl4nsE7/HndFZSU8GQHYsTAr1kJUfU3CZfoLSRvjlHnNFwWn\n" +
                 "ddn9wNOpNYiILGwg1FFtGUuqi9z/rZb3zZlA3g==\n" +
                 "-----END CERTIFICATE-----"
-        cert = DER.decodeFromPem<Certificate>(sanIdnaNamesPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanIdnaNamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.count { it.choiceTag() == X509GeneralName.Tags.dnsName } shouldBe 1
         generalNames?.count { it.choiceTag() == X509GeneralName.Tags.rfc822Name } shouldBe 1
@@ -183,7 +184,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "/WvYRvniEUYxGZ/q1fRmf+gGIacVTJtzpTxSDdSJugfhbm2wRQaXlSojRL+wO5Kg\n" +
                 "rDGwi9y5y+zWOFtQQCDEdhFLsw0ae3HPBQxxv85PzpuQD3EDgO0UolhAdZlIZg==\n" +
                 "-----END CERTIFICATE-----"
-        cert = DER.decodeFromPem<Certificate>(sanIdna2003DNSPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanIdna2003DNSPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.dnsName }
@@ -208,7 +209,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "ZLL0a0t1JexOoqEvUORZXAFL\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<Certificate>(sanRFC822NamesPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanRFC822NamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.rfc822Name }
 
@@ -232,7 +233,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "vpZ0upM8Tx81CkAGf/3m\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<Certificate>(sanURINamesPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanURINamesPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.uniformResourceIdentifier }
 
@@ -255,7 +256,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "fHN31Q==\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<Certificate>(sanIPAddrPem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanIPAddrPem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 2
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.ipAddress }
@@ -279,7 +280,7 @@ val GeneralNameDecodingTest by matrixSuite{
                 "LmOZzeKe+aDRDPoQSObFlOiHAxz/myd0QtWDYi8=\n" +
                 "-----END CERTIFICATE-----"
 
-        cert = DER.decodeFromPem<Certificate>(sanDirNamePem)
+        cert = Signum.Der.decodeFromPem<Certificate>(sanDirNamePem)
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.directoryName }
     }
