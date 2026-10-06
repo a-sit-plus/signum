@@ -32,18 +32,17 @@ private fun tbsCertificate(
     validFrom: Instant = Instant.fromEpochSeconds(1_700_000_000),
     subjectName: Name = X500Name.EMPTY,
 ) = TbsCertificate(
-    { TbsCertificate.ContentContainer(
-    serialNumber = Asn1Integer.ONE,
-    signatureAlgorithm = EcdsaAlgorithm.withSHA256,
-    issuerName = X500Name.EMPTY,
-    subjectName = subjectName,
-    validFrom = validFrom,
-    validUntil = Instant.fromEpochSeconds(1_800_000_000),
-    publicKey = ECCurve.SECP_256_R_1.generator.asPublicKey(),
-    issuerUniqueID = null,
-    subjectUniqueID = null,
-    extensions = emptyList(),
-    ) }, mapOf(ExtraRepresentation to "metadata"),
+    serialNumberProvider = { Asn1Integer.ONE },
+    signatureAlgorithmProvider = { EcdsaAlgorithm.withSHA256 },
+    issuerNameProvider = { X500Name.EMPTY },
+    subjectNameProvider = { subjectName },
+    validFromProvider = { validFrom },
+    validUntilProvider = { Instant.fromEpochSeconds(1_800_000_000) },
+    publicKeyProvider = { ECCurve.SECP_256_R_1.generator.asPublicKey() },
+    issuerUniqueIDProvider = { null },
+    subjectUniqueIDProvider = { null },
+    extensionsProvider = { emptyList() },
+    representations = mapOf(ExtraRepresentation to "metadata"),
 )
 
 private val tbsDer = DER { serializersModule = signumAsn1Serializers }
@@ -85,7 +84,12 @@ val TbsCertificateEncodingTest by matrixSuite {
         val bytes = Signum.Der.encodeToTlv(original).derEncoded
         val decoded = tbsDer.decodeFromByteArray<TbsCertificate>(bytes)
         tbsDer.encodeToByteArray(decoded) shouldBe bytes
+        decoded.serialNumber shouldBe original.serialNumber
+        decoded.validFrom shouldBe original.validity.validFrom.instant
+        decoded.subjectName shouldBe X500Name.EMPTY
+        decoded.publicKey shouldBe tbsCertificate().publicKey
         shouldThrowAny { decoded.signatureAlgorithm }
+        tbsDer.encodeToByteArray(decoded) shouldBe bytes
     }
 
     "Semantic precision and unsupported names are independent of DER" {

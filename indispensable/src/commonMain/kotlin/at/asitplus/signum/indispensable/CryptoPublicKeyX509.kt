@@ -37,26 +37,35 @@ interface PublicKeyFormatProvider {
     fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
 }
 
-fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): RsaPublicKey =
-    RsaPublicKey({
-        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-        RsaPublicKey.Content(Pkcs1RsaPublicKeyInfo.of(src, Signum.Der))
-    }, mapOf(X509 to src))
+fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): RsaPublicKey {
+    // Shared nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
+    val parsed by lazy { Pkcs1RsaPublicKeyInfo.of(src, Signum.Der) }
+    return RsaPublicKey(
+        nProvider = { parsed.modulus as Asn1Integer.Positive },
+        eProvider = { parsed.publicExponent as Asn1Integer.Positive },
+        representations = mapOf(X509 to src),
+    )
+}
 
 operator fun RsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): RsaPublicKey = fromAsn1Representation(src)
 
-fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): EcdsaPublicKey =
-    EcdsaPublicKey({
-        // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-        val parsed = Sec1EcPublicKeyInfo.of(src, Signum.Der)
-        val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
-            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
-        when (parsed) {
-            is Sec1EcPublicKeyInfo.Compressed ->
-                EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
-            is Sec1EcPublicKeyInfo.Uncompressed ->
-                EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
-        }.let { EcdsaPublicKey.Content(it.publicPoint, it.preferCompressedRepresentation) }
-    }, mapOf(X509 to src))
+fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): EcdsaPublicKey {
+    // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
+    val parsed by lazy { Sec1EcPublicKeyInfo.of(src, Signum.Der) }
+    return EcdsaPublicKey(
+        publicPointProvider = {
+            val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
+                ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
+            when (val point = parsed) {
+                is Sec1EcPublicKeyInfo.Compressed ->
+                    EcdsaPublicKey.fromCompressed(curve, point.x, point.positiveY)
+                is Sec1EcPublicKeyInfo.Uncompressed ->
+                    EcdsaPublicKey.fromUncompressed(curve, point.x, point.y)
+            }.publicPoint
+        },
+        preferCompressedRepresentationProvider = { parsed is Sec1EcPublicKeyInfo.Compressed },
+        representations = mapOf(X509 to src),
+    )
+}
 
 operator fun EcdsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): EcdsaPublicKey = fromAsn1Representation(src)

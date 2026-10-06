@@ -37,8 +37,7 @@ class PolicyConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.policyConstraints_2_5_29_36,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            Signum.Der.encodeToByteArray(
+                        Signum.Der.encodeToByteArray(
                 PolicyConstraintsBody.serializer(),
                 PolicyConstraintsBody(
                     requireExplicitPolicy?.let { Asn1Integer(it) },
@@ -54,8 +53,7 @@ class PolicyConstraints internal constructor(
         override val oid get() = KnownOIDs.policyConstraints_2_5_29_36
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): PolicyConstraints {
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            val body = Signum.Der.decodeFromByteArray(PolicyConstraintsBody.serializer(), src.value)
+                        val body = Signum.Der.decodeFromByteArray(PolicyConstraintsBody.serializer(), src.value)
             return PolicyConstraints(
                 src,
                 body.requireExplicitPolicy ?: Asn1Integer.fromDecimalString("-1"),

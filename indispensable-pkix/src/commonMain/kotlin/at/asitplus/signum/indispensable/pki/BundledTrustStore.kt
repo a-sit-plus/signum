@@ -32,7 +32,6 @@ import kotlinx.serialization.decodeFromByteArray
  */
 object BundledTrustStore : TrustStore {
     override val anchors: Set<TrustAnchor> by lazy {
-        // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-        bundledRoots.map { TrustAnchor.Certificate(Signum.Der.decodeFromByteArray<Certificate>(it.hexToByteArray())) }.toSet()
+                bundledRoots.map { TrustAnchor.Certificate(Signum.Der.decodeFromByteArray<Certificate>(it.hexToByteArray())) }.toSet()
     }
 }

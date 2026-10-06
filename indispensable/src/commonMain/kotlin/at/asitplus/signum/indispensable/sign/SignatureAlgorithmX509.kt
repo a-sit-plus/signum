@@ -78,17 +78,20 @@ interface SignatureAlgorithmsProvider {
 }
 
 fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): EcdsaAlgorithm =
-    EcdsaAlgorithm({
-        EcdsaAlgorithm.Params(when (src.oid) {
-            KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
-            KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
-            KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
-            KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
-            else -> throw IllegalArgumentException("Unsupported algorithm ${src.oid}")
-        }, null).also {
+    EcdsaAlgorithm(
+        digestProvider = {
             require(src.parameters == null)
-        }
-    }, mapOf(X509 to src))
+            when (src.oid) {
+                KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
+                KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
+                KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
+                KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
+                else -> throw IllegalArgumentException("Unsupported algorithm ${src.oid}")
+            }
+        },
+        requiredCurveProvider = { null },
+        representations = mapOf(X509 to src),
+    )
 
 operator fun EcdsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): EcdsaAlgorithm = fromAsn1Representation(src)
 

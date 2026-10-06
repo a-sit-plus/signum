@@ -32,8 +32,7 @@ class BasicConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.basicConstraints_2_5_29_19,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            Signum.Der.encodeToByteArray(
+                        Signum.Der.encodeToByteArray(
                 BasicConstraintsBody.serializer(),
                 BasicConstraintsBody(
                     // DER: cA DEFAULT FALSE is omitted when false; pathLen only meaningful (and encoded) for a
@@ -51,8 +50,7 @@ class BasicConstraints internal constructor(
         override val oid get() = KnownOIDs.basicConstraints_2_5_29_19
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): BasicConstraints {
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            val body = Signum.Der.decodeFromByteArray(BasicConstraintsBody.serializer(), src.value)
+                        val body = Signum.Der.decodeFromByteArray(BasicConstraintsBody.serializer(), src.value)
             val ca = body.cA ?: false
             val pathLenConstraint = body.pathLenConstraint?.toInt()?.toUInt()
                 ?: if (ca) UInt.MAX_VALUE else null

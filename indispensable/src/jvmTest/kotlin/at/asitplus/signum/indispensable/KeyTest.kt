@@ -10,6 +10,9 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
+import at.asitplus.signum.indispensable.sign.asPKCS1
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.toAsn1Integer
@@ -44,6 +47,17 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
         val native = KeyPairGenerator.getInstance("EC").apply { initialize(256) }.genKeyPair().private as JcaECPrivateKey
         val key: CryptoPrivateKey = native.toCryptoPrivateKey()
         key.toJcaPrivateKey().toCryptoPrivateKey() shouldBe key
+    }
+
+    "RSA CRT validation remains joint and deferred" {
+        val encoded = KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.genKeyPair().private.encoded
+        val valid = Signum.Der.decodeFromByteArray<RsaPrivateKey>(encoded).asPKCS1
+        val invalid = valid.copy(coefficient = valid.prime1)
+        val decoded = RsaPrivateKey.fromAsn1Representation(invalid)
+        decoded.asPKCS1 shouldBe invalid
+        shouldThrowAny { decoded.publicKey }
+        shouldThrowAny { decoded.privateKey }
+        decoded.asPKCS1 shouldBe invalid
     }
 
     compact("EC") - {

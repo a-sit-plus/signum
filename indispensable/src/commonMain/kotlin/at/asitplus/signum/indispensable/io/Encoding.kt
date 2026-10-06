@@ -112,12 +112,10 @@ object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certific
     decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
 )
 
-// Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
 private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = Signum.Der.encodeToByteArray(certificate)
 
 private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
-    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-    Certificate(Signum.Der.decodeFromDer<Awesn1X509Certificate>(src))
+        Certificate(Signum.Der.decodeFromDer<Awesn1X509Certificate>(src))
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
 object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(

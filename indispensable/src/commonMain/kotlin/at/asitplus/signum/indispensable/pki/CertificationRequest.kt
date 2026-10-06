@@ -19,22 +19,16 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * @param attributes nomen est omen
  */
 class TbsCertificationRequest internal constructor(
-    contentProvider: () -> ContentContainer,
+    subjectNameProvider: () -> Name,
+    publicKeyProvider: () -> CryptoPublicKey,
+    attributesProvider: () -> List<CsrAttribute>,
     override val representations: Map<Encodable.Representation, Any>,
 ) : Encodable {
-    private val content by lazy(contentProvider)
-
-    internal data class ContentContainer(
-        val subjectName: Name,
-        val publicKey: CryptoPublicKey,
-        val attributes: List<CsrAttribute>,
-    )
-
     constructor(
         subjectName: Name,
         publicKey: CryptoPublicKey,
         attributes: List<CsrAttribute> = listOf(),
-    ) : this({ ContentContainer(subjectName, publicKey, attributes) }, emptyMap()) {
+    ) : this({ subjectName }, { publicKey }, { attributes }, emptyMap()) {
         validateAttributes(attributes, allowExtensions = true)
     }
 
@@ -55,9 +49,9 @@ class TbsCertificationRequest internal constructor(
         attributes = mergeAttributesWithExtensions(attributesWithoutExtensions, extensions),
     )
 
-    val subjectName: Name get() = content.subjectName
-    val publicKey: CryptoPublicKey get() = content.publicKey
-    val attributes: List<CsrAttribute> get() = content.attributes
+    val subjectName: Name by lazy(subjectNameProvider)
+    val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
+    val attributes: List<CsrAttribute> by lazy(attributesProvider)
 
     val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID } }
 
@@ -66,8 +60,7 @@ class TbsCertificationRequest internal constructor(
             when (extensionAttributes.size) {
                 0 -> emptyList()
                 1 -> requireNotNull(extensionAttributes.single().asn1Representation).value.single().asSequence().map {
-                    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-                    CertificateExtension(Signum.Der.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
+                                        CertificateExtension(Signum.Der.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
                 }
 
                 else -> throw Asn1StructuralException("Multiple extensionRequest attributes found")
@@ -100,26 +93,20 @@ class TbsCertificationRequest internal constructor(
  * Very simple implementation of a PKCS#10 Certification Request.
  */
 class CertificationRequest internal constructor(
-    contentProvider: () -> ContentContainer,
+    tbsCsrProvider: () -> TbsCertificationRequest,
+    signatureAlgorithmProvider: () -> SignatureAlgorithm,
+    signatureProvider: () -> CryptoSignature,
     override val representations: Map<Encodable.Representation, Any>,
 ) : Encodable {
-    private val content by lazy(contentProvider)
-
-    internal data class ContentContainer(
-        val tbsCsr: TbsCertificationRequest,
-        val signatureAlgorithm: SignatureAlgorithm,
-        val signature: CryptoSignature,
-    )
-
     constructor(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: SignatureAlgorithm,
         signature: CryptoSignature,
-    ) : this({ ContentContainer(tbsCsr, signatureAlgorithm, signature) }, emptyMap())
+    ) : this({ tbsCsr }, { signatureAlgorithm }, { signature }, emptyMap())
 
-    val tbsCsr: TbsCertificationRequest get() = content.tbsCsr
-    val signatureAlgorithm: SignatureAlgorithm get() = content.signatureAlgorithm
-    val signature: CryptoSignature get() = content.signature
+    val tbsCsr: TbsCertificationRequest by lazy(tbsCsrProvider)
+    val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
+    val signature: CryptoSignature by lazy(signatureProvider)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

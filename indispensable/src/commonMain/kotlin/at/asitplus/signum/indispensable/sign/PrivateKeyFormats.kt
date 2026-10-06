@@ -31,44 +31,17 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
 class RsaPrivateKey internal constructor(
-    contentProvider: () -> ContentContainer,
+    publicKeyProvider: () -> RsaPublicKey,
+    privateKeyProvider: () -> BigInteger,
+    prime1Provider: () -> BigInteger,
+    prime2Provider: () -> BigInteger,
+    prime1exponentProvider: () -> BigInteger,
+    prime2exponentProvider: () -> BigInteger,
+    crtCoefficientProvider: () -> BigInteger,
+    otherPrimeInfosProvider: () -> List<PrimeInfo>?,
     override val representations: Map<Encodable.Representation, Any>,
     override val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
-
-    data class ContentContainer(
-        val publicKey: RsaPublicKey,
-        val privateKey: BigInteger,
-        val prime1: BigInteger,
-        val prime2: BigInteger,
-        val prime1exponent: BigInteger,
-        val prime2exponent: BigInteger,
-        val crtCoefficient: BigInteger,
-        val otherPrimeInfos: List<RsaPrivateKey.PrimeInfo>?,
-        val attributes: Set<Asn1Element>?,
-    ) {
-        init {
-            val n = publicKey.n.toBigInteger()
-            val e = publicKey.e.toBigInteger()
-            val primeInfo1 =
-                RsaPrivateKey.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
-            val primeInfo2 =
-                RsaPrivateKey.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
-
-            var product = BigInteger.ONE
-            (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
-                .forEachIndexed { i, info ->
-                    val pminusone = info.prime - BigInteger.ONE
-                    require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE) {
-                        "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i"
-                    }
-                    product *= info.prime
-                    require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
-                    require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
-                }
-            require(product == n) { "p1 * p2 * ... * pk != n" }
-        }
-    }
 
     constructor(
         publicKey: RsaPublicKey,
@@ -81,31 +54,66 @@ class RsaPrivateKey internal constructor(
         otherPrimeInfos: List<PrimeInfo>?,
         attributes: Set<Asn1Element>? = null,
     ) : this(
-        { ContentContainer(
-            publicKey = publicKey,
-            privateKey = privateKey,
-            prime1 = prime1,
-            prime2 = prime2,
-            prime1exponent = prime1exponent,
-            prime2exponent = prime2exponent,
-            crtCoefficient = crtCoefficient,
-            otherPrimeInfos = otherPrimeInfos,
-            attributes = attributes,
-        ) },
+        { publicKey },
+        { privateKey },
+        { prime1 },
+        { prime2 },
+        { prime1exponent },
+        { prime2exponent },
+        { crtCoefficient },
+        { otherPrimeInfos },
         emptyMap(),
         attributes,
     )
 
-    internal val content by lazy(contentProvider)
+    private val decodedPublicKey by lazy(publicKeyProvider)
+    private val decodedPrivateKey by lazy(privateKeyProvider)
+    private val decodedPrime1 by lazy(prime1Provider)
+    private val decodedPrime2 by lazy(prime2Provider)
+    private val decodedPrime1exponent by lazy(prime1exponentProvider)
+    private val decodedPrime2exponent by lazy(prime2exponentProvider)
+    private val decodedCrtCoefficient by lazy(crtCoefficientProvider)
+    private val decodedOtherPrimeInfos by lazy(otherPrimeInfosProvider)
 
-    override val publicKey: RsaPublicKey get() = content.publicKey
-    val privateKey: BigInteger get() = content.privateKey
-    val prime1: BigInteger get() = content.prime1
-    val prime2: BigInteger get() = content.prime2
-    val prime1exponent: BigInteger get() = content.prime1exponent
-    val prime2exponent: BigInteger get() = content.prime2exponent
-    val crtCoefficient: BigInteger get() = content.crtCoefficient
-    val otherPrimeInfos: List<PrimeInfo>? get() = content.otherPrimeInfos
+    // CRT checks cover the entire key and run once, on the first semantic access.
+    private val validated by lazy {
+        val publicKey = decodedPublicKey
+        val privateKey = decodedPrivateKey
+        val prime1 = decodedPrime1
+        val prime2 = decodedPrime2
+        val prime1exponent = decodedPrime1exponent
+        val prime2exponent = decodedPrime2exponent
+        val crtCoefficient = decodedCrtCoefficient
+        val otherPrimeInfos = decodedOtherPrimeInfos
+        val n = publicKey.n.toBigInteger()
+        val e = publicKey.e.toBigInteger()
+        val primeInfo1 =
+            RsaPrivateKey.PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
+        val primeInfo2 =
+            RsaPrivateKey.PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
+
+        var product = BigInteger.ONE
+        (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
+            .forEachIndexed { i, info ->
+                val pminusone = info.prime - BigInteger.ONE
+                require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE) {
+                    "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i"
+                }
+                product *= info.prime
+                require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
+                require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
+            }
+        require(product == n) { "p1 * p2 * ... * pk != n" }
+    }
+
+    override val publicKey: RsaPublicKey get() = validated.let { decodedPublicKey }
+    val privateKey: BigInteger get() = validated.let { decodedPrivateKey }
+    val prime1: BigInteger get() = validated.let { decodedPrime1 }
+    val prime2: BigInteger get() = validated.let { decodedPrime2 }
+    val prime1exponent: BigInteger get() = validated.let { decodedPrime1exponent }
+    val prime2exponent: BigInteger get() = validated.let { decodedPrime2exponent }
+    val crtCoefficient: BigInteger get() = validated.let { decodedCrtCoefficient }
+    val otherPrimeInfos: List<PrimeInfo>? get() = validated.let { decodedOtherPrimeInfos }
 
     override fun equals(other: Any?): Boolean {
         if (other !is RsaPrivateKey) return false
@@ -138,24 +146,12 @@ class RsaPrivateKey internal constructor(
 }
 
 sealed class EcdsaPrivateKey private constructor(
-    contentProvider: () -> ContentContainer,
+    privateKeyProvider: () -> BigInteger,
     override val representations: Map<Encodable.Representation, Any>,
     override val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey {
 
-    data class ContentContainer(
-        val privateKey: BigInteger,
-        val publicKey: EcdsaPublicKey?,
-        val publicKeyBytes: Asn1BitString?,
-        val encodeCurve: Boolean,
-        val encodePublicKey: Boolean,
-        val curveOrderLengthInBytes: Int,
-        val attributes: Set<Asn1Element>?,
-    )
-
-    internal val content by lazy(contentProvider)
-
-    val privateKey: BigInteger get() = content.privateKey
+    val privateKey by lazy(privateKeyProvider)
     abstract val privateKeyBytes: ByteArray
 
     override fun equals(other: Any?): Boolean {
@@ -166,10 +162,13 @@ sealed class EcdsaPrivateKey private constructor(
     override fun hashCode() = privateKey.hashCode()
 
     class WithPublicKey internal constructor(
-        contentProvider: () -> ContentContainer,
+        privateKeyProvider: () -> BigInteger,
+        publicKeyProvider: () -> EcdsaPublicKey,
+        encodeCurveProvider: () -> Boolean,
+        encodePublicKeyProvider: () -> Boolean,
         representations: Map<Encodable.Representation, Any>,
         attributes: Set<Asn1Element>?,
-    ) : EcdsaPrivateKey(contentProvider, representations, attributes),
+    ) : EcdsaPrivateKey(privateKeyProvider, representations, attributes),
         CryptoPrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
@@ -180,17 +179,8 @@ sealed class EcdsaPrivateKey private constructor(
             encodePublicKey: Boolean,
             attributes: Set<Asn1Element>? = null,
         ) : this(
-            { ContentContainer(
-                privateKey = privateKey,
-                publicKey = publicKey,
-                publicKeyBytes = null,
-                encodeCurve = encodeCurve,
-                encodePublicKey = encodePublicKey,
-                curveOrderLengthInBytes = publicKey.curve.scalarLength.bytes.toInt(),
-                attributes = attributes,
-            ) },
-            emptyMap(),
-            attributes,
+            { privateKey }, { publicKey }, { encodeCurve }, { encodePublicKey },
+            emptyMap(), attributes,
         ) {
             require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
                 "Public key must match the private key!"
@@ -211,13 +201,11 @@ sealed class EcdsaPrivateKey private constructor(
             attributes,
         )
 
-        override val publicKey: EcdsaPublicKey by lazy {
-            requireNotNull(content.publicKey) { "EC private key has no public key or curve" }
-        }
+        override val publicKey by lazy(publicKeyProvider)
 
         val curve: ECCurve get() = publicKey.curve
-        val encodeCurve: Boolean get() = content.encodeCurve
-        val encodePublicKey: Boolean get() = content.encodePublicKey
+        val encodeCurve by lazy(encodeCurveProvider)
+        val encodePublicKey by lazy(encodePublicKeyProvider)
 
         override val privateKeyBytes: ByteArray
             get() = privateKey.toByteArray().ensureSize(curve.scalarLength.bytes)
@@ -228,10 +216,12 @@ sealed class EcdsaPrivateKey private constructor(
     }
 
     class WithoutPublicKey internal constructor(
-        contentProvider: () -> ContentContainer,
+        privateKeyProvider: () -> BigInteger,
+        publicKeyBytesProvider: () -> Asn1BitString?,
+        curveOrderLengthInBytesProvider: () -> Int,
         representations: Map<Encodable.Representation, Any>,
         attributes: Set<Asn1Element>?,
-    ) : EcdsaPrivateKey(contentProvider, representations, attributes) {
+    ) : EcdsaPrivateKey(privateKeyProvider, representations, attributes) {
 
         constructor(
             privateKey: BigInteger,
@@ -239,22 +229,13 @@ sealed class EcdsaPrivateKey private constructor(
             attributes: Set<Asn1Element>? = null,
             curveOrderLengthInBytes: Int,
         ) : this(
-            { ContentContainer(
-                privateKey = privateKey,
-                publicKey = null,
-                publicKeyBytes = publicKeyBytes,
-                encodeCurve = false,
-                encodePublicKey = publicKeyBytes != null,
-                curveOrderLengthInBytes = curveOrderLengthInBytes,
-                attributes = attributes,
-            ) },
-            emptyMap(),
-            attributes,
+            { privateKey }, { publicKeyBytes }, { curveOrderLengthInBytes },
+            emptyMap(), attributes,
         )
 
-        val publicKeyBytes: Asn1BitString? get() = content.publicKeyBytes
+        val publicKeyBytes by lazy(publicKeyBytesProvider)
 
-        private val curveOrderLengthInBytes: Int get() = content.curveOrderLengthInBytes
+        private val curveOrderLengthInBytes by lazy(curveOrderLengthInBytesProvider)
 
         fun withCurve(
             curve: ECCurve,

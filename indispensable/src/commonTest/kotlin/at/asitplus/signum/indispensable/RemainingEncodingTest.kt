@@ -1,8 +1,15 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.RsaSsaPssParams
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.awesn1.Asn1OctetString
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
+import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
@@ -35,6 +42,8 @@ val RemainingEncodingTest by matrixSuite {
         raw.withSignatureAlgorithm(RsaAlgorithm.withSHA256andPKCS1Padding) shouldBe rsa
         shouldThrowAny { der.decodeFromByteArray<CryptoSignature>(bytes) }
 
+        shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ZERO, BigInteger.ONE).r }
+        shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.ZERO).s }
         val ec = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
         val ecBytes = der.encodeToByteArray(ec)
         der.encodeToByteArray(der.decodeFromByteArray<EcdsaSignature>(ecBytes)) shouldBe ecBytes
@@ -82,7 +91,24 @@ val RemainingEncodingTest by matrixSuite {
         val originalBytes = der.encodeToByteArray(Pkcs10CertificationRequest.serializer(), unknownAlgorithm)
         val opaque = der.decodeFromByteArray<CertificationRequest>(originalBytes)
         der.encodeToByteArray(opaque) shouldBe originalBytes
+        opaque.tbsCsr.subjectName shouldBe X500Name.EMPTY
+        opaque.tbsCsr.publicKey shouldBe key
+        der.encodeToByteArray(opaque.tbsCsr) shouldBe der.encodeToByteArray(encodable.tbsCsr)
         shouldThrowAny { opaque.signatureAlgorithm }
+        shouldThrowAny { opaque.signature }
+        der.encodeToByteArray(opaque) shouldBe originalBytes
+
+        val unknownKey = Pkcs10CertificationRequestInfo(
+            subjectName = model.certificationRequestInfo.subjectName,
+            publicKey = model.certificationRequestInfo.publicKey.copy(
+                algorithmIdentifier = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null),
+            ),
+        )
+        val opaqueTbs = TbsCertificationRequest.fromAsn1Representation(unknownKey)
+        opaqueTbs.subjectName shouldBe X500Name.EMPTY
+        opaqueTbs.attributes shouldBe emptyList()
+        shouldThrowAny { opaqueTbs.publicKey }
+        opaqueTbs.asn1Representation shouldBeSameInstanceAs unknownKey
     }
 
     "Alternative names compare their contents without encoding them" {
@@ -144,6 +170,41 @@ val RemainingEncodingTest by matrixSuite {
         ) shouldBe params
         val mgf = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(Digest.SHA256)
         der.decodeFromByteArray<RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1>(der.encodeToByteArray(mgf)) shouldBe mgf
+    }
+
+    "PSS properties are independent of unsupported digest and MGF identifiers" {
+        val unknown = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null)
+        val original = RsaSsaPssParams(hashAlgorithm = unknown, maskGenAlgorithm = unknown, saltLength = 42)
+        val decoded = RsaAlgorithm.Parameters.PssPadded.fromAsn1Representation(original)
+        decoded.saltLength shouldBe 42u
+        decoded.trailerField shouldBe 1
+        shouldThrowAny { decoded.digest }
+        shouldThrowAny { decoded.mgfAlgorithm }
+        decoded.asn1Representation shouldBeSameInstanceAs original
+        der.encodeToByteArray(decoded) shouldBe der.encodeToByteArray(original)
+    }
+
+    "EC private scalar and retained representations do not require a supported curve" {
+        val unknownCurve = ObjectIdentifier("1.2.3.4")
+        val original = Sec1EcPrivateKeyInfo(
+            privateKey = ByteArray(32).apply { this[lastIndex] = 1 },
+            parameters = unknownCurve, publicKey = null,
+        )
+        val decoded = EcdsaPrivateKey.fromAsn1Representation(original) as EcdsaPrivateKey.WithPublicKey
+        decoded.privateKey shouldBe BigInteger.ONE
+        decoded.encodeCurve shouldBe true
+        decoded.encodePublicKey shouldBe false
+        shouldThrowAny { decoded.publicKey }
+        decoded.asSEC1 shouldBeSameInstanceAs original
+
+        val pkcs8 = Pkcs8PrivateKeyInfo(
+            privateKeyAlgorithm = X509AlgorithmIdentifier(KnownOIDs.ecPublicKey, der.encodeToTlv(unknownCurve)),
+            privateKey = Asn1OctetString(der.encodeToByteArray(original)),
+        )
+        val fromPkcs8 = EcdsaPrivateKey.fromAsn1Representation(pkcs8) as EcdsaPrivateKey.WithPublicKey
+        fromPkcs8.privateKey shouldBe BigInteger.ONE
+        shouldThrowAny { fromPkcs8.curve }
+        der.encodeToByteArray(fromPkcs8) shouldBe der.encodeToByteArray(pkcs8)
     }
 
     "Encoding independent names have no X509 marker and fail only when encoding is requested" {

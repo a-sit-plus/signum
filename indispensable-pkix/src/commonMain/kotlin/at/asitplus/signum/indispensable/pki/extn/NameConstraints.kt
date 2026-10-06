@@ -1,28 +1,12 @@
 package at.asitplus.signum.indispensable.pki.extn
 
-import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.value
-import at.asitplus.signum.indispensable.pki.asn1Representation
-
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.serialization.Asn1Tag
-import kotlinx.serialization.Serializable
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.CertificateExtension
-import at.asitplus.signum.indispensable.pki.X509CertificateExtension
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.Name
-import at.asitplus.signum.indispensable.pki.X509GeneralSubtree
-import at.asitplus.signum.indispensable.pki.fromAsn1Representation
-import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.pki.x500.DNSName
-import at.asitplus.signum.indispensable.pki.x500.DirectoryName
-import at.asitplus.signum.indispensable.pki.x500.IPAddressName
-import at.asitplus.signum.indispensable.pki.x500.RFC822Name
-import at.asitplus.signum.indispensable.pki.x500.constrains
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.pki.x500.*
 import kotlinx.io.IOException
+import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 /**
@@ -49,10 +33,11 @@ class NameConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.nameConstraints_2_5_29_30,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
             Signum.Der.encodeToByteArray(
                 NameConstraintsBody.serializer(),
-                NameConstraintsBody(permitted?.trees?.map { it.asn1Representation }, excluded?.trees?.map { it.asn1Representation }),
+                NameConstraintsBody(
+                    permitted?.trees?.map { it.asn1Representation },
+                    excluded?.trees?.map { it.asn1Representation }),
             ),
         ),
         permitted,
@@ -60,7 +45,7 @@ class NameConstraints internal constructor(
     )
 
     /** Indicates whether the NameConstraints extension contains only valid general names in both the permitted and excluded subtrees. */
-    val isValid : Boolean by lazy {
+    val isValid: Boolean by lazy {
         fun GeneralSubtree.isInvalid(): Boolean {
             val name = base
             if (name.isValid == false) return true
@@ -72,17 +57,28 @@ class NameConstraints internal constructor(
         allTrees.none { it.isInvalid() }
     }
 
-    companion object : CertificateExtension.Descriptor<NameConstraints>{
+    companion object : CertificateExtension.Descriptor<NameConstraints> {
         override val oid get() = KnownOIDs.nameConstraints_2_5_29_30
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): NameConstraints {
             val body =
-                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
                 Signum.Der.decodeFromByteArray(NameConstraintsBody.serializer(), src.value)
             return NameConstraints(
                 src,
-                permitted = body.permitted?.let { GeneralSubtrees(it.map { subtree -> GeneralSubtree.fromAsn1Representation(subtree) }) },
-                excluded = body.excluded?.let { GeneralSubtrees(it.map { subtree -> GeneralSubtree.fromAsn1Representation(subtree) }) },
+                permitted = body.permitted?.let {
+                    GeneralSubtrees(it.map { subtree ->
+                        GeneralSubtree.fromAsn1Representation(
+                            subtree
+                        )
+                    })
+                },
+                excluded = body.excluded?.let {
+                    GeneralSubtrees(it.map { subtree ->
+                        GeneralSubtree.fromAsn1Representation(
+                            subtree
+                        )
+                    })
+                },
             )
         }
     }
@@ -148,7 +144,10 @@ class NameConstraints internal constructor(
                 .flatMap { it.attrsAndValues }
                 .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
-                    val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
+                    val str =
+                        ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let {
+                            Asn1String.decodeFromTlv(it)
+                        }?.value
                     str?.let {
                         runCatching {
                             RFC822Name(Asn1String.IA5(it))
@@ -170,7 +169,8 @@ class NameConstraints internal constructor(
                 val alreadyPresent =
                     if (isIp) alternativeNames.any { it is IPAddressName } else alternativeNames.any { it is DNSName }
                 if (!alreadyPresent) {
-                    val generalName = if (isIp) IPAddressName.fromString(cnValue.value) else DNSName(Asn1String.IA5(cnValue.value))
+                    val generalName =
+                        if (isIp) IPAddressName.fromString(cnValue.value) else DNSName(Asn1String.IA5(cnValue.value))
                     alternativeNames.add(generalName)
                 }
             } catch (_: Throwable) {
@@ -205,6 +205,7 @@ class NameConstraints internal constructor(
                 when (excludedName.constrains(name)) {
                     GeneralName.ConstraintResult.MATCH,
                     GeneralName.ConstraintResult.WIDENS -> return false
+
                     GeneralName.ConstraintResult.DIFF_TYPE,
                     GeneralName.ConstraintResult.NARROWS,
                     GeneralName.ConstraintResult.SAME_TYPE -> continue
@@ -266,5 +267,4 @@ private class NameConstraintsBody(
 private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue? =
     relativeDistinguishedNames.asReversed()
         .flatMap { it.attrsAndValues }
-        .filterIsInstance<AttributeTypeAndValue>()
         .firstOrNull { it.oid == AttributeTypeAndValue.Descriptor.OID.commonName }
