@@ -226,14 +226,6 @@ material.
 Parsing and re-encoding an X.509 certificate works as follows:
 
 ```kotlin
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.DefaultDer
-import at.asitplus.signum.indispensable.signumX509Serializers
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 DefaultDer.register(signumX509Serializers) // once at application startup
 val cert = DER.decodeFromByteArray<Certificate>(certBytes)
