@@ -37,20 +37,20 @@ val TbsCertificate.asn1Representation: X509TbsCertificate
 operator fun TbsCertificate.Companion.invoke(src: X509TbsCertificate): TbsCertificate =
     fromAsn1Representation(src)
 
-/** Retains the original model; interpretation is deferred until semantic access. */
+/** Retains the original model; algorithm and public-key interpretation are deferred until access. */
 fun TbsCertificate.Companion.fromAsn1Representation(
     src: X509TbsCertificate,
 ): TbsCertificate =
     TbsCertificate(
-        serialNumberProvider = { src.serialNumber },
+        serialNumber = src.serialNumber,
         signatureAlgorithmProvider = { SignatureAlgorithm.fromAsn1Representation(src.signatureAlgorithm) },
-        issuerNameProvider = { X500Name(src.issuerName.map { RelativeDistinguishedName(it) }, false) },
-        validFromProvider = { src.validity.validFrom.instant },
-        validUntilProvider = { src.validity.validUntil.instant },
-        subjectNameProvider = { X500Name(src.subjectName.map { RelativeDistinguishedName(it) }, false) },
+        issuerName = X500Name(src.issuerName.map { RelativeDistinguishedName(it) }, false),
+        validFrom = src.validity.validFrom.instant,
+        validUntil = src.validity.validUntil.instant,
+        subjectName = X500Name(src.subjectName.map { RelativeDistinguishedName(it) }, false),
         publicKeyProvider = { CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo) },
-        issuerUniqueIDProvider = { src.issuerUniqueID?.toLsb0ByteArray() },
-        subjectUniqueIDProvider = { src.subjectUniqueID?.toLsb0ByteArray() },
-        extensionsProvider = { src.extensions?.map { CertificateExtension(it) }.orEmpty() },
+        issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
+        subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
+        extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
         representations = mapOf(X509 to src),
     )
