@@ -26,7 +26,7 @@ fun Certificate.Companion.fromAsn1Representation(src: X509Certificate): Certific
         "Multiple extensions with the same OID found"
     }
     return Certificate(
-        { TbsCertificate.fromAsn1Representation(src.tbsCertificate) },
+        TbsCertificate.fromAsn1Representation(src.tbsCertificate),
         { CryptoSignature(src.signatureAlgorithm, src.signatureValue) },
         mapOf(X509 to src),
     )

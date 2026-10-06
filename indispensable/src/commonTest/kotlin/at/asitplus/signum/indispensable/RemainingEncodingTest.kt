@@ -42,8 +42,8 @@ val RemainingEncodingTest by matrixSuite {
         raw.withSignatureAlgorithm(RsaAlgorithm.withSHA256andPKCS1Padding) shouldBe rsa
         shouldThrowAny { der.decodeFromByteArray<CryptoSignature>(bytes) }
 
-        shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ZERO, BigInteger.ONE).r }
-        shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.ZERO).s }
+        shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ZERO, BigInteger.ONE) }
+        shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.ZERO) }
         val ec = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
         val ecBytes = der.encodeToByteArray(ec)
         der.encodeToByteArray(der.decodeFromByteArray<EcdsaSignature>(ecBytes)) shouldBe ecBytes
