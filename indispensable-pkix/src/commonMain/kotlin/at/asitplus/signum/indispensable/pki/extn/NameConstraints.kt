@@ -1,10 +1,5 @@
 package at.asitplus.signum.indispensable.pki.extn
 
-import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.value
-import at.asitplus.signum.indispensable.pki.asn1Representation
-
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.serialization.Asn1Tag
 import kotlinx.serialization.Serializable
@@ -21,7 +16,11 @@ import at.asitplus.signum.indispensable.pki.x500.DirectoryName
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
 import at.asitplus.signum.indispensable.pki.x500.RFC822Name
 import at.asitplus.signum.indispensable.pki.x500.constrains
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.pki.x500.*
 import kotlinx.io.IOException
+import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 
 /**
@@ -48,10 +47,11 @@ class NameConstraints internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.nameConstraints_2_5_29_30,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
             Signum.Der.encodeToByteArray(
                 NameConstraintsBody.serializer(),
-                NameConstraintsBody(permitted?.trees?.map { it.asn1Representation }, excluded?.trees?.map { it.asn1Representation }),
+                NameConstraintsBody(
+                    permitted?.trees?.map { it.asn1Representation },
+                    excluded?.trees?.map { it.asn1Representation }),
             ),
         ),
         permitted,
@@ -59,7 +59,7 @@ class NameConstraints internal constructor(
     )
 
     /** Indicates whether the NameConstraints extension contains only valid general names in both the permitted and excluded subtrees. */
-    val isValid : Boolean by lazy {
+    val isValid: Boolean by lazy {
         fun GeneralSubtree.isInvalid(): Boolean {
             // Known validation gap: minimum/maximum are decoded but not processed or rejected.
             // Critical constraints using them require handling when this name form occurs later:
@@ -75,7 +75,7 @@ class NameConstraints internal constructor(
         allTrees.none { it.isInvalid() }
     }
 
-    companion object : CertificateExtension.Descriptor<NameConstraints>{
+    companion object : CertificateExtension.Descriptor<NameConstraints> {
         override val oid get() = KnownOIDs.nameConstraints_2_5_29_30
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): NameConstraints {
@@ -84,12 +84,23 @@ class NameConstraints internal constructor(
             // 4.2). PkixDerRegressionTest pins this with an active failing regression.
             // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2
             val body =
-                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
                 Signum.Der.decodeFromByteArray(NameConstraintsBody.serializer(), src.value)
             return NameConstraints(
                 src,
-                permitted = body.permitted?.let { GeneralSubtrees(it.map { subtree -> GeneralSubtree.fromAsn1Representation(subtree) }) },
-                excluded = body.excluded?.let { GeneralSubtrees(it.map { subtree -> GeneralSubtree.fromAsn1Representation(subtree) }) },
+                permitted = body.permitted?.let {
+                    GeneralSubtrees(it.map { subtree ->
+                        GeneralSubtree.fromAsn1Representation(
+                            subtree
+                        )
+                    })
+                },
+                excluded = body.excluded?.let {
+                    GeneralSubtrees(it.map { subtree ->
+                        GeneralSubtree.fromAsn1Representation(
+                            subtree
+                        )
+                    })
+                },
             )
         }
     }
@@ -154,7 +165,10 @@ class NameConstraints internal constructor(
                 .flatMap { it.attrsAndValues }
                 .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
-                    val str = ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(it) }?.value
+                    val str =
+                        ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let {
+                            Asn1String.decodeFromTlv(it)
+                        }?.value
                     str?.let {
                         runCatching {
                             RFC822Name(Asn1String.IA5(it))
@@ -198,6 +212,7 @@ class NameConstraints internal constructor(
                 when (excludedName.constrains(name)) {
                     GeneralName.ConstraintResult.MATCH,
                     GeneralName.ConstraintResult.WIDENS -> return false
+
                     GeneralName.ConstraintResult.DIFF_TYPE,
                     GeneralName.ConstraintResult.NARROWS,
                     GeneralName.ConstraintResult.SAME_TYPE -> continue
@@ -251,3 +266,12 @@ internal class NameConstraintsBody(
     @Asn1Tag(0u) val permitted: List<X509GeneralSubtree>? = null,
     @Asn1Tag(1u) val excluded: List<X509GeneralSubtree>? = null,
 )
+
+/**
+ * The most specific (leaf-most) `commonName` (OID 2.5.4.3) attribute in this [Name]'s RDN sequence, or
+ * `null` if it carries none. RFC 5280 orders the RDNSequence most-general-first, so the last CN wins.
+ */
+private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue? =
+    relativeDistinguishedNames.asReversed()
+        .flatMap { it.attrsAndValues }
+        .firstOrNull { it.oid == AttributeTypeAndValue.Descriptor.OID.commonName }

@@ -258,8 +258,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)
-                    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-                    update(Signum.Der.encodeToByteArray(tbsCert))
+                                        update(Signum.Der.encodeToByteArray(tbsCert))
                     sign()
                 }.let { Certificate(tbsCert, certAlg.parseJCASignature(it)) }
             }
@@ -283,8 +282,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) }
+                        val certificateChain = ctx.ks.getCertificateChain(alias).map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) }
             return getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

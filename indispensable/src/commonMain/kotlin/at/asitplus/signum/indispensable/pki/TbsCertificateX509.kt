@@ -41,15 +41,16 @@ operator fun TbsCertificate.Companion.invoke(src: X509TbsCertificate): TbsCertif
 fun TbsCertificate.Companion.fromAsn1Representation(
     src: X509TbsCertificate,
 ): TbsCertificate =
-    TbsCertificate({ TbsCertificate.ContentContainer(
-        serialNumber = src.serialNumber,
-        signatureAlgorithm = SignatureAlgorithm.fromAsn1Representation(src.signatureAlgorithm),
-        issuerName = X500Name(src.issuerName.map { RelativeDistinguishedName(it) }, false),
-        validFrom = src.validity.validFrom.instant,
-        validUntil = src.validity.validUntil.instant,
-        subjectName = X500Name(src.subjectName.map { RelativeDistinguishedName(it) }, false),
-        publicKey = CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo),
-        issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
-        subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
-        extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
-    ) }, mapOf(X509 to src))
+    TbsCertificate(
+        serialNumberProvider = { src.serialNumber },
+        signatureAlgorithmProvider = { SignatureAlgorithm.fromAsn1Representation(src.signatureAlgorithm) },
+        issuerNameProvider = { X500Name(src.issuerName.map { RelativeDistinguishedName(it) }, false) },
+        validFromProvider = { src.validity.validFrom.instant },
+        validUntilProvider = { src.validity.validUntil.instant },
+        subjectNameProvider = { X500Name(src.subjectName.map { RelativeDistinguishedName(it) }, false) },
+        publicKeyProvider = { CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo) },
+        issuerUniqueIDProvider = { src.issuerUniqueID?.toLsb0ByteArray() },
+        subjectUniqueIDProvider = { src.subjectUniqueID?.toLsb0ByteArray() },
+        extensionsProvider = { src.extensions?.map { CertificateExtension(it) }.orEmpty() },
+        representations = mapOf(X509 to src),
+    )

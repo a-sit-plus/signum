@@ -26,26 +26,15 @@ import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
-internal data class EcSignatureContent(
-    val r: BigInteger,
-    val s: BigInteger,
-) {
-    init {
-        require(r.isPositive) { "r must be positive" }
-        require(s.isPositive) { "s must be positive" }
-    }
-}
-
 sealed class EcdsaSignature
 @Throws(IllegalArgumentException::class) private constructor(
-    contentProvider: () -> EcSignatureContent,
+    rProvider: () -> BigInteger,
+    sProvider: () -> BigInteger,
     override val representations: Map<Encodable.Representation, Any>,
 ) : CryptoSignature {
-    private val content by lazy(contentProvider)
+    val r by lazy { rProvider().also { require(it.isPositive) { "r must be positive" } } }
 
-    val r: BigInteger get() = content.r
-
-    val s: BigInteger get() = content.s
+    val s by lazy { sProvider().also { require(it.isPositive) { "s must be positive" } } }
 
     override fun equals(other: Any?): Boolean {
         if (other !is EcdsaSignature) return false
@@ -57,11 +46,12 @@ sealed class EcdsaSignature
     override fun hashCode() = 31 * s.hashCode() + r.hashCode()
 
     class IndefiniteLength internal constructor(
-        contentProvider: () -> EcSignatureContent,
+        rProvider: () -> BigInteger,
+        sProvider: () -> BigInteger,
         representations: Map<Encodable.Representation, Any>,
-    ) : EcdsaSignature(contentProvider, representations) {
+    ) : EcdsaSignature(rProvider, sProvider, representations) {
 
-        internal constructor(r: BigInteger, s: BigInteger) : this({ EcSignatureContent(r, s) }, emptyMap())
+        internal constructor(r: BigInteger, s: BigInteger) : this({ r }, { s }, emptyMap())
 
         fun withScalarByteLength(l: UInt) =
             DefiniteLength(l, r, s)
@@ -94,7 +84,7 @@ sealed class EcdsaSignature
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-    ) : EcdsaSignature({ EcSignatureContent(r, s) }, emptyMap()) {
+    ) : EcdsaSignature({ r }, { s }, emptyMap()) {
         init {
             val max = scalarByteLength.toInt() * 8
 

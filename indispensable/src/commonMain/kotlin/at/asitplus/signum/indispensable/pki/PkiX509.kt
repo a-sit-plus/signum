@@ -59,22 +59,24 @@ operator fun TbsCertificationRequest.Companion.invoke(src: Pkcs10CertificationRe
 
 /** Retains the original model; interpretation is deferred until semantic access. */
 fun TbsCertificationRequest.Companion.fromAsn1Representation(src: Pkcs10CertificationRequestInfo): TbsCertificationRequest =
-    TbsCertificationRequest({ TbsCertificationRequest.ContentContainer(
-        subjectName = X500Name(src.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false),
-        publicKey = CryptoPublicKey(src.publicKey),
-        attributes = src.attributes.map { CsrAttribute(it) },
-    ) }, mapOf(X509 to src))
+    TbsCertificationRequest(
+        subjectNameProvider = { X500Name(src.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false) },
+        publicKeyProvider = { CryptoPublicKey(src.publicKey) },
+        attributesProvider = { src.attributes.map { CsrAttribute(it) } },
+        representations = mapOf(X509 to src),
+    )
 
 operator fun CertificationRequest.Companion.invoke(src: Pkcs10CertificationRequest): CertificationRequest =
     fromAsn1Representation(src)
 
 /** Retains the original model; interpretation is deferred until semantic access. */
 fun CertificationRequest.Companion.fromAsn1Representation(src: Pkcs10CertificationRequest): CertificationRequest =
-    CertificationRequest({ CertificationRequest.ContentContainer(
-        tbsCsr = TbsCertificationRequest(src.certificationRequestInfo),
-        signatureAlgorithm = SignatureAlgorithm(src.signatureAlgorithm),
-        signature = CryptoSignature(src.signatureAlgorithm, src.signatureValue),
-    ) }, mapOf(X509 to src))
+    CertificationRequest(
+        tbsCsrProvider = { TbsCertificationRequest(src.certificationRequestInfo) },
+        signatureAlgorithmProvider = { SignatureAlgorithm(src.signatureAlgorithm) },
+        signatureProvider = { CryptoSignature(src.signatureAlgorithm, src.signatureValue) },
+        representations = mapOf(X509 to src),
+    )
 
 fun RelativeDistinguishedName.Companion.fromAsn1Representation(
     src: X500RelativeDistinguishedName,

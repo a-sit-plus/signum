@@ -131,8 +131,7 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-        // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-        ?.let { Signum.Der.decodeFromByteArray<Certificate>(it) }
+                ?.let { Signum.Der.decodeFromByteArray<Certificate>(it) }
         ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
     is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
     else -> false

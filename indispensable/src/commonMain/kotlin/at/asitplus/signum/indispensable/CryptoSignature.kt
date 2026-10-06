@@ -18,8 +18,7 @@ interface CryptoSignature : Encodable {
     val joseBytes: ByteArray get() = TODO("providerize JOSE/COSE for generic provider-provided signature types")
     val coseBytes: ByteArray get() = joseBytes
 
-    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${Signum.Der.encodeToTlv(X509SignatureValue.serializer(), asn1Representation).prettyPrint()})"
+        val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${Signum.Der.encodeToTlv(X509SignatureValue.serializer(), asn1Representation).prettyPrint()})"
 
     @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
         replaceWith = ReplaceWith("EcdsaSignature"))

@@ -33,7 +33,6 @@ class AuthorityKeyIdentifier internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.authorityKeyIdentifier_2_5_29_35,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
             Signum.Der.encodeToByteArray(
                 AuthorityKeyIdentifierBody.serializer(),
                 AuthorityKeyIdentifierBody(
@@ -52,7 +51,6 @@ class AuthorityKeyIdentifier internal constructor(
         override val oid get() = KnownOIDs.authorityKeyIdentifier_2_5_29_35
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): AuthorityKeyIdentifier {
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
             val body = Signum.Der.decodeFromByteArray(AuthorityKeyIdentifierBody.serializer(), src.value)
             return AuthorityKeyIdentifier(
                 src,
