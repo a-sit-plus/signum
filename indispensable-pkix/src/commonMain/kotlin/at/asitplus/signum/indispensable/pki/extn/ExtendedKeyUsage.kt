@@ -24,8 +24,7 @@ class ExtendedKeyUsage internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.extKeyUsage,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            Signum.Der.encodeToByteArray(ListSerializer(ObjectIdentifier.serializer()), keyUsages.toList()),
+                        Signum.Der.encodeToByteArray(ListSerializer(ObjectIdentifier.serializer()), keyUsages.toList()),
         ),
         keyUsages,
     )
@@ -36,8 +35,7 @@ class ExtendedKeyUsage internal constructor(
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): ExtendedKeyUsage =
             ExtendedKeyUsage(
                 src,
-                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-                Signum.Der.decodeFromByteArray(ListSerializer(ObjectIdentifier.serializer()), src.value).toSet(),
+                                Signum.Der.decodeFromByteArray(ListSerializer(ObjectIdentifier.serializer()), src.value).toSet(),
             )
     }
 }

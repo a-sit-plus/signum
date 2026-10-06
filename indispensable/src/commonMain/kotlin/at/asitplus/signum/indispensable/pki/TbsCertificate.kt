@@ -14,54 +14,18 @@ import kotlin.time.Instant
 
 /** The semantic certificate contents that are signed. Originals are retained separately. */
 class TbsCertificate internal constructor(
-    contentProvider: () -> ContentContainer,
+    serialNumberProvider: () -> Asn1Integer,
+    signatureAlgorithmProvider: () -> SignatureAlgorithm,
+    issuerNameProvider: () -> Name,
+    validFromProvider: () -> Instant,
+    validUntilProvider: () -> Instant,
+    subjectNameProvider: () -> Name,
+    publicKeyProvider: () -> CryptoPublicKey,
+    issuerUniqueIDProvider: () -> ByteArray?,
+    subjectUniqueIDProvider: () -> ByteArray?,
+    extensionsProvider: () -> List<CertificateExtension>,
     override val representations: Map<Encodable.Representation, Any>,
 ) : Encodable {
-    private val content by lazy(contentProvider)
-    private constructor(content: ContentContainer, representations: Map<Encodable.Representation, Any>) : this({ content }, representations)
-
-    internal data class ContentContainer(
-        val serialNumber: Asn1Integer,
-        val signatureAlgorithm: SignatureAlgorithm,
-        val issuerName: Name,
-        val validFrom: Instant,
-        val validUntil: Instant,
-        val subjectName: Name,
-        val publicKey: CryptoPublicKey,
-        val issuerUniqueID: ByteArray?,
-        val subjectUniqueID: ByteArray?,
-        val extensions: List<CertificateExtension>,
-    ) {
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is ContentContainer) return false
-            return serialNumber == other.serialNumber &&
-                    signatureAlgorithm == other.signatureAlgorithm &&
-                    issuerName == other.issuerName &&
-                    validFrom == other.validFrom &&
-                    validUntil == other.validUntil &&
-                    subjectName == other.subjectName &&
-                    publicKey == other.publicKey &&
-                    issuerUniqueID.contentEquals(other.issuerUniqueID) &&
-                    subjectUniqueID.contentEquals(other.subjectUniqueID) &&
-                    extensions == other.extensions
-        }
-
-        override fun hashCode(): Int {
-            var result = serialNumber.hashCode()
-            result = 31 * result + signatureAlgorithm.hashCode()
-            result = 31 * result + issuerName.hashCode()
-            result = 31 * result + validFrom.hashCode()
-            result = 31 * result + validUntil.hashCode()
-            result = 31 * result + subjectName.hashCode()
-            result = 31 * result + publicKey.hashCode()
-            result = 31 * result + (issuerUniqueID?.contentHashCode() ?: 0)
-            result = 31 * result + (subjectUniqueID?.contentHashCode() ?: 0)
-            result = 31 * result + extensions.hashCode()
-            return result
-        }
-    }
 
     constructor(
         serialNumber: Asn1Integer.Positive,
@@ -75,41 +39,41 @@ class TbsCertificate internal constructor(
         subjectUniqueID: ByteArray? = null,
         extensions: List<CertificateExtension> = emptyList(),
     ) : this(
-        ContentContainer(
-            serialNumber = serialNumber,
-            signatureAlgorithm = signatureAlgorithm,
-            issuerName = issuerName,
-            validFrom = validFrom.secondsCapped(),
-            validUntil = validUntil.secondsCapped(),
-            subjectName = subjectName,
-            publicKey = publicKey,
-            issuerUniqueID = issuerUniqueID,
-            subjectUniqueID = subjectUniqueID,
-            extensions = extensions,
-        ), emptyMap()
+        { serialNumber },
+        { signatureAlgorithm },
+        { issuerName },
+        { validFrom.secondsCapped() },
+        { validUntil.secondsCapped() },
+        { subjectName },
+        { publicKey },
+        { issuerUniqueID },
+        { subjectUniqueID },
+        { extensions },
+        emptyMap(),
     ) {
         runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
         validateExtensions(extensions)
     }
-    val serialNumber: Asn1Integer get() = content.serialNumber
 
-    val signatureAlgorithm: SignatureAlgorithm get() = content.signatureAlgorithm
+    val serialNumber: Asn1Integer by lazy(serialNumberProvider)
 
-    val issuerName: Name get() = content.issuerName
+    val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
 
-    val validFrom: Instant get() = content.validFrom
+    val issuerName: Name by lazy(issuerNameProvider)
 
-    val validUntil: Instant get() = content.validUntil
+    val validFrom: Instant by lazy(validFromProvider)
 
-    val subjectName: Name get() = content.subjectName
+    val validUntil: Instant by lazy(validUntilProvider)
 
-    val issuerUniqueID: ByteArray? get() = content.issuerUniqueID
+    val subjectName: Name by lazy(subjectNameProvider)
 
-    val subjectUniqueID: ByteArray? get() = content.subjectUniqueID
+    val issuerUniqueID: ByteArray? by lazy(issuerUniqueIDProvider)
 
-    val extensions: List<CertificateExtension> get() = content.extensions
+    val subjectUniqueID: ByteArray? by lazy(subjectUniqueIDProvider)
 
-    val publicKey get() = content.publicKey
+    val extensions: List<CertificateExtension> by lazy(extensionsProvider)
+
+    val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
 
     /**
      * Contains `SubjectAlternativeName`s parsed from extensions.
@@ -125,13 +89,45 @@ class TbsCertificate internal constructor(
     // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
     val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
+    private fun semanticEquals(other: TbsCertificate): Boolean {
+        if (this === other) return true
+        return serialNumber == other.serialNumber &&
+                signatureAlgorithm == other.signatureAlgorithm &&
+                issuerName == other.issuerName &&
+                validFrom == other.validFrom &&
+                validUntil == other.validUntil &&
+                subjectName == other.subjectName &&
+                publicKey == other.publicKey &&
+                issuerUniqueID.contentEquals(other.issuerUniqueID) &&
+                subjectUniqueID.contentEquals(other.subjectUniqueID) &&
+                extensions == other.extensions
+    }
+
+    private fun semanticHashCode(): Int {
+        var result = serialNumber.hashCode()
+        result = 31 * result + signatureAlgorithm.hashCode()
+        result = 31 * result + issuerName.hashCode()
+        result = 31 * result + validFrom.hashCode()
+        result = 31 * result + validUntil.hashCode()
+        result = 31 * result + subjectName.hashCode()
+        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + (issuerUniqueID?.contentHashCode() ?: 0)
+        result = 31 * result + (subjectUniqueID?.contentHashCode() ?: 0)
+        result = 31 * result + extensions.hashCode()
+        return result
+    }
+
     override fun equals(other: Any?): Boolean = this === other || catchingUnwrapped {
-        other is TbsCertificate && content == other.content
+        other is TbsCertificate && semanticEquals(other)
     }.getOrDefault(false)
 
-    override fun hashCode(): Int = catchingUnwrapped { content.hashCode() }.getOrDefault(0)
-    override fun toString(): String = catchingUnwrapped { "TbsCertificate($content)" }
-        .getOrElse { "TbsCertificate(semantic content unavailable)" }
+    override fun hashCode(): Int = catchingUnwrapped { semanticHashCode() }.getOrDefault(0)
+    override fun toString(): String = catchingUnwrapped {
+        "TbsCertificate(serialNumber=$serialNumber, signatureAlgorithm=$signatureAlgorithm, " +
+                "issuerName=$issuerName, validFrom=$validFrom, validUntil=$validUntil, " +
+                "subjectName=$subjectName, publicKey=$publicKey, issuerUniqueID=$issuerUniqueID, " +
+                "subjectUniqueID=$subjectUniqueID, extensions=$extensions)"
+    }.getOrElse { "TbsCertificate(semantic content unavailable)" }
 
     companion object : Decodable<TbsCertificate>
 }

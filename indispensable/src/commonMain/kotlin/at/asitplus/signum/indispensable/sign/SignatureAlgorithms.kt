@@ -39,7 +39,8 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
 
 class EcdsaAlgorithm internal constructor(
-    paramsProvider: () -> Params,
+    digestProvider: () -> Digest?,
+    requiredCurveProvider: () -> ECCurve?,
     override val representations: Map<Encodable.Representation, Any>,
 ) : SignatureAlgorithm, Enumerable {
 
@@ -48,26 +49,22 @@ class EcdsaAlgorithm internal constructor(
         digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         requiredCurve: ECCurve? = null
-    ) : this({ Params(digest, requiredCurve) }, emptyMap())
-
-    internal data class Params(val digest: Digest?, val curve: ECCurve?)
-
-    private val params by lazy(paramsProvider)
+    ) : this({ digest }, { requiredCurve }, emptyMap())
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
-    val digest get() = params.digest
+    val digest by lazy(digestProvider)
     override val preHashedSignatureFormat get() = digest
 
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
-    val requiredCurve get() = params.curve
+    val requiredCurve by lazy(requiredCurveProvider)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EcdsaAlgorithm) return false
-        return params == other.params
+        return digest == other.digest && requiredCurve == other.requiredCurve
     }
 
-    override fun hashCode() = params.hashCode()
+    override fun hashCode() = 31 * (digest?.hashCode() ?: 0) + (requiredCurve?.hashCode() ?: 0)
 
     companion object : Enumeration<EcdsaAlgorithm>, Decodable<EcdsaAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
@@ -187,30 +184,24 @@ class RsaAlgorithm internal constructor(
         }
 
         class PssPadded internal constructor(
-            paramsProvider: () -> Content,
+            digestProvider: () -> Digest,
+            mgfAlgorithmProvider: () -> MaskGenerationFunction,
+            saltLengthProvider: () -> UInt,
+            trailerFieldProvider: () -> Int,
             override val representations: Map<Encodable.Representation, Any>,
         ) : Parameters<RsaSsaPssParams> {
-            internal data class Content(
-                val digest: Digest,
-                val mgfAlgorithm: MaskGenerationFunction,
-                val saltLength: UInt,
-                val trailerField: Int,
-            )
-
             constructor(
                 digest: Digest = Digest.SHA1,
                 mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
                 saltLength: UInt = digest.outputLength.bytes,
                 trailerField: Int = DEFAULT_TRAILER_FIELD,
-            ) : this({ Content(digest, mgfAlgorithm, saltLength, trailerField) }, emptyMap())
-
-            private val params by lazy(paramsProvider)
+            ) : this({ digest }, { mgfAlgorithm }, { saltLength }, { trailerField }, emptyMap())
 
             override val type: Padding get() = Padding.PSS
-            override val digest: Digest get() = params.digest
-            val mgfAlgorithm get() = params.mgfAlgorithm
-            val saltLength get() = params.saltLength
-            val trailerField get() = params.trailerField
+            override val digest: Digest by lazy(digestProvider)
+            val mgfAlgorithm by lazy(mgfAlgorithmProvider)
+            val saltLength by lazy(saltLengthProvider)
+            val trailerField by lazy(trailerFieldProvider)
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -241,8 +232,7 @@ class RsaAlgorithm internal constructor(
                         runRethrowing {
                             when (element.oid) {
                                 Pkcs1Mgf1.oid ->
-                                    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-                                    Pkcs1Mgf1(Digest.fromAsn1Representation(Signum.Der.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
+                                                                        Pkcs1Mgf1(Digest.fromAsn1Representation(Signum.Der.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
                                 else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
                             }
                         }

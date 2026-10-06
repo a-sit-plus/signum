@@ -26,7 +26,8 @@ val X509SignatureAlgorithmTest by matrixSuite {
 
     val (certsUnsupported, certsSupported) = readCerts()
 
-    compact("!OK certs with DSA signature algorithms, should parse") - {
+    //works now properly too
+    compact("OK certs with DSA signature algorithms, should parse") - {
         data(certsUnsupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = Signum.Der.decodeFromTlv<Certificate>(src)

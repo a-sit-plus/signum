@@ -31,7 +31,7 @@ private fun List<GeneralName>.tags() = map { it.tag }
 val AlternativeNamesTest by matrixSuite {
     Signum.installPkix()
 
-    test("Generic and typed names agree on equality and hash codes") {
+    "Generic and typed names agree on equality and hash codes" {
         val typed: GeneralName = DNSName(Asn1String.IA5("example.com"))
         val generic: GeneralName = BaseX509GeneralName(X509GeneralName.Dns("example.com"))
         typed shouldBe generic
@@ -43,7 +43,7 @@ val AlternativeNamesTest by matrixSuite {
     // Kotlin-built names must encode with the proper GeneralName CHOICE tags (implicit [n] for the
     // primitives, explicit [4] for the directoryName/X500Name) so they decode back — the regression
     // this guards against produced untagged universal elements that failed to re-decode.
-    test("Kotlin-built alternative names round-trip through X509GeneralNames") {
+    "Kotlin-built alternative names round-trip through X509GeneralNames" {
         val generalNames = listOf(
             DNSName(Asn1String.IA5("example.com")),
             RegisteredIDName(ObjectIdentifier("1.2.3.4")),
@@ -61,7 +61,7 @@ val AlternativeNamesTest by matrixSuite {
         decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
     }
 
-    test("asn1-built alternative names preserve original DER") {
+    "asn1-built alternative names preserve original DER" {
         val encoded = byteArrayOf(
             0x30, 0x18,
             0x82.toByte(), 0x0b, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, // [2] example.com
@@ -76,7 +76,7 @@ val AlternativeNamesTest by matrixSuite {
         decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
     }
 
-    test("duplicate subject alternative name extension rejected") {
+    "duplicate subject alternative name extension rejected" {
         val encoded = AlternativeNames
             .fromGeneralNames(listOf(DNSName(Asn1String.IA5("example.com"))))
             .let { Signum.Der.encodeToByteArray(it) }

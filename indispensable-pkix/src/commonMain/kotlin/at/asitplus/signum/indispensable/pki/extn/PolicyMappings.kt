@@ -30,8 +30,7 @@ class PolicyMappings internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.policyMappings,
             critical,
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            Signum.Der.encodeToByteArray(ListSerializer(CertificatePolicyMap.serializer()), policyMappings),
+                        Signum.Der.encodeToByteArray(ListSerializer(CertificatePolicyMap.serializer()), policyMappings),
         ),
         policyMappings,
     )
@@ -41,8 +40,7 @@ class PolicyMappings internal constructor(
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): PolicyMappings {
             val policyMappings =
-                // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-                Signum.Der.decodeFromByteArray(ListSerializer(CertificatePolicyMap.serializer()), src.value)
+                                Signum.Der.decodeFromByteArray(ListSerializer(CertificatePolicyMap.serializer()), src.value)
             return PolicyMappings(src, policyMappings)
         }
     }

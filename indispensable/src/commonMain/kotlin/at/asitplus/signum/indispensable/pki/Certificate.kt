@@ -12,8 +12,8 @@ import kotlin.time.Instant
 
 /** Signed certificate contents, with original representations retained separately. */
 class Certificate internal constructor(
-    tbsCertificateProvider: () -> TbsCertificate,
-    signatureProvider: () -> CryptoSignature,
+    tbsCertificateProvider: () -> TbsCertificate/*defer to also parse and round-trip even unsupported sigalgs*/,
+    signatureProvider: () -> CryptoSignature/*defer to also parse and round-trip even unsupported sigalgs*/,
     override val representations: Map<Encodable.Representation, Any>,
 ) : Encodable {
     constructor(

@@ -10,8 +10,6 @@ import at.asitplus.signum.indispensable.pki.Certificate
 
 object JwsCertificateSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
     encodeAs = { Signum.Der.encodeToByteArray(it) },
-    // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
     decodeAs = { Signum.Der.decodeFromByteArray<Certificate>(it) } //workaround iOS compilation bug KT-71498
 )

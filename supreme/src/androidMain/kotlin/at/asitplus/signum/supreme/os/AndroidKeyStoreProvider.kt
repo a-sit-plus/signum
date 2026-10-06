@@ -331,8 +331,7 @@ object AndroidKeyStoreProvider:
         val publicKey: CryptoPublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-            // Use the application-wide DER configuration, including nested codecs (docs/docs/default-der.md).
-            catching { chain.map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
+                        catching { chain.map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
                     publicKey = it.leaf.publicKey
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null
