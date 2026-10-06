@@ -60,9 +60,9 @@ operator fun TbsCertificationRequest.Companion.invoke(src: Pkcs10CertificationRe
 /** Retains the original model; interpretation is deferred until semantic access. */
 fun TbsCertificationRequest.Companion.fromAsn1Representation(src: Pkcs10CertificationRequestInfo): TbsCertificationRequest =
     TbsCertificationRequest(
-        subjectNameProvider = { X500Name(src.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false) },
+        subjectName = X500Name(src.subjectName.map { RelativeDistinguishedName(it, performValidation = false) }, false),
         publicKeyProvider = { CryptoPublicKey(src.publicKey) },
-        attributesProvider = { src.attributes.map { CsrAttribute(it) } },
+        attributes = src.attributes.map { CsrAttribute(it) },
         representations = mapOf(X509 to src),
     )
 
@@ -72,7 +72,7 @@ operator fun CertificationRequest.Companion.invoke(src: Pkcs10CertificationReque
 /** Retains the original model; interpretation is deferred until semantic access. */
 fun CertificationRequest.Companion.fromAsn1Representation(src: Pkcs10CertificationRequest): CertificationRequest =
     CertificationRequest(
-        tbsCsrProvider = { TbsCertificationRequest(src.certificationRequestInfo) },
+        tbsCsr = TbsCertificationRequest(src.certificationRequestInfo),
         signatureAlgorithmProvider = { SignatureAlgorithm(src.signatureAlgorithm) },
         signatureProvider = { CryptoSignature(src.signatureAlgorithm, src.signatureValue) },
         representations = mapOf(X509 to src),

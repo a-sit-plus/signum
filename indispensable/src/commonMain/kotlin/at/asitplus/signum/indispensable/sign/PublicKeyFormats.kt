@@ -32,8 +32,10 @@ import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
 class RsaPublicKey internal constructor(
-    nProvider: () -> Asn1Integer.Positive,
-    eProvider: () -> Asn1Integer.Positive,
+    /** modulus */
+    val n: Asn1Integer.Positive,
+    /** public exponent */
+    val e: Asn1Integer.Positive,
     override val representations: Map<Encodable.Representation, Any>,
 ) : CryptoPublicKey {
 
@@ -46,17 +48,9 @@ class RsaPublicKey internal constructor(
 
         /** public exponent */
         e: Asn1Integer.Positive,
-    ) : this({ n }, { e }, emptyMap()) {
-        bits
-    }
+    ) : this(n, e, emptyMap())
 
-    /** modulus */
-    val n by lazy(nProvider)
-
-    /** public exponent */
-    val e by lazy(eProvider)
-
-    val bits by lazy { n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") } }
+    val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
     @Deprecated(message = "Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
     constructor(n: ByteArray, e: Int) : this(
@@ -117,10 +111,10 @@ class RsaPublicKey internal constructor(
          */
         @Throws(Asn1Exception::class)
         fun fromPKCS1encoded(input: ByteArray): RsaPublicKey {
-            val parsed by lazy { Signum.Der.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input) }
+            val parsed = Signum.Der.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)
             return RsaPublicKey(
-                { parsed.modulus as Asn1Integer.Positive },
-                { parsed.publicExponent as Asn1Integer.Positive },
+                parsed.modulus as Asn1Integer.Positive,
+                parsed.publicExponent as Asn1Integer.Positive,
                 emptyMap(),
             )
         }
@@ -144,17 +138,14 @@ class RsaPublicKey internal constructor(
  */
 @SerialName("EC")
 class EcdsaPublicKey internal constructor(
-    publicPointProvider: () -> ECPoint.Normalized,
-    preferCompressedRepresentationProvider: () -> Boolean,
+    val publicPoint: ECPoint.Normalized,
+    val preferCompressedRepresentation: Boolean,
     override val representations: Map<Encodable.Representation, Any>,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
 
     override val additionalProperties = mutableMapOf<String, String>()
 
     override fun asCryptoPublicKey() = this
-
-    val publicPoint by lazy(publicPointProvider)
-    val preferCompressedRepresentation by lazy(preferCompressedRepresentationProvider)
 
     val curve get() = publicPoint.curve
     val x get() = publicPoint.x
@@ -196,7 +187,7 @@ class EcdsaPublicKey internal constructor(
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
-            return EcdsaPublicKey({ this.normalize() }, { preferCompressed }, emptyMap())
+            return EcdsaPublicKey(this.normalize(), preferCompressed, emptyMap())
         }
 
         /** Decodes key from big-endian X and sign of Y */

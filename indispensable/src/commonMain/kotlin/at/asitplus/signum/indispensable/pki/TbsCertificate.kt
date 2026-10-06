@@ -14,16 +14,16 @@ import kotlin.time.Instant
 
 /** The semantic certificate contents that are signed. Originals are retained separately. */
 class TbsCertificate internal constructor(
-    serialNumberProvider: () -> Asn1Integer,
+    val serialNumber: Asn1Integer,
     signatureAlgorithmProvider: () -> SignatureAlgorithm,
-    issuerNameProvider: () -> Name,
-    validFromProvider: () -> Instant,
-    validUntilProvider: () -> Instant,
-    subjectNameProvider: () -> Name,
+    val issuerName: Name,
+    val validFrom: Instant,
+    val validUntil: Instant,
+    val subjectName: Name,
     publicKeyProvider: () -> CryptoPublicKey,
-    issuerUniqueIDProvider: () -> ByteArray?,
-    subjectUniqueIDProvider: () -> ByteArray?,
-    extensionsProvider: () -> List<CertificateExtension>,
+    val issuerUniqueID: ByteArray?,
+    val subjectUniqueID: ByteArray?,
+    val extensions: List<CertificateExtension>,
     override val representations: Map<Encodable.Representation, Any>,
 ) : Encodable {
 
@@ -39,39 +39,23 @@ class TbsCertificate internal constructor(
         subjectUniqueID: ByteArray? = null,
         extensions: List<CertificateExtension> = emptyList(),
     ) : this(
-        { serialNumber },
+        serialNumber,
         { signatureAlgorithm },
-        { issuerName },
-        { validFrom.secondsCapped() },
-        { validUntil.secondsCapped() },
-        { subjectName },
+        issuerName,
+        validFrom.secondsCapped(),
+        validUntil.secondsCapped(),
+        subjectName,
         { publicKey },
-        { issuerUniqueID },
-        { subjectUniqueID },
-        { extensions },
+        issuerUniqueID,
+        subjectUniqueID,
+        extensions,
         emptyMap(),
     ) {
         runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
         validateExtensions(extensions)
     }
 
-    val serialNumber: Asn1Integer by lazy(serialNumberProvider)
-
     val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
-
-    val issuerName: Name by lazy(issuerNameProvider)
-
-    val validFrom: Instant by lazy(validFromProvider)
-
-    val validUntil: Instant by lazy(validUntilProvider)
-
-    val subjectName: Name by lazy(subjectNameProvider)
-
-    val issuerUniqueID: ByteArray? by lazy(issuerUniqueIDProvider)
-
-    val subjectUniqueID: ByteArray? by lazy(subjectUniqueIDProvider)
-
-    val extensions: List<CertificateExtension> by lazy(extensionsProvider)
 
     val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
 

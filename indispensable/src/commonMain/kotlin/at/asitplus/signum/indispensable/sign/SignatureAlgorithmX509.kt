@@ -64,8 +64,7 @@ val RsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
             )
 
             is RsaAlgorithm.Parameters.PssPadded ->
-                // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-                X509AlgorithmIdentifier(currentParameters.asn1Representation, Signum.Der)
+                    X509AlgorithmIdentifier(currentParameters.asn1Representation, Signum.Der)
         }
     }
 
@@ -89,7 +88,7 @@ fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier
                 else -> throw IllegalArgumentException("Unsupported algorithm ${src.oid}")
             }
         },
-        requiredCurveProvider = { null },
+        requiredCurve = null,
         representations = mapOf(X509 to src),
     )
 
@@ -99,7 +98,6 @@ fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier):
     RsaAlgorithm({
         val oid = src.oid
         if (oid == KnownOIDs.rsaPSS) {
-            // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
             RsaAlgorithm.Parameters.PssPadded(RsaSsaPssParams.of(src, Signum.Der))
         } else {
             when (oid) {

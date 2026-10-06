@@ -40,7 +40,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 
 class EcdsaAlgorithm internal constructor(
     digestProvider: () -> Digest?,
-    requiredCurveProvider: () -> ECCurve?,
+    val requiredCurve: ECCurve?,
     override val representations: Map<Encodable.Representation, Any>,
 ) : SignatureAlgorithm, Enumerable {
 
@@ -49,14 +49,11 @@ class EcdsaAlgorithm internal constructor(
         digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         requiredCurve: ECCurve? = null
-    ) : this({ digest }, { requiredCurve }, emptyMap())
+    ) : this({ digest }, requiredCurve, emptyMap())
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
     val digest by lazy(digestProvider)
     override val preHashedSignatureFormat get() = digest
-
-    /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
-    val requiredCurve by lazy(requiredCurveProvider)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -186,8 +183,8 @@ class RsaAlgorithm internal constructor(
         class PssPadded internal constructor(
             digestProvider: () -> Digest,
             mgfAlgorithmProvider: () -> MaskGenerationFunction,
-            saltLengthProvider: () -> UInt,
-            trailerFieldProvider: () -> Int,
+            val saltLength: UInt,
+            val trailerField: Int,
             override val representations: Map<Encodable.Representation, Any>,
         ) : Parameters<RsaSsaPssParams> {
             constructor(
@@ -195,13 +192,11 @@ class RsaAlgorithm internal constructor(
                 mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
                 saltLength: UInt = digest.outputLength.bytes,
                 trailerField: Int = DEFAULT_TRAILER_FIELD,
-            ) : this({ digest }, { mgfAlgorithm }, { saltLength }, { trailerField }, emptyMap())
+            ) : this({ digest }, { mgfAlgorithm }, saltLength, trailerField, emptyMap())
 
             override val type: Padding get() = Padding.PSS
             override val digest: Digest by lazy(digestProvider)
             val mgfAlgorithm by lazy(mgfAlgorithmProvider)
-            val saltLength by lazy(saltLengthProvider)
-            val trailerField by lazy(trailerFieldProvider)
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true

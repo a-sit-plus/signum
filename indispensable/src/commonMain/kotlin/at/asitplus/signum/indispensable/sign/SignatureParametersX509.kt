@@ -105,8 +105,8 @@ fun PssPadded.Companion.fromAsn1Representation(src: RsaSsaPssParams): PssPadded 
     PssPadded(
         digestProvider = { Digest.fromAsn1Representation(src.hashAlgorithm) },
         mgfAlgorithmProvider = { PssPadded.MaskGenerationFunction.fromAsn1Representation(src.maskGenAlgorithm) },
-        saltLengthProvider = { src.saltLength.let { require(it >= 0); it.toUInt() } },
-        trailerFieldProvider = { src.trailerField },
+        saltLength = src.saltLength.let { require(it >= 0); it.toUInt() },
+        trailerField = src.trailerField,
         representations = mapOf(X509 to src),
     )
 
@@ -116,21 +116,24 @@ private fun rsaPrivateKey(
     source: () -> Pkcs1RsaPrivateKeyInfo,
     representations: Map<Encodable.Representation, Any>,
     attributes: Set<Asn1Element>?,
-): RsaPrivateKey {
-    val parsed by lazy(source)
-    return RsaPrivateKey(
-        publicKeyProvider = { RsaPublicKey(parsed.modulus, parsed.publicExponent) },
-        privateKeyProvider = { parsed.privateExponent.toBigInteger() },
-        prime1Provider = { parsed.prime1.toBigInteger() },
-        prime2Provider = { parsed.prime2.toBigInteger() },
-        prime1exponentProvider = { parsed.exponent1.toBigInteger() },
-        prime2exponentProvider = { parsed.exponent2.toBigInteger() },
-        crtCoefficientProvider = { parsed.coefficient.toBigInteger() },
-        otherPrimeInfosProvider = { parsed.otherPrimeInfos?.map { RsaPrivateKey.PrimeInfo.fromAsn1Representation(it) } },
+): RsaPrivateKey =
+    RsaPrivateKey(
+        parametersProvider = {
+            val parsed = source()
+            RsaPrivateKey.Parameters(
+                publicKey = RsaPublicKey(parsed.modulus, parsed.publicExponent),
+                privateKey = parsed.privateExponent.toBigInteger(),
+                prime1 = parsed.prime1.toBigInteger(),
+                prime2 = parsed.prime2.toBigInteger(),
+                prime1exponent = parsed.exponent1.toBigInteger(),
+                prime2exponent = parsed.exponent2.toBigInteger(),
+                crtCoefficient = parsed.coefficient.toBigInteger(),
+                otherPrimeInfos = parsed.otherPrimeInfos?.map { RsaPrivateKey.PrimeInfo.fromAsn1Representation(it) },
+            )
+        },
         representations = representations,
         attributes = attributes,
     )
-}
 
 fun RsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): RsaPrivateKey = runRethrowing {
     require(src.algorithmOid == oid) { "Expected RSA private key, got ${src.algorithmOid}" }
@@ -154,32 +157,30 @@ operator fun RsaPrivateKey.Companion.invoke(src: Pkcs8PrivateKeyInfo): RsaPrivat
 operator fun RsaPrivateKey.Companion.invoke(src: Pkcs1RsaPrivateKeyInfo): RsaPrivateKey = fromAsn1Representation(src)
 
 private fun ecPrivateKey(
-    source: () -> Sec1EcPrivateKeyInfo,
-    curveFromPkcs8: () -> ECCurve?,
-    hasCurve: Boolean,
+    parsed: Sec1EcPrivateKeyInfo,
+    curveFromPkcs8: Asn1Element?,
     representations: Map<Encodable.Representation, Any>,
     attributes: Set<Asn1Element>?,
 ): EcdsaPrivateKey {
-    val parsed by lazy {
-        source().also { require(it.version == Sec1EcPrivateKeyInfo.Version.V1) { "EC private key version must be 1" } }
-    }
-    val curve by lazy { parsed.parameters?.let(ECCurve::withOid) ?: curveFromPkcs8() }
-    val privateValue by lazy { BigInteger.fromByteArray(parsed.privateKey, Sign.POSITIVE) }
-    return if (hasCurve) EcdsaPrivateKey.WithPublicKey(
-        privateKeyProvider = { privateValue },
+    require(parsed.version == Sec1EcPrivateKeyInfo.Version.V1) { "EC private key version must be 1" }
+    val privateValue = BigInteger.fromByteArray(parsed.privateKey, Sign.POSITIVE)
+    return if (parsed.parameters != null || curveFromPkcs8 != null) EcdsaPrivateKey.WithPublicKey(
+        privateKey = privateValue,
         publicKeyProvider = {
-            val resolvedCurve = requireNotNull(curve) { "EC private key has no public key or curve" }
+            val resolvedCurve = requireNotNull(
+                parsed.parameters?.let(ECCurve::withOid) ?: curveFromPkcs8?.let(::decodeEcCurve)
+            ) { "EC private key has no public key or curve" }
             parsed.publicKey?.let { EcdsaPublicKey.fromAnsiX963Bytes(resolvedCurve, it.bitCarryingBytes) }
                 ?: resolvedCurve.generator.times(privateValue).asPublicKey(preferCompressed = true)
         },
-        encodeCurveProvider = { parsed.parameters != null },
-        encodePublicKeyProvider = { parsed.publicKey != null },
+        encodeCurve = parsed.parameters != null,
+        encodePublicKey = parsed.publicKey != null,
         representations = representations,
         attributes = attributes,
     ) else EcdsaPrivateKey.WithoutPublicKey(
-        privateKeyProvider = { privateValue },
-        publicKeyBytesProvider = { parsed.publicKey },
-        curveOrderLengthInBytesProvider = { parsed.privateKey.size },
+        privateKey = privateValue,
+        publicKeyBytes = parsed.publicKey,
+        curveOrderLengthInBytes = parsed.privateKey.size,
         representations = representations,
         attributes = attributes,
     )
@@ -190,18 +191,16 @@ fun EcdsaPrivateKey.Companion.fromAsn1Representation(
     attributes: Set<Asn1Element>? = null,
 ): EcdsaPrivateKey {
     require(src.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${src.version}" }
-    return ecPrivateKey({ src }, { null }, src.parameters != null, mapOf(SEC1 to src), attributes)
+    return ecPrivateKey(src, null, mapOf(SEC1 to src), attributes)
 }
 
 fun EcdsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): EcdsaPrivateKey {
     require(src.algorithmOid == oid) { "Expected EC private key, got ${src.algorithmOid}" }
     require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
     // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
-    val parsed by lazy { Sec1EcPrivateKeyInfo.of(src, Signum.Der) }
-    val hasCurve = src.algorithmParameters != null || parsed.parameters != null
-    if (!hasCurve) require(parsed.version == Sec1EcPrivateKeyInfo.Version.V1)
+    val parsed = Sec1EcPrivateKeyInfo.of(src, Signum.Der)
     return ecPrivateKey(
-        { parsed }, { src.algorithmParameters?.let(::decodeEcCurve) }, hasCurve,
+        parsed, src.algorithmParameters,
         mapOf(X509 to src), src.attributes,
     )
 }
@@ -210,10 +209,10 @@ operator fun EcdsaPrivateKey.Companion.invoke(src: Pkcs8PrivateKeyInfo): EcdsaPr
 operator fun EcdsaPrivateKey.Companion.invoke(src: Sec1EcPrivateKeyInfo): EcdsaPrivateKey = fromAsn1Representation(src)
 
 fun EcdsaSignature.Companion.fromAsn1Representation(src: X509SignatureValue): EcdsaSignature.IndefiniteLength {
-    val parsed by lazy { src.toEcdsaSigValue() }
+    val parsed = src.toEcdsaSigValue()
     return EcdsaSignature.IndefiniteLength(
-        rProvider = { parsed.r.toBigInteger() },
-        sProvider = { parsed.s.toBigInteger() },
+        r = parsed.r.toBigInteger(),
+        s = parsed.s.toBigInteger(),
         representations = mapOf(X509 to src),
     )
 }
@@ -222,7 +221,7 @@ fun EcdsaSignature.IndefiniteLength.Companion.fromAsn1Representation(src: X509Si
     EcdsaSignature.fromAsn1Representation(src)
 
 fun RsaSignature.Companion.fromAsn1Representation(src: X509SignatureValue): RsaSignature =
-    RsaSignature({ src.rawBytes }, mapOf(X509 to src))
+    RsaSignature(src.rawBytes, mapOf(X509 to src))
 
 operator fun EcdsaSignature.Companion.invoke(src: X509SignatureValue): EcdsaSignature.IndefiniteLength = fromAsn1Representation(src)
 operator fun RsaSignature.Companion.invoke(src: X509SignatureValue): RsaSignature = fromAsn1Representation(src)

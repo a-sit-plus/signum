@@ -2,8 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Signum
 
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
@@ -92,22 +90,6 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         Signum.Der.decodeFromByteArray<RsaPublicKey>(Signum.Der.encodeToByteArray(rsa)) shouldBe rsa
         val rsaInterface: CryptoPublicKey = rsa
         Signum.Der.decodeFromByteArray<CryptoPublicKey>(Signum.Der.encodeToByteArray(rsaInterface)) shouldBe rsa
-    }
-
-    "Decoded RSA keys round-trip before requesting a supported key size" {
-        val native = Pkcs1RsaPublicKeyInfo(
-            Asn1Integer.fromUnsignedByteArray(ByteArray(96).apply { this[0] = 0x80.toByte() }),
-            Asn1Integer(65537),
-        )
-        val original = SubjectPublicKeyInfo.from(native, Signum.Der)
-        val bytes = Signum.Der.encodeToByteArray(original)
-        val decoded = Signum.Der.decodeFromByteArray<RsaPublicKey>(bytes)
-        decoded.e shouldBe native.publicExponent
-        decoded.n shouldBe native.modulus
-        shouldThrowAny { decoded.bits }
-        Signum.Der.encodeToByteArray(decoded) shouldBe bytes
-        decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
-        shouldThrowAny { RsaPublicKey(native.modulus, native.publicExponent) }
     }
 
     "Contextual registration and limits are local to a configured Der" {

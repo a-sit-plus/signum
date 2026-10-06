@@ -19,16 +19,16 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * @param attributes nomen est omen
  */
 class TbsCertificationRequest internal constructor(
-    subjectNameProvider: () -> Name,
+    val subjectName: Name,
     publicKeyProvider: () -> CryptoPublicKey,
-    attributesProvider: () -> List<CsrAttribute>,
+    val attributes: List<CsrAttribute>,
     override val representations: Map<Encodable.Representation, Any>,
 ) : Encodable {
     constructor(
         subjectName: Name,
         publicKey: CryptoPublicKey,
         attributes: List<CsrAttribute> = listOf(),
-    ) : this({ subjectName }, { publicKey }, { attributes }, emptyMap()) {
+    ) : this(subjectName, { publicKey }, attributes, emptyMap()) {
         validateAttributes(attributes, allowExtensions = true)
     }
 
@@ -49,9 +49,7 @@ class TbsCertificationRequest internal constructor(
         attributes = mergeAttributesWithExtensions(attributesWithoutExtensions, extensions),
     )
 
-    val subjectName: Name by lazy(subjectNameProvider)
     val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
-    val attributes: List<CsrAttribute> by lazy(attributesProvider)
 
     val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID } }
 
@@ -93,7 +91,7 @@ class TbsCertificationRequest internal constructor(
  * Very simple implementation of a PKCS#10 Certification Request.
  */
 class CertificationRequest internal constructor(
-    tbsCsrProvider: () -> TbsCertificationRequest,
+    val tbsCsr: TbsCertificationRequest,
     signatureAlgorithmProvider: () -> SignatureAlgorithm,
     signatureProvider: () -> CryptoSignature,
     override val representations: Map<Encodable.Representation, Any>,
@@ -102,9 +100,8 @@ class CertificationRequest internal constructor(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: SignatureAlgorithm,
         signature: CryptoSignature,
-    ) : this({ tbsCsr }, { signatureAlgorithm }, { signature }, emptyMap())
+    ) : this(tbsCsr, { signatureAlgorithm }, { signature }, emptyMap())
 
-    val tbsCsr: TbsCertificationRequest by lazy(tbsCsrProvider)
     val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
     val signature: CryptoSignature by lazy(signatureProvider)
 
