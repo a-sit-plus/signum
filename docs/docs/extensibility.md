@@ -21,13 +21,11 @@ For module-specific service interfaces, use explicit typed registration:
 Signum.registerProvider<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
 ```
 
-`Signum.load<ServiceInterface>()` provides the ordered provider lookup. `ServiceLoader` is removed.
-
 An extension should expose one `install()` function that registers its providers, contextual serializers,
 and any certificate-extension or name descriptors. Applications call it during startup before using those types.
 
 Signum uses one application-wide `Signum.Der` instance. Public signing, verification, platform conversion,
-and chain-validation helpers use it automatically and accept no `Der` argument. Nested codecs and deferred
+and chain-validation helpers use it automatically for all things serialization. Nested codecs and deferred
 semantic decoding use the same instance. The core serializers are included automatically;
 `Signum.installPkix()` registers the PKIX descriptors and their serializers.
 Module installers are extension functions on `Signum`, defined in their respective modules; core
@@ -37,13 +35,6 @@ it is also available explicitly as `Signum.installIndispensable()`.
 Optionally select a custom configuration **before** installing extensions:
 
 ```kotlin
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.installPkix
-import at.asitplus.signum.supreme.installSupreme
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
-
 Signum.setDer(DER {
     maxInputLength = 1_000_000
     maxNestingDepth = 64
@@ -69,15 +60,7 @@ later contributions replace earlier registrations for the same type.
 Register native open-polymorphic payload serializers (such as custom `otherName` types) through
 `Signum.registerAsn1Serializers` alongside your provider installation.
 
-[Default DER configuration](default-der.md) records the lifecycle, the previous inspection findings,
-and the deliberate limitation of one configuration per application lifecycle.
-
-In tests, select the template, install providers/modules, and resolve `Signum.Der` once in the test-session
-constructor. Isolated serializer-registration tests can still construct local `Der` instances, but complete
-Signum operations must use `Signum.Der`. There is no per-operation selection or reset.
-See the Cursory signature scheme in `extensibility-test`.
-
-## Representations and encoding
+## Representations and Encoding
 
 Semantic types implement `Encodable`; their companions can implement `Decodable<T>` as a typed decoding target.
 These interfaces replace `DerEncodable` and `DerDecodable` and do not prescribe an ASN.1 representation.
