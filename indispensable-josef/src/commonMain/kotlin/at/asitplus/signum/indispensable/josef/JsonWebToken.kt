@@ -59,6 +59,13 @@ data class JsonWebToken(
     @SerialName("aud")
     val audience: String? = null,
 
+    /**
+     * OAuth2 Attestation Based Client Auth: Challenge as a nonce for proof of possession. See
+     * [OAuth 2.0 Attestation-Based Client Authentication](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-10#name-challenges)
+     */
+    @SerialName("challenge")
+    val challenge: String? = null,
+
     @SerialName("nonce")
     val nonce: String? = null,
 
