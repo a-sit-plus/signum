@@ -2,13 +2,10 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
 
 /**
  * Flattened JSON JWS serialization.
@@ -23,8 +20,7 @@ import kotlinx.serialization.json.jsonObject
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.
  *
- *
- * If [plainPayload] data structure is defined as part of the contact consider [JwsFlattenedTyped]
+ * To access the contents of the parameters use [JwsFlattenedTyped]
  */
 @ConsistentCopyVisibility
 @Serializable
@@ -47,12 +43,6 @@ data class JwsFlattened internal constructor(
     }
 
     @Transient
-    val wrappedHeader = JwsHeaderWrapped.fromParts<JwsHeader>(plainProtectedHeader, unprotectedHeader)
-
-    @Transient
-    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
-
-    @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
 
     override fun equals(other: Any?): Boolean {
@@ -71,7 +61,7 @@ data class JwsFlattened internal constructor(
 
     override fun hashCode(): Int {
         var result = plainProtectedHeader?.contentHashCode() ?: 0
-        result = 31 * result + unprotectedHeader.hashCode()
+        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         result = 31 * result + plainPayload.contentHashCode()
         result = 31 * result + plainSignature.contentHashCode()
         return result
@@ -79,24 +69,22 @@ data class JwsFlattened internal constructor(
 
     companion object {
         /**
-         * Creates a flattened JWS, placing the serialized [header] members named by [unprotectedMembers] in its
-         * unprotected fragment.
+         * Creates a flattened JWS, splitting [JwsHeaderWrapped.header] according to
+         * [JwsHeaderWrapped.unprotectedMembers].
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
-        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
+        @Deprecated("Will be replaced by real signing service")
         suspend operator fun invoke(
-            header: JwsHeader,
+            wrappedHeader: JwsHeaderWrapped<*>,
             payload: ByteArray,
-            unprotectedMembers: Set<String> = emptySet(),
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val serializedHeader = joseCompliantSerializer.encodeToJsonElement(header).jsonObject
-            val plainProtectedHeader = JsonObject(serializedHeader.filterKeys { it !in unprotectedMembers })
-                .takeUnless { it.isEmpty() }
-                ?.toProtectedHeaderBytes()
-            val unprotectedHeader = JsonObject(serializedHeader.filterKeys { it in unprotectedMembers })
+            val (encodedProtectedHeader, encodedUnprotectedHeader) = wrappedHeader.toHeaderParts()
+            val plainProtectedHeader = encodedProtectedHeader
+                .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
+            val unprotectedHeader = encodedUnprotectedHeader
                 .takeUnless { it.isEmpty() }
             return JwsFlattened(
                 plainProtectedHeader,
@@ -108,9 +96,6 @@ data class JwsFlattened internal constructor(
     }
 }
 
-@Deprecated(
-    "Use plainProtectedHeader for the encoded protected fragment or wrappedHeader for the effective typed header."
-)
 val JwsFlattened.protectedHeader: JsonObject?
     get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
 

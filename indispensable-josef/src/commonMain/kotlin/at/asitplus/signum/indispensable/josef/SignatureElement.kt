@@ -1,10 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
-import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -50,12 +48,6 @@ data class SignatureElement internal constructor(
         plainProtectedHeader.requireAbsentIfEmptyProtectedHeader()
     }
 
-    @Transient
-    val wrappedHeader = JwsHeaderWrapped.fromParts<JwsHeader>(plainProtectedHeader, unprotectedHeader)
-
-    @Transient
-    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -71,13 +63,7 @@ data class SignatureElement internal constructor(
     override fun hashCode(): Int {
         var result = plainSignature.contentHashCode()
         result = 31 * result + plainProtectedHeader.contentHashCode()
-        result = 31 * result + unprotectedHeader.hashCode()
+        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         return result
     }
 }
-
-@Deprecated(
-    "Use plainProtectedHeader for the encoded protected fragment or wrappedHeader for the effective typed header."
-)
-val SignatureElement.protectedHeader: JsonObject?
-    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()

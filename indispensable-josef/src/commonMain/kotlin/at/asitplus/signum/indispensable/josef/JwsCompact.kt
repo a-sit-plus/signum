@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import io.matthewnelson.encoding.core.EncodingException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
@@ -16,6 +15,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
 
 /**
  * Implements compact serialization as defined in [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
@@ -25,13 +25,11 @@ import kotlinx.serialization.encoding.Encoder
  *
  * This class does not support an unprotected header field!
  *
- * [JwsCompact] is intentionally *not* annotated with `@Serializable`: its JSON representation is only the compact
- * JWS string, not a JSON object. Use [JwsCompactStringSerializer] explicitly when you want that string form inside
- * a JSON document.
+ * [JwsCompact] is intentionally *not* annotated with `@Serializable`: its canonical representation is compact
+ * JWS string itself which is non-escaped, not a JSON String. Use [JwsCompactStringSerializer] explicitly when you want to
+ * use it from inside a JSON object. For a standalone compact JWS string, use [toString] instead.
  *
- * For a standalone compact JWS string, use [toString] and [JwsCompact.invoke].
- *
- * If [plainPayload] data structure is defined as part of the contact consider [JwsCompactTyped]
+ * To access the contents of the parameters use [JwsCompactTyped]
  */
 @ConsistentCopyVisibility
 data class JwsCompact internal constructor(
@@ -39,12 +37,6 @@ data class JwsCompact internal constructor(
     override val plainPayload: ByteArray,
     val plainSignature: ByteArray,
 ) : JWS() {
-
-    @Transient
-    val wrappedHeader = JwsHeaderWrapped.fromParts<JwsHeader>(plainProtectedHeader, null)
-
-    @Transient
-    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
 
     @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
@@ -77,11 +69,19 @@ data class JwsCompact internal constructor(
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          * and immediately resolve the payload
          */
-        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching {
-            val jws = JwsCompact(base64UrlString)
-            val payload = jws.getPayload<P>().getOrThrow()
-            jws to payload
-        }
+        inline fun <reified P, reified H : JwsHeaderBase> parse(
+            base64UrlString: String,
+            serialFormat: Json = joseCompliantSerializer,
+        ): KmmResult<Triple<JwsCompact, P, JwsHeaderWrapped<H>>> =
+            catching {
+                val jws = JwsCompact(base64UrlString)
+                val payload = jws.getPayload<P>(serialFormat).getOrThrow()
+                val header = JwsHeaderWrapped.fromParts<H>(
+                    protectedHeader = jws.plainProtectedHeader,
+                    serialFormat = serialFormat,
+                )
+                Triple(jws, payload, header)
+            }
 
         /**
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
@@ -113,13 +113,27 @@ data class JwsCompact internal constructor(
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * compact serialization and signing input construction apply base64url encoding internally.
          */
-        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
+        @Deprecated("Will be replaced by real signing service")
         suspend operator fun invoke(
             protectedHeader: JwsHeader,
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
+        ): JwsCompact = invoke(JwsHeaderWrapped(protectedHeader), payload, signer)
+
+        /**
+         * Builds a compact JWS using a wrapped custom header. Compact serialization cannot carry unprotected
+         * members, so every represented header member must be protected.
+         */
+        @Deprecated("Will be replaced by real signing service")
+        suspend operator fun invoke(
+            wrappedHeader: JwsHeaderWrapped<*>,
+            payload: ByteArray,
+            signer: suspend (ByteArray) -> ByteArray,
         ): JwsCompact {
-            val plainProtectedHeader = joseCompliantSerializer.encodeToString(protectedHeader).encodeToByteArray()
+            require(wrappedHeader.effectiveUnprotectedMembers.isEmpty()) {
+                "Compact Serialization does not support unprotected header members"
+            }
+            val plainProtectedHeader = wrappedHeader.toProtectedHeader()
             return JwsCompact(
                 plainProtectedHeader = plainProtectedHeader,
                 plainPayload = payload,
