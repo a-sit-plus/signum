@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
 import kotlin.time.Instant
 
 
@@ -24,6 +23,7 @@ import kotlin.time.Instant
  * Private Header Parameters as specified in RFC 7515 4.3 are currently not implemented
  */
 @Serializable
+@Deprecated("Replaced by interface [JwsHeaderBase]")
 data class JwsHeader(
     /**
      * The "kid" (key ID) Header Parameter is a hint indicating which key
@@ -36,7 +36,7 @@ data class JwsHeader(
      * parameter value.
      */
     @SerialName(SerialNames.KEY_ID)
-    val keyId: String? = null,
+    override val keyId: String? = null,
 
     /**
      * The "typ" (type) Header Parameter is used by JWS applications to
@@ -51,7 +51,7 @@ data class JwsHeader(
      * Use of this Header Parameter is OPTIONAL.
      */
     @SerialName(SerialNames.TYPE)
-    val type: String? = null,
+    override val type: String? = null,
 
     /**
      * The "alg" (algorithm) Header Parameter identifies the cryptographic
@@ -67,7 +67,7 @@ data class JwsHeader(
      * implementations.
      */
     @SerialName(SerialNames.ALGORITHM)
-    val algorithm: JwsAlgorithm,
+    override val algorithm: JwsAlgorithm,
 
     /**
      * The "cty" (content type) Header Parameter is used by JWS applications
@@ -82,7 +82,7 @@ data class JwsHeader(
      * Parameter is OPTIONAL.
      */
     @SerialName(SerialNames.CONTENT_TYPE)
-    val contentType: String? = null,
+    override val contentType: String? = null,
 
     /**
      * The "x5c" (X.509 certificate chain) Header Parameter contains the
@@ -102,7 +102,7 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CERTIFICATE_CHAIN)
     @Serializable(with = CertificateChainBase64Serializer::class)
-    val certificateChain: CertificateChain? = null,
+    override val certificateChain: CertificateChain? = null,
 
     /**
      * RFC 7519: The "nbf" (not before) claim identifies the time before which the JWT
@@ -147,7 +147,7 @@ data class JwsHeader(
      * OPTIONAL.
      */
     @SerialName(SerialNames.JSON_WEB_KEY)
-    val jsonWebKey: JsonWebKey? = null,
+    override val jsonWebKey: JsonWebKey? = null,
 
     /**
      * The "jku" (JWK Set URL) Header Parameter is a URI (RFC3986) that
@@ -162,7 +162,7 @@ data class JwsHeader(
      * OPTIONAL.
      */
     @SerialName(SerialNames.JSON_WEB_KEY_SET_URL)
-    val jsonWebKeySetUrl: String? = null,
+    override val jsonWebKeySetUrl: String? = null,
 
     /**
      * The "x5u" (X.509 URL) Header Parameter is a URI (RFC3986) that refers
@@ -183,7 +183,7 @@ data class JwsHeader(
      * Parameter is OPTIONAL.
      */
     @SerialName(SerialNames.CERTIFICATE_URL)
-    val certificateUrl: String? = null,
+    override val certificateUrl: String? = null,
 
     /**
      * The "x5t" (X.509 certificate SHA-1 thumbprint) Header Parameter is a
@@ -195,7 +195,7 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CERTIFICATE_SHA1_THUMBPRINT)
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val certificateSha1Thumbprint: ByteArray? = null,
+    override val certificateSha1Thumbprint: ByteArray? = null,
 
     /**
      * The "x5t#S256" (X.509 certificate SHA-256 thumbprint) Header
@@ -207,7 +207,7 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CERTIFICATE_SHA256_THUMBPRINT)
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val certificateSha256Thumbprint: ByteArray? = null,
+    override val certificateSha256Thumbprint: ByteArray? = null,
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
@@ -250,7 +250,8 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
-) {
+) : JwsHeaderBase {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -323,6 +324,8 @@ data class JwsHeader(
         attestationJwt?.typed()
     }
 
+    override val crit: List<String>? = null
+
     object SerialNames {
         const val KEY_ID = "kid"
         const val TYPE = "typ"
@@ -342,4 +345,5 @@ data class JwsHeader(
         const val VC_TYPE_METADATA = "vctm"
         const val CLIENT_ID = "client_id"
     }
+
 }

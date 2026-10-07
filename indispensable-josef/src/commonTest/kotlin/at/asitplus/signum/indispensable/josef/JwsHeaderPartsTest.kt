@@ -53,7 +53,7 @@ val JwsHeaderPartsTest by matrixSuite {
 
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
-            JwsHeaderWrapped(
+            JwsHeaderWrapped.fromParts<JwsHeader>(
                 protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))).toProtectedHeaderBytes(),
                 unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
             )

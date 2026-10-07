@@ -51,7 +51,7 @@ data class SignatureElement internal constructor(
     }
 
     @Transient
-    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, unprotectedHeader)
+    val wrappedHeader = JwsHeaderWrapped.fromParts<JwsHeader>(plainProtectedHeader, unprotectedHeader)
 
     @Transient
     val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
