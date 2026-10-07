@@ -18,7 +18,7 @@ data class JwsGeneralTyped<out P, out H : JwsHeaderBase>(
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             jwsFlattened: List<JwsFlattened>,
             serialFormat: Json = joseCompliantSerializer,
-        ): JwsTyped<JwsGeneral, P, H> = jwsFlattened.toJwsGeneral().typed<P, H>(serialFormat)
+        ): JwsGeneralTyped<P, H> = jwsFlattened.toJwsGeneral().typed<P, H>(serialFormat)
     }
 }
 

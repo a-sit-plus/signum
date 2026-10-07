@@ -25,7 +25,7 @@ sealed class JwsTyped<out J : JWS, out P, out H : JwsHeaderBase> {
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             jwsFlattened: List<JwsFlattened>,
             serialFormat: Json = joseCompliantSerializer,
-        ): JwsTyped<JwsGeneral, P, H> = JwsGeneralTyped<P, H>(jwsFlattened, serialFormat)
+        ): JwsGeneralTyped<P, H> = JwsGeneralTyped<P, H>(jwsFlattened, serialFormat)
 
     }
 }
