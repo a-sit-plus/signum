@@ -10,8 +10,8 @@ import kotlinx.serialization.Transient
  * General JSON JWS.
  *
  * A general JWS carries one payload and one or more [SignatureElement]s. Each [SignatureElement] contains the header
- * fragments for one signature and exposes its effective header together with its member-placement metadata. All
- * signatures in a [JwsGeneral] share the same payload.
+ * fragments for one signature. [JwsGeneralTyped] decodes ordered headers and signatures around the retained
+ * wire object. All signatures in a [JwsGeneral] share the same payload.
  *
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.

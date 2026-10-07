@@ -25,11 +25,10 @@ import kotlinx.serialization.json.Json
  *
  * This class does not support an unprotected header field!
  *
- * [JwsCompact] is intentionally *not* annotated with `@Serializable`: its canonical representation is compact
- * JWS string itself which is non-escaped, not a JSON String. Use [JwsCompactStringSerializer] explicitly when you want to
- * use it from inside a JSON object. For a standalone compact JWS string, use [toString] instead.
+ * [JwsCompact] is intentionally not annotated with `@Serializable`: use [toString] for its standalone compact
+ * representation, and [JwsCompactStringSerializer] when embedding that string in JSON.
  *
- * To access the contents of the parameters use [JwsCompactTyped]
+ * Header bytes remain opaque until decoded through [JwsCompactTyped].
  */
 @ConsistentCopyVisibility
 data class JwsCompact internal constructor(
@@ -67,7 +66,7 @@ data class JwsCompact internal constructor(
 
         /**
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
-         * and immediately resolve the payload
+         * and immediately decode its payload and wrapped header
          */
         inline fun <reified P, reified H : JwsHeaderBase> parse(
             base64UrlString: String,

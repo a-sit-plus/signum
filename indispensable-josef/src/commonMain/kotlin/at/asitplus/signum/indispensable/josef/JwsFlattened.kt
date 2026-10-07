@@ -12,10 +12,10 @@ import kotlinx.serialization.json.JsonObject
  *
  * A flattened JWS carries one payload and one signature. The protected header is stored as encoded bytes in
  * [plainProtectedHeader]; the optional unprotected header is represented as a [JsonObject]. The effective header
- * and its member-placement metadata are exposed together through [wrappedHeader].
+ * and its member-placement metadata are decoded through [JwsFlattenedTyped.wrappedHeader].
  *
- * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
- * constitute a valid [JwsHeader].
+ * Either fragment may be partial or contain unmodeled parameters. Creating a typed view requires their
+ * strict union to decode as the chosen [JwsHeaderBase] implementation.
  *
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.
@@ -103,7 +103,7 @@ val JwsFlattened.protectedHeader: JsonObject?
  * Converts flattened JSON serialization to compact serialization.
  *
  * This requires the absence of an unprotected header, because compact JWS can only carry protected parameters.
- * The protected fragment must therefore represent a valid [JwsHeader] by itself.
+ * Protected bytes are retained without decoding a header model.
  */
 fun JwsFlattened.toJwsCompact(): JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }

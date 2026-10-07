@@ -8,11 +8,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Base-Claims defined in RFC7515 which build the basis for
- * JWS Headers none of which are required.
+ * Standard header parameters defined in RFC 7515 for application-defined JWS header models.
+ * [algorithm] is required; the other standard parameters are optional.
  *
- * `@SerialName` annotations are just for convenience and
- * ARE NOT BEING INHERITED to the implementing class!
+ * Serialization annotations are documentation only and are not inherited. Implementations must declare
+ * their own wire names and serializers, or mark unmodeled properties as transient.
  *
  * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  */

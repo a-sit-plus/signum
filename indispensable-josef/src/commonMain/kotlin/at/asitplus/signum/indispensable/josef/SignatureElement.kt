@@ -10,11 +10,11 @@ import kotlinx.serialization.json.JsonObject
  *
  * A [SignatureElement] contains the signature bytes plus the header fragments for that signature. The protected
  * fragment is stored as encoded bytes in [plainProtectedHeader], while the optional unprotected fragment is
- * represented as a [JsonObject]. The effective header and its member-placement metadata are exposed together
- * through [wrappedHeader].
+ * represented as a [JsonObject]. [JwsGeneralTyped] decodes the effective header and member placement for each
+ * entry while retaining these original fragments.
  *
- * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
- * constitute a valid [JwsHeader].
+ * Either fragment may be partial. Typed decoding requires their strict union to form the chosen
+ * [JwsHeaderBase] implementation.
  *
  * See [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1).
  */

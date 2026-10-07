@@ -4,12 +4,11 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.json.Json
 
 /**
- * Wrapper for [at.asitplus.signum.indispensable.josef.JWS]. Useful when [payload] type is known as part of the contract.
- * All communication over the wire should use [jws] only!
- * Serialization is not recommended but does work. See [JwsTypedSerializerTemplate]
+ * Typed payload and header views over a retained [JWS] wire object.
  *
- * While the constructor can be used the different [invoke]s are recommended.
- * For convenience also see the typealiases
+ * Use the concrete compact, flattened, or general view to access decoded headers and signatures.
+ * Forward [jws] or serialize through [JwsTypedSerializerTemplate] to preserve the original signed bytes.
+ * Typed decoding does not verify signatures or establish key trust.
  */
 sealed class JwsTyped<out J : JWS, out P, out H : JwsHeaderBase> {
     abstract val jws: J

@@ -4,8 +4,9 @@ import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import kotlinx.serialization.KSerializer
 
 /**
- * Convenience Serializer Template to serialize through wrapper and
- * only serialize [JwsTyped.jws].
+ * Serializes only the retained [JwsTyped.jws] wire object.
+ * Decoding reconstructs the concrete typed view with the supplied payload and header serializers,
+ * using the JOSE-compliant JSON format. Decoded signatures retain wire order.
  */
 @Suppress("UNCHECKED_CAST")
 class JwsTypedSerializerTemplate<J : JWS, P, H : JwsHeaderBase>(
