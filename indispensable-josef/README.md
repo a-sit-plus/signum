@@ -92,6 +92,8 @@ verification, rather than reconstructing it from the wrapper.
 Use `joseCompliantSerializer` from `io/Encoding.kt` for JOSE JSON. It disables pretty printing and default-value
 encoding, uses `type` as the class discriminator, and ignores unknown keys when decoding typed classes.
 
+Contextual serialization is generally considered out of scope unless a concrete use case arises.
+
 The sealed `JWS` serializer preserves the concrete form: JSON strings become `JwsCompact`, objects with `signature`
 become `JwsFlattened`, and objects with `signatures` become `JwsGeneral`. Ambiguous or incomplete shapes are rejected.
 Use `JwsCompact.toString()`/`JwsCompact(...)` for standalone compact data and `JwsCompactStringSerializer` when the
