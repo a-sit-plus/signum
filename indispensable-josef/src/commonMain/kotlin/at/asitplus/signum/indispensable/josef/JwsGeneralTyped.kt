@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
  * Typed payload and ordered headers and signatures over an unchanged general [jws].
  * Direct construction requires the decoded values to agree with the retained wire object.
  */
-data class JwsGeneralTyped<out P, out H : JwsHeaderBase>(
+data class JwsGeneralTyped<out P, H : JwsHeaderBase>(
     override val jws: JwsGeneral,
     override val payload: P,
     val wrappedHeaders: List<JwsHeaderWrapped<H>>,

@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
  * Typed payload, effective header, and signature over an unchanged compact [jws].
  * Direct construction requires the decoded values to agree with the retained wire object.
  */
-data class JwsCompactTyped<out P, out H : JwsHeaderBase>(
+data class JwsCompactTyped<out P, H : JwsHeaderBase>(
     override val jws: JwsCompact,
     override val payload: P,
     val wrappedHeader: JwsHeaderWrapped<H>,

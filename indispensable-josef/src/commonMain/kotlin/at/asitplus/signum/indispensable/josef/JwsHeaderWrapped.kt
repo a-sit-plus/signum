@@ -14,7 +14,7 @@ import kotlinx.serialization.serializer
  * serializer is retained as a capability so that the protected and unprotected fragments can be produced even
  * after [H] has been erased at runtime.
  */
-data class JwsHeaderWrapped<out H : JwsHeaderBase>(
+data class JwsHeaderWrapped<H : JwsHeaderBase>(
     val header: H,
     val unprotectedMembers: Set<String>,
     private val headerSerializer: KSerializer<H>,
