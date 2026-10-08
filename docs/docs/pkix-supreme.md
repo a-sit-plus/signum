@@ -58,8 +58,7 @@ Use explicit anchors for reproducible tests and restricted application trust pol
 ## Certificate Requests and Issuance
 
 A CSR proves possession of its key. It does not prove that a requested name, custom attribute or
-attestation claim should be accepted. The [binding certificate example](examples.md#issuing-binding-certificates)
-shows the semantic signing APIs and makes that boundary explicit.
+attestation claim should be accepted. Validate these claims before issuing a certificate.
 
 !!! tip
     **Do check out the full API docs [here](dokka/pkix-supreme/index.html)** for validator and context options.

@@ -8,10 +8,13 @@ Use `at.asitplus.signum:indispensable-pkix:4.0.0`.
 
 ## Install Before Decoding
 
+Import `at.asitplus.signum.Signum` and `at.asitplus.signum.indispensable.pki.installPkix`.
 Call `Signum.installPkix()` once during application startup, before accessing `Signum.Der` or
 otherwise sealing the descriptor registries. It installs the typed descriptors and contextual
 serializers. The examples execute under a test session that performs this startup step.
-Applications adding their own descriptors must also register them before sealing; see
+Adding the dependency alone does not install these descriptors. Perform initialization before loading
+PEM trust anchors or decoding configuration that accesses names or extensions, including top-level
+property initializers. Applications adding their own descriptors must also register them before sealing; see
 [Extensibility](extensibility.md).
 
 ## Typed Data

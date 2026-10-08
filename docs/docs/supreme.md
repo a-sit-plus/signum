@@ -52,7 +52,10 @@ the actual calls to some DSL-configurable type reads the same as in common code.
 
 
 ## Provider Initialization
-Install the Supreme operation providers once at application startup, before registering provider overrides. This is separate from obtaining a provider for persistent key storage:
+Import `at.asitplus.signum.Signum` and `at.asitplus.signum.supreme.installSupreme`, then call
+`Signum.installSupreme()` once at application startup, before registering provider overrides.
+Declaring the dependency alone does not install the operation providers. Run this before digest,
+signing, verification, MAC or KDF operations, including those used while loading configuration. This is separate from obtaining a provider for persistent key storage:
 
 ```kotlin
 --8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-bootstrap"

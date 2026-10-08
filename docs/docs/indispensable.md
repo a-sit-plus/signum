@@ -91,9 +91,23 @@ The `pki` package contains data classes relevant in the PKI context:
 * `X500Name`, `RelativeDistinguishedName`, and `AttributeTypeAndValue` represent distinguished names.
 * `CertificationRequest`, `TbsCertificationRequest`, and `CsrAttribute` represent PKCS#10 requests and attributes.
 
+Issuer and subject names use `Name`; construct an X.509 name with `X500Name(rdns)` and access its
+RDNs through `relativeDistinguishedNames`. Certificate validity uses `kotlin.time.Instant` and serial
+numbers use `Asn1Integer.Positive`. CSR constructors omit the version, which is always 0.
+Raw attribute values are available through the `pki.value` extension; `pki.asn1Representation`
+provides the corresponding awesn1 model.
+
 Concrete EC/RSA keys and signatures live in `indispensable.sign`. Digest, MAC, KDF, agreement,
 and encryption definitions have their own packages. These are data and configuration APIs;
 [Supreme](supreme.md) supplies cryptographic implementations.
+
+## Core Provider Initialization
+
+For applications using only Indispensable, import `at.asitplus.signum.indispensable.installIndispensable`
+and call `Signum.installIndispensable()` during startup before using provider-based platform conversions.
+Several semantic companion objects install core providers lazily, but decoding a certificate alone does not
+ensure that the JCA key-mapping providers have been installed. Applications using Supreme can instead
+call `Signum.installSupreme()`, which installs the core providers too.
 
 ##  Conversion from/to Platform Types
 
@@ -107,6 +121,9 @@ The following functions provide interop functionality with platform types.
 * `Certificate.toJcaCertificate()` is suspending; `toJcaCertificateBlocking()` is available when a blocking API is required.
 * `java.security.cert.X509Certificate.toKmpCertificate()` converts back to Signum.
 * `ECCurve.jcaName`, `ECCurve.byJcaName()`, and the platform algorithm helpers connect built-in definitions with JCA.
+
+Key conversions and `toJcaCertificateBlocking()` return values directly.
+`X509Certificate.toKmpCertificate()` still returns `KmmResult`.
 
 
 ```kotlin
@@ -130,7 +147,14 @@ provided curve-length helpers for supported built-in curves.
 
 Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `Certificate`, and `CertificationRequest`
 implement `Encodable`; their companions implement `Decodable`. Encoding goes through the contextual
-`Signum.Der` serializer. `encodeToPem` and `decodeFromPem` provide PEM transport for supported types.
+`Signum.Der` serializer. `Signum.Der.encodeToPem(value)` and `Signum.Der.decodeFromPem<T>(pem)` provide PEM transport for
+supported types, with helpers imported from `at.asitplus.signum.indispensable`. For byte arrays, import
+`kotlinx.serialization.encodeToByteArray` and `kotlinx.serialization.decodeFromByteArray`. For ASN.1
+elements, import `at.asitplus.awesn1.serialization.encodeToTlv` and `decodeFromTlv`.
+
+`Encodable` and `Decodable` do not supply encoding methods. Custom ASN.1 structures can keep awesn1's
+`Asn1Encodable`/`Asn1Decodable` contracts and use its low-level codecs. When embedding a semantic
+Signum value into an awesn1 builder, add `Signum.Der.encodeToTlv(value)` instead of the value itself.
 
 `asn1Representation` exposes the awesn1 wire model, while `sourceRepresentation` records a decoded
 representation. Semantic equality does not require byte-identical encodings. Constructing a new value
