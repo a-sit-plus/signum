@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.cidre.IpAddress
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Exception
@@ -15,7 +17,8 @@ class DNSName private constructor(
     val value: Asn1String.IA5,
     val allowWildcard: Boolean,
     asn1Representation: X509GeneralName,
-) : AbstractX509GeneralName(asn1Representation) {
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+) : AbstractX509GeneralName(asn1Representation, sourceRepresentation) {
 
     /**
      * @throws Asn1Exception if illegal DNSName is provided
@@ -66,7 +69,7 @@ class DNSName private constructor(
         override val tag = X509GeneralName.Tags.dnsName
 
         override fun fromAsn1Representation(src: X509GeneralName): DNSName = runRethrowing {
-            DNSName((src as X509GeneralName.Dns).rawValue, allowWildcard = true, asn1Representation = src)
+            DNSName((src as X509GeneralName.Dns).rawValue, allowWildcard = true, asn1Representation = src, sourceRepresentation = X509 to src)
         }
 
         private fun validate(value: String, allowWildcard: Boolean): Boolean {

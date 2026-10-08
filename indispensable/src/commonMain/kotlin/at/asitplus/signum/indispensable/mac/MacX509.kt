@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.Signum
 
 val MessageAuthenticationCode.asn1Representation: X509AlgorithmIdentifier
-    get() = representations[X509] as? X509AlgorithmIdentifier ?: run {
+    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
         Signum.installIndispensable()
         Signum.load<MessageAuthenticationCodeProvider>().get(this, MessageAuthenticationCodeProvider::encodeToAsn1)
     }

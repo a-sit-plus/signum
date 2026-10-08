@@ -33,10 +33,10 @@ sealed interface AlternativeNames : Encodable {
     companion object : Decodable<AlternativeNames> {
 
         operator fun invoke(asn1Representation: X509GeneralNames): AlternativeNames =
-            X509AlternativeNames({ asn1Representation.entries.map { GeneralName.fromAsn1Representation(it) } }, mapOf(X509 to asn1Representation))
+            X509AlternativeNames({ asn1Representation.entries.map { GeneralName.fromAsn1Representation(it) } }, X509 to asn1Representation)
 
         fun fromGeneralNames(generalNames: List<GeneralName>): AlternativeNames =
-            X509AlternativeNames({ generalNames }, emptyMap())
+            X509AlternativeNames({ generalNames }, null)
 
         @Throws(Asn1Exception::class)
         fun fromAsn1Representation(element: X509GeneralNames): AlternativeNames =
@@ -66,7 +66,7 @@ sealed interface AlternativeNames : Encodable {
 
 private class X509AlternativeNames(
     generalNamesProvider: () -> List<GeneralName>,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : AlternativeNames {
     override val generalNames by lazy(generalNamesProvider)
 

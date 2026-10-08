@@ -1,10 +1,12 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.BaseX509GeneralName
 import at.asitplus.signum.indispensable.pki.GeneralName.ConstraintResult
 import at.asitplus.signum.indispensable.pki.tag
 import at.asitplus.signum.indispensable.pki.asn1Representation as genericAsn1Representation
@@ -13,9 +15,8 @@ import kotlinx.serialization.builtins.ListSerializer
 
 abstract class AbstractX509GeneralName(
     model: X509GeneralName,
-) : GeneralName {
-    final override val representations: Map<at.asitplus.signum.indispensable.Encodable.Representation, Any> =
-        mapOf(at.asitplus.signum.indispensable.pki.X509 to model)
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+) : BaseX509GeneralName(model, sourceRepresentation) {
 
     /**
      * Constraint relation of this name against [input]. The base implementation only distinguishes
@@ -73,13 +74,13 @@ private fun GeneralName.hasSameNameType(other: GeneralName): Boolean {
 /**
  * Serializes a [GeneralName] by delegating to awesn1's [X509GeneralName] CHOICE serializer and routing
  * decode through the [GeneralName] registry (typed alternative when registered, generic
- * [at.asitplus.signum.indispensable.pki.BaseX509GeneralName] otherwise).
+ * [BaseX509GeneralName] otherwise).
  */
 internal object GeneralNameSerializer : KSerializer<GeneralName> by at.asitplus.signum.indispensable.GeneralNameAsn1Serializer
 
 internal object GeneralNameListSerializer : KSerializer<List<GeneralName>> by ListSerializer(GeneralNameSerializer)
 
 val AbstractX509GeneralName.asn1Representation: X509GeneralName
-    get() = representations[at.asitplus.signum.indispensable.pki.X509] as X509GeneralName
+    get() = (this as BaseX509GeneralName).genericAsn1Representation
 
 val AbstractX509GeneralName.tag: Asn1Element.Tag get() = asn1Representation.tag

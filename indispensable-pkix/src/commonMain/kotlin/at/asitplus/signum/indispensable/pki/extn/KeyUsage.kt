@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.awesn1.encoding.parse
@@ -13,7 +15,10 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 class KeyUsage internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
     val keyUsage: Set<UsageBit>,
-) : X509CertificateExtension(asn1Representation) {
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     constructor(vararg usageBits: UsageBit) : this(
         //TODO possibly nullable
@@ -23,7 +28,8 @@ class KeyUsage internal constructor(
             // raw BitSet bytes, which would fail to re-decode.
             value = Asn1BitString(BitSet().apply { usageBits.forEach { this.set(it.index) } }).encodeToTlv().derEncoded
         ),
-        keyUsage = usageBits.toSet()
+        keyUsage = usageBits.toSet(),
+        sourceRepresentation = null,
     )
 
     companion object : CertificateExtension.Descriptor<KeyUsage>, at.asitplus.awesn1.serialization.OidProvider<KeyUsage>{

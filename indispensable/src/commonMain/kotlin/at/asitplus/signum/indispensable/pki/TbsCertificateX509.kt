@@ -13,7 +13,7 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 object X509 : Encodable.Representation
 
 val TbsCertificate.asn1Representation: X509TbsCertificate
-    get() = representations[X509] as? X509TbsCertificate ?: run {
+    get() = sourceRepresentationFor(X509) as? X509TbsCertificate ?: run {
         runRethrowing {
             require(serialNumber.encodeToAsn1ContentBytes().size <= 20) {
                 "Serial Number too long for X.509. Limit = 20 value octets"
@@ -44,13 +44,13 @@ fun TbsCertificate.Companion.fromAsn1Representation(
     TbsCertificate(
         serialNumber = src.serialNumber,
         signatureAlgorithmProvider = { SignatureAlgorithm.fromAsn1Representation(src.signatureAlgorithm) },
-        issuerName = X500Name(src.issuerName.map { RelativeDistinguishedName(it) }, false),
+        issuerName = X500Name.fromAsn1Representation(src.issuerName),
         validFrom = src.validity.validFrom.instant,
         validUntil = src.validity.validUntil.instant,
-        subjectName = X500Name(src.subjectName.map { RelativeDistinguishedName(it) }, false),
+        subjectName = X500Name.fromAsn1Representation(src.subjectName),
         publicKeyProvider = { CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo) },
         issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
         subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
         extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
-        representations = mapOf(X509 to src),
+        sourceRepresentation = X509 to src,
     )

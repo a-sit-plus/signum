@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.asn1Representation
 
 val Certificate.asn1Representation: X509Certificate
-    get() = representations[X509] as? X509Certificate ?: X509Certificate(
+    get() = sourceRepresentationFor(X509) as? X509Certificate ?: X509Certificate(
         tbsCertificate.asn1Representation,
         signatureAlgorithm.asn1Representation,
         signature.asn1Representation,
@@ -28,6 +28,6 @@ fun Certificate.Companion.fromAsn1Representation(src: X509Certificate): Certific
     return Certificate(
         TbsCertificate.fromAsn1Representation(src.tbsCertificate),
         { CryptoSignature(src.signatureAlgorithm, src.signatureValue) },
-        mapOf(X509 to src),
+        X509 to src,
     )
 }

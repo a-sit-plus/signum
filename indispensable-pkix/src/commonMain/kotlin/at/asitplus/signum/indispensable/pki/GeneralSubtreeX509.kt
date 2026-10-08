@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.sourceRepresentationFor
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.signum.indispensable.pki.x500.GeneralNameSerializer
@@ -15,8 +16,8 @@ internal data class X509GeneralSubtree(
 )
 
 internal val GeneralSubtree.asn1Representation: X509GeneralSubtree
-    get() = representations[X509] as? X509GeneralSubtree
+    get() = sourceRepresentationFor(X509) as? X509GeneralSubtree
         ?: X509GeneralSubtree(base, minimum.takeUnless { it == Asn1Integer(0) }, maximum)
 
 internal fun GeneralSubtree.Companion.fromAsn1Representation(src: X509GeneralSubtree): GeneralSubtree =
-    GeneralSubtree(src.base, src.minimum ?: Asn1Integer(0), src.maximum, mapOf(X509 to src))
+    GeneralSubtree(src.base, src.minimum ?: Asn1Integer(0), src.maximum, X509 to src)

@@ -36,7 +36,7 @@ class RsaPublicKey internal constructor(
     val n: Asn1Integer.Positive,
     /** public exponent */
     val e: Asn1Integer.Positive,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoPublicKey {
 
     override val additionalProperties = mutableMapOf<String, String>()
@@ -48,7 +48,7 @@ class RsaPublicKey internal constructor(
 
         /** public exponent */
         e: Asn1Integer.Positive,
-    ) : this(n, e, emptyMap())
+    ) : this(n, e, null)
 
     val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -115,7 +115,7 @@ class RsaPublicKey internal constructor(
             return RsaPublicKey(
                 parsed.modulus as Asn1Integer.Positive,
                 parsed.publicExponent as Asn1Integer.Positive,
-                emptyMap(),
+                null,
             )
         }
 
@@ -140,7 +140,7 @@ class RsaPublicKey internal constructor(
 class EcdsaPublicKey internal constructor(
     val publicPoint: ECPoint.Normalized,
     val preferCompressedRepresentation: Boolean,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
 
     override val additionalProperties = mutableMapOf<String, String>()
@@ -187,7 +187,7 @@ class EcdsaPublicKey internal constructor(
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
-            return EcdsaPublicKey(this.normalize(), preferCompressed, emptyMap())
+            return EcdsaPublicKey(this.normalize(), preferCompressed, null)
         }
 
         /** Decodes key from big-endian X and sign of Y */

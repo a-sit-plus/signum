@@ -66,7 +66,7 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val original = X509AlgorithmIdentifier(normal.oid, null)
         val algorithm = SignatureAlgorithm.fromAsn1Representation(original)
         algorithm.asn1Representation shouldBe original
-        algorithm.representations[X509] shouldBe original
+        algorithm.sourceRepresentationFor(X509) shouldBe original
         val bytes = Signum.Der.encodeToByteArray(original)
         Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<SignatureAlgorithm>(bytes)) shouldBe bytes
     }
@@ -79,7 +79,7 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val bytes = Signum.Der.encodeToByteArray(original)
         Signum.Der.encodeToByteArray(key) shouldBe bytes
         val decoded = Signum.Der.decodeFromByteArray<CryptoPublicKey>(bytes)
-        decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
+        decoded.asn1Representation shouldBeSameInstanceAs decoded.sourceRepresentationFor(X509)
         Signum.Der.encodeToByteArray(decoded) shouldBe bytes
         Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<EcdsaPublicKey>(bytes)) shouldBe bytes
         Signum.Der.decodeFromByteArray<EcdsaPublicKey>(Signum.Der.encodeToByteArray(ec)) shouldBe ec

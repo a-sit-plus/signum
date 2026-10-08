@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.sourceRepresentationFor
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.*
@@ -74,7 +75,7 @@ val SignumDerTest by matrixSuite {
         generic.shouldBeInstanceOf<RegisteredCertificateExtension>()
         concrete shouldBe source
         Signum.Der.encodeToByteArray(concrete) shouldBe bytes
-        requireNotNull(concrete.representations[X509])
+        requireNotNull(concrete.sourceRepresentationFor(X509))
         Signum.attributeOidFor("customcn") shouldBe at.asitplus.signum.indispensable.pki.attributes.CommonName.oid
     }
 
@@ -127,7 +128,7 @@ val SignumDerTest by matrixSuite {
         val explicit = GeneralSubtree.fromAsn1Representation(X509GeneralSubtree(name, Asn1Integer(0)))
         explicit shouldBe omitted
         explicit.hashCode() shouldBe omitted.hashCode()
-        explicit.asn1Representation shouldBeSameInstanceAs explicit.representations[X509]
+        explicit.asn1Representation shouldBeSameInstanceAs explicit.sourceRepresentationFor(X509)
         val bytes = Signum.Der.encodeToByteArray(explicit)
         Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<GeneralSubtree>(bytes)) shouldBe bytes
     }
