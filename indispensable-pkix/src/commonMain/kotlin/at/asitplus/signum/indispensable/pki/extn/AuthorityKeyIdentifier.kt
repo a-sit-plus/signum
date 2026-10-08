@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.Signum
 
 import at.asitplus.awesn1.Asn1Integer
@@ -20,8 +22,11 @@ class AuthorityKeyIdentifier internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
     val keyIdentifier: ByteArray?,
     val authorityCertIssuer: List<GeneralName> = emptyList<GeneralName>(),
-    val authorityCertSerialNumber: ByteArray?
-) : X509CertificateExtension(asn1Representation) {
+    val authorityCertSerialNumber: ByteArray?,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     /** Builds an Authority Key Identifier extension programmatically. */
     constructor(
@@ -45,6 +50,7 @@ class AuthorityKeyIdentifier internal constructor(
         keyIdentifier,
         authorityCertIssuer,
         authorityCertSerialNumber?.encodeToTlv()?.content,
+        sourceRepresentation = null,
     )
 
     companion object : CertificateExtension.Descriptor<AuthorityKeyIdentifier>{

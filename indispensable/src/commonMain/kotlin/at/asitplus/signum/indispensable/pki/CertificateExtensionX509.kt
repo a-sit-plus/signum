@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.sourceRepresentationFor
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.Encodable
@@ -7,15 +8,15 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 
 /** Returns null when this extension has no X.509 representation. */
 val CertificateExtension.asn1Representation: Awesn1X509CertificateExtension?
-    get() = representations[X509] as? Awesn1X509CertificateExtension
+    get() = sourceRepresentationFor(X509) as? Awesn1X509CertificateExtension
         ?: (this as? X509CertificateExtension)?.asn1Representation
 
 val X509CertificateExtension.asn1Representation: Awesn1X509CertificateExtension
-    get() = representations[X509] as? Awesn1X509CertificateExtension
+    get() = sourceRepresentationFor(X509) as? Awesn1X509CertificateExtension
         ?: Awesn1X509CertificateExtension(oid, critical, derEncodedValue)
 
-open class X509CertificateExtension private constructor(
-    override val representations: Map<Encodable.Representation, Any>,
+open class X509CertificateExtension protected constructor(
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
     val derEncodedValue: ByteArray,
@@ -25,7 +26,7 @@ open class X509CertificateExtension private constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: ByteArray,
-    ) : this(emptyMap(), oid, critical, value)
+    ) : this(null, oid, critical, value)
 
     constructor(
         oid: ObjectIdentifier,
@@ -34,7 +35,7 @@ open class X509CertificateExtension private constructor(
     ) : this(oid, critical, value.content)
 
     constructor(asn1Representation: Awesn1X509CertificateExtension) : this(
-        mapOf(X509 to asn1Representation),
+        X509 to asn1Representation,
         asn1Representation.oid,
         asn1Representation.critical,
         asn1Representation.value,

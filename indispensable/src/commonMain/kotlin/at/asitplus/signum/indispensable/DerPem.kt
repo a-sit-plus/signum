@@ -26,7 +26,7 @@ inline fun <reified T : Encodable> Der.encodeToPemBlock(value: T): PemBlock {
         is CertificationRequest -> value.asn1Representation
         is CryptoPublicKey -> value.asn1Representation
         is CryptoPrivateKey -> value.asn1Representation
-        else -> value.representations[at.asitplus.signum.indispensable.pki.X509]
+        else -> value.sourceRepresentationFor(at.asitplus.signum.indispensable.pki.X509)
     }
     val label = (model as? WithPemLabel)?.pemLabel
         ?: throw IllegalArgumentException("${T::class.simpleName} has no PEM label")

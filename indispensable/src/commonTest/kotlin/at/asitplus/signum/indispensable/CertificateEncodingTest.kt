@@ -47,6 +47,7 @@ private val certificateDer = DER { serializersModule = signumAsn1Serializers }
 val CertificateEncodingTest by matrixSuite {
     "Contextual serializers distinguish Certificate and TbsCertificate" {
         val source = certificate()
+        source.sourceRepresentation shouldBe null
         val outer = source
         val inner = source.tbsCertificate
         val bytes = certificateDer.encodeToByteArray(outer)
@@ -64,7 +65,9 @@ val CertificateEncodingTest by matrixSuite {
         buffer.peek().readByteArray() shouldBe bytes
         certificateDer.decodeFromSource<Certificate>(buffer) shouldBe source
         shouldThrowAny { certificateDer.decodeFromSource<Certificate>(Buffer().apply { write(bytes) }, limit = 1) }
-        decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
+        decoded.asn1Representation shouldBeSameInstanceAs decoded.sourceRepresentationFor(X509)
+        source.sourceRepresentation shouldBe null
+        inner.sourceRepresentation shouldBe null
         shouldThrowAny { DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }.decodeFromByteArray<Certificate>(bytes) }
     }
 

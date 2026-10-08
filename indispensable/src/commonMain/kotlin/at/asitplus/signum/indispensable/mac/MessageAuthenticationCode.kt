@@ -19,7 +19,7 @@ interface MessageAuthenticationCode : Encodable {
         : MessageAuthenticationCode
     {
         override fun toString() = "$inner (truncated to $outputLength)"
-        override val representations: Map<Encodable.Representation, Any> = emptyMap()
+        override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null
 
     }
 

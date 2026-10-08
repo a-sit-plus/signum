@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.cidre.*
@@ -14,7 +16,8 @@ class IPAddressName internal constructor(
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     val rawBytes: ByteArray,
     performValidation: Boolean,
-) : AbstractX509GeneralName(X509GeneralName.IpAddress(rawBytes)) {
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+) : AbstractX509GeneralName(X509GeneralName.IpAddress(rawBytes), sourceRepresentation) {
 
     override val isValid: Boolean by lazy { address != null }
 
@@ -111,14 +114,18 @@ class IPAddressName internal constructor(
             val content = (src as X509GeneralName.IpAddress).rawValue.content
             return when (content.size) {
                 IpFamily.V4.numberOfOctets -> IPAddressName(
-                    IpAddress.V4(content), rawBytes = IpAddress.V4(content).octets, performValidation = false
+                    IpAddress.V4(content), rawBytes = content, performValidation = false,
+                    sourceRepresentation = X509 to src,
                 )
 
                 IpFamily.V6.numberOfOctets -> IPAddressName(
-                    IpAddress.V6(content), rawBytes = IpAddress.V6(content).octets, performValidation = false
+                    IpAddress.V6(content), rawBytes = content, performValidation = false,
+                    sourceRepresentation = X509 to src,
                 )
 
-                else -> IPAddressName(IpInterface.fromX509Octets(content))
+                else -> IpInterface.fromX509Octets(content).let {
+                    IPAddressName(it.address, it, content, false, X509 to src)
+                }
             }
         }
 

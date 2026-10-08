@@ -31,11 +31,11 @@ interface Name : Encodable {
 class X500Name internal constructor(
     override val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Name {
 
     constructor(relativeDistinguishedNames: List<RelativeDistinguishedName>, performValidation: Boolean) :
-        this(relativeDistinguishedNames, performValidation, emptyMap())
+        this(relativeDistinguishedNames, performValidation, null)
 
     val isValid: Boolean by lazy {
         relativeDistinguishedNames.all { it.isValid }
@@ -60,7 +60,7 @@ class X500Name internal constructor(
         fun fromAsn1Representation(
             element: Asn1X500Name): X500Name = X500Name(
             element
-                .map { RelativeDistinguishedName(it) }, false, mapOf(X509 to element))
+                .map { RelativeDistinguishedName(it) }, false, X509 to element)
 
         /** Parse an RFC 2253 string (e.g., `CN=John Doe,O=Company,C=US`). */
         fun fromString(value: String): X500Name {

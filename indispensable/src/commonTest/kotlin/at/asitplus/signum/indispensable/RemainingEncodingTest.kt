@@ -82,7 +82,7 @@ val RemainingEncodingTest by matrixSuite {
         der.encodeToByteArray(decoded) shouldBe bytes
         val model = encodable.asn1Representation
         val retained = CertificationRequest.fromAsn1Representation(model)
-        retained.representations[X509] shouldBeSameInstanceAs model
+        retained.sourceRepresentationFor(X509) shouldBeSameInstanceAs model
         retained.asn1Representation shouldBeSameInstanceAs model
         val inner = TbsCertificationRequest.fromAsn1Representation(model.certificationRequestInfo)
         inner.asn1Representation shouldBeSameInstanceAs model.certificationRequestInfo
@@ -123,36 +123,44 @@ val RemainingEncodingTest by matrixSuite {
         shouldThrowAny { der.encodeToByteArray(first) }
     }
 
-    "Original models are retained in maps and fresh models come from semantic fields" {
+    "Only decoded values retain a source and other encodings leave it unchanged" {
         val ecSignature = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
-        ecSignature.representations shouldBe emptyMap()
+        ecSignature.sourceRepresentation shouldBe null
         val signatureModel = ecSignature.asn1Representation
         EcdsaSignature.fromAsn1Representation(signatureModel).asn1Representation.rawBitString shouldBeSameInstanceAs signatureModel.rawBitString
         val rsaModel = RsaSignature(byteArrayOf(1, 2, 3)).asn1Representation
         RsaSignature.fromAsn1Representation(rsaModel).asn1Representation.rawBitString shouldBeSameInstanceAs rsaModel.rawBitString
 
         val pss = RsaAlgorithm.Parameters.PssPadded(digest = Digest.SHA256)
-        pss.representations shouldBe emptyMap()
+        pss.sourceRepresentation shouldBe null
         val pssModel = pss.asn1Representation
         RsaAlgorithm.Parameters.PssPadded.fromAsn1Representation(pssModel).asn1Representation shouldBeSameInstanceAs pssModel
 
         val key = EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1,
             encodeCurve = true, encodePublicKey = true)
-        key.representations shouldBe emptyMap()
+        key.sourceRepresentation shouldBe null
         val pkcs8 = key.asPKCS8
         val decoded = EcdsaPrivateKey.fromAsn1Representation(pkcs8)
         decoded.asPKCS8 shouldBeSameInstanceAs pkcs8
         decoded shouldBe key
         val sec1 = key.asSEC1
         val fromSec1 = EcdsaPrivateKey.fromAsn1Representation(sec1)
+        fromSec1.sourceRepresentation?.first shouldBe SEC1
         fromSec1.asSEC1 shouldBeSameInstanceAs sec1
         fromSec1 shouldBe key
         der.encodeToByteArray(fromSec1) shouldBe der.encodeToByteArray(key)
         fromSec1.attributes shouldBe null
+        fromSec1.sourceRepresentation?.first shouldBe SEC1
+        fromSec1.sourceRepresentation?.second shouldBeSameInstanceAs sec1
+        decoded.sourceRepresentation?.second shouldBeSameInstanceAs pkcs8
+        key.sourceRepresentation shouldBe null
+        ecSignature.sourceRepresentation shouldBe null
+        pss.sourceRepresentation shouldBe null
 
         val names = AlternativeNames.fromGeneralNames(emptyList())
-        names.representations shouldBe emptyMap()
+        names.sourceRepresentation shouldBe null
         val namesModel = requireNotNull(names.asn1Representation)
+        names.sourceRepresentation shouldBe null
         requireNotNull(AlternativeNames.fromAsn1Representation(namesModel).asn1Representation).entries shouldBeSameInstanceAs namesModel.entries
     }
 
@@ -184,7 +192,7 @@ val RemainingEncodingTest by matrixSuite {
         der.encodeToByteArray(decoded) shouldBe der.encodeToByteArray(original)
     }
 
-    "EC private scalar and retained representations do not require a supported curve" {
+    "EC private scalar and retained source do not require a supported curve" {
         val unknownCurve = ObjectIdentifier("1.2.3.4")
         val original = Sec1EcPrivateKeyInfo(
             privateKey = ByteArray(32).apply { this[lastIndex] = 1 },

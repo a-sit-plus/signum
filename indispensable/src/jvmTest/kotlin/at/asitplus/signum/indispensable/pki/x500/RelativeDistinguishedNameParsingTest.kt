@@ -161,7 +161,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         Asn1String.decodeFromTlv(atv.value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
     }
 
-    "ATV equality should be symmetric across representations" {
+    "ATV equality should be symmetric across sourceRepresentation" {
         val oid = ObjectIdentifier("2.5.4.3")
         val generic = NonX509AttributeTypeAndValue(oid)
         val x509 = BaseX509AttributeTypeAndValue(oid, Asn1String.UTF8("Alice"))

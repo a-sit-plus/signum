@@ -23,7 +23,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
         val extension: CertificateExtension = object : CertificateExtension {
             override val oid = ObjectIdentifier("1.2.3.4")
             override val critical = true
-            override val representations = emptyMap<Encodable.Representation, Any>()
+            override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null
         }
         extension.asn1Representation shouldBe null
         val tbs = TbsCertificate(
@@ -48,7 +48,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
         val extension: CertificateExtension = object : CertificateExtension {
             override val oid = original.oid
             override val critical = original.critical
-            override val representations: Map<Encodable.Representation, Any> = mapOf(X509 to original)
+            override val sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to original
         }
         extension.asn1Representation shouldBeSameInstanceAs original
         // Interface-typed lookup selects the registered bridge, including for user-defined implementations.
@@ -56,7 +56,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
         val der = DER { serializersModule = signumAsn1Serializers }
         val bytes = der.encodeToByteArray(value)
         val decoded = der.decodeFromByteArray<CertificateExtension>(bytes)
-        decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
+        decoded.asn1Representation shouldBeSameInstanceAs decoded.sourceRepresentationFor(X509)
         der.encodeToByteArray(decoded) shouldBe bytes
         val generic = X509CertificateExtension(original)
         der.encodeToByteArray(der.decodeFromByteArray<X509CertificateExtension>(der.encodeToByteArray(generic))) shouldBe bytes

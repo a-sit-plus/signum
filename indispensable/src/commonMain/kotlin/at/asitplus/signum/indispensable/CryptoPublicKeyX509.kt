@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 
 val CryptoPublicKey.asn1Representation: SubjectPublicKeyInfo
-    get() = representations[X509] as? SubjectPublicKeyInfo ?: run {
+    get() = sourceRepresentationFor(X509) as? SubjectPublicKeyInfo ?: run {
         Signum.installIndispensable()
         Signum.load<PublicKeyFormatProvider>().get(this, PublicKeyFormatProvider::encodeToAsn1)
     }
@@ -43,7 +43,7 @@ fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): Rs
     return RsaPublicKey(
         n = parsed.modulus as Asn1Integer.Positive,
         e = parsed.publicExponent as Asn1Integer.Positive,
-        representations = mapOf(X509 to src),
+        sourceRepresentation = X509 to src,
     )
 }
 
@@ -58,7 +58,7 @@ fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): 
         is Sec1EcPublicKeyInfo.Compressed -> EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
         is Sec1EcPublicKeyInfo.Uncompressed -> EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
     }
-    return EcdsaPublicKey(key.publicPoint, key.preferCompressedRepresentation, mapOf(X509 to src))
+    return EcdsaPublicKey(key.publicPoint, key.preferCompressedRepresentation, X509 to src)
 }
 
 operator fun EcdsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): EcdsaPublicKey = fromAsn1Representation(src)

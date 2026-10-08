@@ -24,7 +24,7 @@ class TbsCertificate internal constructor(
     val issuerUniqueID: ByteArray?,
     val subjectUniqueID: ByteArray?,
     val extensions: List<CertificateExtension>,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
 
     constructor(
@@ -49,7 +49,7 @@ class TbsCertificate internal constructor(
         issuerUniqueID,
         subjectUniqueID,
         extensions,
-        emptyMap(),
+        null,
     ) {
         runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
         validateExtensions(extensions)
