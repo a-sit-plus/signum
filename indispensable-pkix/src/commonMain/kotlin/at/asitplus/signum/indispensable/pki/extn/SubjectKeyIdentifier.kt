@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.encoding.encodeToAsn1OctetStringPrimitive
@@ -15,8 +17,11 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  */
 class SubjectKeyIdentifier internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
-    val keyIdentifier: ByteArray?
-) : X509CertificateExtension(asn1Representation) {
+    val keyIdentifier: ByteArray?,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     /** Builds a Subject Key Identifier extension programmatically from a raw [keyIdentifier]. */
     constructor(keyIdentifier: ByteArray, critical: Boolean = false) : this(
@@ -26,6 +31,7 @@ class SubjectKeyIdentifier internal constructor(
             keyIdentifier.encodeToAsn1OctetStringPrimitive().derEncoded,
         ),
         keyIdentifier,
+        sourceRepresentation = null,
     )
 
     companion object : CertificateExtension.Descriptor<SubjectKeyIdentifier>{

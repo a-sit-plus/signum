@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.signum.Signum
@@ -18,8 +20,11 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 class NameConstraints internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
     var permitted: GeneralSubtrees? = null,
-    var excluded: GeneralSubtrees? = null
-) : X509CertificateExtension(asn1Representation) {
+    var excluded: GeneralSubtrees? = null,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     /**
      * Builds a Name Constraints extension programmatically from [permitted]/[excluded] subtrees.
@@ -42,6 +47,7 @@ class NameConstraints internal constructor(
         ),
         permitted,
         excluded,
+        sourceRepresentation = null,
     )
 
     /** Indicates whether the NameConstraints extension contains only valid general names in both the permitted and excluded subtrees. */

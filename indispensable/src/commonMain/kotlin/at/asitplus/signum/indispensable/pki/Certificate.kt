@@ -10,16 +10,16 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-/** Signed certificate contents, with original representations retained separately. */
+/** Signed certificate contents, with the original decoded source retained separately. */
 class Certificate internal constructor(
     val tbsCertificate: TbsCertificate,
     signatureProvider: () -> CryptoSignature/*defer to also parse and round-trip even unsupported sigalgs*/,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
     constructor(
         tbsCertificate: TbsCertificate,
         signature: CryptoSignature,
-    ) : this(tbsCertificate, { signature }, emptyMap()) {
+    ) : this(tbsCertificate, { signature }, null) {
         require(tbsCertificate.extensions.allDistinctByOids()) { "Multiple extensions with the same OID found" }
     }
 

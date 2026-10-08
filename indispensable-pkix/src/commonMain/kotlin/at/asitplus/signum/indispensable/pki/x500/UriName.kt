@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
@@ -17,7 +19,8 @@ class UriName private constructor(
     val allowWildcard: Boolean,
     asn1Representation: X509GeneralName,
     performValidation: Boolean,
-) : AbstractX509GeneralName(asn1Representation) {
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+) : AbstractX509GeneralName(asn1Representation, sourceRepresentation) {
 
     val hostDNS: DNSName?
     val hostIP: IPAddressName?
@@ -105,6 +108,7 @@ class UriName private constructor(
                 allowWildcard = false,
                 asn1Representation = src,
                 performValidation = false,
+                sourceRepresentation = X509 to src,
             )
         }
     }

@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
@@ -12,7 +14,8 @@ import at.asitplus.signum.indispensable.pki.GeneralName.Descriptor
 class RFC822Name private constructor(
     val value: Asn1String.IA5,
     asn1Representation: X509GeneralName,
-) : AbstractX509GeneralName(asn1Representation) {
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+) : AbstractX509GeneralName(asn1Representation, sourceRepresentation) {
 
     /**
      * @throws Asn1Exception if illegal RFC822Name is provided
@@ -73,6 +76,6 @@ class RFC822Name private constructor(
     companion object : Descriptor<RFC822Name>{
         override val tag = X509GeneralName.Tags.rfc822Name
         override fun fromAsn1Representation(src: X509GeneralName): RFC822Name =
-            RFC822Name((src as X509GeneralName.Rfc822).rawValue, src)
+            RFC822Name((src as X509GeneralName.Rfc822).rawValue, src, X509 to src)
     }
 }

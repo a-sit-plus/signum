@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.Signum
 
 import at.asitplus.awesn1.KnownOIDs
@@ -16,8 +18,11 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  */
 class ExtendedKeyUsage internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
-    val keyUsages: Set<ObjectIdentifier>
-) : X509CertificateExtension(asn1Representation) {
+    val keyUsages: Set<ObjectIdentifier>,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     /** Builds an Extended Key Usage extension programmatically. Typically non-critical. */
     constructor(keyUsages: Set<ObjectIdentifier>, critical: Boolean = false) : this(
@@ -27,6 +32,7 @@ class ExtendedKeyUsage internal constructor(
                         Signum.Der.encodeToByteArray(ListSerializer(ObjectIdentifier.serializer()), keyUsages.toList()),
         ),
         keyUsages,
+        sourceRepresentation = null,
     )
 
     companion object : CertificateExtension.Descriptor<ExtendedKeyUsage>{

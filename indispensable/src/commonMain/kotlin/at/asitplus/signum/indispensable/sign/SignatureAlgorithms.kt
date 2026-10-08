@@ -41,7 +41,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 class EcdsaAlgorithm internal constructor(
     digestProvider: () -> Digest?,
     val requiredCurve: ECCurve?,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : SignatureAlgorithm, Enumerable {
 
     constructor(
@@ -49,7 +49,7 @@ class EcdsaAlgorithm internal constructor(
         digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         requiredCurve: ECCurve? = null
-    ) : this({ digest }, requiredCurve, emptyMap())
+    ) : this({ digest }, requiredCurve, null)
 
     /** The digest to apply to the data, or `null` to directly process the raw data. */
     val digest by lazy(digestProvider)
@@ -75,13 +75,13 @@ class EcdsaAlgorithm internal constructor(
 
 class RsaAlgorithm internal constructor(
     paramsProvider: () -> Parameters<*>,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : SignatureAlgorithm, Enumerable {
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
         parameters: Parameters<*>
-    ) : this({ parameters }, emptyMap())
+    ) : this({ parameters }, null)
 
     /**
      * Convenience Ctor to use defaults aside digest
@@ -185,14 +185,14 @@ class RsaAlgorithm internal constructor(
             mgfAlgorithmProvider: () -> MaskGenerationFunction,
             val saltLength: UInt,
             val trailerField: Int,
-            override val representations: Map<Encodable.Representation, Any>,
+            override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
         ) : Parameters<RsaSsaPssParams> {
             constructor(
                 digest: Digest = Digest.SHA1,
                 mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
                 saltLength: UInt = digest.outputLength.bytes,
                 trailerField: Int = DEFAULT_TRAILER_FIELD,
-            ) : this({ digest }, { mgfAlgorithm }, saltLength, trailerField, emptyMap())
+            ) : this({ digest }, { mgfAlgorithm }, saltLength, trailerField, null)
 
             override val type: Padding get() = Padding.PSS
             override val digest: Digest by lazy(digestProvider)

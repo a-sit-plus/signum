@@ -80,11 +80,12 @@ val X509GeneralName.tag: Asn1Element.Tag
  * fallback when no typed [GeneralName.Descriptor] is registered for a CHOICE tag. `open` so
  * external modules may subclass it to inherit the wrapping plumbing.
  */
-open class BaseX509GeneralName(
-    model: X509GeneralName,
+open class BaseX509GeneralName protected constructor(
+    internal val model: X509GeneralName,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val isValid: Boolean? = null,
 ) : GeneralName {
-    override val representations: Map<Encodable.Representation, Any> = mapOf(X509 to model)
+    constructor(model: X509GeneralName, isValid: Boolean? = null) : this(model, X509 to model, isValid)
 
     val tag: Asn1Element.Tag get() = asn1Representation.tag
 
@@ -96,5 +97,5 @@ open class BaseX509GeneralName(
     override fun toString(): String = "GeneralName($asn1Representation)"
 
     override fun createValidatedCopy(validate: (GeneralName) -> Boolean): GeneralName =
-        BaseX509GeneralName(asn1Representation, validate(this))
+        BaseX509GeneralName(model, sourceRepresentation, validate(this))
 }

@@ -49,11 +49,11 @@ private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte(
 object CursorySignatureScheme : SignatureAlgorithm {
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
-    data class Signature(val bit: Boolean, override val representations: Map<Encodable.Representation, Any> = emptyMap()) : CryptoSignature {
+    data class Signature(val bit: Boolean, override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null) : CryptoSignature {
         override fun equals(other: Any?) = other is Signature && bit == other.bit
         override fun hashCode() = bit.hashCode()
     }
-    data class Key(val bit: Boolean, override val representations: Map<Encodable.Representation, Any> = emptyMap()) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
+    data class Key(val bit: Boolean, override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
         override fun equals(other: Any?) = other is Key && bit == other.bit
         override fun hashCode() = bit.hashCode()
         companion object {
@@ -64,7 +64,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val additionalProperties = mutableMapOf<String, String>()
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
-        inner class Private(override val representations: Map<Encodable.Representation, Any> = emptyMap()) : CryptoPrivateKey.WithPublicKey {
+        inner class Private(override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null) : CryptoPrivateKey.WithPublicKey {
             override val publicKey = this@Key
             override val attributes: Set<Asn1Element>? = null
             override fun equals(other: Any?) = other is Private && publicKey == other.publicKey
@@ -158,14 +158,14 @@ object CursorySignatureSchemeProvider :
             publicKeyInfo.subjectPublicKey
                 .also { require(it.logicalBitCount == 1L) }
                 .get(0)
-                .let { CursorySignatureScheme.Key(it, mapOf(X509 to publicKeyInfo)) }
+                .let { CursorySignatureScheme.Key(it, X509 to publicKeyInfo) }
         } else null
     }
 
     override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey? {
         if (privateKeyInfo.version != Pkcs8PrivateKeyInfo.Version.V1) return null
         if (privateKeyInfo.privateKeyAlgorithm != CursorySignatureScheme.Key.ALG) return null
-        return CursorySignatureScheme.Key(privateKeyInfo.privateKey.content.hasHighest).Private(mapOf(X509 to privateKeyInfo))
+        return CursorySignatureScheme.Key(privateKeyInfo.privateKey.content.hasHighest).Private(X509 to privateKeyInfo)
     }
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = null
@@ -181,7 +181,7 @@ object CursorySignatureSchemeProvider :
         if (signatureAlgorithm != CursorySignatureScheme) return null
         return signature.rawBitString
                 .also { require(it.logicalBitCount == 1L) }
-                .let { CursorySignatureScheme.Signature(it[0], mapOf(X509 to signature)) }
+                .let { CursorySignatureScheme.Signature(it[0], X509 to signature) }
     }
 
     override fun parseCryptoSignature(
@@ -210,7 +210,7 @@ val ExtensibilityTest by matrixSuite {
             }
         }
         val key = CursorySignatureScheme.Key(true)
-        key.representations shouldBe emptyMap()
+        key.sourceRepresentation shouldBe null
         val baseOnlyDer = DER { serializersModule = signumAsn1Serializers }
         shouldThrow<SerializationException> { baseOnlyDer.encodeToByteArray(key) }
         val baseKey: CryptoPublicKey = key
@@ -218,16 +218,16 @@ val ExtensibilityTest by matrixSuite {
         val parsedKey = der.decodeFromByteArray<CursorySignatureScheme.Key>(der.encodeToByteArray(key))
         parsedKey shouldBe key
         parsedKey.hashCode() shouldBe key.hashCode()
-        parsedKey.asn1Representation shouldBeSameInstanceAs parsedKey.representations[X509]
-        (parsedKey.representations[X509] as SubjectPublicKeyInfo) shouldBe key.asn1Representation
+        parsedKey.asn1Representation shouldBeSameInstanceAs parsedKey.sourceRepresentationFor(X509)
+        (parsedKey.sourceRepresentationFor(X509) as SubjectPublicKeyInfo) shouldBe key.asn1Representation
         der.encodeToByteArray(parsedKey).contentEquals(der.encodeToByteArray(key)) shouldBe true
 
         val privateKey = key.Private()
-        privateKey.representations shouldBe emptyMap()
+        privateKey.sourceRepresentation shouldBe null
         val parsedPrivateKey = der.decodeFromByteArray<CursorySignatureScheme.Key.Private>(der.encodeToByteArray(privateKey))
         parsedPrivateKey shouldBe privateKey
-        parsedPrivateKey.asn1Representation shouldBeSameInstanceAs parsedPrivateKey.representations[X509]
-        parsedPrivateKey.representations[X509] shouldBe privateKey.asn1Representation
+        parsedPrivateKey.asn1Representation shouldBeSameInstanceAs parsedPrivateKey.sourceRepresentationFor(X509)
+        parsedPrivateKey.sourceRepresentationFor(X509) shouldBe privateKey.asn1Representation
         der.encodeToByteArray(parsedPrivateKey).contentEquals(der.encodeToByteArray(privateKey)) shouldBe true
 
         der.decodeFromByteArray<CursorySignatureScheme>(der.encodeToByteArray(CursorySignatureScheme)) shouldBe CursorySignatureScheme
@@ -235,7 +235,7 @@ val ExtensibilityTest by matrixSuite {
         val parsedSignature = der.decodeFromByteArray<CursorySignatureScheme.Signature>(der.encodeToByteArray(signature))
         parsedSignature shouldBe signature
         parsedSignature.hashCode() shouldBe signature.hashCode()
-        (parsedSignature.representations[X509] as X509SignatureValue).rawBitString shouldBe signature.asn1Representation.rawBitString
+        (parsedSignature.sourceRepresentationFor(X509) as X509SignatureValue).rawBitString shouldBe signature.asn1Representation.rawBitString
         der.encodeToByteArray(parsedSignature).contentEquals(der.encodeToByteArray(signature)) shouldBe true
     }
 

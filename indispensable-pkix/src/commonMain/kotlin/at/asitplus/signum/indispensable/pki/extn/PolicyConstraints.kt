@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.Signum
 
 import at.asitplus.awesn1.Asn1Integer
@@ -22,8 +24,11 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
 class PolicyConstraints internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
     val requireExplicitPolicy: Asn1Integer,
-    val inhibitPolicyMapping: Asn1Integer
-) : X509CertificateExtension(asn1Representation) {
+    val inhibitPolicyMapping: Asn1Integer,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     /**
      * Builds a Policy Constraints extension programmatically. `null` means the respective field is absent.
@@ -47,6 +52,7 @@ class PolicyConstraints internal constructor(
         ),
         requireExplicitPolicy?.let { Asn1Integer(it) } ?: Asn1Integer.fromDecimalString("-1"),
         inhibitPolicyMapping?.let { Asn1Integer(it) } ?: Asn1Integer.fromDecimalString("-1"),
+        sourceRepresentation = null,
     )
 
     companion object : CertificateExtension.Descriptor<PolicyConstraints>{

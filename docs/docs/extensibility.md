@@ -67,12 +67,17 @@ These interfaces replace `DerEncodable` and `DerDecodable` and do not prescribe 
 Encoding and decoding use contextual serializers through `Signum.Der`, including awesn1's TLV and kotlinx.io APIs.
 Signum's PEM extensions also use `Signum.Der`.
 
-`Encodable.representations` is a `Map<Encodable.Representation, Any>`. Its keys implement an open interface;
-they are not strings. `X509` identifies the retained ASN.1 model. Other formats can define their own keys.
-Keep the original model when decoding to preserve round-trip accuracy, and exclude the map from semantic
-`equals` and `hashCode`. Public constructors take semantic values; constructors accepting retained
-representations should be internal or private. Companion `fromAsn1Representation` functions provide
+`Encodable.sourceRepresentation` is a nullable `Pair<Encodable.Representation, Any>`: one format key
+and the original decoded model. The key implements an open interface; `X509` identifies an ASN.1 source,
+and other formats can define their own keys. A decoded value retains only its source, preserving
+round-trip accuracy. Programmatically constructed values have `null`, even after encoding;
+getters and serializers never store generated models there. Exclude the pair from semantic
+`equals` and `hashCode`. Public constructors take semantic values; constructors accepting a retained
+source pair should be internal or private. Companion `fromAsn1Representation` functions provide
 conversion from matching awesn1 models.
+
+Attribute descriptors provide `fromValue(Asn1Element)` for programmatic OID/value construction,
+separately from `fromAsn1Representation` for decoding. The former must leave the source pair null.
 
 Keep format-specific tags and explicit serializers on wire models. Shared semantic types should use
 contextual serializers so another format can choose its own representation. `GeneralSubtree` and its
@@ -115,8 +120,9 @@ Your private key class should implement `CryptoPrivateKey`, and likely `CryptoPr
 Each of these four format providers also exposes `encodeToAsn1` for the corresponding Signum type.
 Return `null` for values your provider does not support. The encoding methods default to `null`, so providers that only decode remain valid.
 
-The `asn1Representation` extension getters first use a cached awesn1 model from `representations[X509]`, then ask the registered providers to construct one.
-Fresh values can leave `representations` empty. When decoding, retain the original model in that map to preserve its encoding; exclude the map from semantic equality and hash codes.
+The `asn1Representation` extension getters first use `sourceRepresentationFor(X509)`, which returns
+the original model only if the source format matches, then ask the registered providers to construct one.
+Producing another format's model leaves the source pair unchanged.
 Your provider should construct the model directly rather than calling the same base-type getter recursively.
 
 ### Contextual ASN.1 serializers and installation
@@ -230,7 +236,7 @@ A custom native `otherName` payload still needs its open-polymorphic serializer 
 not every possible payload OID inside it.
 
 There is no `X509Representable` marker. `CertificateExtension.asn1Representation` is nullable: it reads
-`representations[X509]`, or constructs the model for an `X509CertificateExtension`. If neither is available,
+`sourceRepresentationFor(X509)`, or constructs the model for an `X509CertificateExtension`. If neither is available,
 it returns `null` and DER encoding throws.
 If constructing or decoding an extension body requires serialization, use `Signum.Der` so embedded values
 use the application's registered serializers and configuration.

@@ -30,17 +30,17 @@ sealed interface CsrAttribute : Identifiable, Encodable {
 }
 
 class X509CsrAttribute private constructor(
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val oid: ObjectIdentifier,
     val value: Set<Asn1Element>,
 ) : CsrAttribute {
 
-    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(emptyMap(), oid, value)
+    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(null, oid, value)
 
     constructor(oid: ObjectIdentifier, singleValue: Asn1Element) : this(oid, setOf(singleValue))
 
     constructor(asn1Representation: Pkcs10CsrAttribute) :
-            this(mapOf(X509 to asn1Representation), asn1Representation.oid, asn1Representation.value)
+            this(X509 to asn1Representation, asn1Representation.oid, asn1Representation.value)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

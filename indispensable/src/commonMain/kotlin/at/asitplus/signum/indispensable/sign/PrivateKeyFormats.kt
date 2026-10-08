@@ -32,7 +32,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 class RsaPrivateKey internal constructor(
     parametersProvider: () -> Parameters,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
 
@@ -91,7 +91,7 @@ class RsaPrivateKey internal constructor(
             crtCoefficient = crtCoefficient,
             otherPrimeInfos = otherPrimeInfos,
         ) },
-        emptyMap(),
+        null,
         attributes,
     )
 
@@ -138,7 +138,7 @@ class RsaPrivateKey internal constructor(
 
 sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey {
 
@@ -156,9 +156,9 @@ sealed class EcdsaPrivateKey private constructor(
         publicKeyProvider: () -> EcdsaPublicKey,
         val encodeCurve: Boolean,
         val encodePublicKey: Boolean,
-        representations: Map<Encodable.Representation, Any>,
+        sourceRepresentation: Pair<Encodable.Representation, Any>?,
         attributes: Set<Asn1Element>?,
-    ) : EcdsaPrivateKey(privateKey, representations, attributes),
+    ) : EcdsaPrivateKey(privateKey, sourceRepresentation, attributes),
         CryptoPrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
@@ -170,7 +170,7 @@ sealed class EcdsaPrivateKey private constructor(
             attributes: Set<Asn1Element>? = null,
         ) : this(
             privateKey, { publicKey }, encodeCurve, encodePublicKey,
-            emptyMap(), attributes,
+            null, attributes,
         ) {
             require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
                 "Public key must match the private key!"
@@ -207,9 +207,9 @@ sealed class EcdsaPrivateKey private constructor(
         privateKey: BigInteger,
         val publicKeyBytes: Asn1BitString?,
         private val curveOrderLengthInBytes: Int,
-        representations: Map<Encodable.Representation, Any>,
+        sourceRepresentation: Pair<Encodable.Representation, Any>?,
         attributes: Set<Asn1Element>?,
-    ) : EcdsaPrivateKey(privateKey, representations, attributes) {
+    ) : EcdsaPrivateKey(privateKey, sourceRepresentation, attributes) {
 
         constructor(
             privateKey: BigInteger,
@@ -218,7 +218,7 @@ sealed class EcdsaPrivateKey private constructor(
             curveOrderLengthInBytes: Int,
         ) : this(
             privateKey, publicKeyBytes, curveOrderLengthInBytes,
-            emptyMap(), attributes,
+            null, attributes,
         )
 
         fun withCurve(

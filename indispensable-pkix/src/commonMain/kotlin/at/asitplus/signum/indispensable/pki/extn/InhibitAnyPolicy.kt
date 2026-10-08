@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.KnownOIDs
@@ -18,8 +20,11 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * */
 class InhibitAnyPolicy internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
-    val skipCerts: Int
-) : X509CertificateExtension(asn1Representation) {
+    val skipCerts: Int,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
+) : X509CertificateExtension(
+    sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
+) {
 
     /** Builds an Inhibit anyPolicy extension programmatically. MUST be critical (RFC 5280 §4.2.1.14). */
     constructor(skipCerts: Int, critical: Boolean = true) : this(
@@ -29,6 +34,7 @@ class InhibitAnyPolicy internal constructor(
             Asn1Integer(skipCerts).encodeToTlv().derEncoded,
         ),
         skipCerts,
+        sourceRepresentation = null,
     )
 
     companion object : CertificateExtension.Descriptor<InhibitAnyPolicy>{

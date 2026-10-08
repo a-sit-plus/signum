@@ -19,11 +19,11 @@ import at.asitplus.signum.indispensable.Encodable
  */
 class RelativeDistinguishedName internal constructor(
     attrsAndValuesProvider: () -> Set<AttributeTypeAndValue>,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     performValidation: Boolean,
 ) : Encodable {
 
-    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this({ attrsAndValues }, emptyMap(), true)
+    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this({ attrsAndValues }, null, true)
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
@@ -167,6 +167,8 @@ sealed interface AttributeTypeAndValue : Identifiable, Encodable {
         }
 
         fun fromString(value: String): T
+        /** Constructs an attribute from its value without retaining a decoded source. */
+        fun fromValue(value: Asn1Element): T
         fun fromAsn1Representation(src: X500AttributeTypeAndValue): T
 
     }
@@ -175,7 +177,7 @@ sealed interface AttributeTypeAndValue : Identifiable, Encodable {
     companion object : Decodable<AttributeTypeAndValue> {
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
-            fromAsn1Representation(X500AttributeTypeAndValue(oid, value))
+            Signum.attributeDescriptorFor(oid)?.fromValue(value) ?: BaseX509AttributeTypeAndValue(oid, value)
 
         operator fun invoke(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
             fromAsn1Representation(asn1Representation)
@@ -215,6 +217,8 @@ private class StandardX500AttributeDescriptor(
 ) : AttributeTypeAndValue.Descriptor<BaseX509AttributeTypeAndValue> {
     override fun fromString(value: String): BaseX509AttributeTypeAndValue =
         BaseX509AttributeTypeAndValue(oid, stringFactory(value))
+
+    override fun fromValue(value: Asn1Element) = BaseX509AttributeTypeAndValue(oid, value)
 
     override fun fromAsn1Representation(src: X500AttributeTypeAndValue) =
         BaseX509AttributeTypeAndValue(src)
@@ -269,19 +273,19 @@ abstract class BaseAttributeTypeAndValue(
 }
 
 open class BaseX509AttributeTypeAndValue protected constructor(
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     oid: ObjectIdentifier,
     val value: Asn1Element,
     validateValue: Boolean,
 ) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue {
 
-    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(emptyMap(), oid, value, false)
+    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid, value, false)
 
     @Throws(Asn1Exception::class)
-    constructor(oid: ObjectIdentifier, value: Asn1String) : this(emptyMap(), oid, value.encodeToTlv(), true)
+    constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid, value.encodeToTlv(), true)
 
     constructor(asn1Representation: X500AttributeTypeAndValue) :
-            this(mapOf(X509 to asn1Representation), asn1Representation.oid, asn1Representation.value, false)
+            this(X509 to asn1Representation, asn1Representation.oid, asn1Representation.value, false)
 
     override val isValid: Boolean? by lazy {
         catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrElse { false }

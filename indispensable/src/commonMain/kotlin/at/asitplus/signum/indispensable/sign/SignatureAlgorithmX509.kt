@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.indispensable.sourceRepresentationFor
 import at.asitplus.signum.Signum
 
 import at.asitplus.awesn1.Asn1Null
@@ -24,7 +25,7 @@ import at.asitplus.signum.indispensable.installIndispensable
 
 /** Original model first; fresh values are converted only when X.509 is requested. */
 val SignatureAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = representations[X509] as? X509AlgorithmIdentifier ?: run {
+    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
         Signum.installIndispensable()
         Signum.load<SignatureAlgorithmsProvider>().get(this, SignatureAlgorithmsProvider::encodeToAsn1)
     }
@@ -36,7 +37,7 @@ operator fun SignatureAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): 
     fromAsn1Representation(src)
 
 val EcdsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = representations[X509] as? X509AlgorithmIdentifier ?: run {
+    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
         X509AlgorithmIdentifier(
             oid = when (digest) {
                 Digest.SHA1 -> KnownOIDs.ecdsaWithSHA1
@@ -50,7 +51,7 @@ val EcdsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
     }
 
 val RsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = representations[X509] as? X509AlgorithmIdentifier ?: run {
+    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
         when (val currentParameters = parameters) {
             is RsaAlgorithm.Parameters.Pkcs1Padded -> X509AlgorithmIdentifier(
                 when (currentParameters.digest) {
@@ -89,7 +90,7 @@ fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier
             }
         },
         requiredCurve = null,
-        representations = mapOf(X509 to src),
+        sourceRepresentation = X509 to src,
     )
 
 operator fun EcdsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): EcdsaAlgorithm = fromAsn1Representation(src)
@@ -111,6 +112,6 @@ fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier):
                 RsaAlgorithm.Parameters.Pkcs1Padded(digest)
             }
         }
-    }, mapOf(X509 to src))
+    }, X509 to src)
 
 operator fun RsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): RsaAlgorithm = fromAsn1Representation(src)

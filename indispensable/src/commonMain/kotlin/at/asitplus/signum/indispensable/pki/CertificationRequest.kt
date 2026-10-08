@@ -22,13 +22,13 @@ class TbsCertificationRequest internal constructor(
     val subjectName: Name,
     publicKeyProvider: () -> CryptoPublicKey,
     val attributes: List<CsrAttribute>,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
     constructor(
         subjectName: Name,
         publicKey: CryptoPublicKey,
         attributes: List<CsrAttribute> = listOf(),
-    ) : this(subjectName, { publicKey }, attributes, emptyMap()) {
+    ) : this(subjectName, { publicKey }, attributes, null) {
         validateAttributes(attributes, allowExtensions = true)
     }
 
@@ -94,13 +94,13 @@ class CertificationRequest internal constructor(
     val tbsCsr: TbsCertificationRequest,
     signatureAlgorithmProvider: () -> SignatureAlgorithm,
     signatureProvider: () -> CryptoSignature,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
     constructor(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: SignatureAlgorithm,
         signature: CryptoSignature,
-    ) : this(tbsCsr, { signatureAlgorithm }, { signature }, emptyMap())
+    ) : this(tbsCsr, { signatureAlgorithm }, { signature }, null)
 
     val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
     val signature: CryptoSignature by lazy(signatureProvider)

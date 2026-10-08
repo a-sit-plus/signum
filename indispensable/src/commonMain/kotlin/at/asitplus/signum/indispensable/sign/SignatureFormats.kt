@@ -30,7 +30,7 @@ sealed class EcdsaSignature
 @Throws(IllegalArgumentException::class) private constructor(
     val r: BigInteger,
     val s: BigInteger,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoSignature {
     init {
         require(r.isPositive) { "r must be positive" }
@@ -49,10 +49,10 @@ sealed class EcdsaSignature
     class IndefiniteLength internal constructor(
         r: BigInteger,
         s: BigInteger,
-        representations: Map<Encodable.Representation, Any>,
-    ) : EcdsaSignature(r, s, representations) {
+        sourceRepresentation: Pair<Encodable.Representation, Any>?,
+    ) : EcdsaSignature(r, s, sourceRepresentation) {
 
-        internal constructor(r: BigInteger, s: BigInteger) : this(r, s, emptyMap())
+        internal constructor(r: BigInteger, s: BigInteger) : this(r, s, null)
 
         fun withScalarByteLength(l: UInt) =
             DefiniteLength(l, r, s)
@@ -85,7 +85,7 @@ sealed class EcdsaSignature
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-    ) : EcdsaSignature(r, s, emptyMap()) {
+    ) : EcdsaSignature(r, s, null) {
         init {
             val max = scalarByteLength.toInt() * 8
 
@@ -153,9 +153,9 @@ sealed class EcdsaSignature
 
 class RsaSignature internal constructor(
     val rawBytes: ByteArray,
-    override val representations: Map<Encodable.Representation, Any>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoSignature {
-    constructor(rawBytes: ByteArray) : this(rawBytes, emptyMap())
+    constructor(rawBytes: ByteArray) : this(rawBytes, null)
 
     override val joseBytes get() = rawBytes
 

@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.asn1Representation
@@ -16,7 +18,8 @@ import at.asitplus.signum.indispensable.pki.X500Name
 class DirectoryName private constructor(
     val name: X500Name,
     asn1Representation: X509GeneralName,
-) : AbstractX509GeneralName(asn1Representation) {
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+) : AbstractX509GeneralName(asn1Representation, sourceRepresentation) {
 
     constructor(name: X500Name) : this(name, X509GeneralName.Directory(name.asn1Representation))
 
@@ -49,7 +52,7 @@ class DirectoryName private constructor(
 
         override fun fromAsn1Representation(src: X509GeneralName): DirectoryName {
             val awesnName = (src as X509GeneralName.Directory).value
-            return DirectoryName(X500Name.fromAsn1Representation(awesnName), src)
+            return DirectoryName(X500Name.fromAsn1Representation(awesnName), src, X509 to src)
         }
 
         /** True iff [rdns] is within the subtree rooted at [subtree] (a prefix of the RDN sequence). */

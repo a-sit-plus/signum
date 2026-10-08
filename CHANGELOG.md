@@ -3,7 +3,14 @@
 ## NEXT
 This is a major refactor!
 
-* awesn1 instead of indispensable-asn1 (requires explicitly registering seriliazers)
+* awesn1 replaces indispensable-asn1_ replace `Asn1Encodable` / `Asn1Decodable` with format-independent `Encodable` / `Decodable<T>`
+    * Move ASN.1 conversion into `asn1Representation` extension getters and companion `fromAsn1Representation` / `invoke` functions; semantic types no longer require DER-specific interfaces.
+    * Replace per-type DER and PEM encoding/decoding shims with contextual serializers through `Signum.Der`, e.g. `Signum.Der.encodeToByteArray(value)` and `Signum.Der.decodeFromByteArray<Certificate>(bytes)`. TLV, PEM and kotlinx.io helpers use the same configuration.
+    * Retain the original decoded model in a single nullable `sourceRepresentation: Pair<Encodable.Representation, Any>?`, keyed by an open format identifier. Programmatically constructed values leave it null; encoding never populates or replaces it. This preserves source round-tripping without caching generated representations.
+    * Use semantic equality and hash codes, excluding the retained source representation.
+    * Remove the X.509 representability marker from certificate extensions. Their `asn1Representation` getter is nullable; DER encoding fails when an extension has no X.509 representation.
+    * Centralize provider, descriptor and serializer registration in `Signum`. Core serializers are installed automatically; install PKIX with `Signum.installPkix()` and register custom types during startup. Optionally call `Signum.setDer(...)` before registration; first access to `Signum.Der` seals serializer registration.
+    * Prepare the semantic model for additional formats such as C509; C509 support is not implemented yet.
 * publish javadoc redirect to save space
 * make all provider functions suspend
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.

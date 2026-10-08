@@ -31,6 +31,7 @@ private object ExtraRepresentation : Encodable.Representation
 private fun tbsCertificate(
     validFrom: Instant = Instant.fromEpochSeconds(1_700_000_000),
     subjectName: Name = X500Name.EMPTY,
+    sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
 ) = TbsCertificate(
     serialNumber = Asn1Integer.ONE,
     signatureAlgorithmProvider = { EcdsaAlgorithm.withSHA256 },
@@ -42,7 +43,7 @@ private fun tbsCertificate(
     issuerUniqueID = null,
     subjectUniqueID = null,
     extensions = emptyList(),
-    representations = mapOf(ExtraRepresentation to "metadata"),
+    sourceRepresentation = sourceRepresentation,
 )
 
 private val tbsDer = DER { serializersModule = signumAsn1Serializers }
@@ -50,6 +51,7 @@ private val tbsDer = DER { serializersModule = signumAsn1Serializers }
 val TbsCertificateEncodingTest by matrixSuite {
     "Contextual serializer dispatch and retained original" {
         val source = tbsCertificate()
+        source.sourceRepresentation shouldBe null
         val value = source
         val bytes = tbsDer.encodeToByteArray(value)
         val decoded = tbsDer.decodeFromByteArray<TbsCertificate>(bytes)
@@ -64,10 +66,34 @@ val TbsCertificateEncodingTest by matrixSuite {
         buffer.peek().readByteArray() shouldBe bytes
         tbsDer.decodeFromSource<TbsCertificate>(buffer) shouldBe source
         shouldThrowAny { tbsDer.decodeFromSource<TbsCertificate>(Buffer().apply { write(bytes) }, limit = 1) }
-        decoded.asn1Representation shouldBeSameInstanceAs decoded.representations[X509]
+        source.sourceRepresentation shouldBe null
+        decoded.sourceRepresentation?.first shouldBe X509
+        decoded.asn1Representation shouldBeSameInstanceAs decoded.sourceRepresentationFor(X509)
         val original = source.asn1Representation
         TbsCertificate(original).asn1Representation shouldBeSameInstanceAs original
         shouldThrowAny { DER { serializersModule = signumAsn1Serializers; maxInputLength = 1 }.decodeFromByteArray<TbsCertificate>(bytes) }
+    }
+
+    "A source from another format is not reused as X509" {
+        val template = tbsCertificate()
+        val model = template.asn1Representation
+        val foreignModel = X509TbsCertificate(
+            serialNumber = Asn1Integer(2),
+            signatureAlgorithm = model.signatureAlgorithm,
+            issuerName = model.issuerName,
+            validFrom = Asn1Time.SecondsCapped(model.validity.validFrom.instant),
+            validUntil = Asn1Time.SecondsCapped(model.validity.validUntil.instant),
+            subjectName = model.subjectName,
+            subjectPublicKeyInfo = model.subjectPublicKeyInfo,
+        )
+        val source = tbsCertificate(sourceRepresentation = ExtraRepresentation to foreignModel)
+        source.asn1Representation shouldBe template.asn1Representation
+        source.sourceRepresentationFor(X509) shouldBe null
+        source.sourceRepresentation?.second shouldBeSameInstanceAs foreignModel
+        source shouldBe template
+        source.hashCode() shouldBe template.hashCode()
+        tbsDer.encodeToByteArray(source) shouldBe tbsDer.encodeToByteArray(template)
+        source.sourceRepresentation?.second shouldBeSameInstanceAs foreignModel
     }
 
     "Unsupported original algorithms can round-trip without semantic decoding" {

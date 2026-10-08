@@ -25,7 +25,7 @@ import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Parameters.PssPadded
 
 @Suppress("UNCHECKED_CAST")
 val <T : RsaParams> RsaAlgorithm.Parameters<T>.asn1Representation: T
-    get() = (representations[X509] ?: when (this) {
+    get() = (sourceRepresentationFor(X509) ?: when (this) {
         is RsaAlgorithm.Parameters.Pkcs1Padded -> RsaPkcs1PaddingParams
         is PssPadded -> RsaSsaPssParams(
             hashAlgorithm = digest.asn1Representation,
@@ -37,12 +37,12 @@ val <T : RsaParams> RsaAlgorithm.Parameters<T>.asn1Representation: T
 
 @Suppress("UNCHECKED_CAST")
 val RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.asn1Representation: X509AlgorithmIdentifier
-    get() = representations[X509] as? X509AlgorithmIdentifier
+    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier
         ?: X509AlgorithmIdentifier(oid, (this as PssPadded.MaskGenerationFunction.Pkcs1Mgf1).digest.asn1Representation.element)
 
 @Suppress("UNCHECKED_CAST")
 val RsaPrivateKey.PrimeInfo.asn1Representation: Pkcs1RsaOtherPrimeInfo
-    get() = representations[X509] as? Pkcs1RsaOtherPrimeInfo
+    get() = sourceRepresentationFor(X509) as? Pkcs1RsaOtherPrimeInfo
         ?: Pkcs1RsaOtherPrimeInfo(
             prime.toAsn1Integer() as Asn1Integer.Positive,
             exponent.toAsn1Integer() as Asn1Integer.Positive,
@@ -54,14 +54,14 @@ internal object PKCS1 : Encodable.Representation
 internal object SEC1 : Encodable.Representation
 
 val RsaPrivateKey.asPKCS1: Pkcs1RsaPrivateKeyInfo
-    get() = representations[PKCS1] as? Pkcs1RsaPrivateKeyInfo
+    get() = sourceRepresentationFor(PKCS1) as? Pkcs1RsaPrivateKeyInfo
         // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-        ?: (representations[X509] as? Pkcs8PrivateKeyInfo)?.let { Pkcs1RsaPrivateKeyInfo.of(it, Signum.Der) }
+        ?: (sourceRepresentationFor(X509) as? Pkcs8PrivateKeyInfo)?.let { Pkcs1RsaPrivateKeyInfo.of(it, Signum.Der) }
         ?: toPkcs1Representation()
 val EcdsaPrivateKey.asSEC1: Sec1EcPrivateKeyInfo
-    get() = representations[SEC1] as? Sec1EcPrivateKeyInfo
+    get() = sourceRepresentationFor(SEC1) as? Sec1EcPrivateKeyInfo
         // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-        ?: (representations[X509] as? Pkcs8PrivateKeyInfo)?.let { Sec1EcPrivateKeyInfo.of(it, Signum.Der) }
+        ?: (sourceRepresentationFor(X509) as? Pkcs8PrivateKeyInfo)?.let { Sec1EcPrivateKeyInfo.of(it, Signum.Der) }
         ?: toSec1Representation()
 
 internal fun RsaPrivateKey.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo =
@@ -107,14 +107,14 @@ fun PssPadded.Companion.fromAsn1Representation(src: RsaSsaPssParams): PssPadded 
         mgfAlgorithmProvider = { PssPadded.MaskGenerationFunction.fromAsn1Representation(src.maskGenAlgorithm) },
         saltLength = src.saltLength.let { require(it >= 0); it.toUInt() },
         trailerField = src.trailerField,
-        representations = mapOf(X509 to src),
+        sourceRepresentation = X509 to src,
     )
 
 operator fun PssPadded.Companion.invoke(src: RsaSsaPssParams): PssPadded = fromAsn1Representation(src)
 
 private fun rsaPrivateKey(
     source: () -> Pkcs1RsaPrivateKeyInfo,
-    representations: Map<Encodable.Representation, Any>,
+    sourceRepresentation: Pair<Encodable.Representation, Any>?,
     attributes: Set<Asn1Element>?,
 ): RsaPrivateKey =
     RsaPrivateKey(
@@ -131,7 +131,7 @@ private fun rsaPrivateKey(
                 otherPrimeInfos = parsed.otherPrimeInfos?.map { RsaPrivateKey.PrimeInfo.fromAsn1Representation(it) },
             )
         },
-        representations = representations,
+        sourceRepresentation = sourceRepresentation,
         attributes = attributes,
     )
 
@@ -139,7 +139,7 @@ fun RsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): Rs
     require(src.algorithmOid == oid) { "Expected RSA private key, got ${src.algorithmOid}" }
     require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
     // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
-    rsaPrivateKey({ Pkcs1RsaPrivateKeyInfo.of(src, Signum.Der) }, mapOf(X509 to src), src.attributes)
+    rsaPrivateKey({ Pkcs1RsaPrivateKeyInfo.of(src, Signum.Der) }, X509 to src, src.attributes)
 }
 
 fun RsaPrivateKey.Companion.fromAsn1Representation(
@@ -150,7 +150,7 @@ fun RsaPrivateKey.Companion.fromAsn1Representation(
         Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(src.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
         Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(src.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
     }
-    return rsaPrivateKey({ src }, mapOf(PKCS1 to src), attributes)
+    return rsaPrivateKey({ src }, PKCS1 to src, attributes)
 }
 
 operator fun RsaPrivateKey.Companion.invoke(src: Pkcs8PrivateKeyInfo): RsaPrivateKey = fromAsn1Representation(src)
@@ -159,7 +159,7 @@ operator fun RsaPrivateKey.Companion.invoke(src: Pkcs1RsaPrivateKeyInfo): RsaPri
 private fun ecPrivateKey(
     parsed: Sec1EcPrivateKeyInfo,
     curveFromPkcs8: Asn1Element?,
-    representations: Map<Encodable.Representation, Any>,
+    sourceRepresentation: Pair<Encodable.Representation, Any>?,
     attributes: Set<Asn1Element>?,
 ): EcdsaPrivateKey {
     require(parsed.version == Sec1EcPrivateKeyInfo.Version.V1) { "EC private key version must be 1" }
@@ -175,13 +175,13 @@ private fun ecPrivateKey(
         },
         encodeCurve = parsed.parameters != null,
         encodePublicKey = parsed.publicKey != null,
-        representations = representations,
+        sourceRepresentation = sourceRepresentation,
         attributes = attributes,
     ) else EcdsaPrivateKey.WithoutPublicKey(
         privateKey = privateValue,
         publicKeyBytes = parsed.publicKey,
         curveOrderLengthInBytes = parsed.privateKey.size,
-        representations = representations,
+        sourceRepresentation = sourceRepresentation,
         attributes = attributes,
     )
 }
@@ -191,7 +191,7 @@ fun EcdsaPrivateKey.Companion.fromAsn1Representation(
     attributes: Set<Asn1Element>? = null,
 ): EcdsaPrivateKey {
     require(src.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${src.version}" }
-    return ecPrivateKey(src, null, mapOf(SEC1 to src), attributes)
+    return ecPrivateKey(src, null, SEC1 to src, attributes)
 }
 
 fun EcdsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): EcdsaPrivateKey {
@@ -201,7 +201,7 @@ fun EcdsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): 
     val parsed = Sec1EcPrivateKeyInfo.of(src, Signum.Der)
     return ecPrivateKey(
         parsed, src.algorithmParameters,
-        mapOf(X509 to src), src.attributes,
+        X509 to src, src.attributes,
     )
 }
 
@@ -213,7 +213,7 @@ fun EcdsaSignature.Companion.fromAsn1Representation(src: X509SignatureValue): Ec
     return EcdsaSignature.IndefiniteLength(
         r = parsed.r.toBigInteger(),
         s = parsed.s.toBigInteger(),
-        representations = mapOf(X509 to src),
+        sourceRepresentation = X509 to src,
     )
 }
 
@@ -221,7 +221,7 @@ fun EcdsaSignature.IndefiniteLength.Companion.fromAsn1Representation(src: X509Si
     EcdsaSignature.fromAsn1Representation(src)
 
 fun RsaSignature.Companion.fromAsn1Representation(src: X509SignatureValue): RsaSignature =
-    RsaSignature(src.rawBytes, mapOf(X509 to src))
+    RsaSignature(src.rawBytes, X509 to src)
 
 operator fun EcdsaSignature.Companion.invoke(src: X509SignatureValue): EcdsaSignature.IndefiniteLength = fromAsn1Representation(src)
 operator fun RsaSignature.Companion.invoke(src: X509SignatureValue): RsaSignature = fromAsn1Representation(src)

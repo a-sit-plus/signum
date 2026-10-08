@@ -20,23 +20,22 @@ import kotlinx.io.IOException
 
 
 /** A name subtree with semantic distance bounds, independent of its wire representation. */
-@ConsistentCopyVisibility
-data class GeneralSubtree internal constructor(
+data class GeneralSubtree(
     val base: GeneralName,
-    val minimum: Asn1Integer,
-    val maximum: Asn1Integer?,
-    override val representations: Map<Encodable.Representation, Any>,
+    val minimum: Asn1Integer = Asn1Integer(0),
+    val maximum: Asn1Integer? = null,
 ) : Encodable {
-    constructor(
+    override var sourceRepresentation: Pair<Encodable.Representation, Any>? = null
+        private set
+
+    internal constructor(
         base: GeneralName,
-        minimum: Asn1Integer = Asn1Integer(0),
-        maximum: Asn1Integer? = null,
-    ) : this(base, minimum, maximum, emptyMap())
-
-    override fun equals(other: Any?): Boolean = this === other ||
-        other is GeneralSubtree && base == other.base && minimum == other.minimum && maximum == other.maximum
-
-    override fun hashCode(): Int = 31 * (31 * base.hashCode() + minimum.hashCode()) + (maximum?.hashCode() ?: 0)
+        minimum: Asn1Integer,
+        maximum: Asn1Integer?,
+        sourceRepresentation: Pair<Encodable.Representation, Any>,
+    ) : this(base, minimum, maximum) {
+        this.sourceRepresentation = sourceRepresentation
+    }
 
     companion object : Decodable<GeneralSubtree>
 }
