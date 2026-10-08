@@ -3,7 +3,10 @@
 ## NEXT
 This is a major refactor!
 
-* awesn1 replaces indispensable-asn1_ replace `Asn1Encodable` / `Asn1Decodable` with format-independent `Encodable` / `Decodable<T>`
+The next release is **Indispensable 4.0.0 / Supreme 1.0.0**.
+See the [migration guide](https://a-sit-plus.github.io/signum/migration/) for tested old and new examples.
+
+* [awesn1](https://a-sit-plus.github.io/awesn1/) replaces `indispensable-asn1`; replace `Asn1Encodable` / `Asn1Decodable` with format-independent `Encodable` / `Decodable<T>`
     * Move ASN.1 conversion into `asn1Representation` extension getters and companion `fromAsn1Representation` / `invoke` functions; semantic types no longer require DER-specific interfaces.
     * Replace per-type DER and PEM encoding/decoding shims with contextual serializers through `Signum.Der`, e.g. `Signum.Der.encodeToByteArray(value)` and `Signum.Der.decodeFromByteArray<Certificate>(bytes)`. TLV, PEM and kotlinx.io helpers use the same configuration.
     * Retain the original decoded model in a single nullable `sourceRepresentation: Pair<Encodable.Representation, Any>?`, keyed by an open format identifier. Programmatically constructed values leave it null; encoding never populates or replaces it. This preserves source round-tripping without caching generated representations.

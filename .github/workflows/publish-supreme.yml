@@ -21,7 +21,7 @@ jobs:
         with:
           xcode-version: 16.2.0
       - name: Publish to Sonatype
-        run: ./gradlew clean supreme:publishToSonatype closeSonatypeStagingRepository
+        run: ./gradlew clean supreme:publishToSonatype pkix-supreme:publishToSonatype closeSonatypeStagingRepository
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PUBLISH_SIGNING_KEY }}
@@ -45,8 +45,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
-      - run: pip install mkdocs-material==9.5.40
-      - run: pip install mkdocs-material[imaging]==9.5.40
+      - run: pip install -r docs/requirements.txt
       - name: Set up Homebrew
         id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@master

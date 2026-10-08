@@ -27,7 +27,7 @@ types and functionality related to crypto and PKI applications:
 * Exposes Multibase Encoder/Decoder as an API dependency
   including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 
-In effect, you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on all KMP targets except `watchosDeviceArm64`!
+In effect, you can work with X509 Certificates, public keys, CSRs and Signum-specific cryptographic structures on all KMP targets except `watchosDeviceArm64`!
 
 !!! tip
     **Do check out the full API docs [here](dokka/indispensable/index.html)**!
@@ -39,9 +39,7 @@ the JVM, Android and iOS.
 
 Simply declare the desired dependency to get going:
 
-```kotlin 
-implementation("at.asitplus.signum:indispensable:$version")
-```
+Use `at.asitplus.signum:indispensable:4.0.0`.
 
 ## Structure and Class Overview
 As the name _Indispensable_ implies, this is the base module for all KMP crypto operations.
@@ -51,55 +49,51 @@ of working with and on cryptographic data.
 ### Package Organisation
 
 #### Fundamental Cryptographic Data Structures
-The main package housing all data classes is `at.asitplus.signum.indispensable`.
+The base package is `at.asitplus.signum.indispensable`; concrete operations and algorithm definitions live in its subpackages.
 It contains essentials such as:
 
 * `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
-* `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+* `CryptoPrivateKey` representing a private key. Currently, we support RSA (`RsaPrivateKey`) and EC (`EcdsaPrivateKey`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
     * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
     * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
     * EC keys also support SEC1 encoding (`.asSEC1`)
-* `Digest` containing an enumeration of supported digests
+* `Digest` defines an open digest interface; built-in SHA definitions live in `indispensable.digest`
 * `ECCurve` representing an EC Curve
 * `ECPoint` representing a point on an elliptic curve
-* `CryptoSignatre` representing a cryptographic signature including descriptive information regarding the algorithms and signature data
-* `SignatureAlgorithm` containing an enumeration of supported signature algorithms
-    * `X509SignatureAlgorithm` enumeration of supported X.509 signature algorithms (maps to and from `SignatureAlgorithm`)
+* `CryptoSignature` representing a cryptographic signature holding parsed signature data; `SignatureValue` holds an uninterpreted X.509 signature value
+* `SignatureAlgorithm` is an open signature algorithm interface; EC and RSA definitions live in `indispensable.sign`
 * `Attestation` representing a container to convey attestation statements 
-    * `AndroidKeystoreAttestation` contains the certificate chain from Google's root certificate down to the attested key
-    * `IosHomebrewAttestation` contains the new iOS attestation format introduces in Supreme 0.2.0 (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
-    * `SelfAttestation` is used on the JVM. It has no specific semantics, but could be used, if an attestation-supporting HSM is used on the JVM. WIP!
+    * `AndroidKeystoreAttestation` contains the Android key-attestation certificate chain
+    * `IosHomebrewAttestation` contains the iOS App Attest format used by Supreme (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
+    * `SelfAttestation` is used on the JVM. It carries a self-signed certificate and does not establish hardware trust.
 * `KeyAgreementPrivateValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPrivateValue.ECDH`,
-which is implemented by `CryptoPrivateKey.EC`
+which is implemented by `EcdsaPrivateKey`
 * `KeyAgreementPublicValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPublicValue.ECDH`,
-which is implemented by `CryptoPublicKey.EC`
-* `MAC` defines the interface for message authentication codes
+which is implemented by `EcdsaPublicKey`
+* `MessageAuthenticationCode` defines the interface for message authentication codes
     * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
 * `KDF` defines the interface for key derivation functions
     * `HKDF` defines the configuration of an HKDF key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
     * `PBKDF2` defines the configuration of an PBKDF2 key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
     * `SCrypt` defines the configuration of an scrypt key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
-* `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. _Indispensable_ currently ships with definitions for AES-CBC, a flexible AES-CBC-HMAC, and AES-GCM, while the [Supreme](supreme.md) KMP crypto provider implements the actual AES functionality. 
-    * `BlockCipher` denotes a BlockCipher 
-    * `WithIV` denotes a Cipher requiring an initialization vector
-    * `Unauthenticated` denotes a non-authenticated encryption algorithm
-    * `Authenticated` denotes an authenticated encryption algorithm
-    * `Authenticated.WithDedicatedMac` describes an encryption authenticated encryption algorithm based on a non-authenticated one and a dedicated `MAC`, to achieve authenticated encryption
-* `Ciphertext` stores ciphertext produced by a symmetric cipher. It has dedicated accessors for every component of the ciphertext, such as `iv` and `encryptedData`
-    * `Unauthenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Unauthenticated`
-    * `Authenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Authenticated`, it also contains an `authTag` and, `aad`
-    * `Authenticated.WithDedicatedMac` restricts `Ciphertext.Authenticated` to ciphertexts produced by a `SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac`
+* `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. Built-in definitions include AES-GCM, AES-CBC, AES-CBC-HMAC, AES-ECB and AES key wrap. [Supreme](supreme.md) supplies the actual operations.
+    * `AuthCapability` tracks whether authentication is integrated, absent, or uses a dedicated MAC key.
+    * `NonceTrait` tracks whether an algorithm requires a nonce/IV.
+    * `KeyType` describes the key material required by the algorithm.
+* `Ciphertext` and `SealedBox` store encrypted data and algorithm-appropriate nonce, authentication tag and AAD information in the `symmetric` package.
 
 #### PKI-Related Data Structures
 The `pki` package contains data classes relevant in the PKI context:
 
-* `X509Certificate` does what you think it does
-    * `X509CertificateExtension` contains a convenience abstraction of X.509 certificate extensions 
-    * `AlternativeNames` contains definitions of subject/issuer alternative names
-    * `RelativeDistinguishedName` contains definitions of RDNs (Common Name, City, …)
-* `Pkcs10CertificateRequest` contains a CSR abstraction
-    * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension
+* `Certificate` and `TbsCertificate` represent an X.509 certificate and its signed contents.
+* `CertificateExtension` holds an extension; typed extensions live in [Indispensable PKIX](indispensable-pkix.md).
+* `X500Name`, `RelativeDistinguishedName`, and `AttributeTypeAndValue` represent distinguished names.
+* `CertificationRequest`, `TbsCertificationRequest`, and `CsrAttribute` represent PKCS#10 requests and attributes.
+
+Concrete EC/RSA keys and signatures live in `indispensable.sign`. Digest, MAC, KDF, agreement,
+and encryption definitions have their own packages. These are data and configuration APIs;
+[Supreme](supreme.md) supplies cryptographic implementations.
 
 ##  Conversion from/to Platform Types
 
@@ -108,111 +102,47 @@ The following functions provide interop functionality with platform types.
 
 ### JVM/Android
 
-* `SignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
-* `SpecializedSignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
-* `SignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
-* `SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
+* `CryptoPublicKey.toJcaPublicKey()` and `PublicKey.toCryptoPublicKey()` convert public keys.
+* `CryptoPrivateKey.toJcaPrivateKey()` and `PrivateKey.toCryptoPrivateKey()` convert private keys.
+* `Certificate.toJcaCertificate()` is suspending; `toJcaCertificateBlocking()` is available when a blocking API is required.
+* `java.security.cert.X509Certificate.toKmpCertificate()` converts back to Signum.
+* `ECCurve.jcaName`, `ECCurve.byJcaName()`, and the platform algorithm helpers connect built-in definitions with JCA.
 
-<br>
 
-* `Digest.jcaPSSParams` returns a sane default `PSSParameterSpec` for computing PSS signatures
-* `Digest.jcaName` returns the JCA name of the digest
-* `Digest?.jcaAlgorithmComponent` digest part of the digest part of the <Digest>with<Algorithm> JCA algorithm identifier (which differs fom the above)
+```kotlin
+--8<-- "indispensable/src/jvmTest/kotlin/at/asitplus/signum/examples/CoreExamples.kt:core-key-roundtrip"
+```
 
-<br>
-
-* `ECCurve.jcaName` returns the curve's name used by JCA
-* `ECCurve.byJcaName()` returns the curve matching the provided JCA curve name
-* `ECCurve.iosEncodedPublicKeyLength` returns the number of bytes of a public key matching this curve, when exporting such a key from iOS.
-* `ECCurve.iosEncodedPrivateKeyLength` returns the number of bytes of a private key matching this curve, when exporting such a key from iOS.
-* `ECCurve.fromIosEncodedPublicKeyLength`returns the curve matching the length of an encoded public key, when exported from iOS.
-(Apple does not encode curve identifiers, when exporting keys.)
-* `ECCurve.fromIosEncodedPrivateKeyLength` returns the curve matching the length of an encoded private key, when exported from iOS.
-(Apple does not encode curve identifiers, when exporting keys.)
-
-<br>
-
-* `CryptoPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key
-* `CryptoPublicKey.EC.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `CryptoPublicKey.RSA.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `PublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey` from a JCA Public Key
-* `ECPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
-* `RSAPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
-
-<br>
-
-* `CryptoPrivateKey.WihtPublicKey<*>.toJcaPublicKey()` returns the JCA-representation of the private key
-* `CryptoPrivateKey.EC.WithPublicKey.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
-* `CryptoPrivateKey.RSA.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
-* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.WithPublicKey` from a JCA Public Key
-* `ECPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.EC.WithPublicKey` from a JCA EC Public Key
-* `RSAPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.RSA` from a JCA RSA Public Key
-
-<br>
-
-* `CryptoSignature.jcaSignatureBytes` returns the JCA-native encoded representation of a signature
-* `CryptoSignature.parseFromJca()` returns a signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.EC.parseFromJca()` returns an EC signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.RSA.parseFromJca()` returns an RSA signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.EC.parseFromJcaP1363` parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
-* `X509Certificate.toJcaCertificate()` converts the certificate to a JCA-native `X509Certificate`
-* `java.security.cert.X509Certificate.toKmpCertificate()` converts a JCA-native certificate to a Signum `X509Certificate`
+1. Decoding gives a semantic Signum key. The original format representation is retained when available.
 
 ### iOS
 
-* `CryptoPublicKey.iosEncoded` encodes a public key as iOS does
-* `CryptoPublicKey.fromIosEncoded()` decodes a public key that was encoded in iOS
+* `CryptoPublicKey.iosEncoded` exports the platform representation; `CryptoPublicKey.fromIosEncoded()` parses it.
+* `CryptoPrivateKey.toSecKey()` produces a `SecKey`; `SecKeyRef.toCryptoPrivateKey()` imports a native key.
+* `SignatureAlgorithm.secKeyAlgorithm` and `secKeyAlgorithmPreHashed` obtain native algorithm identifiers through the platform extension providers.
+* `CryptoSignature.iosEncoded` exposes the native signature representation.
 
-<br>
+Native key encodings do not always contain every piece of algorithm metadata. In particular,
+Apple EC exports omit the curve identifier, so retain the algorithm/curve context or use the
+provided curve-length helpers for supported built-in curves.
 
-* `CryptoPrivateKey.toSecKey()` produces a `SecKey` usable on iOS
-* `CryptoPrivateKey.fromIosEncoded()` decodes a private key as it is exported from iOS
+## Encoding and Format Representations
 
-<br>
+Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `Certificate`, and `CertificationRequest`
+implement `Encodable`; their companions implement `Decodable`. Encoding goes through the contextual
+`Signum.Der` serializer. `encodeToPem` and `decodeFromPem` provide PEM transport for supported types.
 
-* `SignatureAlgorithm.secKeyAlgorithm` returns an algorithm identifier constant usable with CommonCrypto
-* `SpecializedSignatureAlgorithm.secKeyAlgorithm` returns an algorithm identifier constant usable with CommonCrypto
-* `SpecializedSignatureAlgorithm.secKeyAlgorithm` returns an algorithm identifier constant usable with CommonCrypto
-* `SignatureAlgorithm.secKeyAlgorithmPreHashed` returns an algorithm identifier constant usable with CommonCrypto (for pre-hashed data)
-* `SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed` returns an algorithm identifier constant usable with CommonCrypto (for pre-hashed data)
+`asn1Representation` exposes the awesn1 wire model, while `sourceRepresentation` records a decoded
+representation. Semantic equality does not require byte-identical encodings. Constructing a new value
+(or copying changed semantics) does not mean it inherits the original signed bytes. Verify signatures
+against the actual input representation and use the supplied signing/verification helpers.
 
-* `CryptoSignature.iosEncoded` encodes a signature object as iOS would natively do
+ECDSA uses DER for its X.509 signature value and fixed-width P1363 bytes for JOSE and COSE:
 
+```kotlin
+--8<-- "indispensable/src/jvmTest/kotlin/at/asitplus/signum/examples/CoreExamples.kt:core-signature-formats"
+```
 
-## ASN.1 Engine Addons
-
-Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
-implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-This is an essential pattern, making the ASN.1 engine work the way it does.
-We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  
-The following section provides more details on the various patterns used for ASN.1 encoding and decoding.
-
-### Generic Patterns
-
-As mentioned before, classes like `CryptoPublicKey`, `X509Certificate`, and `ObjectIdentifier` all implement `Asn1Encodable`
-while their companions implement `Asn1Decodable`.
-These interfaces essentially provide a mapping between custom types and low-level TLV structures that can directly be encoded, conforming to DER.
-
-In addition, `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
-while their respective companions implement `PemDecodable`.
-This brings about the `encodeToPem` and `decodeFromPem` functions doing what their names imply:
-Encode/decode to/from PEM strings.
-
-#### Low-Level Addons
-
-This module provides the following low-level addons for [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum):
-
-* `Asn1Primitive.decodeToBigInteger()` throws on error
-* `Asn1Primitive.decodeToBigIntegerOrNull()` returns `null` on error
-* `BigInteger.decodeFromAsn1ContentBytes()`
-* `encodeToAsn1Primitive()` produces an ASN.1 primitive  `BigInteger`
-* `encodeToAsn1ContentBytes()` producing the content bytes of an `Asn1Primitive` for `BigInteger`
-
-
-### Notes on Object Identifiers
-Signum also ships with a `indispensable-oids` module, included by default, which adds extension properties to `KnownOIDs` for all ASN.1 object identifiers from Peter Guttmann's
-[dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
-Hence, handy constants such as `KnownOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
-`KnownOIDs.asAdjacencyAttest`. To also describe these properties, call the `KnownOIDs.describeAll()` extension once.
-
-While it is convenient to have virtually the whole world's OIDs available as constants, including descriptions,, this will add a couple of megabytes to klibs and any XCode frameworks. Thus, it may make sense to exclude `indispensable-oids` from your framework export.
+The ASN.1 parser, DER codec, low-level types, builder DSL and OID catalogue belong to
+[awesn1](https://github.com/a-sit-plus/awesn1). Signum adds cryptographic semantics, contextual
+serialization and [extensibility](extensibility.md) integration on top of those models.

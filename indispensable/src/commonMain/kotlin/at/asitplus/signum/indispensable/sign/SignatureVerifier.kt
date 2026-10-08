@@ -70,8 +70,8 @@ suspend fun CertificationRequest.verify() =
     this.verifier().verify(this)
 
 @IgnorableReturnValue
-/** Verify the proof of possession of the contained public key. Asserts that [this] matches the encoded [this.publicKey].
- * @see SignatureVerifier.Companion.verify */
+/** Verify the proof of possession of the contained public key.
+ * Asserts that [SignatureVerifier.publicKey] matches [at.asitplus.signum.indispensable.pki.TbsCertificationRequest.publicKey] in [input]. */
 suspend fun SignatureVerifier.verify(input: CertificationRequest): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
     require(this.publicKey == input.tbsCsr.publicKey)

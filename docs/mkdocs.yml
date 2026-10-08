@@ -12,6 +12,7 @@ theme:
     - navigation.sections
     - search.suggest
     - search.highlight
+    - content.code.annotate
   icon:
     repo: fontawesome/brands/github
 
@@ -68,7 +69,11 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
+      dedent_subsections: true
+      base_path:
+        - ..
   - pymdownx.superfences
   - admonition
   - pymdownx.details
@@ -79,14 +84,17 @@ markdown_extensions:
 nav:
   - Manual:
       - Overview: index.md
+      - Migration to 4.0.0: migration.md
       - CHANGELOG.md
       - Examples: examples.md
+      - Extensibility: extensibility.md
       - Modules:
-          - Indispensable ASN.1: indispensable-asn1.md
           - Indispensable: indispensable.md
           - Indispensable Josef: indispensable-josef.md
           - Indispensable Cosef: indispensable-cosef.md
+          - Indispensable PKIX: indispensable-pkix.md
           - Signum Supreme: supreme.md
+          - PKIX Supreme: pkix-supreme.md
   - Feature Matrix: features.md
   - Showcase App: app.md
   - API Docs: dokka/index.html

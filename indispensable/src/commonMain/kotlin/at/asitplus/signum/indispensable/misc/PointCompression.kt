@@ -69,8 +69,8 @@ internal fun compressY(curve: ECCurve, x: ModularBigInteger, y: ModularBigIntege
  * x^2 = a (mod p) <=> x = b^((p+1)/4) && a is quadratic residue
  *
  * @param curve can only be one of the currently supported curves
- * @param x not necessarily valid bytearray encoding of x-coordinate on given curve
- * @param root is used to determine which y-coordinate to take
+ * @param x the x-coordinate on the given curve
+ * @param sign is used to determine which y-coordinate to take
 
  *
  * @throws IllegalArgumentException if curve gets added that violates our current assumptions

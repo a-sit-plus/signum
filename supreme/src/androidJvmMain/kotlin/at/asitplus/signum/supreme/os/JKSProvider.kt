@@ -94,8 +94,11 @@ interface JavaKeyStoreOperationsProvider {
 
     /**
      * Construct an [JKSSigner] for the given values.
-     * Implementers likely only need to determine the [SignatureAlgorithm] to expose, and have their subclass
-     * implement the relevant [Signer] marker interface (if applicable).
+     * Implementers likely only need to determine the
+     * [SignatureAlgorithm](https://a-sit-plus.github.io/signum/dokka/indispensable/at.asitplus.signum.indispensable.sign/-signature-algorithm/index.html)
+     * to expose, and have their subclass implement the relevant
+     * [Signer](https://a-sit-plus.github.io/signum/dokka/indispensable/at.asitplus.signum.indispensable.sign/-signer/index.html)
+     * marker interface (if applicable).
      *
      * Independently of this provider, they also need to integrate with X.509 classes to ensure certificate/public key
      * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.

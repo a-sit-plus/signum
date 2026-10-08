@@ -9,7 +9,8 @@ types and functionality related to crypto and PKI applications:
 
 * Multiplatform ECDSA and RSA Signer and Verifier &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
   action
-* Multiplatform AES and ChaCha20-Poly1503
+* Multiplatform AES and ChaCha20-Poly1305
+* [Hybrid Public Key Encryption (HPKE)](#hybrid-public-key-encryption)
 * Multiplatform HMAC
 * Multiplatform RSA Encryption
 * Multiplatform KDF/KSF
@@ -30,15 +31,13 @@ the JVM, Android, and iOS.
 
 Simply declare the desired dependency to get going:
 
-```kotlin 
-implementation("at.asitplus.signum:supreme:$supreme_version")
-```
+Declare `at.asitplus.signum:supreme:1.0.0` in your commonMain dependencies.
 
 ## Key Design Principles
 The Supreme KMP crypto provider works differently than the JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
-and a `SupremeVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
+and a `SignatureVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
 In addition, creating ephemeral keys is a dedicated operation, decoupled from a `Provider`.
-The actual implementation of cryptographic functionality is delegated to platform-native implementations.
+The actual implementation of cryptographic functionality is delegated to platform-native implementations, complemented by Kotlin providers.
 
 Symmetric encryption follows a similar paradigm, utilising structured representations of ciphertexts and type-safe APIs.
 This prevents misuse and mishaps much more effectively than the JCA.
@@ -49,16 +48,20 @@ the actual calls to some DSL-configurable type reads the same as in common code.
 
 !!! warning
     **Do not ignore the results returned by any operation!**  
-    We heavily rely  on `KmmResult` to communicate the success or failure of operations. Nothing ever throws!
+    Provider operations, digest/MAC/KDF calculation and key agreement are suspending and return their values directly; failures throw. Verification returns `SignatureVerifier.Success` or throws. Signing returns a `SignatureResult`; access `.signature` to obtain the signature or surface a failure. Symmetric and RSA encryption/decryption, symmetric key import and some secret-key accessors still return `KmmResult`. Handle those results or explicitly use `getOrThrow()`.
 
 
 ## Provider Initialization
-Currently, we provide only one provider, the `SigningProvider`, which is used to manage signing keys and create signer
-instances. Due to limitations of Kotlin, two discrete implementations of the provider exist: one for mobile targets, and
-one for the JVM. Their initialization differs.
+Install the Supreme operation providers once at application startup, before registering provider overrides. This is separate from obtaining a provider for persistent key storage:
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-bootstrap"
+```
+
+Platform signing providers implement `SigningProvider` to manage signing keys and create signer instances. The JVM uses `JKSProvider`, Android uses `AndroidKeyStoreProvider`, and iOS uses `IosKeychainProvider`. Their initialization differs.
 
 ### iOS and Android
-On mobile targets (Android and iOS), simply reference the `PlatformSigningProvider` object, and you're good to go!
+On mobile targets (Android and iOS), simply reference the `PlatformSigningProvider` property, and you're good to go!
 This provider is backed by the _AndroidKeyStore_ and the _KeyChain_/_Secure Enclave_ and requires no configuration.
 
 ### JVM
@@ -76,18 +79,14 @@ This can either be an already initialized, loaded one, or you can pass a path to
 <td>
 
 ```kotlin
-JKSProvider {
-  file { path = keystorePath }
-}
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-jks-file"
 ```
 
 </td>
 <td>
 
 ```kotlin
-JKSProvider {
-  withBackingObject { store = keyStore }
-}
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-jks-memory"
 ```
 
 </td>
@@ -99,8 +98,7 @@ a specific `SecurityProvider`.
 In cases where even more flexibility is needed, it is possible to use `withCustomAccessor{}` and pass a custom
 KeyStore-accessor, implementing the `JKSAccessor` interface.
 
-In addition, the `JKSProvider` can be initialized without any backing keystore to create only ephemeral keys, if no
-options are passed.
+In addition, `JKSProvider.Ephemeral()` creates an in-memory provider without persistent backing. `JKSProvider()` selects this mode too.
 
 
 ## Key Management
@@ -125,25 +123,14 @@ As EC and RSA keys are the only supported ones, this amounts to the following co
 <td>
 
 ```kotlin
-prov.createSigningKey(alias = "sig") {
-  ec {
-      curve = ECCurve.SECP_256_R_1
-      digests = setOf(Digest.SHA256)
-  }
-}
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-key-ec"
 ```
 
 </td>
 <td>
 
 ```kotlin
-prov.createSigningKey(alias = "sig") {
-  rsa {
-    bits = 4096
-    digests = setOf(Digest.SHA256)
-    paddings = setOf(RSAPAdding.PSS)
-  }
-}
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-key-rsa"
 ```
 
 </td>
@@ -158,14 +145,7 @@ It is also possible to override the public exponent, although not all platform r
 If you want to use a hardware-backed key for key agreement, you need to specify the corresponding purpose:
 
 ```kotlin
-Provider.createSigningKey(ALIAS) {
-    ec {
-        purposes {
-            keyAgreement = true //defaults to false
-            signing = true //defaults to true, no impact on key agreement
-        } 
-    }
-}
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-key-agreement-purpose"
 ```
 
 !!! warning inline end
@@ -180,29 +160,17 @@ On Android, key usage purposes are enforced by hardware, on iOS this enforcement
 Both iOS and Android support attestation, hardware-backed key storage and authentication to use a key.
 Since all of this is, at least in part, hardware-dependent, the `PlatformSigningProvider` supports an additional
 `hardware` configuration block for key generation.
-The following snippet is a comprehensive example showcasing this feature set:
+The following configuration lambdas showcase this feature set. Pass `configureKey` to the corresponding native provider's `createSigningKey(alias, configureKey)` call:
 
 ```kotlin
-val serverChallenge: ByteArray = TODO("This was unpredictably chosen by your server.")
-PlatformSigningProvider.createSigningKey(alias = "Swordfish") {
-  ec {
-    // as supported by iOS and Android in hardware
-    curve = ECCurve.SECP_256_R_1
-  }
-  hardware {
-    // you could use PREFERRED if you want the operation to succeed (without hardware backing) on devices that do not support it
-    backing = REQUIRED
-    attestation { challenge = serverChallenge }
-    protection { 
-      timeout = 5.seconds
-      factors {
-        biometry = true
-        deviceLock = false
-      }  
-    }
-  }
-}
+--8<-- "supreme/src/iosTest/kotlin/at/asitplus/signum/examples/IosSupremeExamples.kt:supreme-ios-configuration"
 ```
+
+```kotlin
+--8<-- "supreme/src/androidDeviceTest/kotlin/at/asitplus/signum/examples/AndroidSupremeExamples.kt:supreme-android-configuration"
+```
+
+On Android, `hardware.strongBox` independently selects StrongBox using `REQUIRED`, `PREFERRED`, or `DISCOURAGED`. `PREFERRED` falls back when StrongBox is unavailable; `REQUIRED` fails if the requested backing is unavailable. `DISCOURAGED` hardware backing does not guarantee software key storage on Android.
 
 If multiple protections factors are chosen, any one of them can be used to unlock the key.
 Biometry could be face unlock or fingerprint unlock, depending on the device and how it is configured.
@@ -226,16 +194,14 @@ Most prominently, you may want to display a custom unlock prompt on mobile targe
 is protected by biometry:
 
 ```kotlin
-provider.getSignerForKey("Swordfish") {
-  unlockPrompt {
-    message = "Authenticate key usage"
-    subtitle = "We require your authentication to sign data" //Android-only
-    cancelText = "Cancel"
-  }
-}
+--8<-- "supreme/src/iosTest/kotlin/at/asitplus/signum/examples/IosSupremeExamples.kt:supreme-ios-key"
 ```
 
-This configuration will be used for every sign operation as well.
+```kotlin
+--8<-- "supreme/src/androidDeviceTest/kotlin/at/asitplus/signum/examples/AndroidSupremeExamples.kt:supreme-android-key"
+```
+
+The native lifecycle examples configure the loading and signing prompts separately. They do not require hardware backing or biometric interaction. The full hardware configuration example is resolved and validated as a DSL configuration; issuing it to the provider requires a suitable device, enrolled protection factors and, on iOS, App Attest entitlements and connectivity.
 More often than not, though, you'll want to setup an `unlockPrompt` as part of the signing operation
 (see [Signature Creation](#signature-creation)).  
 On the JVM (using the `JKSProvider`), another toplevel configuration property is present: `privateKeyPassword`,
@@ -253,7 +219,7 @@ If not, it usually means that a non-existent alias was specified.
 Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object:
 
 ```kotlin
-CryptoPrivateKey.decodeFromPem(pkcs8)
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-private-key-decode"
 ```
 
 These keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).
@@ -268,73 +234,60 @@ Also, while encrypted keys can be parsed, decryption is currently not natively s
 Given a `CryptoPrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object, a signer can be created as follows:
 
 ```kotlin
-val signer = sigAlg.signerFor(privateKey)
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-private-key-import"
 ```
 
-This only works if key and signature algorithm are compatible. Otherwise, it returns `KmmResult.failure`. 
-If you have an EC private key at hand without a public key attached, simply convert it to a `CryptoPrivateKey.EC.WithPublicKey` as follows:
+This only works if key and signature algorithm are compatible. Otherwise, creating the signer throws.
+If you have an EC private key at hand without a public key attached, simply convert it to a `EcdsaPrivateKey.WithPublicKey` as follows:
 
-```kotlin
-privateKey.withCurve(EECurve.SECP_256_R_1)
-```
+Attach the known curve using `privateKey.withCurve(ECCurve.SECP_256_R_1)` before creating the signer.
 
 #### Exporting Private Keys
 
 !!! note inline end
     The `exportPrivateKey()` method requires an explicit opt-in for `SecretExposure` to prevent accidental export of private keys
 
-Private keys can be exported (typically to be DER or PEM-encoded) from ephemeral signers and ephemeral key objects as follows:
+Private keys can be exported (typically to be DER or PEM-encoded) from `Signer.WithExportableKey`, such as ephemeral signers and signers created from imported keys. The returned key is a direct value, and the call is suspending. The following example opts in to `SecretExposure` in its source file:
 
 ```kotlin
-@OptIn(SecretExposure::class)
-val privKey = signer.exportPrivateKey()
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-private-key"
 ```
 
-While all signers feature an `exportPrivateKey()` method, only some signers allow for actually exporting private key material.
-Platform-native signers prevent it (i.e. always return a `KmmResult.failure`) when trying to export private keys.
-Keys from signers created from a `CryptoPrivateKey` (see above), as well as ephemeral signers can be exported.
+Platform-native signers do not implement `Signer.WithExportableKey`, so their private key material cannot be exported.
 
 
 ## Signature Creation
 Regardless of whether a key was freshly created or a pre-existing key way loaded. The result of either operation
 is a `Signer`, which can be used as desired.
 To sign, simply pass data to sign.
-On iOS and Android, it is possible to perform additional optional configuration, such as
-setting up an `unlockPrompt`:
+On iOS and Android, it is possible to configure an `unlockPrompt`, as shown in the [native key lifecycle examples](#key-loading). The basic signing call is the same across platforms:
 
 ```kotlin
-signer.sign(data) {
-  unlockPrompt {
-    message = "Authenticate key usage"
-    subtitle = "We require your authentication to sign data" //Android-only
-    cancelText = "Cancel"
-  }
-}
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-signing"
 ```
+
+1. Accessing `.signature` surfaces a signing failure; signing itself returns a `SignatureResult`.
 
 ## Signature Verification
 
-To verify a signature, obtain a `SupremeVerifier` instance using `verifierFor(k: PublicKey)`, either directly on a
+To verify a signature, obtain a `SignatureVerifier` instance using `verifierFor(publicKey)`, either directly on a
 `SignatureAlgorithm`, or on one of the specialized algorithms (`X509SignatureAlgorithm`, `CoseAlgorithm`, ...).
 A variety of constants, resembling the well-known JCA names, are also available in `SignatureAlgorithm`'s companion.
 
 As an example, here's how to verify a basic signature using a public key:
 
 ```kotlin
-val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
-val plaintext = "You want to trust this.".encodeToByteArray()
-val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
-val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
-val isValid = verifier.verify(plaintext, signature).isSuccess
-println("Looks good? $isValid")
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-verification"
 ```
 
+1. A rejected signature throws. Catch verification failures at the boundary handling untrusted input.
+
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
-To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
+To do this, pass a DSL configuration lambda to `verifierFor`.
 
 There really is not much more to it. This pattern works the same on all platforms.
-Details on how to parse cryptographic material can be found in the [section on decoding](indispensable.md#asn1-engine-addons) in
-of the Indispensable module description.
+Details on how to parse cryptographic material can be found in the [section on decoding](indispensable.md) in
+the Indispensable module description.
 
 
 ## Ephemeral Keys and Ephemeral Signers
@@ -343,17 +296,28 @@ They are just not persisted and work the same across platforms.
 
 To obtain an ephemeral signer, call `Signer.Ephemeral{}` and pass EC or RSA-specific configuration options as you would when creating a key using
 the `SigningProvider`.
-Alternatively, you can create an ephemeral key using `EphemeralKey{}`(and again, pass algorithm-specific configuration options).
-To obtain a signer from this ephemeral key, call `getSigner{}` on it. This, similarly to provider-backed keys, takes
-algorithm-specific configuration options, such as a specific hash algorithm or padding, in case more than one was
-specified when creating the ephemeral key.
+The signer itself has exportable private key material; a separate ephemeral key object is no longer needed.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-ephemeral"
+```
 
 ## Digest Calculation
-The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
+The provider implements the `digest()` extension on Indispensable's `Digest` interface. The extension is suspending and returns the digest bytes directly.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-digest"
+```
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
 
 ## HMAC Calculation
-The Supreme KMP crypto provider introduces a `mac()` extension on the `MAC` class. It takes two arguments:
+The provider implements the suspending `mac()` extension on Indispensable's `MessageAuthenticationCode` interface. It returns MAC bytes directly.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-hmac"
+```
+
+It takes two arguments:
 
 * `key` denotes the MAC key
 * `msg` represents the payload to compute a MAC for
@@ -421,22 +385,22 @@ All contracts can be combined, meaning it is possible to steadily narrow down th
 
 * `isAuthenticated()`
     * if `true`, smart-casts the object's AuthCapability to `AuthCapability.Authenticated<*>`
-    * if `false` smart-casts the object's AuthCapability to `AuthCapability.Unathenticated`
+    * if `false` smart-casts the object's AuthCapability to `AuthCapability.Unauthenticated`
 * `hasDedicatedMac()`
     * if `true`, smart-casts the object's
         * KeyType to `KeyType.WithDedicatedMac`
         * AuthCapability to `AuthCapability.Authenticated.WithDedicatedMac`
     * if `false`, smart-casts the object's 
-        * AuthCapability to a union type of `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated` and `AuthCapability.Unauthenticated`
+        * AuthCapability to a union type of `SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated` and `AuthCapability.Unauthenticated`
         * KeyType to `KeyType.Integrated`
 * `requiresNonce()`
-    * if `true` smart-casts the object's NonceTrait  to `Nonce.Required`
-    * if `false` smart-casts the object's NonceTrait to `Nonce.Without`
+    * if `true` smart-casts the object's NonceTrait  to `NonceTrait.Required`
+    * if `false` smart-casts the object's NonceTrait to `NonceTrait.Without`
 
-In addition, there's `isIntegrated()`, which is only defined for objects having the `Authenticated.Integrated` characteristic:
+In addition, there's `isIntegrated()`, which is only defined for authenticated objects:
 
 * if `true`, smart-casts the object's
-    * AuthCapability to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated>`
+    * AuthCapability to `SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated>`
     * KeyType to `KeyType.Integrated`
 * if `false`, smart-casts the object's
     * KeyType to `KeyType.WithDedicatedMac`
@@ -450,12 +414,10 @@ Cryptographic algorithms have various obvious properties, such as the underlying
 (AES and ChaCha branch off `SymmetricEncryptionAlgorithm` at the root level), `name`, and `keySize`.
 Taking all [characteristics](#characteristics) into account results in the following class definition:
 
-```kotlin
-SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType>
-```
+The type parameters are `A : AuthCapability<K>`, `I : NonceTrait`, and `K : KeyType`.
 
 As can be seen, this leaves quite some degrees of freedom, especially for AES-based encryption algorithms, which do exhaust
-this space. As of 01-2025, the following algorithms are implemented:
+this space. The following algorithms are implemented:
 
 * `SymmetricEncryptionAlgorithm.ChaCha20Poly1305`
 * `SymmetricEncryptionAlgorithm.AES_128.GCM`
@@ -487,27 +449,19 @@ this space. As of 01-2025, the following algorithms are implemented:
 Once you know decided on an encryption algorithm, encryption itself is straight-forward:
 
 ```kotlin
-val secret = "Top Secret".encodeToByteArray()
-val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
-val encrypted = secretKey.encrypt(secret).getOrThrow(/*handle error*/)
-encrypted.decrypt(secretKey).getOrThrow(/*handle error*/) shouldBe secret
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-symmetric"
 ```
+
+1. Symmetric encryption still returns `KmmResult`; `getOrThrow()` explicitly surfaces errors.
 
 Encrypted data is always structured and the individual components are easily accessible:
 ```kotlin
-val nonce = encrypted.nonce
-val ciphertext = encrypted.encryptedData
-val authTag = encrypted.authTag
-val keyBytes = secretKey.secretKey.getOrThrow() /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-symmetric-components"
 ```
 
 Decrypting data received from external sources is also straight-forward:
 ```kotlin
-val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
-box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
-
-//alternatively, pass raw data:
-preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-symmetric-external"
 ```
 
 ### Custom AES-CBC-HMAC
@@ -517,48 +471,7 @@ In addition, it is possible to customise AES-CBC-HMAC by freely defining which d
 There are also no constraints on the MAC key length, except that it must not be empty:
 
 ```kotlin
-val payload = "More matter, with less art!".encodeToByteArray()
-
-//define algorithm parameters
-val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
-    //with a custom HMAC input calculation function
-    .Custom(32.bytes) { ciphertext, iv, aad -> //A shorter version of RFC 7518
-        aad + iv + ciphertext + aad.size.encodeTo4Bytes()
-    }
-
-//any size is fine, really. omitting the override generates a mac key
-//of the same size as the encryption key
-val key = algorithm.randomKey(macKeyLength = 32.bit)
-val aad = Clock.System.now().toString().encodeToByteArray()
-
-val sealedBox = key.encrypt(
-    payload,
-    authenticatedData = aad,
-).getOrThrow(/*handle error*/)
-
-//because everything is structured, decryption is simple
-val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
-
-recovered shouldBe payload //success!
-
-//we can also manually construct the sealed box, if we know the algorithm:
-val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
-    encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
-    authTag = sealedBox.authTag,
-).getOrThrow()
-
-val manuallyRecovered = reconstructed.decrypt(
-    key,
-    authenticatedData = aad,
-).getOrThrow(/*handle error*/)
-
-manuallyRecovered shouldBe payload //great success!
-
-//if we just know algorithm and key bytes, we can also construct a symmetric key
-reconstructed.decrypt(
-    algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
-    aad
-).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-cbc-hmac"
 ```
 
 #### Contracts
@@ -574,29 +487,26 @@ with compatible algorithms.
 
 #### Generating, Importing, and Exporting
 The main function for key generation is `SymmetricEncryptionAlgorithm.randomKey()`.
-This always works, even without type information.
-For algorithms with a dedicated MAC key, an overloaded variant is available too:
-```kotlin
-SymmetricEncryptionalgorithm.randomKey(macKeyLength: BitLength = preferredMacKeyLength)
-```
+This is available even without detailed type information.
+For algorithms with a dedicated MAC key, pass `macKeyLength`, as shown in the [custom AES-CBC-HMAC example](#custom-aes-cbc-hmac).
 
 !!! Note inline end
     Parameters and properties of the different key types are deliberately named distinctly and the functions are intentionally only available, if enough
     type information about the algorithm is available. `hasDedicatedMac` is available on keys too!!
 
-It is, of course, possible to access the raw key bytes to export the,. Depending on the key type, these are:
+It is, of course, possible to access the raw key bytes to export them. Depending on the key type, these are:
 
 * `encryptionKey` and `macKey` for symmetric keys with a dedicated MAC key
 * `secretKey` for symmetric key which only use a single key
 
 Importing keys is also straight-forward. For encryption algorithms with a single key (and **only** for those),
-simply call `SymmetricEncryptionalgorithm.keyFrom(secretKey: ByteArray)`.
+simply call `SymmetricEncryptionAlgorithm.keyFrom(secretKey: ByteArray)`.
 In case of an AEAD algorithm with a dedicated MAC key, call `keyFrom(encryptionKey: ByteArray, macKey: ByteArray)`.
 
 
 ??? warning "Danger Zone"
     It is possible to manually generate a nonce/IV for algorithms that require an IV/nonce. However, you typically don't need this
-    since IVs/nonces are auto-generated when encrypting. If you insist, you can call `SymmetricEncryptionAlgorithm.randomKey()`
+    since IVs/nonces are auto-generated when encrypting. If you insist, you can call `SymmetricEncryptionAlgorithm.randomNonce()`
     on algorithms that require a nonce. You must, however, explicitly add an opt-in for `@HazardousMaterials`!.
     <br>
     If you really want to feed a manually generated nonce/IV into the encryption process, call `andPredefinedNonce(nonce: ByteArray)`
@@ -613,7 +523,7 @@ or not. Hence, there is no contract-backed function `hasDedicatedMacKey()`.
     If you want to decrypt external data and don't need to pass it around as a `SealedBox`,
     use `SymmetricKey.decrypt` rather than `SealedBox.decrypt`!
 
-Decryption is possible in two ways: On the on hand, you can create a `SealedBox` by calling `SymmetricEncryptionAlgorithm.sealedBox()` and then call `.decrypt(key)` on it.
+Decryption is possible in two ways: On the one hand, you can create a `SealedBox` by calling `SymmetricEncryptionAlgorithm.sealedBox` and then call `.decrypt(key)` on it.
 Alternatively, it is possible to directly call `SymmetricKey.decrypt()` and pass nonce/IV (if any), ciphertext bytes, auth tag (if any) and additional authenticated data (if any).
 The first variant will allow for arbitrary combinations of characteristics for convenience.
 The second option, however, will only allow passing a nonce/IV if the algorithm associated with a symmetric key
@@ -640,16 +550,16 @@ Decryption works analogously:
 
 !!! tip inline end
     The JVM and Android targets allow for optionally specifying a JCA provider name:
-    ```kotlin
-    alg.decryptorFor(key) {
-      provider= "BC"
-    }
-    ```
+    Pass a configuration lambda to `decryptorFor(key)` or `encryptorFor(key.publicKey)` and set `provider` to the desired installed JCA provider name.
     This works the same for encryptors.
 
-As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
-Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
-Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems
+RSA encryption and decryption are suspending and return `KmmResult`; encryptor/decryptor creation returns the object directly.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-rsa-encryption"
+```
+Textbook RSA (without padding; represented as `RSAPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
+Both require a `HazardousMaterials` opt-in, as the latter should only be used to recover ciphertexts created by legacy systems
 and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
 
 ### Supported Algorithms and Paddings
@@ -671,13 +581,80 @@ For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist 
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA384`
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA512`
 
+## Hybrid Public Key Encryption
+
+The Supreme KMP crypto provider includes [HPKE (RFC 9180)](https://www.rfc-editor.org/rfc/rfc9180), combining key encapsulation, HKDF and authenticated encryption.
+Instead of manually wiring ECDH and symmetric encryption together, pick a suite and let HPKE derive its keys and nonces.
+
+!!! tip
+    HPKE is part of `at.asitplus.signum:supreme:1.0.0`. Check out the [API docs](dokka/supreme/at.asitplus.signum.supreme.asymmetric/-h-p-k-e/index.html) for all parameters.
+
+### Supported Suites
+
+Built-in DHKEM implementations support P-256/HKDF-SHA256, P-384/HKDF-SHA384 and P-521/HKDF-SHA512.
+The suite KDF can be HKDF-SHA256, HKDF-SHA384 or HKDF-SHA512.
+AEAD choices are AES-128-GCM, AES-256-GCM and ChaCha20-Poly1305. `EXPORT_ONLY` derives secrets without encrypting messages.
+
+!!! warning
+    The X25519 and X448 KEM properties currently throw `UnsupportedCryptoException`. Their names in the API do not mean these algorithms are implemented!
+    The implementation provides no transport, public-key trust validation or replay policy. Applications must supply those.
+
+### One Message
+
+Generate a recipient key pair, choose the same suite and `info` on both sides, and transmit the encapsulated secret alongside the ciphertext.
+`aad` authenticates cleartext protocol metadata; it must match on both sides too.
+All operations below are suspending and return direct values. Invalid parameters or failed authentication throw.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/HpkeExamples.kt:hpke-base"
+```
+
+Base mode authenticates the ciphertext to the recipient, but does not establish the sender's identity. Obtain the recipient's public key through a trusted mechanism before encrypting.
+
+### Multiple Messages
+
+For multiple messages, keep the sender and receiver contexts. Each context maintains its own sequence counter and derives the next nonce automatically:
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/HpkeExamples.kt:hpke-context"
+```
+
+Process messages in the same order on both sides. Contexts are mutable: do not share them between concurrent callers. This API does not serialize or persist contexts, reorder messages, or provide a replay cache. Failed opening does not advance the receiver's sequence counter; decide how your protocol handles such a failure. The implementation throws `MessageLimitReachedError` when the sequence limit is reached. Discard the context after that error; do not attempt to reuse it.
+
+### Pre-Shared Keys and Sender Authentication
+
+PSK mode additionally binds a pre-shared key and its identifier. Auth mode binds the sender's key pair. AuthPSK combines both:
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/HpkeExamples.kt:hpke-psk-auth"
+```
+
+The implementation requires at least 32 PSK bytes and a nonempty PSK identifier, and rejects inconsistent PSK/identifier inputs. The fixed PSK in this test is only a fixture. Use a secret established by your protocol, and validate the sender public key before treating Auth mode as an identity claim. These modes also have `Setup…S`/`Setup…R` context variants for multiple messages.
+
+### Exporting Secrets
+
+The exporter derives matching application secrets on each side, including with an export-only suite:
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/HpkeExamples.kt:hpke-export"
+```
+
+Use a distinct exporter context for each purpose. `EXPORT_ONLY` rejects `Seal` and `Open`. Sender/receiver export helpers exist for Base, PSK, Auth and AuthPSK; encryption contexts also expose `Export`.
+
+### Keys and Implementation Limits
+
+The built-in DHKEM can generate random key pairs and deterministically derive them using `DeriveKeyPair(ikm)`. The latter requires suitably random input key material; a password is not sufficient.
+Public-key serialization uses uncompressed ANSI X9.63 points. DHKEM also exposes raw private-key serialization, whose current implementation requires an in-memory `EcdsaPrivateKey.WithPublicKey`; it cannot export a hardware-backed private value.
+
+HPKE exposes interfaces for KEM, KDF and AEAD implementations, but custom implementations must satisfy RFC 9180's requirements themselves. A named suite does not add algorithms absent from the underlying platform/provider. The supplied workflows are checked on the JVM; platform restrictions still apply to platform-specific key material.
+
 ## Key Derivation / Key Stretching
 
 The Supreme KMP crypto provider implements the following key derivation functions:
 
 * _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
 * _PBKDF2_ in accordance with [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
-* _scrpyt_ in accordance with [RFC 7914](https://www.rfc-editor.org/rfc/rfc7914)
+* _scrypt_ in accordance with [RFC 7914](https://www.rfc-editor.org/rfc/rfc7914)
 
 Usage is the same across implementations:
 
@@ -685,13 +662,16 @@ Usage is the same across implementations:
     * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. Pass `info` bytes to obtain a fully instantiated `WithInfo` object:  
     `HKDF.SHAXXX(info = ...)` 
     * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. Pass the number of `iterations` is required to obtain a `WithIterations` object:  
-    `PBKDF2.SHAXXX(iterations = ...)`
+    `PBKDF2.HMAC_SHAXXX(iterations = ...)`
     * An scrypt instance can be configured as desired:  
     `SCrypt(cost, parallelization, blockSize)`.
 2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
 
-In line with other APIs, `deriveKey` returns a `KmmResult` indicating either success or failure.
-HKDF additionally exposes `extract(salt /*nullable*/, inputKeyMaterial)` and `expand(pseudoRandomKey, info, derivedKeyLength)` functions.
+`deriveKey` is suspending and returns the derived bytes directly; failures throw. HKDF additionally exposes the suspending `extractStep` and `expandStep` functions.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-kdf"
+```
 
 ## Attestation
 
@@ -714,8 +694,7 @@ Hence, we create an attestation key, immediately afterwards create a P-256 key i
 EC key.
 The iOS attestation type hence includes an attestation statement, the challenge, and the public key, so that the back-end
 can easily verify the attestation result based on Apple's AppAttest service and the public key bytes, hence emulating
-key attestation. Strictly speaking, this is a violation of the process described by Apple, but cryptographically, it is
-perfectly sound!
+key attestation. The server must validate the App Attest statement and the binding to the expected challenge and public key; this does not turn App Attest into Apple hardware key attestation.
 
 The JVM also "supports" a custom attestation format. By default, it is rather nonsensical.
 However, if you plug an HSM that supports attestation to the JCA, you can make use of it.
@@ -742,14 +721,7 @@ in the same manner as [for signing](#signature-creation).
     Key generated using Supreme &leq;0.6.4 don't have the key agreement purpose set and cannot be used for key agreement.
     Regenerate such keys, if you want to use them for key agreement:
     ```kotlin
-    Provider.createSigningKey(ALIAS) {
-      ec {
-        purposes {
-          keyAgreement = true //defaults to false
-          signing = true //defaults to true, no impact on key agreement
-        }
-      }
-    }
+    --8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-key-agreement-purpose"
     ```
 
 
@@ -760,4 +732,8 @@ in the same manner as [for signing](#signature-creation).
 Once a private and a public value have been obtained, simply call `theOneValue.keyAgreement(theOtherValue)`.
 The `keyAgreement()` extension function is present on both `KeyAgreementPublicValue` and `KeyAgreementPrivateValue`, thus making it irrelevant
 whether the function is invoked on the public value or on the private value.
-The return value of a key agreement is always a (KmmResult-wrapped) `ByteArray` without additional semantics.
+Key agreement is suspending and returns a `ByteArray` directly. Feed this raw secret into a suitable KDF with protocol-specific context before using it as an application key.
+
+```kotlin
+--8<-- "supreme/src/jvmTest/kotlin/at/asitplus/signum/examples/SupremeExamples.kt:supreme-agreement"
+```

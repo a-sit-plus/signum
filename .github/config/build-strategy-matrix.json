@@ -5,8 +5,8 @@
       "artifactName": "Indispensable"
     },
     {
-      "module": "indispensable-asn1",
-      "artifactName": "IndispensableAsn1"
+      "module": "indispensable-pkix",
+      "artifactName": "IndispensablePkix"
     },
     {
       "module": "indispensable-josef",
@@ -19,6 +19,10 @@
     {
       "module": "supreme",
       "artifactName": "SignumSupreme"
+    },
+    {
+      "module": "pkix-supreme",
+      "artifactName": "PkixSupreme"
     }
   ]
 }

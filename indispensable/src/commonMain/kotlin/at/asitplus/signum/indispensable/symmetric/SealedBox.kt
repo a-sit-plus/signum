@@ -10,7 +10,7 @@ val SealedBox<*, NonceTrait.Required, *>.nonce get() = (this as SealedBox.WithNo
 
 /**
  * Represents symmetrically encrypted data in a structured manner.
- * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
+ * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
  */
 sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> {
     val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
@@ -26,7 +26,7 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
 
     /**
      * A sealed box without an IV/nonce.
-     * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
+     * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
     sealed class WithoutNonce<A : AuthCapability<out K>, K : KeyType>(
         private val ciphertext: Ciphertext<A, NonceTrait.Without, SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K>, K>
@@ -67,7 +67,7 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
 
     /**
      * A sealed box consisting of an [nonce] and the actual [ciphertext].
-     * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
+     * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
     sealed class WithNonce<A : AuthCapability<out K>, K : KeyType>(
         val nonce: ByteArray,
@@ -126,7 +126,7 @@ sealed interface Ciphertext<A : AuthCapability<out K>, I : NonceTrait, E : Symme
     val encryptedData: ByteArray
 
     /**
-     * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
+     * An authenticated ciphertext, i.e. containing an [authTag]. Associated data is supplied separately for encryption and decryption.
      */
     class Authenticated<A : AuthCapability.Authenticated<out K>, I : NonceTrait, E : SymmetricEncryptionAlgorithm<A, I, K>, K : KeyType> internal constructor(
         override val algorithm: E,

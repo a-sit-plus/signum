@@ -75,7 +75,7 @@ interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*,
 }
 /**
  * An interface to some underlying persistent storage for private key material. Stored keys are identified by a unique string "alias" for each key.
- * You can [create signing keys][createSigningKey], [get signers for existing keys][getSignerForKey], or [delete signing keys][deleteSigningKey].
+ * You can [create signing keys][SigningProviderI.createSigningKey], [get signers for existing keys][SigningProviderI.getSignerForKey], or [delete signing keys][SigningProviderI.deleteSigningKey].
  *
  * To obtain a platform signing provider in platform-agnostic code, use `PlatformSigningProvider`.
  * In platform-specific code, it is currently recommended to directly interface with your platform signing provider to get platform-specific functionality.
@@ -85,9 +85,8 @@ interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*,
  * Signers can be configured using the [SignerConfiguration] DSL.
  * When creating a key, the returned signer's configuration is embedded in the signing key configuration as `signer {}`.
  *
- * @see JKSProvider
- * @see AndroidKeyStoreProvider
- * @see IosKeychainProvider
+ * See the [Supreme provider manual](https://a-sit-plus.github.io/signum/supreme/#provider-initialization)
+ * for the JVM, Android, and iOS implementations.
  */
 val PlatformSigningProvider get() = getPlatformSigningProvider(null)
 

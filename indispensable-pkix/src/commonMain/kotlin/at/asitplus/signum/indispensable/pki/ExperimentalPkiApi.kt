@@ -5,9 +5,8 @@ package at.asitplus.signum.indispensable.pki
  * This includes all certificate path validation logic, constraint processing (e.g., NameConstraints),
  * and any general name comparison or restriction checks.
  *
- * Lives in the lean `indispensable` core (not `indispensable-pkix`) because core types such as
- * [at.asitplus.signum.indispensable.pki.x500.GeneralName]'s constraint API are gated by it, and core
- * cannot depend on `indispensable-pkix`.
+ * Lives in `indispensable-pkix`, alongside typed name constraints.
+ * [at.asitplus.signum.indispensable.pki.x500.AbstractX509GeneralName]'s constraint API is gated by it.
  */
 @RequiresOptIn(
     message = "This API is part of the experimental certificate validation feature. " +

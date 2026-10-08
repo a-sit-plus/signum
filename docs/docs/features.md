@@ -14,7 +14,6 @@ More details about the supported algorithms is provided in the next section.
 
 | Operation                   |          JVM          | Android |       iOS       |
 |:----------------------------|:---------------------:|:-------:|:---------------:|
-| ASN.1 Encoding + Decoding   |           ✔           |    ✔    |        ✔        |
 | Signature Creation          |           ✔           |    ✔    |        ✔        |
 | Signature Verification      |           ✔           |    ✔    |        ✔        |
 | Digest Calculation          |           ✔           |    ✔    |        ✔        |
@@ -27,8 +26,8 @@ More details about the supported algorithms is provided in the next section.
 | MAC                         |           ✔           |    ✔    |        ✔        |
 | KDF/KSF                     |           ✔           |    ✔    |        ✔        |
 
-Hardware-backed key agreement, asymmetric and symmetric encryption are WIP and will be supported in an upcoming release.
-This is more than a mere lip service, since we (A-SIT Plus GmbH) need this functionality urgently ourselves and are already working on it.
+Hardware-backed ECDH depends on the platform and device. RSA and symmetric encryption in Supreme use in-memory keys;
+the signing provider does not expose hardware-backed encryption APIs.
 
 ### ❋ JVM Attestation
 The JVM supports a custom attestation format, which can convey attestation
@@ -47,11 +46,13 @@ Additional details are described in the [Attestation](supreme.md#attestation) se
 
 ### † Android Key Agreement
 !!! bug inline end
-    All Android versions supporting key agreement contain a bug, which makes it impossible
-    to perform key agreement using an auth-on-every-use key. The bugfix is hidden behind a disabled-by-default
-    feature flag in the Android source code.
+    The current Supreme Android provider cannot perform key agreement using an auth-on-every-use key.
     **Hence, do not require biometric authentication for keys you want to use for key agreement or
-    use a timeout of at leas one second!**
+    use a timeout of at least one second!**
+
+Android exposes a `BiometricPrompt.CryptoObject` constructor for `KeyAgreement` starting with
+[version 36.1](https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt.CryptoObject#CryptoObject(javax.crypto.KeyAgreement)).
+Supreme's current key-agreement authentication path does not use that operation-bound prompt.
 
 Key Agreement support in Hardware is spotty on Android: It is only implemented starting with SDK&nbsp;31 (Android&nbsp;12).
 Since this is indeed dependent on the crypto hardware (and _KeyMaster_/_KeyMint_ version, etc.), not every device running Android&nbsp;12 or later
@@ -59,15 +60,14 @@ will support key agreement in hardware. The reason for this is that devices laun
 from certain (otherwise) hard requirements for Devices launched with later Android versions.
 Hence, a device launched with Android&nbsp;10, and later updated to Android&nbsp;12 may still not support key agreement in
 hardware.
-The Supreme crypto provider will return a failure, in if key agreement is not supported in hardware.
+The Supreme crypto provider throws if key agreement is not supported by the selected hardware-backed key.
 <br>
 **You can still, however, use key agreement based on software (ephemeral) keys.**
 
 ## Supported Algorithms
 
-The following matrix lists all supported algorithms and details.
-Since everything is supported on all platforms equally,
-a separate platform listing is omitted.
+The following matrix lists the built-in algorithms. Platform and hardware restrictions still apply;
+external libraries can contribute additional algorithms through [provider registration](extensibility.md).
 
 | Primitive          | Details                                                                              |
 |--------------------|--------------------------------------------------------------------------------------|
@@ -81,57 +81,33 @@ On the JVM and on Android, supporting more algorithms is rather easy, since Boun
 and can be used to provide more algorithms than natively supported. However, we aim for tight platform integration,
 especially wrt. hardware-backed key storage and in-hardware computation of cryptographic operations.
 We have therefore limited ourselves to what is natively supported on all platforms and most relevant in practice.
-Different block cipher modes of operation can be added on request.
+External implementations can extend the open algorithm and provider interfaces. See [Extensibility](extensibility.md).
 
-## High-Level ASN.1 Abstractions
+## PKI and Format Integration
 
-The `indispensable-asn1` module comes with a fully-featured ASN.1 engine including a builder DSL.
-In addition to low-level, generic abstractions, it also provides higher-level datatypes with enriched
-semantics. The `indispensable` module builds on top of it, adding cryptography-specific data types.
-Combined these two modules provide the following abstractions:
+Signum provides semantic keys, certificates, and CSRs. Their ASN.1/DER serialization uses
+[awesn1](https://a-sit-plus.github.io/awesn1/), which is now its own library.
+The standalone parser, builder DSL, primitive types, and OID catalogue are documented there.
 
-| Abstraction                  |   | Remarks                                                                                                                                                                              |
-|------------------------------|:-:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| X.509 Certificate            | ❋ | Only supported algorithms can be parsed as certificate.<br> Certificates containing other algorithm can be parsed as generic ASN.1 structure. Parser is too lenient in some aspects. |
-| X.509 Certificate Extension  | ❋ | Almost no predefined extensions. Need to be manually created.                                                                                                                        |
-| Relative Distinguished Names | ❋ | Rather barebones with little to no validation.                                                                                                                                       |
-| Alternative Names            | ❋ | Only basic structural validation.                                                                                                                                                    |
-| PKCS10 CSR                   | ❋ | Almost certainly a bit too lenient.                                                                                                                                                  |
-| PKCS10 CSR Attributes        | ❋ | No predefined attributes. Need to be manually created.                                                                                                                               |
-| X.509 Signature Algorithm    | ❋ | Only supported algorithms.                                                                                                                                                           |
-| Public Keys                  | ❋ | Only supported types.                                                                                                                                                                |
-| Private Keys                 | ❋ | Only supported types.                                                                                                                                                                |
-| ASN.1 Integer                |   | Supports `Int`, `UInt`, `Long`, `ULong`, and `BigInteger` and custom varint `Asn1Integer`.                                                                                           |
-| ASN.1 Time                   |   | Maps from/to kotlinx-datetime `Instant`. Automatic choice of `GENERALIZED` and  `UTC` time.                                                                                          |
-| ASN.1 String                 |   | All types supported, with little to no validation, however.                                                                                                                          |
-| ASN.1 Object Identifier      |   | Only `1` and `2` subtrees supported. `KnownOIDs` is generated from _dumpasn1_.                                                                                                       |
-| ASN.1 Octet String           |   | Primitive octet strings and encapsulating complex structures natively supported for encoding and parsing.                                                                            |
-| ASN.1 Bit String             |   | Relies on custom `BitSet` implementation, but also supports encoding raw bytes.                                                                                                      |
+| Abstraction | Module | Remarks |
+|:------------|:-------|:--------|
+| Public and private keys | Indispensable | RSA and NIST EC built-ins; open format providers |
+| Certificates and CSRs | Indispensable | Semantic models with source-representation preservation |
+| Certificate extensions | Indispensable PKIX | Typed constraints, usages, identifiers and policies; unknown extensions retain their opaque data |
+| Distinguished and general names | Indispensable PKIX | Typed attributes and name forms |
+| Trust anchors and bundled roots | Indispensable PKIX | Data model and a pinned Apple-sourced root snapshot |
+| Path construction and validation | PKIX Supreme | Signatures, validity, constraints, policies and critical extensions |
+| Live system trust store | PKIX Supreme | Platform-dependent, best-effort access; see the [PKIX manual](pkix-supreme.md) |
+| JOSE | Indispensable Josef | JWK, compact/flattened/general JWS, typed payloads and JWT |
+| COSE | Indispensable Cosef | COSE keys, signed messages and CWT |
+| HPKE | Supreme | See the [HPKE manual](supreme.md#hybrid-public-key-encryption) for supported suites and modes |
 
-!!! info
-    ❋ marks abstractions added by the `indispensable` module
+Validation is separate from decoding a certificate. Parsing data successfully does not establish trust.
+Refer to [PKIX Supreme](pkix-supreme.md) for explicit trust anchors and validation outcomes.
 
-## Signum vs. cryptography-kotlin
+## Extensibility
 
-Signum and [cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin) pursue different goals but their features sets have grown to
-overlap considerably.
-The following table provides overview about what is supported by Signum and cryptography-kotlin, respectively.
-
-!!! tip inline end
-    For a rationale behind Signum's design, see the corresponding section in the [project overview](index.md#rationale).
-
-|                             | Signum                   | cryptography-kotlin       |
-|-----------------------------|--------------------------|---------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)           | ✔ (ECDSA, RSA)            |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly)     | ✔ (AES)                   |
-| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP       | ✔ RAW, PKCS1, OAEP        |
-| Digest                      | ✔ (SHA-1, SHA-2)         | ✔ (MD5, SHA-1, SHA-2)     |
-| MAC                         | ✔ (HMAC)                 | ✔ (HMAC)                  |
-| Key Agreement               | ✔ (ECDH)                 | ✔ (ECDH)                  |
-| KDF/PRF/KSF                 | ✔ (PBKDF2, HKDF, scrypt) | ✔ (PBKDF2, HKDF)          |
-| Hardware-Backed Crypto      | ✔                        | ✗                         |
-| Attestation                 | ✔                        | ✗                         |
-| Fully-Featured ASN.1 Engine | ✔                        | ✗                         |
-| COSE                        | ✔                        | ✗                         |
-| JOSE                        | ✔                        | ✗                         |
-| Provider Targets            | JVM, Android, iOS        | All KMP-supported targets |
+Built-in algorithms are defaults, rather than an exhaustive list of what Signum can represent.
+External libraries can contribute digests, MACs, KDFs, signing and verification, key formats, platform mappings,
+typed certificate data, and configuration DSL options. Those contributions still depend on their own platform support.
+See [Extensibility](extensibility.md) for installation and registration requirements.

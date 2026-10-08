@@ -1,5 +1,3 @@
-import at.asitplus.signum.supreme.sign.CursorySignatureSchemeProvider
-import at.asitplus.signum.Signum
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -12,8 +10,8 @@ class ModuleTestSession : TestSession(
     }
 ) {
     init {
-        Signum.setDer(at.asitplus.awesn1.serialization.DER { maxNestingDepth = 80 })
-        CursorySignatureSchemeProvider.install()
-        Signum.Der
+        bootstrapDocumentationExamples()
     }
 }
+
+expect fun bootstrapDocumentationExamples()

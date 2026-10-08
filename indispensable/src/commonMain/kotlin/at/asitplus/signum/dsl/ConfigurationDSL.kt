@@ -4,8 +4,8 @@ import kotlin.reflect.KProperty
 
 /**
  * The meta functionality that enables us to easily create DSLs.
- * @see at.asitplus.signum.supreme.dsl.DSLInheritanceDemonstration
- * @see at.asitplus.signum.supreme.dsl.DSLVarianceDemonstration
+ * See the [DSL inheritance example](https://github.com/a-sit-plus/signum/blob/main/supreme/src/commonTest/kotlin/at/asitplus/signum/supreme/dsl/DSLInheritanceDemonstration.kt).
+ * See the [DSL variance example](https://github.com/a-sit-plus/signum/blob/main/supreme/src/commonTest/kotlin/at/asitplus/signum/supreme/dsl/DSLVarianceDemonstration.kt).
  */
 object DSL {
     /** Resolve a DSL lambda to a concrete configuration */

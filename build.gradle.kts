@@ -41,13 +41,18 @@ dokka {
     }
 }
 
-subprojects {
-    if(!name.startsWith("internals")) rootProject.dependencies.add("dokka", this)
-}
+val documentedModules = listOf(
+    "indispensable", "indispensable-josef", "indispensable-cosef",
+    "indispensable-pkix", "supreme", "pkix-supreme",
+)
+documentedModules.forEach { dependencies.add("dokka", project(":$it")) }
 
 allprojects {
     apply(plugin = "org.jetbrains.dokka")
     group = rootProject.group
+    dokka {
+        dokkaPublications.configureEach { failOnWarning.set(true) }
+    }
 }
 
 tasks.register<Copy>("copyChangelog") {
@@ -60,7 +65,11 @@ tasks.register<Copy>("copyAppLegend") {
     from("demoapp/app.png")
 }
 
-tasks.register<Copy>("mkDocsPrepare") {
+tasks.named("dokkaGeneratePublicationHtml") {
+    doFirst { delete(dokkaDir) }
+}
+
+tasks.register<Sync>("mkDocsPrepare") {
     dependsOn("dokkaGenerate")
     dependsOn("copyChangelog")
     dependsOn("copyAppLegend")
@@ -68,10 +77,33 @@ tasks.register<Copy>("mkDocsPrepare") {
     from(dokkaDir)
 }
 
+tasks.register<GradleBuild>("legacyDocsTest") {
+    group = "verification"
+    description = "Runs historical documentation examples against published Signum 3.x."
+    dir = rootDir.resolve("docs/legacy-examples")
+    tasks = listOf("test")
+}
+
+tasks.register<Exec>("checkDocsSnippets") {
+    group = "verification"
+    description = "Checks that documentation Kotlin fences embed named test-source snippets."
+    commandLine("python3", rootDir.resolve("docs/check_snippets.py"), "--self-test")
+}
+
+tasks.register("docsTest") {
+    group = "verification"
+    description = "Runs the JVM tests backing the current and historical documentation examples."
+    dependsOn(documentedModules.map { ":$it:jvmTest" })
+    dependsOn(":extensibility-test:jvmTest", "legacyDocsTest", "checkDocsSnippets")
+}
+
 tasks.register<Exec>("mkDocsBuild") {
     dependsOn(tasks.named("mkDocsPrepare"))
+    dependsOn("docsTest")
     workingDir("${rootDir}/docs")
-    commandLine("mkdocs", "build", "--clean", "--strict")
+    val mkdocs = providers.environmentVariable("VIRTUAL_ENV")
+        .map { "$it/bin/mkdocs" }.getOrElse("mkdocs")
+    commandLine(mkdocs, "build", "--clean", "--strict")
 }
 
 tasks.register<Copy>("mkDocsSite") {
@@ -79,5 +111,3 @@ tasks.register<Copy>("mkDocsSite") {
     into(rootDir.resolve("docs/site/assets/images/social"))
     from(rootDir.resolve("docs/docs/assets/images/social"))
 }
-
-

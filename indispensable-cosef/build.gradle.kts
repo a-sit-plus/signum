@@ -26,6 +26,7 @@ kotlin {
             }
         }
         jvmTest.dependencies {
+            implementation(project(":supreme"))
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }
     }

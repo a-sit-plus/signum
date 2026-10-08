@@ -86,7 +86,7 @@ data class CborWebToken(
 
     /**
      * The "cti" (CWT ID) claim has the same meaning and processing rules as
-     * the "jti" claim defined in Section 4.1.7 of [RFC7519], except that
+     * the "jti" claim defined in Section 4.1.7 of [RFC 7519](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.7), except that
      * the value is a byte string.  The Claim Key 7 is used to identify this
      * claim.
      */

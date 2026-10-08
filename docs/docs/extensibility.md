@@ -5,20 +5,33 @@ This document describes the process for library developers.
 
 ## Registration and DER configuration
 
-All extensibility registration and registry lookups go through `Signum`. Register a provider and its
-concrete ASN.1 serializers together:
+All extensibility registration and registry lookups go through `Signum`. Register providers and their
+concrete ASN.1 serializers during startup, before resolving DER. This function installs the examples
+introduced below in the required order:
 
 ```kotlin
-Signum.register(FoobarProvider, serializers = asn1Serializers)
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-bootstrap"
 ```
+
+1. Select the DER settings before contributing serializers.
+2. Register the educational digest provider together with its concrete serializer.
+3. Register the custom certificate-extension descriptor and its concrete serializer together.
+4. Resolve DER only after all serializer contributions are installed.
 
 This registers every Indispensable provider interface implemented by the object, including the current
 platform's JCA or iOS mapping interface. Core defaults are installed before the provider, and later
 providers are tried first. Install Supreme before registering overrides for its operation providers.
-For module-specific service interfaces, use explicit typed registration:
+Use explicit typed registration to override an operation provider. Provider-only registration remains
+possible after DER has been resolved:
 
 ```kotlin
-Signum.registerProvider<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-override-provider"
+```
+
+The bootstrap installs this override after resolving DER. It takes precedence when the operation is requested:
+
+```kotlin
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-provider-precedence"
 ```
 
 An extension should expose one `install()` function that registers its providers, contextual serializers,
@@ -32,20 +45,7 @@ Module installers are extension functions on `Signum`, defined in their respecti
 Indispensable does not depend on Supreme or PKIX. Core provider installation remains lazy and idempotent;
 it is also available explicitly as `Signum.installIndispensable()`.
 
-Optionally select a custom configuration **before** installing extensions:
-
-```kotlin
-Signum.setDer(DER {
-    maxInputLength = 1_000_000
-    maxNestingDepth = 64
-})
-Signum.installSupreme() // when using Supreme; install its defaults before overrides
-FoobarExtension.install()
-Signum.installPkix() // when using the typed PKIX module
-
-val bytes = Signum.Der.encodeToByteArray(foobarPublicKey)
-val key = Signum.Der.decodeFromByteArray<FoobarPublicKey>(bytes)
-```
+Optionally select a custom configuration **before** installing extensions, as shown in the bootstrap example above.
 
 `setDer` supplies a template: Signum creates a new instance preserving its settings and existing serializers,
 then adds its core and registered extension serializers. Omit `setDer` to use awesn1's default `DER` instance;
@@ -63,7 +63,7 @@ Register native open-polymorphic payload serializers (such as custom `otherName`
 ## Representations and Encoding
 
 Semantic types implement `Encodable`; their companions can implement `Decodable<T>` as a typed decoding target.
-These interfaces replace `DerEncodable` and `DerDecodable` and do not prescribe an ASN.1 representation.
+For Signum semantic types, these replace the old `Asn1Encodable` and `Asn1Decodable` contracts and do not prescribe an ASN.1 representation.
 Encoding and decoding use contextual serializers through `Signum.Der`, including awesn1's TLV and kotlinx.io APIs.
 Signum's PEM extensions also use `Signum.Der`.
 
@@ -84,6 +84,13 @@ contextual serializers so another format can choose its own representation. `Gen
 internal `X509GeneralSubtree` illustrate this separation. C509 is not implemented yet.
 
 ## Message Digests & Message Authentication Codes
+
+Here is a complete educational checksum provider. Byte sums are not secure hashes! The provider handles
+its own algorithm and returns `null` for others, allowing Supreme's providers to handle those.
+
+```kotlin
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-digest"
+```
 
 Implement `DigestProvider` and `DigestOperationProvider`.
 Your digest identifier should implement `Digest`.
@@ -132,31 +139,19 @@ The base-interface serializers in `signumAsn1Serializers` already use the format
 The types themselves do not need `@Serializable` annotations. A class-level generated or custom serializer
 takes precedence over contextual registration; avoid fixing an X.509 serializer on a shared semantic type.
 
-Use `contextualAsn1` to bridge your type to an awesn1 model:
+Use `contextualAsn1` to bridge your type to an awesn1 model. This example registers the concrete digest
+type introduced above; algorithm, key and signature types use the same pattern:
 
 ```kotlin
-val asn1Serializers = SerializersModule {
-    contextualAsn1(
-        FoobarPublicKey::class,
-        SubjectPublicKeyInfo.serializer(),
-        toModel = { it.asn1Representation },
-        fromModel = { FoobarPublicKey.fromAsn1Representation(it) },
-    )
-    // Register private keys, algorithm identifiers, and concrete signatures similarly.
-}
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-serializers"
 ```
 
 The conversion from the model must return the concrete registered type.
 For a generic signature, the BIT STRING does not identify its algorithm: decode as `SignatureValue`, then supply an algorithm using `withSignatureAlgorithm`.
 A concrete signature serializer may decode directly if its type provides enough information.
 
-Expose one installation entry point for your extension, alongside its serializer module:
-
-```kotlin
-fun install() {
-    Signum.register(FoobarProvider, serializers = asn1Serializers)
-}
-```
+Expose one installation entry point for your extension, alongside its serializer module, then call it during
+application startup as shown in the [bootstrap example](#registration-and-der-configuration).
 
 ### Signing operations
 
@@ -168,7 +163,7 @@ For actual operations, implement the following:
       Using these templates also requires you to implement the platform conversion providers listed further down.
 - `InMemoryKeysProvider` to provide in-memory signing operations:
     - Override `makeEphemeralSigner` to provide ephemeral key creation (via `Signer.Ephemeral`). 
-        - You will need to provide a DSL extension property for an `EphemeralSignerConfiguration._algSpecific` option. See [DSL Extensibility].
+        - You will need to provide a DSL extension property for an `EphemeralSignerConfiguration._algSpecific` option. See [DSL Extensibility](#dsl-extensibility).
     - Override `createSignerForKey` to provide in-memory signer creation for existing keys.
         - If you depend on _Supreme_, you can once again reuse its platform class templates.
           See `SupremeJVMInMemoryKeysProvider` and `SupremeIosInMemoryKeysProvider`.
@@ -190,36 +185,32 @@ For actual operations, implement the following:
             - For key creation, override `createKeyPair`.
             - Additionally, override `getJKSSigner` with a minimal shim.
               See the existing Supreme implementation for the shim to use.
-    - Additionally, in common code, define your DSL extension properties (see [DSL Extensibility]):
+    - Additionally, in common code, define your DSL extension properties (see [DSL Extensibility](#dsl-extensibility)):
         - Add an `PlatformSigningKeyConfigurationBase<*>._algSpecific` option to select key creation using your algorithm.
-        - Optionally, if your (platform) signers need additional configuration, provide a DSL extension property on `SignerConfiguration` and/or on `PlatformSignerConfigurationBase`.
+        - Optionally, if your (platform) signers need additional configuration, provide a DSL extension property on `InMemorySignerConfiguration` and/or on `PlatformSignerConfigurationBase`.
         - This extension property should be used by all of your provider integrations.
           This enables seamless platform-specific key creation and usage from common code.
 
 ## Certificate extensions
+
+The custom flag below uses a private experimental OID and a one-byte body, solely to demonstrate registration.
+Do not use that wire format or OID as an interoperable certificate extension.
 
 A custom extension implements `CertificateExtension`. Its companion implements
 `CertificateExtension.Descriptor<MyExtension>`, which extends `Decodable<MyExtension>`, and provides
 its OID and `fromAsn1Representation` returning the concrete type.
 
 ```kotlin
-fun install() {
-    Signum.register(FoobarCertificateExtension)
-}
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-descriptor"
 ```
 
-This one call installs both the OID descriptor and the concrete contextual ASN.1 serializer. No separate
+The `Signum.register(ExampleFlag)` call in bootstrap installs both the OID descriptor and the concrete contextual ASN.1 serializer. No separate
 serializer module or `@Serializable` annotation is needed. The bridge uses the extension's
 `asn1Representation` and the descriptor's conversion from awesn1's `X509CertificateExtension`.
 
 The same pattern applies to `GeneralName.Descriptor<MyName>` (keyed by CHOICE tag) and
-`AttributeTypeAndValue.Descriptor<MyAttribute>` (keyed by OID):
-
-```kotlin
-Signum.register(MyName)
-Signum.register(MyAttribute)
-Signum.registerAttributeAlias("MYATTR", MyAttribute.oid)
-```
+`AttributeTypeAndValue.Descriptor<MyAttribute>` (keyed by OID). Register their descriptors through
+`Signum.register` and attribute aliases through `Signum.registerAttributeAlias` during bootstrap.
 
 Attribute descriptors also supply a canonical name and `fromString`. Register aliases after their
 descriptor and before attribute lookup. `Signum.attributeOidFor`, `attributeNameFor`, and
@@ -270,85 +261,41 @@ On iOS, implement `IosMappingProvider`:
 
 ## DSL Extensibility
 
-Most generic structures in Signum are configured using DSL notation:
+Most generic structures in Signum are configured using DSL notation. This is realized using our DSL data structures.
+(For those interested, refer to `ConfigurationDSL.kt`.)
+For extensibility purposes, the DSL operates using extension properties.
+
+To **define a new mutually-exclusive option**, define an extension property on the DSL structure using
+its `_algSpecific.option(...)` member. Its class must extend the indicator subclass required by the holder,
+such as `EphemeralSignerConfiguration.AlgorithmSpecific`.
+To **integrate a DSL property** that doesn't interact with existing properties, use `childOrDefault`,
+`childOrNull`, etc. The string key needs to differ from all other properties on this DSL type, or undefined
+behavior may result. Choose a string that is sufficiently unique.
+
 ```kotlin
-Signer.Ephemeral { ec { curve = ECCurve.SECP_384_R_1 } }
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-dsl"
 ```
 
-This is realized using our DSL data structures.
-(For those interested, refer to `ConfigurationDSL.kt`.)
+This also demonstrates how you can nest DSL data structures inside each other.
+As an aside: There is no specific reason, beyond convention, why `details` needs to be an extension property here.
+You could place the same property, with or without a backing field, inside the DSL class itself.
+The classes returned from `childOrNull` etc. are only accessors into the underlying generic storage defined on
+`DSL.Data` itself. Only generic accessors (the objects you call `.option` on) hold their own storage and need backing fields.
 
-For extensibility purposes, the DSL operates using extension properties.
-Some extension points ask you to define your own algorithm-specific options.
-Here is how you do this:
+The provider reads `.v` to check whether its algorithm was selected. Return `null` when it wasn't selected
+so another provider can handle the configuration. This provider reuses the test module's one-bit cursory
+signature scheme. As the name suggests, that scheme is very insecure! It is only useful for demonstrating
+how a custom algorithm plugs into the DSL.
 
-- To **define a new mutually-exclusive option**: define an extension property on the DSL structure using the `option(...)` member of the specified generic, like this: 
-  ```kotlin
-  val EphemeralSignerConfiguration.foobar get() =
-      _algSpecific.option("at.mypackage.mylibrary.foobar", ::FoobarAlgSpecificConfiguration)
-  ```
-  The string key needs to differ from all other possible options for this generic, or undefined behavior may result.
-  Choose a string that is sufficiently unique.
-  `FoobarAlgSpecificConfiguration` should extend `DSL.Data` (or an indicator subclass where specified by the generic holder, such as `EphemeralSignerConfiguration.AlgorithmSpecific` here):
-  ```kotlin
-  class FoobarAlgSpecificConfiguration : EphemeralSignerConfiguration.AlgorithmSpecific() {
-    var key: Int = 42
-  }
-  ``` 
-  This then allows consumers to configure your algorithm as:
-  ```kotlin
-  Signer.Ephemeral { foobar { key = 21 } }
-  ``` 
-  In your provider implementation (in this case `InMemoryKeysProvider::makeEphemeralSigner`), you can then check if your algorithm was selected:
-  ```kotlin
-  override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): Signer.WithExportableKey? {
-    val algSpecificConfiguration = configuration.foobar.v
-    if (algSpecificConfiguration == null) return null
-    /* ... create an ephemeral key as configured, then wrap it in a signer */
-  }
-  ```
-- To **integrate a DSL property** that doesn't interact with existing properties: define an extension property on the DSL structure using its `childOrDefault`, `childOrNull`, etc, methods, like this:
-  ```kotlin
-  val SignerConfiguration.foobar get() =
-    childOrDefault("at.mypackage.mylibrary.foobar", ::FoobarSignerConfiguration)
-  ```
-  The string key needs to differ from all other DSL properties on this DSL type, or undefined behavior may result.
-  Choose a string that is sufficiently unique.
-  `FoobarSignerConfiguration` should extend `DSL.Data`.
-  ```kotlin
-  class FoobarSignerConfiguration : DSL.Data() {
-    var extraSalt: ByteArray = byteArrayOf()
-    class SugarStirringConfiguration : DSL.Data() {
-      var stirLeft: Boolean = false
-    }
-  }
-  val FoobarSignerConfiguration.sugar get() =
-    childOrDefault("sugar", FoobarSignerConfiguration::SugarStirringConfiguration)
-  ```
-  This also demonstrates how you can nest DSL data structures inside each other.
-  As an aside: There is no specific reason, beyond convention why `sugar` needs to be an extension property here.
-  You could place the same property, with or without a backing field, inside the DSL class itself.
-  Note that the classes returned from `childOrNull` etc. are only accessors into the underlying generic storage defined on `DSL.Data` itself.
-  Only generic accessors (the objects you call `.option` on) hold their own storage and need backing fields.
-  Refer to `ConfigurationDSL.kt` and the `DSLInheritanceDemonstration`/`DSLVarianceDemonstration` test sources if you wish to customize your DSL data structures fully.
-  
-  This particular nested structure can then be configured as such:
-  ```kotlin
-  SigningProvider.Platform{}.getSignerForKey("my_alias") {
-    foobar {
-      extraSalt = byteArrayOf(0x42)
-      sugar {
-        stirLeft = true
-      }
-    }
-  }
-  ```
-  You can retrieve the configured structure using `.v` on the accessor, as demonstrated earlier:
-  ```kotlin
-  override fun getJKSSigner(/* ... */ config: JKSSignerConfiguration, /* ... */) : JKSSigner? {
-    if (certificate.publicKey !is FoobarPublicKey) return null
-    val algSpecificConfiguration = config.foobar.v
-    val sugar = algSpecificConfiguration.sugar.v
-    /* ... create a JKS signer appropriately selecting the SignatureAlgorithm to use based on public key and configuration */
-  }
-  ```
+```kotlin
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-dsl-provider"
+```
+
+The options are exercised by this configuration and signer creation:
+
+```kotlin
+--8<-- "extensibility-test/src/jvmTest/kotlin/at/asitplus/signum/examples/ExtensibilityExamples.kt:extension-dsl-use"
+```
+
+Refer to `ConfigurationDSL.kt` and the `DSLInheritanceDemonstration`/`DSLVarianceDemonstration` test sources
+if you wish to customize your DSL data structures fully.

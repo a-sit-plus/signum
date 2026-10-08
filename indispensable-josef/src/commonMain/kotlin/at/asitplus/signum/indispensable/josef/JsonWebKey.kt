@@ -38,7 +38,7 @@ data class JsonWebKey(
      * The "alg" (algorithm) parameter identifies the algorithm intended for
      * use with the key.  The values used should either be registered in the
      * IANA "JSON Web Signature and Encryption Algorithms" registry
-     * established by [JWA] or be a value that contains a collision-resistant Name.
+     * established by [JWA](https://www.rfc-editor.org/rfc/rfc7518) or be a value that contains a collision-resistant Name.
      * The "alg" value is a case-sensitive ASCII string.
      * Use of this member is OPTIONAL.
      */
@@ -369,8 +369,8 @@ data class JsonWebKey(
 }
 
 /**
- * Converts this symmetric key to a [JsonWebKey]. [algorithm] may be null for algorithms, which do not directly
- * correspond to a valid JWA `alg` identifier but will still be encoded.
+ * Converts this symmetric key to a [JsonWebKey]. The key algorithm must map to a valid JWA `alg` identifier;
+ * unsupported mappings are returned as a failure.
  * * Allowed key operations can be restricted by specifying [includedOps]
  * */
 fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): KmmResult<JsonWebKey> =

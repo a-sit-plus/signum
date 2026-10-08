@@ -128,11 +128,8 @@ suspend fun <I : NonceTrait> SealedBox<AuthCapability.Unauthenticated, I, KeyTyp
 
 
 /**
- * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
- * This constrains the [key]'s characteristics to the characteristics of the [SealedBox] to decrypt.
- * It does not, however, prevent mixing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [SymmetricEncryptionAlgorithm.ChaCha20Poly1305] key into
- * a [AES.GCM] [SealedBox].
- * In such cases, this function will immediately return a [KmmResult.failure].
+ * Decrypts this ciphertext using the raw [secretKey] and [authenticatedData].
+ * The caller must check algorithm and key compatibility before selecting this internal path.
  */
 @JvmName("decryptRawAuthenticated")
 private suspend fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.decryptInternal(

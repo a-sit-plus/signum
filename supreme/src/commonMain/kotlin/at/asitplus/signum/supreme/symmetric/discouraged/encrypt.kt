@@ -61,7 +61,7 @@ suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encr
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
  * This is usually not required, since all algorithms requiting a nonce/IV generate them by default
- * @see at.asitplus.signum.supreme.symmetric.randomNonce
+ * @see at.asitplus.signum.indispensable.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
@@ -73,7 +73,7 @@ fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
  * This is usually not required, since all algorithms requiting a nonce/IV generate them by default
- * @see at.asitplus.signum.supreme.symmetric.randomNonce
+ * @see at.asitplus.signum.indispensable.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")

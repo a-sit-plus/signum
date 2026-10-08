@@ -72,7 +72,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         }
 
         @SecretExposure
-        override suspend fun exportPrivateKey() = TODO()
+        override suspend fun exportPrivateKey() = Private()
         override val publicKey: CryptoPublicKey get() = this
 
         override val signatureAlgorithm: SignatureAlgorithm get() = CursorySignatureScheme
