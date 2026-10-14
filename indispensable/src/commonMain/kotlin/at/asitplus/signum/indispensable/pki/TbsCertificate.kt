@@ -13,7 +13,7 @@ import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
 /** The semantic certificate contents that are signed. Originals are retained separately. */
-class TbsCertificate internal constructor(
+class TbsCertificate(
     val serialNumber: Asn1Integer,
     signatureAlgorithmProvider: () -> SignatureAlgorithm,
     val issuerName: Name,

@@ -8,7 +8,7 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
 
-sealed interface CsrAttribute : Identifiable, Encodable {
+interface CsrAttribute : Identifiable, Encodable {
 
     companion object : Decodable<CsrAttribute> {
         operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): CsrAttribute =
@@ -29,7 +29,7 @@ sealed interface CsrAttribute : Identifiable, Encodable {
     }
 }
 
-class X509CsrAttribute private constructor(
+class X509CsrAttribute(
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val oid: ObjectIdentifier,
     val value: Set<Asn1Element>,

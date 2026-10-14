@@ -28,7 +28,7 @@ interface Name : Encodable {
  * The DER/X.509 specialization of [Name] (an X.500 directory name) — a certificate issuer/subject.
  * RFC 2253 parsing/printing remains in Signum, while the structural representation comes from awesn1.
  */
-class X500Name internal constructor(
+class X500Name(
     override val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
