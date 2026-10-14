@@ -22,6 +22,10 @@ import kotlinx.serialization.encodeToByteArray
 @Serializable
 @CborArray
 @ConsistentCopyVisibility
+@Deprecated(
+    "Replaced by CoseSign1 and CoseMac0, which keep the protected header as transmitted",
+    level = DeprecationLevel.WARNING
+)
 data class CoseBytes internal constructor(
     @Serializable(with = ProtectedCoseHeaderSerializer::class)
     val protectedHeader: CoseHeader,

@@ -18,6 +18,11 @@ import kotlinx.serialization.encodeToByteArray
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseMacSerializer::class)
 @ConsistentCopyVisibility
+@Deprecated(
+    "Replaced by CoseMac0 (wire) + CoseMac0Typed (typed payload)",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CoseMac0Typed")
+)
 data class CoseMac<P : Any?> internal constructor(
     val protectedHeader: CoseHeader,
     val unprotectedHeader: CoseHeader? = null,
