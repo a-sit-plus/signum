@@ -129,26 +129,10 @@ object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, 
         else -> throw IllegalArgumentException("Unknown iOS Key type")
     }})
 
-sealed class ListSerializerTemplate<ValueT>(
-    using: KSerializer<ValueT>, serialName: String = "")
-    : TemplateSerializer<List<ValueT>>(serialName) {
-
-    override val descriptor: SerialDescriptor =
-        SerialDescriptor(realSerialName, listSerialDescriptor(using.descriptor))
-
-    private val realSerializer = ListSerializer(using)
-    override fun serialize(encoder: Encoder, value: List<ValueT>) =
-        encoder.encodeSerializableValue(realSerializer, value)
-
-    override fun deserialize(decoder: Decoder): List<ValueT> =
-        decoder.decodeSerializableValue(realSerializer)
-
-}
-
 /** De-/serializes X509Certificate as collection of Base64Url-encoded Strings */
-object CertificateChainBase64UrlSerializer : ListSerializerTemplate<Certificate>(
-    using = X509CertificateBase64UrlSerializer)
+object CertificateChainBase64UrlSerializer :
+    KSerializer<List<Certificate>> by ListSerializer(X509CertificateBase64UrlSerializer)
 
 /** De-/serializes X509Certificate as collection of Base64-encoded Strings */
-object CertificateChainBase64Serializer : ListSerializerTemplate<Certificate>(
-    using = X509CertificateBase64Serializer)
+object CertificateChainBase64Serializer :
+    KSerializer<List<Certificate>> by ListSerializer(X509CertificateBase64Serializer)
