@@ -11,7 +11,7 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 /** Signed certificate contents, with the original decoded source retained separately. */
-class Certificate internal constructor(
+class Certificate(
     val tbsCertificate: TbsCertificate,
     signatureProvider: () -> CryptoSignature/*defer to also parse and round-trip even unsupported sigalgs*/,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,

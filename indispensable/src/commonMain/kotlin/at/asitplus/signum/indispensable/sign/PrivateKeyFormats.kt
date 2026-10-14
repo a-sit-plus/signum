@@ -30,14 +30,14 @@ import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
-class RsaPrivateKey internal constructor(
+class RsaPrivateKey(
     parametersProvider: () -> Parameters,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
 
     /** The RSA components form one unit: every semantic access requires valid CRT relationships. */
-    internal data class Parameters(
+    data class Parameters(
         val publicKey: RsaPublicKey,
         val privateKey: BigInteger,
         val prime1: BigInteger,
@@ -151,7 +151,7 @@ sealed class EcdsaPrivateKey private constructor(
 
     override fun hashCode() = privateKey.hashCode()
 
-    class WithPublicKey internal constructor(
+    class WithPublicKey(
         privateKey: BigInteger,
         publicKeyProvider: () -> EcdsaPublicKey,
         val encodeCurve: Boolean,
@@ -203,7 +203,7 @@ sealed class EcdsaPrivateKey private constructor(
         override fun toString() = "EC private key for public key $publicKey"
     }
 
-    class WithoutPublicKey internal constructor(
+    class WithoutPublicKey(
         privateKey: BigInteger,
         val publicKeyBytes: Asn1BitString?,
         private val curveOrderLengthInBytes: Int,

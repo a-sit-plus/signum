@@ -7,7 +7,6 @@ import at.asitplus.awesn1.crypto.pki.*
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.Signum
-import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.signum.indispensable.sign.*
 
 val CryptoPrivateKey.asn1Representation: Pkcs8PrivateKeyInfo
@@ -24,6 +23,6 @@ val CryptoSignature.asn1Representation: X509SignatureValue
 
 val SignatureValue.asn1Representation: X509SignatureValue
     get() = sourceRepresentationFor(X509) as? X509SignatureValue
-        ?: throw Asn1Exception("No X.509 representation for ${this::class.simpleName}")
+        ?: model
 
 val CryptoPrivateKey.asPKCS8: Pkcs8PrivateKeyInfo get() = asn1Representation
