@@ -12,6 +12,7 @@ import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
@@ -116,7 +117,7 @@ object CursorySignatureSchemeProvider :
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey? {
         return if (publicKeyInfo.algorithmIdentifier == CursorySignatureScheme.Key.ALG) {
             publicKeyInfo.subjectPublicKey
-                .also { require(it.sizeBits == 1L) }
+                .also { require(it.logicalBitCount == 1L) }
                 .get(0)
                 .let(CursorySignatureScheme::Key)
         } else null
@@ -140,7 +141,7 @@ object CursorySignatureSchemeProvider :
     ): CryptoSignature? {
         if (signatureAlgorithm != CursorySignatureScheme) return null
         return signature.rawBitString
-                .also { require(it.sizeBits == 1L) }
+                .also { require(it.logicalBitCount == 1L) }
                 .let { CursorySignatureScheme.Signature(it[0]) }
     }
 
@@ -186,14 +187,15 @@ val ExtensibilityTest by matrixSuite {
             val theSignature = privateKey.sign(data).signature.encodeToDer()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
+                val certificateName = X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
                 val tbsCertificate = TbsCertificate(
                     serialNumber = Asn1Integer.ONE,
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 60.minutes,
                     signatureAlgorithm = CursorySignatureScheme,
                     publicKey = publicKey,
-                    issuerName = X500Name.fromString("2.5.4.3=Test,2.5.4.6=AT"),
-                    subjectName = X500Name.EMPTY
+                    issuerName = certificateName,
+                    subjectName = certificateName,
                 )
                 val signature = privateKey.sign(tbsCertificate.encodeToDer()).signature
                 Certificate(tbsCertificate, signature).encodeToDer()
@@ -201,6 +203,20 @@ val ExtensibilityTest by matrixSuite {
 
             val parsedCertificate = Certificate.decodeFromDer(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
+            val nameAttributes = (parsedCertificate.tbsCertificate.subjectName as X500Name)
+                .relativeDistinguishedNames
+                .flatMap { it.attrsAndValues }
+                .associateBy { it.oid }
+            fun encodedValue(oid: String) =
+                (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue.X509Representable)
+                    .value.asPrimitive()
+            fun stringValue(oid: String) = Asn1String.decodeFromTlv(encodedValue(oid)).value
+            encodedValue("2.5.4.41").tag shouldBe Asn1Element.Tag.STRING_UTF8
+            encodedValue("2.5.4.12").tag shouldBe Asn1Element.Tag.STRING_UTF8
+            encodedValue("2.5.4.6").tag shouldBe Asn1Element.Tag.STRING_PRINTABLE
+            stringValue("2.5.4.41") shouldBe "JohnDoe"
+            stringValue("2.5.4.12") shouldBe "Dr"
+            stringValue("2.5.4.6") shouldBe "Austria"
             val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
             verifier.verify(parsedCertificate) shouldBe SignatureVerifier.Success
             val parsedSignature = CryptoSignature.decodeFromDer(theSignature)

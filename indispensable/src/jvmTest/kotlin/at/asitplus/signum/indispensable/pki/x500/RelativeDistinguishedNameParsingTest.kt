@@ -85,7 +85,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
             ObjectIdentifier("2.5.4.10"),
             ObjectIdentifier("2.5.4.3"),
         )
-        name.toRfc2253String() shouldBe "2.5.4.3=foo\\, bar,2.5.4.10=acme,2.5.4.6=de"
+        name.toRfc2253String() shouldBe "cn=foo\\, bar,o=acme,c=de"
     }
 
     "X500Name should reject empty RDN segments" {

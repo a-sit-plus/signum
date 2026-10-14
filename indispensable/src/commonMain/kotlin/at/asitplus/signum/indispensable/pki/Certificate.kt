@@ -54,8 +54,8 @@ class TbsCertificate private constructor(
             validUntil = asn1Representation.validity.validUntil.instant,
             subjectName = X500Name(asn1Representation.subjectName.map(::RelativeDistinguishedName), false),
             publicKey = CryptoPublicKey(asn1Representation.subjectPublicKeyInfo),
-            issuerUniqueID = asn1Representation.issuerUniqueID?.toBitSet()?.toByteArray(),
-            subjectUniqueID = asn1Representation.subjectUniqueID?.toBitSet()?.toByteArray(),
+            issuerUniqueID = asn1Representation.issuerUniqueID?.toLsb0ByteArray(),
+            subjectUniqueID = asn1Representation.subjectUniqueID?.toLsb0ByteArray(),
             extensions = asn1Representation.extensions?.map { CertificateExtension(it) }.orEmpty(),
         )
 
