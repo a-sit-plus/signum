@@ -15,48 +15,29 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
 /**
- * `COSE_Sign1` — a single signer, no recipients. See
- * [RFC 9052 §4.2](https://www.rfc-editor.org/rfc/rfc9052.html#section-4.2).
- *
- * ```
- * COSE_Sign1 = [ Headers, payload: bstr / nil, signature: bstr ]
- * ```
- *
- * Note that COSE_Sign1 carries an **unprotected** bucket, unlike JWS compact serialization. Its JOSE counterpart in
- * shape is therefore the flattened JSON serialization, not the compact one.
- *
+ * COSE_Sign1
  * This type is the wire form. For a payload whose type is part of the contract, see [CoseSign1Typed].
- *
- * Serialized untagged. CBOR tag 18 (`COSE_Sign1_Tagged`) is not emitted or consumed — ISO/IEC 18013-5 uses the
- * untagged form, and tag support is a separate, opt-in step.
  */
 @ConsistentCopyVisibility
 @Serializable
 @CborArray
 data class CoseSign1 internal constructor(
-    /** The `protected` bucket as transmitted. Empty array = RFC 9052 §3 zero-length `bstr`. */
     @ByteString
     override val plainProtectedHeader: ByteArray,
 
     /**
-     * The `unprotected` bucket.
-     *
-     * Kept nullable to preserve the behaviour of the previous `CoseBytes`. RFC 9052 models this bucket as always
-     * present (possibly an empty map); tightening it is deferred to the header rework so that existing mdoc
-     * messages keep round-tripping byte-for-byte.
+     * Kept nullable to preserve the behavior of the previous `CoseBytes`. RFC 9052 models this bucket as always
+     * present. Tightening it is deferred to the header rework
      */
     override val unprotectedHeader: CoseHeader?,
 
-    /** `bstr / nil`. `null` means the payload is detached and transported separately. */
     @ByteString
     override val plainPayload: ByteArray?,
 
-    /** The signature `bstr`, opaque per RFC 9052. */
     @ByteString
     val plainSignature: ByteArray,
 ) : COSE() {
 
-    /** Typed view of [plainProtectedHeader]. Derived — never the source of truth for signature input. */
     @Transient
     val protectedHeader: CoseHeader = decodeProtectedHeader(plainProtectedHeader)
 
@@ -65,9 +46,6 @@ data class CoseSign1 internal constructor(
 
     /**
      * The `Sig_structure` bytes that [signature] is computed over, built from [plainProtectedHeader] as received.
-     *
-     * @param externalAad RFC 9052 §4.3 externally supplied data
-     * @param detachedPayload only to be set when [plainPayload] is `null`
      */
     fun signatureInput(
         externalAad: ByteArray = byteArrayOf(),
@@ -118,8 +96,7 @@ data class CoseSign1 internal constructor(
 
         /**
          * Assembles a [CoseSign1] from an already computed signature.
-         *
-         * [plainProtectedHeader] must be the **same bytes** that were passed to [prepare]; re-encoding
+         * [plainProtectedHeader] must be the same bytes that were passed to [prepare]; re-encoding
          * [protectedHeader] here would be the defect this type exists to prevent.
          */
         operator fun invoke(
@@ -131,9 +108,6 @@ data class CoseSign1 internal constructor(
 
         /**
          * Encodes [protectedHeader] once and returns both the bytes to keep and the `Sig_structure` to sign.
-         *
-         * Hand the returned [Prepared.plainProtectedHeader] straight back to [invoke] so that the bytes signed and
-         * the bytes transmitted are the same.
          */
         fun prepare(
             protectedHeader: CoseHeader,

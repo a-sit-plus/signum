@@ -13,18 +13,8 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
 /**
- * `COSE_Mac0` — a MAC with no recipient structures. See
+ * Representation of a COSE_MAC0 object
  * [RFC 9052 §6.2](https://www.rfc-editor.org/rfc/rfc9052.html#section-6.2).
- *
- * ```
- * COSE_Mac0 = [ Headers, payload: bstr / nil, tag: bstr ]
- * ```
- *
- * Structurally identical on the wire to [CoseSign1] — four CBOR array elements — which is exactly why the two were
- * previously served by one `CoseBytes` class and why nothing stopped a MAC from being read as a signature. They are
- * separate types here; without CBOR tags (17 vs 18) the wire form alone cannot tell them apart, so the caller must
- * choose, and that choice is now visible in the type.
- *
  * Serialized untagged, as [CoseSign1].
  */
 @ConsistentCopyVisibility
@@ -49,8 +39,6 @@ data class CoseMac0 internal constructor(
 
     /**
      * The `MAC_structure` bytes the [tag] is computed over, built from [plainProtectedHeader] as received.
-     *
-     * @param detachedPayload only to be set when [plainPayload] is `null`
      */
     fun macInput(
         externalAad: ByteArray = byteArrayOf(),
