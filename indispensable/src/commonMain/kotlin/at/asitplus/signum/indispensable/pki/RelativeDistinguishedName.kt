@@ -17,7 +17,7 @@ import at.asitplus.signum.indispensable.Encodable
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-class RelativeDistinguishedName internal constructor(
+class RelativeDistinguishedName(
     attrsAndValuesProvider: () -> Set<AttributeTypeAndValue>,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     performValidation: Boolean,
@@ -116,7 +116,7 @@ class RelativeDistinguishedName internal constructor(
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
-sealed interface AttributeTypeAndValue : Identifiable, Encodable {
+interface AttributeTypeAndValue : Identifiable, Encodable {
     val displayName: String?
     val isValid: Boolean?
 

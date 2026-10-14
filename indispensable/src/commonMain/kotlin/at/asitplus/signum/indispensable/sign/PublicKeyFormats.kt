@@ -31,7 +31,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
-class RsaPublicKey internal constructor(
+class RsaPublicKey(
     /** modulus */
     val n: Asn1Integer.Positive,
     /** public exponent */
@@ -137,7 +137,7 @@ class RsaPublicKey internal constructor(
  * @see Companion.asPublicKey
  */
 @SerialName("EC")
-class EcdsaPublicKey internal constructor(
+class EcdsaPublicKey(
     val publicPoint: ECPoint.Normalized,
     val preferCompressedRepresentation: Boolean,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,

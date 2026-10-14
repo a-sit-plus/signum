@@ -38,7 +38,7 @@ import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
 
-class EcdsaAlgorithm internal constructor(
+class EcdsaAlgorithm(
     digestProvider: () -> Digest?,
     val requiredCurve: ECCurve?,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
@@ -73,7 +73,7 @@ class EcdsaAlgorithm internal constructor(
     }
 }
 
-class RsaAlgorithm internal constructor(
+class RsaAlgorithm(
     paramsProvider: () -> Parameters<*>,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : SignatureAlgorithm, Enumerable {
@@ -180,7 +180,7 @@ class RsaAlgorithm internal constructor(
             }
         }
 
-        class PssPadded internal constructor(
+        class PssPadded(
             digestProvider: () -> Digest,
             mgfAlgorithmProvider: () -> MaskGenerationFunction,
             val saltLength: UInt,

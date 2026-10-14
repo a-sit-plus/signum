@@ -26,7 +26,7 @@ import at.asitplus.signum.indispensable.Encodable
  *
  * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6).
  */
-sealed interface AlternativeNames : Encodable {
+interface AlternativeNames : Encodable {
 
     val generalNames: List<GeneralName>
 

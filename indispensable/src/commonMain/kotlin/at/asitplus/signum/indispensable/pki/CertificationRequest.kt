@@ -18,7 +18,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */
-class TbsCertificationRequest internal constructor(
+class TbsCertificationRequest(
     val subjectName: Name,
     publicKeyProvider: () -> CryptoPublicKey,
     val attributes: List<CsrAttribute>,
@@ -90,7 +90,7 @@ class TbsCertificationRequest internal constructor(
 /**
  * Very simple implementation of a PKCS#10 Certification Request.
  */
-class CertificationRequest internal constructor(
+class CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     signatureAlgorithmProvider: () -> SignatureAlgorithm,
     signatureProvider: () -> CryptoSignature,

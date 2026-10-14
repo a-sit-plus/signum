@@ -73,8 +73,11 @@ interface SignatureFormatProvider {
 }
 
 /** An uninterpreted BIT STRING; supply an algorithm before verification. */
-class SignatureValue internal constructor(model: X509SignatureValue) : Encodable {
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>? = at.asitplus.signum.indispensable.pki.X509 to model
+class SignatureValue(
+    internal val model: X509SignatureValue,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>? =
+        at.asitplus.signum.indispensable.pki.X509 to model,
+) : Encodable {
     companion object : Decodable<SignatureValue> {
         fun fromAsn1Representation(model: X509SignatureValue) = SignatureValue(model)
     }

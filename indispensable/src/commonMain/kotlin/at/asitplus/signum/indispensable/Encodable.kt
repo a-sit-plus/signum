@@ -10,6 +10,9 @@ interface Encodable {
      *
      * Null when no source representation is retained, including for programmatically constructed
      * values. Encoding or accessing a representation never populates or replaces this property.
+     *
+     * Format modules use source-aware constructors to retain their own models. Where constructors
+     * accept providers, interpretation and validation are deferred to those providers on semantic access.
      */
     val sourceRepresentation: Pair<Representation, Any>? get() = null
 }

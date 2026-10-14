@@ -46,7 +46,7 @@ sealed class EcdsaSignature
 
     override fun hashCode() = 31 * s.hashCode() + r.hashCode()
 
-    class IndefiniteLength internal constructor(
+    class IndefiniteLength(
         r: BigInteger,
         s: BigInteger,
         sourceRepresentation: Pair<Encodable.Representation, Any>?,
@@ -81,11 +81,12 @@ sealed class EcdsaSignature
         }
     }
 
-    class DefiniteLength @Throws(IllegalArgumentException::class) internal constructor(
+    class DefiniteLength @Throws(IllegalArgumentException::class) constructor(
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-    ) : EcdsaSignature(r, s, null) {
+        sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+    ) : EcdsaSignature(r, s, sourceRepresentation) {
         init {
             val max = scalarByteLength.toInt() * 8
 
@@ -151,7 +152,7 @@ sealed class EcdsaSignature
     }
 }
 
-class RsaSignature internal constructor(
+class RsaSignature(
     val rawBytes: ByteArray,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoSignature {
