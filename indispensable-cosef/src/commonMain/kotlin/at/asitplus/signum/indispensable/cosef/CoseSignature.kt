@@ -9,33 +9,17 @@ import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
 
 /**
- * One signer entry of a `COSE_Sign`. See
- * [RFC 9052 §4.1](https://www.rfc-editor.org/rfc/rfc9052.html#section-4.1).
- *
- * ```
- * COSE_Signature = [ Headers, signature: bstr ]
- * ```
- *
- * The analogue of josef's `SignatureElement`: a signature plus *its own* header buckets, carried alongside the
- * body's buckets. Each signer's `Sig_structure` therefore covers five elements — the body's protected bucket and
- * the signer's — which is why [signatureInput] takes the body bucket as a parameter.
- *
- * Either bucket may be partial; only the combination has to form a usable [CoseHeader].
- *
- * Introduced ahead of `COSE_Sign` itself so that the multi-signer type can be added without reshaping this one.
+ * One signer entry of a `COSE_Sign`. See (https://www.rfc-editor.org/rfc/rfc9052.html#section-4.1).
  */
 @ConsistentCopyVisibility
 @Serializable
 @CborArray
 data class CoseSignature internal constructor(
-    /** This signer's `protected` bucket as transmitted. Empty array = zero-length `bstr`. */
     @ByteString
     val plainProtectedHeader: ByteArray,
 
-    /** This signer's `unprotected` bucket. */
     val unprotectedHeader: CoseHeader?,
 
-    /** The signature `bstr`. */
     @ByteString
     val plainSignature: ByteArray,
 ) {
@@ -50,8 +34,6 @@ data class CoseSignature internal constructor(
 
     /**
      * The five-element `Sig_structure` this signer's [signature] is computed over.
-     *
-     * @param bodyProtectedHeader the enclosing `COSE_Sign`'s protected bucket, as transmitted
      */
     fun signatureInput(
         bodyProtectedHeader: ByteArray,

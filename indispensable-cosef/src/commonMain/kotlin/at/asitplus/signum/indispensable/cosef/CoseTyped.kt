@@ -5,17 +5,12 @@ import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.encodeToByteArray
 
 typealias CoseSign1Typed<P> = CoseTyped<CoseSign1, P>
 typealias CoseMac0Typed<P> = CoseTyped<CoseMac0, P>
 
 /**
  * Pairs a [COSE] wire object with its decoded payload, for when the payload type is part of the contract.
- *
- * The direct counterpart of josef's `JwsTyped`. The point is that the payload type is **not** a parameter of the
- * wire class: `CoseSign1` stays a plain four-element structure holding raw bytes, and typing is layered on top.
- * Everything that goes over the wire should use [cose] only.
  */
 data class CoseTyped<out C : COSE, out P>(
     val cose: C,
@@ -43,10 +38,6 @@ class CoseTypedSerializerTemplate<C : COSE, P>(
 /**
  * Encodes [payload] the way the previous `CoseSigned.create` did: a [ByteArray] is used as-is, anything else is
  * serialized and wrapped in CBOR tag 24.
- *
- * Kept as its own function because it is an application convention (ISO/IEC 18013-5, CWT), not something RFC 9052
- * mandates — RFC 9052 only says the payload is a `bstr`. Keeping it out of [CoseSign1] is what lets a caller with a
- * different convention bypass it.
  */
 fun <P : Any> encodePayload(payload: P?, payloadSerializer: KSerializer<P>): ByteArray? = when (payload) {
     null -> null
