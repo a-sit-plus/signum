@@ -47,7 +47,7 @@ sealed class COSE {
     companion object {
 
         /** The empty `protected` bucket: RFC 9052 zero-length byte string. */
-        val EMPTY_PROTECTED_HEADER: ByteArray = byteArrayOf()
+        private val EMPTY_PROTECTED_HEADER: ByteArray = byteArrayOf()
 
         fun decodeProtectedHeader(plainProtectedHeader: ByteArray): CoseHeader =
             if (plainProtectedHeader.isEmpty()) CoseHeader()
@@ -77,19 +77,6 @@ sealed class COSE {
             externalAad: ByteArray = byteArrayOf(),
             payload: ByteArray,
         ): ByteArray = encodeStructure("MAC0", plainProtectedHeader, externalAad, payload)
-
-        /**
-         * Builds the five-element `Sig_structure` of a `COSE_Signature` inside a `COSE_Sign` (RFC 9052 §4.4):
-         * `["Signature", body_protected, sign_protected, external_aad, payload]`.
-         */
-        fun signerStructureInput(
-            bodyProtectedHeader: ByteArray,
-            signProtectedHeader: ByteArray,
-            externalAad: ByteArray = byteArrayOf(),
-            payload: ByteArray,
-        ): ByteArray = coseCompliantSerializer.encodeToByteArray(
-            CoseSignerStructure("Signature", bodyProtectedHeader, signProtectedHeader, externalAad, payload)
-        )
 
         private fun encodeStructure(
             context: String,
@@ -124,47 +111,12 @@ sealed class COSE {
     }
 }
 
-/**
- * Labels carried by this header, for the RFC 9052 check that a label does not occur in both buckets.
- * Only the labels [CoseHeader] models are visible here
- */
-internal val CoseHeader.presentLabels: Set<Long>
-    get() = buildSet {
-        algorithm?.let { add(1L) }
-        criticalHeaders?.let { add(2L) }
-        contentType?.let { add(3L) }
-        kid?.let { add(4L) }
-        iv?.let { add(5L) }
-        partialIv?.let { add(6L) }
-        type?.let { add(16L) }
-        certificateChain?.let { add(33L) }
-    }
-
-/**
- * Labels present in both buckets.
- * RFC 9052 applications SHOULD verify that a label does not occur in both the protected and the unprotected bucket
- */
-fun COSE.duplicateLabels(): Set<Long> =
-    unprotectedHeader?.let { COSE.decodeProtectedHeader(plainProtectedHeader).presentLabels intersect it.presentLabels }
-        ?: emptySet()
-
 /** The four-element `Sig_structure` / `MAC_structure` */
 @Serializable
 @CborArray
 internal data class CoseStructure(
     val context: String,
     @ByteString val plainProtectedHeader: ByteArray,
-    @ByteString val externalAad: ByteArray,
-    @ByteString val payload: ByteArray,
-)
-
-/** The five-element `Sig_structure` used by `COSE_Signature` */
-@Serializable
-@CborArray
-internal data class CoseSignerStructure(
-    val context: String,
-    @ByteString val bodyProtectedHeader: ByteArray,
-    @ByteString val signProtectedHeader: ByteArray,
     @ByteString val externalAad: ByteArray,
     @ByteString val payload: ByteArray,
 )
