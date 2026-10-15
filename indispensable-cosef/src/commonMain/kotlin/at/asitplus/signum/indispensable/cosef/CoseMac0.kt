@@ -1,11 +1,10 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -20,6 +19,7 @@ import kotlinx.serialization.encodeToByteArray
  * [RFC 9052 §6.2](https://www.rfc-editor.org/rfc/rfc9052.html#section-6.2).
  * Serialized untagged, as [CoseSign1].
  */
+@OptIn(ExperimentalSerializationApi::class)
 @KeepGeneratedSerializer
 @ConsistentCopyVisibility
 @Serializable(with = CoseMac0Serializer::class)
@@ -48,14 +48,12 @@ data class CoseMac0 internal constructor(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
     ): ByteArray {
-        val payload = if (detachedPayload != null) {
-            require(plainPayload == null) { "Payload is not detached; detachedPayload must not be set" }
-            detachedPayload
-        } else plainPayload
+        val payload = if (plainPayload != null) {
+            require(detachedPayload == null) { "Payload is attached; detachedPayload must not be set" }
+            plainPayload
+        } else requireNotNull(detachedPayload) { "Payload is detached; supply it as detachedPayload" }
         return structureInput(Context.Mac0, plainProtectedHeader, externalAad, payload)
     }
-
-    fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

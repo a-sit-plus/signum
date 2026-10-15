@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -19,6 +20,7 @@ import kotlinx.serialization.json.JsonDecoder
  * Keeps the JSON form of [CoseSign1] and [CoseMac0] identical to that of [CoseSigned] and [CoseMac], so values
  * persisted with the old types can be read with the new ones and vice versa.
  */
+@OptIn(ExperimentalSerializationApi::class)
 open class CoseWireSerializer<T : COSE>(
     generatedSerializer: () -> KSerializer<T>,
 ) : KSerializer<T> {

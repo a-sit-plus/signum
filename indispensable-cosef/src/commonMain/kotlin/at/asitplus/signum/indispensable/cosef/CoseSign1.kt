@@ -1,12 +1,11 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
@@ -21,6 +20,7 @@ import kotlinx.serialization.encodeToByteArray
  * COSE_Sign1
  * This type is the wire form. For a payload whose type is part of the contract, see [CoseSign1Typed].
  */
+@OptIn(ExperimentalSerializationApi::class)
 @KeepGeneratedSerializer
 @ConsistentCopyVisibility
 @Serializable(with = CoseSign1Serializer::class)
@@ -55,14 +55,12 @@ data class CoseSign1 internal constructor(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
     ): ByteArray {
-        val payload = if (detachedPayload != null) {
-            require(plainPayload == null) { "Payload is not detached; detachedPayload must not be set" }
-            detachedPayload
-        } else plainPayload
+        val payload = if (plainPayload != null) {
+            require(detachedPayload == null) { "Payload is attached; detachedPayload must not be set" }
+            plainPayload
+        } else requireNotNull(detachedPayload) { "Payload is detached; supply it as detachedPayload" }
         return structureInput(Context.Signature1, plainProtectedHeader, externalAad, payload)
     }
-
-    fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
