@@ -43,37 +43,6 @@ sealed class COSE {
     inline fun <reified P> getPayload(): KmmResult<P> =
         getPayload(coseCompliantSerializer.serializersModule.serializer())
 
-    /**
-     * The `context` strings of RFC 9052
-     */
-    enum class Context(val value: String) {
-        /** `Sig_structure` for a `COSE_Signature` inside a `COSE_Sign`. */
-        Signature("Signature"),
-
-        /** `Sig_structure` for a `COSE_Sign1`. */
-        Signature1("Signature1"),
-
-        /** `MAC_structure` for a `COSE_Mac`. */
-        Mac("MAC"),
-
-        /** `MAC_structure` for a `COSE_Mac0`. */
-        Mac0("MAC0"),
-
-        /** `Enc_structure` for a `COSE_Encrypt`. */
-        Encrypt("Encrypt"),
-
-        /** `Enc_structure` for a `COSE_Encrypt0`. */
-        Encrypt0("Encrypt0"),
-
-        /** `Enc_structure` for a recipient of a `COSE_Encrypt`. */
-        EncRecipient("Enc_Recipient"),
-
-        /** `Enc_structure` for a recipient of a `COSE_Mac`. */
-        MacRecipient("Mac_Recipient"),
-
-        /** `Enc_structure` for a recipient nested inside another recipient. */
-        RecRecipient("Rec_Recipient"),
-    }
 
     companion object {
 
@@ -90,19 +59,28 @@ sealed class COSE {
                 .let { if (it.size == 1 && it[0] == 0xA0.toByte()) EMPTY_PROTECTED_HEADER else it }
 
         /**
-         * Builds the four-element Sig_structure/MAC_structure
+         * Builds the `Sig_structure` of a `COSE_Sign1` (RFC 9052 §4.4):
+         * `["Signature1", body_protected, external_aad, payload]`.
          */
-        fun structureInput(
-            context: Context,
+        fun sign1StructureInput(
             plainProtectedHeader: ByteArray,
             externalAad: ByteArray = byteArrayOf(),
             payload: ByteArray,
-        ): ByteArray = coseCompliantSerializer.encodeToByteArray(
-            CoseStructure(context.value, plainProtectedHeader, externalAad, payload)
-        )
+        ): ByteArray = encodeStructure("Signature1", plainProtectedHeader, externalAad, payload)
 
         /**
-         * Builds the five-element `Sig_structure` used for a `COSE_Signature` inside a `COSE_Sign`,
+         * Builds the `MAC_structure` of a `COSE_Mac0` (RFC 9052 §6.3):
+         * `["MAC0", protected, external_aad, payload]`.
+         */
+        fun mac0StructureInput(
+            plainProtectedHeader: ByteArray,
+            externalAad: ByteArray = byteArrayOf(),
+            payload: ByteArray,
+        ): ByteArray = encodeStructure("MAC0", plainProtectedHeader, externalAad, payload)
+
+        /**
+         * Builds the five-element `Sig_structure` of a `COSE_Signature` inside a `COSE_Sign` (RFC 9052 §4.4):
+         * `["Signature", body_protected, sign_protected, external_aad, payload]`.
          */
         fun signerStructureInput(
             bodyProtectedHeader: ByteArray,
@@ -110,9 +88,16 @@ sealed class COSE {
             externalAad: ByteArray = byteArrayOf(),
             payload: ByteArray,
         ): ByteArray = coseCompliantSerializer.encodeToByteArray(
-            CoseSignerStructure(
-                Context.Signature.value, bodyProtectedHeader, signProtectedHeader, externalAad, payload
-            )
+            CoseSignerStructure("Signature", bodyProtectedHeader, signProtectedHeader, externalAad, payload)
+        )
+
+        private fun encodeStructure(
+            context: String,
+            plainProtectedHeader: ByteArray,
+            externalAad: ByteArray,
+            payload: ByteArray,
+        ): ByteArray = coseCompliantSerializer.encodeToByteArray(
+            CoseStructure(context, plainProtectedHeader, externalAad, payload)
         )
 
         /**
