@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -9,6 +10,7 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
@@ -92,70 +94,33 @@ data class CoseSign1 internal constructor(
 
     companion object {
 
-        fun deserialize(input: ByteArray): KmmResult<CoseSign1> = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseSign1>(input)
-        }
+        /** Parses a [CoseSign1] from its CBOR encoding. */
+        @Throws(SerializationException::class)
+        operator fun invoke(bytes: ByteArray): CoseSign1 = catchingUnwrappedAs(::SerializationException) {
+            coseCompliantSerializer.decodeFromByteArray<CoseSign1>(bytes)
+        }.getOrThrow()
 
         /**
-         * Assembles a [CoseSign1] from an already computed signature.
-         * [plainProtectedHeader] must be the same bytes that were passed to [prepare]; re-encoding
-         * [protectedHeader] here would be the defect this type exists to prevent.
+         * Builds a new [CoseSign1], signing the `Sig_structure` built from the encoded [protectedHeader].
          */
-        operator fun invoke(
-            plainProtectedHeader: ByteArray,
-            unprotectedHeader: CoseHeader? = null,
-            plainPayload: ByteArray?,
-            plainSignature: ByteArray,
-        ): CoseSign1 = CoseSign1(plainProtectedHeader, unprotectedHeader, plainPayload, plainSignature)
-
-        /**
-         * Encodes [protectedHeader] once and returns both the bytes to keep and the `Sig_structure` to sign.
-         */
-        fun prepare(
-            protectedHeader: CoseHeader,
-            externalAad: ByteArray = byteArrayOf(),
-            plainPayload: ByteArray?,
-        ): Prepared {
-            val plainProtectedHeader = encodeProtectedHeader(protectedHeader)
-            return Prepared(
-                plainProtectedHeader = plainProtectedHeader,
-                signatureInput = structureInput(
-                    Context.Signature1, plainProtectedHeader, externalAad, plainPayload
-                ),
-            )
-        }
-
-        /** Convenience overload that signs immediately. */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,
-            plainPayload: ByteArray?,
+            plainPayload: ByteArray,
+            detached: Boolean = false,
             externalAad: ByteArray = byteArrayOf(),
             signer: suspend (ByteArray) -> ByteArray,
-        ): CoseSign1 = prepare(protectedHeader, externalAad, plainPayload).let { prepared ->
-            CoseSign1(
-                plainProtectedHeader = prepared.plainProtectedHeader,
+        ): CoseSign1 {
+            val plainProtectedHeader = encodeProtectedHeader(protectedHeader)
+            return CoseSign1(
+                plainProtectedHeader = plainProtectedHeader,
                 unprotectedHeader = unprotectedHeader,
-                plainPayload = plainPayload,
-                plainSignature = signer(prepared.signatureInput),
+                plainPayload = if (detached) null else plainPayload,
+                plainSignature = signer(
+                    structureInput(Context.Signature1, plainProtectedHeader, externalAad, plainPayload)
+                ),
             )
-        }
-
-        /** The encoded protected bucket together with the structure to be signed over it. */
-        data class Prepared(
-            val plainProtectedHeader: ByteArray,
-            val signatureInput: ByteArray,
-        ) {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other == null || this::class != other::class) return false
-                other as Prepared
-                if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
-                return signatureInput.contentEquals(other.signatureInput)
-            }
-
-            override fun hashCode(): Int =
-                31 * plainProtectedHeader.contentHashCode() + signatureInput.contentHashCode()
         }
     }
 }

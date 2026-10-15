@@ -2,11 +2,13 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
@@ -85,27 +87,30 @@ data class CoseMac0 internal constructor(
 
     companion object {
 
-        fun deserialize(input: ByteArray): KmmResult<CoseMac0> = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseMac0>(input)
-        }
+        /** Parses a [CoseMac0] from its CBOR encoding. */
+        @Throws(SerializationException::class)
+        operator fun invoke(bytes: ByteArray): CoseMac0 = catchingUnwrappedAs(::SerializationException) {
+            coseCompliantSerializer.decodeFromByteArray<CoseMac0>(bytes)
+        }.getOrThrow()
 
-        operator fun invoke(
-            plainProtectedHeader: ByteArray,
-            unprotectedHeader: CoseHeader? = null,
-            plainPayload: ByteArray?,
-            tag: ByteArray,
-        ): CoseMac0 = CoseMac0(plainProtectedHeader, unprotectedHeader, plainPayload, tag)
-
-        /** Encodes [protectedHeader] once and returns both the bytes to keep and the structure to MAC. */
-        fun prepare(
+        /**
+         * Builds a new [CoseMac0], authenticating the `MAC_structure` built from the encoded [protectedHeader].
+         */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
+        suspend operator fun invoke(
             protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader? = null,
+            plainPayload: ByteArray,
+            detached: Boolean = false,
             externalAad: ByteArray = byteArrayOf(),
-            plainPayload: ByteArray?,
-        ): CoseSign1.Companion.Prepared {
+            mac: suspend (ByteArray) -> ByteArray,
+        ): CoseMac0 {
             val plainProtectedHeader = encodeProtectedHeader(protectedHeader)
-            return CoseSign1.Companion.Prepared(
+            return CoseMac0(
                 plainProtectedHeader = plainProtectedHeader,
-                signatureInput = structureInput(Context.Mac0, plainProtectedHeader, externalAad, plainPayload),
+                unprotectedHeader = unprotectedHeader,
+                plainPayload = if (detached) null else plainPayload,
+                tag = mac(structureInput(Context.Mac0, plainProtectedHeader, externalAad, plainPayload)),
             )
         }
     }
