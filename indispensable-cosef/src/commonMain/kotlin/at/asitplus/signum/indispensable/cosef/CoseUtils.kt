@@ -20,4 +20,4 @@ internal fun <P : Any> P?.toRawPayload(payloadSerializer: KSerializer<P>): ByteA
     else -> null
 }
 
-private fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this
+internal fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this

@@ -12,6 +12,10 @@ import kotlinx.serialization.encodeToByteArray
 
 @Serializable
 @CborArray
+@Deprecated(
+    "Replaced by COSE.structureInput",
+    level = DeprecationLevel.WARNING
+)
 data class CoseInput(
     val contextString: String,
     @Serializable(with = ProtectedCoseHeaderSerializer::class)

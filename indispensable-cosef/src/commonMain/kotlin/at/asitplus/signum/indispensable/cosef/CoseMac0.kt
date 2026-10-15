@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -116,3 +117,7 @@ data class CoseMac0 internal constructor(
 
 /** Decodes the payload of a [CoseMac0] into [P], yielding the typed wrapper. */
 inline fun <reified P> CoseMac0.typed(): CoseMac0Typed<P> = CoseTyped(this, getPayload<P>().getOrThrow())
+
+/** Decodes the payload of a [CoseMac0] into [P] using an explicit serializer. */
+fun <P> CoseMac0.typed(serializer: KSerializer<P>): CoseMac0Typed<P> =
+    CoseTyped(this, getPayload(serializer).getOrThrow())
