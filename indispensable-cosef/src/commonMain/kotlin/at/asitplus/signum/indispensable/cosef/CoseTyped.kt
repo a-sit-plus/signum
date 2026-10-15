@@ -11,19 +11,65 @@ typealias CoseMac0Typed<P> = CoseTyped<CoseMac0, P>
 
 /**
  * Pairs a [COSE] wire object with its decoded payload, for when the payload type is part of the contract.
+ *
+ * Everything that goes over the wire should use [cose] only; [payload] is derived from it.
  */
 data class CoseTyped<out C : COSE, out P>(
     val cose: C,
     val payload: P,
 ) {
     override fun toString(): String = cose.toString()
+
+    companion object {
+
+        /** Creates a [CoseSign1] over [payload], encoded with [payloadSerializer]. */
+        suspend fun <P : Any> sign1(
+            protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader? = null,
+            payload: P,
+            payloadSerializer: KSerializer<P>,
+            detached: Boolean = false,
+            externalAad: ByteArray = byteArrayOf(),
+            signer: suspend (ByteArray) -> ByteArray,
+        ): CoseSign1Typed<P> = CoseTyped(
+            CoseSign1(
+                protectedHeader = protectedHeader,
+                unprotectedHeader = unprotectedHeader,
+                plainPayload = encodePayload(payload, payloadSerializer),
+                detached = detached,
+                externalAad = externalAad,
+                signer = signer,
+            ),
+            payload,
+        )
+
+        /** Creates a [CoseMac0] over [payload], encoded with [payloadSerializer]. */
+        suspend fun <P : Any> mac0(
+            protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader? = null,
+            payload: P,
+            payloadSerializer: KSerializer<P>,
+            detached: Boolean = false,
+            externalAad: ByteArray = byteArrayOf(),
+            mac: suspend (ByteArray) -> ByteArray,
+        ): CoseMac0Typed<P> = CoseTyped(
+            CoseMac0(
+                protectedHeader = protectedHeader,
+                unprotectedHeader = unprotectedHeader,
+                plainPayload = encodePayload(payload, payloadSerializer),
+                detached = detached,
+                externalAad = externalAad,
+                mac = mac,
+            ),
+            payload,
+        )
+    }
 }
 
 /**
  * Serializes a [CoseTyped] through its wire object only, decoding the payload on the way back.
  *
- * Mirrors josef's `JwsTypedSerializerTemplate` and reuses the same `TransformingSerializerTemplate` already used by
- * the current `CoseSignedSerializer`.
+ * Mirrors josef's `JwsTypedSerializerTemplate`.
  */
 class CoseTypedSerializerTemplate<C : COSE, P>(
     coseSerializer: KSerializer<C>,
@@ -37,37 +83,12 @@ class CoseTypedSerializerTemplate<C : COSE, P>(
 
 /**
  * Encodes [payload] the way the previous `CoseSigned.create` did: a [ByteArray] is used as-is, anything else is
- * serialized and wrapped in CBOR tag 24.
+ * serialized and wrapped in CBOR tag 24
  */
-fun <P : Any> encodePayload(payload: P, payloadSerializer: KSerializer<P>): ByteArray = when (payload) {
+internal fun <P : Any> encodePayload(payload: P, payloadSerializer: KSerializer<P>): ByteArray = when (payload) {
     is ByteArray -> payload
     is ByteStringWrapper<*> -> throw IllegalArgumentException("Payload must not be a ByteStringWrapper")
     else -> coseCompliantSerializer.encodeToByteArray(
         ByteStringWrapperSerializer(payloadSerializer), ByteStringWrapper(payload)
-    ).wrapInCborTag24()
+    ).wrapInCborTag(24)
 }
-
-private fun ByteArray.wrapInCborTag24() = byteArrayOf(0xd8.toByte(), 24) + this
-
-/**
- * Builds a [CoseSign1] over a typed [payload], signing the structure produced from the protected bucket bytes.
- */
-suspend fun <P : Any> coseSign1(
-    protectedHeader: CoseHeader,
-    unprotectedHeader: CoseHeader? = null,
-    payload: P,
-    payloadSerializer: KSerializer<P>,
-    detached: Boolean = false,
-    externalAad: ByteArray = byteArrayOf(),
-    signer: suspend (ByteArray) -> ByteArray,
-): CoseSign1Typed<P> = CoseTyped(
-    CoseSign1(
-        protectedHeader = protectedHeader,
-        unprotectedHeader = unprotectedHeader,
-        plainPayload = encodePayload(payload, payloadSerializer),
-        detached = detached,
-        externalAad = externalAad,
-        signer = signer,
-    ),
-    payload,
-)
