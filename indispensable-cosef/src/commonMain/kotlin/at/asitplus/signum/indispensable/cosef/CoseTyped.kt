@@ -39,8 +39,7 @@ class CoseTypedSerializerTemplate<C : COSE, P>(
  * Encodes [payload] the way the previous `CoseSigned.create` did: a [ByteArray] is used as-is, anything else is
  * serialized and wrapped in CBOR tag 24.
  */
-fun <P : Any> encodePayload(payload: P?, payloadSerializer: KSerializer<P>): ByteArray? = when (payload) {
-    null -> null
+fun <P : Any> encodePayload(payload: P, payloadSerializer: KSerializer<P>): ByteArray = when (payload) {
     is ByteArray -> payload
     is ByteStringWrapper<*> -> throw IllegalArgumentException("Payload must not be a ByteStringWrapper")
     else -> coseCompliantSerializer.encodeToByteArray(
@@ -56,18 +55,19 @@ private fun ByteArray.wrapInCborTag24() = byteArrayOf(0xd8.toByte(), 24) + this
 suspend fun <P : Any> coseSign1(
     protectedHeader: CoseHeader,
     unprotectedHeader: CoseHeader? = null,
-    payload: P?,
+    payload: P,
     payloadSerializer: KSerializer<P>,
+    detached: Boolean = false,
     externalAad: ByteArray = byteArrayOf(),
     signer: suspend (ByteArray) -> ByteArray,
-): CoseSign1Typed<P?> {
-    val plainPayload = encodePayload(payload, payloadSerializer)
-    val cose = CoseSign1(
+): CoseSign1Typed<P> = CoseTyped(
+    CoseSign1(
         protectedHeader = protectedHeader,
         unprotectedHeader = unprotectedHeader,
-        plainPayload = plainPayload,
+        plainPayload = encodePayload(payload, payloadSerializer),
+        detached = detached,
         externalAad = externalAad,
         signer = signer,
-    )
-    return CoseTyped(cose, payload)
-}
+    ),
+    payload,
+)

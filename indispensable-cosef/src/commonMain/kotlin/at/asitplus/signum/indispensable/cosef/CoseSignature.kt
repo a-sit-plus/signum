@@ -71,34 +71,4 @@ data class CoseSignature internal constructor(
             "unprotectedHeader=$unprotectedHeader, " +
             "signature=${plainSignature.encodeToString(Base16Strict)})"
 
-    companion object {
-
-        operator fun invoke(
-            plainProtectedHeader: ByteArray,
-            unprotectedHeader: CoseHeader? = null,
-            plainSignature: ByteArray,
-        ): CoseSignature = CoseSignature(plainProtectedHeader, unprotectedHeader, plainSignature)
-
-        /**
-         * Encodes [protectedHeader] once and returns both the bytes to keep and the structure to sign, mirroring
-         * [CoseSign1.Companion.prepare].
-         */
-        fun prepare(
-            protectedHeader: CoseHeader,
-            bodyProtectedHeader: ByteArray,
-            externalAad: ByteArray = byteArrayOf(),
-            plainPayload: ByteArray?,
-        ): CoseSign1.Companion.Prepared {
-            val plainProtectedHeader = COSE.encodeProtectedHeader(protectedHeader)
-            return CoseSign1.Companion.Prepared(
-                plainProtectedHeader = plainProtectedHeader,
-                signatureInput = COSE.signerStructureInput(
-                    bodyProtectedHeader = bodyProtectedHeader,
-                    signProtectedHeader = plainProtectedHeader,
-                    externalAad = externalAad,
-                    payload = plainPayload,
-                ),
-            )
-        }
-    }
 }
