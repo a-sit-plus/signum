@@ -107,8 +107,24 @@ sealed class IosSigner(final override val alias: String,
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
 
     override val mayRequireUserUnlock get() = needsAuthentication
-    val needsAuthentication get() = metadata.needsUnlock
-    val needsAuthenticationForEveryUse get() = metadata.needsUnlock && (metadata.unlockTimeout == Duration.ZERO)
+
+    /** Whether this key requires user authentication before use. */
+    val needsAuthentication get() = authenticationTimeout != null
+
+    /** Whether this key requires a fresh user authentication for every use. */
+    val needsAuthenticationForEveryUse get() = authenticationTimeout == Duration.ZERO
+
+    /**
+     * The effective Signum reuse window for successful user authentication.
+     *
+     * `null` means that the key does not require user authentication, [Duration.ZERO] means that every use requires
+     * authentication, and a positive duration is the time for which Signum may reuse authentication in the provider
+     * process.
+     *
+     * This value is restored from Signum's stored key metadata. It is not an independent readback of an iOS Keychain
+     * access-control attribute.
+     */
+    val authenticationTimeout: Duration? get() = metadata.rawUnlockTimeout
     override val attestation get() = metadata.attestation
 
     protected interface PrivateKeyManager { suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration): OwnedCFValue<SecKeyRef> }
