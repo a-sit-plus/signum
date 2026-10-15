@@ -13,7 +13,7 @@ import kotlinx.serialization.encodeToByteArray
 @Serializable
 @CborArray
 @Deprecated(
-    "Replaced by COSE.structureInput",
+    "Replaced by CoseSign1.signatureInput / CoseMac0.macInput",
     level = DeprecationLevel.WARNING
 )
 data class CoseInput(
