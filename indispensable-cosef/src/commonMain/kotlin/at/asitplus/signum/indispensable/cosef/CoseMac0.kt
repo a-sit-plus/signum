@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
@@ -17,8 +18,9 @@ import kotlinx.serialization.encodeToByteArray
  * [RFC 9052 §6.2](https://www.rfc-editor.org/rfc/rfc9052.html#section-6.2).
  * Serialized untagged, as [CoseSign1].
  */
+@KeepGeneratedSerializer
 @ConsistentCopyVisibility
-@Serializable
+@Serializable(with = CoseMac0Serializer::class)
 @CborArray
 data class CoseMac0 internal constructor(
     @ByteString
