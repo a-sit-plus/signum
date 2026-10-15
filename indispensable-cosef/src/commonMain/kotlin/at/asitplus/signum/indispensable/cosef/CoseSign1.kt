@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
@@ -18,8 +19,9 @@ import kotlinx.serialization.encodeToByteArray
  * COSE_Sign1
  * This type is the wire form. For a payload whose type is part of the contract, see [CoseSign1Typed].
  */
+@KeepGeneratedSerializer
 @ConsistentCopyVisibility
-@Serializable
+@Serializable(with = CoseSign1Serializer::class)
 @CborArray
 data class CoseSign1 internal constructor(
     @ByteString
