@@ -13,7 +13,6 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a COSE_MAC0 object
@@ -53,7 +52,7 @@ data class CoseMac0 internal constructor(
             require(detachedPayload == null) { "Payload is attached; detachedPayload must not be set" }
             plainPayload
         } else requireNotNull(detachedPayload) { "Payload is detached; supply it as detachedPayload" }
-        return structureInput(Context.Mac0, plainProtectedHeader, externalAad, payload)
+        return mac0StructureInput(plainProtectedHeader, externalAad, payload)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -109,7 +108,7 @@ data class CoseMac0 internal constructor(
                 plainProtectedHeader = plainProtectedHeader,
                 unprotectedHeader = unprotectedHeader,
                 plainPayload = if (detached) null else plainPayload,
-                tag = mac(structureInput(Context.Mac0, plainProtectedHeader, externalAad, plainPayload)),
+                tag = mac(mac0StructureInput(plainProtectedHeader, externalAad, plainPayload)),
             )
         }
     }
