@@ -14,7 +14,6 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * COSE_Sign1
@@ -59,7 +58,7 @@ data class CoseSign1 internal constructor(
             require(detachedPayload == null) { "Payload is attached; detachedPayload must not be set" }
             plainPayload
         } else requireNotNull(detachedPayload) { "Payload is detached; supply it as detachedPayload" }
-        return structureInput(Context.Signature1, plainProtectedHeader, externalAad, payload)
+        return sign1StructureInput(plainProtectedHeader, externalAad, payload)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -115,9 +114,7 @@ data class CoseSign1 internal constructor(
                 plainProtectedHeader = plainProtectedHeader,
                 unprotectedHeader = unprotectedHeader,
                 plainPayload = if (detached) null else plainPayload,
-                plainSignature = signer(
-                    structureInput(Context.Signature1, plainProtectedHeader, externalAad, plainPayload)
-                ),
+                plainSignature = signer(sign1StructureInput(plainProtectedHeader, externalAad, plainPayload)),
             )
         }
     }
