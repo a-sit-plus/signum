@@ -96,7 +96,7 @@ sealed class COSE {
             context: Context,
             plainProtectedHeader: ByteArray,
             externalAad: ByteArray = byteArrayOf(),
-            payload: ByteArray?,
+            payload: ByteArray,
         ): ByteArray = coseCompliantSerializer.encodeToByteArray(
             CoseStructure(context.value, plainProtectedHeader, externalAad, payload)
         )
@@ -108,7 +108,7 @@ sealed class COSE {
             bodyProtectedHeader: ByteArray,
             signProtectedHeader: ByteArray,
             externalAad: ByteArray = byteArrayOf(),
-            payload: ByteArray?,
+            payload: ByteArray,
         ): ByteArray = coseCompliantSerializer.encodeToByteArray(
             CoseSignerStructure(
                 Context.Signature.value, bodyProtectedHeader, signProtectedHeader, externalAad, payload
@@ -170,7 +170,7 @@ internal data class CoseStructure(
     val context: String,
     @ByteString val plainProtectedHeader: ByteArray,
     @ByteString val externalAad: ByteArray,
-    @ByteString val payload: ByteArray?,
+    @ByteString val payload: ByteArray,
 )
 
 /** The five-element `Sig_structure` used by `COSE_Signature` */
@@ -181,7 +181,7 @@ internal data class CoseSignerStructure(
     @ByteString val bodyProtectedHeader: ByteArray,
     @ByteString val signProtectedHeader: ByteArray,
     @ByteString val externalAad: ByteArray,
-    @ByteString val payload: ByteArray?,
+    @ByteString val payload: ByteArray,
 )
 
 @OptIn(ExperimentalSerializationApi::class)

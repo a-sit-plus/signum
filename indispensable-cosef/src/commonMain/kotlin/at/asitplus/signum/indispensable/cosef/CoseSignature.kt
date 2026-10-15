@@ -38,7 +38,7 @@ data class CoseSignature internal constructor(
     fun signatureInput(
         bodyProtectedHeader: ByteArray,
         externalAad: ByteArray = byteArrayOf(),
-        payload: ByteArray?,
+        payload: ByteArray,
     ): ByteArray = COSE.signerStructureInput(
         bodyProtectedHeader = bodyProtectedHeader,
         signProtectedHeader = plainProtectedHeader,
