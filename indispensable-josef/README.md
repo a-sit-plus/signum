@@ -41,7 +41,7 @@ the signing input. Instead, it keeps the wire/data object as the source of truth
 |:--|:--|:--|
 | Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JWS`, `JwsCompact`, `JwsFlattened`, `JwsGeneral`, `SignatureElement` |
 | Typed/domain | Provide a typed payload while retaining the wire object | `JwsTyped<J, P>` and its compact, flattened, and general aliases |
-| Effective header | Combine typed header values and retain their protection status | `JwsHeaderWrapped` |
+| Effective header | Combine typed header values and retain their protection status | `JwsHeaderWrapped<H>` |
 
 `JwsTyped` contains the retained `jws` object and its decoded `payload`. Send or store `jws`, not a reconstruction from
 `payload`. `JwsTypedSerializerTemplate` serializes only `jws` and derives `payload` again when decoding. Direct users of
@@ -60,13 +60,15 @@ The model distinguishes three header views:
 - **Protected as transmitted/signed:** the first compact segment or JSON `protected` member. Its decoded JSON bytes
   are retained in `plainProtectedHeader`, not reduced to a parsed `JwsHeader`.
 - **Unprotected:** the optional `unprotectedHeader: JsonObject`. It remains separate and is not signed.
-- **Combined/effective:** `wrappedHeader: JwsHeaderWrapped` (or `wrappedHeaders` on `JwsGeneral`). Its `header` is the
-  typed strict union of both fragments, while `unprotectedMembers` records which names came from the unprotected one.
+- **Combined/effective:** `wrappedHeader: JwsHeaderWrapped<JwsHeader>` (or `wrappedHeaders` on `JwsGeneral`). Its `header` is the
+  typed strict union of both fragments, while `unprotectedHeaderMembers` records which modeled names came from the unprotected one.
 
 A bare `JwsHeader` loses protection status and must not be used for decisions about header placement. Use
-`JwsHeaderWrapped` or the original fragments. The wrapper is a one-way typed view: unmodeled parameters remain in
-`plainProtectedHeader` or `unprotectedHeader` for round trips, and their unprotected names remain in
-`unprotectedMembers`, but their values are not available through `JwsHeader`.
+`JwsHeaderWrapped<H>` or the original fragments. The wrapper is a one-way typed view: unmodeled parameters remain in
+`plainProtectedHeader` or `unprotectedHeader` for round trips. Their values and unprotected names remain available
+through the original wire fragments.
+`unprotectedHeaderMembers` records only modeled names. The wrapper caches its serialized fragments at construction
+and does not retain a serializer.
 
 ## Serialization invariants
 
@@ -109,7 +111,9 @@ The older `JwsSigned` API is deprecated in favor of `JwsCompactTyped`.
 Application-defined header models can implement `JwsHeaderBase`. The existing `JwsHeader` implements this
 interface and is deprecated in favor of application-defined models. Serialization annotations on the interface
 are not inherited: implementations must declare their own wire names and serializers, or mark unmodeled
-properties as `@Transient`. Wire objects currently decode effective headers as `JwsHeader`.
+properties as `@Transient`. Wire objects currently decode effective headers as `JwsHeader`. Use `JwsHeaderWrapped(header)` or
+`JwsHeaderWrapped(header, serializer)` to wrap a custom model, and `fromParts<H>()` or `fromJsonObjects<H>()`
+to decode fragments. These factories also accept an explicit serializer and JSON configuration.
 
 ## JWT payloads
 
