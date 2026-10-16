@@ -104,6 +104,13 @@ algorithms; unsupported algorithms are rejected.
 
 The older `JwsSigned` API is deprecated in favor of `JwsCompactTyped`.
 
+## Custom JWS header models
+
+Application-defined header models can implement `JwsHeaderBase`. The existing `JwsHeader` implements this
+interface and is deprecated in favor of application-defined models. Serialization annotations on the interface
+are not inherited: implementations must declare their own wire names and serializers, or mark unmodeled
+properties as `@Transient`. Wire objects currently decode effective headers as `JwsHeader`.
+
 ## JWT payloads
 
 Application payloads may implement `JwtPayload` for standard RFC 7519 claims. Its `@SerialName` annotations are not
