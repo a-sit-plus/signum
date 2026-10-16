@@ -21,7 +21,8 @@ import kotlinx.serialization.serializer
  * Entries at the same index in [headers], [unprotectedHeaderMembers], and [signatures] describe the same signature,
  * in the order of [Raw.signatureElements]. [toFlattened] produces one [JwsFlattened] view per signature.
  *
- * Decode a received [Raw] with [Raw.typed], or combine raw flattened JWS values with
+ * Create signed values through [JwsSigner]. Decode a received [Raw] with [Raw.typed], or combine raw flattened
+ * JWS values with
  * `JwsGeneral<P, H>(flattenedValues)`. Combining values requires identical payload bytes.
  *
  * Decoding does not verify signatures. To verify signature `i`, use `signatures[i]` and `jws.signatureInputs[i]`.
@@ -122,9 +123,6 @@ data class JwsGeneral<out P, H : JwsHeaderBase> private constructor(
                 plainPayload: ByteArray,
                 signatureElements: List<SignatureElement>,
             ): Raw = Raw(plainPayload, buildList { addAll(signatureElements) })
-
-            /** Combines raw flattened signatures over one payload into a [Raw] representation. */
-            operator fun invoke(jwsFlattened: List<JwsFlattened.Raw>): Raw = jwsFlattened.toGeneral()
         }
     }
 

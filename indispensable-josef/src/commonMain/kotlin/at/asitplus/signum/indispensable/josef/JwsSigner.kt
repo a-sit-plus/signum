@@ -41,14 +41,14 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         payload: P,
         payloadSerializer: KSerializer<P>,
         headerSerializer: KSerializer<H>,
-    ): JwsCompactTyped<P, H> = signFlattened(
+    ): JwsCompact<P, H> = signFlattened(
         protectedHeader, payload, payloadSerializer, headerSerializer,
-    ).toJwsCompactTyped()
+    ).toCompact()
 
     suspend inline fun <reified P, reified H : JwsHeaderBase> signCompact(
         protectedHeader: H,
         payload: P,
-    ): JwsCompactTyped<P, H> = signCompact(
+    ): JwsCompact<P, H> = signCompact(
         protectedHeader, payload,
         joseCompliantSerializer.serializersModule.serializer<P>(),
         joseCompliantSerializer.serializersModule.serializer<H>(),
@@ -61,7 +61,7 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         payloadSerializer: KSerializer<P>,
         headerSerializer: KSerializer<H>,
         unprotectedHeaderMembers: Set<String> = emptySet(),
-    ): JwsFlattenedTyped<P, H> {
+    ): JwsFlattened<P, H> {
         val serializedHeader = joseCompliantSerializer.encodeToJsonElement(headerSerializer, header).jsonObject
         return with(selectSigner(serializedHeader)) {
             signFlattened(
@@ -75,7 +75,7 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         header: H,
         payload: P,
         unprotectedHeaderMembers: Set<String> = emptySet(),
-    ): JwsFlattenedTyped<P, H> = signFlattened(
+    ): JwsFlattened<P, H> = signFlattened(
         header, payload,
         joseCompliantSerializer.serializersModule.serializer<P>(),
         joseCompliantSerializer.serializersModule.serializer<H>(),
@@ -88,7 +88,7 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         signatures: List<JwsHeaderWrapped<H>>,
         payloadSerializer: KSerializer<P>,
         headerSerializer: KSerializer<H>,
-    ): JwsGeneralTyped<P, H> {
+    ): JwsGeneral<P, H> {
         val parameters = signatures.toList()
         require(parameters.isNotEmpty()) { "General JWS requires at least one signature" }
         val prepared = parameters.map {
@@ -98,13 +98,13 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         }
         val payloadBytes = joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray()
         return prepared.map { with(it.signer) { signFlattened(it.header, payloadBytes) } }
-            .toJwsGeneral().typed(payloadSerializer, headerSerializer)
+            .toGeneral().typed(payloadSerializer, headerSerializer)
     }
 
     suspend inline fun <reified P, reified H : JwsHeaderBase> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
-    ): JwsGeneralTyped<P, H> = signGeneral(
+    ): JwsGeneral<P, H> = signGeneral(
         payload, signatures,
         joseCompliantSerializer.serializersModule.serializer<P>(),
         joseCompliantSerializer.serializersModule.serializer<H>(),
@@ -114,9 +114,9 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
     private suspend fun signFlattened(
         header: HeaderParts,
         payload: ByteArray,
-    ): JwsFlattened {
-        val signature = signer.sign(JWS.getSignatureInput(header.protectedHeader, payload)).signature
-        return JwsFlattened(header.protectedHeader, header.unprotectedHeader, payload, signature.joseBytes.copyOf())
+    ): JwsFlattened.Raw {
+        val signature = signer.sign(JwsRaw.getSignatureInput(header.protectedHeader, payload)).signature
+        return JwsFlattened.Raw(header.protectedHeader, header.unprotectedHeader, payload, signature.joseBytes.copyOf())
     }
 
     context(signer: Signer)

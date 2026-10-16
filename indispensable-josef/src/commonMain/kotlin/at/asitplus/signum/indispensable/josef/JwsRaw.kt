@@ -83,9 +83,11 @@ sealed class JwsRaw {
             protectedHeader?.encodeToString(Base64UrlStrict).orEmpty()
 
         /**
-         * Builds the RFC 7515 signing input from raw protected-header bytes and raw payload bytes.
+         * Builds the [RFC 7515 Section 5.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-5.1) signing input:
+         * `ASCII(BASE64URL(UTF8(protected header)) || '.' || BASE64URL(payload))`.
          *
-         * [payload] must be plain payload bytes; this helper base64url-encodes it internally.
+         * Both encodings use unpadded base64url. [protectedHeader] contains the serialized UTF-8 header bytes;
+         * [payload] contains plain payload bytes. An absent protected header contributes an empty segment.
          */
         fun getSignatureInput(protectedHeader: ByteArray?, payload: ByteArray) =
             "${getEncodedProtectedHeader(protectedHeader)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()

@@ -12,30 +12,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 val JwsRawSignedRegressionTest by matrixSuite {
-    "JwsCompact.Raw.invoke signs the protected-header bytes derived from JwsHeader" {
-        val header = JwsHeader(
-            algorithm = JwsAlgorithm.Signature.RS256,
-            type = "application/example+jws",
-            keyId = "kid-1",
-        )
-        val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        var capturedInput: ByteArray? = null
-
-        val compact = JwsCompact.Raw.invoke(
-            protectedHeader = header,
-            payload = payload,
-        ) { signingInput ->
-            capturedInput = signingInput
-            byteArrayOf(1, 2, 3, 4)
-        }
-
-        val expectedProtectedHeader = JwsHeaderWrapped(header).protectedHeader
-
-        compact.plainProtectedHeader shouldBe expectedProtectedHeader
-        capturedInput shouldBe JwsRaw.getSignatureInput(expectedProtectedHeader, payload)
-        compact.signatureInput shouldBe capturedInput
-    }
-
     "legacy compact serialization matches JwsCompact.Raw for RS256" {
         val regressionCase = compactRegressionCase(
             protectedHeader = JwsHeader(

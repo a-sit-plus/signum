@@ -104,11 +104,11 @@ val JwsSignerTest by matrixSuite {
             typed.header shouldBe header
             typed.unprotectedHeaderMembers shouldBe placement
             typed.jws.unprotectedHeader?.keys.orEmpty() shouldBe placement
-            val wireJson = joseCompliantSerializer.encodeToJsonElement(JwsFlattened.serializer(), typed.jws).jsonObject
-            (JWS.SerialNames.HEADER in wireJson) shouldBe placement.isNotEmpty()
+            val wireJson = joseCompliantSerializer.encodeToJsonElement(JwsFlattened.Raw.serializer(), typed.jws).jsonObject
+            (JwsRaw.SerialNames.HEADER in wireJson) shouldBe placement.isNotEmpty()
             if ("alg" in placement) typed.jws.plainProtectedHeader shouldBe null
             signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
-            joseCompliantSerializer.decodeFromString<JwsFlattened>(
+            joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
                 joseCompliantSerializer.encodeToString(typed.jws)
             ).typed<SigningPayload, SigningHeader>() shouldBe typed
         }
@@ -135,7 +135,7 @@ val JwsSignerTest by matrixSuite {
         typed.headers.map { it.keyId } shouldBe listOf("key-0", "key-1")
         typed.unprotectedHeaderMembers shouldBe listOf(setOf("kid"), emptySet())
         typed.payload shouldBe SigningPayload("alice")
-        typed.toJwsFlattenedTyped().forEachIndexed { index, flattened ->
+        typed.toFlattened().forEachIndexed { index, flattened ->
             flattened.jws.plainPayload shouldBe typed.jws.plainPayload
             signers[index].makeVerifier().verify(flattened.jws.signatureInput, flattened.signature) shouldBe
                     SignatureVerifier.Success
@@ -180,7 +180,7 @@ val JwsSignerTest by matrixSuite {
         typed.headers.map { it.keyId } shouldBe listOf("key-0-view", "key-1-view")
         typed.headers.map { it.extension } shouldBe listOf("wire-0", "wire-1")
         typed.unprotectedHeaderMembers shouldBe listOf(setOf("kid"), emptySet())
-        typed.toJwsFlattenedTyped().forEachIndexed { index, flattened ->
+        typed.toFlattened().forEachIndexed { index, flattened ->
             signers[index].makeVerifier().verify(flattened.jws.signatureInput, flattened.signature) shouldBe
                     SignatureVerifier.Success
             JwsHeaderWrapped.fromParts<SigningHeader>(
@@ -210,7 +210,7 @@ val JwsSignerTest by matrixSuite {
         val general = jwsSigner.signGeneral(
             payload, listOf(JwsHeaderWrapped(header, headerSerializer, emptySet())), payloadSerializer, headerSerializer,
         )
-        (listOf(compact.toJwsFlattenedTyped(), flattened) + general.toJwsFlattenedTyped()).forEach { typed ->
+        (listOf(compact.toFlattened(), flattened) + general.toFlattened()).forEach { typed ->
             typed.payload.sub shouldBe "alice"
             typed.header.keyId shouldBe "key"
             typed.jws.getPayload(SigningPayload.serializer()).getOrThrow().sub shouldBe "ALICE"
@@ -245,8 +245,8 @@ val JwsSignerTest by matrixSuite {
             JwsHeaderWrapped(header),
             JwsHeaderWrapped(header.copy(algorithm = JwsAlgorithm.Signature.PS256)),
         ))
-        val views = listOf(compact.toJwsFlattenedTyped(), transformed.toJwsFlattenedTyped(), flattened) +
-                general.toJwsFlattenedTyped()
+        val views = listOf(compact.toFlattened(), transformed.toFlattened(), flattened) +
+                general.toFlattened()
         val expectedSigners = listOf(ec, rsa, rsa, rsa, ec, rsa)
         views.zip(expectedSigners).forEach { (typed, signer) ->
             val algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()
@@ -280,7 +280,7 @@ val JwsSignerTest by matrixSuite {
             val general = jwsSigner.signGeneral(SigningPayload("alice"), listOf(
                 JwsHeaderWrapped(header, placement),
             ))
-            (listOf(compact.toJwsFlattenedTyped(), flattened) + general.toJwsFlattenedTyped()).forEach { typed ->
+            (listOf(compact.toFlattened(), flattened) + general.toFlattened()).forEach { typed ->
                 typed.header shouldBe expectedHeader
                 signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
             }
@@ -400,7 +400,7 @@ val JwsSignerTest by matrixSuite {
         wire.signatureElements.size shouldBe 2
         wire.signatureElements.forEachIndexed { index, signature ->
             delegate.makeVerifier().verify(
-                wire.signatureInputs[index], JWS.getSignature(JwsAlgorithm.Signature.ES256, signature.plainSignature),
+                wire.signatureInputs[index], JwsRaw.getSignature(JwsAlgorithm.Signature.ES256, signature.plainSignature),
             ) shouldBe SignatureVerifier.Success
         }
     }
