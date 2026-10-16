@@ -6,18 +6,18 @@ import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.*
 import kotlinx.serialization.serializer
 
 /**
  * Signs JWS and returns typed views derived from the signed bytes.
  *
- * Copies [signers]; each registration must match its signer's algorithm. The serialized `alg` selects a signer.
- * Supplies `alg`, the public key's `jwkId` when available, and the actual public key for a requested embedded `jwk`.
- * Other header members and placement are preserved without mutating the supplied model.
+ * Copies [signers]; each registration must match its signer's algorithm. The supplied header's algorithm selects a signer.
+ * Validates `alg`, a supplied `kid` against the public key's `jwkId` when available, and any embedded `jwk` against the public key.
+ * Header members and placement are preserved without mutating the supplied model or filling in optional members.
+ * Header serializers must preserve the supplied algorithm, key ID, and public key.
  *
- * Serializes the payload once. General signing prepares all headers before signing and preserves signature order.
- * Missing registrations fail before signing; signer failures propagate.
+ * Serializes the payload once. General signing validates all headers before signing and preserves signature order.
+ * Missing registrations and mismatched headers fail before signing; signer failures propagate.
  */
 class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
     private val signers = signers.toMap()
@@ -58,10 +58,10 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         headerSerializer: KSerializer<H>,
         unprotectedHeaderMembers: Set<String> = emptySet(),
     ): JwsFlattened<P, H> {
-        val serializedHeader = joseCompliantSerializer.encodeToJsonElement(headerSerializer, header).jsonObject
-        return with(selectSigner(serializedHeader)) {
+        val wrappedHeader = JwsHeaderWrapped(header, headerSerializer, unprotectedHeaderMembers)
+        return with(selectSigner(header)) {
             signFlattened(
-                prepareHeader(serializedHeader, unprotectedHeaderMembers),
+                wrappedHeader,
                 joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray(),
             ).typed(payloadSerializer, headerSerializer)
         }
@@ -87,13 +87,9 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
     ): JwsGeneral<P, H> {
         val parameters = signatures.toList()
         require(parameters.isNotEmpty()) { "General JWS requires at least one signature" }
-        val prepared = parameters.map {
-            val serializedHeader = it.protectedHeaderJson.strictUnion(it.unprotectedHeader)
-            val signer = selectSigner(serializedHeader)
-            PreparedSignature(signer, with(signer) { prepareHeader(serializedHeader, it.unprotectedHeaderMembers) })
-        }
+        val selectedSigners = parameters.map { selectSigner(it.header) }
         val payloadBytes = joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray()
-        return prepared.map { with(it.signer) { signFlattened(it.header, payloadBytes) } }
+        return parameters.zip(selectedSigners) { header, signer -> with(signer) { signFlattened(header, payloadBytes) } }
             .toGeneral().typed(payloadSerializer, headerSerializer)
     }
 
@@ -108,51 +104,37 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
 
     context(signer: Signer)
     private suspend fun signFlattened(
-        header: HeaderParts,
+        header: JwsHeaderWrapped<*>,
         payload: ByteArray,
     ): JwsFlattened.Raw {
-        val signature = signer.sign(JwsRaw.getSignatureInput(header.protectedHeader, payload)).signature
-        return JwsFlattened.Raw(header.protectedHeader, header.unprotectedHeader, payload, signature.joseBytes.copyOf())
+        val protectedHeader = header.protectedHeader.takeUnless { header.protectedHeaderJson.isEmpty() }
+        val unprotectedHeader = header.unprotectedHeader.takeUnless { it.isEmpty() }
+        val signature = signer.sign(JwsRaw.getSignatureInput(protectedHeader, payload)).signature
+        return JwsFlattened.Raw(protectedHeader, unprotectedHeader, payload, signature.joseBytes.copyOf())
     }
 
-    context(signer: Signer)
-    private fun prepareHeader(
-        serializedHeader: JsonObject,
-        unprotectedHeaderMembers: Set<String>,
-    ): HeaderParts {
-        val algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()
+    private fun selectSigner(header: JwsHeaderBase): Signer {
+        val algorithm = header.algorithm
+        val signer = requireNotNull(signers[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
+        require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {
+            "Signer algorithm does not match the JWS header algorithm"
+        }
         val publicKey = signer.publicKey
         if (algorithm is JwsAlgorithm.Signature.EC) {
             require((publicKey as? EcdsaPublicKey)?.curve == algorithm.ecCurve) {
                 "Signer curve does not match the JWS header algorithm"
             }
         }
-        val effectiveHeader = JsonObject(serializedHeader.toMutableMap().apply {
-            put("alg", joseCompliantSerializer.encodeToJsonElement(JwsAlgorithmSerializer, algorithm))
-            publicKey.jwkId?.let { put("kid", JsonPrimitive(it)) }
-            if (get("jwk")?.let { it != JsonNull } == true) {
-                val keyId = get("kid")?.jsonPrimitive?.contentOrNull
-                put(
-                    "jwk",
-                    joseCompliantSerializer.encodeToJsonElement(JsonWebKey.serializer(), publicKey.toJsonWebKey(keyId))
-                )
+        header.keyId?.let { keyId ->
+            require(publicKey.jwkId == null || keyId == publicKey.jwkId) {
+                "Signer key ID does not match the JWS header key ID"
             }
-        })
-        return HeaderParts(
-            protectedHeader = JsonObject(effectiveHeader.filterKeys { it !in unprotectedHeaderMembers }).takeUnless { it.isEmpty() }
-                ?.toProtectedHeaderBytes(),
-            unprotectedHeader = JsonObject(effectiveHeader.filterKeys { it in unprotectedHeaderMembers }).takeUnless { it.isEmpty() },
-        )
-    }
-
-    private fun selectSigner(header: JsonObject): Signer {
-        val encodedAlgorithm = requireNotNull(header["alg"]?.takeUnless { it == JsonNull }) {
-            "JWS header must contain an algorithm"
         }
-        val algorithm = joseCompliantSerializer.decodeFromJsonElement(JwsAlgorithmSerializer, encodedAlgorithm)
-        return requireNotNull(signers[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
+        header.jsonWebKey?.let { key ->
+            require(key.toCryptoPublicKey().getOrThrow() == publicKey) {
+                "Signer public key does not match the JWS header JWK"
+            }
+        }
+        return signer
     }
-
-    private class PreparedSignature(val signer: Signer, val header: HeaderParts)
-    private class HeaderParts(val protectedHeader: ByteArray?, val unprotectedHeader: JsonObject?)
 }

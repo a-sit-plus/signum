@@ -116,12 +116,13 @@ val flattened = jwsSigner.signFlattened(header, claims)
 val general = jwsSigner.signGeneral(claims, listOf(JwsHeaderWrapped(header)))
 ```
 
-The serialized `alg` selects a registered signer whose algorithm must match; missing registrations fail before
-signing. The signer supplies `alg`, `kid` when available, and the actual public key for a requested embedded `jwk`.
-Other members and header placement are preserved without mutating the supplied model.
+The supplied header's algorithm selects a registered signer whose algorithm must match. A supplied key ID must match
+the signer's key ID when available, and an embedded JWK must match its public key. Missing registrations and mismatches
+fail before signing. Header members and placement are preserved without filling in optional members or mutating the
+supplied model. Header serializers must preserve the supplied algorithm, key ID, and public key.
 
 Headers are protected by default. Set `unprotectedHeaderMembers` for flattened signing or use wrapped headers for
-general signing. General signing prepares all headers before signing and preserves their order. Payloads are serialized
+general signing. General signing validates all headers before signing and preserves their order. Payloads are serialized
 once per operation; overloads accept explicit payload and header serializers.
 
 To verify a signature, use the stored input and signature pairs:
