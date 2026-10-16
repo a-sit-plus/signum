@@ -19,7 +19,7 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
 ) : JwsTyped<JwsCompact, P, H>() {
 
     val header = wrappedHeader.header
-    val unprotectedHeaderMembers = wrappedHeader.unprotectedMembers
+    val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
 
     companion object {
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(

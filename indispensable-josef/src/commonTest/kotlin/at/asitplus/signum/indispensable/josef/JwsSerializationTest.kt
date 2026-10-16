@@ -59,7 +59,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         )
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        val plainProtectedHeader = wrappedHeader.toProtectedHeader()
+        val plainProtectedHeader = wrappedHeader.protectedHeader
         var capturedSignatureInput: ByteArray? = null
 
         val flattened = JwsFlattened.invoke(
@@ -142,7 +142,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
             JwsHeader.SerialNames.KEY_ID,
         )
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+        val unprotectedHeader = wrappedHeader.unprotectedHeader
         val conformantWithoutProtected = JwsFlattened(
             plainProtectedHeader = null,
             unprotectedHeader = unprotectedHeader,
@@ -333,8 +333,6 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         listOf(typedFlattened.wrappedHeader, typedGeneral.wrappedHeaders.single()).forEach { wrappedHeader ->
             wrappedHeader.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
-            wrappedHeader.unprotectedMembers shouldBe setOf("nonce")
-            wrappedHeader.effectiveUnprotectedMembers shouldBe emptySet()
             wrappedHeader shouldBe JwsHeaderWrapped(wrappedHeader.header)
             wrappedHeader.hashCode() shouldBe JwsHeaderWrapped(wrappedHeader.header).hashCode()
         }
@@ -481,7 +479,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
     "signature and general equality include unprotected headers" {
         val protectedHeader = JwsHeaderWrapped(JwsHeader(algorithm = JwsAlgorithm.Signature.RS256))
-            .toProtectedHeader()
+            .protectedHeader
         val signatureA = SignatureElement(
             plainSignature = byteArrayOf(1),
             plainProtectedHeader = protectedHeader,

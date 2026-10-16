@@ -26,8 +26,8 @@ val JwsHeaderPartsTest by matrixSuite {
         )
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
 
-        val protectedHeader = wrappedHeader.toProtectedHeader().toProtectedHeaderJsonObject()
-        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+        val protectedHeader = wrappedHeader.protectedHeader.toProtectedHeaderJsonObject()
+        val unprotectedHeader = wrappedHeader.unprotectedHeader
 
         protectedHeader shouldBe JsonObject(
             mapOf(
@@ -60,9 +60,9 @@ val JwsHeaderPartsTest by matrixSuite {
             certificateSha256Thumbprint = byteArrayOf(4, 5, 6),
         )
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val encodedProtectedHeader = wrappedHeader.toProtectedHeader()
+        val encodedProtectedHeader = wrappedHeader.protectedHeader
         val protectedHeader = encodedProtectedHeader.toProtectedHeaderJsonObject()
-        val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+        val unprotectedHeader = wrappedHeader.unprotectedHeader
 
         protectedHeader.keys shouldBe setOf(
             JwsHeader.SerialNames.TYPE,
@@ -122,22 +122,6 @@ val JwsHeaderPartsTest by matrixSuite {
 
         reparsedHeader shouldBe wrappedHeader
         reparsedHeader.header shouldBe header
-    }
-
-    "effective member placement ignores names absent from the modeled header" {
-        val header = JwsHeader(algorithm = JwsAlgorithm.Signature.RS256)
-        val withAbsentMember = JwsHeaderWrapped(
-            header,
-            setOf(JwsHeader.SerialNames.KEY_ID),
-        )
-        val withoutAbsentMember = JwsHeaderWrapped(header)
-
-        withAbsentMember.unprotectedMembers shouldBe setOf(JwsHeader.SerialNames.KEY_ID)
-        withAbsentMember.effectiveUnprotectedMembers shouldBe emptySet()
-        withAbsentMember.toProtectedHeader() shouldBe withoutAbsentMember.toProtectedHeader()
-        withAbsentMember.toUnprotectedHeader() shouldBe withoutAbsentMember.toUnprotectedHeader()
-        withAbsentMember shouldBe withoutAbsentMember
-        withAbsentMember.hashCode() shouldBe withoutAbsentMember.hashCode()
     }
 
     "fully protected flattened JWS omits the unprotected header" {

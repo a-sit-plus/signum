@@ -22,7 +22,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
 
     internal val wrappedHeaders = signatureViews.map { it.first }
     val headers = signatureViews.map { it.first.header }
-    val unprotectedHeaderMembers = signatureViews.map { it.first.unprotectedMembers }
+    val unprotectedHeaderMembers = signatureViews.map { it.first.unprotectedHeaderMembers }
     val signatures = signatureViews.map { it.second }
 
     init {

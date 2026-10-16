@@ -23,7 +23,7 @@ val JwsTypedTest by matrixSuite {
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
         val wrappedHeader = JwsHeaderWrapped(header)
-        val expectedProtectedHeader = wrappedHeader.toProtectedHeader()
+        val expectedProtectedHeader = wrappedHeader.protectedHeader
         val typedCompact = JwsCompactTyped(
             jws = JwsCompact(
                 plainProtectedHeader = expectedProtectedHeader,
@@ -53,7 +53,7 @@ val JwsTypedTest by matrixSuite {
         )
         val typedCompact = JwsCompactTyped(
             jws = JwsCompact(
-                plainProtectedHeader = wrappedHeader.toProtectedHeader(),
+                plainProtectedHeader = wrappedHeader.protectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
                 plainSignature = byteArrayOf(9, 8, 7, 6),
             ),
@@ -84,7 +84,7 @@ val JwsTypedTest by matrixSuite {
         )
         val typedCompact = JwsCompactTyped(
             jws = JwsCompact(
-                plainProtectedHeader = wrappedHeader.toProtectedHeader(),
+                plainProtectedHeader = wrappedHeader.protectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
                 plainSignature = byteArrayOf(5, 6, 7, 8),
             ),
@@ -113,12 +113,12 @@ val JwsTypedTest by matrixSuite {
         )
         val expectedPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray()
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val expectedProtectedHeader = wrappedHeader.toProtectedHeader()
+        val expectedProtectedHeader = wrappedHeader.protectedHeader
             .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
         val typedFlattened = JwsFlattenedTyped(
             jws = JwsFlattened(
                 plainProtectedHeader = expectedProtectedHeader,
-                unprotectedHeader = wrappedHeader.toUnprotectedHeader(),
+                unprotectedHeader = wrappedHeader.unprotectedHeader,
                 plainPayload = expectedPayload,
                 plainSignature = byteArrayOf(4, 3, 2, 1),
             ),
@@ -129,7 +129,7 @@ val JwsTypedTest by matrixSuite {
 
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
-        typedFlattened.jws.unprotectedHeader shouldBe wrappedHeader.toUnprotectedHeader()
+        typedFlattened.jws.unprotectedHeader shouldBe wrappedHeader.unprotectedHeader
         typedFlattened.wrappedHeader shouldBe wrappedHeader
         typedFlattened.jws.signatureInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
@@ -148,8 +148,8 @@ val JwsTypedTest by matrixSuite {
         )
         val first = JwsFlattenedTyped(
             jws = JwsFlattened(
-                plainProtectedHeader = firstHeader.toProtectedHeader(),
-                unprotectedHeader = firstHeader.toUnprotectedHeader(),
+                plainProtectedHeader = firstHeader.protectedHeader,
+                unprotectedHeader = firstHeader.unprotectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
                 plainSignature = byteArrayOf(1, 1, 1, 1),
             ),
@@ -167,8 +167,8 @@ val JwsTypedTest by matrixSuite {
         )
         val second = JwsFlattenedTyped(
             jws = JwsFlattened(
-                plainProtectedHeader = secondHeader.toProtectedHeader(),
-                unprotectedHeader = secondHeader.toUnprotectedHeader(),
+                plainProtectedHeader = secondHeader.protectedHeader,
+                unprotectedHeader = secondHeader.unprotectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
                 plainSignature = byteArrayOf(2, 2, 2, 2),
             ),
@@ -181,7 +181,7 @@ val JwsTypedTest by matrixSuite {
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
-        typedGeneral.wrappedHeaders.map { it.unprotectedMembers } shouldBe listOf(
+        typedGeneral.wrappedHeaders.map { it.unprotectedHeaderMembers } shouldBe listOf(
             setOf(JwsHeader.SerialNames.KEY_ID),
             setOf(JwsHeader.SerialNames.TYPE),
         )

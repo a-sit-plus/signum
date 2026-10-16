@@ -70,7 +70,7 @@ data class JwsFlattened internal constructor(
     companion object {
         /**
          * Creates a flattened JWS, splitting [JwsHeaderWrapped.header] according to
-         * [JwsHeaderWrapped.unprotectedMembers].
+         * [JwsHeaderWrapped.unprotectedHeaderMembers].
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
@@ -81,10 +81,9 @@ data class JwsFlattened internal constructor(
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val (encodedProtectedHeader, encodedUnprotectedHeader) = wrappedHeader.toHeaderParts()
-            val plainProtectedHeader = encodedProtectedHeader
+            val plainProtectedHeader = wrappedHeader.protectedHeader
                 .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
-            val unprotectedHeader = encodedUnprotectedHeader
+            val unprotectedHeader = wrappedHeader.unprotectedHeader
                 .takeUnless { it.isEmpty() }
             return JwsFlattened(
                 plainProtectedHeader,

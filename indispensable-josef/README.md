@@ -66,14 +66,14 @@ The model distinguishes three header views:
 - **Unprotected:** the optional `unprotectedHeader: JsonObject`. It remains separate and is not signed.
 - **Combined/effective:** `wrappedHeader: JwsHeaderWrapped<H>` on compact/flattened typed views, or
   `wrappedHeaders` on a general typed view. Its `header` is the typed strict union of both fragments, while
-  `unprotectedMembers` records which wire names came from the unprotected one.
+  `unprotectedHeaderMembers` records which modeled names came from the unprotected one.
 
 A bare header model loses protection status. Use `JwsHeaderWrapped<H>` or the original fragments when checking
-placement. `effectiveUnprotectedMembers` contains only names represented by the serialized model. Wrapper equality
-uses the modeled header and this effective placement; absent or unmodeled names do not affect equality.
+placement. `unprotectedHeaderMembers` contains the modeled names carried in the unprotected fragment.
+Wrapper equality uses the modeled header and this placement.
 
-The wrapper retains its header serializer and can produce protected bytes with `toProtectedHeader()` and unprotected
-JSON with `toUnprotectedHeader()` when constructing a new JWS. These methods serialize only modeled parameters.
+The wrapper serializes the modeled header once during construction and caches its protected and unprotected fragments.
+It does not retain a header serializer.
 Unmodeled values remain in the original wire fragments for round trips; use the retained `jws` for forwarding and
 verification, rather than reconstructing it from the wrapper.
 
@@ -84,7 +84,7 @@ verification, rather than reconstructing it from the wrapper.
 - `plainProtectedHeader`, `plainPayload`, and `plainSignature` contain decoded bytes. Pass plain payload bytes to the
   signing factories; the library handles base64url encoding.
 - Header parameters are protected by default. For flattened JWS, only wire names explicitly listed in
-  `unprotectedMembers` are unprotected. Protected and unprotected fragments may complement each other, but duplicate
+  `unprotectedHeaderMembers` are unprotected. Protected and unprotected fragments may complement each other, but duplicate
   names are rejected when decoding a typed header.
 - Conversions retain protected bytes and header placement. Because compact JWS has no unprotected header, only a
   fully protected flattened JWS can be converted to compact form; general JWS signatures must share one payload.

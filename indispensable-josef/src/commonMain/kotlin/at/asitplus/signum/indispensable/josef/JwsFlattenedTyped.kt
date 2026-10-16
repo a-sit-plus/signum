@@ -18,7 +18,7 @@ data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
 ) : JwsTyped<JwsFlattened, P, H>() {
 
     val header = wrappedHeader.header
-    val unprotectedHeaderMembers = wrappedHeader.unprotectedMembers
+    val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
 
 }
 

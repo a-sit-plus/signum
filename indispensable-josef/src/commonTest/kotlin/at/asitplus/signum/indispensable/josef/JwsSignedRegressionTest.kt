@@ -31,7 +31,7 @@ val JwsSignedRegressionTest by matrixSuite {
             byteArrayOf(1, 2, 3, 4)
         }
 
-        val expectedProtectedHeader = JwsHeaderWrapped(header).toProtectedHeader()
+        val expectedProtectedHeader = JwsHeaderWrapped(header).protectedHeader
 
         compact.plainProtectedHeader shouldBe expectedProtectedHeader
         capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
@@ -137,12 +137,12 @@ val JwsSignedRegressionTest by matrixSuite {
         val typedGeneral = general.typed<JsonObject, JwsHeader>()
 
         typedFlattened.wrappedHeader.header shouldBe regressionCase.legacy.header
-        typedFlattened.wrappedHeader.unprotectedMembers shouldBe emptySet()
+        typedFlattened.wrappedHeader.unprotectedHeaderMembers shouldBe emptySet()
         typedFlattened.signature shouldBe regressionCase.legacy.signature
         flattened.signatureInput shouldBe regressionCase.legacy.plainSignatureInput
 
         typedGeneral.wrappedHeaders[0].header shouldBe regressionCase.legacy.header
-        typedGeneral.wrappedHeaders[0].unprotectedMembers shouldBe emptySet()
+        typedGeneral.wrappedHeaders[0].unprotectedHeaderMembers shouldBe emptySet()
         typedGeneral.signatures[0] shouldBe regressionCase.legacy.signature
         general.signatureInputs[0] shouldBe regressionCase.legacy.plainSignatureInput
     }
@@ -197,7 +197,7 @@ private fun compactRegressionCase(
 ): CompactRegressionCase {
     val header = protectedHeader
     val compact = JwsCompact(
-        plainProtectedHeader = JwsHeaderWrapped(protectedHeader).toProtectedHeader(),
+        plainProtectedHeader = JwsHeaderWrapped(protectedHeader).protectedHeader,
         plainPayload = payload,
         plainSignature = plainSignature,
     )

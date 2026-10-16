@@ -62,9 +62,9 @@ internal fun flattenedSample(
     payload: ByteArray,
     plainSignature: ByteArray,
 ): JwsFlattened = JwsFlattened(
-    plainProtectedHeader = wrappedHeader.toProtectedHeader()
+    plainProtectedHeader = wrappedHeader.protectedHeader
         .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() },
-    unprotectedHeader = wrappedHeader.toUnprotectedHeader().takeUnless { it.isEmpty() },
+    unprotectedHeader = wrappedHeader.unprotectedHeader.takeUnless { it.isEmpty() },
     plainPayload = payload,
     plainSignature = plainSignature,
 )
