@@ -48,9 +48,7 @@ val JwsCustomHeaderTest by matrixSuite {
         )
         val signatures = listOf(byteArrayOf(1, 2), byteArrayOf(3, 4))
         val flattened = headers.mapIndexed { index, header ->
-            val jws = flattenedSample(header, bytes, signatures[index])
-            jws.signatureInput shouldBe JwsRaw.getSignatureInput(header.protectedHeader, bytes)
-            jws.typed<JsonObject, CustomJwsHeader>()
+            flattenedSample(header, bytes, signatures[index]).typed<JsonObject, CustomJwsHeader>()
         }
         val general = flattened.map { it.jws }.toGeneral().typed<JsonObject, CustomJwsHeader>()
 

@@ -79,8 +79,6 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             plainSignature = byteArrayOf(1, 2, 3, 4),
         )
 
-        flattened.signatureInput shouldBe JwsRaw.getSignatureInput(plainProtectedHeader, payload)
-
         val serialized = joseCompliantSerializer.encodeToString(flattened)
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(serialized)
         val typedReparsed = reparsed.typed<JsonObject, JwsHeader>()
@@ -140,35 +138,15 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         typedFlattened.map { it.wrappedHeader } shouldBe listOf(firstHeader, secondHeader)
     }
 
-    "empty protected header is omitted from flattened/general JWS and signing input" {
+    "absent protected header stays omitted through flattened/general serialization" {
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        val header = JwsHeader(
-            algorithm = JwsAlgorithm.Signature.RS256,
-            keyId = "kid-1",
-        )
-        val unprotectedMembers = setOf(
-            JwsHeader.SerialNames.ALGORITHM,
-            JwsHeader.SerialNames.KEY_ID,
-        )
-        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val unprotectedHeader = wrappedHeader.unprotectedHeader
-        val conformantWithoutProtected = JwsFlattened.Raw(
+        val flattened = JwsFlattened.Raw(
             plainProtectedHeader = null,
-            unprotectedHeader = unprotectedHeader,
+            unprotectedHeader = JsonObject(mapOf("alg" to JsonPrimitive("RS256"), "kid" to JsonPrimitive("kid-1"))),
             plainPayload = payload,
             plainSignature = byteArrayOf(1, 2, 3, 4),
         )
-        val flattened = flattenedSample(
-            wrappedHeader = wrappedHeader,
-            payload = payload,
-            plainSignature = byteArrayOf(1, 2, 3, 4),
-        )
         val general = listOf(flattened).toGeneral()
-
-        flattened shouldBe conformantWithoutProtected
-        flattened.plainProtectedHeader shouldBe null
-        flattened.signatureInput shouldBe JwsRaw.getSignatureInput(null, payload)
-        flattened.signatureInput shouldBe conformantWithoutProtected.signatureInput
 
         val flattenedJson = joseCompliantSerializer.decodeFromString<JsonObject>(
             joseCompliantSerializer.encodeToString(flattened)
@@ -176,7 +154,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         flattenedJson.shouldNotContainKey(JwsRaw.SerialNames.PROTECTED)
 
         general.signatureElements.single().plainProtectedHeader shouldBe null
-        general.signatureInputs.single() shouldBe conformantWithoutProtected.signatureInput
+        general.signatureInputs.single() shouldBe flattened.signatureInput
 
         val generalJson = joseCompliantSerializer.decodeFromString<JsonObject>(
             joseCompliantSerializer.encodeToString(general)

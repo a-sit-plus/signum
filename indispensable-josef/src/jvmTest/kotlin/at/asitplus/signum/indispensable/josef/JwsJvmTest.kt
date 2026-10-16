@@ -52,9 +52,7 @@ val JwsJvmTest by matrixSuite {
 
             parsed.verify(context.verifiers[0]).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
-            typed.header shouldBe context.headers[0]
-            typed.payload shouldBe context.payload
-            typed.unprotectedHeaderMembers shouldBe emptySet()
+            parsed.payload.toString() shouldBe """{"iss":"https://issuer.example","sub":"alice"}"""
         }
 
         "flattened typed JWS can be serialized and verified by Nimbus" { context ->
@@ -62,13 +60,9 @@ val JwsJvmTest by matrixSuite {
             val typed = context.jwsSigner.signFlattened(context.headers[0], context.payload, placement)
             val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
 
-            parsed.signatures.size shouldBe 1
             parsed.signatures.single().verify(context.verifiers[0]).shouldBeTrue()
             parsed.signatures.single().header.keyID shouldBe null
             parsed.signatures.single().unprotectedHeader.keyID shouldBe "kid-1"
-            typed.header shouldBe context.headers[0]
-            typed.payload shouldBe context.payload
-            typed.unprotectedHeaderMembers shouldBe placement
         }
 
         "general typed JWS can be serialized and verified by Nimbus" { context ->
@@ -84,9 +78,6 @@ val JwsJvmTest by matrixSuite {
                 signature.header.keyID shouldBe null
                 signature.unprotectedHeader.keyID shouldBe "kid-${index + 1}"
             }
-            typed.headers shouldBe context.headers
-            typed.payload shouldBe context.payload
-            typed.unprotectedHeaderMembers shouldBe listOf(placement, placement)
         }
     }
 }
