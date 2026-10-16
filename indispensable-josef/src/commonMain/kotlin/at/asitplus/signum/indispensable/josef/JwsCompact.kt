@@ -41,7 +41,7 @@ data class JwsCompact internal constructor(
 ) : JWS() {
 
     @Transient
-    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, null)
+    val wrappedHeader = JwsHeaderWrapped.fromParts<JwsHeader>(plainProtectedHeader, null)
 
     @Transient
     val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)

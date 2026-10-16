@@ -64,16 +64,16 @@ Each signature exposes three views of its header:
 * **Protected:** The first compact segment or the JSON `protected` member contains the signed header.
   Its decoded JSON bytes are retained in `plainProtectedHeader`.
 * **Unprotected:** The optional `unprotectedHeader: JsonObject` remains separate and is not signed.
-* **Combined:** `wrappedHeader: JwsHeaderWrapped` (or `wrappedHeaders` on `JwsGeneral`) provides the effective header.
-  Its `header` is the typed union of both fragments, with duplicate names rejected. Its `unprotectedMembers` records
-  which names came from the unprotected fragment.
+* **Combined:** `wrappedHeader: JwsHeaderWrapped<JwsHeader>` (or `wrappedHeaders` on `JwsGeneral`) provides the effective header.
+  Its `header` is the typed union of both fragments, with duplicate names rejected. Its `unprotectedHeaderMembers` records
+  which modeled names came from the unprotected fragment.
 
 A bare `JwsHeader` does not retain protection status. Use `JwsHeaderWrapped` or the original fragments whenever
 you need to determine whether a header parameter was signed.
 
 The wrapper is a one-way typed view: parameters not modeled by `JwsHeader` remain in `plainProtectedHeader` or
 `unprotectedHeader` for round trips, but their values are not available through the typed header. Their unprotected
-names are still recorded in `unprotectedMembers`.
+names remain available through the original unprotected wire fragment.
 
 ### Serialization and Conversion Rules
 

@@ -103,7 +103,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         reparsed shouldBe flattened
         reparsed.wrappedHeader.header shouldBe header
-        reparsed.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
+        reparsed.wrappedHeader.unprotectedHeaderMembers shouldBe unprotectedMembers
         @Suppress("DEPRECATION")
         val deprecatedProtectedHeader = reparsed.protectedHeader
         deprecatedProtectedHeader shouldBe plainProtectedHeader.toProtectedHeaderJsonObject()
@@ -354,7 +354,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         listOf(flattened.wrappedHeader, general.wrappedHeaders.single()).forEach { wrappedHeader ->
             wrappedHeader.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
-            wrappedHeader.unprotectedMembers shouldBe setOf("nonce")
+            wrappedHeader.unprotectedHeaderMembers shouldBe emptySet()
         }
 
         joseCompliantSerializer.decodeFromString<JsonObject>(

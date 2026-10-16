@@ -108,7 +108,7 @@ val JwsTypedTest by matrixSuite {
         typedFlattened.payload shouldBe payload
         typedFlattened.jws.plainPayload shouldBe expectedPayload
         typedFlattened.jws.wrappedHeader.header shouldBe header
-        typedFlattened.jws.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
+        typedFlattened.jws.wrappedHeader.unprotectedHeaderMembers shouldBe unprotectedMembers
         capturedSignatureInput shouldBe JWS.getSignatureInput(typedFlattened.jws.plainProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
@@ -143,7 +143,7 @@ val JwsTypedTest by matrixSuite {
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
-        typedGeneral.jws.wrappedHeaders.map { it.unprotectedMembers } shouldBe listOf(
+        typedGeneral.jws.wrappedHeaders.map { it.unprotectedHeaderMembers } shouldBe listOf(
             setOf(JwsHeader.SerialNames.KEY_ID),
             setOf(JwsHeader.SerialNames.TYPE),
         )
