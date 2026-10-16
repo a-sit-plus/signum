@@ -121,7 +121,11 @@ supplied model. Header serializers must preserve the supplied algorithm, key ID,
 
 Headers are protected by default. Set `unprotectedHeaderMembers` for flattened signing or use wrapped headers for
 general signing. General signing validates all headers before signing and preserves their order. Payloads are serialized
-once per operation; overloads accept explicit payload and header serializers.
+once per operation. Compact and flattened signing accept explicit payload and header serializers; general signing only
+needs a payload serializer because wrapped headers already cache their serialized fragments.
+
+Signing retains the supplied typed payload and headers and the signer-produced signatures without reparsing them.
+The wire data retains the serialized bytes used for signing; mutable input objects remain shared with the returned views.
 
 To verify a signature, use the stored input and signature pairs:
 

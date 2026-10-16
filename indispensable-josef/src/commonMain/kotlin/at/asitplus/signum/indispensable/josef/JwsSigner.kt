@@ -9,7 +9,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
 
 /**
- * Signs JWS and returns typed views derived from the signed bytes.
+ * Signs JWS and retains the supplied typed payload, headers, and signer-produced signatures in the returned views.
  *
  * Copies [signers]; each registration must match its signer's algorithm. The supplied header's algorithm selects a signer.
  * Validates `alg`, a supplied `kid` against the public key's `jwkId` when available, and any embedded `jwk` against the public key.
@@ -62,8 +62,9 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         return with(selectSigner(header)) {
             signFlattened(
                 wrappedHeader,
+                payload,
                 joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray(),
-            ).typed(payloadSerializer, headerSerializer)
+            )
         }
     }
 
@@ -83,34 +84,44 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
         payloadSerializer: KSerializer<P>,
-        headerSerializer: KSerializer<H>,
     ): JwsGeneralTyped<P, H> {
         val parameters = signatures.toList()
         require(parameters.isNotEmpty()) { "General JWS requires at least one signature" }
         val selectedSigners = parameters.map { selectSigner(it.header) }
         val payloadBytes = joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray()
-        return parameters.zip(selectedSigners) { header, signer -> with(signer) { signFlattened(header, payloadBytes) } }
-            .toJwsGeneral().typed(payloadSerializer, headerSerializer)
+        val signed = parameters.zip(selectedSigners) { header, signer ->
+            with(signer) { signFlattened(header, payload, payloadBytes) }
+        }
+        return JwsGeneralTyped(
+            jws = signed.map { it.jws }.toJwsGeneral(),
+            payload = payload,
+            signatureViews = signed.map { it.wrappedHeader to it.signature },
+        )
     }
 
-    suspend inline fun <reified P, reified H : JwsHeaderBase> signGeneral(
+    suspend inline fun <reified P, H : JwsHeaderBase> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
     ): JwsGeneralTyped<P, H> = signGeneral(
         payload, signatures,
         joseCompliantSerializer.serializersModule.serializer<P>(),
-        joseCompliantSerializer.serializersModule.serializer<H>(),
     )
 
     context(signer: Signer)
-    private suspend fun signFlattened(
-        header: JwsHeaderWrapped<*>,
-        payload: ByteArray,
-    ): JwsFlattened {
+    private suspend fun <P, H : JwsHeaderBase> signFlattened(
+        header: JwsHeaderWrapped<H>,
+        payload: P,
+        payloadBytes: ByteArray,
+    ): JwsFlattenedTyped<P, H> {
         val protectedHeader = header.protectedHeader.takeUnless { header.protectedHeaderJson.isEmpty() }
         val unprotectedHeader = header.unprotectedHeader.takeUnless { it.isEmpty() }
-        val signature = signer.sign(JWS.getSignatureInput(protectedHeader, payload)).signature
-        return JwsFlattened(protectedHeader, unprotectedHeader, payload, signature.joseBytes.copyOf())
+        val signature = signer.sign(JWS.getSignatureInput(protectedHeader, payloadBytes)).signature
+        return JwsFlattenedTyped(
+            jws = JwsFlattened(protectedHeader, unprotectedHeader, payloadBytes, signature.joseBytes.copyOf()),
+            payload = payload,
+            wrappedHeader = header,
+            signature = signature,
+        )
     }
 
     private fun selectSigner(header: JwsHeaderBase): Signer {
