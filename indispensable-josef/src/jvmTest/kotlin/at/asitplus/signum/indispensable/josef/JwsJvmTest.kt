@@ -59,7 +59,7 @@ val JwsJvmTest by matrixSuite {
             parsed.verify(it.verifier1).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
             compact.wrappedHeader.header shouldBe header
-            compact.wrappedHeader.unprotectedMembers shouldBe emptySet()
+            compact.wrappedHeader.unprotectedHeaderMembers shouldBe emptySet()
         }
 
         "flattened JWS can be serialized and verified by Nimbus" { it ->
@@ -84,7 +84,7 @@ val JwsJvmTest by matrixSuite {
             parsed.signatures.single().header.keyID shouldBe null
             parsed.signatures.single().unprotectedHeader.keyID shouldBe "kid-1"
             flattened.wrappedHeader.header shouldBe header
-            flattened.wrappedHeader.unprotectedMembers shouldBe unprotectedMembers
+            flattened.wrappedHeader.unprotectedHeaderMembers shouldBe unprotectedMembers
         }
 
         "general JWS can be serialized and verified by Nimbus" { it ->
