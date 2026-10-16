@@ -17,10 +17,12 @@ import kotlinx.serialization.Transient
  * member, so callers should not pre-encode them.
  *
  * To access the contents of the parameters use [JwsGeneralTyped]
+ *
+ * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
  */
 @ConsistentCopyVisibility
 @Serializable
-data class JwsGeneral internal constructor(
+data class JwsGeneral private constructor(
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val plainPayload: ByteArray,
@@ -72,6 +74,12 @@ data class JwsGeneral internal constructor(
     }
 
     companion object {
+        /** Copies [signatureElements] so later caller mutations cannot invalidate cached signing inputs. */
+        internal operator fun invoke(
+            plainPayload: ByteArray,
+            signatureElements: List<SignatureElement>,
+        ): JwsGeneral = JwsGeneral(plainPayload, buildList { addAll(signatureElements) })
+
         operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
     }
 }

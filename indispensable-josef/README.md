@@ -45,9 +45,11 @@ the signing input. Instead, it keeps the wire/data object as the source of truth
 
 `JwsTyped` is a sealed base for three concrete typed views. Each retains its original `jws` and decoded `payload`.
 Compact and flattened views also expose `wrappedHeader` and `signature`; general views expose ordered
-`wrappedHeaders` and `signatures`. Wire objects retain bytes and fragments without eagerly decoding a header model
-or signature. Send or store `jws`. `JwsTypedSerializerTemplate` serializes only that wire object and derives all typed
-values when decoding. Direct users of the concrete typed constructors must keep those values consistent.
+`headers`, `unprotectedHeaderMembers`, and `signatures`. These general accessors are projections of a copied internal
+list of header/signature pairs, keeping each effective header and its placement together with its signature.
+Duplicate headers and signatures retain their original order. Wire objects retain bytes and fragments without eagerly
+decoding a header model or signature. Send or store `jws`. `JwsTypedSerializerTemplate` serializes only that wire object
+and derives all typed values when decoding. Direct users of the concrete typed constructors must keep those values consistent.
 
 ## JWS representation model
 
@@ -104,7 +106,7 @@ For verification, use the stored, wire-derived pairs:
 
 - `typedCompact.jws.signatureInput` and `typedCompact.signature`;
 - `typedFlattened.jws.signatureInput` and `typedFlattened.signature`; or
-- each corresponding pair in `typedGeneral.jws.signatureInputs` and `typedGeneral.signatures`.
+- each `view.jws.signatureInput` and `view.signature` from `typedGeneral.toJwsFlattenedTyped()`.
 
 Never recreate a signing input from a modeled header or typed payload. Parsing, typed access, and
 `JwsHeader.publicKey` do not verify a signature or establish key trust; callers must perform verification, trust

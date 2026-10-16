@@ -3,25 +3,47 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 /**
- * Typed payload and ordered headers and signatures over an unchanged general [jws].
- * Direct construction requires the decoded values to agree with the retained wire object.
+ * Typed payload and ordered [signatureViews] over an unchanged general [jws].
+ * Each pair keeps an effective header with its member placement and decoded signature together, in wire order.
+ * Use [JwsGeneral.typed] to decode a general JWS.
+ *
+ * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
  */
-data class JwsGeneralTyped<out P, H : JwsHeaderBase>(
+@ConsistentCopyVisibility
+data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
     override val jws: JwsGeneral,
     override val payload: P,
-    internal val wrappedHeaders: List<JwsHeaderWrapped<H>>,
-    val signatures: List<CryptoSignature>
+    internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
 ) : JwsTyped<JwsGeneral, P, H>() {
 
-    val headers = wrappedHeaders.map { it.header }
-    val unprotectedHeaderMembers = wrappedHeaders.map { it.unprotectedMembers }
+    internal val wrappedHeaders = signatureViews.map { it.first }
+    val headers = signatureViews.map { it.first.header }
+    val unprotectedHeaderMembers = signatureViews.map { it.first.unprotectedMembers }
+    val signatures = signatureViews.map { it.second }
+
+    init {
+        require(signatureViews.size == jws.signatureElements.size) {
+            "Signature views must match the number of wire signature elements"
+        }
+        require(signatureViews.indices.all { index ->
+            signatureViews[index].second.joseBytes.contentEquals(jws.signatureElements[index].plainSignature)
+        }) {
+            "Signature views must match the wire signature bytes in order"
+        }
+    }
 
     companion object {
+        /** Copies [signatureViews] so later caller mutations cannot invalidate cached projections or wire alignment. */
+        internal operator fun <P, H : JwsHeaderBase> invoke(
+            jws: JwsGeneral,
+            payload: P,
+            signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
+        ): JwsGeneralTyped<P, H> = JwsGeneralTyped(jws, payload, buildList { addAll(signatureViews) })
+
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             jwsFlattened: List<JwsFlattened>,
             serialFormat: Json = joseCompliantSerializer,
@@ -43,29 +65,20 @@ fun <P, H : JwsHeaderBase> JwsGeneral.typed(
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneralTyped<P, H> {
-    val wrappedHeaders = signatureElements.map {
-        JwsHeaderWrapped.fromParts(
+    val payload = getPayload(payloadSerializer, serialFormat).getOrThrow()
+    val signatureViews = signatureElements.map { element ->
+        val wrappedHeader = JwsHeaderWrapped.fromParts(
             serializer = headerSerializer,
-            protectedHeader = it.plainProtectedHeader,
-            unprotectedHeader = it.unprotectedHeader,
+            protectedHeader = element.plainProtectedHeader,
+            unprotectedHeader = element.unprotectedHeader,
             serialFormat = serialFormat,
         )
+        wrappedHeader to JWS.getSignature(wrappedHeader.header.algorithm, element.plainSignature)
     }
-
-    return JwsGeneralTyped(
-        this,
-        getPayload(payloadSerializer, serialFormat).getOrThrow(),
-        wrappedHeaders,
-        wrappedHeaders.zip(signatureElements) { wrapped, signatureElement ->
-            JWS.getSignature(
-                wrapped.header.algorithm,
-                signatureElement.plainSignature
-            )
-        }
-    )
+    return JwsGeneralTyped(this, payload, signatureViews)
 }
 
 fun <P, H : JwsHeaderBase> JwsGeneralTyped<P, H>.toJwsFlattenedTyped() =
-    jws.toJwsFlattened().mapIndexed { index, flattened ->
-        JwsFlattenedTyped(flattened, payload, wrappedHeaders[index], signatures[index])
+    jws.toJwsFlattened().zip(signatureViews) { flattened, (wrappedHeader, signature) ->
+        JwsFlattenedTyped(flattened, payload, wrappedHeader, signature)
     }
