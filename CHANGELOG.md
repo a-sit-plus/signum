@@ -10,7 +10,7 @@ This is a major refactor!
 * **Breaking:** Move decoded headers and signatures from wire objects to concrete `JwsTyped<J, P, H>` views.
 * **Breaking:** Use `.typed<P, H>()` and supply a header serializer to `JwsTypedSerializerTemplate`.
 * **Breaking:** `JwsCompact.parse<P, H>()` returns a triple of wire object, payload, and wrapped header.
-* **Breaking:** Replace callback-based JWS signing factories with `JwsSigner` for typed headers and payloads.
+* **Breaking:** Replace typed and callback signing factories with `JwsSigner`; make typed constructors and copying internal.
 * Deprecate `JwsHeader` in favor of custom `JwsHeaderBase` models supported by `JwsHeaderWrapped<H>`.
 * **Breaking:** Rename `unprotectedMembers` to `unprotectedHeaderMembers` on wrappers; include only serialized header members.
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
