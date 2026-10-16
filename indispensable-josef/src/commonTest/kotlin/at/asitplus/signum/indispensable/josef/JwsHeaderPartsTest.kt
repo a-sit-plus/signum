@@ -7,8 +7,6 @@ import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
 
 val JwsHeaderPartsTest by matrixSuite {
     "protected and unprotected JSON objects form an exact partition" {
@@ -110,10 +108,11 @@ val JwsHeaderPartsTest by matrixSuite {
                 JwsHeader.SerialNames.KEY_ID,
             ),
         )
-        val flattened = JwsFlattened(
+        val flattened = flattenedSample(
             wrappedHeader = wrappedHeader,
             payload = byteArrayOf(1),
-        ) { byteArrayOf(2) }
+            plainSignature = byteArrayOf(2),
+        )
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened>(
             joseCompliantSerializer.encodeToString(flattened)
         )
@@ -122,24 +121,5 @@ val JwsHeaderPartsTest by matrixSuite {
 
         reparsedHeader shouldBe wrappedHeader
         reparsedHeader.header shouldBe header
-    }
-
-    "fully protected flattened JWS omits the unprotected header" {
-        val header = JwsHeader(
-            algorithm = JwsAlgorithm.Signature.RS256,
-            keyId = "did:example:signer",
-        )
-        val wrappedHeader = JwsHeaderWrapped(header)
-        val flattened = JwsFlattened.invoke(
-            wrappedHeader = wrappedHeader,
-            payload = "payload".encodeToByteArray(),
-        ) { byteArrayOf(1) }
-        val serialized = joseCompliantSerializer.encodeToJsonElement(flattened).jsonObject
-        val reconstructedHeader =
-            JwsHeaderWrapped.fromParts<JwsHeader>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
-
-        reconstructedHeader shouldBe wrappedHeader
-        flattened.unprotectedHeader shouldBe null
-        (JWS.SerialNames.HEADER in serialized) shouldBe false
     }
 }

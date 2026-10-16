@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
  * Typed payload and header views over a retained [JWS] wire object.
  *
  * Use the concrete compact, flattened, or general view to access decoded headers and signatures.
+ * Create signed values through [JwsSigner].
  * Forward [jws] or serialize through [JwsTypedSerializerTemplate] to preserve the original signed bytes.
  * Typed decoding does not verify signatures or establish key trust.
  */

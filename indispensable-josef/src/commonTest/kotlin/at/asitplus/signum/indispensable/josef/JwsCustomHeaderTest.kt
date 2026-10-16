@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -49,12 +48,8 @@ val JwsCustomHeaderTest by matrixSuite {
         )
         val signatures = listOf(byteArrayOf(1, 2), byteArrayOf(3, 4))
         val flattened = headers.mapIndexed { index, header ->
-            var capturedInput: ByteArray? = null
-            val jws = JwsFlattened(header, bytes) { input ->
-                capturedInput = input
-                signatures[index]
-            }
-            capturedInput shouldBe jws.signatureInput
+            val jws = flattenedSample(header, bytes, signatures[index])
+            jws.signatureInput shouldBe JWS.getSignatureInput(header.protectedHeader, bytes)
             jws.typed<JsonObject, CustomJwsHeader>()
         }
         val general = flattened.map { it.jws }.toJwsGeneral().typed<JsonObject, CustomJwsHeader>()
@@ -83,7 +78,7 @@ val JwsCustomHeaderTest by matrixSuite {
 
     "sealed typed serializer decodes every concrete JWS form with custom headers" {
         val header = JwsHeaderWrapped(CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "private"))
-        val compact = JwsCompact(header, "{}".encodeToByteArray()) { byteArrayOf(1) }
+        val compact = JwsCompact(header.protectedHeader, "{}".encodeToByteArray(), byteArrayOf(1))
         val flattened = compact.toJwsFlattened()
         val general = listOf(flattened).toJwsGeneral()
         val serializer = JwsTypedSerializerTemplate(
@@ -148,21 +143,6 @@ val JwsCustomHeaderTest by matrixSuite {
             lenientFlattened.typed(payloadSerializer, headerSerializer, lenientFormat),
             lenientGeneral.typed(payloadSerializer, headerSerializer, lenientFormat),
         ).forEach { it.payload shouldBe expectedPayload }
-    }
-
-    "compact signing rejects represented unprotected members before invoking the signer" {
-        val header = JwsHeaderWrapped(
-            CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "private"), setOf("extension")
-        )
-        var called = false
-        val result = runCatching {
-            JwsCompact(header, "{}".encodeToByteArray()) {
-                called = true
-                byteArrayOf(1)
-            }
-        }
-        result.shouldBeFailure().message.shouldContain("does not support unprotected")
-        called shouldBe false
     }
 
     "raw JWS accepts duplicate fragments but typed decoding rejects them" {

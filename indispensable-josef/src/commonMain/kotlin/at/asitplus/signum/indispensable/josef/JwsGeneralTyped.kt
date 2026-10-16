@@ -9,7 +9,7 @@ import kotlinx.serialization.serializer
 /**
  * Typed payload and ordered [signatureViews] over an unchanged general [jws].
  * Each pair keeps an effective header with its member placement and decoded signature together, in wire order.
- * Use [JwsGeneral.typed] to decode a general JWS.
+ * Use [JwsSigner] to sign a general JWS or [JwsGeneral.typed] to decode one.
  *
  * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
  */

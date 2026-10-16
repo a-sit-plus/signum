@@ -8,9 +8,11 @@ import kotlinx.serialization.serializer
 
 /**
  * Typed payload, effective header with member placement, and signature over an unchanged flattened [jws].
- * Direct construction requires the decoded values to agree with the retained wire object.
+ * Create signed values through [JwsSigner] or decode views through [typed].
+ * Component construction and copying are internal.
  */
-data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
+@ConsistentCopyVisibility
+data class JwsFlattenedTyped<out P, H : JwsHeaderBase> internal constructor(
     override val jws: JwsFlattened,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
@@ -19,7 +21,6 @@ data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
-
 }
 
 inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.typed(

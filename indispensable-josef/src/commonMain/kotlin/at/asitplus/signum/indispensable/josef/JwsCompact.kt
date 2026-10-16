@@ -105,40 +105,6 @@ data class JwsCompact internal constructor(
             )
         }.getOrThrow()
 
-        /**
-         * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
-         * from components and immediately sign the correct representation.
-         *
-         * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
-         * compact serialization and signing input construction apply base64url encoding internally.
-         */
-        @Deprecated("Will be replaced by real signing service")
-        suspend operator fun invoke(
-            protectedHeader: JwsHeader,
-            payload: ByteArray,
-            signer: suspend (ByteArray) -> ByteArray
-        ): JwsCompact = invoke(JwsHeaderWrapped(protectedHeader), payload, signer)
-
-        /**
-         * Builds a compact JWS using a wrapped custom header. Compact serialization cannot carry unprotected
-         * members, so every represented header member must be protected.
-         */
-        @Deprecated("Will be replaced by real signing service")
-        suspend operator fun invoke(
-            wrappedHeader: JwsHeaderWrapped<*>,
-            payload: ByteArray,
-            signer: suspend (ByteArray) -> ByteArray,
-        ): JwsCompact {
-            require(wrappedHeader.unprotectedHeaderMembers.isEmpty()) {
-                "Compact Serialization does not support unprotected header members"
-            }
-            val plainProtectedHeader = wrappedHeader.protectedHeader
-            return JwsCompact(
-                plainProtectedHeader = plainProtectedHeader,
-                plainPayload = payload,
-                plainSignature = signer(getSignatureInput(plainProtectedHeader, payload)),
-            )
-        }
     }
 }
 
