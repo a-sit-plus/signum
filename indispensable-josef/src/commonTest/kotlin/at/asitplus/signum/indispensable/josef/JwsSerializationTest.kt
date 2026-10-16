@@ -17,26 +17,6 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.*
 
-private val generalVectorJson = """
-    {
-      "payload": "eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ",
-      "signatures": [
-        {
-          "protected": "eyJhbGciOiJSUzI1NiJ9",
-          "signature": "cC4hiUPoj9Eetdgtv3hF80EGrhuB__dzERat0XF9g2VtQgr9PJbu3XOiZj5RZmh7AAuHIm4Bh-0Qc_lF5YKt_O8W2Fp5jujGbds9uJdbF9CUAr7t1dnZcAcQjbKBYNX4BAynRFdiuB--f_nZLgrnbyTyWzO75vRK5h6xBArLIARNPvkSjtQBMHlb1L07Qe7K0GarZRmB_eSN9383LcOLn6_dO--xi12jzDwusC-eOkHWEsqtFZESc6BfI7noOPqvhJ1phCnvWh6IeYI2w9QOYEUipUTI8np6LbgGY9Fs98rqVt5AXLIhWkWywlVmtVrBp0igcN_IoypGlUPQGe77Rw"
-        },
-        {
-          "protected": "eyJhbGciOiJFUzI1NiJ9",
-          "signature": "DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQxfKTUJqPP3-Kg6NU1Q"
-        }
-      ]
-    }
-""".trimIndent()
-
-private val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), generalVectorJson)
-private val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD].shouldNotBeNull().jsonPrimitive.content
-private val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES].shouldNotBeNull().jsonArray
-
 val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
@@ -568,67 +548,5 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         arrayResult.isSuccess shouldBe false
         arrayResult.shouldBeFailure().message.shouldContain("expected a compact string or JSON object")
-    }
-}
-
-private fun compactSerializationAt(index: Int): String {
-    val sourceSignature = generalVectorSignatures[index].jsonObject
-    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED].shouldNotBeNull().jsonPrimitive.content
-    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE].shouldNotBeNull().jsonPrimitive.content
-    return "$protectedHeaderBase64.$generalVectorPayload.$signatureBase64"
-}
-
-private fun flattenedJson(
-    protectedHeaderBase64: String = "eyJhbGciOiJSUzI1NiJ9",
-    payloadBase64: String = "e30",
-    signatureBase64: String = "AQ",
-    headerJson: String? = null,
-): String = """
-    {"protected":"$protectedHeaderBase64","payload":"$payloadBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}
-""".trimIndent()
-
-private fun generalJson(
-    protectedHeaderBase64: String = "eyJhbGciOiJSUzI1NiJ9",
-    payloadBase64: String = "e30",
-    signatureBase64: String = "AQ",
-    headerJson: String? = null,
-): String = """
-    {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}]}
-""".trimIndent()
-
-private suspend fun flattenedSample(
-    header: JwsHeader,
-    payload: ByteArray,
-    plainSignature: ByteArray,
-    unprotectedMembers: Set<String> = emptySet(),
-): JwsFlattened = JwsFlattened(header, payload, unprotectedMembers) { plainSignature }
-
-private fun String.toPaddedBase64UrlVariant(): String = when (length % 2) {
-    1 -> "${this}=="
-    else -> "${this}="
-}
-
-private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
-    isSuccess shouldBe false
-    val failure = shouldBeFailure()
-    failure.message.orEmpty().shouldContain("Decoding failed")
-    failure.cause shouldNotBe null
-    failure.cause.shouldNotBeNull().message.orEmpty().shouldContain("Trailing = are not supported")
-}
-
-private fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
-    isSuccess shouldBe false
-    shouldBeFailure().message.orEmpty().shouldContain("must be absent when it would otherwise be empty")
-}
-
-private fun JsonElement.shouldNotContainKey(key: String) {
-    when (this) {
-        is JsonObject -> {
-            keys.contains(key) shouldBe false
-            values.forEach { it.shouldNotContainKey(key) }
-        }
-
-        is JsonArray -> forEach { it.shouldNotContainKey(key) }
-        else -> Unit
     }
 }
