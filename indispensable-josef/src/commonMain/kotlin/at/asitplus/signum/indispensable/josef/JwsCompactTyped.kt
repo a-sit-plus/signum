@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 
 /**
@@ -11,9 +12,16 @@ import kotlinx.serialization.json.Json
 data class JwsCompactTyped<out P, H : JwsHeaderBase>(
     override val jws: JwsCompact,
     override val payload: P,
-    val wrappedHeader: JwsHeaderWrapped<H>,
+    internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
 ) : JwsTyped<JwsCompact, P, H>() {
+
+    @Transient
+    val header = wrappedHeader.header
+
+    @Transient
+    val unprotectedHeaderMembers = wrappedHeader.unprotectedMembers
+
     companion object {
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             base64UrlString: String,

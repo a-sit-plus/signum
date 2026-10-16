@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 
 /**
@@ -11,9 +12,16 @@ import kotlinx.serialization.json.Json
 data class JwsGeneralTyped<out P, H : JwsHeaderBase>(
     override val jws: JwsGeneral,
     override val payload: P,
-    val wrappedHeaders: List<JwsHeaderWrapped<H>>,
+    internal val wrappedHeaders: List<JwsHeaderWrapped<H>>,
     val signatures: List<CryptoSignature>
 ) : JwsTyped<JwsGeneral, P, H>() {
+
+    @Transient
+    val headers = wrappedHeaders.map { it.header }
+
+    @Transient
+    val unprotectedHeaderMembers = wrappedHeaders.map { it.unprotectedMembers }
+
     companion object {
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             jwsFlattened: List<JwsFlattened>,
