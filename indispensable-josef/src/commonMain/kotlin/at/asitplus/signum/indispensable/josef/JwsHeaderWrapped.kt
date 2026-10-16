@@ -8,11 +8,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 
 /**
- * An effective [JwsHeaderBase] together with the names of the members carried in its unprotected fragment.
- *
- * Member placement belongs to a concrete JSON JWS representation rather than to the modeled [header]. The
- * factories serialize the modeled [header] once and cache its protected and unprotected fragments. No serializer
- * is retained, so those fragments remain available after [H] has been erased at runtime.
+ * Typed effective [header] with unprotected member placement.
+ * Factories cache serialized fragments; retain the original wire object for byte-preserving round trips.
  */
 @ConsistentCopyVisibility
 data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
@@ -22,7 +19,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
     internal val protectedHeader: ByteArray,
 ) {
 
-    /** Names represented by [header] in the unprotected fragment. */
+    /** Unprotected wire names emitted by the header serializer. */
     val unprotectedHeaderMembers: Set<String> = unprotectedHeader.keys
 
     override fun equals(other: Any?): Boolean {
