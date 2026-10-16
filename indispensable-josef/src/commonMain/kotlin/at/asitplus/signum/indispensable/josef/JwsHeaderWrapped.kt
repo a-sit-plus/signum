@@ -1,32 +1,121 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.serializer
 
 /**
- * Type-safe (one-way) view of an effective [JwsHeader] together with the names of the members in its unprotected fragment.
+ * An effective [JwsHeaderBase] together with the names of the members carried in its unprotected fragment.
  *
- * Header fragments are owned by the concrete [JWS] representation.
+ * Member placement belongs to a concrete JSON JWS representation rather than to the modeled [header]. The
+ * factories serialize the modeled [header] once and cache its protected and unprotected fragments. No serializer
+ * is retained, so those fragments remain available after [H] has been erased at runtime.
  */
 @ConsistentCopyVisibility
-data class JwsHeaderWrapped internal constructor(
-    val header: JwsHeader,
-    val unprotectedMembers: Set<String>,
+data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
+    val header: H,
+    internal val protectedHeaderJson: JsonObject,
+    internal val unprotectedHeader: JsonObject,
+    internal val protectedHeader: ByteArray,
 ) {
 
-    internal constructor(
-        protectedHeader: ByteArray?,
-        unprotectedHeader: JsonObject?
-    ) : this(
-        joseCompliantSerializer
-            .decodeFromJsonElement<JwsHeader>(
-                protectedHeader?.toProtectedHeaderJsonObject().strictUnion(
-                    unprotectedHeader
-                )
-            ),
-        unprotectedHeader?.keys ?: emptySet()
-    )
+    /** Names represented by [header] in the unprotected fragment. */
+    val unprotectedHeaderMembers: Set<String> = unprotectedHeader.keys
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is JwsHeaderWrapped<*>) return false
+        return header == other.header && unprotectedHeaderMembers == other.unprotectedHeaderMembers
+    }
+
+    override fun hashCode(): Int = 31 * header.hashCode() + unprotectedHeaderMembers.hashCode()
+
+    companion object {
+        /** Creates a wrapper when [H]'s serializer is available explicitly. */
+        operator fun <H : JwsHeaderBase> invoke(
+            header: H,
+            serializer: KSerializer<H>,
+            unprotectedMembers: Set<String> = emptySet(),
+            serialFormat: Json = joseCompliantSerializer,
+        ): JwsHeaderWrapped<H> {
+            val serializedHeader = serialFormat.encodeToJsonElement(serializer, header).jsonObject
+            val protectedHeaderJson = JsonObject(serializedHeader.filterKeys { it !in unprotectedMembers })
+            val unprotectedHeader = JsonObject(serializedHeader.filterKeys { it in unprotectedMembers })
+            return JwsHeaderWrapped(
+                header = header,
+                protectedHeaderJson = protectedHeaderJson,
+                unprotectedHeader = unprotectedHeader,
+                protectedHeader = protectedHeaderJson.toProtectedHeaderBytes(),
+            )
+        }
+
+        /** Creates a wrapper while [H] is still reified at the call site. */
+        inline operator fun <reified H : JwsHeaderBase> invoke(
+            header: H,
+            unprotectedMembers: Set<String> = emptySet(),
+            serialFormat: Json = joseCompliantSerializer,
+        ): JwsHeaderWrapped<H> = invoke(
+            header = header,
+            serializer = serialFormat.serializersModule.serializer(),
+            unprotectedMembers = unprotectedMembers,
+            serialFormat = serialFormat,
+        )
+
+        /** Decodes and combines protected and unprotected fragments using the supplied header serializer. */
+        fun <H : JwsHeaderBase> fromParts(
+            serializer: KSerializer<H>,
+            protectedHeader: ByteArray? = null,
+            unprotectedHeader: JsonObject? = null,
+            serialFormat: Json = joseCompliantSerializer,
+        ): JwsHeaderWrapped<H> = fromJsonObjects(
+            serializer = serializer,
+            protectedHeader = protectedHeader?.toProtectedHeaderJsonObject(),
+            unprotectedHeader = unprotectedHeader,
+            serialFormat = serialFormat,
+        )
+
+        /** Decodes fragments while [H] is still reified at the call site. */
+        inline fun <reified H : JwsHeaderBase> fromParts(
+            protectedHeader: ByteArray? = null,
+            unprotectedHeader: JsonObject? = null,
+            serialFormat: Json = joseCompliantSerializer,
+        ): JwsHeaderWrapped<H> = fromParts(
+            serializer = serialFormat.serializersModule.serializer(),
+            protectedHeader = protectedHeader,
+            unprotectedHeader = unprotectedHeader,
+            serialFormat = serialFormat,
+        )
+
+        /** Decodes and combines JSON fragments using the supplied header serializer. */
+        fun <H : JwsHeaderBase> fromJsonObjects(
+            serializer: KSerializer<H>,
+            protectedHeader: JsonObject? = null,
+            unprotectedHeader: JsonObject? = null,
+            serialFormat: Json = joseCompliantSerializer,
+        ): JwsHeaderWrapped<H> = protectedHeader.strictUnion(unprotectedHeader).let { combinedHeader ->
+            invoke(
+                header = serialFormat.decodeFromJsonElement(serializer, combinedHeader),
+                serializer = serializer,
+                unprotectedMembers = unprotectedHeader?.keys ?: emptySet(),
+                serialFormat = serialFormat,
+            )
+        }
+
+        /** Decodes JSON fragments while [H] is still reified at the call site. */
+        inline fun <reified H : JwsHeaderBase> fromJsonObjects(
+            protectedHeader: JsonObject? = null,
+            unprotectedHeader: JsonObject? = null,
+            serialFormat: Json = joseCompliantSerializer,
+        ): JwsHeaderWrapped<H> = fromJsonObjects(
+            serializer = serialFormat.serializersModule.serializer(),
+            protectedHeader = protectedHeader,
+            unprotectedHeader = unprotectedHeader,
+            serialFormat = serialFormat,
+        )
+    }
 }
 
 internal fun ByteArray.toProtectedHeaderJsonObject(): JsonObject =

@@ -65,15 +65,15 @@ Each signature exposes three views of its header:
   Its decoded JSON bytes are retained in `plainProtectedHeader`.
 * **Unprotected:** The optional `unprotectedHeader: JsonObject` remains separate and is not signed.
 * **Combined:** `wrappedHeader: JwsHeaderWrapped` (or `wrappedHeaders` on `JwsGeneral`) provides the effective header.
-  Its `header` is the typed union of both fragments, with duplicate names rejected. Its `unprotectedMembers` records
-  which names came from the unprotected fragment.
+  Its `header` is the typed union of both fragments, with duplicate names rejected. Its `unprotectedHeaderMembers` records
+  which modeled names came from the unprotected fragment.
 
 A bare `JwsHeader` does not retain protection status. Use `JwsHeaderWrapped` or the original fragments whenever
 you need to determine whether a header parameter was signed.
 
 The wrapper is a one-way typed view: parameters not modeled by `JwsHeader` remain in `plainProtectedHeader` or
 `unprotectedHeader` for round trips, but their values are not available through the typed header. Their unprotected
-names are still recorded in `unprotectedMembers`.
+names remain available through the original unprotected wire fragment.
 
 ### Serialization and Conversion Rules
 
@@ -82,7 +82,7 @@ names are still recorded in `unprotectedMembers`.
 * `plainProtectedHeader`, `plainPayload`, and `plainSignature` contain decoded bytes.
   Pass plain payload bytes to the signing factories; the library handles base64url encoding.
 * Header parameters are protected by default. When creating a flattened JWS, only wire names explicitly listed in
-  `unprotectedMembers` are unprotected. Protected and unprotected fragments can complement each other, but duplicate
+  `unprotectedHeaderMembers` are unprotected. Protected and unprotected fragments can complement each other, but duplicate
   names are rejected.
 * Conversions retain protected bytes and header placement. Compact JWS has no unprotected header, so only a fully
   protected flattened JWS can be converted to compact form. General JWS signatures must share one payload.

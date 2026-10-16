@@ -1,10 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
-import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -12,11 +10,11 @@ import kotlinx.serialization.json.JsonObject
  *
  * A [SignatureElement] contains the signature bytes plus the header fragments for that signature. The protected
  * fragment is stored as encoded bytes in [plainProtectedHeader], while the optional unprotected fragment is
- * represented as a [JsonObject]. The effective header and its member-placement metadata are exposed together
- * through [wrappedHeader].
+ * represented as a [JsonObject]. [JwsGeneralTyped] decodes the effective header and member placement for each
+ * entry while retaining these original fragments.
  *
- * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
- * constitute a valid [JwsHeader].
+ * Either fragment may be partial. Typed decoding requires their strict union to form the chosen
+ * [JwsHeaderBase] implementation.
  *
  * See [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1).
  */
@@ -50,12 +48,6 @@ data class SignatureElement internal constructor(
         plainProtectedHeader.requireAbsentIfEmptyProtectedHeader()
     }
 
-    @Transient
-    val wrappedHeader = JwsHeaderWrapped(plainProtectedHeader, unprotectedHeader)
-
-    @Transient
-    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -71,13 +63,7 @@ data class SignatureElement internal constructor(
     override fun hashCode(): Int {
         var result = plainSignature.contentHashCode()
         result = 31 * result + plainProtectedHeader.contentHashCode()
-        result = 31 * result + unprotectedHeader.hashCode()
+        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         return result
     }
 }
-
-@Deprecated(
-    "Use plainProtectedHeader for the encoded protected fragment or wrappedHeader for the effective typed header."
-)
-val SignatureElement.protectedHeader: JsonObject?
-    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()

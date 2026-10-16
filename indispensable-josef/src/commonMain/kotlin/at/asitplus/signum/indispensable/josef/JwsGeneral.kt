@@ -5,23 +5,24 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlinx.serialization.json.JsonObject
 
 /**
  * General JSON JWS.
  *
  * A general JWS carries one payload and one or more [SignatureElement]s. Each [SignatureElement] contains the header
- * fragments for one signature and exposes its effective header together with its member-placement metadata. All
- * signatures in a [JwsGeneral] share the same payload.
+ * fragments for one signature. [JwsGeneralTyped] decodes ordered headers and signatures around the retained
+ * wire object. All signatures in a [JwsGeneral] share the same payload.
  *
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.
  *
- * If [plainPayload] data structure is defined as part of the contact consider [JwsGeneralTyped]
+ * To access the contents of the parameters use [JwsGeneralTyped]
+ *
+ * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
  */
 @ConsistentCopyVisibility
 @Serializable
-data class JwsGeneral internal constructor(
+data class JwsGeneral private constructor(
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val plainPayload: ByteArray,
@@ -33,12 +34,6 @@ data class JwsGeneral internal constructor(
     init {
         require(signatureElements.isNotEmpty()) { "At least one signature is required" }
     }
-
-    @Transient
-    val wrappedHeaders: List<JwsHeaderWrapped> = signatureElements.map { it.wrappedHeader }
-
-    @Transient
-    val signatures = signatureElements.map { it.signature }
 
     @Transient
     val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, plainPayload) }
@@ -79,15 +74,15 @@ data class JwsGeneral internal constructor(
     }
 
     companion object {
+        /** Copies [signatureElements] so later caller mutations cannot invalidate cached signing inputs. */
+        internal operator fun invoke(
+            plainPayload: ByteArray,
+            signatureElements: List<SignatureElement>,
+        ): JwsGeneral = JwsGeneral(plainPayload, buildList { addAll(signatureElements) })
+
         operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
     }
 }
-
-@Deprecated(
-    "Use signatureElements for encoded protected fragments or wrappedHeaders for effective typed headers."
-)
-val JwsGeneral.protectedHeaders: List<JsonObject?>
-    get() = signatureElements.map { it.plainProtectedHeader?.toProtectedHeaderJsonObject() }
 
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.
