@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 
 /**
  * Typed payload and ordered headers and signatures over an unchanged general [jws].
@@ -16,10 +18,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase>(
     val signatures: List<CryptoSignature>
 ) : JwsTyped<JwsGeneral, P, H>() {
 
-    @Transient
     val headers = wrappedHeaders.map { it.header }
-
-    @Transient
     val unprotectedHeaderMembers = wrappedHeaders.map { it.unprotectedMembers }
 
     companion object {
@@ -32,9 +31,21 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase>(
 
 inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.typed(
     serialFormat: Json = joseCompliantSerializer,
+): JwsGeneralTyped<P, H> = typed(
+    payloadSerializer = serialFormat.serializersModule.serializer<P>(),
+    headerSerializer = serialFormat.serializersModule.serializer<H>(),
+    serialFormat = serialFormat,
+)
+
+/** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
+fun <P, H : JwsHeaderBase> JwsGeneral.typed(
+    payloadSerializer: KSerializer<P>,
+    headerSerializer: KSerializer<H>,
+    serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneralTyped<P, H> {
     val wrappedHeaders = signatureElements.map {
-        JwsHeaderWrapped.fromParts<H>(
+        JwsHeaderWrapped.fromParts(
+            serializer = headerSerializer,
             protectedHeader = it.plainProtectedHeader,
             unprotectedHeader = it.unprotectedHeader,
             serialFormat = serialFormat,
@@ -43,7 +54,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.typed(
 
     return JwsGeneralTyped(
         this,
-        getPayload<P>(serialFormat).getOrThrow(),
+        getPayload(payloadSerializer, serialFormat).getOrThrow(),
         wrappedHeaders,
         wrappedHeaders.zip(signatureElements) { wrapped, signatureElement ->
             JWS.getSignature(

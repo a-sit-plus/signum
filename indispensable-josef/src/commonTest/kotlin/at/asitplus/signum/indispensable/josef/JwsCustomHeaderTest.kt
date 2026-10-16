@@ -5,8 +5,12 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonTransformingSerializer
+import kotlinx.serialization.json.jsonObject
 
 val JwsCustomHeaderTest by matrixSuite {
     "custom typed views preserve the exact compact bytes through conversions and serialization" {
@@ -97,6 +101,53 @@ val JwsCustomHeaderTest by matrixSuite {
             }
             joseCompliantSerializer.encodeToString(serializer, typed) shouldBe encoded
         }
+    }
+
+    "explicit typed serializers customize decoded views while preserving wire data" {
+        val payloadSerializer = object : JsonTransformingSerializer<JsonObject>(JsonObject.serializer()) {
+            override fun transformDeserialize(element: JsonElement): JsonElement =
+                JsonObject(element.jsonObject + ("decoded" to JsonPrimitive(true)))
+        }
+        val headerSerializer = object : JsonTransformingSerializer<CustomJwsHeader>(CustomJwsHeader.serializer()) {
+            override fun transformDeserialize(element: JsonElement): JsonElement =
+                JsonObject(element.jsonObject + ("extension" to JsonPrimitive("decoded")))
+        }
+        val compact = JwsCompact(
+            """{ "alg": "RS256", "extension": "wire" }""".encodeToByteArray(),
+            """{ "sub": "alice" }""".encodeToByteArray(),
+            byteArrayOf(1, 2, 3),
+        )
+        val flattened = compact.toJwsFlattened()
+        val general = listOf(flattened).toJwsGeneral()
+        val expectedPayload = JsonObject(mapOf("sub" to JsonPrimitive("alice"), "decoded" to JsonPrimitive(true)))
+        val expectedHeader = CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "decoded")
+        val serializer = JwsTypedSerializerTemplate(JWS.serializer(), payloadSerializer, headerSerializer)
+
+        listOf(
+            compact.typed(payloadSerializer, headerSerializer),
+            flattened.typed(payloadSerializer, headerSerializer),
+            general.typed(payloadSerializer, headerSerializer),
+        ).forEach { typed ->
+            typed.payload shouldBe expectedPayload
+            when (typed) {
+                is JwsCompactTyped -> listOf(typed.header)
+                is JwsFlattenedTyped -> listOf(typed.header)
+                is JwsGeneralTyped -> typed.headers
+            } shouldBe listOf(expectedHeader)
+            val encoded = joseCompliantSerializer.encodeToString(JWS.serializer(), typed.jws)
+            joseCompliantSerializer.decodeFromString(serializer, encoded) shouldBe typed
+            joseCompliantSerializer.encodeToString(serializer, typed) shouldBe encoded
+        }
+
+        val lenientFormat = Json(joseCompliantSerializer) { isLenient = true }
+        val lenientCompact = compact.copy(plainPayload = """{sub:"alice"}""".encodeToByteArray())
+        val lenientFlattened = lenientCompact.toJwsFlattened()
+        val lenientGeneral = listOf(lenientFlattened).toJwsGeneral()
+        listOf(
+            lenientCompact.typed(payloadSerializer, headerSerializer, lenientFormat),
+            lenientFlattened.typed(payloadSerializer, headerSerializer, lenientFormat),
+            lenientGeneral.typed(payloadSerializer, headerSerializer, lenientFormat),
+        ).forEach { it.payload shouldBe expectedPayload }
     }
 
     "compact signing rejects represented unprotected members before invoking the signer" {

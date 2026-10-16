@@ -165,6 +165,7 @@ val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
 
 Use `JwsFlattened.serializer()`, `JwsGeneral.serializer()`, or `JWS.serializer()` as the first argument for those
 wire forms. Reified `.typed<P, H>(serialFormat)` uses the supplied JSON format for payload and header decoding.
+Use `.typed(payloadSerializer, headerSerializer, serialFormat)` when supplying serializers explicitly.
 The serializer template uses `joseCompliantSerializer` for those decoded views.
 
 ## Migrating header and typed access

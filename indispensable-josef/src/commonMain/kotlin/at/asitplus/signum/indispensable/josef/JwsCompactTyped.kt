@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 
 /**
  * Typed payload, effective header, and signature over an unchanged compact [jws].
@@ -16,10 +18,7 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
     val signature: CryptoSignature
 ) : JwsTyped<JwsCompact, P, H>() {
 
-    @Transient
     val header = wrappedHeader.header
-
-    @Transient
     val unprotectedHeaderMembers = wrappedHeader.unprotectedMembers
 
     companion object {
@@ -32,14 +31,26 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
 
 inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.typed(
     serialFormat: Json = joseCompliantSerializer,
+): JwsCompactTyped<P, H> = typed(
+    payloadSerializer = serialFormat.serializersModule.serializer<P>(),
+    headerSerializer = serialFormat.serializersModule.serializer<H>(),
+    serialFormat = serialFormat,
+)
+
+/** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
+fun <P, H : JwsHeaderBase> JwsCompact.typed(
+    payloadSerializer: KSerializer<P>,
+    headerSerializer: KSerializer<H>,
+    serialFormat: Json = joseCompliantSerializer,
 ): JwsCompactTyped<P, H> =
-    JwsHeaderWrapped.fromParts<H>(
+    JwsHeaderWrapped.fromParts(
+        serializer = headerSerializer,
         protectedHeader = plainProtectedHeader,
         serialFormat = serialFormat,
     ).let { wrapped ->
         JwsCompactTyped(
             this,
-            getPayload<P>(serialFormat).getOrThrow(),
+            getPayload(payloadSerializer, serialFormat).getOrThrow(),
             wrapped,
             JWS.getSignature(wrapped.header.algorithm, plainSignature)
         )
