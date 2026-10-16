@@ -10,18 +10,14 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.serializer
 
 /**
- * Creates signed JWS wire objects and derives their typed views from the signed bytes.
+ * Signs JWS and returns typed views derived from the signed bytes.
  *
- * Copies the [signers] map and selects a signer by the serialized header's required `alg`.
- * Each registration must match the signer's actual signature algorithm. An unregistered algorithm
- * fails before signing; general JWS resolves every header before invoking any signer.
+ * Copies [signers]; each registration must match its signer's algorithm. The serialized `alg` selects a signer.
+ * Supplies `alg`, the public key's `jwkId` when available, and the actual public key for a requested embedded `jwk`.
+ * Other header members and placement are preserved without mutating the supplied model.
  *
- * The selected signer supplies `alg` and its public key's `jwkId` when available. An embedded `jwk` is
- * updated from its actual public key only when requested by the supplied header. Application members
- * and their placement are retained. Overrides are applied after header serialization.
- *
- * General JWS selects signers and prepares all headers before invoking any signer, serializes the shared
- * payload once, and preserves signature order. Signer failures propagate to the caller.
+ * Serializes the payload once. General signing prepares all headers before signing and preserves signature order.
+ * Missing registrations fail before signing; signer failures propagate.
  */
 class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
     private val signers = signers.toMap()

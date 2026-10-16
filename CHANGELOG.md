@@ -12,7 +12,7 @@ This is a major refactor!
     * Replace `JwsHeader.Part` and `protectedHeader` constructor parameters with `JwsHeaderWrapped<H>` for combined headers and protected/unprotected member placement
     * Typed access now uses `.typed<P, H>()`; `JwsTypedSerializerTemplate` also requires a header serializer
     * Rename JWS conversions to `toCompact()`, `toFlattened()`, and `toGeneral()`
-    * Replace callback-based JWS signing factories with `JwsSigner` for typed headers and payloads
+    * Replace typed and callback signing factories with `JwsSigner`; make typed constructors and copying internal
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.

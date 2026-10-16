@@ -46,7 +46,7 @@ view is never used to reconstruct an incoming signing input.
 `JwsTyped<J, P, H>` retains the wire object as `jws` and decodes its payload, headers, and signatures.
 Compact/flattened views expose `header` and `signature`; general views expose ordered `headers` and `signatures`.
 Use `jws` for storage or forwarding. `JwsTypedSerializerTemplate` serializes it and rebuilds decoded views on reading.
-Use `JwsSigner` to create signed values and `.typed()` to decode wire objects; typed component constructors and copying are internal.
+Create signed values with `JwsSigner` and decode with `.typed()`; typed constructors and copying are internal.
 
 ## JWS Representations
 
@@ -104,28 +104,25 @@ data, and `JwsCompactRawStringSerializer` when embedding a compact string in JSO
 
 ### Signing and Verification
 
-`JwsSigner` creates compact, flattened, and general typed JWS using registered Signum `Signer`s. Configure a signing
-provider, such as Supreme, before creating signers. For an application-defined `AppHeader`:
+`JwsSigner` maps JWS algorithms to Signum `Signer`s and returns typed views of the signed data.
+Configure a signing provider such as Supreme first. For a serializable `AppHeader`:
 
 ```kotlin
 val header = AppHeader(algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow())
 val claims = JsonObject(mapOf("sub" to JsonPrimitive("alice")))
 val jwsSigner = JwsSigner(mapOf(header.algorithm to signer))
 val compact = jwsSigner.signCompact(header, claims)
-val flattened = jwsSigner.signFlattened(header, claims, setOf("app_claim"))
-val general = jwsSigner.signGeneral(claims, listOf(
-    JwsHeaderWrapped(header, setOf("app_claim")),
-))
+val flattened = jwsSigner.signFlattened(header, claims)
+val general = jwsSigner.signGeneral(claims, listOf(JwsHeaderWrapped(header)))
 ```
 
-The serialized `alg` selects a registered signer; registrations must match each signer's algorithm. The signer
-sets `alg`, supplies `kid` from its public key when available, and replaces an embedded `jwk` only when requested.
-Application members, header placement, and caller-owned models are preserved; certificate and key URL metadata
-remain caller-supplied. The returned typed view reflects the signed header.
+The serialized `alg` selects a registered signer whose algorithm must match; missing registrations fail before
+signing. The signer supplies `alg`, `kid` when available, and the actual public key for a requested embedded `jwk`.
+Other members and header placement are preserved without mutating the supplied model.
 
-Each operation serializes the payload once. General signing reuses wrapped headers' cached fragments, prepares all
-headers before signing, and preserves signature order. Unknown algorithms fail before signing. All operations accept
-explicit payload and header serializers, with reified overloads for inference.
+Headers are protected by default. Set `unprotectedHeaderMembers` for flattened signing or use wrapped headers for
+general signing. General signing prepares all headers before signing and preserves their order. Payloads are serialized
+once per operation; overloads accept explicit payload and header serializers.
 
 To verify a signature, use the stored input and signature pairs:
 
@@ -170,8 +167,8 @@ and header serializers; decoded views use `joseCompliantSerializer`.
 | `jws.typed<J, P>()` | `jws.typed<P, H>()` on the concrete wire form |
 | `JwsCompact.parse<P>()` → pair | `JwsCompact.Raw.parse<P, H>()` → triple of wire object, payload, wrapped header |
 | Two-argument `JwsTypedSerializerTemplate` | Add the header serializer as the third argument |
-| Typed signing factories and callback-based wire signing factories | Use `JwsSigner` with typed headers and payloads |
-| Component constructors and `copy()` on typed views | Use `JwsSigner` or parsing factories and `.typed<P, H>()` |
+| Typed and callback signing factories | `JwsSigner.signCompact`, `signFlattened`, or `signGeneral` |
+| Typed constructors and `copy()` | `JwsSigner` or `.typed<P, H>()` |
 | `JwsFlattened(header, payload, unprotectedMembers, signer)` | `JwsSigner(signersByAlgorithm).signFlattened(header, payload, unprotectedMembers)` |
 | `toJwsCompactTyped()` / `toJwsFlattenedTyped()` | `toCompact()` / `toFlattened()` on typed views |
 | `toJwsCompact()` / `toJwsFlattened()` / `toJwsGeneral()` | `toCompact()` / `toFlattened()` / `toGeneral()` on raw representations |
