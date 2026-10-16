@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -14,6 +15,7 @@ import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.UserInitiatedCancellation
 import at.asitplus.signum.indispensable.sign.makeVerifier
+import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.supreme.Supreme
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -126,7 +128,7 @@ val JwsSignerTest by matrixSuite {
                 SigningPayload.serializer().serialize(encoder, value)
             }
         }
-        val typed = jwsSigner.signGeneral(SigningPayload("alice"), parameters, serializer, SigningHeader.serializer())
+        val typed = jwsSigner.signGeneral(SigningPayload("alice"), parameters, serializer)
         encodings shouldBe 1
         typed.headers.map { it.keyId } shouldBe listOf("key-0", "key-1")
         typed.unprotectedHeaderMembers shouldBe listOf(setOf("kid"), emptySet())
@@ -141,7 +143,7 @@ val JwsSignerTest by matrixSuite {
         reified.payload shouldBe typed.payload
     }
 
-    "general signing reuses cached headers and decodes with the supplied serializer" {
+    "general signing retains typed headers and reuses their cached serialization" {
         val signers = listOf(newEcSigner(), newRsaSigner())
         val jwsSigner = JwsSigner(signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm().getOrThrow() })
         val encodings = IntArray(signers.size)
@@ -159,59 +161,64 @@ val JwsSignerTest by matrixSuite {
             )
         }
         encodings.toList() shouldBe listOf(1, 1)
-        var decodings = 0
-        val viewSerializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
-            override fun deserialize(decoder: Decoder): SigningHeader {
-                decodings++
-                return SigningHeader.serializer().deserialize(decoder).let {
-                    it.copy(keyId = "${it.keyId}-view")
-                }
-            }
-        }
-
-        val typed = jwsSigner.signGeneral(SigningPayload("alice"), headers, SigningPayload.serializer(), viewSerializer)
+        val typed = jwsSigner.signGeneral(SigningPayload("alice"), headers, SigningPayload.serializer())
 
         encodings.toList() shouldBe listOf(1, 1)
-        decodings shouldBe 2
-        typed.headers.map { it.keyId } shouldBe listOf("key-0-view", "key-1-view")
-        typed.headers.map { it.extension } shouldBe listOf("wire-0", "wire-1")
+        typed.headers.map { it.keyId } shouldBe listOf("key-0", "key-1")
+        typed.headers.map { it.extension } shouldBe listOf(null, null)
         typed.unprotectedHeaderMembers shouldBe listOf(setOf("kid"), emptySet())
         typed.toFlattened().forEachIndexed { index, flattened ->
+            (flattened.wrappedHeader === headers[index]) shouldBe true
             signers[index].makeVerifier().verify(flattened.jws.signatureInput, flattened.signature) shouldBe
                     SignatureVerifier.Success
-            JwsHeaderWrapped.fromParts<SigningHeader>(
+            val wireHeader = JwsHeaderWrapped.fromParts<SigningHeader>(
                 flattened.jws.plainProtectedHeader, flattened.jws.unprotectedHeader,
-            ).header.keyId shouldBe "key-$index"
+            ).header
+            wireHeader.keyId shouldBe "key-$index"
+            wireHeader.extension shouldBe "wire-$index"
         }
     }
 
-    "signing derives normalized views from the bytes they sign" {
-        val signer = newEcSigner()
-        val jwsSigner = JwsSigner(mapOf(JwsAlgorithm.Signature.ES256 to signer))
-        val payloadSerializer = object : KSerializer<SigningPayload> by SigningPayload.serializer() {
-            override fun deserialize(decoder: Decoder) =
-                SigningPayload.serializer().deserialize(decoder).let { it.copy(sub = it.sub.lowercase()) }
+    "every signing form retains typed inputs and signatures without deserializing" {
+        val delegate = newEcSigner()
+        val signatures = mutableListOf<CryptoSignature>()
+        val signer = object : Signer by delegate {
+            override suspend fun sign(data: SignatureInput): SignatureResult<*> =
+                delegate.sign(data).also { signatures += it.signature }
         }
-        val headerSerializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
-            override fun serialize(encoder: Encoder, value: SigningHeader) =
-                SigningHeader.serializer().serialize(encoder, value.copy(extension = value.extension?.uppercase()))
+        val jwsSigner = JwsSigner(mapOf(JwsAlgorithm.Signature.ES256 to signer))
+        var payloadEncodings = 0
+        val payloadSerializer = object : KSerializer<SigningPayload> by SigningPayload.serializer() {
+            override fun serialize(encoder: Encoder, value: SigningPayload) {
+                payloadEncodings++
+                SigningPayload.serializer().serialize(encoder, value.copy(sub = value.sub.uppercase()))
+            }
 
-            override fun deserialize(decoder: Decoder) =
-                SigningHeader.serializer().deserialize(decoder).let {
-                    it.copy(extension = it.extension?.let { extension -> "${extension.lowercase()}-view" })
-                }
+            override fun deserialize(decoder: Decoder): SigningPayload = error("Signing must not deserialize the payload")
+        }
+        var headerEncodings = 0
+        val headerSerializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
+            override fun serialize(encoder: Encoder, value: SigningHeader) {
+                headerEncodings++
+                SigningHeader.serializer().serialize(encoder, value.copy(extension = value.extension?.uppercase()))
+            }
+
+            override fun deserialize(decoder: Decoder): SigningHeader = error("Signing must not deserialize the header")
         }
         val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key", "custom")
-        val payload = SigningPayload("ALICE")
+        val payload = SigningPayload("alice")
         val compact = jwsSigner.signCompact(header, payload, payloadSerializer, headerSerializer)
         val flattened = jwsSigner.signFlattened(header, payload, payloadSerializer, headerSerializer, setOf("kid"))
         val general = jwsSigner.signGeneral(
-            payload, listOf(JwsHeaderWrapped(header, headerSerializer, emptySet())), payloadSerializer, headerSerializer,
+            payload, listOf(JwsHeaderWrapped(header, headerSerializer, emptySet())), payloadSerializer,
         )
-        (listOf(compact.toFlattened(), flattened) + general.toFlattened()).forEach { typed ->
-            typed.payload.sub shouldBe "alice"
-            typed.header.keyId shouldBe "key"
-            typed.header.extension shouldBe "custom-view"
+        payloadEncodings shouldBe 3
+        headerEncodings shouldBe 3
+        val views = listOf(compact.toFlattened(), flattened) + general.toFlattened()
+        views.forEachIndexed { index, typed ->
+            (typed.payload === payload) shouldBe true
+            (typed.header === header) shouldBe true
+            (typed.signature === signatures[index]) shouldBe true
             typed.jws.getPayload(SigningPayload.serializer()).getOrThrow().sub shouldBe "ALICE"
             JwsHeaderWrapped.fromParts<SigningHeader>(
                 typed.jws.plainProtectedHeader, typed.jws.unprotectedHeader,
@@ -409,7 +416,7 @@ val JwsSignerTest by matrixSuite {
         replacement.calls shouldBe 0
     }
 
-    "signing snapshots mutable payloads and signature parameters" {
+    "general signing snapshots wire payload bytes and signature parameters while retaining the typed payload" {
         val delegate = newEcSigner()
         val claims = mutableMapOf("sub" to JsonPrimitive("alice"))
         val payload = JsonObject(claims)
@@ -425,9 +432,10 @@ val JwsSignerTest by matrixSuite {
         parameters += JwsHeaderWrapped(SigningHeader(JwsAlgorithm.Signature.ES256))
         parameters += JwsHeaderWrapped(SigningHeader(JwsAlgorithm.Signature.ES256))
         val typed = jwsSigner.signGeneral(payload, parameters)
-        typed.payload["sub"] shouldBe JsonPrimitive("alice")
+        (typed.payload === payload) shouldBe true
+        typed.payload["sub"] shouldBe JsonPrimitive("changed")
         val wire = typed.jws
-        wire.getPayload<JsonObject>().getOrThrow() shouldBe typed.payload
+        wire.getPayload<JsonObject>().getOrThrow()["sub"] shouldBe JsonPrimitive("alice")
         wire.signatureElements.size shouldBe 2
         wire.signatureElements.forEachIndexed { index, signature ->
             delegate.makeVerifier().verify(
