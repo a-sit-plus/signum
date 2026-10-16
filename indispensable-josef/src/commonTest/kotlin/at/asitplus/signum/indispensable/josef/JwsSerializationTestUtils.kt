@@ -1,13 +1,16 @@
 package at.asitplus.signum.indispensable.josef
 
-
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 internal val generalVectorJson = """
     {
@@ -26,13 +29,13 @@ internal val generalVectorJson = """
 """.trimIndent()
 
 internal val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), generalVectorJson)
-internal val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD].shouldNotBeNull().jsonPrimitive.content
-internal val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES].shouldNotBeNull().jsonArray
+internal val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD]!!.jsonPrimitive.content
+internal val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES]!!.jsonArray
 
 internal fun compactSerializationAt(index: Int): String {
     val sourceSignature = generalVectorSignatures[index].jsonObject
-    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED].shouldNotBeNull().jsonPrimitive.content
-    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE].shouldNotBeNull().jsonPrimitive.content
+    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED]!!.jsonPrimitive.content
+    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE]!!.jsonPrimitive.content
     return "$protectedHeaderBase64.$generalVectorPayload.$signatureBase64"
 }
 
@@ -54,12 +57,17 @@ internal fun generalJson(
     {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}]}
 """.trimIndent()
 
-internal suspend fun flattenedSample(
-    header: JwsHeader,
+internal fun flattenedSample(
+    wrappedHeader: JwsHeaderWrapped<JwsHeader>,
     payload: ByteArray,
     plainSignature: ByteArray,
-    unprotectedMembers: Set<String> = emptySet(),
-): JwsFlattened = JwsFlattened(header, payload, unprotectedMembers) { plainSignature }
+): JwsFlattened = JwsFlattened(
+    plainProtectedHeader = wrappedHeader.protectedHeader
+        .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() },
+    unprotectedHeader = wrappedHeader.unprotectedHeader.takeUnless { it.isEmpty() },
+    plainPayload = payload,
+    plainSignature = plainSignature,
+)
 
 internal fun String.toPaddedBase64UrlVariant(): String = when (length % 2) {
     1 -> "${this}=="
@@ -71,7 +79,7 @@ internal fun Result<*>.shouldBeRejectedPaddedBase64Url() {
     val failure = shouldBeFailure()
     failure.message.orEmpty().shouldContain("Decoding failed")
     failure.cause shouldNotBe null
-    failure.cause.shouldNotBeNull().message.orEmpty().shouldContain("Trailing = are not supported")
+    failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
 }
 
 internal fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
