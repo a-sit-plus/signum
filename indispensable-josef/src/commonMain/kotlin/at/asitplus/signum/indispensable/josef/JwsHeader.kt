@@ -316,11 +316,11 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.publicKey
     }
 
-    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
+    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt, JwsHeader>? by lazy {
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken>? by lazy {
+    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken, JwsHeader>? by lazy {
         attestationJwt?.typed()
     }
 
