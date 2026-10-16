@@ -22,15 +22,11 @@ import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.JsonTransformingSerializer
 import kotlinx.serialization.json.jsonObject
 
 @Serializable
@@ -198,12 +194,14 @@ val JwsSignerTest by matrixSuite {
         }
         val headerSerializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
             override fun serialize(encoder: Encoder, value: SigningHeader) =
-                SigningHeader.serializer().serialize(encoder, value.copy(keyId = value.keyId?.uppercase()))
+                SigningHeader.serializer().serialize(encoder, value.copy(extension = value.extension?.uppercase()))
 
             override fun deserialize(decoder: Decoder) =
-                SigningHeader.serializer().deserialize(decoder).let { it.copy(keyId = it.keyId?.lowercase()) }
+                SigningHeader.serializer().deserialize(decoder).let {
+                    it.copy(extension = it.extension?.let { extension -> "${extension.lowercase()}-view" })
+                }
         }
-        val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key")
+        val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key", "custom")
         val payload = SigningPayload("ALICE")
         val compact = jwsSigner.signCompact(header, payload, payloadSerializer, headerSerializer)
         val flattened = jwsSigner.signFlattened(header, payload, payloadSerializer, headerSerializer, setOf("kid"))
@@ -213,15 +211,16 @@ val JwsSignerTest by matrixSuite {
         (listOf(compact.toJwsFlattenedTyped(), flattened) + general.toJwsFlattenedTyped()).forEach { typed ->
             typed.payload.sub shouldBe "alice"
             typed.header.keyId shouldBe "key"
+            typed.header.extension shouldBe "custom-view"
             typed.jws.getPayload(SigningPayload.serializer()).getOrThrow().sub shouldBe "ALICE"
             JwsHeaderWrapped.fromParts<SigningHeader>(
                 typed.jws.plainProtectedHeader, typed.jws.unprotectedHeader,
-            ).header.keyId shouldBe "KEY"
+            ).header.extension shouldBe "CUSTOM"
             signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
         }
     }
 
-    "serialized algorithms select their registered signers independently for every JWS form" {
+    "header algorithms select their registered signers independently for every JWS form" {
         val ec = CountingSigner(newEcSigner())
         val rsa = CountingSigner(newRsaSigner())
         val jwsSigner = JwsSigner(mapOf(
@@ -230,12 +229,8 @@ val JwsSignerTest by matrixSuite {
         ))
         val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key")
         val compact = jwsSigner.signCompact(header, SigningPayload("alice"))
-        val changedAlgorithm = object : JsonTransformingSerializer<SigningHeader>(SigningHeader.serializer()) {
-            override fun transformSerialize(element: JsonElement): JsonElement =
-                JsonObject(element.jsonObject + ("alg" to JsonPrimitive("PS256")))
-        }
-        val transformed = jwsSigner.signCompact(
-            header, SigningPayload("alice"), SigningPayload.serializer(), changedAlgorithm,
+        val rsaCompact = jwsSigner.signCompact(
+            header.copy(algorithm = JwsAlgorithm.Signature.PS256), SigningPayload("alice"),
         )
         val flattened = jwsSigner.signFlattened(
             header.copy(algorithm = JwsAlgorithm.Signature.PS256), SigningPayload("alice"), setOf("alg"),
@@ -245,7 +240,7 @@ val JwsSignerTest by matrixSuite {
             JwsHeaderWrapped(header),
             JwsHeaderWrapped(header.copy(algorithm = JwsAlgorithm.Signature.PS256)),
         ))
-        val views = listOf(compact.toJwsFlattenedTyped(), transformed.toJwsFlattenedTyped(), flattened) +
+        val views = listOf(compact.toJwsFlattenedTyped(), rsaCompact.toJwsFlattenedTyped(), flattened) +
                 general.toJwsFlattenedTyped()
         val expectedSigners = listOf(ec, rsa, rsa, rsa, ec, rsa)
         views.zip(expectedSigners).forEach { (typed, signer) ->
@@ -262,36 +257,75 @@ val JwsSignerTest by matrixSuite {
         rsa.calls shouldBe 4
     }
 
-    "signer key metadata overrides stale header values without changing custom members or placement" {
-        val oldKey = newEcSigner().publicKey.toJsonWebKey()
+    "matching key metadata and optional omissions are preserved without changing header members or placement" {
         for (signer in listOf(newEcSigner(), newRsaSigner())) {
             signer.publicKey.jwkId = "actual-key"
             val algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()
             val jwsSigner = JwsSigner(mapOf(algorithm to signer))
-            val header = SigningHeader(algorithm, "old-key", "custom", oldKey)
-            val expectedHeader = header.copy(
-                algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                keyId = "actual-key",
-                jsonWebKey = signer.publicKey.toJsonWebKey(),
+            val embeddedKey = signer.publicKey.toJsonWebKey().copy(
+                algorithm = algorithm,
+                publicKeyUse = "sig",
+                keyOperations = setOf("verify"),
             )
-            val placement = setOf("alg", "kid", "jwk")
-            val compact = jwsSigner.signCompact(header, SigningPayload("alice"))
-            val flattened = jwsSigner.signFlattened(header, SigningPayload("alice"), placement)
-            val general = jwsSigner.signGeneral(SigningPayload("alice"), listOf(
-                JwsHeaderWrapped(header, placement),
-            ))
-            (listOf(compact.toJwsFlattenedTyped(), flattened) + general.toJwsFlattenedTyped()).forEach { typed ->
-                typed.header shouldBe expectedHeader
-                signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+            val matching = SigningHeader(algorithm, "actual-key", "custom", embeddedKey)
+            for (header in listOf(
+                matching,
+                matching.copy(jsonWebKey = null),
+                matching.copy(keyId = null),
+                matching.copy(keyId = null, jsonWebKey = null),
+            )) {
+                val placement = buildSet {
+                    add("alg")
+                    if (header.keyId != null) add("kid")
+                    if (header.jsonWebKey != null) add("jwk")
+                }
+                val compact = jwsSigner.signCompact(header, SigningPayload("alice"))
+                val flattened = jwsSigner.signFlattened(header, SigningPayload("alice"), placement)
+                val general = jwsSigner.signGeneral(SigningPayload("alice"), listOf(
+                    JwsHeaderWrapped(header, placement),
+                ))
+                (listOf(compact.toJwsFlattenedTyped(), flattened) + general.toJwsFlattenedTyped()).forEach { typed ->
+                    typed.header shouldBe header
+                    signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+                }
+                flattened.unprotectedHeaderMembers shouldBe placement
+                general.unprotectedHeaderMembers shouldBe listOf(placement)
             }
-            flattened.unprotectedHeaderMembers shouldBe placement
-            general.unprotectedHeaderMembers shouldBe listOf(placement)
-            header.keyId shouldBe "old-key"
-            header.jsonWebKey shouldBe oldKey
+        }
+    }
 
-            val withoutEmbeddedKey = jwsSigner.signCompact(header.copy(jsonWebKey = null), SigningPayload("alice"))
-            withoutEmbeddedKey.header.keyId shouldBe "actual-key"
-            withoutEmbeddedKey.header.jsonWebKey shouldBe null
+    "mismatched key metadata is rejected before invoking any signer in every JWS form" {
+        for ((delegate, otherSigner) in listOf(
+            newEcSigner() to newEcSigner(),
+            newRsaSigner() to newRsaSigner(),
+        )) {
+            delegate.publicKey.jwkId = "actual-key"
+            val signer = CountingSigner(delegate)
+            val algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()
+            val jwsSigner = JwsSigner(mapOf(algorithm to signer))
+            val matching = SigningHeader(algorithm, "actual-key", "custom", signer.publicKey.toJsonWebKey())
+            val otherKey = otherSigner.publicKey.toJsonWebKey(keyId = "actual-key")
+            for (header in listOf(
+                matching.copy(keyId = "old-key"),
+                matching.copy(jsonWebKey = otherKey),
+                matching.copy(jsonWebKey = JsonWebKey()),
+            )) {
+                shouldThrow<IllegalArgumentException> {
+                    jwsSigner.signCompact(header, SigningPayload("alice"))
+                }
+                for (placement in listOf(emptySet(), setOf("alg", "kid", "jwk"))) {
+                    shouldThrow<IllegalArgumentException> {
+                        jwsSigner.signFlattened(header, SigningPayload("alice"), placement)
+                    }
+                    shouldThrow<IllegalArgumentException> {
+                        jwsSigner.signGeneral(SigningPayload("alice"), listOf(
+                            JwsHeaderWrapped(matching),
+                            JwsHeaderWrapped(header, placement),
+                        ))
+                    }
+                }
+                signer.calls shouldBe 0
+            }
         }
     }
 
@@ -341,28 +375,25 @@ val JwsSignerTest by matrixSuite {
         signer.calls shouldBe 0
     }
 
-    "missing serialized algorithms are rejected and header parsing still requires an algorithm" {
-        val signer = CountingSigner(newEcSigner())
+    "changed signer algorithms are rejected instead of rewriting the header" {
+        val delegate = CountingSigner(newEcSigner())
+        var algorithm = EcdsaAlgorithm(Digest.SHA256)
+        val signer = object : Signer by delegate {
+            override val signatureAlgorithm get() = algorithm
+        }
         val jwsSigner = JwsSigner(mapOf(JwsAlgorithm.Signature.ES256 to signer))
-        for (includeNull in listOf(false, true)) {
-            val serializer = object : JsonTransformingSerializer<SigningHeader>(SigningHeader.serializer()) {
-                override fun transformSerialize(element: JsonElement): JsonElement =
-                    JsonObject(element.jsonObject - "alg" + if (includeNull) mapOf("alg" to JsonNull) else emptyMap())
-            }
-            shouldThrow<IllegalArgumentException> {
-                jwsSigner.signCompact(
-                    SigningHeader(JwsAlgorithm.Signature.ES256), SigningPayload("alice"),
-                    SigningPayload.serializer(), serializer,
-                )
-            }
+        algorithm = EcdsaAlgorithm(Digest.SHA384)
+        val header = SigningHeader(JwsAlgorithm.Signature.ES256)
+        shouldThrow<IllegalArgumentException> {
+            jwsSigner.signCompact(header, SigningPayload("alice"))
         }
-        shouldThrow<SerializationException> {
-            joseCompliantSerializer.decodeFromString<SigningHeader>("""{"kid":"key"}""")
+        shouldThrow<IllegalArgumentException> {
+            jwsSigner.signFlattened(header, SigningPayload("alice"))
         }
-        shouldThrow<SerializationException> {
-            joseCompliantSerializer.decodeFromString<SigningHeader>("""{"alg":null}""")
+        shouldThrow<IllegalArgumentException> {
+            jwsSigner.signGeneral(SigningPayload("alice"), listOf(JwsHeaderWrapped(header)))
         }
-        signer.calls shouldBe 0
+        delegate.calls shouldBe 0
     }
 
     "later mutations to the supplied map cannot replace or remove registered signers" {
