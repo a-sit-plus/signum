@@ -3,15 +3,16 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 /**
  * Typed payload, effective header, and signature over an unchanged compact [jws].
- * Direct construction requires the decoded values to agree with the retained wire object.
+ * Create signed values through [JwsSigner] or decode views through [typed] or the parsing factory.
+ * Component construction and copying are internal.
  */
-data class JwsCompactTyped<out P, H : JwsHeaderBase>(
+@ConsistentCopyVisibility
+data class JwsCompactTyped<out P, H : JwsHeaderBase> internal constructor(
     override val jws: JwsCompact,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,

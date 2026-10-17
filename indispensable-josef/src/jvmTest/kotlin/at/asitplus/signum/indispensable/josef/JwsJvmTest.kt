@@ -2,132 +2,82 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.Supreme
-import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.sign.sign
-import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.testballoon.matrix.*
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSObjectJSON
 import com.nimbusds.jose.crypto.ECDSAVerifier
-import at.asitplus.testballoon.matrix.*
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.JsonObject
 import java.security.interfaces.ECPublicKey
 
-val none = Supreme.init()
 val JwsJvmTest by matrixSuite {
+    Supreme.init()
 
     class Context {
-        val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-
-        val signer1 = runBlocking { Signer.Ephemeral {
-            ec { curve = ECCurve.SECP_256_R_1 }
-        }}
-
-        val signer2 = runBlocking {  Signer.Ephemeral {
-            ec { curve = ECCurve.SECP_256_R_1 }
-        }}
-
-        val verifier1 = ECDSAVerifier(signer1.publicKey.toJcaPublicKey() as ECPublicKey)
-        val verifier2 = ECDSAVerifier(signer2.publicKey.toJcaPublicKey() as ECPublicKey)
-
-        fun signerFor(signer: Signer): suspend (ByteArray) -> ByteArray = { input ->
-            signer.sign(input).signature.joseBytes
+        val payload = joseCompliantSerializer.decodeFromString<JsonObject>(
+            """{"iss":"https://issuer.example","sub":"alice"}"""
+        )
+        val signers = List(2) { index ->
+            runBlocking {
+                Signer.Ephemeral {
+                    ec {
+                        curve = if (index == 0) ECCurve.SECP_256_R_1 else ECCurve.SECP_384_R_1
+                        digest = if (index == 0) Digest.SHA256 else Digest.SHA384
+                    }
+                }
+            }
+        }
+        val jwsSigner = JwsSigner(signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm().getOrThrow() })
+        val verifiers = signers.map { ECDSAVerifier(it.publicKey.toJcaPublicKey() as ECPublicKey) }
+        val headers = signers.mapIndexed { index, signer ->
+            JwsHeader(
+                algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                keyId = "kid-${index + 1}",
+                type = "application/example+jws",
+            )
         }
     }
 
     fixture(::Context) - {
+        "compact typed JWS can be encoded and verified by Nimbus" { context ->
+            val typed = context.jwsSigner.signCompact(context.headers[0], context.payload)
+            val parsed = JWSObject.parse(typed.jws.toString())
 
-        "compact JWS can be encoded and verified by Nimbus" { it ->
-            val header = JwsHeader(
-                algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                keyId = "kid-1",
-                type = "application/example+jws",
-            )
-            val compact = JwsCompact.invoke(
-                protectedHeader = header,
-                payload = it.payload,
-                signer = it.signerFor(it.signer1),
-            )
-
-            val serialized = compact.toString()
-            val parsed = JWSObject.parse(serialized)
-            val typedCompact = compact.typed<JsonObject, JwsHeader>()
-
-            parsed.verify(it.verifier1).shouldBeTrue()
+            parsed.verify(context.verifiers[0]).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
-            typedCompact.wrappedHeader shouldBe JwsHeaderWrapped(header)
+            parsed.payload.toString() shouldBe """{"iss":"https://issuer.example","sub":"alice"}"""
         }
 
-        "flattened JWS can be serialized and verified by Nimbus" { it ->
-            val wrappedHeader = JwsHeaderWrapped(
-                header = JwsHeader(
-                    algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                    type = "application/example+jws",
-                    keyId = "kid-1",
-                ),
-                unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
-            )
-            val flattened = JwsFlattened.invoke(
-                wrappedHeader = wrappedHeader,
-                payload = it.payload,
-                signer = it.signerFor(it.signer1),
-            )
+        "flattened typed JWS can be serialized and verified by Nimbus" { context ->
+            val placement = setOf(JwsHeader.SerialNames.KEY_ID)
+            val typed = context.jwsSigner.signFlattened(context.headers[0], context.payload, placement)
+            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
 
-            val serialized = joseCompliantSerializer.encodeToString(JwsFlattened.serializer(), flattened)
-            val parsed = JWSObjectJSON.parse(serialized)
-            val typedFlattened = flattened.typed<JsonObject, JwsHeader>()
-
-            parsed.signatures.size shouldBe 1
-            parsed.signatures.single().verify(it.verifier1).shouldBeTrue()
+            parsed.signatures.single().verify(context.verifiers[0]).shouldBeTrue()
             parsed.signatures.single().header.keyID shouldBe null
             parsed.signatures.single().unprotectedHeader.keyID shouldBe "kid-1"
-            typedFlattened.wrappedHeader shouldBe wrappedHeader
         }
 
-        "general JWS can be serialized and verified by Nimbus" { it ->
-            val flattened1 = JwsFlattened.invoke(
-                wrappedHeader = JwsHeaderWrapped(
-                    header = JwsHeader(
-                        algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                        keyId = "kid-1",
-                    ),
-                    unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
-                ),
-                payload = it.payload,
-                signer = it.signerFor(it.signer1),
-            )
-            val flattened2 = JwsFlattened.invoke(
-                wrappedHeader = JwsHeaderWrapped(
-                    header = JwsHeader(
-                        algorithm = it.signer2.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
-                        keyId = "kid-2",
-                    ),
-                    unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
-                ),
-                payload = it.payload,
-                signer = it.signerFor(it.signer2),
-            )
-
-            val general = JwsGeneral.invoke(listOf(flattened1, flattened2))
-            val serialized = joseCompliantSerializer.encodeToString(JwsGeneral.serializer(), general)
-            val parsed = JWSObjectJSON.parse(serialized)
-            val typedGeneral = general.typed<JsonObject, JwsHeader>()
-            val typedFlattened = listOf(flattened1, flattened2).map { it.typed<JsonObject, JwsHeader>() }
+        "general typed JWS can be serialized and verified by Nimbus" { context ->
+            val placement = setOf(JwsHeader.SerialNames.KEY_ID)
+            val typed = context.jwsSigner.signGeneral(context.payload, context.headers.map { header ->
+                JwsHeaderWrapped(header, placement)
+            })
+            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
 
             parsed.signatures.size shouldBe 2
-            parsed.signatures[0].verify(it.verifier1).shouldBeTrue()
-            parsed.signatures[1].verify(it.verifier2).shouldBeTrue()
-            parsed.signatures[0].header.keyID shouldBe null
-            parsed.signatures[1].header.keyID shouldBe null
-            parsed.signatures[0].unprotectedHeader.keyID shouldBe "kid-1"
-            parsed.signatures[1].unprotectedHeader.keyID shouldBe "kid-2"
-            typedGeneral.wrappedHeaders[0] shouldBe typedFlattened[0].wrappedHeader
-            typedGeneral.wrappedHeaders[1] shouldBe typedFlattened[1].wrappedHeader
+            parsed.signatures.forEachIndexed { index, signature ->
+                signature.verify(context.verifiers[index]).shouldBeTrue()
+                signature.header.keyID shouldBe null
+                signature.unprotectedHeader.keyID shouldBe "kid-${index + 1}"
+            }
         }
     }
 }

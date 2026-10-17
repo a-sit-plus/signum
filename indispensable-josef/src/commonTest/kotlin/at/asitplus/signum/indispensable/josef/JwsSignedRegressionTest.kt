@@ -3,10 +3,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
-import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -14,30 +12,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 val JwsSignedRegressionTest by matrixSuite {
-    "JwsCompact.invoke signs the protected-header bytes derived from JwsHeader" {
-        val header = JwsHeader(
-            algorithm = JwsAlgorithm.Signature.RS256,
-            type = "application/example+jws",
-            keyId = "kid-1",
-        )
-        val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        var capturedInput: ByteArray? = null
-
-        val compact = JwsCompact.invoke(
-            protectedHeader = header,
-            payload = payload,
-        ) { signingInput ->
-            capturedInput = signingInput
-            byteArrayOf(1, 2, 3, 4)
-        }
-
-        val expectedProtectedHeader = JwsHeaderWrapped(header).protectedHeader
-
-        compact.plainProtectedHeader shouldBe expectedProtectedHeader
-        capturedInput shouldBe JWS.getSignatureInput(expectedProtectedHeader, payload)
-        compact.signatureInput shouldBe capturedInput
-    }
-
     "legacy compact serialization matches JwsCompact for RS256" {
         val regressionCase = compactRegressionCase(
             protectedHeader = JwsHeader(

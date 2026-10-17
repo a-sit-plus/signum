@@ -79,8 +79,6 @@ data class JwsGeneral private constructor(
             plainPayload: ByteArray,
             signatureElements: List<SignatureElement>,
         ): JwsGeneral = JwsGeneral(plainPayload, buildList { addAll(signatureElements) })
-
-        operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
     }
 }
 
