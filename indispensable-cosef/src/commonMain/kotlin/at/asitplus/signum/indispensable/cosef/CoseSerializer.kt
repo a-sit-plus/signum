@@ -105,24 +105,6 @@ private fun ByteArray.toSignature(
     else
         RsaSignature(this)
 
-private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
-    if (serializer == ByteArraySerializer()) {
-        @Suppress("UNCHECKED_CAST")
-        (this as P)
-    } else {
-        runCatching { fromBytes(serializer) }
-            .getOrElse { fromByteStringWrapper(serializer) }
-    }
-
-private fun <P : Any?> ByteArray.fromBytes(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(serializer, this)
-
-private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(
-        ByteStringWrapperSerializer(serializer),
-        this
-    ).value
-
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
                 ?.let { Certificate.fromAsn1(it) }
