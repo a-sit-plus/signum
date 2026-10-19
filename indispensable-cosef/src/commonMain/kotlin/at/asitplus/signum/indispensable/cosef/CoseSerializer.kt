@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
@@ -108,24 +107,6 @@ private fun ByteArray.toSignature(
         EcdsaSignature.fromP1363Bytes(this)
     else
         RsaSignature(this)
-
-private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
-    if (serializer == ByteArraySerializer()) {
-        @Suppress("UNCHECKED_CAST")
-        (this as P)
-    } else {
-        runCatching { fromBytes(serializer) }
-            .getOrElse { fromByteStringWrapper(serializer) }
-    }
-
-private fun <P : Any?> ByteArray.fromBytes(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(serializer, this)
-
-private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(
-        ByteStringWrapperSerializer(serializer),
-        this
-    ).value
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
