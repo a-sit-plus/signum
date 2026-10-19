@@ -90,7 +90,7 @@ sealed class COSE {
         /**
          * Reconstructs a [CryptoSignature] from the raw `bstr`.
          */
-        fun getSignature(
+        internal fun getSignature(
             plainSignature: ByteArray,
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader?,

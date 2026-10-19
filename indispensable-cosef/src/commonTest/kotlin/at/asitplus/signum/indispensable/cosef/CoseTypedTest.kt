@@ -19,18 +19,18 @@ import kotlinx.serialization.json.Json
 @OptIn(ExperimentalSerializationApi::class)
 val CoseTypedTest by matrixSuite {
 
-    val payload = CoseTestPayload(name = "alice", count = 3)
+    val payload = DataClass("alice")
 
     "sign1 wraps a typed payload in CBOR tag 24" {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
 
         typed.payload shouldBe payload
         typed.cose.plainPayload!!.hex() shouldStartWith "D818"
-        typed.cose.plainPayload!!.hex() shouldBe encodePayload(payload, CoseTestPayload.serializer()).hex()
+        typed.cose.plainPayload!!.hex() shouldBe encodePayload(payload, DataClass.serializer()).hex()
     }
 
     "sign1 signs over the encoded payload" {
@@ -38,7 +38,7 @@ val CoseTypedTest by matrixSuite {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) {
             signed = it
             FAKE_SIGNATURE
@@ -75,12 +75,12 @@ val CoseTypedTest by matrixSuite {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
         val parsed = CoseSign1(coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose))
 
-        parsed.typed(CoseTestPayload.serializer()) shouldBe typed
-        parsed.typed<CoseTestPayload>() shouldBe typed
+        parsed.typed(DataClass.serializer()) shouldBe typed
+        parsed.typed<DataClass>() shouldBe typed
     }
 
     "detached sign1 keeps the typed payload but leaves it out of the message" {
@@ -88,7 +88,7 @@ val CoseTypedTest by matrixSuite {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
             detached = true,
         ) {
             signed = it
@@ -98,7 +98,7 @@ val CoseTypedTest by matrixSuite {
         typed.payload shouldBe payload
         typed.cose.plainPayload.shouldBeNull()
         typed.cose.signatureInput(
-            detachedPayload = encodePayload(payload, CoseTestPayload.serializer())
+            detachedPayload = encodePayload(payload, DataClass.serializer())
         ).hex() shouldBe signed!!.hex()
     }
 
@@ -106,9 +106,9 @@ val CoseTypedTest by matrixSuite {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), CoseTestPayload.serializer())
+        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
 
         val cbor = coseCompliantSerializer.encodeToByteArray(template, typed)
         cbor.hex() shouldBe coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose).hex()
@@ -119,9 +119,9 @@ val CoseTypedTest by matrixSuite {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), CoseTestPayload.serializer())
+        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
 
         val json = Json.encodeToString(template, typed)
         json shouldStartWith "\""
@@ -134,10 +134,10 @@ val CoseTypedTest by matrixSuite {
         val detached = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
             detached = true,
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), CoseTestPayload.serializer())
+        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
         val cbor = coseCompliantSerializer.encodeToByteArray(template, detached)
 
         shouldThrowAny { coseCompliantSerializer.decodeFromByteArray(template, cbor) }
@@ -148,7 +148,7 @@ val CoseTypedTest by matrixSuite {
         val typed = CoseTyped.mac0(
             protectedHeader = HS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) {
             maced = it
             FAKE_TAG
@@ -159,10 +159,10 @@ val CoseTypedTest by matrixSuite {
         typed.cose.macInput().hex() shouldBe maced!!.hex()
 
         val parsed = CoseMac0(coseCompliantSerializer.encodeToByteArray(CoseMac0.serializer(), typed.cose))
-        parsed.typed(CoseTestPayload.serializer()) shouldBe typed
-        parsed.typed<CoseTestPayload>() shouldBe typed
+        parsed.typed(DataClass.serializer()) shouldBe typed
+        parsed.typed<DataClass>() shouldBe typed
 
-        val template = CoseTypedSerializerTemplate(CoseMac0.serializer(), CoseTestPayload.serializer())
+        val template = CoseTypedSerializerTemplate(CoseMac0.serializer(), DataClass.serializer())
         coseCompliantSerializer.decodeFromByteArray(
             template,
             coseCompliantSerializer.encodeToByteArray(template, typed)

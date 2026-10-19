@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.cosef.CONTENT
 import at.asitplus.signum.indispensable.cosef.COSE
 import at.asitplus.signum.indispensable.cosef.CoseSign1
 import at.asitplus.signum.indispensable.cosef.CoseSigned
-import at.asitplus.signum.indispensable.cosef.CoseTestPayload
+import at.asitplus.signum.indispensable.cosef.DataClass
 import at.asitplus.signum.indispensable.cosef.CoseTyped
 import at.asitplus.signum.indispensable.cosef.ES256_HEADER
 import at.asitplus.signum.indispensable.cosef.EXTERNAL_AAD
@@ -75,6 +75,7 @@ val CoseJvmTest by matrixSuite {
     }
 
     "non-canonical protected header from a foreign issuer verifies with CoseSign1 only" {
+        // {4: h'6B6964', 1: -7}: same content as CoseHeader(ES256, kid = "kid"), keys in the other order
         val plainProtectedHeader = "A204436B69640126".hexBytes()
         val wire = foreignSign1(plainProtectedHeader, CONTENT)
 
@@ -117,13 +118,13 @@ val CoseJvmTest by matrixSuite {
     "typed sign1 verifies over the tag-24 payload" {
         val typed = CoseTyped.sign1(
             protectedHeader = ES256_HEADER,
-            payload = CoseTestPayload(name = "alice", count = 3),
-            payloadSerializer = CoseTestPayload.serializer(),
+            payload = DataClass("alice"),
+            payloadSerializer = DataClass.serializer(),
         ) { sign(it) }
         val parsed = CoseSign1(coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose))
 
         verify(parsed.signatureInput(), parsed.plainSignature).shouldBeTrue()
-        parsed.typed(CoseTestPayload.serializer()) shouldBe typed
+        parsed.typed(DataClass.serializer()) shouldBe typed
     }
 }
 
