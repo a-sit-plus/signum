@@ -1,17 +1,8 @@
 package at.asitplus.signum.indispensable.cosef
 
-import kotlinx.serialization.decodeFromByteArray
-
-import at.asitplus.signum.indispensable.Signature
-import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaSignature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -62,7 +53,8 @@ class CoseSignedSerializer<P : Any?>(
     serialName = "CoseSigned",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val signature = wire.rawAuthBytes.toSignature(wire.protectedHeader, wire.unprotectedHeader)
+        val protectedHeader = wire.protectedHeader
+        val signature = COSE.getSignature(wire.rawAuthBytes, protectedHeader, wire.unprotectedHeader)
         CoseSigned(
             payload = wire.payload.toNullablePayload(parameterSerializer),
             signature = signature,
@@ -96,19 +88,3 @@ private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>):
     else -> toTypedPayload(serializer)
 }
 
-private fun ByteArray.toSignature(
-    protectedHeader: CoseHeader,
-    unprotectedHeader: CoseHeader?,
-): Signature =
-    if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        EcdsaSignature.fromP1363Bytes(this)
-    else
-        RsaSignature(this)
-
-private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
-    null -> certificateChain?.firstOrNull()
-                ?.let { Certificate.fromAsn1(it) }
-        ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
-    is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
-    else -> false
-}
