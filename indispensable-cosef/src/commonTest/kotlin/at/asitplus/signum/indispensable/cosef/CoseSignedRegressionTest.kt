@@ -196,19 +196,19 @@ val CoseSignedRegressionTest by matrixSuite {
     }
 
     "typed CoseSign1 matches legacy CoseSigned<P> on the wire and in JSON" {
-        val payload = CoseTestPayload(name = "alice", count = 3)
+        val payload = DataClass("alice")
         val legacy = CoseSigned.create(
             protectedHeader = RS256_HEADER,
             payload = payload,
             signature = RsaSignature(FAKE_SIGNATURE),
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         )
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), CoseTestPayload.serializer())
+        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
 
         typed.cose.plainPayload!!.hex() shouldBe legacy.wireFormat.payload!!.hex()
         typed.cose.signatureInput().hex() shouldBe legacy.prepareCoseSignatureInput().hex()
@@ -216,19 +216,19 @@ val CoseSignedRegressionTest by matrixSuite {
         val legacyJson = Json.encodeToString(legacy)
         Json.encodeToString(template, typed) shouldBe legacyJson
         Json.decodeFromString(template, legacyJson) shouldBe typed
-        Json.decodeFromString<CoseSigned<CoseTestPayload>>(Json.encodeToString(template, typed)).payload shouldBe payload
+        Json.decodeFromString<CoseSigned<DataClass>>(Json.encodeToString(template, typed)).payload shouldBe payload
     }
 
     "typed payload decoding agrees with legacy CoseSigned<P>" {
-        val payload = CoseTestPayload(name = "bob", count = 7)
+        val payload = DataClass("bob")
         val legacy = CoseSigned.create(
             protectedHeader = RS256_HEADER,
             payload = payload,
             signature = RsaSignature(FAKE_SIGNATURE),
-            payloadSerializer = CoseTestPayload.serializer(),
+            payloadSerializer = DataClass.serializer(),
         )
 
-        CoseSign1(legacy.serialize(CoseTestPayload.serializer()))
-            .typed(CoseTestPayload.serializer()).payload shouldBe legacy.payload
+        CoseSign1(legacy.serialize(DataClass.serializer()))
+            .typed(DataClass.serializer()).payload shouldBe legacy.payload
     }
 }
