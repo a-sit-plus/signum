@@ -34,7 +34,7 @@ data class CoseMac0 internal constructor(
     /** The authentication tag `bstr`. */
     @ByteString
     val tag: ByteArray,
-) : COSE() {
+) : CosePlaintextMessage() {
 
     @Transient
     val protectedHeader: CoseHeader = decodeProtectedHeader(plainProtectedHeader)

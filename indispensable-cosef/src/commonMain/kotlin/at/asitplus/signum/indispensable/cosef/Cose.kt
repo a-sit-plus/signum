@@ -28,21 +28,11 @@ sealed class COSE {
 
     abstract val unprotectedHeader: CoseHeader?
 
-    abstract val plainPayload: ByteArray?
-
     /**
-     * Decodes [plainPayload] with [serializer]
-     * Accepts both a directly encoded payload and one wrapped in CBOR tag 24
+     * The content of the message the plaintext or the ciphertext as transmitted, or `null` when it is
+     * detached.
      */
-    fun <P> getPayload(serializer: KSerializer<P>): KmmResult<P> = catching {
-        val bytes = plainPayload ?: throw IllegalStateException("Payload is detached; supply it externally")
-        bytes.toTypedPayload(serializer)
-    }
-
-    /** Find the correct serializer at compile time. */
-    inline fun <reified P> getPayload(): KmmResult<P> =
-        getPayload(coseCompliantSerializer.serializersModule.serializer())
-
+    abstract val plainContent: ByteArray?
 
     companion object {
 
@@ -109,6 +99,42 @@ sealed class COSE {
             else -> false
         }
     }
+}
+
+/**
+ * A COSE message whose content is the plaintext payload: signed and MACed messages.
+ */
+sealed class CosePlaintextMessage : COSE() {
+
+    /** The payload as transmitted, or `null` when it is detached. */
+    abstract val plainPayload: ByteArray?
+
+    final override val plainContent: ByteArray? get() = plainPayload
+
+    /**
+     * Decodes [plainPayload] with [serializer]
+     * Accepts both a directly encoded payload and one wrapped in CBOR tag 24
+     */
+    fun <P> getPayload(serializer: KSerializer<P>): KmmResult<P> = catching {
+        val bytes = plainPayload ?: throw IllegalStateException("Payload is detached; supply it externally")
+        bytes.toTypedPayload(serializer)
+    }
+
+    /** Find the correct serializer at compile time. */
+    inline fun <reified P> getPayload(): KmmResult<P> =
+        getPayload(coseCompliantSerializer.serializersModule.serializer())
+}
+
+/**
+ * A COSE message whose content is ciphertext: COSE_Encrypt0 and COSE_Encrypt
+ * Not implemented by any message type yet
+ */
+sealed class CoseCiphertextMessage : COSE() {
+
+    /** The ciphertext as transmitted, or `null` when it is detached. */
+    abstract val ciphertext: ByteArray?
+
+    final override val plainContent: ByteArray? get() = ciphertext
 }
 
 /** The four-element `Sig_structure` / `MAC_structure` */

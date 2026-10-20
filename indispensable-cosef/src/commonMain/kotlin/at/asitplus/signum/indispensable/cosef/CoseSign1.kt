@@ -37,7 +37,7 @@ data class CoseSign1 internal constructor(
 
     @ByteString
     val plainSignature: ByteArray,
-) : COSE() {
+) : CosePlaintextMessage() {
 
     @Transient
     val protectedHeader: CoseHeader = decodeProtectedHeader(plainProtectedHeader)

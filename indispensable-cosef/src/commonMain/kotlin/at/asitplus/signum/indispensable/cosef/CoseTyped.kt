@@ -99,7 +99,7 @@ data class CoseTyped<out C : COSE, out P>(
  *
  * Mirrors josef's `JwsTypedSerializerTemplate`.
  */
-class CoseTypedSerializerTemplate<C : COSE, P>(
+class CoseTypedSerializerTemplate<C : CosePlaintextMessage, P>(
     coseSerializer: KSerializer<C>,
     private val payloadSerializer: KSerializer<P>,
 ) : TransformingSerializerTemplate<CoseTyped<C, P>, C>(
