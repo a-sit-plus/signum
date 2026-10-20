@@ -25,6 +25,12 @@ subprojects {
             content { includeGroup("at.asitplus.awesn1") }
             mavenContent { snapshotsOnly() }
         }
+        maven("https://maven.waltid.dev/releases") {
+            name = "waltid"
+            content {
+                includeVersionByRegex("org\\.jetbrains\\.kotlinx", "kotlinx-serialization-.*", ".*-waltid-.*")
+            }
+        }
     }
 }
 //work around nexus publish bug
