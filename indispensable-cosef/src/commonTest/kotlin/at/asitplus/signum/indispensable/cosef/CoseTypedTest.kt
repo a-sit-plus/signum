@@ -153,4 +153,28 @@ val CoseTypedTest by matrixSuite {
             coseCompliantSerializer.encodeToByteArray(template, typed)
         ) shouldBe typed
     }
+
+    "CoseTyped compares ByteArray payloads by content" {
+        val first = CoseTyped.sign1(
+            protectedHeader = RS256_HEADER, payload = CONTENT, payloadSerializer = ByteArraySerializer()
+        ) { FAKE_SIGNATURE }
+        val second = CoseTyped.sign1(
+            protectedHeader = RS256_HEADER, payload = CONTENT, payloadSerializer = ByteArraySerializer()
+        ) { FAKE_SIGNATURE }
+
+        first shouldBe second
+        first.hashCode() shouldBe second.hashCode()
+    }
+
+    "header combines the protected and unprotected buckets" {
+        val kid = "kid".encodeToByteArray()
+        val typed = CoseTyped.sign1(
+            protectedHeader = RS256_HEADER,
+            unprotectedHeader = CoseHeader(kid = kid),
+            payload = payload,
+            payloadSerializer = DataClass.serializer(),
+        ) { FAKE_SIGNATURE }
+
+        typed.header shouldBe RS256_HEADER.copy(kid = kid)
+    }
 }
