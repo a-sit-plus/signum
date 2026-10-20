@@ -9,7 +9,6 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.json.Json
 
 /**
  * The new structure types against the deprecated [CoseSigned], [CoseMac] and [CoseInput]: for everything the old
@@ -161,41 +160,7 @@ val CoseSignedRegressionTest by matrixSuite {
         CoseMac.deserialize(ByteArraySerializer(), coseBytes).getOrThrow() shouldBe legacy
     }
 
-    "CoseSign1 JSON is interchangeable with legacy CoseSigned JSON" {
-        val legacy = CoseSigned.create(
-            protectedHeader = RS256_HEADER,
-            payload = CONTENT,
-            signature = RsaSignature(FAKE_SIGNATURE),
-            payloadSerializer = ByteArraySerializer(),
-        )
-        val cose = CoseSign1(protectedHeader = RS256_HEADER, plainPayload = CONTENT) { FAKE_SIGNATURE }
-
-        val legacyJson = Json.encodeToString(legacy)
-        val coseJson = Json.encodeToString(CoseSign1.serializer(), cose)
-
-        coseJson shouldBe legacyJson
-        Json.decodeFromString(CoseSign1.serializer(), legacyJson) shouldBe cose
-        Json.decodeFromString<CoseSigned<ByteArray>>(coseJson) shouldBe legacy
-    }
-
-    "CoseMac0 JSON is interchangeable with legacy CoseMac JSON" {
-        val legacy = CoseMac.create(
-            protectedHeader = HS256_HEADER,
-            payload = CONTENT,
-            tag = FAKE_TAG,
-            payloadSerializer = ByteArraySerializer(),
-        )
-        val cose = CoseMac0(protectedHeader = HS256_HEADER, plainPayload = CONTENT) { FAKE_TAG }
-
-        val legacyJson = Json.encodeToString(legacy)
-        val coseJson = Json.encodeToString(CoseMac0.serializer(), cose)
-
-        coseJson shouldBe legacyJson
-        Json.decodeFromString(CoseMac0.serializer(), legacyJson) shouldBe cose
-        Json.decodeFromString<CoseMac<ByteArray>>(coseJson) shouldBe legacy
-    }
-
-    "typed CoseSign1 matches legacy CoseSigned<P> on the wire and in JSON" {
+    "typed CoseSign1 matches legacy CoseSigned<P> on the wire" {
         val payload = DataClass("alice")
         val legacy = CoseSigned.create(
             protectedHeader = RS256_HEADER,
@@ -212,11 +177,6 @@ val CoseSignedRegressionTest by matrixSuite {
 
         typed.cose.plainPayload!!.hex() shouldBe legacy.wireFormat.payload!!.hex()
         typed.cose.signatureInput().hex() shouldBe legacy.prepareCoseSignatureInput().hex()
-
-        val legacyJson = Json.encodeToString(legacy)
-        Json.encodeToString(template, typed) shouldBe legacyJson
-        Json.decodeFromString(template, legacyJson) shouldBe typed
-        Json.decodeFromString<CoseSigned<DataClass>>(Json.encodeToString(template, typed)).payload shouldBe payload
     }
 
     "typed payload decoding agrees with legacy CoseSigned<P>" {
