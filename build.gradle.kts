@@ -17,6 +17,12 @@ group = "at.asitplus.signum"
 subprojects {
     repositories {
         mavenLocal()
+        maven("https://maven.waltid.dev/releases") {
+            name = "waltid"
+            content {
+                includeVersionByRegex("org\\.jetbrains\\.kotlinx", "kotlinx-serialization-.*", ".*-waltid-.*")
+            }
+        }
     }
 }
 //work around nexus publish bug
