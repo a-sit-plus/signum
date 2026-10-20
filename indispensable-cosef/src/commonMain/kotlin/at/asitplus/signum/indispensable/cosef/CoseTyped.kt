@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -19,6 +21,32 @@ data class CoseTyped<out C : COSE, out P>(
     val payload: P,
 ) {
     override fun toString(): String = cose.toString()
+
+    /** Protected and unprotected bucket combined. Typed with the header rework. */
+    val header: CoseHeader by lazy {
+        COSE.decodeProtectedHeader(cose.plainProtectedHeader).strictUnion(cose.unprotectedHeader)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CoseTyped<*, *>
+
+        if (cose != other.cose) return false
+        if (payload != null) {
+            if (other.payload == null) return false
+            if (!payload.contentEqualsIfArray(other.payload)) return false
+        } else if (other.payload != null) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = cose.hashCode()
+        result = 31 * result + (payload?.contentHashCodeIfArray() ?: 0)
+        return result
+    }
 
     companion object {
 
