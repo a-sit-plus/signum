@@ -18,11 +18,10 @@ This is a major refactor!
     * Bouncy Castle 1.85
     * multibase 1.3.0
 * Rework COSE support around explicit `COSE_Sign1` and `COSE_Mac0` structures
-    * Add sealed `COSE` base with dedicated `CoseSign1` and `CoseMac0`, which keep the protected header as transmitted (`plainProtectedHeader`)
+    * Add sealed `COSE` base modeling the common message prefix of RFC 9052 (protected header as transmitted, unprotected header, content), with `CosePlaintextMessage` (`CoseSign1`, `CoseMac0`) and `CoseCiphertextMessage` (for future COSE_Encrypt/Encrypt0)
     * `Sig_structure` / `MAC_structure` are built from the received protected-header bytes instead of a re-encoded `CoseHeader`
     * Add `CoseSign1.signatureInput` and `CoseMac0.macInput`, supporting external AAD and detached payloads
     * Typed payloads remain supported via `CoseTyped` (`CoseSign1Typed`, `CoseMac0Typed`) and `CoseTypedSerializerTemplate`
-    * CBOR and JSON wire forms are unchanged, so values persisted with `CoseSigned` / `CoseMac` can be read with the new types and vice versa
     * Deprecate `CoseSigned`, `CoseMac`, `CoseBytes` and `CoseInput`
 
 ## 3.24.0 / Supreme 0.15.0
