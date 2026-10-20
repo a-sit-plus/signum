@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.nulls.shouldBeNull
@@ -11,7 +11,6 @@ import io.kotest.matchers.string.shouldStartWith
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 
 /**
  * [CoseTyped]: typed builders, `typed()` decoding and [CoseTypedSerializerTemplate].
@@ -30,7 +29,7 @@ val CoseTypedTest by matrixSuite {
 
         typed.payload shouldBe payload
         typed.cose.plainPayload!!.hex() shouldStartWith "D818"
-        typed.cose.plainPayload!!.hex() shouldBe encodePayload(payload, DataClass.serializer()).hex()
+        typed.cose.plainPayload.hex() shouldBe encodePayload(payload, DataClass.serializer()).hex()
     }
 
     "sign1 signs over the encoded payload" {
@@ -113,20 +112,6 @@ val CoseTypedTest by matrixSuite {
         val cbor = coseCompliantSerializer.encodeToByteArray(template, typed)
         cbor.hex() shouldBe coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose).hex()
         coseCompliantSerializer.decodeFromByteArray(template, cbor) shouldBe typed
-    }
-
-    "CoseTypedSerializerTemplate round-trips through JSON as a Base64 string" {
-        val typed = CoseTyped.sign1(
-            protectedHeader = RS256_HEADER,
-            payload = payload,
-            payloadSerializer = DataClass.serializer(),
-        ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
-
-        val json = Json.encodeToString(template, typed)
-        json shouldStartWith "\""
-        json shouldBe Json.encodeToString(CoseSign1.serializer(), typed.cose)
-        Json.decodeFromString(template, json) shouldBe typed
     }
 
     "CoseTypedSerializerTemplate cannot rebuild a detached payload" {

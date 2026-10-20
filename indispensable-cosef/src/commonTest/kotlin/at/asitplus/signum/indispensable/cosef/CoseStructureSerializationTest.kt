@@ -14,7 +14,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.json.Json
 
 /**
  * RFC 9052 structure building, protected-header handling, and the wire forms of [CoseSign1] and [CoseMac0].
@@ -66,7 +65,7 @@ val CoseStructureSerializationTest by matrixSuite {
         }
 
         signed!!.hex() shouldBe COSE.sign1StructureInput(RS256_HEADER_HEX.hexBytes(), payload = CONTENT).hex()
-        cose.signatureInput().hex() shouldBe signed!!.hex()
+        cose.signatureInput().hex() shouldBe signed.hex()
         cose.plainProtectedHeader.hex() shouldBe RS256_HEADER_HEX
         cose.protectedHeader shouldBe RS256_HEADER
         cose.plainPayload!!.hex() shouldBe CONTENT_HEX
@@ -93,7 +92,7 @@ val CoseStructureSerializationTest by matrixSuite {
         }
 
         cose.signatureInput(externalAad = EXTERNAL_AAD).hex() shouldBe signed!!.hex()
-        cose.signatureInput().hex() shouldNotBe signed!!.hex()
+        cose.signatureInput().hex() shouldNotBe signed.hex()
     }
 
     "detached CoseSign1 signs the payload but leaves it out of the message" {
@@ -135,22 +134,10 @@ val CoseStructureSerializationTest by matrixSuite {
         other shouldNotBe cose
     }
 
-    "CoseSign1 serializes to JSON as a Base64 string" {
-        val cose = CoseSign1(protectedHeader = RS256_HEADER, plainPayload = CONTENT) { FAKE_SIGNATURE }
-        val json = Json.encodeToString(CoseSign1.serializer(), cose)
-
-        json shouldStartWith "\""
-        Json.decodeFromString(CoseSign1.serializer(), json) shouldBe cose
-    }
-
-    "CoseSign1 inside a serializable class is a Base64 string in JSON and an array in CBOR" {
+    "CoseSign1 inside a serializable class round-trips through CBOR" {
         val holder = CoseSign1Holder(
             CoseSign1(protectedHeader = RS256_HEADER, plainPayload = CONTENT) { FAKE_SIGNATURE }
         )
-
-        val json = Json.encodeToString(CoseSign1Holder.serializer(), holder)
-        json shouldStartWith "{\"cose\":\""
-        Json.decodeFromString(CoseSign1Holder.serializer(), json) shouldBe holder
 
         val cbor = coseCompliantSerializer.encodeToByteArray(CoseSign1Holder.serializer(), holder)
         coseCompliantSerializer.decodeFromByteArray(CoseSign1Holder.serializer(), cbor) shouldBe holder
@@ -166,21 +153,17 @@ val CoseStructureSerializationTest by matrixSuite {
         }
 
         maced!!.hex() shouldBe COSE.mac0StructureInput(HS256_HEADER_HEX.hexBytes(), payload = CONTENT).hex()
-        cose.macInput().hex() shouldBe maced!!.hex()
+        cose.macInput().hex() shouldBe maced.hex()
         cose.protectedHeader shouldBe HS256_HEADER
         cose.tag.hex() shouldBe FAKE_TAG.hex()
     }
 
-    "CoseMac0 round-trips through CBOR and JSON" {
+    "CoseMac0 round-trips through CBOR" {
         val cose = CoseMac0(protectedHeader = HS256_HEADER, plainPayload = CONTENT) { FAKE_TAG }
 
         val bytes = coseCompliantSerializer.encodeToByteArray(CoseMac0.serializer(), cose)
         bytes.hex() shouldStartWith "8443" + HS256_HEADER_HEX
         CoseMac0(bytes) shouldBe cose
-
-        val json = Json.encodeToString(CoseMac0.serializer(), cose)
-        json shouldStartWith "\""
-        Json.decodeFromString(CoseMac0.serializer(), json) shouldBe cose
     }
 
     "detached CoseMac0 authenticates the payload but leaves it out of the message" {

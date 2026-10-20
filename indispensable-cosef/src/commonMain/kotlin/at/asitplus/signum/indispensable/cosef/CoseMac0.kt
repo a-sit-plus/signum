@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
@@ -20,9 +19,8 @@ import kotlinx.serialization.decodeFromByteArray
  * Serialized untagged, as [CoseSign1].
  */
 @OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
 @ConsistentCopyVisibility
-@Serializable(with = CoseMac0Serializer::class)
+@Serializable
 @CborArray
 data class CoseMac0 internal constructor(
     @ByteString
