@@ -42,6 +42,10 @@ data class CoseSign1 internal constructor(
     @Transient
     val protectedHeader: CoseHeader = decodeProtectedHeader(plainProtectedHeader)
 
+    init {
+        val _ = protectedHeader.strictUnion(unprotectedHeader)
+    }
+
     @Transient
     val signature: CryptoSignature = getSignature(plainSignature, protectedHeader, unprotectedHeader)
 

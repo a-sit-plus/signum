@@ -143,6 +143,17 @@ val CoseStructureSerializationTest by matrixSuite {
         coseCompliantSerializer.decodeFromByteArray(CoseSign1Holder.serializer(), cbor) shouldBe holder
     }
 
+    "CoseSign1 rejects a header parameter in both buckets" {
+        val wire = ("84" + "45" + RS256_HEADER_HEX + RS256_HEADER_HEX + "54" + CONTENT_HEX + "43" + FAKE_SIGNATURE.hex())
+            .hexBytes()
+        shouldThrow<SerializationException> { CoseSign1(wire) }
+        shouldThrow<IllegalArgumentException> {
+            CoseSign1(protectedHeader = RS256_HEADER, unprotectedHeader = RS256_HEADER, plainPayload = CONTENT) {
+                FAKE_SIGNATURE
+            }
+        }
+    }
+
     // ---- CoseMac0 ---------------------------------------------------------------------------------------------
 
     "CoseMac0 MACs the MAC_structure over the encoded protected header" {
@@ -180,6 +191,12 @@ val CoseStructureSerializationTest by matrixSuite {
 
     "CoseMac0 parsing rejects malformed input with a SerializationException" {
         shouldThrow<SerializationException> { CoseMac0(byteArrayOf(0x01, 0x02)) }
+    }
+
+    "CoseMac0 rejects a header parameter in both buckets" {
+        val wire = ("84" + "43" + HS256_HEADER_HEX + HS256_HEADER_HEX + "54" + CONTENT_HEX + "43" + FAKE_TAG.hex())
+            .hexBytes()
+        shouldThrow<SerializationException> { CoseMac0(wire) }
     }
 }
 

@@ -39,6 +39,10 @@ data class CoseMac0 internal constructor(
     @Transient
     val protectedHeader: CoseHeader = decodeProtectedHeader(plainProtectedHeader)
 
+    init {
+        val _ = protectedHeader.strictUnion(unprotectedHeader)
+    }
+
     /**
      * The `MAC_structure` bytes the [tag] is computed over, built from [plainProtectedHeader] as received.
      */
