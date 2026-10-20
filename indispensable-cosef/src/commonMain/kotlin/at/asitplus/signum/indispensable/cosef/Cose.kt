@@ -119,7 +119,29 @@ internal data class CoseStructure(
     @ByteString val plainProtectedHeader: ByteArray,
     @ByteString val externalAad: ByteArray,
     @ByteString val payload: ByteArray,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CoseStructure
+
+        if (context != other.context) return false
+        if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
+        if (!externalAad.contentEquals(other.externalAad)) return false
+        if (!payload.contentEquals(other.payload)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = context.hashCode()
+        result = 31 * result + plainProtectedHeader.contentHashCode()
+        result = 31 * result + externalAad.contentHashCode()
+        result = 31 * result + payload.contentHashCode()
+        return result
+    }
+}
 
 @OptIn(ExperimentalSerializationApi::class)
 internal fun <P> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
@@ -130,3 +152,27 @@ internal fun <P> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
         runCatching { coseCompliantSerializer.decodeFromByteArray(serializer, this) }
             .getOrElse { coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(serializer), this).value }
     }
+
+/**
+ * Combines a protected and an unprotected bucket into one header, failing if a parameter occurs in
+ * both. Only parameters modeled by [CoseHeader] can be checked; unknown labels are dropped on decoding.
+ */
+internal fun CoseHeader.strictUnion(unprotected: CoseHeader?): CoseHeader {
+    if (unprotected == null) return this
+    fun <T> pick(label: String, protected: T?, unprotected: T?): T? {
+        require(protected == null || unprotected == null) {
+            "Header parameter '$label' must not occur in both protected and unprotected header"
+        }
+        return protected ?: unprotected
+    }
+    return CoseHeader(
+        algorithm = pick("alg", algorithm, unprotected.algorithm),
+        criticalHeaders = pick("crit", criticalHeaders, unprotected.criticalHeaders),
+        contentType = pick("content type", contentType, unprotected.contentType),
+        kid = pick("kid", kid, unprotected.kid),
+        iv = pick("IV", iv, unprotected.iv),
+        partialIv = pick("Partial IV", partialIv, unprotected.partialIv),
+        certificateChain = pick("x5chain", certificateChain, unprotected.certificateChain),
+        type = pick("typ", type, unprotected.type),
+    )
+}
