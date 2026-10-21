@@ -9,7 +9,8 @@ import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborLabel
 
 /**
- * Protected header of a [CoseSigned].
+ * The [CoseHeaderBase] parameters plus `crit`.
+ * Applications needing further parameters define their own [CoseHeaderBase] implementation.
  *
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
@@ -25,7 +26,7 @@ data class CoseHeader(
      */
     @CborLabel(1)
     @SerialName("alg")
-    val algorithm: CoseAlgorithm? = null,
+    override val algorithm: CoseAlgorithm? = null,
 
     /**
      * This header parameter is used to indicate which protected header parameters an application that is processing a
@@ -49,7 +50,7 @@ data class CoseHeader(
      */
     @CborLabel(3)
     @SerialName("content type")
-    val contentType: String? = null,
+    override val contentType: String? = null,
 
     /**
      * This header parameter identifies one piece of data that can be used as input to find the needed cryptographic
@@ -63,7 +64,7 @@ data class CoseHeader(
     @CborLabel(4)
     @SerialName("kid")
     @ByteString
-    val kid: ByteArray? = null,
+    override val kid: ByteArray? = null,
 
     /**
      * This header parameter holds the Initialization Vector (IV) value. For some symmetric encryption algorithms, this
@@ -73,7 +74,7 @@ data class CoseHeader(
     @CborLabel(5)
     @SerialName("IV")
     @ByteString
-    val iv: ByteArray? = null,
+    override val iv: ByteArray? = null,
 
     /**
      * This header parameter holds a part of the IV value. When using the COSE_Encrypt0 structure, a portion of the IV
@@ -86,7 +87,7 @@ data class CoseHeader(
     @CborLabel(6)
     @SerialName("Partial IV")
     @ByteString
-    val partialIv: ByteArray? = null,
+    override val partialIv: ByteArray? = null,
 
     /**
      * This header parameter contains an ordered array of X.509 certificates. The certificates are to be ordered
@@ -103,7 +104,7 @@ data class CoseHeader(
     @CborLabel(33)
     @SerialName("x5chain")
     @ByteString
-    val certificateChain: List<ByteArray>? = null,
+    override val certificateChain: List<ByteArray>? = null,
 
     /**
      * https://www.rfc-editor.org/rfc/rfc9596
@@ -117,8 +118,8 @@ data class CoseHeader(
      */
     @CborLabel(16)
     @SerialName("typ")
-    val type: String? = null,
-) {
+    override val type: String? = null,
+) : CoseHeaderBase {
 
 
     @Deprecated("To be removed in next release")
