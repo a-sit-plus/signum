@@ -12,6 +12,7 @@ import kotlinx.serialization.cbor.CborInteger
 import kotlinx.serialization.cbor.CborMap
 import kotlinx.serialization.cbor.CborNull
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.nullable
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.serializer
@@ -155,6 +156,31 @@ internal object UnprotectedHeaderSerializer : KSerializer<CborMap> {
         return when (val element = cborDecoder.decodeCborElement()) {
             is CborMap -> element
             is CborNull -> EMPTY_BUCKET
+            else -> throw SerializationException("Unprotected header must be a CBOR map, was ${element::class.simpleName}")
+        }
+    }
+}
+
+/**
+ * Unprotected header of the deprecated [CoseBytes], as it was before the header rework: `null` is written as an
+ * empty map, and both an empty map and CBOR `null` are read back as `null`.
+ */
+@OptIn(ExperimentalSerializationApi::class)
+internal object LegacyUnprotectedHeaderSerializer : KSerializer<CoseHeader?> {
+
+    override val descriptor: SerialDescriptor = CoseHeader.serializer().descriptor.nullable
+
+    override fun serialize(encoder: Encoder, value: CoseHeader?) =
+        encoder.encodeSerializableValue(CoseHeader.serializer(), value ?: CoseHeader())
+
+    override fun deserialize(decoder: Decoder): CoseHeader? {
+        val cborDecoder = decoder as? CborDecoder
+            ?: throw SerializationException("COSE structures can only be decoded from CBOR")
+        return when (val element = cborDecoder.decodeCborElement()) {
+            is CborNull -> null
+            is CborMap ->
+                if (element.isEmpty()) null
+                else coseCompliantSerializer.decodeFromCborElement(CoseHeader.serializer(), element)
             else -> throw SerializationException("Unprotected header must be a CBOR map, was ${element::class.simpleName}")
         }
     }

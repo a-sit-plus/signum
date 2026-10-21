@@ -41,6 +41,7 @@ data class CoseBytes internal constructor(
     @SerialName("protectedHeader")
     @ByteString
     val rawProtectedHeader: ByteArray,
+    @Serializable(with = LegacyUnprotectedHeaderSerializer::class)
     val unprotectedHeader: CoseHeader?,
     @ByteString
     val payload: ByteArray?,
