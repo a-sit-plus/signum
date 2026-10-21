@@ -11,6 +11,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
+import kotlinx.serialization.cbor.CborMap
+import kotlinx.serialization.cbor.CborObjectAsArray
 import kotlinx.serialization.decodeFromByteArray
 
 /**
@@ -21,12 +23,14 @@ import kotlinx.serialization.decodeFromByteArray
 @OptIn(ExperimentalSerializationApi::class)
 @ConsistentCopyVisibility
 @Serializable
-@CborArray
+@CborObjectAsArray
 data class CoseMac0 internal constructor(
     @ByteString
     override val plainProtectedHeader: ByteArray,
 
-    override val unprotectedHeader: CoseHeader?,
+    /** Always encoded as a map; a CBOR `null` written by the deprecated `CoseMac` is read as an empty bucket. */
+    @Serializable(with = UnprotectedHeaderSerializer::class)
+    override val unprotectedHeader: CborMap,
 
     @ByteString
     override val plainPayload: ByteArray?,
@@ -37,10 +41,10 @@ data class CoseMac0 internal constructor(
 ) : CosePlaintextMessage() {
 
     @Transient
-    val protectedHeader: CoseHeader = decodeProtectedHeader(plainProtectedHeader)
+    override val protectedHeader: CborMap = decodeProtectedBucket(plainProtectedHeader)
 
     init {
-        val _ = protectedHeader.strictUnion(unprotectedHeader)
+        requireValidBuckets(protectedHeader, unprotectedHeader)
     }
 
     /**
@@ -96,6 +100,23 @@ data class CoseMac0 internal constructor(
         /**
          * Builds a new [CoseMac0], authenticating the `MAC_structure` built from the encoded [protectedHeader].
          */
+        suspend operator fun invoke(
+            header: CoseHeaderWrapped<*>,
+            plainPayload: ByteArray,
+            detached: Boolean = false,
+            externalAad: ByteArray = byteArrayOf(),
+            mac: suspend (ByteArray) -> ByteArray,
+        ): CoseMac0 {
+            val plainProtectedHeader = header.plainProtectedHeader
+            return CoseMac0(
+                plainProtectedHeader = plainProtectedHeader,
+                unprotectedHeader = header.unprotectedHeader,
+                plainPayload = if (detached) null else plainPayload,
+                tag = mac(mac0StructureInput(plainProtectedHeader, externalAad, plainPayload)),
+            )
+        }
+
+        /** Builds a new [CoseMac0] from two [CoseHeader]s, one per bucket. */
         //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             protectedHeader: CoseHeader,
@@ -105,10 +126,10 @@ data class CoseMac0 internal constructor(
             externalAad: ByteArray = byteArrayOf(),
             mac: suspend (ByteArray) -> ByteArray,
         ): CoseMac0 {
-            val plainProtectedHeader = encodeProtectedHeader(protectedHeader)
+            val plainProtectedHeader = encodeProtectedBucket(protectedHeader.toBucket())
             return CoseMac0(
                 plainProtectedHeader = plainProtectedHeader,
-                unprotectedHeader = unprotectedHeader,
+                unprotectedHeader = unprotectedHeader?.toBucket() ?: EMPTY_BUCKET,
                 plainPayload = if (detached) null else plainPayload,
                 tag = mac(mac0StructureInput(plainProtectedHeader, externalAad, plainPayload)),
             )
