@@ -23,27 +23,26 @@ internal object X5ChainSerializer : KSerializer<List<ByteArray>> {
     override val descriptor: SerialDescriptor =
         SerialDescriptor("at.asitplus.signum.indispensable.cosef.X5Chain", serializer<CborElement>().descriptor)
 
-    override fun serialize(encoder: Encoder, value: List<ByteArray>) {
-        val cborEncoder = encoder as? CborEncoder
-            ?: throw SerializationException("x5chain can only be encoded to CBOR")
-        cborEncoder.encodeCborElement(
+    override fun serialize(encoder: Encoder, value: List<ByteArray>) =
+        encoder.encodeSerializableValue(
+            CborElement.serializer(),
             if (value.size == 1) CborByteString(value.single())
-            else CborArray(value.map { CborByteString(it) })
+            else CborArray(value.map { CborByteString(it) }),
         )
-    }
 
-    override fun deserialize(decoder: Decoder): List<ByteArray> {
-        val cborDecoder = decoder as? CborDecoder
-            ?: throw SerializationException("x5chain can only be decoded from CBOR")
-        return when (val element = cborDecoder.decodeCborElement()) {
+    // decodeSerializableValue instead of CborDecoder.decodeCborElement(): when decoding from a CborElement tree,
+    // the latter returns the map key instead of the value
+    override fun deserialize(decoder: Decoder): List<ByteArray> =
+        when (val element = decoder.decodeSerializableValue(CborElement.serializer())) {
             is CborByteString -> listOf(element.toByteArray())
             is CborArray -> element.map {
                 (it as? CborByteString)?.toByteArray()
                     ?: throw SerializationException("x5chain must contain byte strings only")
             }
-            else -> throw SerializationException("x5chain must be a byte string or an array of byte strings")
+            else -> throw SerializationException(
+                "x5chain must be a byte string or an array of byte strings, was ${element::class.simpleName}"
+            )
         }
-    }
 }
 
 @Deprecated("CoseHeader uses its generated serializer", ReplaceWith("CoseHeader.serializer()"))
