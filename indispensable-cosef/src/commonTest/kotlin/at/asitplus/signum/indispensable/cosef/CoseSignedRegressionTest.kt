@@ -37,7 +37,8 @@ val CoseSignedRegressionTest by matrixSuite {
                         payloadSerializer = ByteArraySerializer(),
                     )
                 )
-                COSE.sign1StructureInput(COSE.encodeProtectedHeader(header), aad, CONTENT).hex() shouldBe legacy.hex()
+                COSE.sign1StructureInput(encodeProtectedBucket(header.toBucket()), aad, CONTENT).hex() shouldBe
+                        legacy.hex()
             }
         }
     }
@@ -54,7 +55,8 @@ val CoseSignedRegressionTest by matrixSuite {
                         payloadSerializer = ByteArraySerializer(),
                     )
                 )
-                COSE.mac0StructureInput(COSE.encodeProtectedHeader(header), aad, CONTENT).hex() shouldBe legacy.hex()
+                COSE.mac0StructureInput(encodeProtectedBucket(header.toBucket()), aad, CONTENT).hex() shouldBe
+                        legacy.hex()
             }
         }
     }
@@ -132,10 +134,11 @@ val CoseSignedRegressionTest by matrixSuite {
         val legacyBytes = legacy.serialize(ByteArraySerializer())
 
         val cose = CoseSign1(legacyBytes)
-        cose.protectedHeader shouldBe legacy.protectedHeader
-        cose.unprotectedHeader shouldBe legacy.unprotectedHeader
+        cose.protectedHeader shouldBe legacy.protectedHeader.toBucket()
+        cose.wrappedHeader<CoseHeader>().header shouldBe
+                legacy.protectedHeader.copy(kid = legacy.unprotectedHeader!!.kid)
         cose.plainPayload!!.hex() shouldBe CONTENT_HEX
-        cose.signature shouldBe legacy.signature
+        cose.typed<ByteArray, CoseHeader>().signature shouldBe legacy.signature
         cose.signatureInput().hex() shouldBe legacy.prepareCoseSignatureInput().hex()
 
         val coseBytes = coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), cose)
@@ -143,21 +146,29 @@ val CoseSignedRegressionTest by matrixSuite {
     }
 
     "legacy CoseMac bytes parse as CoseMac0 and back" {
-        val legacy = CoseMac.create(
-            protectedHeader = HS256_HEADER,
-            payload = CONTENT,
-            tag = FAKE_TAG,
-            payloadSerializer = ByteArraySerializer(),
-        )
-        val legacyBytes = legacy.serialize(ByteArraySerializer())
+        for (unprotected in listOf(null, CoseHeader(), CoseHeader(kid = "kid".encodeToByteArray()))) {
+            withClue("unprotected=$unprotected") {
+                val legacy = CoseMac.create(
+                    protectedHeader = HS256_HEADER,
+                    unprotectedHeader = unprotected,
+                    payload = CONTENT,
+                    tag = FAKE_TAG,
+                    payloadSerializer = ByteArraySerializer(),
+                )
+                val legacyBytes = legacy.serialize(ByteArraySerializer())
 
-        val cose = CoseMac0(legacyBytes)
-        cose.protectedHeader shouldBe legacy.protectedHeader
-        cose.tag.hex() shouldBe legacy.tag.hex()
-        cose.macInput().hex() shouldBe legacy.prepareCoseMacInput().hex()
+                val cose = CoseMac0(legacyBytes)
+                cose.protectedHeader shouldBe legacy.protectedHeader.toBucket()
+                cose.wrappedHeader<CoseHeader>().header shouldBe HS256_HEADER.copy(kid = unprotected?.kid)
+                cose.tag.hex() shouldBe legacy.tag.hex()
+                cose.macInput().hex() shouldBe legacy.prepareCoseMacInput().hex()
 
-        val coseBytes = coseCompliantSerializer.encodeToByteArray(CoseMac0.serializer(), cose)
-        CoseMac.deserialize(ByteArraySerializer(), coseBytes).getOrThrow() shouldBe legacy
+                val coseBytes = coseCompliantSerializer.encodeToByteArray(CoseMac0.serializer(), cose)
+                coseBytes.hex() shouldBe legacyBytes.hex()
+                CoseMac.deserialize(ByteArraySerializer(), coseBytes).getOrThrow() shouldBe
+                        CoseMac.deserialize(ByteArraySerializer(), legacyBytes).getOrThrow()
+            }
+        }
     }
 
     "typed CoseSign1 matches legacy CoseSigned<P> on the wire" {
@@ -173,7 +184,6 @@ val CoseSignedRegressionTest by matrixSuite {
             payload = payload,
             payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
 
         typed.cose.plainPayload!!.hex() shouldBe legacy.wireFormat.payload!!.hex()
         typed.cose.signatureInput().hex() shouldBe legacy.prepareCoseSignatureInput().hex()
@@ -189,6 +199,6 @@ val CoseSignedRegressionTest by matrixSuite {
         )
 
         CoseSign1(legacy.serialize(DataClass.serializer()))
-            .typed(DataClass.serializer()).payload shouldBe legacy.payload
+            .typed(DataClass.serializer(), CoseHeader.serializer()).payload shouldBe legacy.payload
     }
 }
