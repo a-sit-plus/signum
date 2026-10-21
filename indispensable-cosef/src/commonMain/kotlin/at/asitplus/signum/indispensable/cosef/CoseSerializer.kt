@@ -19,7 +19,7 @@ import kotlinx.serialization.json.JsonDecoder
 object CoseBytesWireFormatSerializer : KSerializer<CoseBytes> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseBytes") {
         element("protectedHeader", ProtectedCoseHeaderSerializer.descriptor)
-        element("unprotectedHeader", CoseHeaderSerializer.descriptor)
+        element("unprotectedHeader", CoseHeader.serializer().descriptor)
         element("payload", ByteArraySerializer().descriptor, isOptional = true)
         element("authTag", ByteArraySerializer().descriptor)
     }

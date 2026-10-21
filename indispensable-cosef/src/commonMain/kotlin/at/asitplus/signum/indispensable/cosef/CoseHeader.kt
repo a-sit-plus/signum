@@ -15,7 +15,7 @@ import kotlinx.serialization.cbor.CborLabel
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
 @OptIn(ExperimentalSerializationApi::class)
-@Serializable(with = CoseHeaderSerializer::class)
+@Serializable
 data class CoseHeader(
     /**
      * This header parameter is used to indicate the algorithm used for the security processing. This header parameter
@@ -103,7 +103,7 @@ data class CoseHeader(
      */
     @CborLabel(33)
     @SerialName("x5chain")
-    @ByteString
+    @Serializable(with = X5ChainSerializer::class)
     override val certificateChain: List<ByteArray>? = null,
 
     /**
@@ -153,7 +153,7 @@ data class CoseHeader(
         result = 31 * result + (kid?.contentHashCode() ?: 0)
         result = 31 * result + (iv?.contentHashCode() ?: 0)
         result = 31 * result + (partialIv?.contentHashCode() ?: 0)
-        result = 31 * result + (certificateChain?.hashCode() ?: 0)
+        result = 31 * result + (certificateChain?.sumOf { it.contentHashCode() } ?: 0)
         result = 31 * result + (type?.hashCode() ?: 0)
         return result
     }
