@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -12,7 +11,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.cbor.CborMap
 import kotlinx.serialization.cbor.CborObjectAsArray
 import kotlinx.serialization.decodeFromByteArray
@@ -78,7 +76,7 @@ data class CoseSign1 internal constructor(
 
     override fun hashCode(): Int {
         var result = plainProtectedHeader.contentHashCode()
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
+        result = 31 * result + unprotectedHeader.hashCode()
         result = 31 * result + (plainPayload?.contentHashCode() ?: 0)
         result = 31 * result + plainSignature.contentHashCode()
         return result
@@ -99,6 +97,7 @@ data class CoseSign1 internal constructor(
         }.getOrThrow()
 
         /** Builds a new [CoseSign1] with the buckets of [header], signing the `Sig_structure`. */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             header: CoseHeaderWrapped<*>,
             plainPayload: ByteArray,
@@ -116,6 +115,7 @@ data class CoseSign1 internal constructor(
         }
 
         /** Builds a new [CoseSign1] from two [CoseHeader]s, one per bucket. */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,

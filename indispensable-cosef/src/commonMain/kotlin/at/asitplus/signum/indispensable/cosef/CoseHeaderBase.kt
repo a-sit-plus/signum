@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
 /**
- * Common header parameters of (https://www.rfc-editor.org/rfc/rfc9052.html#section-3.1), plus
+ * Common header parameters of [RFC 9052 3.1](https://www.rfc-editor.org/rfc/rfc9052.html#section-3.1), plus
  * `x5chain` [RFC 9360](https://www.rfc-editor.org/rfc/rfc9360.html) and `typ`
  * [RFC 9596](https://www.rfc-editor.org/rfc/rfc9596.html), for application-defined COSE header models.
  *
