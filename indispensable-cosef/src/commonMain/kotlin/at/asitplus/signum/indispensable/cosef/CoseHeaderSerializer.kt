@@ -1,13 +1,18 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.cbor.ByteString
+import kotlinx.serialization.cbor.CborArray
+import kotlinx.serialization.cbor.CborByteString
+import kotlinx.serialization.cbor.CborDecoder
+import kotlinx.serialization.cbor.CborElement
+import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.cbor.CborLabel
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -15,287 +20,63 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.serializer
 
-/**
- * Handles serialization of [CoseHeader], accounting for [CoseHeader.certificateChain], which may be an array OR a
- * byte string.
- */
+/** `x5chain` (RFC 9360): one certificate as a byte string, several as an array of byte strings. */
 @OptIn(ExperimentalSerializationApi::class)
-object CoseHeaderSerializer : KSerializer<CoseHeader> {
+internal object X5ChainSerializer : KSerializer<List<ByteArray>> {
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseHeader") {
-        element("alg", CoseAlgorithm.serializer().descriptor, listOf(CborLabel(1)))
-        element("crit", ListSerializer(CoseHeaderLabel.serializer()).descriptor, listOf(CborLabel(2)))
-        element("content type", CoseContentType.serializer().descriptor, listOf(CborLabel(3)))
-        element("kid", ByteArraySerializer().descriptor, listOf(CborLabel(4), ByteString()))
-        element("IV", ByteArraySerializer().descriptor, listOf(CborLabel(5), ByteString()))
-        element("Partial IV", ByteArraySerializer().descriptor, listOf(CborLabel(6), ByteString()))
-        element("x5chain", ListSerializer(ByteArraySerializer()).descriptor, listOf(CborLabel(33), ByteString()))
-        element("typ", String.serializer().descriptor, listOf(CborLabel(16)))
-        element("x5t", CoseCertificateHash.serializer().descriptor, listOf(CborLabel(34)))
-        element("x5u", String.serializer().descriptor, listOf(CborLabel(35)))
-        element("CWT Claims", CborWebToken.serializer().descriptor, listOf(CborLabel(15)))
-    }
+    override val descriptor: SerialDescriptor =
+        SerialDescriptor("at.asitplus.signum.indispensable.cosef.X5Chain", serializer<CborElement>().descriptor)
 
-    override fun deserialize(decoder: Decoder): CoseHeader {
-        val labels = mapOf<String, Long>(
-            "alg" to 1,
-            "crit" to 2,
-            "content type" to 3,
-            "kid" to 4,
-            "IV" to 5,
-            "Partial IV" to 6,
-            "x5chain" to 33,
-            "typ" to 16,
-            "x5t" to 34,
-            "x5u" to 35,
-            "CWT Claims" to 15,
-        )
-
-        var alg: CoseAlgorithm? = null
-        var crit: List<CoseHeaderLabel>? = null
-        var contentType: CoseContentType? = null
-        var kid: ByteArray? = null
-        var iv: ByteArray? = null
-        var partialIv: ByteArray? = null
-        var x5chain: List<ByteArray>? = null
-        var typ: String? = null
-        var x5t: CoseCertificateHash? = null
-        var x5u: String? = null
-        var cwtClaims: CborWebToken? = null
-
-        decoder.decodeStructure(descriptor) {
-            while (true) {
-                val index = decodeElementIndex(descriptor)
-                if (index == -1) break
-                val label = descriptor.getElementAnnotations(index)
-                    .filterIsInstance<CborLabel>().first().label
-                when (label) {
-                    labels["alg"] -> alg = decodeNullableSerializableElement(
-                        CoseAlgorithmSerializer.descriptor,
-                        index,
-                        CoseAlgorithm.serializer()
-                    )
-
-                    labels["crit"] -> crit = decodeSerializableElement(
-                        descriptor,
-                        index,
-                        ListSerializer(CoseHeaderLabel.serializer())
-                    ).also { require(it.isNotEmpty()) { "crit must not be empty" } }
-
-                    labels["content type"] -> contentType = decodeSerializableElement(
-                        descriptor,
-                        index,
-                        CoseContentType.serializer()
-                    )
-                    labels["kid"] -> kid = decodeNullableSerializableElement(
-                        ByteArraySerializer().descriptor,
-                        index,
-                        ByteArraySerializer()
-                    )
-
-                    labels["IV"] -> iv = decodeNullableSerializableElement(
-                        ByteArraySerializer().descriptor,
-                        index,
-                        ByteArraySerializer()
-                    )
-
-                    labels["Partial IV"] -> partialIv = decodeNullableSerializableElement(
-                        ByteArraySerializer().descriptor,
-                        index,
-                        ByteArraySerializer()
-                    )
-                    // may be a list of byte array or a single byte array
-                    labels["x5chain"] -> x5chain = catchingUnwrapped {
-                        decodeNullableSerializableElement(
-                            ListSerializer(ByteArraySerializer()).descriptor,
-                            index,
-                            ListSerializer(ByteArraySerializer())
-                        )
-                    }.getOrElse {
-                        listOf(
-                            decodeSerializableElement(
-                                ByteArraySerializer().descriptor,
-                                index,
-                                ByteArraySerializer()
-                            )
-                        )
-                    }
-
-                    labels["typ"] -> typ = decodeStringElement(String.serializer().descriptor, index)
-                    labels["x5t"] -> x5t = decodeSerializableElement(
-                        descriptor,
-                        index,
-                        CoseCertificateHash.serializer()
-                    )
-
-                    labels["x5u"] -> x5u = decodeStringElement(String.serializer().descriptor, index)
-                    labels["CWT Claims"] -> cwtClaims = decodeSerializableElement(
-                        descriptor,
-                        index,
-                        CborWebToken.serializer()
-                    )
-
-                    else -> break
-                }
-            }
-        }
-        return CoseHeader(
-            algorithm = alg,
-            criticalHeaders = crit,
-            contentType = contentType,
-            kid = kid,
-            iv = iv,
-            partialIv = partialIv,
-            certificateChain = x5chain,
-            type = typ,
-            certificateHash = x5t,
-            certificateUrl = x5u,
-            cwtClaims = cwtClaims,
+    override fun serialize(encoder: Encoder, value: List<ByteArray>) {
+        val cborEncoder = encoder as? CborEncoder
+            ?: throw SerializationException("x5chain can only be encoded to CBOR")
+        cborEncoder.encodeCborElement(
+            if (value.size == 1) CborByteString(value.single())
+            else CborArray(value.map { CborByteString(it) })
         )
     }
 
-    override fun serialize(encoder: Encoder, value: CoseHeader) {
-        with(value) {
-            encoder.encodeStructure(descriptor) {
-                algorithm?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        0,
-                        CoseAlgorithmSerializer,
-                        algorithm
-                    )
-                }
-                criticalHeaders?.let {
-                    require(it.isNotEmpty()) { "crit must not be empty" }
-                    encodeSerializableElement(
-                        descriptor,
-                        1,
-                        ListSerializer(CoseHeaderLabel.serializer()),
-                        criticalHeaders
-                    )
-                }
-                contentType?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        2,
-                        CoseContentType.serializer(),
-                        contentType
-                    )
-                }
-                kid?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        3,
-                        ByteArraySerializer(),
-                        kid
-                    )
-                }
-                iv?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        4,
-                        ByteArraySerializer(),
-                        iv
-                    )
-                }
-                partialIv?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        5,
-                        ByteArraySerializer(),
-                        partialIv
-                    )
-                }
-                cwtClaims?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        10,
-                        CborWebToken.serializer(),
-                        cwtClaims
-                    )
-                }
-                certificateChain?.let {
-                    if (it.size == 1) {
-                        encodeSerializableElement(
-                            descriptor,
-                            6,
-                            ByteArraySerializer(),
-                            certificateChain.first()
-                        )
-                    } else {
-                        encodeSerializableElement(
-                            descriptor,
-                            6,
-                            ListSerializer(ByteArraySerializer()),
-                            certificateChain
-                        )
-                    }
-                }
-                certificateHash?.let {
-                    encodeSerializableElement(
-                        descriptor,
-                        8,
-                        CoseCertificateHash.serializer(),
-                        certificateHash
-                    )
-                }
-                certificateUrl?.let {
-                    encodeStringElement(
-                        descriptor,
-                        9,
-                        certificateUrl
-                    )
-                }
-                type?.let {
-                    encodeStringElement(
-                        descriptor,
-                        7,
-                        type
-                    )
-                }
+    override fun deserialize(decoder: Decoder): List<ByteArray> {
+        val cborDecoder = decoder as? CborDecoder
+            ?: throw SerializationException("x5chain can only be decoded from CBOR")
+        return when (val element = cborDecoder.decodeCborElement()) {
+            is CborByteString -> listOf(element.toByteArray())
+            is CborArray -> element.map {
+                (it as? CborByteString)?.toByteArray()
+                    ?: throw SerializationException("x5chain must contain byte strings only")
             }
+            else -> throw SerializationException("x5chain must be a byte string or an array of byte strings")
         }
     }
 }
 
-/**
- * Serializes [CoseHeader] as a protected header, i.e. wrapped in a byte string.
- *
- * Note that re-encoding a deserialized header does not necessarily reproduce the original bytes,
- * see [CoseBytes.rawProtectedHeader] for the bytes as transferred.
- */
+@Deprecated("CoseHeader uses its generated serializer", ReplaceWith("CoseHeader.serializer()"))
+object CoseHeaderSerializer : KSerializer<CoseHeader> by CoseHeader.serializer()
+
 @OptIn(ExperimentalSerializationApi::class)
 object ProtectedCoseHeaderSerializer : KSerializer<CoseHeader> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ProtectedHeader")
 
     override fun serialize(encoder: Encoder, value: CoseHeader) {
-        encoder.encodeSerializableValue(ByteArraySerializer(), value.toProtectedHeaderBytes())
+        val headerBytes = coseCompliantSerializer.encodeToByteArray(CoseHeader.serializer(), value)
+        // Empty map (0xA0) → h'' (zero-length bstr)
+        val wrapped = if (headerBytes.size == 1 && headerBytes[0] == 0xA0.toByte()) {
+            byteArrayOf()
+        } else {
+            headerBytes
+        }
+
+        encoder.encodeSerializableValue(ByteArraySerializer(), wrapped)
     }
 
-    override fun deserialize(decoder: Decoder): CoseHeader =
-        decoder.decodeSerializableValue(ByteArraySerializer()).toProtectedCoseHeader()
-}
-
-/**
- * Encodes this header as the content of a protected header byte string,
- * i.e. an empty map (`0xA0`) is encoded as a zero-length byte string (`h''`).
- */
-internal fun CoseHeader.toProtectedHeaderBytes(): ByteArray {
-    val headerBytes = coseCompliantSerializer.encodeToByteArray(CoseHeader.serializer(), this)
-    // Empty map (0xA0) → h'' (zero-length bstr)
-    return if (headerBytes.size == 1 && headerBytes[0] == 0xA0.toByte()) {
-        byteArrayOf()
-    } else {
-        headerBytes
+    override fun deserialize(decoder: Decoder): CoseHeader {
+        val raw = decoder.decodeSerializableValue(ByteArraySerializer())
+        return if (raw.isEmpty()) {
+            CoseHeader()
+        } else {
+            coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), raw)
+        }
     }
-}
-
-/**
- * Decodes the content of a protected header byte string, where a zero-length byte string is an empty header.
- */
-internal fun ByteArray.toProtectedCoseHeader(): CoseHeader = if (isEmpty()) {
-    CoseHeader()
-} else {
-    coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), this)
 }
