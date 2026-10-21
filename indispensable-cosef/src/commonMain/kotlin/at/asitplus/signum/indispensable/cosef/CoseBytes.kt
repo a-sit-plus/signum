@@ -29,6 +29,7 @@ import kotlinx.serialization.encodeToByteArray
 data class CoseBytes internal constructor(
     @Serializable(with = ProtectedCoseHeaderSerializer::class)
     val protectedHeader: CoseHeader,
+    @Serializable(with = LegacyUnprotectedHeaderSerializer::class)
     val unprotectedHeader: CoseHeader?,
     @ByteString
     val payload: ByteArray?,

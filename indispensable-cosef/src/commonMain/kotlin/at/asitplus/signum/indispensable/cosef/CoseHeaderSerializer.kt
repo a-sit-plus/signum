@@ -1,26 +1,19 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.cbor.CborByteString
 import kotlinx.serialization.cbor.CborDecoder
 import kotlinx.serialization.cbor.CborElement
 import kotlinx.serialization.cbor.CborEncoder
-import kotlinx.serialization.cbor.CborLabel
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.encoding.decodeStructure
-import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.serializer
 
 /** `x5chain` (RFC 9360): one certificate as a byte string, several as an array of byte strings. */
