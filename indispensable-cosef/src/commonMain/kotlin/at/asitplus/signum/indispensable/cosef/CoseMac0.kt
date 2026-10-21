@@ -11,7 +11,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.cbor.CborMap
 import kotlinx.serialization.cbor.CborObjectAsArray
 import kotlinx.serialization.decodeFromByteArray
@@ -79,7 +78,7 @@ data class CoseMac0 internal constructor(
 
     override fun hashCode(): Int {
         var result = plainProtectedHeader.contentHashCode()
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
+        result = 31 * result + unprotectedHeader.hashCode()
         result = 31 * result + (plainPayload?.contentHashCode() ?: 0)
         result = 31 * result + tag.contentHashCode()
         return result
@@ -100,8 +99,9 @@ data class CoseMac0 internal constructor(
         }.getOrThrow()
 
         /**
-         * Builds a new [CoseMac0], authenticating the `MAC_structure` built from the encoded [protectedHeader].
+         * Builds a new [CoseMac0] with the buckets of [header], authenticating the `MAC_structure` built from the encoded [protectedHeader].
          */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             header: CoseHeaderWrapped<*>,
             plainPayload: ByteArray,
@@ -119,6 +119,7 @@ data class CoseMac0 internal constructor(
         }
 
         /** Builds a new [CoseMac0] from two [CoseHeader]s, one per bucket. */
+        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,
