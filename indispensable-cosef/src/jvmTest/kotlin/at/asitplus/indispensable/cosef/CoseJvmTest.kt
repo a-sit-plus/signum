@@ -2,6 +2,7 @@ package at.asitplus.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.CONTENT
 import at.asitplus.signum.indispensable.cosef.COSE
+import at.asitplus.signum.indispensable.cosef.CoseHeader
 import at.asitplus.signum.indispensable.cosef.CoseSign1
 import at.asitplus.signum.indispensable.cosef.CoseSigned
 import at.asitplus.signum.indispensable.cosef.DataClass
@@ -11,6 +12,7 @@ import at.asitplus.signum.indispensable.cosef.EXTERNAL_AAD
 import at.asitplus.signum.indispensable.cosef.hex
 import at.asitplus.signum.indispensable.cosef.hexBytes
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.cosef.signature
 import at.asitplus.signum.indispensable.cosef.typed
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.testballoon.matrix.*
@@ -57,7 +59,7 @@ val CoseJvmTest by matrixSuite {
         val cose = CoseSign1(protectedHeader = ES256_HEADER, plainPayload = CONTENT) { sign(it) }
         val parsed = CoseSign1(coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), cose))
 
-        parsed.signature.shouldBeInstanceOf<EcdsaSignature>()
+        parsed.typed<ByteArray, CoseHeader>().signature.shouldBeInstanceOf<EcdsaSignature>()
         verify(parsed.signatureInput(), parsed.plainSignature).shouldBeTrue()
     }
 
@@ -85,7 +87,7 @@ val CoseJvmTest by matrixSuite {
         coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), parsed).hex() shouldBe wire.hex()
 
         val legacy = CoseSigned.deserialize(ByteArraySerializer(), wire).getOrThrow()
-        legacy.protectedHeader shouldBe parsed.protectedHeader
+        legacy.protectedHeader shouldBe parsed.wrappedHeader<CoseHeader>().header
         legacy.prepareCoseSignatureInput().hex() shouldNotBe parsed.signatureInput().hex()
         verify(legacy.prepareCoseSignatureInput(), parsed.plainSignature).shouldBeFalse()
     }
@@ -96,7 +98,8 @@ val CoseJvmTest by matrixSuite {
         val wire = foreignSign1(plainProtectedHeader, CONTENT)
 
         val parsed = CoseSign1(wire)
-        parsed.protectedHeader shouldBe ES256_HEADER
+        parsed.protectedHeader.size shouldBe 2
+        parsed.wrappedHeader<CoseHeader>().header shouldBe ES256_HEADER
         parsed.plainProtectedHeader.hex() shouldBe plainProtectedHeader.hex()
         verify(parsed.signatureInput(), parsed.plainSignature).shouldBeTrue()
 
@@ -124,7 +127,7 @@ val CoseJvmTest by matrixSuite {
         val parsed = CoseSign1(coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose))
 
         verify(parsed.signatureInput(), parsed.plainSignature).shouldBeTrue()
-        parsed.typed(DataClass.serializer()) shouldBe typed
+        parsed.typed(DataClass.serializer(), CoseHeader.serializer()) shouldBe typed
     }
 }
 

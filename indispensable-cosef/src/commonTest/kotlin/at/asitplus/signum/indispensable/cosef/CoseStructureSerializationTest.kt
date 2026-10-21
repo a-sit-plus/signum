@@ -14,6 +14,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.cbor.CborInteger
 
 /**
  * RFC 9052 structure building, protected-header handling, and the wire forms of [CoseSign1] and [CoseMac0].
@@ -44,15 +45,19 @@ val CoseStructureSerializationTest by matrixSuite {
         ).hex() shouldBe "846A5369676E617475726531" + "40" + "4C11AA22BB33CC44DD55006699" + "54" + CONTENT_HEX
     }
 
-    "encodeProtectedHeader collapses an empty header to a zero-length byte string" {
-        COSE.encodeProtectedHeader(CoseHeader()).size shouldBe 0
-        COSE.encodeProtectedHeader(ES256_HEADER).hex() shouldBe ES256_HEADER_HEX
+    "an empty protected header is transmitted as a zero-length byte string" {
+        CoseSign1(protectedHeader = CoseHeader(), plainPayload = CONTENT) { FAKE_SIGNATURE }
+            .plainProtectedHeader.size shouldBe 0
+        CoseSign1(protectedHeader = ES256_HEADER, plainPayload = CONTENT) { FAKE_SIGNATURE }
+            .plainProtectedHeader.hex() shouldBe ES256_HEADER_HEX
     }
 
-    "decodeProtectedHeader accepts both empty forms of RFC 9052 section 3" {
-        COSE.decodeProtectedHeader(byteArrayOf()) shouldBe CoseHeader()
-        COSE.decodeProtectedHeader("A0".hexBytes()) shouldBe CoseHeader()
-        COSE.decodeProtectedHeader(ES256_HEADER_HEX.hexBytes()) shouldBe ES256_HEADER
+    "both empty forms of the protected header are accepted (RFC 9052 section 3)" {
+        for (protected in listOf("40", "41A0")) {
+            val parsed = CoseSign1(("84" + protected + "A0" + "54" + CONTENT_HEX + "43" + FAKE_SIGNATURE.hex()).hexBytes())
+            parsed.protectedHeader.isEmpty().shouldBeTrue()
+            parsed.wrappedHeader<CoseHeader>().header shouldBe CoseHeader()
+        }
     }
 
     // ---- CoseSign1 --------------------------------------------------------------------------------------------
@@ -67,9 +72,10 @@ val CoseStructureSerializationTest by matrixSuite {
         signed!!.hex() shouldBe COSE.sign1StructureInput(RS256_HEADER_HEX.hexBytes(), payload = CONTENT).hex()
         cose.signatureInput().hex() shouldBe signed.hex()
         cose.plainProtectedHeader.hex() shouldBe RS256_HEADER_HEX
-        cose.protectedHeader shouldBe RS256_HEADER
+        cose.protectedHeader[1] shouldBe CborInteger(-257)
+        cose.wrappedHeader<CoseHeader>().header shouldBe RS256_HEADER
         cose.plainPayload!!.hex() shouldBe CONTENT_HEX
-        cose.signature shouldBe RsaSignature(FAKE_SIGNATURE)
+        cose.typed<ByteArray, CoseHeader>().signature shouldBe RsaSignature(FAKE_SIGNATURE)
     }
 
     "CoseSign1 round-trips through CBOR" {
@@ -165,7 +171,8 @@ val CoseStructureSerializationTest by matrixSuite {
 
         maced!!.hex() shouldBe COSE.mac0StructureInput(HS256_HEADER_HEX.hexBytes(), payload = CONTENT).hex()
         cose.macInput().hex() shouldBe maced.hex()
-        cose.protectedHeader shouldBe HS256_HEADER
+        cose.wrappedHeader<CoseHeader>().header shouldBe HS256_HEADER
+        cose.protectedHeader shouldBe HS256_HEADER.toBucket()
         cose.tag.hex() shouldBe FAKE_TAG.hex()
     }
 

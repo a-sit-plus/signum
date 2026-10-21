@@ -2,15 +2,19 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldStartWith
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.cbor.CborElement
+import kotlinx.serialization.cbor.CborInteger
 
 /**
  * [CoseTyped]: typed builders, `typed()` decoding and [CoseTypedSerializerTemplate].
@@ -70,7 +74,7 @@ val CoseTypedTest by matrixSuite {
         }
     }
 
-    "typed() decodes the payload of a parsed CoseSign1" {
+    "typed() decodes payload and header of a parsed CoseSign1" {
         val typed = CoseTyped.sign1(
             protectedHeader = RS256_HEADER,
             payload = payload,
@@ -78,8 +82,32 @@ val CoseTypedTest by matrixSuite {
         ) { FAKE_SIGNATURE }
         val parsed = CoseSign1(coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose))
 
-        parsed.typed(DataClass.serializer()) shouldBe typed
-        parsed.typed<DataClass>() shouldBe typed
+        parsed.typed(DataClass.serializer(), CoseHeader.serializer()) shouldBe typed
+        parsed.typed<DataClass, CoseHeader>() shouldBe typed
+    }
+
+    "the typed view exposes the combined header, its placement and crit labels" {
+        val kid = "kid".encodeToByteArray()
+        val typed = CoseTyped.sign1(
+            protectedHeader = RS256_HEADER,
+            unprotectedHeader = CoseHeader(kid = kid),
+            payload = payload,
+            payloadSerializer = DataClass.serializer(),
+        ) { FAKE_SIGNATURE }
+
+        typed.header shouldBe RS256_HEADER.copy(kid = kid)
+        typed.unprotectedLabels shouldBe setOf<CborElement>(CborInteger(4))
+        typed.criticalLabels.shouldBeEmpty()
+    }
+
+    "the signature is interpreted on the typed view" {
+        val typed = CoseTyped.sign1(
+            protectedHeader = RS256_HEADER,
+            payload = payload,
+            payloadSerializer = DataClass.serializer(),
+        ) { FAKE_SIGNATURE }
+
+        typed.signature shouldBe RsaSignature(FAKE_SIGNATURE)
     }
 
     "detached sign1 keeps the typed payload but leaves it out of the message" {
@@ -107,7 +135,7 @@ val CoseTypedTest by matrixSuite {
             payload = payload,
             payloadSerializer = DataClass.serializer(),
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
+        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer(), CoseHeader.serializer())
 
         val cbor = coseCompliantSerializer.encodeToByteArray(template, typed)
         cbor.hex() shouldBe coseCompliantSerializer.encodeToByteArray(CoseSign1.serializer(), typed.cose).hex()
@@ -122,7 +150,7 @@ val CoseTypedTest by matrixSuite {
             payloadSerializer = DataClass.serializer(),
             detached = true,
         ) { FAKE_SIGNATURE }
-        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer())
+        val template = CoseTypedSerializerTemplate(CoseSign1.serializer(), DataClass.serializer(), CoseHeader.serializer())
         val cbor = coseCompliantSerializer.encodeToByteArray(template, detached)
 
         shouldThrowAny { coseCompliantSerializer.decodeFromByteArray(template, cbor) }
@@ -140,14 +168,15 @@ val CoseTypedTest by matrixSuite {
         }
 
         typed.payload shouldBe payload
+        typed.header shouldBe HS256_HEADER
         typed.cose.tag.hex() shouldBe FAKE_TAG.hex()
         typed.cose.macInput().hex() shouldBe maced!!.hex()
 
         val parsed = CoseMac0(coseCompliantSerializer.encodeToByteArray(CoseMac0.serializer(), typed.cose))
-        parsed.typed(DataClass.serializer()) shouldBe typed
-        parsed.typed<DataClass>() shouldBe typed
+        parsed.typed(DataClass.serializer(), CoseHeader.serializer()) shouldBe typed
+        parsed.typed<DataClass, CoseHeader>() shouldBe typed
 
-        val template = CoseTypedSerializerTemplate(CoseMac0.serializer(), DataClass.serializer())
+        val template = CoseTypedSerializerTemplate(CoseMac0.serializer(), DataClass.serializer(), CoseHeader.serializer())
         coseCompliantSerializer.decodeFromByteArray(
             template,
             coseCompliantSerializer.encodeToByteArray(template, typed)
