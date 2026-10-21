@@ -15,7 +15,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.cbor.CborMap
 import kotlinx.serialization.cbor.CborObjectAsArray
 import kotlinx.serialization.encodeToByteArray
@@ -60,7 +59,7 @@ sealed class COSE {
     companion object {
 
         /**
-         * Builds the `Sig_structure` of a `COSE_Sign1` (RFC 9052 §4.4):
+         * Builds the `Sig_structure` of a `COSE_Sign1` (RFC 9052 4.4):
          * `["Signature1", body_protected, external_aad, payload]`.
          */
         fun sign1StructureInput(
