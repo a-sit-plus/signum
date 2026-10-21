@@ -11,10 +11,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
+import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.cbor.CborMap
 import kotlinx.serialization.cbor.CborObjectAsArray
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.serializer
 
 /**
  * COSE_Sign1
@@ -133,9 +135,22 @@ data class CoseSign1 internal constructor(
     }
 }
 
-/** Decodes the payload of a [CoseSign1] into [P], yielding the typed wrapper. */
-inline fun <reified P> CoseSign1.typed(): CoseSign1Typed<P> = CoseTyped(this, getPayload<P>().getOrThrow())
+/** Decodes payload and header of a [CoseSign1] using explicit serializers, retaining the wire object. */
+fun <P, H : CoseHeaderBase> CoseSign1.typed(
+    payloadSerializer: KSerializer<P>,
+    headerSerializer: KSerializer<H>,
+    serialFormat: Cbor = coseCompliantSerializer,
+): CoseSign1Typed<P, H> = CoseTyped(
+    this,
+    getPayload(payloadSerializer, serialFormat).getOrThrow(),
+    wrappedHeader(headerSerializer, serialFormat),
+)
 
-/** Decodes the payload of a [CoseSign1] into [P] using an explicit serializer. */
-fun <P> CoseSign1.typed(serializer: KSerializer<P>): CoseSign1Typed<P> =
-    CoseTyped(this, getPayload(serializer).getOrThrow())
+/** Decodes payload and header of a [CoseSign1] into [P] and [H]. */
+inline fun <reified P, reified H : CoseHeaderBase> CoseSign1.typed(
+    serialFormat: Cbor = coseCompliantSerializer,
+): CoseSign1Typed<P, H> = typed(
+    payloadSerializer = serialFormat.serializersModule.serializer<P>(),
+    headerSerializer = serialFormat.serializersModule.serializer<H>(),
+    serialFormat = serialFormat,
+)

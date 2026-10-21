@@ -10,10 +10,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
+import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.cbor.CborMap
 import kotlinx.serialization.cbor.CborObjectAsArray
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.serializer
 
 /**
  * Representation of a COSE_MAC0 object
@@ -117,7 +119,6 @@ data class CoseMac0 internal constructor(
         }
 
         /** Builds a new [CoseMac0] from two [CoseHeader]s, one per bucket. */
-        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
         suspend operator fun invoke(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,
@@ -137,9 +138,22 @@ data class CoseMac0 internal constructor(
     }
 }
 
-/** Decodes the payload of a [CoseMac0] into [P], yielding the typed wrapper. */
-inline fun <reified P> CoseMac0.typed(): CoseMac0Typed<P> = CoseTyped(this, getPayload<P>().getOrThrow())
+/** Decodes payload and header of a [CoseMac0] using explicit serializers, retaining the wire object. */
+fun <P, H : CoseHeaderBase> CoseMac0.typed(
+    payloadSerializer: KSerializer<P>,
+    headerSerializer: KSerializer<H>,
+    serialFormat: Cbor = coseCompliantSerializer,
+): CoseMac0Typed<P, H> = CoseTyped(
+    this,
+    getPayload(payloadSerializer, serialFormat).getOrThrow(),
+    wrappedHeader(headerSerializer, serialFormat),
+)
 
-/** Decodes the payload of a [CoseMac0] into [P] using an explicit serializer. */
-fun <P> CoseMac0.typed(serializer: KSerializer<P>): CoseMac0Typed<P> =
-    CoseTyped(this, getPayload(serializer).getOrThrow())
+/** Decodes payload and header of a [CoseMac0] into [P] and [H]. */
+inline fun <reified P, reified H : CoseHeaderBase> CoseMac0.typed(
+    serialFormat: Cbor = coseCompliantSerializer,
+): CoseMac0Typed<P, H> = typed(
+    payloadSerializer = serialFormat.serializersModule.serializer<P>(),
+    headerSerializer = serialFormat.serializersModule.serializer<H>(),
+    serialFormat = serialFormat,
+)
