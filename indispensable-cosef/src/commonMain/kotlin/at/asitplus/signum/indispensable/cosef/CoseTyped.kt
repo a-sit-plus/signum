@@ -23,9 +23,7 @@ data class CoseTyped<out C : COSE, out P>(
     override fun toString(): String = cose.toString()
 
     /** Protected and unprotected bucket combined. Typed with the header rework. */
-    val header: CoseHeader by lazy {
-        COSE.decodeProtectedHeader(cose.plainProtectedHeader).strictUnion(cose.unprotectedHeader)
-    }
+    val header: CoseHeader get() = cose.combinedHeader
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

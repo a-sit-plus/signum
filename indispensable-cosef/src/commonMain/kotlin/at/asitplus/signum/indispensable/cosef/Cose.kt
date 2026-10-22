@@ -28,6 +28,8 @@ sealed class COSE {
 
     abstract val unprotectedHeader: CoseHeader?
 
+    abstract val combinedHeader: CoseHeader
+
     /**
      * The content of the message the plaintext or the ciphertext as transmitted, or `null` when it is
      * detached.
