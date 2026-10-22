@@ -24,7 +24,20 @@ This is a major refactor!
     * Typed payloads remain supported via `CoseTyped` (`CoseSign1Typed`, `CoseMac0Typed`) and `CoseTypedSerializerTemplate`
     * CBOR and JSON wire forms are unchanged, so values persisted with `CoseSigned` / `CoseMac` can be read with the new types and vice versa
     * Deprecate `CoseSigned`, `CoseMac`, `CoseBytes` and `CoseInput`
-
+* COSE header rework
+    Builds on the CBOR element preview of kotlinx.serialization (`1.11.1-waltid-20260811`, via `https://maven.waltid.dev/releases`).
+    * Header buckets are kept as transmitted: `CoseSign1`/`CoseMac0` expose `protectedHeader` and `unprotectedHeader` as raw `CborMap`s, so parameters not modeled by a header class are neither lost nor rejected
+    * New `CoseHeaderBase` interface for header models; `CoseHeader` implements it, and applications can define their own (e.g. with private-use labels)
+    * New `CoseHeaderWrapped<H>`, mirroring josef's `JwsHeaderWrapped`: the effective header `H` (strict union of both buckets) together with the buckets
+        * `CoseHeaderWrapped(header, unprotectedLabels)` splits a header model into buckets by label
+        * `CoseHeaderWrapped.fromBuckets(...)` / `COSE.wrappedHeader<H>()` decode the buckets into any header model
+    * Structural checks of RFC 9052 3 on parsing and building: no label in both buckets, `crit` only in the protected bucket and as a non-empty array
+    * `CoseSign1`/`CoseMac0` builders and `CoseTyped.sign1`/`mac0` additionally accept a `CoseHeaderWrapped<H>`
+    * `CoseHeader` uses its generated serializer; `x5chain` (RFC 9360) is handled by a dedicated serializer 
+    * Fix `CoseHeader.hashCode` for `certificateChain` (now content-based, consistent with `equals`)
+    * Deprecate `CoseHeaderSerializer` in favor of `CoseHeader.serializer()`
+    * The deprecated `CoseSigned`/`CoseMac`/`CoseBytes` keep their wire format, including an empty map for a missing unprotected header
+   
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support
 * Defence-in-depth
