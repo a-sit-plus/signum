@@ -113,8 +113,8 @@ val JwsJvmTest by matrixSuite {
                 signer = it.signerFor(it.signer2),
             )
 
-            val general = JwsRawGeneral.invoke(listOf(flattened1, flattened2))
-            val serialized = joseCompliantSerializer.encodeToString(JwsRawGeneral.serializer(), general)
+            val general = JwsGeneralTyped.JwsRawGeneral.invoke(listOf(flattened1, flattened2))
+            val serialized = joseCompliantSerializer.encodeToString(JwsGeneralTyped.JwsRawGeneral.serializer(), general)
             val parsed = JWSObjectJSON.parse(serialized)
             val typedGeneral = general.typed<JsonObject, JwsHeader>()
             val typedFlattened = listOf(flattened1, flattened2).map { it.typed<JsonObject, JwsHeader>() }

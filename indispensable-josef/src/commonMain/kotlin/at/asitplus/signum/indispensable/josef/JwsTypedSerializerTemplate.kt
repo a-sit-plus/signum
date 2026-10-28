@@ -20,7 +20,7 @@ class JwsTypedSerializerTemplate<J : JwsRaw, P, H : JwsHeaderBase>(
         when (jws) {
             is JwsCompact.Raw -> jws.typed(payloadSerializer, headerSerializer)
             is JwsFlattened.Raw -> jws.typed(payloadSerializer, headerSerializer)
-            is JwsRawGeneral -> jws.typed(payloadSerializer, headerSerializer)
+            is JwsGeneralTyped.JwsRawGeneral -> jws.typed(payloadSerializer, headerSerializer)
         } as JwsTyped<J, P, H>
     }
 )

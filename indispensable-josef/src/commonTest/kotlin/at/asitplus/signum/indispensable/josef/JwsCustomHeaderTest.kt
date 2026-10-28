@@ -74,7 +74,7 @@ val JwsCustomHeaderTest by matrixSuite {
             joseCompliantSerializer.decodeFromString(flattenedSerializer, encoded) shouldBe typed
         }
         val generalSerializer = JwsTypedSerializerTemplate(
-            JwsRawGeneral.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsGeneralTyped.JwsRawGeneral.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
         )
         val encoded = joseCompliantSerializer.encodeToString(generalSerializer, general)
         encoded shouldBe joseCompliantSerializer.encodeToString(general.jws)

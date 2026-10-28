@@ -168,7 +168,7 @@ fun JwsFlattened.Raw.toJwsCompact(): JwsCompact.Raw {
 /**
  * Converts multiple flattened JWS values with the same payload into general JSON JWS representation.
  */
-fun List<JwsFlattened.Raw>.toJwsGeneral(): JwsRawGeneral {
+fun List<JwsFlattened.Raw>.toJwsGeneral(): JwsGeneralTyped.JwsRawGeneral {
     require(isNotEmpty()) { "General JWS requires at least one signature" }
     val payload = this[0].plainPayload
     val signatures = this.map {
@@ -181,7 +181,7 @@ fun List<JwsFlattened.Raw>.toJwsGeneral(): JwsRawGeneral {
             unprotectedHeader = it.unprotectedHeader,
         )
     }
-    return JwsRawGeneral(
+    return JwsGeneralTyped.JwsRawGeneral(
         plainPayload = payload,
         signatureElements = signatures
     )
