@@ -3,8 +3,9 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -69,21 +70,13 @@ internal fun flattenedSample(
     plainSignature = plainSignature,
 )
 
-internal fun String.toPaddedBase64UrlVariant(): String = when (length % 2) {
-    1 -> "${this}=="
-    else -> "${this}="
-}
-
 internal fun Result<*>.shouldBeRejectedPaddedBase64Url() {
-    isSuccess shouldBe false
-    val failure = shouldBeFailure()
-    failure.message.orEmpty().shouldContain("Decoding failed")
-    failure.cause shouldNotBe null
-    failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
+    val failure = shouldBeFailure().shouldBeInstanceOf<SerializationException>()
+    failure.cause.shouldBeInstanceOf<IllegalArgumentException>()
+        .message.shouldContain("Trailing = are not supported")
 }
 
 internal fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
-    isSuccess shouldBe false
     shouldBeFailure().message.orEmpty().shouldContain("must be absent when it would otherwise be empty")
 }
 

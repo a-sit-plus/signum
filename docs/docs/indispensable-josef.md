@@ -34,16 +34,16 @@ ASCII(BASE64URL(protected-header bytes)) || '.' || ASCII(BASE64URL(payload bytes
 ```
 
 To preserve this input, _Indispensable Josef_ retains the received data and provides typed views around it.
-Parsing a protected header into `JwsHeader` and serializing it again could produce different bytes, so the typed
+Parsing a protected header into `JwsHeaderMonolith` and serializing it again could produce different bytes, so the typed
 view is never used to reconstruct an incoming signing input.
 
 | Layer | Purpose | Main Types |
 |:--|:--|:--|
 | Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JwsRaw`, `JwsCompact.Raw`, `JwsFlattened.Raw`, `JwsGeneral.Raw`, `SignatureElement` |
-| Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, P, H>`, `JwsCompact<P, H>`, `JwsFlattened<P, H>`, `JwsGeneral<P, H>` |
+| Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, H, P>`, `JwsCompact<H, P>`, `JwsFlattened<H, P>`, `JwsGeneral<H, P>` |
 | Effective header | Combine modeled header values and retain their protection status | `JwsHeaderWrapped<H>` with `H : JwsHeaderBase` |
 
-`JwsTyped<J, P, H>` retains the wire object as `jws` and decodes its payload, headers, and signatures.
+`JwsTyped<J, H, P>` retains the wire object as `jws` and decodes its payload, headers, and signatures.
 Compact/flattened views expose `header` and `signature`; general views expose ordered `headers` and `signatures`.
 Use `jws` for storage or forwarding. `JwsTypedSerializerTemplate` serializes it and rebuilds decoded views on reading.
 Create signed values with `JwsSigner` and decode with `.typed()`; typed constructors and copying are internal.
@@ -136,7 +136,7 @@ To verify a signature, use the stored input and signature pairs:
 * Each `view.jws.signatureInput` and `view.signature` from `typedGeneral.toFlattened()`
 
 !!! warning
-    **Always verify the stored signing input.** Recreating it from `JwsHeader` or a typed payload can change the bytes.
+    **Always verify the stored signing input.** Recreating it from `JwsHeaderMonolith` or a typed payload can change the bytes.
     Parsing, typed access, and `JwsHeader.publicKey` do not verify a signature or establish key trust.
     Your application must perform signature verification, trust validation, and any application-specific checks.
 
@@ -144,22 +144,22 @@ Wire objects retain opaque headers and algorithms. Typed decoding supports EC an
 algorithms and leaves critical-extension handling to the application.
 
 !!! note
-    The older `JwsSigned` API is deprecated. Use `JwsCompact<P, H>` instead.
+    The older `JwsSigned` API is deprecated. Use `JwsCompact<H, P>` instead.
 
 ## Custom Headers and Typed Access
 
-Implement `JwsHeaderBase` for custom headers; `JwsHeader` is deprecated. Declare wire names and serializers on
+Implement `JwsHeader` for custom headers; `JwsHeaderMonolith` is deprecated. Declare wire names and serializers on
 implementations, since interface annotations are not inherited; mark unused properties `@Transient`.
 
 For a serializable `AppHeader`:
 
 ```kotlin
-val typed = JwsCompact<JsonObject, AppHeader>(receivedCompactString)
+val typed = JwsCompact<AppHeader, JsonObject>(receivedCompactString)
 val header: AppHeader = typed.header
 val wrapped = JwsHeaderWrapped(header, setOf("app_claim"))
 ```
 
-On a raw representation, use `.typed<P, H>(serialFormat)` or `.typed(payloadSerializer, headerSerializer, serialFormat)`.
+On a raw representation, use `.typed<H, P>(serialFormat)` or `.typed(payloadSerializer, headerSerializer, serialFormat)`.
 `JwsHeaderWrapped` also accepts an explicit header serializer. `JwsTypedSerializerTemplate` takes wire, payload,
 and header serializers; decoded views use `joseCompliantSerializer`.
 
@@ -167,13 +167,13 @@ and header serializers; decoded views use `joseCompliantSerializer`.
 
 | Previous API | Replacement |
 |:--|:--|
-| Typed aliases such as `JwsCompactTyped<P>` | Concrete views such as `JwsCompact<P, H>` |
+| Typed aliases such as `JwsCompactTyped<P>` | Concrete views such as `JwsCompact<H, P>` |
 | Header/signature properties on wire objects | Header/signature properties on typed views |
-| `jws.typed<J, P>()` | `jws.typed<P, H>()` on the concrete wire form |
-| `JwsCompact.parse<P>()` → pair | `JwsCompact.Raw.parse<P, H>()` → triple of wire object, payload, wrapped header |
+| `jws.typed<J, P>()` | `jws.typed<H, P>()` on the concrete wire form |
+| `JwsCompact.parse<P>()` → pair | `JwsCompact.Raw.parse<H, P>()` → triple of wire object, payload, wrapped header |
 | Two-argument `JwsTypedSerializerTemplate` | Add the header serializer as the third argument |
 | Typed and callback signing factories | `JwsSigner.signCompact`, `signFlattened`, or `signGeneral` |
-| Typed constructors and `copy()` | `JwsSigner` or `.typed<P, H>()` |
+| Typed constructors and `copy()` | `JwsSigner` or `.typed<H, P>()` |
 | `JwsFlattened(header, payload, unprotectedMembers, signer)` | `JwsSigner(signersByAlgorithm).signFlattened(header, payload, unprotectedMembers)` |
 | `toJwsCompactTyped()` / `toJwsFlattenedTyped()` | `toCompact()` / `toFlattened()` on typed views |
 | `toJwsCompact()` / `toJwsFlattened()` / `toJwsGeneral()` | `toCompact()` / `toFlattened()` / `toGeneral()` on raw representations |

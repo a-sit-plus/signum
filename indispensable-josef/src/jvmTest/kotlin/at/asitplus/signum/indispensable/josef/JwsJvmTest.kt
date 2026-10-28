@@ -15,16 +15,13 @@ import com.nimbusds.jose.crypto.ECDSAVerifier
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.json.JsonObject
 import java.security.interfaces.ECPublicKey
 
 val JwsJvmTest by matrixSuite {
     Supreme.init()
 
     class Context {
-        val payload = joseCompliantSerializer.decodeFromString<JsonObject>(
-            """{"iss":"https://issuer.example","sub":"alice"}"""
-        )
+        val payload = SigningPayload("alice")
         val signers = List(2) { index ->
             runBlocking {
                 Signer.Ephemeral {
@@ -38,7 +35,7 @@ val JwsJvmTest by matrixSuite {
         val jwsSigner = JwsSigner(signers)
         val verifiers = signers.map { ECDSAVerifier(it.publicKey.toJcaPublicKey() as ECPublicKey) }
         val headers = signers.mapIndexed { index, signer ->
-            JwsHeader(
+            SigningHeader(
                 algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                 keyId = "kid-${index + 1}",
                 type = "application/example+jws",
@@ -49,17 +46,17 @@ val JwsJvmTest by matrixSuite {
     fixture(::Context) - {
         "compact typed JWS can be encoded and verified by Nimbus" { context ->
             val typed = context.jwsSigner.signCompact(context.headers[0], context.payload)
-            val parsed = JWSObject.parse(typed.jws.toString())
+            val parsed = JWSObject.parse(typed.raw.toString())
 
             parsed.verify(context.verifiers[0]).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
-            parsed.payload.toString() shouldBe """{"iss":"https://issuer.example","sub":"alice"}"""
+            parsed.payload.toString() shouldBe """{"sub":"alice"}"""
         }
 
         "flattened typed JWS can be serialized and verified by Nimbus" { context ->
             val placement = setOf(JwsHeader.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signFlattened(context.headers[0], context.payload, placement)
-            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
+            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.raw))
 
             parsed.signatures.single().verify(context.verifiers[0]).shouldBeTrue()
             parsed.signatures.single().header.keyID shouldBe null
@@ -71,7 +68,7 @@ val JwsJvmTest by matrixSuite {
             val typed = context.jwsSigner.signGeneral(context.payload, context.headers.map { header ->
                 JwsHeaderWrapped(header, placement)
             })
-            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
+            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.raw))
 
             parsed.signatures.size shouldBe 2
             parsed.signatures.forEachIndexed { index, signature ->

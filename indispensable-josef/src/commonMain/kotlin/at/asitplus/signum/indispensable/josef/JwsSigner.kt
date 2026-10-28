@@ -33,32 +33,32 @@ class JwsSigner(signers: List<Signer>) {
     }
 
     /** Signs a payload with a fully protected header and returns its compact typed view. */
-    suspend fun <P, H : JwsHeaderBase> signCompact(
+    suspend fun <H : JwsHeader, P> signCompact(
         protectedHeader: H,
         payload: P,
         payloadSerializer: KSerializer<P>,
         headerSerializer: KSerializer<H>,
-    ): JwsCompact<P, H> = signFlattened(
+    ): JwsCompact<H, P> = signFlattened(
         protectedHeader, payload, payloadSerializer, headerSerializer,
     ).toCompact()
 
-    suspend inline fun <reified P, reified H : JwsHeaderBase> signCompact(
+    suspend inline fun <reified H : JwsHeader, reified P> signCompact(
         protectedHeader: H,
         payload: P,
-    ): JwsCompact<P, H> = signCompact(
+    ): JwsCompact<H, P> = signCompact(
         protectedHeader, payload,
         joseCompliantSerializer.serializersModule.serializer<P>(),
         joseCompliantSerializer.serializersModule.serializer<H>(),
     )
 
     /** Signs a payload with the requested header-member placement and returns its flattened typed view. */
-    suspend fun <P, H : JwsHeaderBase> signFlattened(
+    suspend fun <H : JwsHeader, P> signFlattened(
         header: H,
         payload: P,
         payloadSerializer: KSerializer<P>,
         headerSerializer: KSerializer<H>,
         unprotectedHeaderMembers: Set<String> = emptySet(),
-    ): JwsFlattened<P, H> {
+    ): JwsFlattened<H, P> {
         val wrappedHeader = JwsHeaderWrapped(header, headerSerializer, unprotectedHeaderMembers)
         return with(selectSigner(header)) {
             signFlattened(
@@ -69,11 +69,11 @@ class JwsSigner(signers: List<Signer>) {
         }
     }
 
-    suspend inline fun <reified P, reified H : JwsHeaderBase> signFlattened(
+    suspend inline fun <reified H : JwsHeader, reified P> signFlattened(
         header: H,
         payload: P,
         unprotectedHeaderMembers: Set<String> = emptySet(),
-    ): JwsFlattened<P, H> = signFlattened(
+    ): JwsFlattened<H, P> = signFlattened(
         header, payload,
         joseCompliantSerializer.serializersModule.serializer<P>(),
         joseCompliantSerializer.serializersModule.serializer<H>(),
@@ -81,11 +81,11 @@ class JwsSigner(signers: List<Signer>) {
     )
 
     /** Signs one shared serialized payload, reusing each wrapped header's cached JSON and member placement. */
-    suspend fun <P, H : JwsHeaderBase> signGeneral(
+    suspend fun <H : JwsHeader, P> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
         payloadSerializer: KSerializer<P>,
-    ): JwsGeneral<P, H> {
+    ): JwsGeneral<H, P> {
         val parameters = signatures.toList()
         require(parameters.isNotEmpty()) { "General JWS requires at least one signature" }
         val selectedSigners = parameters.map { selectSigner(it.header) }
@@ -94,38 +94,38 @@ class JwsSigner(signers: List<Signer>) {
             with(signer) { signFlattened(header, payload, payloadBytes) }
         }
         return JwsGeneral(
-            jws = signed.map { it.jws }.toGeneral(),
+            jws = signed.map { it.raw }.toGeneral(),
             payload = payload,
             signatureViews = signed.map { it.wrappedHeader to it.signature },
         )
     }
 
-    suspend inline fun <reified P, H : JwsHeaderBase> signGeneral(
+    suspend inline fun <H : JwsHeader, reified P> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
-    ): JwsGeneral<P, H> = signGeneral(
+    ): JwsGeneral<H, P> = signGeneral(
         payload, signatures,
         joseCompliantSerializer.serializersModule.serializer<P>(),
     )
 
     context(signer: Signer)
-    private suspend fun <P, H : JwsHeaderBase> signFlattened(
+    private suspend fun <H : JwsHeader, P> signFlattened(
         header: JwsHeaderWrapped<H>,
         payload: P,
         payloadBytes: ByteArray,
-    ): JwsFlattened<P, H> {
+    ): JwsFlattened<H, P> {
         val protectedHeader = header.protectedHeader.takeUnless { header.protectedHeaderJson.isEmpty() }
         val unprotectedHeader = header.unprotectedHeader.takeUnless { it.isEmpty() }
         val signature = signer.sign(JwsRaw.getSignatureInput(protectedHeader, payloadBytes)).signature
         return JwsFlattened(
-            jws = JwsFlattened.Raw(protectedHeader, unprotectedHeader, payloadBytes, signature.joseBytes.copyOf()),
+            raw = JwsFlattened.Raw(protectedHeader, unprotectedHeader, payloadBytes, signature.joseBytes.copyOf()),
             payload = payload,
             wrappedHeader = header,
             signature = signature,
         )
     }
 
-    private fun selectSigner(header: JwsHeaderBase): Signer {
+    private fun selectSigner(header: JwsHeader): Signer {
         val algorithm = header.algorithm
         val signer = requireNotNull(signerMap[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
         require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {

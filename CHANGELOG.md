@@ -7,10 +7,11 @@ This is a major refactor!
 * publish javadoc redirect to save space
 * make all provider functions suspend
 * Rework `indispensable-josef` (**breaking**):
-    * Support custom JWS headers through `JwsHeaderBase`; deprecate `JwsHeader`
-    * Separate decoded `JwsCompact<P, H>`, `JwsFlattened<P, H>`, and `JwsGeneral<P, H>` views from `JwsRaw` and nested `.Raw` wire representations, allowing raw parsing of custom headers and unsupported algorithms
+    * Remove monolithic `JwsHeader` implementation; replaced by `JwsHeader` interface
+    * Remove deprecated `JwsSigned` (use `JwsCompact`), `JsonWebToken`, and related JWT/attestation models
+    * Separate decoded `JwsCompact<H, P>`, `JwsFlattened<H, P>`, and `JwsGeneral<H, P>` views from `JwsRaw` and nested `.Raw` wire representations, allowing raw parsing of custom headers and unsupported algorithms
     * Replace `JwsHeader.Part` and `protectedHeader` constructor parameters with `JwsHeaderWrapped<H>` for combined headers and protected/unprotected member placement
-    * Typed access now uses `.typed<P, H>()`; `JwsTypedSerializerTemplate` also requires a header serializer
+    * Typed access now uses `.typed<H, P>()`; `JwsTypedSerializerTemplate` also requires a header serializer
     * Rename JWS conversions to `toCompact()`, `toFlattened()`, and `toGeneral()`
     * Replace typed and callback signing factories with `JwsSigner`; make typed constructors and copying internal
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
@@ -35,7 +36,7 @@ This is a major refactor!
 * Rework JWS support around explicit compact, flattened, and general representations
     * Add sealed `JWS` support with dedicated `JwsCompact`, `JwsFlattened`, `JwsGeneral`
     * Add conversions between compact, flattened, and general JWS representations
-    * Represent protected and unprotected header fragments explicitly via `JwsHeader.Part`, merging them into a `JwsHeader` only when the combined header is valid
+    * Represent protected and unprotected header fragments explicitly via `JwsHeader.Part`, merging them into a `JwsHeaderMonolith` only when the combined header is valid
     * Parse `JwsHeader.attestationJwt` and `JwsHeader.keyAttestation` as `JwsCompact` instead of raw strings
     * Deprecate `JwsSigned` in favor of `JwsCompact`
     * Typed payloads remain supported via `JwsTyped`
@@ -204,7 +205,7 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
-* In `JwsHeader` add property `vcTypeMetadata` with key `vctm`, see [SD-JWT VC](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-10.html#name-sd-jwt-vc-type-metadata)
+* In `JwsHeaderMonolith` add property `vcTypeMetadata` with key `vctm`, see [SD-JWT VC](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-10.html#name-sd-jwt-vc-type-metadata)
 * Dependency Updates:
     * Kotlin 2.2.0
     * AGP 8.10.0
@@ -647,7 +648,7 @@ The full list of changes is:
 * Expose `generator`, `order` and `cofactor` of `ECCurve`
 * Extend list of values in `JweAlgorithm` and `JweEncryption`
 * Extend properties in `JweHeader`
-* Extend properties in `JwsHeader`
+* Extend properties in `JwsHeaderMonolith`
 * **BREAKING CHANGE:** Completely revamp the ASN.1 builder DSL
     * explicitly require `+` to add some ASN.1 element to a builder
     * Make convenience functions like `Bool(<boolean value>)`work stand-alone
@@ -680,7 +681,7 @@ The full list of changes is:
 * Add `header` to constructor parameters of `JweEncrypted`
 * Extend properties of `JsonWebKey`
 * Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
-* Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
+* Use `CertificateChain` inside `JwsHeaderMonolith` instead of `Array<ByteArray>'
 * Use `CertificateChain` inside `JsonWebKey` instead of `Array<ByteArray>'
 
 * SubjectAltNames and IssuerAltNames:

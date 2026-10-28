@@ -8,25 +8,25 @@ import kotlinx.serialization.json.Json
  *
  * Use the concrete compact, flattened, or general view to access decoded headers and signatures.
  * Create signed values through [JwsSigner].
- * Forward [jws] or serialize through [JwsTypedSerializerTemplate] to preserve the original signed bytes.
+ * Forward [raw] or serialize through [JwsTypedSerializerTemplate] to preserve the original signed bytes.
  * Typed decoding does not verify signatures or establish key trust.
  */
-sealed class JwsTyped<out J : JwsRaw, out P, out H : JwsHeaderBase> {
-    abstract val jws: J
+sealed class JwsTyped<out J : JwsRaw, out H : JwsHeader, out P> {
+    abstract val raw: J
     abstract val payload: P
 
-    final override fun toString() = jws.toString()
+    final override fun toString() = raw.toString()
 
     companion object {
-        inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
+        inline operator fun <reified H : JwsHeader, reified P> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
-        ) = JwsCompact<P, H>(base64UrlString, serialFormat)
+        ) = JwsCompact<H, P>(base64UrlString, serialFormat)
 
-        inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
+        inline operator fun <reified H : JwsHeader, reified P> invoke(
             jwsFlattened: List<JwsFlattened.Raw>,
             serialFormat: Json = joseCompliantSerializer,
-        ): JwsGeneral<P, H> = JwsGeneral<P, H>(jwsFlattened, serialFormat)
+        ): JwsGeneral<H, P> = JwsGeneral<H, P>(jwsFlattened, serialFormat)
 
     }
 }
