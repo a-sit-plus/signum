@@ -182,6 +182,16 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         flattened.toCompact() shouldBe compact
     }
 
+    "empty compact payload retains its separator through serialization and conversion" {
+        val compactString = "eyJhbGciOiJSUzI1NiJ9..AQ"
+        val compact = JwsCompact.Raw(compactString)
+
+        compact.plainPayload shouldBe byteArrayOf()
+        compact.signatureInput.decodeToString() shouldBe "eyJhbGciOiJSUzI1NiJ9."
+        compact.toString() shouldBe compactString
+        compact.toFlattened().toCompact().toString() shouldBe compactString
+    }
+
     data class PaddingCase(
         val member: String,
         val protectedHeader: String = "eyJhbGciOiJSUzI1NiJ9IA",

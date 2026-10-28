@@ -37,7 +37,6 @@ val JwsCustomHeaderTest by matrixSuite {
         encoded shouldBe joseCompliantSerializer.encodeToString(JwsCompactRawStringSerializer, compact)
         val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
         decoded shouldBe typed
-        JwsCompact.Raw.parse<SigningHeader, SigningPayload>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
         JwsCompact<SigningHeader, SigningPayload>(compact.toString()) shouldBe typed
     }
 
