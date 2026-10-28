@@ -41,7 +41,7 @@ data class JwsRawGeneral private constructor(
     /**
      * Returns a new [JwsRawGeneral] with one additional signature over the same payload.
      */
-    fun appendSignature(jwsFlattened: JwsRawFlattened): JwsRawGeneral {
+    fun appendSignature(jwsFlattened: JwsFlattenedTyped.JwsRawFlattened): JwsRawGeneral {
         require(plainPayload.contentEqualsIfArray(jwsFlattened.plainPayload)) {
             "Additional signed JWS payload must match existing payload"
         }
@@ -80,16 +80,16 @@ data class JwsRawGeneral private constructor(
             signatureElements: List<SignatureElement>,
         ): JwsRawGeneral = JwsRawGeneral(plainPayload, buildList { addAll(signatureElements) })
 
-        operator fun invoke(jwsFlattened: List<JwsRawFlattened>): JwsRawGeneral = jwsFlattened.toJwsGeneral()
+        operator fun invoke(jwsFlattened: List<JwsFlattenedTyped.JwsRawFlattened>): JwsRawGeneral = jwsFlattened.toJwsGeneral()
     }
 }
 
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.
  */
-fun JwsRawGeneral.toJwsFlattened(): List<JwsRawFlattened> =
+fun JwsRawGeneral.toJwsFlattened(): List<JwsFlattenedTyped.JwsRawFlattened> =
     signatureElements.map {
-        JwsRawFlattened(
+        JwsFlattenedTyped.JwsRawFlattened(
             plainProtectedHeader = it.plainProtectedHeader,
             unprotectedHeader = it.unprotectedHeader,
             plainPayload = this.plainPayload,

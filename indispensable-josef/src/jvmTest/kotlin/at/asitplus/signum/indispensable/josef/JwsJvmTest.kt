@@ -72,13 +72,13 @@ val JwsJvmTest by matrixSuite {
                 ),
                 unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
             )
-            val flattened = JwsRawFlattened.invoke(
+            val flattened = JwsFlattenedTyped.JwsRawFlattened.invoke(
                 wrappedHeader = wrappedHeader,
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),
             )
 
-            val serialized = joseCompliantSerializer.encodeToString(JwsRawFlattened.serializer(), flattened)
+            val serialized = joseCompliantSerializer.encodeToString(JwsFlattenedTyped.JwsRawFlattened.serializer(), flattened)
             val parsed = JWSObjectJSON.parse(serialized)
             val typedFlattened = flattened.typed<JsonObject, JwsHeader>()
 
@@ -90,7 +90,7 @@ val JwsJvmTest by matrixSuite {
         }
 
         "general JWS can be serialized and verified by Nimbus" { it ->
-            val flattened1 = JwsRawFlattened.invoke(
+            val flattened1 = JwsFlattenedTyped.JwsRawFlattened.invoke(
                 wrappedHeader = JwsHeaderWrapped(
                     header = JwsHeader(
                         algorithm = it.signer1.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
@@ -101,7 +101,7 @@ val JwsJvmTest by matrixSuite {
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),
             )
-            val flattened2 = JwsRawFlattened.invoke(
+            val flattened2 = JwsFlattenedTyped.JwsRawFlattened.invoke(
                 wrappedHeader = JwsHeaderWrapped(
                     header = JwsHeader(
                         algorithm = it.signer2.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),

@@ -23,7 +23,7 @@ sealed class JwsTyped<out J : JwsRaw, out P, out H : JwsHeaderBase> {
         ) = JwsCompact<P, H>(base64UrlString, serialFormat)
 
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
-            jwsFlattened: List<JwsRawFlattened>,
+            jwsFlattened: List<JwsFlattenedTyped.JwsRawFlattened>,
             serialFormat: Json = joseCompliantSerializer,
         ): JwsGeneralTyped<P, H> = JwsGeneralTyped<P, H>(jwsFlattened, serialFormat)
 

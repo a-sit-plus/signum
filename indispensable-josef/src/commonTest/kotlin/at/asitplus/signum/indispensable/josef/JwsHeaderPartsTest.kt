@@ -74,7 +74,7 @@ val JwsRawHeaderPartsTest by matrixSuite {
             JwsHeader.SerialNames.CONTENT_TYPE,
             JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
-        val flattened = JwsRawFlattened(
+        val flattened = JwsFlattenedTyped.JwsRawFlattened(
             plainProtectedHeader = encodedProtectedHeader,
             unprotectedHeader = unprotectedHeader,
             plainPayload = byteArrayOf(1),
@@ -110,11 +110,11 @@ val JwsRawHeaderPartsTest by matrixSuite {
                 JwsHeader.SerialNames.KEY_ID,
             ),
         )
-        val flattened = JwsRawFlattened(
+        val flattened = JwsFlattenedTyped.JwsRawFlattened(
             wrappedHeader = wrappedHeader,
             payload = byteArrayOf(1),
         ) { byteArrayOf(2) }
-        val reparsed = joseCompliantSerializer.decodeFromString<JwsRawFlattened>(
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.JwsRawFlattened>(
             joseCompliantSerializer.encodeToString(flattened)
         )
         val reparsedHeader =
@@ -130,7 +130,7 @@ val JwsRawHeaderPartsTest by matrixSuite {
             keyId = "did:example:signer",
         )
         val wrappedHeader = JwsHeaderWrapped(header)
-        val flattened = JwsRawFlattened.invoke(
+        val flattened = JwsFlattenedTyped.JwsRawFlattened.invoke(
             wrappedHeader = wrappedHeader,
             payload = "payload".encodeToByteArray(),
         ) { byteArrayOf(1) }

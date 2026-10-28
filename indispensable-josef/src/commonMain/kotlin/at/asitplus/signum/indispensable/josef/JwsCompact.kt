@@ -214,7 +214,7 @@ object JwsCompactRawStringSerializer : KSerializer<JwsCompact.Raw> {
  * The protected header bytes are preserved and the unprotected header is absent, because compact serialization does
  * not support unprotected header parameters.
  */
-fun JwsCompact.Raw.toJwsFlattened(): JwsRawFlattened = JwsRawFlattened(
+fun JwsCompact.Raw.toJwsFlattened(): JwsFlattenedTyped.JwsRawFlattened = JwsFlattenedTyped.JwsRawFlattened(
     plainProtectedHeader = plainProtectedHeader,
     unprotectedHeader = null,
     plainPayload = plainPayload,

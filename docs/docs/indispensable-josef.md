@@ -39,7 +39,7 @@ view is never used to reconstruct an incoming signing input.
 
 | Layer | Purpose | Main Types |
 |:--|:--|:--|
-| Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JwsRaw`, `Raw`, `JwsRawFlattened`, `JwsRawGeneral`, `SignatureElement` |
+| Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JwsRaw`, `Raw`, `JwsFlattenedTyped.JwsRawFlattened`, `JwsRawGeneral`, `SignatureElement` |
 | Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, P, H>` and its compact, flattened, and general views |
 | Effective header | Combine modeled header values and retain their protection status | `JwsHeaderWrapped<H>` with `H : JwsHeaderBase` |
 
@@ -55,7 +55,7 @@ The library supports three JWS forms:
 | Form | Type | Header Representation |
 |:--|:--|:--|
 | Compact | `Raw` | One protected header; no unprotected header |
-| Flattened JSON | `JwsRawFlattened` | One signature with optional protected and unprotected fragments |
+| Flattened JSON | `JwsFlattenedTyped.JwsRawFlattened` | One signature with optional protected and unprotected fragments |
 | General JSON | `JwsRawGeneral` | Shared payload and one or more `SignatureElement`s, each with its own header fragments |
 
 ### Protected and Unprotected Headers
@@ -94,7 +94,7 @@ encoding, uses `type` as the class discriminator, and ignores unknown keys when 
 The sealed `JwsRaw` serializer preserves the concrete form:
 
 * JSON strings become `Raw`.
-* Objects with `signature` become `JwsRawFlattened`.
+* Objects with `signature` become `JwsFlattenedTyped.JwsRawFlattened`.
 * Objects with `signatures` become `JwsRawGeneral`.
 
 Ambiguous or incomplete shapes are rejected. Use `JwsCompact.toString()` and `JwsCompact(...)` for standalone compact
