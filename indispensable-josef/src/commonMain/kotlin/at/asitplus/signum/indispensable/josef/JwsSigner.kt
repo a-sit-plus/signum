@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
+import kotlin.requireNotNull
 
 /**
  * Signs JWS and retains the supplied typed payload, headers, and signer-produced signatures in the returned views.
@@ -19,12 +20,12 @@ import kotlinx.serialization.serializer
  * Serializes the payload once. General signing validates all headers before signing and preserves signature order.
  * Missing registrations and mismatched headers fail before signing; signer failures propagate.
  */
-class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
-    private val signers = signers.toMap()
+class JwsSigner(signers: List<Signer>) {
+    private val signerMap = signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm().getOrThrow() }
 
     init {
-        require(this.signers.isNotEmpty()) { "At least one signer is required" }
-        this.signers.forEach { (algorithm, signer) ->
+        require(this.signerMap.isNotEmpty()) { "At least one signer is required" }
+        this.signerMap.forEach { (algorithm, signer) ->
             require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {
                 "Registered JWS algorithm does not match the signer"
             }
@@ -126,7 +127,7 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
 
     private fun selectSigner(header: JwsHeaderBase): Signer {
         val algorithm = header.algorithm
-        val signer = requireNotNull(signers[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
+        val signer = requireNotNull(signerMap[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
         require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {
             "Signer algorithm does not match the JWS header algorithm"
         }

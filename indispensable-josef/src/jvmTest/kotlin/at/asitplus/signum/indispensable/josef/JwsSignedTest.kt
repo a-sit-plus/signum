@@ -1,23 +1,19 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.Supreme
-import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.sign.sign
-import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.testballoon.matrix.matrixSuite
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
-import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.json.JsonElement
 import java.security.interfaces.RSAPublicKey
 
-val none_ = Supreme.init()
 val JwsSignedTest by matrixSuite {
+    Supreme.init()
 
     compact("JWS can be parsed and verified") - {
         val testvec = javaClass.classLoader.getResourceAsStream("JwsTestVectors.txt")?.reader()?.readLines()
@@ -29,7 +25,7 @@ val JwsSignedTest by matrixSuite {
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey())
+                if (publicKey is EcdsaPublicKey) ECDSAVerifier(publicKey.toJcaPublicKey())
                 else RSASSAVerifier(publicKey.toJcaPublicKey() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)

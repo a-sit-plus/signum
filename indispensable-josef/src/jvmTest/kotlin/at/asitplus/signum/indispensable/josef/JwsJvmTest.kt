@@ -7,7 +7,8 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.Supreme
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.fixture
+import at.asitplus.testballoon.matrix.matrixSuite
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSObjectJSON
 import com.nimbusds.jose.crypto.ECDSAVerifier
@@ -34,7 +35,7 @@ val JwsJvmTest by matrixSuite {
                 }
             }
         }
-        val jwsSigner = JwsSigner(signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm().getOrThrow() })
+        val jwsSigner = JwsSigner(signers)
         val verifiers = signers.map { ECDSAVerifier(it.publicKey.toJcaPublicKey() as ECPublicKey) }
         val headers = signers.mapIndexed { index, signer ->
             JwsHeader(
