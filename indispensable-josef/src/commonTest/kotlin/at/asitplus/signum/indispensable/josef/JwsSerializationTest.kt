@@ -62,7 +62,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val plainProtectedHeader = wrappedHeader.protectedHeader
         var capturedSignatureInput: ByteArray? = null
 
-        val flattened = JwsFlattenedTyped.Raw.invoke(
+        val flattened = JwsFlattened.Raw.invoke(
             wrappedHeader = wrappedHeader,
             payload = payload,
         ) { signatureInput ->
@@ -73,7 +73,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         capturedSignatureInput shouldBe JwsRaw.getSignatureInput(plainProtectedHeader, payload)
 
         val serialized = joseCompliantSerializer.encodeToString(flattened)
-        val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(serialized)
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(serialized)
         val typedReparsed = reparsed.typed<JsonObject, JwsHeader>()
 
         reparsed shouldBe flattened
@@ -143,7 +143,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         )
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
         val unprotectedHeader = wrappedHeader.unprotectedHeader
-        val conformantWithoutProtected = JwsFlattenedTyped.Raw(
+        val conformantWithoutProtected = JwsFlattened.Raw(
             plainProtectedHeader = null,
             unprotectedHeader = unprotectedHeader,
             plainPayload = payload,
@@ -151,7 +151,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         )
         var capturedSignatureInput: ByteArray? = null
 
-        val flattened = JwsFlattenedTyped.Raw(
+        val flattened = JwsFlattened.Raw(
             wrappedHeader = wrappedHeader,
             payload = payload,
         ) { signatureInput ->
@@ -257,17 +257,17 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
     "flattened JSON JWS rejects padded base64url members" {
         val paddedProtectedHeaderResult = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(
+            joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
                 flattenedJson(protectedHeaderBase64 = "eyJhbGciOiJSUzI1NiJ9".toPaddedBase64UrlVariant())
             )
         }
         val paddedPayloadResult = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(
+            joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
                 flattenedJson(payloadBase64 = "e30".toPaddedBase64UrlVariant())
             )
         }
         val paddedSignatureResult = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(
+            joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
                 flattenedJson(signatureBase64 = "AQ".toPaddedBase64UrlVariant())
             )
         }
@@ -301,7 +301,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
     "flattened and general JSON JWS reject explicitly empty protected headers" {
         val flattenedResult = runCatching {
-            joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(
+            joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
                 flattenedJson(
                     protectedHeaderBase64 = "e30",
                     headerJson = """{"alg":"RS256","kid":"kid-1"}""",
@@ -326,7 +326,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val flattenedJson = flattenedJson(headerJson = headerJson)
         val generalJson = generalJson(headerJson = headerJson)
 
-        val flattened = joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(flattenedJson)
+        val flattened = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(flattenedJson)
         val general = joseCompliantSerializer.decodeFromString<JwsRawGeneral>(generalJson)
         val typedFlattened = flattened.typed<JsonObject, JwsHeader>()
         val typedGeneral = general.typed<JsonObject, JwsHeader>()
@@ -349,7 +349,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val encodedProtectedHeader = "bm90LWpzb24"
         val expectedProtectedHeader = "not-json".encodeToByteArray()
         val compact = JwsCompact.Raw("$encodedProtectedHeader.e30.AQ")
-        val flattened = joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(
+        val flattened = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
             flattenedJson(protectedHeaderBase64 = encodedProtectedHeader)
         )
         val general = joseCompliantSerializer.decodeFromString<JwsRawGeneral>(
@@ -421,7 +421,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             plainSignature = byteArrayOf(2),
         )
 
-        val emptyResult = runCatching { emptyList<JwsFlattenedTyped.Raw>().toJwsGeneral() }
+        val emptyResult = runCatching { emptyList<JwsFlattened.Raw>().toJwsGeneral() }
         val listMismatchResult = runCatching { listOf(first, second).toJwsGeneral() }
         val appendMismatchResult = runCatching { JwsRawGeneral(listOf(first)).appendSignature(second) }
 
@@ -438,7 +438,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
     }
 
     "compact conversion rejects missing protected header and malformed compact strings" {
-        val missingProtectedHeader = JwsFlattenedTyped.Raw(
+        val missingProtectedHeader = JwsFlattened.Raw(
             plainProtectedHeader = null,
             unprotectedHeader = JsonObject(
                 mapOf(
@@ -536,7 +536,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val compactDecoded = joseCompliantSerializer.decodeFromString<JwsRaw>(compactSerialized)
             .shouldBeInstanceOf<JwsCompact.Raw>()
         val flattenedDecoded = joseCompliantSerializer.decodeFromString<JwsRaw>(flattenedSerialized)
-            .shouldBeInstanceOf<JwsFlattenedTyped.Raw>()
+            .shouldBeInstanceOf<JwsFlattened.Raw>()
         val generalDecoded = joseCompliantSerializer.decodeFromString<JwsRaw>(generalSerialized)
             .shouldBeInstanceOf<JwsRawGeneral>()
 

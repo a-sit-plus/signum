@@ -193,7 +193,7 @@ fun <P, H : JwsHeaderBase> JwsCompact.Raw.typed(
     }
 
 fun <P, H : JwsHeaderBase> JwsCompact<P, H>.toJwsFlattenedTyped() =
-    JwsFlattenedTyped(jws.toJwsFlattened(), payload, wrappedHeader, signature)
+    JwsFlattened(jws.toJwsFlattened(), payload, wrappedHeader, signature)
 
 /**
  * Serializes a [Raw] as its compact JWS string form inside JSON.
@@ -214,7 +214,7 @@ object JwsCompactRawStringSerializer : KSerializer<JwsCompact.Raw> {
  * The protected header bytes are preserved and the unprotected header is absent, because compact serialization does
  * not support unprotected header parameters.
  */
-fun JwsCompact.Raw.toJwsFlattened(): JwsFlattenedTyped.Raw = JwsFlattenedTyped.Raw(
+fun JwsCompact.Raw.toJwsFlattened(): JwsFlattened.Raw = JwsFlattened.Raw(
     plainProtectedHeader = plainProtectedHeader,
     unprotectedHeader = null,
     plainPayload = plainPayload,

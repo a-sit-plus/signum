@@ -95,7 +95,7 @@ sealed class JwsRaw {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
             element(SerialNames.COMPACT, JwsCompactRawStringSerializer.descriptor)
-            element(SerialNames.FLATTENED, JwsFlattenedTyped.Raw.serializer().descriptor)
+            element(SerialNames.FLATTENED, JwsFlattened.Raw.serializer().descriptor)
             element(SerialNames.GENERAL, JwsRawGeneral.serializer().descriptor)
         }
 
@@ -106,7 +106,7 @@ sealed class JwsRaw {
             require(encoder is JsonEncoder) { "JWS serialization requires a JsonDecoder" }
             when (value) {
                 is JwsCompact.Raw -> encoder.encodeSerializableValue(JwsCompactRawStringSerializer, value)
-                is JwsFlattenedTyped.Raw -> encoder.encodeSerializableValue(JwsFlattenedTyped.Raw.serializer(), value)
+                is JwsFlattened.Raw -> encoder.encodeSerializableValue(JwsFlattened.Raw.serializer(), value)
                 is JwsRawGeneral -> encoder.encodeSerializableValue(JwsRawGeneral.serializer(), value)
             }
         }
@@ -131,7 +131,7 @@ sealed class JwsRaw {
                             decoder.json.decodeFromJsonElement(JwsRawGeneral.serializer(), jsonElement)
 
                         hasFlattenedSignature ->
-                            decoder.json.decodeFromJsonElement(JwsFlattenedTyped.Raw.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JwsFlattened.Raw.serializer(), jsonElement)
 
                         else ->
                             throw SerializationException(

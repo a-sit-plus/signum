@@ -45,7 +45,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
         ): JwsGeneralTyped<P, H> = JwsGeneralTyped(jws, payload, buildList { addAll(signatureViews) })
 
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
-            jwsFlattened: List<JwsFlattenedTyped.Raw>,
+            jwsFlattened: List<JwsFlattened.Raw>,
             serialFormat: Json = joseCompliantSerializer,
         ): JwsGeneralTyped<P, H> = jwsFlattened.toJwsGeneral().typed<P, H>(serialFormat)
     }
@@ -80,5 +80,5 @@ fun <P, H : JwsHeaderBase> JwsRawGeneral.typed(
 
 fun <P, H : JwsHeaderBase> JwsGeneralTyped<P, H>.toJwsFlattenedTyped() =
     jws.toJwsFlattened().zip(signatureViews) { flattened, (wrappedHeader, signature) ->
-        JwsFlattenedTyped(flattened, payload, wrappedHeader, signature)
+        JwsFlattened(flattened, payload, wrappedHeader, signature)
     }
