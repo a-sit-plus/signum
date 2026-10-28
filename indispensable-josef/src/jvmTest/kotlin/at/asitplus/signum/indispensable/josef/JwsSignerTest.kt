@@ -50,7 +50,7 @@ val JwsSignerTest by matrixSuite {
         roundtrip shouldBe typed
 
         val verifier = signer.signatureAlgorithm.verifierFor(signer.publicKey)
-        verifier.verify(roundtrip.raw.signatureInput, roundtrip.signature) shouldBe SignatureVerifier.Success
+        verifier.verify(roundtrip.signatureInput, roundtrip.signature) shouldBe SignatureVerifier.Success
     }
 
     "compact signing happy path" {
@@ -81,7 +81,7 @@ val JwsSignerTest by matrixSuite {
                 joseCompliantSerializer.encodeToJsonElement(JwsFlattened.Raw.serializer(), typed.raw).jsonObject
             (JwsRaw.SerialNames.HEADER in wireJson) shouldBe placement.isNotEmpty()
             (JwsRaw.SerialNames.PROTECTED in wireJson) shouldBe placement.isEmpty()
-            signer.makeVerifier().verify(typed.raw.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+            signer.makeVerifier().verify(typed.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
         }
     }
 
@@ -109,12 +109,12 @@ val JwsSignerTest by matrixSuite {
         val typed = jwsSigner.signGeneral(SigningPayload("alice"), parameters, serializer)
         encodings shouldBe 1
         typed.raw.signatureElements.size shouldBe 2
-        typed.toFlattened().forEachIndexed { index, flattened ->
-            flattened.raw.plainPayload shouldBe """{"sub":"alice"}""".encodeToByteArray()
+        typed.raw.plainPayload shouldBe """{"sub":"alice"}""".encodeToByteArray()
+        typed.raw.signatureElements.forEachIndexed { index, element ->
             JwsHeaderWrapped.fromParts<SigningHeader>(
-                flattened.raw.plainProtectedHeader, flattened.raw.unprotectedHeader,
+                element.plainProtectedHeader, element.unprotectedHeader,
             ).header.keyId shouldBe "key-$index"
-            signers[index].makeVerifier().verify(flattened.raw.signatureInput, flattened.signature) shouldBe
+            signers[index].makeVerifier().verify(typed.signatureInputs[index], typed.signatures[index]) shouldBe
                     SignatureVerifier.Success
         }
     }
@@ -158,7 +158,7 @@ val JwsSignerTest by matrixSuite {
             JwsHeaderWrapped.fromParts<SigningHeader>(
                 typed.raw.plainProtectedHeader, typed.raw.unprotectedHeader,
             ).header.extension shouldBe "CUSTOM"
-            signer.makeVerifier().verify(typed.raw.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+            signer.makeVerifier().verify(typed.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
         }
     }
 
@@ -233,7 +233,7 @@ val JwsSignerTest by matrixSuite {
         val jwsSigner = JwsSigner(signers)
         signers.clear()
         val typed = jwsSigner.signCompact(SigningHeader(JwsAlgorithm.Signature.ES256), SigningPayload("alice"))
-        original.makeVerifier().verify(typed.raw.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+        original.makeVerifier().verify(typed.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
     }
 
     "signer cancellation propagates unchanged" {

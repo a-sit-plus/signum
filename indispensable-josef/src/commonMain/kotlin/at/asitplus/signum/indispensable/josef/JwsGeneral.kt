@@ -38,6 +38,7 @@ data class JwsGeneral<H : JwsHeader, out P> private constructor(
     val headers = signatureViews.map { it.first.header }
     val unprotectedHeaderMembers = signatureViews.map { it.first.unprotectedHeaderMembers }
     val signatures = signatureViews.map { it.second }
+    val signatureInputs = raw.signatureInputs
 
     init {
         require(signatureViews.size == raw.signatureElements.size) {

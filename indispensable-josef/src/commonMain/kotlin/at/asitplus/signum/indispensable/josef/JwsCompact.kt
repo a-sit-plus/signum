@@ -43,6 +43,7 @@ data class JwsCompact<H : JwsHeader, out P> internal constructor(
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
+    val signatureInput = raw.signatureInput
 
     /**
      * Compact JWS over-the-wire format: three base64url-encoded segments joined by dots.

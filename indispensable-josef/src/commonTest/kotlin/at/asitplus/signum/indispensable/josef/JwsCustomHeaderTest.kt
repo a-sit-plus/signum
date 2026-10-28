@@ -28,7 +28,7 @@ val JwsCustomHeaderTest by matrixSuite {
         converted shouldBe typed
         converted.raw.plainProtectedHeader shouldBe protectedBytes
         converted.raw.plainPayload shouldBe payloadBytes
-        converted.raw.signatureInput shouldBe compact.signatureInput
+        converted.signatureInput shouldBe compact.signatureInput
 
         val serializer = JwsTypedSerializerTemplate(
             JwsCompactRawStringSerializer, SigningPayload.serializer(), SigningHeader.serializer()
@@ -57,7 +57,7 @@ val JwsCustomHeaderTest by matrixSuite {
         general.wrappedHeaders shouldBe headers
         general.signatures.map { it.joseBytes } shouldBe signatures
         general.toFlattened() shouldBe flattened
-        general.raw.signatureInputs shouldBe flattened.map { it.raw.signatureInput }
+        general.signatureInputs shouldBe flattened.map { it.signatureInput }
 
         val flattenedSerializer = JwsTypedSerializerTemplate(
             JwsFlattened.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()

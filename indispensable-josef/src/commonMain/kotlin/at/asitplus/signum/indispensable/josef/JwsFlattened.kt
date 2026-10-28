@@ -40,6 +40,7 @@ data class JwsFlattened<H : JwsHeader, out P> internal constructor(
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
+    val signatureInput = raw.signatureInput
 
     /**
      * Flattened JSON JWS over-the-wire format.
