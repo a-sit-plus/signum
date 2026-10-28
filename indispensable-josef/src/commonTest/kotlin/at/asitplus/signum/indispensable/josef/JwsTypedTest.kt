@@ -40,8 +40,8 @@ val JwsRawTypedTest by matrixSuite {
         typedCompact.jws.signatureInput shouldBe JwsRaw.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedCompact.toString() shouldBe typedCompact.jws.toString()
 
-        typedCompact.jws.typed<JsonObject, JwsHeaderMonolith>() shouldBe typedCompact
-        JwsTyped<JsonObject, JwsHeaderMonolith>(typedCompact.toString()) shouldBe typedCompact
+        typedCompact.jws.typed<JwsHeaderMonolith, JsonObject>() shouldBe typedCompact
+        JwsTyped<JwsHeaderMonolith, JsonObject>(typedCompact.toString()) shouldBe typedCompact
     }
 
     "compact and flattened typed wrappers convert without changing the payload view" {
@@ -134,7 +134,7 @@ val JwsRawTypedTest by matrixSuite {
         typedFlattened.jws.signatureInput shouldBe JwsRaw.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
-        typedFlattened.jws.typed<JsonObject, JwsHeaderMonolith>() shouldBe typedFlattened
+        typedFlattened.jws.typed<JwsHeaderMonolith, JsonObject>() shouldBe typedFlattened
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
@@ -177,7 +177,7 @@ val JwsRawTypedTest by matrixSuite {
             signature = JwsRaw.getSignature(secondHeader.header.algorithm, byteArrayOf(2, 2, 2, 2)),
         )
 
-        val typedGeneral = listOf(first.jws, second.jws).toGeneral().typed<JsonObject, JwsHeaderMonolith>()
+        val typedGeneral = listOf(first.jws, second.jws).toGeneral().typed<JwsHeaderMonolith, JsonObject>()
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toGeneral()
@@ -188,6 +188,6 @@ val JwsRawTypedTest by matrixSuite {
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toFlattened() shouldBe listOf(first, second)
 
-        typedGeneral.jws.typed<JsonObject, JwsHeaderMonolith>() shouldBe typedGeneral
+        typedGeneral.jws.typed<JwsHeaderMonolith, JsonObject>() shouldBe typedGeneral
     }
 }

@@ -17,7 +17,7 @@ val JwsCustomHeaderTest by matrixSuite {
             .encodeToByteArray()
         val payloadBytes = """{ "sub": "alice" }""".encodeToByteArray()
         val compact = JwsCompact.Raw(protectedBytes, payloadBytes, byteArrayOf(1, 2, 3))
-        val typed = compact.typed<JsonObject, CustomJwsHeader>()
+        val typed = compact.typed<CustomJwsHeader, JsonObject>()
 
         (typed.jws === compact) shouldBe true
         typed.wrappedHeader.header.extension shouldBe "private"
@@ -35,8 +35,8 @@ val JwsCustomHeaderTest by matrixSuite {
         encoded shouldBe joseCompliantSerializer.encodeToString(JwsCompactRawStringSerializer, compact)
         val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
         decoded shouldBe typed
-        JwsCompact.Raw.parse<JsonObject, CustomJwsHeader>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
-        JwsCompact<JsonObject, CustomJwsHeader>(compact.toString()) shouldBe typed
+        JwsCompact.Raw.parse<CustomJwsHeader, JsonObject>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
+        JwsCompact<CustomJwsHeader, JsonObject>(compact.toString()) shouldBe typed
     }
 
     "custom headers retain placement and signature order in flattened and general typed views" {
@@ -48,9 +48,9 @@ val JwsCustomHeaderTest by matrixSuite {
         )
         val signatures = listOf(byteArrayOf(1, 2), byteArrayOf(3, 4))
         val flattened = headers.mapIndexed { index, header ->
-            flattenedSample(header, bytes, signatures[index]).typed<JsonObject, CustomJwsHeader>()
+            flattenedSample(header, bytes, signatures[index]).typed<CustomJwsHeader, JsonObject>()
         }
-        val general = flattened.map { it.jws }.toGeneral().typed<JsonObject, CustomJwsHeader>()
+        val general = flattened.map { it.jws }.toGeneral().typed<CustomJwsHeader, JsonObject>()
 
         general.payload shouldBe payload
         general.wrappedHeaders shouldBe headers
@@ -150,7 +150,7 @@ val JwsCustomHeaderTest by matrixSuite {
             plainPayload = "{}".encodeToByteArray(),
             plainSignature = byteArrayOf(1),
         )
-        val result = runCatching { flattened.typed<JsonObject, CustomJwsHeader>() }
+        val result = runCatching { flattened.typed<CustomJwsHeader, JsonObject>() }
         result.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: extension")
     }
 }

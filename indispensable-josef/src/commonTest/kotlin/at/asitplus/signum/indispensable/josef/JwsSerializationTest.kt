@@ -34,7 +34,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
-        val typedGeneral = general.typed<JsonObject, JwsHeaderMonolith>()
+        val typedGeneral = general.typed<JwsHeaderMonolith, JsonObject>()
 
         general.signatureElements.size shouldBe 2
         typedGeneral.wrappedHeaders[0].header.algorithm shouldBe JwsAlgorithm.Signature.RS256
@@ -81,7 +81,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
         val serialized = joseCompliantSerializer.encodeToString(flattened)
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(serialized)
-        val typedReparsed = reparsed.typed<JsonObject, JwsHeaderMonolith>()
+        val typedReparsed = reparsed.typed<JwsHeaderMonolith, JsonObject>()
 
         reparsed shouldBe flattened
         typedReparsed.wrappedHeader shouldBe JwsHeaderWrapped(header, unprotectedMembers)
@@ -90,7 +90,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             decodeFromString<JsonObject>(serialized) shouldBe decodeFromString<JsonObject>(encodeToString(reparsed))
         }
         val general = listOf(flattened).toGeneral()
-        val typedGeneral = general.typed<JsonObject, JwsHeaderMonolith>()
+        val typedGeneral = general.typed<JwsHeaderMonolith, JsonObject>()
 
         general.plainPayload shouldBe payload
         typedGeneral.wrappedHeaders[0] shouldBe typedReparsed.wrappedHeader
@@ -130,8 +130,8 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(
             joseCompliantSerializer.encodeToString(general)
         )
-        val typedReparsed = reparsed.typed<JsonObject, JwsHeaderMonolith>()
-        val typedFlattened = reparsed.toFlattened().map { it.typed<JsonObject, JwsHeaderMonolith>() }
+        val typedReparsed = reparsed.typed<JwsHeaderMonolith, JsonObject>()
+        val typedFlattened = reparsed.toFlattened().map { it.typed<JwsHeaderMonolith, JsonObject>() }
 
         reparsed shouldBe general
         typedReparsed.wrappedHeaders shouldBe listOf(firstHeader, secondHeader)
@@ -168,7 +168,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
     "compact JWS keeps its exact string form and round-trips through flattened" {
         val compactString = compactSerializationAt(0)
         val compact = JwsCompact.Raw(compactString)
-        val typedCompact = compact.typed<JsonObject, JwsHeaderMonolith>()
+        val typedCompact = compact.typed<JwsHeaderMonolith, JsonObject>()
 
         typedCompact.wrappedHeader.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
         typedCompact.signature.shouldBeInstanceOf<RsaSignature>()
@@ -308,8 +308,8 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
         val flattened = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(flattenedJson)
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalJson)
-        val typedFlattened = flattened.typed<JsonObject, JwsHeaderMonolith>()
-        val typedGeneral = general.typed<JsonObject, JwsHeaderMonolith>()
+        val typedFlattened = flattened.typed<JwsHeaderMonolith, JsonObject>()
+        val typedGeneral = general.typed<JwsHeaderMonolith, JsonObject>()
 
         listOf(typedFlattened.wrappedHeader, typedGeneral.wrappedHeaders.single()).forEach { wrappedHeader ->
             wrappedHeader.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
@@ -344,8 +344,8 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
     "general to flattened to compact preserves each single-signature view" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
         val flattened = general.toFlattened()
-        val typedGeneral = general.typed<JsonObject, JwsHeaderMonolith>()
-        val typedFlattened = flattened.map { it.typed<JsonObject, JwsHeaderMonolith>() }
+        val typedGeneral = general.typed<JwsHeaderMonolith, JsonObject>()
+        val typedFlattened = flattened.map { it.typed<JwsHeaderMonolith, JsonObject>() }
 
         flattened.size shouldBe general.signatureElements.size
         flattened.forEachIndexed { index, entry ->

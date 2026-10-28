@@ -11,22 +11,22 @@ import kotlinx.serialization.json.Json
  * Forward [jws] or serialize through [JwsTypedSerializerTemplate] to preserve the original signed bytes.
  * Typed decoding does not verify signatures or establish key trust.
  */
-sealed class JwsTyped<out J : JwsRaw, out P, out H : JwsHeader> {
+sealed class JwsTyped<out J : JwsRaw, out H : JwsHeader, out P> {
     abstract val jws: J
     abstract val payload: P
 
     final override fun toString() = jws.toString()
 
     companion object {
-        inline operator fun <reified P, reified H : JwsHeader> invoke(
+        inline operator fun <reified H : JwsHeader, reified P> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
-        ) = JwsCompact<P, H>(base64UrlString, serialFormat)
+        ) = JwsCompact<H, P>(base64UrlString, serialFormat)
 
-        inline operator fun <reified P, reified H : JwsHeader> invoke(
+        inline operator fun <reified H : JwsHeader, reified P> invoke(
             jwsFlattened: List<JwsFlattened.Raw>,
             serialFormat: Json = joseCompliantSerializer,
-        ): JwsGeneral<P, H> = JwsGeneral<P, H>(jwsFlattened, serialFormat)
+        ): JwsGeneral<H, P> = JwsGeneral<H, P>(jwsFlattened, serialFormat)
 
     }
 }

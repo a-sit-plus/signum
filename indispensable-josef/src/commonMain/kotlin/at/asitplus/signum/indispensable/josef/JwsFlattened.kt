@@ -31,12 +31,12 @@ import kotlinx.serialization.serializer
  * Decoding does not verify the signature. To verify it, use [signature] and `jws.signatureInput`.
  */
 @ConsistentCopyVisibility
-data class JwsFlattened<out P, H : JwsHeader> internal constructor(
+data class JwsFlattened<H : JwsHeader, out P> internal constructor(
     override val jws: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
-) : JwsTyped<JwsFlattened.Raw, P, H>() {
+) : JwsTyped<JwsFlattened.Raw, H, P>() {
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
@@ -104,20 +104,20 @@ data class JwsFlattened<out P, H : JwsHeader> internal constructor(
 }
 
 /** Decodes a [JwsFlattened] view while retaining this raw flattened representation. */
-inline fun <reified P, reified H : JwsHeader> JwsFlattened.Raw.typed(
+inline fun <reified H : JwsHeader, reified P> JwsFlattened.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
-): JwsFlattened<P, H> = typed(
+): JwsFlattened<H, P> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
     headerSerializer = serialFormat.serializersModule.serializer<H>(),
     serialFormat = serialFormat,
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeader> JwsFlattened.Raw.typed(
+fun <H : JwsHeader, P> JwsFlattened.Raw.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
-): JwsFlattened<P, H> =
+): JwsFlattened<H, P> =
     JwsHeaderWrapped.fromParts(
         serializer = headerSerializer,
         protectedHeader = plainProtectedHeader,
@@ -136,7 +136,7 @@ fun <P, H : JwsHeader> JwsFlattened.Raw.typed(
  * Converts to a [JwsCompact] view, retaining the decoded payload, header, and signature.
  * The original wire representation must have a protected header and no unprotected header.
  */
-fun <P, H : JwsHeader> JwsFlattened<P, H>.toCompact() =
+fun <H : JwsHeader, P> JwsFlattened<H, P>.toCompact() =
     JwsCompact(jws.toCompact(), payload, wrappedHeader, signature)
 
 val JwsFlattened.Raw.protectedHeader: JsonObject?

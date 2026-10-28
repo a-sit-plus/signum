@@ -315,11 +315,11 @@ data class JwsHeaderMonolith(
             ?: certificateChain?.leaf?.publicKey
     }
 
-    val keyAttestationParsed: JwsCompact<KeyAttestationJwt, JwsHeaderMonolith>? by lazy {
+    val keyAttestationParsed: JwsCompact<JwsHeaderMonolith, KeyAttestationJwt>? by lazy {
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompact<JsonWebToken, JwsHeaderMonolith>? by lazy {
+    val verifierAttestationParsed: JwsCompact<JwsHeaderMonolith, JsonWebToken>? by lazy {
         attestationJwt?.typed()
     }
 

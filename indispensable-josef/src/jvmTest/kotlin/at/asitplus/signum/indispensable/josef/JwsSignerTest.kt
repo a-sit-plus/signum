@@ -82,10 +82,10 @@ val JwsSignerTest by matrixSuite {
         val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key", "custom")
         val jwsSigner = JwsSigner(listOf(signer))
         val typed = jwsSigner.signCompact(header, SigningPayload("alice"))
-        typed.shouldBeInstanceOf<JwsCompact<SigningPayload, SigningHeader>>()
+        typed.shouldBeInstanceOf<JwsCompact<SigningHeader, SigningPayload>>()
 
         val wireJson = typed.toString()
-        val roundtrip = JwsCompact<SigningPayload, SigningHeader>(wireJson)
+        val roundtrip = JwsCompact<SigningHeader, SigningPayload>(wireJson)
         roundtrip shouldBe typed
 
         val verifier = signer.signatureAlgorithm.verifierFor(signer.publicKey)
