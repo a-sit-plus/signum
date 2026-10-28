@@ -12,7 +12,7 @@ import kotlinx.serialization.serializer
  * Factories cache serialized fragments; retain the original wire object for byte-preserving round trips.
  */
 @ConsistentCopyVisibility
-data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
+data class JwsHeaderWrapped<H : JwsHeader> private constructor(
     val header: H,
     internal val protectedHeaderJson: JsonObject,
     internal val unprotectedHeader: JsonObject,
@@ -32,7 +32,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
 
     companion object {
         /** Creates a wrapper when [H]'s serializer is available explicitly. */
-        operator fun <H : JwsHeaderBase> invoke(
+        operator fun <H : JwsHeader> invoke(
             header: H,
             serializer: KSerializer<H>,
             unprotectedMembers: Set<String> = emptySet(),
@@ -50,7 +50,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
         }
 
         /** Creates a wrapper while [H] is still reified at the call site. */
-        inline operator fun <reified H : JwsHeaderBase> invoke(
+        inline operator fun <reified H : JwsHeader> invoke(
             header: H,
             unprotectedMembers: Set<String> = emptySet(),
             serialFormat: Json = joseCompliantSerializer,
@@ -62,7 +62,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
         )
 
         /** Decodes and combines protected and unprotected fragments using the supplied header serializer. */
-        fun <H : JwsHeaderBase> fromParts(
+        fun <H : JwsHeader> fromParts(
             serializer: KSerializer<H>,
             protectedHeader: ByteArray? = null,
             unprotectedHeader: JsonObject? = null,
@@ -75,7 +75,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
         )
 
         /** Decodes fragments while [H] is still reified at the call site. */
-        inline fun <reified H : JwsHeaderBase> fromParts(
+        inline fun <reified H : JwsHeader> fromParts(
             protectedHeader: ByteArray? = null,
             unprotectedHeader: JsonObject? = null,
             serialFormat: Json = joseCompliantSerializer,
@@ -87,7 +87,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
         )
 
         /** Decodes and combines JSON fragments using the supplied header serializer. */
-        fun <H : JwsHeaderBase> fromJsonObjects(
+        fun <H : JwsHeader> fromJsonObjects(
             serializer: KSerializer<H>,
             protectedHeader: JsonObject? = null,
             unprotectedHeader: JsonObject? = null,
@@ -102,7 +102,7 @@ data class JwsHeaderWrapped<H : JwsHeaderBase> private constructor(
         }
 
         /** Decodes JSON fragments while [H] is still reified at the call site. */
-        inline fun <reified H : JwsHeaderBase> fromJsonObjects(
+        inline fun <reified H : JwsHeader> fromJsonObjects(
             protectedHeader: JsonObject? = null,
             unprotectedHeader: JsonObject? = null,
             serialFormat: Json = joseCompliantSerializer,

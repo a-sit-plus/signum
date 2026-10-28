@@ -36,7 +36,7 @@ import kotlinx.serialization.serializer
  * Decoding does not verify the signature. To verify it, use [signature] and `jws.signatureInput`.
  */
 @ConsistentCopyVisibility
-data class JwsCompact<out P, H : JwsHeaderBase> internal constructor(
+data class JwsCompact<out P, H : JwsHeader> internal constructor(
     override val jws: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
@@ -98,7 +98,7 @@ data class JwsCompact<out P, H : JwsHeaderBase> internal constructor(
             /**
              * Parses compact serialization into a [Raw] value and decodes its payload and wrapped header.
              */
-            inline fun <reified P, reified H : JwsHeaderBase> parse(
+            inline fun <reified P, reified H : JwsHeader> parse(
                 base64UrlString: String,
                 serialFormat: Json = joseCompliantSerializer,
             ): KmmResult<Triple<Raw, P, JwsHeaderWrapped<H>>> =
@@ -139,7 +139,7 @@ data class JwsCompact<out P, H : JwsHeaderBase> internal constructor(
 
     companion object {
         /** Parses compact serialization and decodes its typed payload, header, and signature. */
-        inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
+        inline operator fun <reified P, reified H : JwsHeader> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
         ) = Raw(base64UrlString).typed<P, H>(serialFormat)
@@ -147,7 +147,7 @@ data class JwsCompact<out P, H : JwsHeaderBase> internal constructor(
 }
 
 /** Decodes a [JwsCompact] view while retaining this raw compact representation. */
-inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.Raw.typed(
+inline fun <reified P, reified H : JwsHeader> JwsCompact.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsCompact<P, H> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
@@ -156,7 +156,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.Raw.typed(
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeaderBase> JwsCompact.Raw.typed(
+fun <P, H : JwsHeader> JwsCompact.Raw.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
@@ -175,7 +175,7 @@ fun <P, H : JwsHeaderBase> JwsCompact.Raw.typed(
     }
 
 /** Converts to a [JwsFlattened] view, retaining the decoded payload, header, and signature. */
-fun <P, H : JwsHeaderBase> JwsCompact<P, H>.toFlattened() =
+fun <P, H : JwsHeader> JwsCompact<P, H>.toFlattened() =
     JwsFlattened(jws.toFlattened(), payload, wrappedHeader, signature)
 
 /**

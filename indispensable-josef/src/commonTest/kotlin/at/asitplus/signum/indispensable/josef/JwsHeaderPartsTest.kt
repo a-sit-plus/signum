@@ -12,10 +12,10 @@ val JwsRawHeaderPartsTest by matrixSuite {
     "protected and unprotected JSON objects form an exact partition" {
         val metadata = "bWV0YWRhdGE"
         val unprotectedMembers = setOf(
-            JwsHeader.SerialNames.KEY_ID,
-            JwsHeader.SerialNames.VC_TYPE_METADATA,
+            JwsHeaderMonolith.SerialNames.KEY_ID,
+            JwsHeaderMonolith.SerialNames.VC_TYPE_METADATA,
         )
-        val header = JwsHeader(
+        val header = JwsHeaderMonolith(
             keyId = "did:example:signer",
             type = "vc+sd-jwt",
             algorithm = JwsAlgorithm.Signature.ES256,
@@ -29,15 +29,15 @@ val JwsRawHeaderPartsTest by matrixSuite {
 
         protectedHeader shouldBe JsonObject(
             mapOf(
-                JwsHeader.SerialNames.TYPE to JsonPrimitive("vc+sd-jwt"),
-                JwsHeader.SerialNames.ALGORITHM to JsonPrimitive("ES256"),
-                JwsHeader.SerialNames.CONTENT_TYPE to JsonPrimitive("application/example+json"),
+                JwsHeaderMonolith.SerialNames.TYPE to JsonPrimitive("vc+sd-jwt"),
+                JwsHeaderMonolith.SerialNames.ALGORITHM to JsonPrimitive("ES256"),
+                JwsHeaderMonolith.SerialNames.CONTENT_TYPE to JsonPrimitive("application/example+json"),
             )
         )
         unprotectedHeader shouldBe JsonObject(
             mapOf(
-                JwsHeader.SerialNames.KEY_ID to JsonPrimitive("did:example:signer"),
-                JwsHeader.SerialNames.VC_TYPE_METADATA to JsonArray(listOf(JsonPrimitive(metadata))),
+                JwsHeaderMonolith.SerialNames.KEY_ID to JsonPrimitive("did:example:signer"),
+                JwsHeaderMonolith.SerialNames.VC_TYPE_METADATA to JsonArray(listOf(JsonPrimitive(metadata))),
             )
         )
         protectedHeader.keys.intersect(unprotectedHeader.keys) shouldBe emptySet()
@@ -45,11 +45,11 @@ val JwsRawHeaderPartsTest by matrixSuite {
 
     "encoded fragments reconstruct the header and expose member placement on JWS" {
         val unprotectedMembers = setOf(
-            JwsHeader.SerialNames.KEY_ID,
-            JwsHeader.SerialNames.CONTENT_TYPE,
-            JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
+            JwsHeaderMonolith.SerialNames.KEY_ID,
+            JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
+            JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
-        val header = JwsHeader(
+        val header = JwsHeaderMonolith(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "did:example:signer",
@@ -63,14 +63,14 @@ val JwsRawHeaderPartsTest by matrixSuite {
         val unprotectedHeader = wrappedHeader.unprotectedHeader
 
         protectedHeader.keys shouldBe setOf(
-            JwsHeader.SerialNames.TYPE,
-            JwsHeader.SerialNames.ALGORITHM,
-            JwsHeader.SerialNames.CERTIFICATE_SHA256_THUMBPRINT,
+            JwsHeaderMonolith.SerialNames.TYPE,
+            JwsHeaderMonolith.SerialNames.ALGORITHM,
+            JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA256_THUMBPRINT,
         )
         unprotectedHeader.keys shouldBe setOf(
-            JwsHeader.SerialNames.KEY_ID,
-            JwsHeader.SerialNames.CONTENT_TYPE,
-            JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
+            JwsHeaderMonolith.SerialNames.KEY_ID,
+            JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
+            JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
         val flattened = JwsFlattened.Raw(
             plainProtectedHeader = encodedProtectedHeader,
@@ -79,16 +79,16 @@ val JwsRawHeaderPartsTest by matrixSuite {
             plainSignature = byteArrayOf(2),
         )
         val reconstructedHeader =
-            JwsHeaderWrapped.fromParts<JwsHeader>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
+            JwsHeaderWrapped.fromParts<JwsHeaderMonolith>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
 
         reconstructedHeader shouldBe wrappedHeader
     }
 
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
-            JwsHeaderWrapped.fromJsonObjects<JwsHeader>(
-                protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
-                unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
+            JwsHeaderWrapped.fromJsonObjects<JwsHeaderMonolith>(
+                protectedHeader = JsonObject(mapOf(JwsHeaderMonolith.SerialNames.KEY_ID to JsonPrimitive("protected"))),
+                unprotectedHeader = JsonObject(mapOf(JwsHeaderMonolith.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
             )
         }
 
@@ -96,7 +96,7 @@ val JwsRawHeaderPartsTest by matrixSuite {
     }
 
     "member placement is set-like and stable through serialization" {
-        val header = JwsHeader(
+        val header = JwsHeaderMonolith(
             algorithm = JwsAlgorithm.Signature.RS256,
             keyId = "did:example:signer",
             contentType = "application/example+json",
@@ -104,8 +104,8 @@ val JwsRawHeaderPartsTest by matrixSuite {
         val wrappedHeader = JwsHeaderWrapped(
             header,
             linkedSetOf(
-                JwsHeader.SerialNames.CONTENT_TYPE,
-                JwsHeader.SerialNames.KEY_ID,
+                JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
+                JwsHeaderMonolith.SerialNames.KEY_ID,
             ),
         )
         val flattened = flattenedSample(
@@ -117,7 +117,7 @@ val JwsRawHeaderPartsTest by matrixSuite {
             joseCompliantSerializer.encodeToString(flattened)
         )
         val reparsedHeader =
-            JwsHeaderWrapped.fromParts<JwsHeader>(reparsed.plainProtectedHeader, reparsed.unprotectedHeader)
+            JwsHeaderWrapped.fromParts<JwsHeaderMonolith>(reparsed.plainProtectedHeader, reparsed.unprotectedHeader)
 
         reparsedHeader shouldBe wrappedHeader
         reparsedHeader.header shouldBe header

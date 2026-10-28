@@ -25,7 +25,7 @@ import kotlinx.serialization.json.Json
  */
 @Deprecated("Replaced by JwsCompact", level = DeprecationLevel.WARNING)
 data class JwsSigned<out P : Any>(
-    val header: JwsHeader,
+    val header: JwsHeaderMonolith,
     val payload: P,
     val signature: CryptoSignature,
     val plainSignatureInput: ByteArray,
@@ -73,7 +73,7 @@ data class JwsSigned<out P : Any>(
                 throw IllegalArgumentException("not three parts in input: $this")
             val inputParts = stringList.map { it.decodeToByteArray(Base64UrlStrict) }
             val header = with(inputParts[0]) {
-                joseCompliantSerializer.decodeFromString<JwsHeader>(decodeToString())
+                joseCompliantSerializer.decodeFromString<JwsHeaderMonolith>(decodeToString())
             }
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
@@ -111,7 +111,7 @@ data class JwsSigned<out P : Any>(
          * used as the input for signature calculation
          */
         @Suppress("unused")
-        fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): ByteArray =
+        fun prepareJwsSignatureInput(header: JwsHeaderMonolith, payload: ByteArray): ByteArray =
             (joseCompliantSerializer.encodeToString(header).encodeToByteArray().encodeToString(Base64UrlStrict) +
                     ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
 
@@ -121,7 +121,7 @@ data class JwsSigned<out P : Any>(
          */
         @Suppress("unused", "NOTHING_TO_INLINE")
         inline fun <T : Any> prepareJwsSignatureInput(
-            header: JwsHeader,
+            header: JwsHeaderMonolith,
             payload: T,
             serializer: SerializationStrategy<T>,
             json: Json = Json,

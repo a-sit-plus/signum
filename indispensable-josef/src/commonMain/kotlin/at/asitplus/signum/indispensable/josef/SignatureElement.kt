@@ -14,7 +14,7 @@ import kotlinx.serialization.json.JsonObject
  * entry while retaining these original fragments.
  *
  * Either fragment may be partial. Typed decoding requires their strict union to form the chosen
- * [JwsHeaderBase] implementation.
+ * [JwsHeader] implementation.
  *
  * See [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1).
  */

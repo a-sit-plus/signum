@@ -34,7 +34,7 @@ ASCII(BASE64URL(protected-header bytes)) || '.' || ASCII(BASE64URL(payload bytes
 ```
 
 To preserve this input, _Indispensable Josef_ retains the received data and provides typed views around it.
-Parsing a protected header into `JwsHeader` and serializing it again could produce different bytes, so the typed
+Parsing a protected header into `JwsHeaderMonolith` and serializing it again could produce different bytes, so the typed
 view is never used to reconstruct an incoming signing input.
 
 | Layer | Purpose | Main Types |
@@ -136,7 +136,7 @@ To verify a signature, use the stored input and signature pairs:
 * Each `view.jws.signatureInput` and `view.signature` from `typedGeneral.toFlattened()`
 
 !!! warning
-    **Always verify the stored signing input.** Recreating it from `JwsHeader` or a typed payload can change the bytes.
+    **Always verify the stored signing input.** Recreating it from `JwsHeaderMonolith` or a typed payload can change the bytes.
     Parsing, typed access, and `JwsHeader.publicKey` do not verify a signature or establish key trust.
     Your application must perform signature verification, trust validation, and any application-specific checks.
 
@@ -148,7 +148,7 @@ algorithms and leaves critical-extension handling to the application.
 
 ## Custom Headers and Typed Access
 
-Implement `JwsHeaderBase` for custom headers; `JwsHeader` is deprecated. Declare wire names and serializers on
+Implement `JwsHeader` for custom headers; `JwsHeaderMonolith` is deprecated. Declare wire names and serializers on
 implementations, since interface annotations are not inherited; mark unused properties `@Transient`.
 
 For a serializable `AppHeader`:

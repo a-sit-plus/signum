@@ -26,7 +26,7 @@ internal data class SigningHeader(
     @SerialName("kid") override val keyId: String? = null,
     val extension: String? = null,
     @SerialName("jwk") override val jsonWebKey: JsonWebKey? = null,
-) : JwsHeaderBase {
+) : JwsHeader {
     @Transient
     override val type: String? = null
 

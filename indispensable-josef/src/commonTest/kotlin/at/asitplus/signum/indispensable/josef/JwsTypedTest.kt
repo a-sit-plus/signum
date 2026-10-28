@@ -16,7 +16,7 @@ val payload = JsonObject(
 
 val JwsRawTypedTest by matrixSuite {
     "compact typed wrappers can be constructed and reopened from compact JWS" {
-        val header = JwsHeader(
+        val header = JwsHeaderMonolith(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "kid-compact",
@@ -40,13 +40,13 @@ val JwsRawTypedTest by matrixSuite {
         typedCompact.jws.signatureInput shouldBe JwsRaw.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedCompact.toString() shouldBe typedCompact.jws.toString()
 
-        typedCompact.jws.typed<JsonObject, JwsHeader>() shouldBe typedCompact
-        JwsTyped<JsonObject, JwsHeader>(typedCompact.toString()) shouldBe typedCompact
+        typedCompact.jws.typed<JsonObject, JwsHeaderMonolith>() shouldBe typedCompact
+        JwsTyped<JsonObject, JwsHeaderMonolith>(typedCompact.toString()) shouldBe typedCompact
     }
 
     "compact and flattened typed wrappers convert without changing the payload view" {
         val wrappedHeader = JwsHeaderWrapped(
-            JwsHeader(
+            JwsHeaderMonolith(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-roundtrip",
             )
@@ -74,10 +74,10 @@ val JwsRawTypedTest by matrixSuite {
         val serializer = JwsTypedSerializerTemplate(
             JwsCompactRawStringSerializer,
             JsonObject.serializer(),
-            JwsHeader.serializer(),
+            JwsHeaderMonolith.serializer(),
         )
         val wrappedHeader = JwsHeaderWrapped(
-            JwsHeader(
+            JwsHeaderMonolith(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-serializer",
             )
@@ -102,10 +102,10 @@ val JwsRawTypedTest by matrixSuite {
 
     "flattened typed wrappers can be created from split headers and existing flattened JWS" {
         val unprotectedMembers = setOf(
-            JwsHeader.SerialNames.KEY_ID,
-            JwsHeader.SerialNames.CONTENT_TYPE,
+            JwsHeaderMonolith.SerialNames.KEY_ID,
+            JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
         )
-        val header = JwsHeader(
+        val header = JwsHeaderMonolith(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "kid-flattened",
@@ -134,17 +134,17 @@ val JwsRawTypedTest by matrixSuite {
         typedFlattened.jws.signatureInput shouldBe JwsRaw.getSignatureInput(expectedProtectedHeader, expectedPayload)
         typedFlattened.toString() shouldBe typedFlattened.jws.toString()
 
-        typedFlattened.jws.typed<JsonObject, JwsHeader>() shouldBe typedFlattened
+        typedFlattened.jws.typed<JsonObject, JwsHeaderMonolith>() shouldBe typedFlattened
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
         val firstHeader = JwsHeaderWrapped(
-            header = JwsHeader(
+            header = JwsHeaderMonolith(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
                 keyId = "kid-1",
             ),
-            unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
+            unprotectedMembers = setOf(JwsHeaderMonolith.SerialNames.KEY_ID),
         )
         val first = JwsFlattened(
             jws = JwsFlattened.Raw(
@@ -158,12 +158,12 @@ val JwsRawTypedTest by matrixSuite {
             signature = JwsRaw.getSignature(firstHeader.header.algorithm, byteArrayOf(1, 1, 1, 1)),
         )
         val secondHeader = JwsHeaderWrapped(
-            header = JwsHeader(
+            header = JwsHeaderMonolith(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 type = "application/example+jws",
                 keyId = "kid-2",
             ),
-            unprotectedMembers = setOf(JwsHeader.SerialNames.TYPE),
+            unprotectedMembers = setOf(JwsHeaderMonolith.SerialNames.TYPE),
         )
         val second = JwsFlattened(
             jws = JwsFlattened.Raw(
@@ -177,17 +177,17 @@ val JwsRawTypedTest by matrixSuite {
             signature = JwsRaw.getSignature(secondHeader.header.algorithm, byteArrayOf(2, 2, 2, 2)),
         )
 
-        val typedGeneral = listOf(first.jws, second.jws).toGeneral().typed<JsonObject, JwsHeader>()
+        val typedGeneral = listOf(first.jws, second.jws).toGeneral().typed<JsonObject, JwsHeaderMonolith>()
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toGeneral()
         typedGeneral.wrappedHeaders.map { it.unprotectedHeaderMembers } shouldBe listOf(
-            setOf(JwsHeader.SerialNames.KEY_ID),
-            setOf(JwsHeader.SerialNames.TYPE),
+            setOf(JwsHeaderMonolith.SerialNames.KEY_ID),
+            setOf(JwsHeaderMonolith.SerialNames.TYPE),
         )
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
         typedGeneral.toFlattened() shouldBe listOf(first, second)
 
-        typedGeneral.jws.typed<JsonObject, JwsHeader>() shouldBe typedGeneral
+        typedGeneral.jws.typed<JsonObject, JwsHeaderMonolith>() shouldBe typedGeneral
     }
 }

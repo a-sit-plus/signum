@@ -33,7 +33,7 @@ class JwsSigner(signers: List<Signer>) {
     }
 
     /** Signs a payload with a fully protected header and returns its compact typed view. */
-    suspend fun <P, H : JwsHeaderBase> signCompact(
+    suspend fun <P, H : JwsHeader> signCompact(
         protectedHeader: H,
         payload: P,
         payloadSerializer: KSerializer<P>,
@@ -42,7 +42,7 @@ class JwsSigner(signers: List<Signer>) {
         protectedHeader, payload, payloadSerializer, headerSerializer,
     ).toCompact()
 
-    suspend inline fun <reified P, reified H : JwsHeaderBase> signCompact(
+    suspend inline fun <reified P, reified H : JwsHeader> signCompact(
         protectedHeader: H,
         payload: P,
     ): JwsCompact<P, H> = signCompact(
@@ -52,7 +52,7 @@ class JwsSigner(signers: List<Signer>) {
     )
 
     /** Signs a payload with the requested header-member placement and returns its flattened typed view. */
-    suspend fun <P, H : JwsHeaderBase> signFlattened(
+    suspend fun <P, H : JwsHeader> signFlattened(
         header: H,
         payload: P,
         payloadSerializer: KSerializer<P>,
@@ -69,7 +69,7 @@ class JwsSigner(signers: List<Signer>) {
         }
     }
 
-    suspend inline fun <reified P, reified H : JwsHeaderBase> signFlattened(
+    suspend inline fun <reified P, reified H : JwsHeader> signFlattened(
         header: H,
         payload: P,
         unprotectedHeaderMembers: Set<String> = emptySet(),
@@ -81,7 +81,7 @@ class JwsSigner(signers: List<Signer>) {
     )
 
     /** Signs one shared serialized payload, reusing each wrapped header's cached JSON and member placement. */
-    suspend fun <P, H : JwsHeaderBase> signGeneral(
+    suspend fun <P, H : JwsHeader> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
         payloadSerializer: KSerializer<P>,
@@ -100,7 +100,7 @@ class JwsSigner(signers: List<Signer>) {
         )
     }
 
-    suspend inline fun <reified P, H : JwsHeaderBase> signGeneral(
+    suspend inline fun <reified P, H : JwsHeader> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
     ): JwsGeneral<P, H> = signGeneral(
@@ -109,7 +109,7 @@ class JwsSigner(signers: List<Signer>) {
     )
 
     context(signer: Signer)
-    private suspend fun <P, H : JwsHeaderBase> signFlattened(
+    private suspend fun <P, H : JwsHeader> signFlattened(
         header: JwsHeaderWrapped<H>,
         payload: P,
         payloadBytes: ByteArray,
@@ -125,7 +125,7 @@ class JwsSigner(signers: List<Signer>) {
         )
     }
 
-    private fun selectSigner(header: JwsHeaderBase): Signer {
+    private fun selectSigner(header: JwsHeader): Signer {
         val algorithm = header.algorithm
         val signer = requireNotNull(signerMap[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
         require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {

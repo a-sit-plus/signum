@@ -38,7 +38,7 @@ val JwsJvmTest by matrixSuite {
         val jwsSigner = JwsSigner(signers)
         val verifiers = signers.map { ECDSAVerifier(it.publicKey.toJcaPublicKey() as ECPublicKey) }
         val headers = signers.mapIndexed { index, signer ->
-            JwsHeader(
+            JwsHeaderMonolith(
                 algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                 keyId = "kid-${index + 1}",
                 type = "application/example+jws",
@@ -57,7 +57,7 @@ val JwsJvmTest by matrixSuite {
         }
 
         "flattened typed JWS can be serialized and verified by Nimbus" { context ->
-            val placement = setOf(JwsHeader.SerialNames.KEY_ID)
+            val placement = setOf(JwsHeaderMonolith.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signFlattened(context.headers[0], context.payload, placement)
             val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
 
@@ -67,7 +67,7 @@ val JwsJvmTest by matrixSuite {
         }
 
         "general typed JWS can be serialized and verified by Nimbus" { context ->
-            val placement = setOf(JwsHeader.SerialNames.KEY_ID)
+            val placement = setOf(JwsHeaderMonolith.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signGeneral(context.payload, context.headers.map { header ->
                 JwsHeaderWrapped(header, placement)
             })

@@ -21,7 +21,7 @@ internal data class CustomJwsHeader(
     @SerialName("kid") override val keyId: String? = null,
     val extension: String? = null,
     @Transient override val crit: List<String>? = null,
-) : JwsHeaderBase {
+) : JwsHeader {
     @Transient override val type: String? = null
     @Transient override val contentType: String? = null
     @Transient override val certificateChain: CertificateChain? = null
