@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.Supreme
 import at.asitplus.testballoon.matrix.fixture
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.nimbusds.jose.JWSObject
@@ -19,8 +18,6 @@ import kotlinx.serialization.json.JsonObject
 import java.security.interfaces.ECPublicKey
 
 val JwsJvmTest by matrixSuite {
-    Supreme.init()
-
     class Context {
         val payload = joseCompliantSerializer.decodeFromString<JsonObject>(
             """{"iss":"https://issuer.example","sub":"alice"}"""
