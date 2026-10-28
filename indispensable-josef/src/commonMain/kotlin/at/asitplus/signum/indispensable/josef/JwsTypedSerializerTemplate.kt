@@ -9,7 +9,7 @@ import kotlinx.serialization.KSerializer
  * using the JOSE-compliant JSON format. Decoded signatures retain wire order.
  */
 @Suppress("UNCHECKED_CAST")
-class JwsTypedSerializerTemplate<J : JWS, P, H : JwsHeaderBase>(
+class JwsTypedSerializerTemplate<J : JwsRaw, P, H : JwsHeaderBase>(
     jwsSerializer: KSerializer<J>,
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
@@ -18,9 +18,9 @@ class JwsTypedSerializerTemplate<J : JWS, P, H : JwsHeaderBase>(
     encodeAs = { it.jws },
     decodeAs = { jws ->
         when (jws) {
-            is JwsCompactTyped.JwsCompact -> jws.typed(payloadSerializer, headerSerializer)
-            is JwsFlattened -> jws.typed(payloadSerializer, headerSerializer)
-            is JwsGeneral -> jws.typed(payloadSerializer, headerSerializer)
+            is JwsCompactTyped.Raw -> jws.typed(payloadSerializer, headerSerializer)
+            is JwsRawFlattened -> jws.typed(payloadSerializer, headerSerializer)
+            is JwsRawGeneral -> jws.typed(payloadSerializer, headerSerializer)
         } as JwsTyped<J, P, H>
     }
 )

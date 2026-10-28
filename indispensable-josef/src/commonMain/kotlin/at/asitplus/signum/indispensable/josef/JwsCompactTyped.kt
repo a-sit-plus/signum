@@ -24,11 +24,11 @@ import kotlinx.serialization.serializer
  * Direct construction requires the decoded values to agree with the retained wire object.
  */
 data class JwsCompactTyped<out P, H : JwsHeaderBase>(
-    override val jws: JwsCompact,
+    override val jws: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
-) : JwsTyped<JwsCompactTyped.JwsCompact, P, H>() {
+) : JwsTyped<JwsCompactTyped.Raw, P, H>() {
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
@@ -41,17 +41,17 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
      *
      * This class does not support an unprotected header field!
      *
-     * [JwsCompact] is intentionally not annotated with `@Serializable`: use [toString] for its standalone compact
-     * representation, and [JwsCompactStringSerializer] when embedding that string in JSON.
+     * [Raw] is intentionally not annotated with `@Serializable`: use [toString] for its standalone compact
+     * representation, and [JwsCompactRawStringSerializer] when embedding that string in JSON.
      *
      * Header bytes remain opaque until decoded through [JwsCompactTyped].
      */
     @ConsistentCopyVisibility
-    data class JwsCompact internal constructor(
+    data class Raw internal constructor(
         val plainProtectedHeader: ByteArray,
         override val plainPayload: ByteArray,
         val plainSignature: ByteArray,
-    ) : JWS() {
+    ) : JwsRaw() {
 
         @Transient
         val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
@@ -62,7 +62,7 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as JwsCompact
+            other as Raw
 
             if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
             if (!plainPayload.contentEquals(other.plainPayload)) return false
@@ -79,17 +79,16 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
         }
 
         companion object {
-
             /**
-             * Build a [at.asitplus.signum.indispensable.josef.JwsCompactTyped.JwsCompact] received as string
+             * Build a [at.asitplus.signum.indispensable.josef.JwsCompactTyped] received as string
              * and immediately decode its payload and wrapped header
              */
             inline fun <reified P, reified H : JwsHeaderBase> parse(
                 base64UrlString: String,
                 serialFormat: Json = joseCompliantSerializer,
-            ): KmmResult<Triple<JwsCompact, P, JwsHeaderWrapped<H>>> =
+            ): KmmResult<Triple<Raw, P, JwsHeaderWrapped<H>>> =
                 catching {
-                    val jws = JwsCompact(base64UrlString)
+                    val jws = Raw(base64UrlString)
                     val payload = jws.getPayload<P>(serialFormat).getOrThrow()
                     val header = JwsHeaderWrapped.fromParts<H>(
                         protectedHeader = jws.plainProtectedHeader,
@@ -99,12 +98,12 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
                 }
 
             /**
-             * Build a [at.asitplus.signum.indispensable.josef.JwsCompactTyped.JwsCompact] received as string
+             * Build a [at.asitplus.signum.indispensable.josef.JwsCompactTyped] received as string
              */
             @Throws(SerializationException::class)
             operator fun invoke(
                 base64UrlString: String,
-            ): JwsCompact = catchingUnwrappedAs(::SerializationException) {
+            ): Raw = catchingUnwrappedAs(::SerializationException) {
                 require(!base64UrlString.contains("=")) { "Trailing = are not supported. See RFC 7515" }
                 val parts = base64UrlString.split('.')
 
@@ -114,7 +113,7 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
                     )
                 }
 
-                JwsCompact(
+                Raw(
                     plainProtectedHeader = parts[0].decodeToByteArray(Base64UrlStrict),
                     plainPayload = parts[1].decodeToByteArray(Base64UrlStrict),
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
@@ -122,7 +121,7 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
             }.getOrThrow()
 
             /**
-             * Build a new [at.asitplus.signum.indispensable.josef.JwsCompactTyped.JwsCompact]
+             * Build a new [at.asitplus.signum.indispensable.josef.JwsCompactTyped]
              * from components and immediately sign the correct representation.
              *
              * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
@@ -133,7 +132,7 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
                 protectedHeader: JwsHeader,
                 payload: ByteArray,
                 signer: suspend (ByteArray) -> ByteArray
-            ): JwsCompact = invoke(JwsHeaderWrapped(protectedHeader), payload, signer)
+            ): Raw = invoke(JwsHeaderWrapped(protectedHeader), payload, signer)
 
             /**
              * Builds a compact JWS using a wrapped custom header. Compact serialization cannot carry unprotected
@@ -144,12 +143,12 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
                 wrappedHeader: JwsHeaderWrapped<*>,
                 payload: ByteArray,
                 signer: suspend (ByteArray) -> ByteArray,
-            ): JwsCompact {
+            ): Raw {
                 require(wrappedHeader.unprotectedHeaderMembers.isEmpty()) {
                     "Compact Serialization does not support unprotected header members"
                 }
                 val plainProtectedHeader = wrappedHeader.protectedHeader
-                return JwsCompact(
+                return Raw(
                     plainProtectedHeader = plainProtectedHeader,
                     plainPayload = payload,
                     plainSignature = signer(getSignatureInput(plainProtectedHeader, payload)),
@@ -162,11 +161,11 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase>(
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
-        ) = JwsCompact(base64UrlString).typed<P, H>(serialFormat)
+        ) = Raw(base64UrlString).typed<P, H>(serialFormat)
     }
 }
 
-inline fun <reified P, reified H : JwsHeaderBase> JwsCompactTyped.JwsCompact.typed(
+inline fun <reified P, reified H : JwsHeaderBase> JwsCompactTyped.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsCompactTyped<P, H> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
@@ -175,7 +174,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsCompactTyped.JwsCompact.typ
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeaderBase> JwsCompactTyped.JwsCompact.typed(
+fun <P, H : JwsHeaderBase> JwsCompactTyped.Raw.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
@@ -189,7 +188,7 @@ fun <P, H : JwsHeaderBase> JwsCompactTyped.JwsCompact.typed(
             this,
             getPayload(payloadSerializer, serialFormat).getOrThrow(),
             wrapped,
-            JWS.getSignature(wrapped.header.algorithm, plainSignature)
+            JwsRaw.getSignature(wrapped.header.algorithm, plainSignature)
         )
     }
 
@@ -197,16 +196,16 @@ fun <P, H : JwsHeaderBase> JwsCompactTyped<P, H>.toJwsFlattenedTyped() =
     JwsFlattenedTyped(jws.toJwsFlattened(), payload, wrappedHeader, signature)
 
 /**
- * Serializes a [JwsCompactTyped.JwsCompact] as its compact JWS string form inside JSON.
+ * Serializes a [Raw] as its compact JWS string form inside JSON.
  *
- * This serializer must be opted into explicitly to avoid accidentally treating [JwsCompactTyped.JwsCompact] as a JSON object.
+ * This serializer must be opted into explicitly to avoid accidentally treating [Raw] as a JSON object.
  */
-object JwsCompactStringSerializer : KSerializer<JwsCompactTyped.JwsCompact> {
+object JwsCompactRawStringSerializer : KSerializer<JwsCompactTyped.Raw> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("JwsCompact", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: JwsCompactTyped.JwsCompact) = encoder.encodeString(value.toString())
+    override fun serialize(encoder: Encoder, value: JwsCompactTyped.Raw) = encoder.encodeString(value.toString())
 
-    override fun deserialize(decoder: Decoder): JwsCompactTyped.JwsCompact = JwsCompactTyped.JwsCompact(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): JwsCompactTyped.Raw = JwsCompactTyped.Raw(decoder.decodeString())
 }
 
 /**
@@ -215,7 +214,7 @@ object JwsCompactStringSerializer : KSerializer<JwsCompactTyped.JwsCompact> {
  * The protected header bytes are preserved and the unprotected header is absent, because compact serialization does
  * not support unprotected header parameters.
  */
-fun JwsCompactTyped.JwsCompact.toJwsFlattened(): JwsFlattened = JwsFlattened(
+fun JwsCompactTyped.Raw.toJwsFlattened(): JwsRawFlattened = JwsRawFlattened(
     plainProtectedHeader = plainProtectedHeader,
     unprotectedHeader = null,
     plainPayload = plainPayload,

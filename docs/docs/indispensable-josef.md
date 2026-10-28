@@ -39,7 +39,7 @@ view is never used to reconstruct an incoming signing input.
 
 | Layer | Purpose | Main Types |
 |:--|:--|:--|
-| Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JWS`, `JwsCompactTyped.JwsCompact`, `JwsFlattened`, `JwsGeneral`, `SignatureElement` |
+| Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JwsRaw`, `Raw`, `JwsRawFlattened`, `JwsRawGeneral`, `SignatureElement` |
 | Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, P, H>` and its compact, flattened, and general views |
 | Effective header | Combine modeled header values and retain their protection status | `JwsHeaderWrapped<H>` with `H : JwsHeaderBase` |
 
@@ -54,9 +54,9 @@ The library supports three JWS forms:
 
 | Form | Type | Header Representation |
 |:--|:--|:--|
-| Compact | `JwsCompactTyped.JwsCompact` | One protected header; no unprotected header |
-| Flattened JSON | `JwsFlattened` | One signature with optional protected and unprotected fragments |
-| General JSON | `JwsGeneral` | Shared payload and one or more `SignatureElement`s, each with its own header fragments |
+| Compact | `Raw` | One protected header; no unprotected header |
+| Flattened JSON | `JwsRawFlattened` | One signature with optional protected and unprotected fragments |
+| General JSON | `JwsRawGeneral` | Shared payload and one or more `SignatureElement`s, each with its own header fragments |
 
 ### Protected and Unprotected Headers
 
@@ -91,14 +91,14 @@ to check placement. Unmodeled parameters remain in the original fragments for ro
 Use `joseCompliantSerializer` for JOSE JSON. This preconfigured serializer disables pretty printing and default-value
 encoding, uses `type` as the class discriminator, and ignores unknown keys when decoding typed classes.
 
-The sealed `JWS` serializer preserves the concrete form:
+The sealed `JwsRaw` serializer preserves the concrete form:
 
-* JSON strings become `JwsCompactTyped.JwsCompact`.
-* Objects with `signature` become `JwsFlattened`.
-* Objects with `signatures` become `JwsGeneral`.
+* JSON strings become `Raw`.
+* Objects with `signature` become `JwsRawFlattened`.
+* Objects with `signatures` become `JwsRawGeneral`.
 
-Ambiguous or incomplete shapes are rejected. Use `JwsCompactTyped.JwsCompact.toString()` and `JwsCompactTyped.JwsCompact(...)` for standalone compact
-data, and `JwsCompactStringSerializer` when embedding a compact string in JSON.
+Ambiguous or incomplete shapes are rejected. Use `JwsCompactTyped.toString()` and `JwsCompactTyped(...)` for standalone compact
+data, and `JwsCompactRawStringSerializer` when embedding a compact string in JSON.
 
 ### Signing and Verification
 
@@ -128,7 +128,7 @@ implementations, since interface annotations are not inherited; mark unused prop
 For a serializable `AppHeader`:
 
 ```kotlin
-val typed = JwsCompactTyped.JwsCompact(receivedCompactString).typed<JsonObject, AppHeader>()
+val typed = JwsCompactTyped(receivedCompactString).typed<JsonObject, AppHeader>()
 val header: AppHeader = typed.header
 val wrapped = JwsHeaderWrapped(header, setOf("app_claim"))
 ```
@@ -145,7 +145,7 @@ Callback signing helpers are deprecated pending a signing service.
 | Typed aliases such as `JwsCompactTyped<P>` | Concrete views such as `JwsCompactTyped<P, H>` |
 | Header/signature properties on wire objects | Header/signature properties on typed views |
 | `jws.typed<J, P>()` | `jws.typed<P, H>()` on the concrete wire form |
-| `JwsCompactTyped.JwsCompact.parse<P>()` → pair | `JwsCompactTyped.JwsCompact.parse<P, H>()` → triple of wire object, payload, wrapped header |
+| `JwsCompactTyped.parse<P>()` → pair | `JwsCompactTyped.parse<P, H>()` → triple of wire object, payload, wrapped header |
 | Two-argument `JwsTypedSerializerTemplate` | Add the header serializer as the third argument |
 | Payload-signing `JwsTyped` factories | Construct the wire form from payload bytes, then call `.typed<P, H>()` |
 | `JwsFlattened(header, payload, unprotectedMembers, signer)` | `JwsFlattened(JwsHeaderWrapped(header, unprotectedMembers), payload, signer)` |

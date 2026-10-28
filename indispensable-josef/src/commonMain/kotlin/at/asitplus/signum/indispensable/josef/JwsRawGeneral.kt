@@ -11,7 +11,7 @@ import kotlinx.serialization.Transient
  *
  * A general JWS carries one payload and one or more [SignatureElement]s. Each [SignatureElement] contains the header
  * fragments for one signature. [JwsGeneralTyped] decodes ordered headers and signatures around the retained
- * wire object. All signatures in a [JwsGeneral] share the same payload.
+ * wire object. All signatures in a [JwsRawGeneral] share the same payload.
  *
  * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
  * member, so callers should not pre-encode them.
@@ -22,14 +22,14 @@ import kotlinx.serialization.Transient
  */
 @ConsistentCopyVisibility
 @Serializable
-data class JwsGeneral private constructor(
+data class JwsRawGeneral private constructor(
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     @SerialName(SerialNames.PAYLOAD)
     override val plainPayload: ByteArray,
     @Serializable
     @SerialName(SerialNames.SIGNATURES)
     val signatureElements: List<SignatureElement>
-) : JWS() {
+) : JwsRaw() {
 
     init {
         require(signatureElements.isNotEmpty()) { "At least one signature is required" }
@@ -39,9 +39,9 @@ data class JwsGeneral private constructor(
     val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, plainPayload) }
 
     /**
-     * Returns a new [JwsGeneral] with one additional signature over the same payload.
+     * Returns a new [JwsRawGeneral] with one additional signature over the same payload.
      */
-    fun appendSignature(jwsFlattened: JwsFlattened): JwsGeneral {
+    fun appendSignature(jwsFlattened: JwsRawFlattened): JwsRawGeneral {
         require(plainPayload.contentEqualsIfArray(jwsFlattened.plainPayload)) {
             "Additional signed JWS payload must match existing payload"
         }
@@ -59,7 +59,7 @@ data class JwsGeneral private constructor(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as JwsGeneral
+        other as JwsRawGeneral
 
         if (!plainPayload.contentEquals(other.plainPayload)) return false
         if (signatureElements != other.signatureElements) return false
@@ -78,18 +78,18 @@ data class JwsGeneral private constructor(
         internal operator fun invoke(
             plainPayload: ByteArray,
             signatureElements: List<SignatureElement>,
-        ): JwsGeneral = JwsGeneral(plainPayload, buildList { addAll(signatureElements) })
+        ): JwsRawGeneral = JwsRawGeneral(plainPayload, buildList { addAll(signatureElements) })
 
-        operator fun invoke(jwsFlattened: List<JwsFlattened>): JwsGeneral = jwsFlattened.toJwsGeneral()
+        operator fun invoke(jwsFlattened: List<JwsRawFlattened>): JwsRawGeneral = jwsFlattened.toJwsGeneral()
     }
 }
 
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.
  */
-fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
+fun JwsRawGeneral.toJwsFlattened(): List<JwsRawFlattened> =
     signatureElements.map {
-        JwsFlattened(
+        JwsRawFlattened(
             plainProtectedHeader = it.plainProtectedHeader,
             unprotectedHeader = it.unprotectedHeader,
             plainPayload = this.plainPayload,

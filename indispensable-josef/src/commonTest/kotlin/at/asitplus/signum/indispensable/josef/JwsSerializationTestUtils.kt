@@ -29,13 +29,13 @@ internal val generalVectorJson = """
 """.trimIndent()
 
 internal val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), generalVectorJson)
-internal val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD]!!.jsonPrimitive.content
-internal val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES]!!.jsonArray
+internal val generalVectorPayload = generalVectorSource[JwsRaw.SerialNames.PAYLOAD]!!.jsonPrimitive.content
+internal val generalVectorSignatures = generalVectorSource[JwsRaw.SerialNames.SIGNATURES]!!.jsonArray
 
 internal fun compactSerializationAt(index: Int): String {
     val sourceSignature = generalVectorSignatures[index].jsonObject
-    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED]!!.jsonPrimitive.content
-    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE]!!.jsonPrimitive.content
+    val protectedHeaderBase64 = sourceSignature[JwsRaw.SerialNames.PROTECTED]!!.jsonPrimitive.content
+    val signatureBase64 = sourceSignature[JwsRaw.SerialNames.SIGNATURE]!!.jsonPrimitive.content
     return "$protectedHeaderBase64.$generalVectorPayload.$signatureBase64"
 }
 
@@ -61,7 +61,7 @@ internal fun flattenedSample(
     wrappedHeader: JwsHeaderWrapped<JwsHeader>,
     payload: ByteArray,
     plainSignature: ByteArray,
-): JwsFlattened = JwsFlattened(
+): JwsRawFlattened = JwsRawFlattened(
     plainProtectedHeader = wrappedHeader.protectedHeader
         .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() },
     unprotectedHeader = wrappedHeader.unprotectedHeader.takeUnless { it.isEmpty() },

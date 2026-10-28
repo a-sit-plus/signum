@@ -9,16 +9,16 @@ import kotlinx.serialization.serializer
 /**
  * Typed payload and ordered [signatureViews] over an unchanged general [jws].
  * Each pair keeps an effective header with its member placement and decoded signature together, in wire order.
- * Use [JwsGeneral.typed] to decode a general JWS.
+ * Use [JwsRawGeneral.typed] to decode a general JWS.
  *
  * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
  */
 @ConsistentCopyVisibility
 data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
-    override val jws: JwsGeneral,
+    override val jws: JwsRawGeneral,
     override val payload: P,
     internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
-) : JwsTyped<JwsGeneral, P, H>() {
+) : JwsTyped<JwsRawGeneral, P, H>() {
 
     internal val wrappedHeaders = signatureViews.map { it.first }
     val headers = signatureViews.map { it.first.header }
@@ -39,19 +39,19 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
     companion object {
         /** Copies [signatureViews] so later caller mutations cannot invalidate cached projections or wire alignment. */
         internal operator fun <P, H : JwsHeaderBase> invoke(
-            jws: JwsGeneral,
+            jws: JwsRawGeneral,
             payload: P,
             signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
         ): JwsGeneralTyped<P, H> = JwsGeneralTyped(jws, payload, buildList { addAll(signatureViews) })
 
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
-            jwsFlattened: List<JwsFlattened>,
+            jwsFlattened: List<JwsRawFlattened>,
             serialFormat: Json = joseCompliantSerializer,
         ): JwsGeneralTyped<P, H> = jwsFlattened.toJwsGeneral().typed<P, H>(serialFormat)
     }
 }
 
-inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.typed(
+inline fun <reified P, reified H : JwsHeaderBase> JwsRawGeneral.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneralTyped<P, H> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
@@ -60,7 +60,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.typed(
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeaderBase> JwsGeneral.typed(
+fun <P, H : JwsHeaderBase> JwsRawGeneral.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
@@ -73,7 +73,7 @@ fun <P, H : JwsHeaderBase> JwsGeneral.typed(
             unprotectedHeader = element.unprotectedHeader,
             serialFormat = serialFormat,
         )
-        wrappedHeader to JWS.getSignature(wrappedHeader.header.algorithm, element.plainSignature)
+        wrappedHeader to JwsRaw.getSignature(wrappedHeader.header.algorithm, element.plainSignature)
     }
     return JwsGeneralTyped(this, payload, signatureViews)
 }

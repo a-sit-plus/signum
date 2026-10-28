@@ -26,7 +26,7 @@ data class SignatureElement internal constructor(
      *
      * Serialization: BASE64URL(JWS Signature).
      */
-    @SerialName(JWS.SerialNames.SIGNATURE)
+    @SerialName(JwsRaw.SerialNames.SIGNATURE)
     @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
     val plainSignature: ByteArray,
 
@@ -37,11 +37,11 @@ data class SignatureElement internal constructor(
      *
      * Serialization: BASE64URL(UTF8(JWS Protected Header))
      */
-    @SerialName(JWS.SerialNames.PROTECTED)
+    @SerialName(JwsRaw.SerialNames.PROTECTED)
     @Serializable(with = ByteArrayBase64UrlNoPaddingSerializer::class)
     val plainProtectedHeader: ByteArray? = null,
 
-    @SerialName(JWS.SerialNames.HEADER)
+    @SerialName(JwsRaw.SerialNames.HEADER)
     val unprotectedHeader: JsonObject? = null
 ) {
     init {

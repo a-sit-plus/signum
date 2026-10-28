@@ -11,18 +11,18 @@ import kotlinx.serialization.serializer
  * Direct construction requires the decoded values to agree with the retained wire object.
  */
 data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
-    override val jws: JwsFlattened,
+    override val jws: JwsRawFlattened,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
-) : JwsTyped<JwsFlattened, P, H>() {
+) : JwsTyped<JwsRawFlattened, P, H>() {
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
 
 }
 
-inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.typed(
+inline fun <reified P, reified H : JwsHeaderBase> JwsRawFlattened.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsFlattenedTyped<P, H> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
@@ -31,7 +31,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.typed(
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeaderBase> JwsFlattened.typed(
+fun <P, H : JwsHeaderBase> JwsRawFlattened.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
@@ -46,7 +46,7 @@ fun <P, H : JwsHeaderBase> JwsFlattened.typed(
             this,
             getPayload(payloadSerializer, serialFormat).getOrThrow(),
             wrapped,
-            JWS.getSignature(wrapped.header.algorithm, plainSignature)
+            JwsRaw.getSignature(wrapped.header.algorithm, plainSignature)
         )
     }
 
