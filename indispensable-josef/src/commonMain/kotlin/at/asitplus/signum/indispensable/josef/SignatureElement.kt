@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonObject
  *
  * A [SignatureElement] contains the signature bytes plus the header fragments for that signature. The protected
  * fragment is stored as encoded bytes in [plainProtectedHeader], while the optional unprotected fragment is
- * represented as a [JsonObject]. [JwsGeneralTyped] decodes the effective header and member placement for each
+ * represented as a [JsonObject]. [JwsGeneral] decodes the effective header and member placement for each
  * entry while retaining these original fragments.
  *
  * Either fragment may be partial. Typed decoding requires their strict union to form the chosen

@@ -74,7 +74,7 @@ val JwsCustomHeaderTest by matrixSuite {
             joseCompliantSerializer.decodeFromString(flattenedSerializer, encoded) shouldBe typed
         }
         val generalSerializer = JwsTypedSerializerTemplate(
-            JwsGeneralTyped.Raw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsGeneral.Raw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
         )
         val encoded = joseCompliantSerializer.encodeToString(generalSerializer, general)
         encoded shouldBe joseCompliantSerializer.encodeToString(general.jws)
@@ -97,7 +97,7 @@ val JwsCustomHeaderTest by matrixSuite {
             when (typed) {
                 is JwsCompact -> typed.wrappedHeader shouldBe header
                 is JwsFlattened -> typed.wrappedHeader shouldBe header
-                is JwsGeneralTyped -> typed.wrappedHeaders shouldBe listOf(header)
+                is JwsGeneral -> typed.wrappedHeaders shouldBe listOf(header)
             }
             joseCompliantSerializer.encodeToString(serializer, typed) shouldBe encoded
         }
@@ -132,7 +132,7 @@ val JwsCustomHeaderTest by matrixSuite {
             when (typed) {
                 is JwsCompact -> listOf(typed.header)
                 is JwsFlattened -> listOf(typed.header)
-                is JwsGeneralTyped -> typed.headers
+                is JwsGeneral -> typed.headers
             } shouldBe listOf(expectedHeader)
             val encoded = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), typed.jws)
             joseCompliantSerializer.decodeFromString(serializer, encoded) shouldBe typed
