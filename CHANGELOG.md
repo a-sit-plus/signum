@@ -11,7 +11,7 @@ This is a major refactor!
     * Remove deprecated `JwsSigned` (use `JwsCompact`), `JsonWebToken`, and related JWT/attestation models
     * Separate decoded `JwsCompact<H, P>`, `JwsFlattened<H, P>`, and `JwsGeneral<H, P>` views from `JwsRaw` and nested `.Raw` wire representations, allowing raw parsing of custom headers and unsupported algorithms
     * Replace `JwsHeader.Part` and `protectedHeader` constructor parameters with `JwsHeaderWrapped<H>` for combined headers and protected/unprotected member placement
-    * Typed access now uses `.typed<H, P>()`; `JwsTypedSerializerTemplate` also requires a header serializer
+    * Typed access now uses `.typed<H, P>()`; `JwsTypedSerializerTemplate` takes header and payload serializers and creates concrete serializers through `jwsCompactSerializer()`, `jwsFlattenedSerializer()`, and `jwsGeneralSerializer()`
     * Rename JWS conversions to `toCompact()`, `toFlattened()`, and `toGeneral()`
     * Replace typed and callback signing factories with `JwsSigner`; make typed constructors and copying internal
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.

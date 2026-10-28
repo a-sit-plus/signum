@@ -6,6 +6,7 @@ import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -31,8 +32,8 @@ val JwsCustomHeaderTest by matrixSuite {
         converted.signatureInput shouldBe compact.signatureInput
 
         val serializer = JwsTypedSerializerTemplate(
-            JwsCompactRawStringSerializer, SigningPayload.serializer(), SigningHeader.serializer()
-        )
+            headerSerializer = SigningHeader.serializer(), payloadSerializer = SigningPayload.serializer(),
+        ).jwsCompactSerializer()
         val encoded = joseCompliantSerializer.encodeToString(serializer, typed)
         encoded shouldBe joseCompliantSerializer.encodeToString(JwsCompactRawStringSerializer, compact)
         val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
@@ -59,42 +60,46 @@ val JwsCustomHeaderTest by matrixSuite {
         general.toFlattened() shouldBe flattened
         general.signatureInputs shouldBe flattened.map { it.signatureInput }
 
-        val flattenedSerializer = JwsTypedSerializerTemplate(
-            JwsFlattened.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
+        val serializers = JwsTypedSerializerTemplate(
+            headerSerializer = SigningHeader.serializer(), payloadSerializer = SigningPayload.serializer(),
         )
+        val flattenedSerializer = serializers.jwsFlattenedSerializer()
         flattened.forEach { typed ->
             val encoded = joseCompliantSerializer.encodeToString(flattenedSerializer, typed)
             encoded shouldBe joseCompliantSerializer.encodeToString(typed.raw)
             joseCompliantSerializer.decodeFromString(flattenedSerializer, encoded) shouldBe typed
         }
-        val generalSerializer = JwsTypedSerializerTemplate(
-            JwsGeneral.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
-        )
+        val generalSerializer = serializers.jwsGeneralSerializer()
         val encoded = joseCompliantSerializer.encodeToString(generalSerializer, general)
         encoded shouldBe joseCompliantSerializer.encodeToString(general.raw)
         joseCompliantSerializer.decodeFromString(generalSerializer, encoded) shouldBe general
     }
 
-    "sealed typed serializer decodes every concrete JWS form with custom headers" {
+    "typed serializers decode every concrete JWS form with custom headers" {
         val header = JwsHeaderWrapped(SigningHeader(JwsAlgorithm.Signature.RS256, extension = "private"))
         val compact = JwsCompact.Raw(header.protectedHeader, "{}".encodeToByteArray(), byteArrayOf(1))
         val flattened = compact.toFlattened()
         val general = listOf(flattened).toGeneral()
-        val serializer = JwsTypedSerializerTemplate(
-            JwsRaw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
+        val serializers = JwsTypedSerializerTemplate(
+            headerSerializer = SigningHeader.serializer(), payloadSerializer = SigningPayload.serializer(),
         )
 
-        listOf(compact, flattened, general).forEach { wire ->
+        fun <T : JwsTyped<*, SigningHeader, SigningPayload>> assertDecoded(wire: JwsRaw, serializer: KSerializer<T>) {
             val encoded = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), wire)
-            val typed = joseCompliantSerializer.decodeFromString(serializer, encoded)
+            val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
+            val typed: JwsTyped<*, SigningHeader, SigningPayload> = decoded
             typed.raw shouldBe wire
             when (typed) {
                 is JwsCompact -> typed.wrappedHeader shouldBe header
                 is JwsFlattened -> typed.wrappedHeader shouldBe header
                 is JwsGeneral -> typed.wrappedHeaders shouldBe listOf(header)
             }
-            joseCompliantSerializer.encodeToString(serializer, typed) shouldBe encoded
+            joseCompliantSerializer.encodeToString(serializer, decoded) shouldBe encoded
         }
+
+        assertDecoded(compact, serializers.jwsCompactSerializer())
+        assertDecoded(flattened, serializers.jwsFlattenedSerializer())
+        assertDecoded(general, serializers.jwsGeneralSerializer())
     }
 
     "explicit typed serializers customize decoded views while preserving wire data" {
@@ -115,23 +120,38 @@ val JwsCustomHeaderTest by matrixSuite {
         val general = listOf(flattened).toGeneral()
         val expectedPayload = SigningPayload("ALICE")
         val expectedHeader = SigningHeader(JwsAlgorithm.Signature.RS256, extension = "decoded")
-        val serializer = JwsTypedSerializerTemplate(JwsRaw.serializer(), payloadSerializer, headerSerializer)
+        val serializers = JwsTypedSerializerTemplate(
+            headerSerializer = headerSerializer, payloadSerializer = payloadSerializer,
+        )
 
-        listOf(
-            compact.typed(payloadSerializer, headerSerializer),
-            flattened.typed(payloadSerializer, headerSerializer),
-            general.typed(payloadSerializer, headerSerializer),
-        ).forEach { typed ->
+        fun <T : JwsTyped<*, SigningHeader, SigningPayload>> assertRoundTrip(
+            typed: T,
+            serializer: KSerializer<T>,
+        ) {
             typed.payload shouldBe expectedPayload
-            when (typed) {
-                is JwsCompact -> listOf(typed.header)
-                is JwsFlattened -> listOf(typed.header)
-                is JwsGeneral -> typed.headers
+            val view: JwsTyped<*, SigningHeader, SigningPayload> = typed
+            when (view) {
+                is JwsCompact -> listOf(view.header)
+                is JwsFlattened -> listOf(view.header)
+                is JwsGeneral -> view.headers
             } shouldBe listOf(expectedHeader)
             val encoded = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), typed.raw)
             joseCompliantSerializer.decodeFromString(serializer, encoded) shouldBe typed
             joseCompliantSerializer.encodeToString(serializer, typed) shouldBe encoded
         }
+
+        assertRoundTrip(
+            compact.typed(payloadSerializer, headerSerializer),
+            serializers.jwsCompactSerializer(),
+        )
+        assertRoundTrip(
+            flattened.typed(payloadSerializer, headerSerializer),
+            serializers.jwsFlattenedSerializer(),
+        )
+        assertRoundTrip(
+            general.typed(payloadSerializer, headerSerializer),
+            serializers.jwsGeneralSerializer(),
+        )
 
         val lenientFormat = Json(joseCompliantSerializer) { isLenient = true }
         val lenientCompact = compact.copy(plainPayload = """{sub:"alice"}""".encodeToByteArray())
