@@ -21,12 +21,12 @@ import kotlinx.serialization.json.JsonPrimitive
 
 
 /**
- * Wrapper for all JWS formats.
+ * Retained wire bytes for all JWS formats: [JwsCompact.Raw], [JwsFlattened.Raw], and [JwsGeneral.Raw].
  *
- * If [plainPayload] data structure is defined as part of the contact consider [JwsTyped]
+ * Use the corresponding [JwsTyped] view to decode the payload, headers, and signatures.
  */
-@Serializable(with = JWS.JwsSerializer::class)
-sealed class JWS {
+@Serializable(with = JwsRaw.JwsSerializer::class)
+sealed class JwsRaw {
     /**
      * Raw payload bytes.
      *
@@ -91,31 +91,31 @@ sealed class JWS {
             "${getEncodedProtectedHeader(protectedHeader)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
 
-    object JwsSerializer : KSerializer<JWS> {
+    object JwsSerializer : KSerializer<JwsRaw> {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
-            element(SerialNames.COMPACT, JwsCompactStringSerializer.descriptor)
-            element(SerialNames.FLATTENED, JwsFlattened.serializer().descriptor)
-            element(SerialNames.GENERAL, JwsGeneral.serializer().descriptor)
+            element(SerialNames.COMPACT, JwsCompactRawStringSerializer.descriptor)
+            element(SerialNames.FLATTENED, JwsFlattened.Raw.serializer().descriptor)
+            element(SerialNames.GENERAL, JwsGeneral.Raw.serializer().descriptor)
         }
 
         override fun serialize(
             encoder: Encoder,
-            value: JWS
+            value: JwsRaw
         ) {
             require(encoder is JsonEncoder) { "JWS serialization requires a JsonDecoder" }
             when (value) {
-                is JwsCompact -> encoder.encodeSerializableValue(JwsCompactStringSerializer, value)
-                is JwsFlattened -> encoder.encodeSerializableValue(JwsFlattened.serializer(), value)
-                is JwsGeneral -> encoder.encodeSerializableValue(JwsGeneral.serializer(), value)
+                is JwsCompact.Raw -> encoder.encodeSerializableValue(JwsCompactRawStringSerializer, value)
+                is JwsFlattened.Raw -> encoder.encodeSerializableValue(JwsFlattened.Raw.serializer(), value)
+                is JwsGeneral.Raw -> encoder.encodeSerializableValue(JwsGeneral.Raw.serializer(), value)
             }
         }
 
-        override fun deserialize(decoder: Decoder): JWS {
+        override fun deserialize(decoder: Decoder): JwsRaw {
             require(decoder is JsonDecoder) { "JWS deserialization requires a JsonDecoder" }
 
             return when (val jsonElement = decoder.decodeJsonElement()) {
-                is JsonPrimitive -> decoder.json.decodeFromJsonElement(JwsCompactStringSerializer, jsonElement)
+                is JsonPrimitive -> decoder.json.decodeFromJsonElement(JwsCompactRawStringSerializer, jsonElement)
                 is JsonObject -> {
                     val hasGeneralSignatures = SerialNames.SIGNATURES in jsonElement
                     val hasFlattenedSignature = SerialNames.SIGNATURE in jsonElement
@@ -128,10 +128,10 @@ sealed class JWS {
                             )
 
                         hasGeneralSignatures ->
-                            decoder.json.decodeFromJsonElement(JwsGeneral.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JwsGeneral.Raw.serializer(), jsonElement)
 
                         hasFlattenedSignature ->
-                            decoder.json.decodeFromJsonElement(JwsFlattened.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JwsFlattened.Raw.serializer(), jsonElement)
 
                         else ->
                             throw SerializationException(

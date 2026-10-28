@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 
-val JwsHeaderPartsTest by matrixSuite {
+val JwsRawHeaderPartsTest by matrixSuite {
     "protected and unprotected JSON objects form an exact partition" {
         val metadata = "bWV0YWRhdGE"
         val unprotectedMembers = setOf(
@@ -74,7 +74,7 @@ val JwsHeaderPartsTest by matrixSuite {
             JwsHeader.SerialNames.CONTENT_TYPE,
             JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
-        val flattened = JwsFlattened(
+        val flattened = JwsFlattened.Raw(
             plainProtectedHeader = encodedProtectedHeader,
             unprotectedHeader = unprotectedHeader,
             plainPayload = byteArrayOf(1),
@@ -110,11 +110,11 @@ val JwsHeaderPartsTest by matrixSuite {
                 JwsHeader.SerialNames.KEY_ID,
             ),
         )
-        val flattened = JwsFlattened(
+        val flattened = JwsFlattened.Raw(
             wrappedHeader = wrappedHeader,
             payload = byteArrayOf(1),
         ) { byteArrayOf(2) }
-        val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened>(
+        val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
             joseCompliantSerializer.encodeToString(flattened)
         )
         val reparsedHeader =
@@ -130,7 +130,7 @@ val JwsHeaderPartsTest by matrixSuite {
             keyId = "did:example:signer",
         )
         val wrappedHeader = JwsHeaderWrapped(header)
-        val flattened = JwsFlattened.invoke(
+        val flattened = JwsFlattened.Raw.invoke(
             wrappedHeader = wrappedHeader,
             payload = "payload".encodeToByteArray(),
         ) { byteArrayOf(1) }
@@ -140,6 +140,6 @@ val JwsHeaderPartsTest by matrixSuite {
 
         reconstructedHeader shouldBe wrappedHeader
         flattened.unprotectedHeader shouldBe null
-        (JWS.SerialNames.HEADER in serialized) shouldBe false
+        (JwsRaw.SerialNames.HEADER in serialized) shouldBe false
     }
 }

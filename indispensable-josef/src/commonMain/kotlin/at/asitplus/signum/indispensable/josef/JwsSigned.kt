@@ -19,10 +19,11 @@ import kotlinx.serialization.json.Json
  * Representation of a signed JSON Web Signature object, i.e. consisting of header, payload and signature.
  *
  * `<P>` represents the type of the payload.
+ * Use [JwsCompact] for typed access and [JwsCompact.Raw] for the retained compact representation.
  *
  * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  */
-@Deprecated("Replaced by JwsCompactTyped", level = DeprecationLevel.WARNING, replaceWith = ReplaceWith("JwsCompactTyped"))
+@Deprecated("Replaced by JwsCompact", level = DeprecationLevel.WARNING)
 data class JwsSigned<out P : Any>(
     val header: JwsHeader,
     val payload: P,

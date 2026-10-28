@@ -4,13 +4,13 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.json.Json
 
 /**
- * Typed payload and header views over a retained [JWS] wire object.
+ * Typed payload and header views over a retained [JwsRaw] wire object.
  *
  * Use the concrete compact, flattened, or general view to access decoded headers and signatures.
  * Forward [jws] or serialize through [JwsTypedSerializerTemplate] to preserve the original signed bytes.
  * Typed decoding does not verify signatures or establish key trust.
  */
-sealed class JwsTyped<out J : JWS, out P, out H : JwsHeaderBase> {
+sealed class JwsTyped<out J : JwsRaw, out P, out H : JwsHeaderBase> {
     abstract val jws: J
     abstract val payload: P
 
@@ -20,12 +20,12 @@ sealed class JwsTyped<out J : JWS, out P, out H : JwsHeaderBase> {
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
-        ) = JwsCompactTyped<P, H>(base64UrlString, serialFormat)
+        ) = JwsCompact<P, H>(base64UrlString, serialFormat)
 
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
-            jwsFlattened: List<JwsFlattened>,
+            jwsFlattened: List<JwsFlattened.Raw>,
             serialFormat: Json = joseCompliantSerializer,
-        ): JwsGeneralTyped<P, H> = JwsGeneralTyped<P, H>(jwsFlattened, serialFormat)
+        ): JwsGeneral<P, H> = JwsGeneral<P, H>(jwsFlattened, serialFormat)
 
     }
 }
