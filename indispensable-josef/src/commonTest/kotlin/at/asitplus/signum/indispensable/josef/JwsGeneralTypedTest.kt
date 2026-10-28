@@ -27,15 +27,15 @@ val JwsGeneralTypedTest by matrixSuite {
         val typedFlattened = typed.toJwsFlattenedTyped()
         typedFlattened.map { it.jws } shouldBe flattened
         typedFlattened shouldBe flattened.map { it.typed<JsonObject, JwsHeader>() }
-        joseCompliantSerializer.decodeFromString<JwsGeneralTyped.JwsRawGeneral>(
+        joseCompliantSerializer.decodeFromString<JwsGeneralTyped.Raw>(
             joseCompliantSerializer.encodeToString(typed.jws),
         ).typed<JsonObject, JwsHeader>() shouldBe typed
     }
 
     "changing the input wire signature list cannot invalidate a general typed view" {
-        val original = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.JwsRawGeneral>(generalVectorJson)
+        val original = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.Raw>(generalVectorJson)
         val signatureElements = original.signatureElements.toMutableList()
-        val wire = JwsGeneralTyped.JwsRawGeneral(original.plainPayload, signatureElements)
+        val wire = JwsGeneralTyped.Raw(original.plainPayload, signatureElements)
         val typed = wire.typed<JsonObject, JwsHeader>()
         val expectedViews = typed.toJwsFlattenedTyped()
         val expectedHashCode = typed.hashCode()
@@ -52,7 +52,7 @@ val JwsGeneralTypedTest by matrixSuite {
     }
 
     "changing the input signature view list cannot alter headers placement or conversions" {
-        val wire = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.JwsRawGeneral>(generalVectorJson)
+        val wire = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.Raw>(generalVectorJson)
         val expected = wire.typed<JsonObject, JwsHeader>()
         val views = expected.signatureViews.toMutableList()
         val typed = JwsGeneralTyped(wire, expected.payload, views)
@@ -69,7 +69,7 @@ val JwsGeneralTypedTest by matrixSuite {
     }
 
     "general typed views reject missing extra or reordered signature views" {
-        val wire = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.JwsRawGeneral>(generalVectorJson)
+        val wire = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.Raw>(generalVectorJson)
         val typed = wire.typed<JsonObject, JwsHeader>()
         val views = typed.signatureViews
         val payload = typed.payload
@@ -83,7 +83,7 @@ val JwsGeneralTypedTest by matrixSuite {
     }
 
     "general typed views decode the shared payload only once" {
-        val wire = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.JwsRawGeneral>(generalVectorJson)
+        val wire = joseCompliantSerializer.decodeFromString<JwsGeneralTyped.Raw>(generalVectorJson)
         var payloadDecodes = 0
         val payloadSerializer = object : JsonTransformingSerializer<JsonObject>(JsonObject.serializer()) {
             override fun transformDeserialize(element: JsonElement): JsonElement {

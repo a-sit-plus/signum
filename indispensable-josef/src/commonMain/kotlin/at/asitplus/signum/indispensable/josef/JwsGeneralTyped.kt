@@ -14,16 +14,16 @@ import kotlinx.serialization.serializer
 /**
  * Typed payload and ordered [signatureViews] over an unchanged general [jws].
  * Each pair keeps an effective header with its member placement and decoded signature together, in wire order.
- * Use [JwsGeneralTyped.JwsRawGeneral.typed] to decode a general JWS.
+ * Use [JwsGeneralTyped.Raw.typed] to decode a general JWS.
  *
  * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
  */
 @ConsistentCopyVisibility
 data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
-    override val jws: JwsRawGeneral,
+    override val jws: Raw,
     override val payload: P,
     internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
-) : JwsTyped<JwsGeneralTyped.JwsRawGeneral, P, H>() {
+) : JwsTyped<JwsGeneralTyped.Raw, P, H>() {
 
     internal val wrappedHeaders = signatureViews.map { it.first }
     val headers = signatureViews.map { it.first.header }
@@ -46,7 +46,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
      *
      * A general JWS carries one payload and one or more [SignatureElement]s. Each [SignatureElement] contains the header
      * fragments for one signature. [JwsGeneralTyped] decodes ordered headers and signatures around the retained
-     * wire object. All signatures in a [JwsRawGeneral] share the same payload.
+     * wire object. All signatures in a [Raw] share the same payload.
      *
      * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
      * member, so callers should not pre-encode them.
@@ -57,7 +57,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
      */
     @ConsistentCopyVisibility
     @Serializable
-    data class JwsRawGeneral private constructor(
+    data class Raw private constructor(
         @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
         @SerialName(SerialNames.PAYLOAD)
         override val plainPayload: ByteArray,
@@ -74,9 +74,9 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
         val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, plainPayload) }
 
         /**
-         * Returns a new [JwsRawGeneral] with one additional signature over the same payload.
+         * Returns a new [Raw] with one additional signature over the same payload.
          */
-        fun appendSignature(jwsFlattened: JwsFlattened.Raw): JwsRawGeneral {
+        fun appendSignature(jwsFlattened: JwsFlattened.Raw): Raw {
             require(plainPayload.contentEqualsIfArray(jwsFlattened.plainPayload)) {
                 "Additional signed JWS payload must match existing payload"
             }
@@ -94,7 +94,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as JwsRawGeneral
+            other as Raw
 
             if (!plainPayload.contentEquals(other.plainPayload)) return false
             if (signatureElements != other.signatureElements) return false
@@ -113,16 +113,16 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
             internal operator fun invoke(
                 plainPayload: ByteArray,
                 signatureElements: List<SignatureElement>,
-            ): JwsRawGeneral = JwsRawGeneral(plainPayload, buildList { addAll(signatureElements) })
+            ): Raw = Raw(plainPayload, buildList { addAll(signatureElements) })
 
-            operator fun invoke(jwsFlattened: List<JwsFlattened.Raw>): JwsRawGeneral = jwsFlattened.toJwsGeneral()
+            operator fun invoke(jwsFlattened: List<JwsFlattened.Raw>): Raw = jwsFlattened.toJwsGeneral()
         }
     }
 
     companion object {
         /** Copies [signatureViews] so later caller mutations cannot invalidate cached projections or wire alignment. */
         internal operator fun <P, H : JwsHeaderBase> invoke(
-            jws: JwsRawGeneral,
+            jws: Raw,
             payload: P,
             signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
         ): JwsGeneralTyped<P, H> = JwsGeneralTyped(jws, payload, buildList { addAll(signatureViews) })
@@ -134,7 +134,7 @@ data class JwsGeneralTyped<out P, H : JwsHeaderBase> private constructor(
     }
 }
 
-inline fun <reified P, reified H : JwsHeaderBase> JwsGeneralTyped.JwsRawGeneral.typed(
+inline fun <reified P, reified H : JwsHeaderBase> JwsGeneralTyped.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneralTyped<P, H> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
@@ -143,7 +143,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsGeneralTyped.JwsRawGeneral.
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeaderBase> JwsGeneralTyped.JwsRawGeneral.typed(
+fun <P, H : JwsHeaderBase> JwsGeneralTyped.Raw.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
@@ -169,7 +169,7 @@ fun <P, H : JwsHeaderBase> JwsGeneralTyped<P, H>.toJwsFlattenedTyped() =
 /**
  * Expands general JSON JWS representation into one flattened JWS per signature.
  */
-fun JwsGeneralTyped.JwsRawGeneral.toJwsFlattened(): List<JwsFlattened.Raw> =
+fun JwsGeneralTyped.Raw.toJwsFlattened(): List<JwsFlattened.Raw> =
     signatureElements.map {
         JwsFlattened.Raw(
             plainProtectedHeader = it.plainProtectedHeader,

@@ -96,7 +96,7 @@ sealed class JwsRaw {
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
             element(SerialNames.COMPACT, JwsCompactRawStringSerializer.descriptor)
             element(SerialNames.FLATTENED, JwsFlattened.Raw.serializer().descriptor)
-            element(SerialNames.GENERAL, JwsGeneralTyped.JwsRawGeneral.serializer().descriptor)
+            element(SerialNames.GENERAL, JwsGeneralTyped.Raw.serializer().descriptor)
         }
 
         override fun serialize(
@@ -107,7 +107,7 @@ sealed class JwsRaw {
             when (value) {
                 is JwsCompact.Raw -> encoder.encodeSerializableValue(JwsCompactRawStringSerializer, value)
                 is JwsFlattened.Raw -> encoder.encodeSerializableValue(JwsFlattened.Raw.serializer(), value)
-                is JwsGeneralTyped.JwsRawGeneral -> encoder.encodeSerializableValue(JwsGeneralTyped.JwsRawGeneral.serializer(), value)
+                is JwsGeneralTyped.Raw -> encoder.encodeSerializableValue(JwsGeneralTyped.Raw.serializer(), value)
             }
         }
 
@@ -128,7 +128,7 @@ sealed class JwsRaw {
                             )
 
                         hasGeneralSignatures ->
-                            decoder.json.decodeFromJsonElement(JwsGeneralTyped.JwsRawGeneral.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JwsGeneralTyped.Raw.serializer(), jsonElement)
 
                         hasFlattenedSignature ->
                             decoder.json.decodeFromJsonElement(JwsFlattened.Raw.serializer(), jsonElement)
