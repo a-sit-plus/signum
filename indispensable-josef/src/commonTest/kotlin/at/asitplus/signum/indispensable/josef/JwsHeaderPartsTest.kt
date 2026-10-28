@@ -11,17 +11,17 @@ import kotlinx.serialization.json.JsonPrimitive
 
 val JwsRawHeaderPartsTest by matrixSuite {
     "protected and unprotected JSON objects form an exact partition" {
-        val metadata = "bWV0YWRhdGE"
         val unprotectedMembers = setOf(
-            JwsHeaderMonolith.SerialNames.KEY_ID,
-            JwsHeaderMonolith.SerialNames.VC_TYPE_METADATA,
+            JwsHeader.SerialNames.KEY_ID,
+            JwsHeader.SerialNames.CONTENT_TYPE,
         )
-        val header = JwsHeaderMonolith(
+        val header = SigningHeader(
             keyId = "did:example:signer",
             type = "vc+sd-jwt",
             algorithm = JwsAlgorithm.Signature.ES256,
             contentType = "application/example+json",
-            vcTypeMetadata = setOf(metadata),
+            extension = "custom-value",
+            crit = listOf("extension"),
         )
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
 
@@ -30,26 +30,27 @@ val JwsRawHeaderPartsTest by matrixSuite {
 
         protectedHeader shouldBe JsonObject(
             mapOf(
-                JwsHeaderMonolith.SerialNames.TYPE to JsonPrimitive("vc+sd-jwt"),
-                JwsHeaderMonolith.SerialNames.ALGORITHM to JsonPrimitive("ES256"),
-                JwsHeaderMonolith.SerialNames.CONTENT_TYPE to JsonPrimitive("application/example+json"),
+                JwsHeader.SerialNames.TYPE to JsonPrimitive("vc+sd-jwt"),
+                JwsHeader.SerialNames.ALGORITHM to JsonPrimitive("ES256"),
+                "extension" to JsonPrimitive("custom-value"),
+                "crit" to JsonArray(listOf(JsonPrimitive("extension"))),
             )
         )
         unprotectedHeader shouldBe JsonObject(
             mapOf(
-                JwsHeaderMonolith.SerialNames.KEY_ID to JsonPrimitive("did:example:signer"),
-                JwsHeaderMonolith.SerialNames.VC_TYPE_METADATA to JsonArray(listOf(JsonPrimitive(metadata))),
+                JwsHeader.SerialNames.KEY_ID to JsonPrimitive("did:example:signer"),
+                JwsHeader.SerialNames.CONTENT_TYPE to JsonPrimitive("application/example+json"),
             )
         )
     }
 
     "encoded fragments reconstruct headers with protected and unprotected thumbprints" {
         val unprotectedMembers = setOf(
-            JwsHeaderMonolith.SerialNames.KEY_ID,
-            JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
-            JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
+            JwsHeader.SerialNames.KEY_ID,
+            JwsHeader.SerialNames.CONTENT_TYPE,
+            JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
-        val header = JwsHeaderMonolith(
+        val header = SigningHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "did:example:signer",
@@ -63,26 +64,29 @@ val JwsRawHeaderPartsTest by matrixSuite {
         val unprotectedHeader = wrappedHeader.unprotectedHeader
 
         protectedHeader.keys shouldBe setOf(
-            JwsHeaderMonolith.SerialNames.TYPE,
-            JwsHeaderMonolith.SerialNames.ALGORITHM,
-            JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA256_THUMBPRINT,
+            JwsHeader.SerialNames.TYPE,
+            JwsHeader.SerialNames.ALGORITHM,
+            JwsHeader.SerialNames.CERTIFICATE_SHA256_THUMBPRINT,
         )
         unprotectedHeader.keys shouldBe setOf(
-            JwsHeaderMonolith.SerialNames.KEY_ID,
-            JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
-            JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
+            JwsHeader.SerialNames.KEY_ID,
+            JwsHeader.SerialNames.CONTENT_TYPE,
+            JwsHeader.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
         val reconstructedHeader =
-            JwsHeaderWrapped.fromParts<JwsHeaderMonolith>(encodedProtectedHeader, unprotectedHeader)
+            JwsHeaderWrapped.fromParts<SigningHeader>(encodedProtectedHeader, unprotectedHeader)
 
-        reconstructedHeader shouldBe wrappedHeader
+        reconstructedHeader.header.certificateSha1Thumbprint shouldBe header.certificateSha1Thumbprint
+        reconstructedHeader.header.certificateSha256Thumbprint shouldBe header.certificateSha256Thumbprint
+        reconstructedHeader.protectedHeader.toProtectedHeaderJsonObject() shouldBe protectedHeader
+        reconstructedHeader.unprotectedHeader shouldBe unprotectedHeader
     }
 
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
-            JwsHeaderWrapped.fromJsonObjects<JwsHeaderMonolith>(
-                protectedHeader = JsonObject(mapOf(JwsHeaderMonolith.SerialNames.KEY_ID to JsonPrimitive("protected"))),
-                unprotectedHeader = JsonObject(mapOf(JwsHeaderMonolith.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
+            JwsHeaderWrapped.fromJsonObjects<SigningHeader>(
+                protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
+                unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
             )
         }
 

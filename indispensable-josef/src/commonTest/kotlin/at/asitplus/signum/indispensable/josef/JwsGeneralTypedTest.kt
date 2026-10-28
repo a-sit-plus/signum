@@ -6,7 +6,6 @@ import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonTransformingSerializer
 
 val JwsGeneralTypedTest by matrixSuite {
@@ -17,26 +16,26 @@ val JwsGeneralTypedTest by matrixSuite {
         val second = first.copy(plainSignature = byteArrayOf(2))
         val flattened = listOf(first, second, first)
         val wire = flattened.toGeneral()
-        val typed = wire.typed<JwsHeaderMonolith, JsonObject>()
+        val typed = wire.typed<SigningHeader, SigningPayload>()
 
         (typed.jws === wire) shouldBe true
         typed.signatureViews.size shouldBe 3
         typed.headers.map { it.keyId } shouldBe listOf("shared", "shared", "shared")
-        typed.unprotectedHeaderMembers shouldBe List(3) { setOf(JwsHeaderMonolith.SerialNames.KEY_ID) }
+        typed.unprotectedHeaderMembers shouldBe List(3) { setOf(JwsHeader.SerialNames.KEY_ID) }
         typed.signatures.map { it.joseBytes } shouldBe flattened.map { it.plainSignature }
         val typedFlattened = typed.toFlattened()
         typedFlattened.map { it.jws } shouldBe flattened
-        typedFlattened shouldBe flattened.map { it.typed<JwsHeaderMonolith, JsonObject>() }
+        typedFlattened shouldBe flattened.map { it.typed<SigningHeader, SigningPayload>() }
         joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(
             joseCompliantSerializer.encodeToString(typed.jws),
-        ).typed<JwsHeaderMonolith, JsonObject>() shouldBe typed
+        ).typed<SigningHeader, SigningPayload>() shouldBe typed
     }
 
     "changing the input wire signature list cannot invalidate a general typed view" {
         val original = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
         val signatureElements = original.signatureElements.toMutableList()
         val wire = JwsGeneral.Raw(original.plainPayload, signatureElements)
-        val typed = wire.typed<JwsHeaderMonolith, JsonObject>()
+        val typed = wire.typed<SigningHeader, SigningPayload>()
         val expectedViews = typed.toFlattened()
         val expectedHashCode = typed.hashCode()
 
@@ -47,13 +46,13 @@ val JwsGeneralTypedTest by matrixSuite {
         wire.signatureInputs shouldBe original.signatureInputs
         typed.toFlattened() shouldBe expectedViews
         typed.hashCode() shouldBe expectedHashCode
-        typed shouldBe original.typed<JwsHeaderMonolith, JsonObject>()
+        typed shouldBe original.typed<SigningHeader, SigningPayload>()
         joseCompliantSerializer.encodeToString(wire) shouldBe joseCompliantSerializer.encodeToString(original)
     }
 
     "changing the input signature view list cannot alter headers placement or conversions" {
         val wire = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
-        val expected = wire.typed<JwsHeaderMonolith, JsonObject>()
+        val expected = wire.typed<SigningHeader, SigningPayload>()
         val views = expected.signatureViews.toMutableList()
         val typed = JwsGeneral(wire, expected.payload, views)
 
@@ -70,7 +69,7 @@ val JwsGeneralTypedTest by matrixSuite {
 
     "general typed views reject missing extra or reordered signature views" {
         val wire = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
-        val typed = wire.typed<JwsHeaderMonolith, JsonObject>()
+        val typed = wire.typed<SigningHeader, SigningPayload>()
         val views = typed.signatureViews
         val payload = typed.payload
 
@@ -85,13 +84,13 @@ val JwsGeneralTypedTest by matrixSuite {
     "general typed views decode the shared payload only once" {
         val wire = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
         var payloadDecodes = 0
-        val payloadSerializer = object : JsonTransformingSerializer<JsonObject>(JsonObject.serializer()) {
+        val payloadSerializer = object : JsonTransformingSerializer<SigningPayload>(SigningPayload.serializer()) {
             override fun transformDeserialize(element: JsonElement): JsonElement {
                 payloadDecodes++
                 return element
             }
         }
-        val typed = wire.typed(payloadSerializer, JwsHeaderMonolith.serializer())
+        val typed = wire.typed(payloadSerializer, SigningHeader.serializer())
 
         typed.signatureViews.size shouldBe 2
         payloadDecodes shouldBe 1

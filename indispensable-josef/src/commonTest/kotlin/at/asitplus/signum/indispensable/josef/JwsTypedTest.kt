@@ -2,25 +2,17 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
-private val typedPayload = JsonObject(
-    mapOf(
-        "issuer" to JsonPrimitive("https://issuer.example"),
-        "subject" to JsonPrimitive("alice"),
-        "admin" to JsonPrimitive(true),
-    )
-)
-private val typedPayloadJson = """{"issuer":"https://issuer.example","subject":"alice","admin":true}"""
+private val typedPayload = SigningPayload("alice")
+private val typedPayloadJson = """{"sub":"alice"}"""
 
 val JwsRawTypedTest by matrixSuite {
     "compact facade decodes values and conversions retain the payload view" {
         val compactString = "eyJhbGciOiJSUzI1NiJ9.e30.AQ"
-        val typedCompact = JwsTyped<JwsHeaderMonolith, JsonObject>(compactString)
+        val typedCompact = JwsTyped<SigningHeader, SigningPayload>(compactString)
 
         typedCompact.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
-        typedCompact.payload shouldBe JsonObject(emptyMap())
+        typedCompact.payload shouldBe SigningPayload()
         typedCompact.signature.joseBytes shouldBe byteArrayOf(1)
         typedCompact.toString() shouldBe compactString
 
@@ -34,10 +26,10 @@ val JwsRawTypedTest by matrixSuite {
 
     "flattened typed views decode split headers and expose their placement" {
         val unprotectedMembers = setOf(
-            JwsHeaderMonolith.SerialNames.KEY_ID,
-            JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
+            JwsHeader.SerialNames.KEY_ID,
+            JwsHeader.SerialNames.CONTENT_TYPE,
         )
-        val header = JwsHeaderMonolith(
+        val header = SigningHeader(
             algorithm = JwsAlgorithm.Signature.RS256,
             type = "application/example+jws",
             keyId = "kid-flattened",
@@ -46,7 +38,7 @@ val JwsRawTypedTest by matrixSuite {
         val wire = flattenedSample(
             JwsHeaderWrapped(header, unprotectedMembers), typedPayloadJson.encodeToByteArray(), byteArrayOf(4, 3, 2, 1),
         )
-        val typed = wire.typed<JwsHeaderMonolith, JsonObject>()
+        val typed = wire.typed<SigningHeader, SigningPayload>()
 
         (typed.jws === wire) shouldBe true
         typed.payload shouldBe typedPayload
@@ -58,19 +50,19 @@ val JwsRawTypedTest by matrixSuite {
     "general facade accepts distinct arrays with equal payloads and retains signature order" {
         val headers = listOf(
             JwsHeaderWrapped(
-                JwsHeaderMonolith(algorithm = JwsAlgorithm.Signature.RS256, keyId = "kid-1"),
-                setOf(JwsHeaderMonolith.SerialNames.KEY_ID),
+                SigningHeader(algorithm = JwsAlgorithm.Signature.RS256, keyId = "kid-1"),
+                setOf(JwsHeader.SerialNames.KEY_ID),
             ),
             JwsHeaderWrapped(
-                JwsHeaderMonolith(algorithm = JwsAlgorithm.Signature.RS256, type = "application/example+jws", keyId = "kid-2"),
-                setOf(JwsHeaderMonolith.SerialNames.TYPE),
+                SigningHeader(algorithm = JwsAlgorithm.Signature.RS256, type = "application/example+jws", keyId = "kid-2"),
+                setOf(JwsHeader.SerialNames.TYPE),
             ),
         )
         val flattened = headers.mapIndexed { index, header ->
             // Each signature gets a separate array with the same payload bytes.
             flattenedSample(header, typedPayloadJson.encodeToByteArray(), byteArrayOf((index + 1).toByte()))
         }
-        val typed = JwsTyped<JwsHeaderMonolith, JsonObject>(flattened)
+        val typed = JwsTyped<SigningHeader, SigningPayload>(flattened)
 
         typed.payload shouldBe typedPayload
         typed.headers shouldBe headers.map { it.header }

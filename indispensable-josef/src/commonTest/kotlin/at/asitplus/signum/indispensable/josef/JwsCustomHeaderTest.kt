@@ -19,7 +19,7 @@ val JwsCustomHeaderTest by matrixSuite {
             .encodeToByteArray()
         val payloadBytes = """{ "sub": "alice" }""".encodeToByteArray()
         val compact = JwsCompact.Raw(protectedBytes, payloadBytes, byteArrayOf(1, 2, 3))
-        val typed = compact.typed<CustomJwsHeader, JsonObject>()
+        val typed = compact.typed<SigningHeader, SigningPayload>()
 
         (typed.jws === compact) shouldBe true
         typed.wrappedHeader.header.extension shouldBe "private"
@@ -31,28 +31,28 @@ val JwsCustomHeaderTest by matrixSuite {
         converted.jws.signatureInput shouldBe compact.signatureInput
 
         val serializer = JwsTypedSerializerTemplate(
-            JwsCompactRawStringSerializer, JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsCompactRawStringSerializer, SigningPayload.serializer(), SigningHeader.serializer()
         )
         val encoded = joseCompliantSerializer.encodeToString(serializer, typed)
         encoded shouldBe joseCompliantSerializer.encodeToString(JwsCompactRawStringSerializer, compact)
         val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
         decoded shouldBe typed
-        JwsCompact.Raw.parse<CustomJwsHeader, JsonObject>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
-        JwsCompact<CustomJwsHeader, JsonObject>(compact.toString()) shouldBe typed
+        JwsCompact.Raw.parse<SigningHeader, SigningPayload>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
+        JwsCompact<SigningHeader, SigningPayload>(compact.toString()) shouldBe typed
     }
 
     "custom headers retain placement and signature order in flattened and general typed views" {
-        val payload = JsonObject(mapOf("sub" to JsonPrimitive("alice")))
-        val bytes = joseCompliantSerializer.encodeToString(JsonObject.serializer(), payload).encodeToByteArray()
+        val payload = SigningPayload("alice")
+        val bytes = joseCompliantSerializer.encodeToString(SigningPayload.serializer(), payload).encodeToByteArray()
         val headers = listOf(
-            JwsHeaderWrapped(CustomJwsHeader(JwsAlgorithm.Signature.RS256, "first", "one"), setOf("extension")),
-            JwsHeaderWrapped(CustomJwsHeader(JwsAlgorithm.Signature.RS256, "second", "two"), setOf("kid")),
+            JwsHeaderWrapped(SigningHeader(JwsAlgorithm.Signature.RS256, "first", "one"), setOf("extension")),
+            JwsHeaderWrapped(SigningHeader(JwsAlgorithm.Signature.RS256, "second", "two"), setOf("kid")),
         )
         val signatures = listOf(byteArrayOf(1, 2), byteArrayOf(3, 4))
         val flattened = headers.mapIndexed { index, header ->
-            flattenedSample(header, bytes, signatures[index]).typed<CustomJwsHeader, JsonObject>()
+            flattenedSample(header, bytes, signatures[index]).typed<SigningHeader, SigningPayload>()
         }
-        val general = flattened.map { it.jws }.toGeneral().typed<CustomJwsHeader, JsonObject>()
+        val general = flattened.map { it.jws }.toGeneral().typed<SigningHeader, SigningPayload>()
 
         general.payload shouldBe payload
         general.wrappedHeaders shouldBe headers
@@ -61,7 +61,7 @@ val JwsCustomHeaderTest by matrixSuite {
         general.jws.signatureInputs shouldBe flattened.map { it.jws.signatureInput }
 
         val flattenedSerializer = JwsTypedSerializerTemplate(
-            JwsFlattened.Raw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsFlattened.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
         )
         flattened.forEach { typed ->
             val encoded = joseCompliantSerializer.encodeToString(flattenedSerializer, typed)
@@ -69,7 +69,7 @@ val JwsCustomHeaderTest by matrixSuite {
             joseCompliantSerializer.decodeFromString(flattenedSerializer, encoded) shouldBe typed
         }
         val generalSerializer = JwsTypedSerializerTemplate(
-            JwsGeneral.Raw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsGeneral.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
         )
         val encoded = joseCompliantSerializer.encodeToString(generalSerializer, general)
         encoded shouldBe joseCompliantSerializer.encodeToString(general.jws)
@@ -77,12 +77,12 @@ val JwsCustomHeaderTest by matrixSuite {
     }
 
     "sealed typed serializer decodes every concrete JWS form with custom headers" {
-        val header = JwsHeaderWrapped(CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "private"))
+        val header = JwsHeaderWrapped(SigningHeader(JwsAlgorithm.Signature.RS256, extension = "private"))
         val compact = JwsCompact.Raw(header.protectedHeader, "{}".encodeToByteArray(), byteArrayOf(1))
         val flattened = compact.toFlattened()
         val general = listOf(flattened).toGeneral()
         val serializer = JwsTypedSerializerTemplate(
-            JwsRaw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsRaw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
         )
 
         listOf(compact, flattened, general).forEach { wire ->
@@ -99,11 +99,11 @@ val JwsCustomHeaderTest by matrixSuite {
     }
 
     "explicit typed serializers customize decoded views while preserving wire data" {
-        val payloadSerializer = object : JsonTransformingSerializer<JsonObject>(JsonObject.serializer()) {
+        val payloadSerializer = object : JsonTransformingSerializer<SigningPayload>(SigningPayload.serializer()) {
             override fun transformDeserialize(element: JsonElement): JsonElement =
-                JsonObject(element.jsonObject + ("decoded" to JsonPrimitive(true)))
+                JsonObject(element.jsonObject + ("sub" to JsonPrimitive("ALICE")))
         }
-        val headerSerializer = object : JsonTransformingSerializer<CustomJwsHeader>(CustomJwsHeader.serializer()) {
+        val headerSerializer = object : JsonTransformingSerializer<SigningHeader>(SigningHeader.serializer()) {
             override fun transformDeserialize(element: JsonElement): JsonElement =
                 JsonObject(element.jsonObject + ("extension" to JsonPrimitive("decoded")))
         }
@@ -114,8 +114,8 @@ val JwsCustomHeaderTest by matrixSuite {
         )
         val flattened = compact.toFlattened()
         val general = listOf(flattened).toGeneral()
-        val expectedPayload = JsonObject(mapOf("sub" to JsonPrimitive("alice"), "decoded" to JsonPrimitive(true)))
-        val expectedHeader = CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "decoded")
+        val expectedPayload = SigningPayload("ALICE")
+        val expectedHeader = SigningHeader(JwsAlgorithm.Signature.RS256, extension = "decoded")
         val serializer = JwsTypedSerializerTemplate(JwsRaw.serializer(), payloadSerializer, headerSerializer)
 
         listOf(
@@ -152,7 +152,7 @@ val JwsCustomHeaderTest by matrixSuite {
             plainPayload = "{}".encodeToByteArray(),
             plainSignature = byteArrayOf(1),
         )
-        val result = runCatching { flattened.typed<CustomJwsHeader, JsonObject>() }
+        val result = runCatching { flattened.typed<SigningHeader, SigningPayload>() }
         result.shouldBeFailure().shouldBeInstanceOf<IllegalArgumentException>()
             .message.shouldContain("Duplicate keys: extension")
     }

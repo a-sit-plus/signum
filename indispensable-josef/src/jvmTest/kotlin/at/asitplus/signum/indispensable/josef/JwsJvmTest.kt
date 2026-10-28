@@ -14,14 +14,11 @@ import com.nimbusds.jose.crypto.ECDSAVerifier
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.json.JsonObject
 import java.security.interfaces.ECPublicKey
 
 val JwsJvmTest by matrixSuite {
     class Context {
-        val payload = joseCompliantSerializer.decodeFromString<JsonObject>(
-            """{"iss":"https://issuer.example","sub":"alice"}"""
-        )
+        val payload = SigningPayload("alice")
         val signers = List(2) { index ->
             runBlocking {
                 Signer.Ephemeral {
@@ -35,7 +32,7 @@ val JwsJvmTest by matrixSuite {
         val jwsSigner = JwsSigner(signers)
         val verifiers = signers.map { ECDSAVerifier(it.publicKey.toJcaPublicKey() as ECPublicKey) }
         val headers = signers.mapIndexed { index, signer ->
-            JwsHeaderMonolith(
+            SigningHeader(
                 algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
                 keyId = "kid-${index + 1}",
                 type = "application/example+jws",
@@ -50,11 +47,11 @@ val JwsJvmTest by matrixSuite {
 
             parsed.verify(context.verifiers[0]).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
-            parsed.payload.toString() shouldBe """{"iss":"https://issuer.example","sub":"alice"}"""
+            parsed.payload.toString() shouldBe """{"sub":"alice"}"""
         }
 
         "flattened typed JWS can be serialized and verified by Nimbus" { context ->
-            val placement = setOf(JwsHeaderMonolith.SerialNames.KEY_ID)
+            val placement = setOf(JwsHeader.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signFlattened(context.headers[0], context.payload, placement)
             val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
 
@@ -64,7 +61,7 @@ val JwsJvmTest by matrixSuite {
         }
 
         "general typed JWS can be serialized and verified by Nimbus" { context ->
-            val placement = setOf(JwsHeaderMonolith.SerialNames.KEY_ID)
+            val placement = setOf(JwsHeader.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signGeneral(context.payload, context.headers.map { header ->
                 JwsHeaderWrapped(header, placement)
             })
