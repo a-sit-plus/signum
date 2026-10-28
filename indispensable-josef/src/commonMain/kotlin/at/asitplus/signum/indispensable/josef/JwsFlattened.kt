@@ -26,11 +26,12 @@ import kotlinx.serialization.serializer
  * Deserialize received JSON as [Raw], then call [Raw.typed] to decode its payload, header, and signature.
  * [toCompact] produces a [JwsCompact] view when the original representation has a protected header and
  * no unprotected header.
- * Direct construction requires the decoded values to agree with [jws].
+ * Create signed values through [JwsSigner]. Component construction and copying are internal.
  *
  * Decoding does not verify the signature. To verify it, use [signature] and `jws.signatureInput`.
  */
-data class JwsFlattened<out P, H : JwsHeaderBase>(
+@ConsistentCopyVisibility
+data class JwsFlattened<out P, H : JwsHeaderBase> internal constructor(
     override val jws: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
@@ -98,33 +99,6 @@ data class JwsFlattened<out P, H : JwsHeaderBase>(
             result = 31 * result + plainPayload.contentHashCode()
             result = 31 * result + plainSignature.contentHashCode()
             return result
-        }
-
-        companion object {
-            /**
-             * Creates a flattened JWS, splitting [JwsHeaderWrapped.header] according to
-             * [JwsHeaderWrapped.unprotectedHeaderMembers].
-             *
-             * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
-             * flattened JSON serialization and signing input construction apply base64url encoding internally.
-             */
-            @Deprecated("Will be replaced by real signing service")
-            suspend operator fun invoke(
-                wrappedHeader: JwsHeaderWrapped<*>,
-                payload: ByteArray,
-                signer: suspend (ByteArray) -> ByteArray
-            ): Raw {
-                val plainProtectedHeader = wrappedHeader.protectedHeader
-                    .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
-                val unprotectedHeader = wrappedHeader.unprotectedHeader
-                    .takeUnless { it.isEmpty() }
-                return Raw(
-                    plainProtectedHeader,
-                    unprotectedHeader,
-                    payload,
-                    signer(getSignatureInput(plainProtectedHeader, payload))
-                )
-            }
         }
     }
 }

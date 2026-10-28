@@ -19,6 +19,19 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
+    "signing input matches RFC 7515 Appendix A.1.1 with the protected header first" {
+        // Preserve the exact CRLF and spaces from https://www.rfc-editor.org/rfc/rfc7515.html#appendix-A.1.1.
+        val protectedHeader = "{\"typ\":\"JWT\",\r\n \"alg\":\"HS256\"}".encodeToByteArray()
+        val payload = ("{\"iss\":\"joe\",\r\n \"exp\":1300819380,\r\n " +
+                "\"http://example.com/is_root\":true}").encodeToByteArray()
+        val encodedHeader = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"
+        val encodedPayload = "eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+                "cGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
+
+        JwsRaw.getSignatureInput(protectedHeader, payload) shouldBe "$encodedHeader.$encodedPayload".encodeToByteArray()
+        JwsRaw.getSignatureInput(null, payload) shouldBe ".$encodedPayload".encodeToByteArray()
+    }
+
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
         val typedGeneral = general.typed<JsonObject, JwsHeader>()
@@ -60,17 +73,11 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
         val plainProtectedHeader = wrappedHeader.protectedHeader
-        var capturedSignatureInput: ByteArray? = null
-
-        val flattened = JwsFlattened.Raw.invoke(
+        val flattened = flattenedSample(
             wrappedHeader = wrappedHeader,
             payload = payload,
-        ) { signatureInput ->
-            capturedSignatureInput = signatureInput
-            byteArrayOf(1, 2, 3, 4)
-        }
-
-        capturedSignatureInput shouldBe JwsRaw.getSignatureInput(plainProtectedHeader, payload)
+            plainSignature = byteArrayOf(1, 2, 3, 4),
+        )
 
         val serialized = joseCompliantSerializer.encodeToString(flattened)
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(serialized)
@@ -131,40 +138,15 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         typedFlattened.map { it.wrappedHeader } shouldBe listOf(firstHeader, secondHeader)
     }
 
-    "empty protected header is omitted from flattened/general JWS and signing input" {
+    "absent protected header stays omitted through flattened/general serialization" {
         val payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray()
-        val header = JwsHeader(
-            algorithm = JwsAlgorithm.Signature.RS256,
-            keyId = "kid-1",
-        )
-        val unprotectedMembers = setOf(
-            JwsHeader.SerialNames.ALGORITHM,
-            JwsHeader.SerialNames.KEY_ID,
-        )
-        val wrappedHeader = JwsHeaderWrapped(header, unprotectedMembers)
-        val unprotectedHeader = wrappedHeader.unprotectedHeader
-        val conformantWithoutProtected = JwsFlattened.Raw(
+        val flattened = JwsFlattened.Raw(
             plainProtectedHeader = null,
-            unprotectedHeader = unprotectedHeader,
+            unprotectedHeader = JsonObject(mapOf("alg" to JsonPrimitive("RS256"), "kid" to JsonPrimitive("kid-1"))),
             plainPayload = payload,
             plainSignature = byteArrayOf(1, 2, 3, 4),
         )
-        var capturedSignatureInput: ByteArray? = null
-
-        val flattened = JwsFlattened.Raw(
-            wrappedHeader = wrappedHeader,
-            payload = payload,
-        ) { signatureInput ->
-            capturedSignatureInput = signatureInput
-            byteArrayOf(1, 2, 3, 4)
-        }
         val general = listOf(flattened).toGeneral()
-
-        flattened shouldBe conformantWithoutProtected
-        flattened.plainProtectedHeader shouldBe null
-        capturedSignatureInput shouldBe JwsRaw.getSignatureInput(null, payload)
-        flattened.signatureInput shouldBe capturedSignatureInput
-        flattened.signatureInput shouldBe conformantWithoutProtected.signatureInput
 
         val flattenedJson = joseCompliantSerializer.decodeFromString<JsonObject>(
             joseCompliantSerializer.encodeToString(flattened)
@@ -172,7 +154,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         flattenedJson.shouldNotContainKey(JwsRaw.SerialNames.PROTECTED)
 
         general.signatureElements.single().plainProtectedHeader shouldBe null
-        general.signatureInputs.single() shouldBe conformantWithoutProtected.signatureInput
+        general.signatureInputs.single() shouldBe flattened.signatureInput
 
         val generalJson = joseCompliantSerializer.decodeFromString<JsonObject>(
             joseCompliantSerializer.encodeToString(general)
@@ -203,18 +185,17 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         flattened.toCompact() shouldBe compact
     }
 
-    "compact JWS invoke methods round-trip as three base64url segments" {
+    "compact JWS components round-trip as three base64url segments" {
         val compactPattern = Regex("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")
-        val compact = JwsCompact.Raw.invoke(
-            protectedHeader = JwsHeader(
+        val compact = JwsCompact.Raw(
+            plainProtectedHeader = JwsHeaderWrapped(JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-1",
                 type = "application/example+jws",
-            ),
-            payload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray(),
-        ) {
-            byteArrayOf(1, 2, 3, 4)
-        }
+            )).protectedHeader,
+            plainPayload = """{"iss":"https://issuer.example","sub":"alice"}""".encodeToByteArray(),
+            plainSignature = byteArrayOf(1, 2, 3, 4),
+        )
 
         val serialized = compact.toString()
         val reparsed = JwsCompact.Raw(serialized)
@@ -229,15 +210,14 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
     }
 
     "compact JWS rejects padded base64url segments" {
-        val canonical = JwsCompact.Raw.invoke(
-            protectedHeader = JwsHeader(
+        val canonical = JwsCompact.Raw(
+            plainProtectedHeader = JwsHeaderWrapped(JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-1",
-            ),
-            payload = "x".encodeToByteArray(),
-        ) {
-            byteArrayOf(1, 2, 3, 4)
-        }.toString()
+            )).protectedHeader,
+            plainPayload = "x".encodeToByteArray(),
+            plainSignature = byteArrayOf(1, 2, 3, 4),
+        ).toString()
         val (protectedSegment, payloadSegment, signatureSegment) = canonical.split('.')
         val nonCanonical = buildString {
             append(protectedSegment)
@@ -399,7 +379,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             plainSignature = ByteArray(64) { (it + 1).toByte() },
         )
 
-        val appended = JwsGeneral.Raw(listOf(first)).appendSignature(second)
+        val appended = listOf(first).toGeneral().appendSignature(second)
 
         appended.toFlattened() shouldBe listOf(first, second)
         appended shouldBe listOf(first, second).toGeneral()
@@ -423,7 +403,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
         val emptyResult = runCatching { emptyList<JwsFlattened.Raw>().toGeneral() }
         val listMismatchResult = runCatching { listOf(first, second).toGeneral() }
-        val appendMismatchResult = runCatching { JwsGeneral.Raw(listOf(first)).appendSignature(second) }
+        val appendMismatchResult = runCatching { listOf(first).toGeneral().appendSignature(second) }
 
         emptyResult.isSuccess shouldBe false
         emptyResult.shouldBeFailure() shouldBe IllegalArgumentException("General JWS requires at least one signature")

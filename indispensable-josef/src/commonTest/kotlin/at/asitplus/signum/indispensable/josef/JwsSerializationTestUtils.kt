@@ -58,7 +58,7 @@ internal fun generalJson(
 """.trimIndent()
 
 internal fun flattenedSample(
-    wrappedHeader: JwsHeaderWrapped<JwsHeader>,
+    wrappedHeader: JwsHeaderWrapped<*>,
     payload: ByteArray,
     plainSignature: ByteArray,
 ): JwsFlattened.Raw = JwsFlattened.Raw(

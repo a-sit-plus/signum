@@ -31,11 +31,12 @@ import kotlinx.serialization.serializer
  *
  * Parse a received string with `JwsCompact<P, H>(compactString)`, or decode an existing [Raw] with [Raw.typed].
  * [toString] produces the compact string; [toFlattened] produces a [JwsFlattened] view with the same signed bytes.
- * Direct construction requires the decoded values to agree with [jws].
+ * Create signed values through [JwsSigner]. Component construction and copying are internal.
  *
  * Decoding does not verify the signature. To verify it, use [signature] and `jws.signatureInput`.
  */
-data class JwsCompact<out P, H : JwsHeaderBase>(
+@ConsistentCopyVisibility
+data class JwsCompact<out P, H : JwsHeaderBase> internal constructor(
     override val jws: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
@@ -133,40 +134,6 @@ data class JwsCompact<out P, H : JwsHeaderBase>(
                     plainSignature = parts[2].decodeToByteArray(Base64UrlStrict),
                 )
             }.getOrThrow()
-
-            /**
-             * Builds a new [Raw] value from components and signs the correct representation.
-             *
-             * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
-             * compact serialization and signing input construction apply base64url encoding internally.
-             */
-            @Deprecated("Will be replaced by real signing service")
-            suspend operator fun invoke(
-                protectedHeader: JwsHeader,
-                payload: ByteArray,
-                signer: suspend (ByteArray) -> ByteArray
-            ): Raw = invoke(JwsHeaderWrapped(protectedHeader), payload, signer)
-
-            /**
-             * Builds a compact JWS using a wrapped custom header. Compact serialization cannot carry unprotected
-             * members, so every represented header member must be protected.
-             */
-            @Deprecated("Will be replaced by real signing service")
-            suspend operator fun invoke(
-                wrappedHeader: JwsHeaderWrapped<*>,
-                payload: ByteArray,
-                signer: suspend (ByteArray) -> ByteArray,
-            ): Raw {
-                require(wrappedHeader.unprotectedHeaderMembers.isEmpty()) {
-                    "Compact Serialization does not support unprotected header members"
-                }
-                val plainProtectedHeader = wrappedHeader.protectedHeader
-                return Raw(
-                    plainProtectedHeader = plainProtectedHeader,
-                    plainPayload = payload,
-                    plainSignature = signer(getSignatureInput(plainProtectedHeader, payload)),
-                )
-            }
         }
     }
 
