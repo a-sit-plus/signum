@@ -17,11 +17,11 @@ import kotlinx.serialization.serializer
  * Direct construction requires the decoded values to agree with the retained wire object.
  */
 data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
-    override val jws: JwsRawFlattened,
+    override val jws: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
-) : JwsTyped<JwsFlattenedTyped.JwsRawFlattened, P, H>() {
+) : JwsTyped<JwsFlattenedTyped.Raw, P, H>() {
 
     val header = wrappedHeader.header
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
@@ -43,7 +43,7 @@ data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
      */
     @ConsistentCopyVisibility
     @Serializable
-    data class JwsRawFlattened internal constructor(
+    data class Raw internal constructor(
         @Serializable(ByteArrayBase64UrlNoPaddingSerializer::class)
         @SerialName(SerialNames.PROTECTED)
         val plainProtectedHeader: ByteArray? = null,
@@ -68,7 +68,7 @@ data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as JwsRawFlattened
+            other as Raw
 
             if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
             if (unprotectedHeader != other.unprotectedHeader) return false
@@ -99,12 +99,12 @@ data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
                 wrappedHeader: JwsHeaderWrapped<*>,
                 payload: ByteArray,
                 signer: suspend (ByteArray) -> ByteArray
-            ): JwsRawFlattened {
+            ): Raw {
                 val plainProtectedHeader = wrappedHeader.protectedHeader
                     .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
                 val unprotectedHeader = wrappedHeader.unprotectedHeader
                     .takeUnless { it.isEmpty() }
-                return JwsRawFlattened(
+                return Raw(
                     plainProtectedHeader,
                     unprotectedHeader,
                     payload,
@@ -115,7 +115,7 @@ data class JwsFlattenedTyped<out P, H : JwsHeaderBase>(
     }
 }
 
-inline fun <reified P, reified H : JwsHeaderBase> JwsFlattenedTyped.JwsRawFlattened.typed(
+inline fun <reified P, reified H : JwsHeaderBase> JwsFlattenedTyped.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsFlattenedTyped<P, H> = typed(
     payloadSerializer = serialFormat.serializersModule.serializer<P>(),
@@ -124,7 +124,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsFlattenedTyped.JwsRawFlatte
 )
 
 /** Decodes a typed view using explicit payload and header serializers, retaining the original wire object. */
-fun <P, H : JwsHeaderBase> JwsFlattenedTyped.JwsRawFlattened.typed(
+fun <P, H : JwsHeaderBase> JwsFlattenedTyped.Raw.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
@@ -146,7 +146,7 @@ fun <P, H : JwsHeaderBase> JwsFlattenedTyped.JwsRawFlattened.typed(
 fun <P, H : JwsHeaderBase> JwsFlattenedTyped<P, H>.toJwsCompactTyped() =
     JwsCompact(jws.toJwsCompact(), payload, wrappedHeader, signature)
 
-val JwsFlattenedTyped.JwsRawFlattened.protectedHeader: JsonObject?
+val JwsFlattenedTyped.Raw.protectedHeader: JsonObject?
     get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
 
 /**
@@ -155,7 +155,7 @@ val JwsFlattenedTyped.JwsRawFlattened.protectedHeader: JsonObject?
  * This requires the absence of an unprotected header, because compact JWS can only carry protected parameters.
  * Protected bytes are retained without decoding a header model.
  */
-fun JwsFlattenedTyped.JwsRawFlattened.toJwsCompact(): JwsCompact.Raw {
+fun JwsFlattenedTyped.Raw.toJwsCompact(): JwsCompact.Raw {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
     return JwsCompact.Raw(
@@ -168,7 +168,7 @@ fun JwsFlattenedTyped.JwsRawFlattened.toJwsCompact(): JwsCompact.Raw {
 /**
  * Converts multiple flattened JWS values with the same payload into general JSON JWS representation.
  */
-fun List<JwsFlattenedTyped.JwsRawFlattened>.toJwsGeneral(): JwsRawGeneral {
+fun List<JwsFlattenedTyped.Raw>.toJwsGeneral(): JwsRawGeneral {
     require(isNotEmpty()) { "General JWS requires at least one signature" }
     val payload = this[0].plainPayload
     val signatures = this.map {

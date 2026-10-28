@@ -116,7 +116,7 @@ val JwsRawTypedTest by matrixSuite {
         val expectedProtectedHeader = wrappedHeader.protectedHeader
             .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
         val typedFlattened = JwsFlattenedTyped(
-            jws = JwsFlattenedTyped.JwsRawFlattened(
+            jws = JwsFlattenedTyped.Raw(
                 plainProtectedHeader = expectedProtectedHeader,
                 unprotectedHeader = wrappedHeader.unprotectedHeader,
                 plainPayload = expectedPayload,
@@ -147,7 +147,7 @@ val JwsRawTypedTest by matrixSuite {
             unprotectedMembers = setOf(JwsHeader.SerialNames.KEY_ID),
         )
         val first = JwsFlattenedTyped(
-            jws = JwsFlattenedTyped.JwsRawFlattened(
+            jws = JwsFlattenedTyped.Raw(
                 plainProtectedHeader = firstHeader.protectedHeader,
                 unprotectedHeader = firstHeader.unprotectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
@@ -166,7 +166,7 @@ val JwsRawTypedTest by matrixSuite {
             unprotectedMembers = setOf(JwsHeader.SerialNames.TYPE),
         )
         val second = JwsFlattenedTyped(
-            jws = JwsFlattenedTyped.JwsRawFlattened(
+            jws = JwsFlattenedTyped.Raw(
                 plainProtectedHeader = secondHeader.protectedHeader,
                 unprotectedHeader = secondHeader.unprotectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),

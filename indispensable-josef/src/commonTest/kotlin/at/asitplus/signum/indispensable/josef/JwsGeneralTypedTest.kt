@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonTransformingSerializer
 
 val JwsGeneralTypedTest by matrixSuite {
     "general typed views retain duplicate headers and duplicate signature elements in order" {
-        val first = joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.JwsRawFlattened>(
+        val first = joseCompliantSerializer.decodeFromString<JwsFlattenedTyped.Raw>(
             flattenedJson(headerJson = """{"kid":"shared"}"""),
         )
         val second = first.copy(plainSignature = byteArrayOf(2))

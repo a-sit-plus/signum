@@ -50,7 +50,7 @@ val JwsCustomHeaderTest by matrixSuite {
         val signatures = listOf(byteArrayOf(1, 2), byteArrayOf(3, 4))
         val flattened = headers.mapIndexed { index, header ->
             var capturedInput: ByteArray? = null
-            val jws = JwsFlattenedTyped.JwsRawFlattened(header, bytes) { input ->
+            val jws = JwsFlattenedTyped.Raw(header, bytes) { input ->
                 capturedInput = input
                 signatures[index]
             }
@@ -66,7 +66,7 @@ val JwsCustomHeaderTest by matrixSuite {
         general.jws.signatureInputs shouldBe flattened.map { it.jws.signatureInput }
 
         val flattenedSerializer = JwsTypedSerializerTemplate(
-            JwsFlattenedTyped.JwsRawFlattened.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
+            JwsFlattenedTyped.Raw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
         )
         flattened.forEach { typed ->
             val encoded = joseCompliantSerializer.encodeToString(flattenedSerializer, typed)
@@ -166,7 +166,7 @@ val JwsCustomHeaderTest by matrixSuite {
     }
 
     "raw JWS accepts duplicate fragments but typed decoding rejects them" {
-        val flattened = JwsFlattenedTyped.JwsRawFlattened(
+        val flattened = JwsFlattenedTyped.Raw(
             plainProtectedHeader = """{"alg":"RS256","extension":"one"}""".encodeToByteArray(),
             unprotectedHeader = JsonObject(mapOf("extension" to JsonPrimitive("two"))),
             plainPayload = "{}".encodeToByteArray(),
