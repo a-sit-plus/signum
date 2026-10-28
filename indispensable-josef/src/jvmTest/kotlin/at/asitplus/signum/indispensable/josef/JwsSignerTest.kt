@@ -76,7 +76,22 @@ private class CountingSigner(private val delegate: Signer) : Signer by delegate 
 }
 
 val JwsSignerTest by matrixSuite {
-    Supreme.init()
+
+    "compact signing happy path" {
+        val signer = newEcSigner()
+        val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key", "custom")
+        val jwsSigner = JwsSigner(listOf(signer))
+        val typed = jwsSigner.signCompact(header, SigningPayload("alice"))
+        typed.shouldBeInstanceOf<JwsCompact<SigningPayload, SigningHeader>>()
+
+        val wireJson = typed.toString()
+        val roundtrip = JwsCompact<SigningPayload, SigningHeader>(wireJson)
+        roundtrip shouldBe typed
+
+        val verifier = signer.signatureAlgorithm.verifierFor(signer.publicKey)
+        verifier.verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+        verifier.verify(roundtrip.jws.signatureInput, roundtrip.signature) shouldBe SignatureVerifier.Success
+    }
 
     "compact signing happy path" {
         val signer = newEcSigner()
