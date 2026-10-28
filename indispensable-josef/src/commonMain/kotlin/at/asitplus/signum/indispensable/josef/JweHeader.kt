@@ -53,7 +53,7 @@ data class JweHeader(
      * decrypt the JWE.  This parameter allows originators to explicitly
      * signal a change of key to JWE recipients.
      *
-     * See [JwsHeaderMonolith.keyId]
+     * See [JwsHeader.keyId]
      */
     @SerialName("kid")
     val keyId: String? = null,
@@ -63,7 +63,7 @@ data class JweHeader(
      * the "typ" Header Parameter defined in Section 4.1.9 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the type is that of this complete JWE.
      *
-     * See [JwsHeaderMonolith.type]
+     * See [JwsHeader.type]
      */
     @SerialName("typ")
     val type: String? = null,
@@ -73,7 +73,7 @@ data class JweHeader(
      * the "cty" Header Parameter defined in Section 4.1.10 of [JWS](https://www.rfc-editor.org/rfc/rfc7515.html), except
      * that the type is that of the secured content (the plaintext).
      *
-     * See [JwsHeaderMonolith.contentType]
+     * See [JwsHeader.contentType]
      */
     @SerialName("cty")
     val contentType: String? = null,
@@ -133,7 +133,7 @@ data class JweHeader(
      * that the key is the public key to which the JWE was encrypted; this
      * can be used to determine the private key needed to decrypt the JWE.
      *
-     * See [JwsHeaderMonolith.jsonWebKey]
+     * See [JwsHeader.jsonWebKey]
      */
     @SerialName("jwk")
     val jsonWebKey: JsonWebKey? = null,
@@ -145,7 +145,7 @@ data class JweHeader(
      * was encrypted; this can be used to determine the private key needed
      * to decrypt the JWE.
      *
-     * See [JwsHeaderMonolith.jsonWebKeySetUrl]
+     * See [JwsHeader.jsonWebKeySetUrl]
      */
     @SerialName("jku")
     val jsonWebKeyUrl: String? = null,
@@ -216,7 +216,7 @@ data class JweHeader(
      * contains the public key to which the JWE was encrypted; this can be
      * used to determine the private key needed to decrypt the JWE.
      *
-     * See [JwsHeaderMonolith.certificateUrl]
+     * See [JwsHeader.certificateUrl]
      */
     @SerialName("x5u")
     val certificateUrl: String? = null,
@@ -228,7 +228,7 @@ data class JweHeader(
      * contains the public key to which the JWE was encrypted; this can be
      * used to determine the private key needed to decrypt the JWE.
      *
-     * See [JwsHeaderMonolith.certificateChain]
+     * See [JwsHeader.certificateChain]
      */
     @SerialName("x5c")
     @Serializable(with = CertificateChainBase64Serializer::class)
@@ -242,7 +242,7 @@ data class JweHeader(
      * private key needed to decrypt the JWE.  Note that certificate
      * thumbprints are also sometimes known as certificate fingerprints.
      *
-     * See [JwsHeaderMonolith.certificateSha1Thumbprint]
+     * See [JwsHeader.certificateSha1Thumbprint]
      */
     @SerialName("x5t")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
@@ -257,7 +257,7 @@ data class JweHeader(
      * certificate thumbprints are also sometimes known as certificate
      * fingerprints.
      *
-     * See [JwsHeaderMonolith.certificateSha256Thumbprint]
+     * See [JwsHeader.certificateSha256Thumbprint]
      */
     @SerialName("x5t#S256")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
