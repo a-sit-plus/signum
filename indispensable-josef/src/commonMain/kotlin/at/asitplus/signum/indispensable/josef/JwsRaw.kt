@@ -21,9 +21,9 @@ import kotlinx.serialization.json.JsonPrimitive
 
 
 /**
- * Wrapper for all JWS formats.
+ * Retained wire bytes for all JWS formats: [JwsCompact.Raw], [JwsFlattened.Raw], and [JwsGeneral.Raw].
  *
- * If [plainPayload] data structure is defined as part of the contact consider [JwsTyped]
+ * Use the corresponding [JwsTyped] view to decode the payload, headers, and signatures.
  */
 @Serializable(with = JwsRaw.JwsSerializer::class)
 sealed class JwsRaw {

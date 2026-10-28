@@ -210,7 +210,7 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompact.Raw], with [JsonWebToken] as the payload.
+     * third party. Stored as [JwsCompact.Raw]; [verifierAttestationParsed] decodes its [JsonWebToken] payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactRawStringSerializer::class)
@@ -218,7 +218,7 @@ data class JwsHeader(
 
     /**
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * Should be a [JwsCompact.Raw?], with [JsonWebToken] as the payload
+     * Stored as [JwsCompact.Raw]; [keyAttestationParsed] decodes its [KeyAttestationJwt] payload.
      */
     @SerialName(SerialNames.KEY_ATTESTATION)
     @Serializable(with = JwsCompactRawStringSerializer::class)

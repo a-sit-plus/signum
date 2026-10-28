@@ -129,8 +129,8 @@ val JwsRawSignedRegressionTest by matrixSuite {
             plainSignature = byteArrayOf(0x2a),
         )
 
-        val flattened = regressionCase.compact.toJwsFlattened()
-        val general = listOf(flattened).toJwsGeneral()
+        val flattened = regressionCase.compact.toFlattened()
+        val general = listOf(flattened).toGeneral()
         val typedFlattened = flattened.typed<JsonObject, JwsHeader>()
         val typedGeneral = general.typed<JsonObject, JwsHeader>()
 

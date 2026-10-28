@@ -42,7 +42,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val reserialized = joseCompliantSerializer.encodeToString(general)
 
         joseCompliantSerializer.decodeFromString(JsonObject.serializer(), reserialized) shouldBe generalVectorSource
-        general.toJwsFlattened().toJwsGeneral() shouldBe general
+        general.toFlattened().toGeneral() shouldBe general
     }
 
     "flattened JWS keeps unprotected headers stable through serialization and general conversion" {
@@ -82,7 +82,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         with(joseCompliantSerializer) {
             decodeFromString<JsonObject>(serialized) shouldBe decodeFromString<JsonObject>(encodeToString(reparsed))
         }
-        val general = listOf(flattened).toJwsGeneral()
+        val general = listOf(flattened).toGeneral()
         val typedGeneral = general.typed<JsonObject, JwsHeader>()
 
         general.plainPayload shouldBe payload
@@ -91,7 +91,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         general.signatureInputs[0] shouldBe flattened.signatureInput
         general.signatureElements.single().plainProtectedHeader shouldBe flattened.plainProtectedHeader
         general.signatureElements.map { it.plainProtectedHeader } shouldBe listOf(flattened.plainProtectedHeader)
-        general.toJwsFlattened() shouldBe listOf(flattened)
+        general.toFlattened() shouldBe listOf(flattened)
     }
 
     "general JWS preserves per-signature member placement through serialization" {
@@ -118,13 +118,13 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         val general = listOf(
             flattenedSample(firstHeader, payload, byteArrayOf(1)),
             flattenedSample(secondHeader, payload, byteArrayOf(2)),
-        ).toJwsGeneral()
+        ).toGeneral()
 
         val reparsed = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(
             joseCompliantSerializer.encodeToString(general)
         )
         val typedReparsed = reparsed.typed<JsonObject, JwsHeader>()
-        val typedFlattened = reparsed.toJwsFlattened().map { it.typed<JsonObject, JwsHeader>() }
+        val typedFlattened = reparsed.toFlattened().map { it.typed<JsonObject, JwsHeader>() }
 
         reparsed shouldBe general
         typedReparsed.wrappedHeaders shouldBe listOf(firstHeader, secondHeader)
@@ -158,7 +158,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             capturedSignatureInput = signatureInput
             byteArrayOf(1, 2, 3, 4)
         }
-        val general = listOf(flattened).toJwsGeneral()
+        val general = listOf(flattened).toGeneral()
 
         flattened shouldBe conformantWithoutProtected
         flattened.plainProtectedHeader shouldBe null
@@ -197,10 +197,10 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
         serialized shouldBe "\"$compactString\""
         joseCompliantSerializer.decodeFromString(JwsCompactRawStringSerializer, serialized) shouldBe compact
 
-        val flattened = compact.toJwsFlattened()
+        val flattened = compact.toFlattened()
 
         flattened.signatureInput shouldBe compact.signatureInput
-        flattened.toJwsCompact() shouldBe compact
+        flattened.toCompact() shouldBe compact
     }
 
     "compact JWS invoke methods round-trip as three base64url segments" {
@@ -363,7 +363,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
     "general to flattened to compact preserves each single-signature view" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(generalVectorJson)
-        val flattened = general.toJwsFlattened()
+        val flattened = general.toFlattened()
         val typedGeneral = general.typed<JsonObject, JwsHeader>()
         val typedFlattened = flattened.map { it.typed<JsonObject, JwsHeader>() }
 
@@ -372,7 +372,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             typedFlattened[index].wrappedHeader shouldBe typedGeneral.wrappedHeaders[index]
             typedFlattened[index].signature shouldBe typedGeneral.signatures[index]
             entry.signatureInput shouldBe general.signatureInputs[index]
-            entry.toJwsCompact().toString() shouldBe compactSerializationAt(index)
+            entry.toCompact().toString() shouldBe compactSerializationAt(index)
         }
     }
 
@@ -401,8 +401,8 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
         val appended = JwsGeneral.Raw(listOf(first)).appendSignature(second)
 
-        appended.toJwsFlattened() shouldBe listOf(first, second)
-        appended shouldBe listOf(first, second).toJwsGeneral()
+        appended.toFlattened() shouldBe listOf(first, second)
+        appended shouldBe listOf(first, second).toGeneral()
     }
 
     "general conversions reject empty and mismatched flattened inputs" {
@@ -421,8 +421,8 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             plainSignature = byteArrayOf(2),
         )
 
-        val emptyResult = runCatching { emptyList<JwsFlattened.Raw>().toJwsGeneral() }
-        val listMismatchResult = runCatching { listOf(first, second).toJwsGeneral() }
+        val emptyResult = runCatching { emptyList<JwsFlattened.Raw>().toGeneral() }
+        val listMismatchResult = runCatching { listOf(first, second).toGeneral() }
         val appendMismatchResult = runCatching { JwsGeneral.Raw(listOf(first)).appendSignature(second) }
 
         emptyResult.isSuccess shouldBe false
@@ -450,7 +450,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             plainSignature = byteArrayOf(1),
         )
 
-        val missingHeaderResult = runCatching { missingProtectedHeader.toJwsCompact() }
+        val missingHeaderResult = runCatching { missingProtectedHeader.toCompact() }
         val missingPartResult = runCatching { JwsCompact.Raw("a.b") }
         val extraPartResult = runCatching { JwsCompact.Raw("a.b.c.d") }
         val invalidBase64Result = runCatching { JwsCompact.Raw("!!.e30.AQ") }
@@ -523,7 +523,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
             payload = """{"sub":"alice"}""".encodeToByteArray(),
             plainSignature = byteArrayOf(9, 8, 7, 6),
         )
-        val generalValue = listOf(flattenedValue).toJwsGeneral()
+        val generalValue = listOf(flattenedValue).toGeneral()
 
         val compactSerialized = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), compactValue)
         val flattenedSerialized = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), flattenedValue)
@@ -542,7 +542,7 @@ val JwsRawSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode
 
         compactDecoded shouldBe compactValue
         flattenedDecoded shouldBe flattenedValue
-        generalDecoded.toJwsFlattened() shouldBe listOf(flattenedValue)
+        generalDecoded.toFlattened() shouldBe listOf(flattenedValue)
     }
 
     "sealed JWS serializer rejects ambiguous and incomplete JSON objects" {

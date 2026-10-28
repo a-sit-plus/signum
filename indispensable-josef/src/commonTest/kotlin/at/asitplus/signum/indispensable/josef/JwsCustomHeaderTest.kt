@@ -23,7 +23,7 @@ val JwsCustomHeaderTest by matrixSuite {
         (typed.jws === compact) shouldBe true
         typed.wrappedHeader.header.extension shouldBe "private"
         typed.signature.joseBytes shouldBe compact.plainSignature
-        val converted = typed.toJwsFlattenedTyped().toJwsCompactTyped()
+        val converted = typed.toFlattened().toCompact()
         converted shouldBe typed
         converted.jws.plainProtectedHeader shouldBe protectedBytes
         converted.jws.plainPayload shouldBe payloadBytes
@@ -57,12 +57,12 @@ val JwsCustomHeaderTest by matrixSuite {
             capturedInput shouldBe jws.signatureInput
             jws.typed<JsonObject, CustomJwsHeader>()
         }
-        val general = flattened.map { it.jws }.toJwsGeneral().typed<JsonObject, CustomJwsHeader>()
+        val general = flattened.map { it.jws }.toGeneral().typed<JsonObject, CustomJwsHeader>()
 
         general.payload shouldBe payload
         general.wrappedHeaders shouldBe headers
         general.signatures.map { it.joseBytes } shouldBe signatures
-        general.toJwsFlattenedTyped() shouldBe flattened
+        general.toFlattened() shouldBe flattened
         general.jws.signatureInputs shouldBe flattened.map { it.jws.signatureInput }
 
         val flattenedSerializer = JwsTypedSerializerTemplate(
@@ -84,8 +84,8 @@ val JwsCustomHeaderTest by matrixSuite {
     "sealed typed serializer decodes every concrete JWS form with custom headers" {
         val header = JwsHeaderWrapped(CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "private"))
         val compact = JwsCompact.Raw(header, "{}".encodeToByteArray()) { byteArrayOf(1) }
-        val flattened = compact.toJwsFlattened()
-        val general = listOf(flattened).toJwsGeneral()
+        val flattened = compact.toFlattened()
+        val general = listOf(flattened).toGeneral()
         val serializer = JwsTypedSerializerTemplate(
             JwsRaw.serializer(), JsonObject.serializer(), CustomJwsHeader.serializer()
         )
@@ -117,8 +117,8 @@ val JwsCustomHeaderTest by matrixSuite {
             """{ "sub": "alice" }""".encodeToByteArray(),
             byteArrayOf(1, 2, 3),
         )
-        val flattened = compact.toJwsFlattened()
-        val general = listOf(flattened).toJwsGeneral()
+        val flattened = compact.toFlattened()
+        val general = listOf(flattened).toGeneral()
         val expectedPayload = JsonObject(mapOf("sub" to JsonPrimitive("alice"), "decoded" to JsonPrimitive(true)))
         val expectedHeader = CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "decoded")
         val serializer = JwsTypedSerializerTemplate(JwsRaw.serializer(), payloadSerializer, headerSerializer)
@@ -141,8 +141,8 @@ val JwsCustomHeaderTest by matrixSuite {
 
         val lenientFormat = Json(joseCompliantSerializer) { isLenient = true }
         val lenientCompact = compact.copy(plainPayload = """{sub:"alice"}""".encodeToByteArray())
-        val lenientFlattened = lenientCompact.toJwsFlattened()
-        val lenientGeneral = listOf(lenientFlattened).toJwsGeneral()
+        val lenientFlattened = lenientCompact.toFlattened()
+        val lenientGeneral = listOf(lenientFlattened).toGeneral()
         listOf(
             lenientCompact.typed(payloadSerializer, headerSerializer, lenientFormat),
             lenientFlattened.typed(payloadSerializer, headerSerializer, lenientFormat),

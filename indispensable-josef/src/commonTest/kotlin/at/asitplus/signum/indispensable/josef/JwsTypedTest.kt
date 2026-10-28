@@ -62,11 +62,11 @@ val JwsRawTypedTest by matrixSuite {
             signature = JwsRaw.getSignature(wrappedHeader.header.algorithm, byteArrayOf(9, 8, 7, 6)),
         )
 
-        val typedFlattened = typedCompact.toJwsFlattenedTyped()
-        val reparsedCompact = typedFlattened.toJwsCompactTyped()
+        val typedFlattened = typedCompact.toFlattened()
+        val reparsedCompact = typedFlattened.toCompact()
 
         typedFlattened.payload shouldBe payload
-        typedFlattened.jws shouldBe typedCompact.jws.toJwsFlattened()
+        typedFlattened.jws shouldBe typedCompact.jws.toFlattened()
         reparsedCompact shouldBe typedCompact
     }
 
@@ -177,16 +177,16 @@ val JwsRawTypedTest by matrixSuite {
             signature = JwsRaw.getSignature(secondHeader.header.algorithm, byteArrayOf(2, 2, 2, 2)),
         )
 
-        val typedGeneral = listOf(first.jws, second.jws).toJwsGeneral().typed<JsonObject, JwsHeader>()
+        val typedGeneral = listOf(first.jws, second.jws).toGeneral().typed<JsonObject, JwsHeader>()
 
         typedGeneral.payload shouldBe payload
-        typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
+        typedGeneral.jws shouldBe listOf(first.jws, second.jws).toGeneral()
         typedGeneral.wrappedHeaders.map { it.unprotectedHeaderMembers } shouldBe listOf(
             setOf(JwsHeader.SerialNames.KEY_ID),
             setOf(JwsHeader.SerialNames.TYPE),
         )
         typedGeneral.toString() shouldBe typedGeneral.jws.toString()
-        typedGeneral.toJwsFlattenedTyped() shouldBe listOf(first, second)
+        typedGeneral.toFlattened() shouldBe listOf(first, second)
 
         typedGeneral.jws.typed<JsonObject, JwsHeader>() shouldBe typedGeneral
     }

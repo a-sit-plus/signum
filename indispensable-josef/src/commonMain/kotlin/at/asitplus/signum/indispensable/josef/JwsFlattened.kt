@@ -13,8 +13,22 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.serializer
 
 /**
- * Typed payload, effective header with member placement, and signature over an unchanged flattened [jws].
- * Direct construction requires the decoded values to agree with the retained wire object.
+ * A JWS with one [payload] and one [signature], whose JOSE header can contain both protected and
+ * unprotected parameters.
+ *
+ * This is the decoded form of Flattened JSON Serialization. The payload is decoded as [P], and the protected and
+ * unprotected header parameters are combined into an [H]. [jws] retains the original [Raw] representation,
+ * including the bytes used to construct the signature's signing input.
+ *
+ * [header] exposes the combined header; [unprotectedHeaderMembers] identifies its unprotected parameters by JSON name.
+ * The signature covers the payload and protected header parameters; unprotected header parameters are unsigned.
+ *
+ * Deserialize received JSON as [Raw], then call [Raw.typed] to decode its payload, header, and signature.
+ * [toCompact] produces a [JwsCompact] view when the original representation has a protected header and
+ * no unprotected header.
+ * Direct construction requires the decoded values to agree with [jws].
+ *
+ * Decoding does not verify the signature. To verify it, use [signature] and `jws.signatureInput`.
  */
 data class JwsFlattened<out P, H : JwsHeaderBase>(
     override val jws: Raw,
@@ -27,19 +41,19 @@ data class JwsFlattened<out P, H : JwsHeaderBase>(
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
 
     /**
-     * Flattened JSON JWS serialization.
+     * Flattened JSON JWS over-the-wire format.
      *
-     * A flattened JWS carries one payload and one signature. The protected header is stored as encoded bytes in
-     * [plainProtectedHeader]; the optional unprotected header is represented as a [JsonObject]. The effective header
-     * and its member-placement metadata are decoded through [JwsFlattened.wrappedHeader].
+     * The JSON object has one base64url-encoded `payload` member and one base64url-encoded `signature` member.
+     * The optional `protected` member contains a base64url-encoded header fragment; the optional `header` member
+     * contains an unprotected header fragment as a [JsonObject].
      *
      * Either fragment may be partial or contain unmodeled parameters. Creating a typed view requires their
      * strict union to decode as the chosen [JwsHeaderBase] implementation.
      *
-     * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
-     * member, so callers should not pre-encode them.
+     * Byte arrays contain decoded data. JSON serialization applies base64url encoding to the payload,
+     * protected header, and signature; callers should not pre-encode them.
      *
-     * To access the contents of the parameters use [JwsFlattened]
+     * Use [typed] to decode a [JwsFlattened] view.
      */
     @ConsistentCopyVisibility
     @Serializable
@@ -115,6 +129,7 @@ data class JwsFlattened<out P, H : JwsHeaderBase>(
     }
 }
 
+/** Decodes a [JwsFlattened] view while retaining this raw flattened representation. */
 inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsFlattened<P, H> = typed(
@@ -143,19 +158,24 @@ fun <P, H : JwsHeaderBase> JwsFlattened.Raw.typed(
         )
     }
 
-fun <P, H : JwsHeaderBase> JwsFlattened<P, H>.toJwsCompactTyped() =
-    JwsCompact(jws.toJwsCompact(), payload, wrappedHeader, signature)
+/**
+ * Converts to a [JwsCompact] view, retaining the decoded payload, header, and signature.
+ * The original wire representation must have a protected header and no unprotected header.
+ */
+fun <P, H : JwsHeaderBase> JwsFlattened<P, H>.toCompact() =
+    JwsCompact(jws.toCompact(), payload, wrappedHeader, signature)
 
 val JwsFlattened.Raw.protectedHeader: JsonObject?
     get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
 
 /**
- * Converts flattened JSON serialization to compact serialization.
+ * Converts a raw flattened JWS to the equivalent [JwsCompact.Raw] representation.
  *
- * This requires the absence of an unprotected header, because compact JWS can only carry protected parameters.
+ * This requires a protected header and the absence of an unprotected header, because compact JWS can only carry
+ * protected parameters.
  * Protected bytes are retained without decoding a header model.
  */
-fun JwsFlattened.Raw.toJwsCompact(): JwsCompact.Raw {
+fun JwsFlattened.Raw.toCompact(): JwsCompact.Raw {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
     return JwsCompact.Raw(
@@ -166,9 +186,9 @@ fun JwsFlattened.Raw.toJwsCompact(): JwsCompact.Raw {
 }
 
 /**
- * Converts multiple flattened JWS values with the same payload into general JSON JWS representation.
+ * Combines raw flattened JWS values with the same payload into a [JwsGeneral.Raw] representation.
  */
-fun List<JwsFlattened.Raw>.toJwsGeneral(): JwsGeneral.Raw {
+fun List<JwsFlattened.Raw>.toGeneral(): JwsGeneral.Raw {
     require(isNotEmpty()) { "General JWS requires at least one signature" }
     val payload = this[0].plainPayload
     val signatures = this.map {

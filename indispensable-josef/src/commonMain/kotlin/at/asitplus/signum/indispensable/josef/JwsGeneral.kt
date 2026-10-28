@@ -12,11 +12,19 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 /**
- * Typed payload and ordered [signatureViews] over an unchanged general [jws].
- * Each pair keeps an effective header with its member placement and decoded signature together, in wire order.
- * Use [JwsGeneral.Raw.typed] to decode a general JWS.
+ * A JWS with one shared [payload] and one or more signatures, each with its own JOSE header.
  *
- * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
+ * This is the decoded form of General JSON Serialization. The payload is decoded as [P], and each signature's
+ * protected and unprotected header parameters are combined into an [H]. [jws] retains the original [Raw]
+ * representation, including the bytes used to construct each signature's signing input.
+ *
+ * Entries at the same index in [headers], [unprotectedHeaderMembers], and [signatures] describe the same signature,
+ * in the order of [Raw.signatureElements]. [toFlattened] produces one [JwsFlattened] view per signature.
+ *
+ * Decode a received [Raw] with [Raw.typed], or combine raw flattened JWS values with
+ * `JwsGeneral<P, H>(flattenedValues)`. Combining values requires identical payload bytes.
+ *
+ * Decoding does not verify signatures. To verify signature `i`, use `signatures[i]` and `jws.signatureInputs[i]`.
  */
 @ConsistentCopyVisibility
 data class JwsGeneral<out P, H : JwsHeaderBase> private constructor(
@@ -42,16 +50,16 @@ data class JwsGeneral<out P, H : JwsHeaderBase> private constructor(
     }
 
     /**
-     * General JSON JWS.
+     * General JSON JWS over-the-wire format.
      *
-     * A general JWS carries one payload and one or more [SignatureElement]s. Each [SignatureElement] contains the header
-     * fragments for one signature. [JwsGeneral] decodes ordered headers and signatures around the retained
-     * wire object. All signatures in a [Raw] share the same payload.
+     * The JSON object has one base64url-encoded `payload` member and a non-empty `signatures` array.
+     * Each [SignatureElement] contains a signature and its optional protected and unprotected header fragments.
+     * Every signature uses the same [plainPayload] bytes.
      *
-     * [plainPayload] stores the plain payload bytes. JSON serialization base64url-encodes those bytes for the `payload`
-     * member, so callers should not pre-encode them.
+     * Byte arrays contain decoded data. JSON serialization applies base64url encoding to the payload,
+     * protected headers, and signatures; callers should not pre-encode them.
      *
-     * To access the contents of the parameters use [JwsGeneral]
+     * Use [typed] to decode a [JwsGeneral] view.
      *
      * @constructor Kept private so construction and generated `copy()` cannot bypass the signature-list snapshot.
      */
@@ -115,7 +123,8 @@ data class JwsGeneral<out P, H : JwsHeaderBase> private constructor(
                 signatureElements: List<SignatureElement>,
             ): Raw = Raw(plainPayload, buildList { addAll(signatureElements) })
 
-            operator fun invoke(jwsFlattened: List<JwsFlattened.Raw>): Raw = jwsFlattened.toJwsGeneral()
+            /** Combines raw flattened signatures over one payload into a [Raw] representation. */
+            operator fun invoke(jwsFlattened: List<JwsFlattened.Raw>): Raw = jwsFlattened.toGeneral()
         }
     }
 
@@ -127,13 +136,15 @@ data class JwsGeneral<out P, H : JwsHeaderBase> private constructor(
             signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
         ): JwsGeneral<P, H> = JwsGeneral(jws, payload, buildList { addAll(signatureViews) })
 
+        /** Combines raw flattened signatures over one payload and decodes a typed general view. */
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             jwsFlattened: List<JwsFlattened.Raw>,
             serialFormat: Json = joseCompliantSerializer,
-        ): JwsGeneral<P, H> = jwsFlattened.toJwsGeneral().typed<P, H>(serialFormat)
+        ): JwsGeneral<P, H> = jwsFlattened.toGeneral().typed<P, H>(serialFormat)
     }
 }
 
+/** Decodes a [JwsGeneral] view while retaining this raw general representation and its signature order. */
 inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.Raw.typed(
     serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneral<P, H> = typed(
@@ -161,15 +172,16 @@ fun <P, H : JwsHeaderBase> JwsGeneral.Raw.typed(
     return JwsGeneral(this, payload, signatureViews)
 }
 
-fun <P, H : JwsHeaderBase> JwsGeneral<P, H>.toJwsFlattenedTyped() =
-    jws.toJwsFlattened().zip(signatureViews) { flattened, (wrappedHeader, signature) ->
+/** Expands into [JwsFlattened] views in signature order, retaining the decoded payload and headers. */
+fun <P, H : JwsHeaderBase> JwsGeneral<P, H>.toFlattened() =
+    jws.toFlattened().zip(signatureViews) { flattened, (wrappedHeader, signature) ->
         JwsFlattened(flattened, payload, wrappedHeader, signature)
     }
 
 /**
- * Expands general JSON JWS representation into one flattened JWS per signature.
+ * Expands a raw general JWS into one [JwsFlattened.Raw] per signature, retaining wire order and signed bytes.
  */
-fun JwsGeneral.Raw.toJwsFlattened(): List<JwsFlattened.Raw> =
+fun JwsGeneral.Raw.toFlattened(): List<JwsFlattened.Raw> =
     signatureElements.map {
         JwsFlattened.Raw(
             plainProtectedHeader = it.plainProtectedHeader,
