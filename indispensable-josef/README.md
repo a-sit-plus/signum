@@ -18,97 +18,13 @@
 |    [![Android](https://img.shields.io/badge/Android_(Supreme)-SDK--30-37AA55?logo=android)](https://developer.android.com/tools/releases/platforms#11)     |       [![Maven Central (Supreme)](https://img.shields.io/maven-central/v/at.asitplus.signum/supreme?label=maven-central%20%28Supreme%29)](https://mvnrepository.com/artifact/at.asitplus.signum/supreme)        |              [![Maven SNAPSHOT (Supreme)](https://img.shields.io/nexus/snapshots/https/s01.oss.sonatype.org/at.asitplus.signum/supreme?label=SNAPSHOT%20%28Supreme%29)](https://s01.oss.sonatype.org/content/repositories/snapshots/at/asitplus/signum/supreme/)              |
 </div>
 
-# Kotlin Multiplatform type-safe JOSE data architecture
+# Indispensable Josef
 
-Indispensable Josef provides Kotlin Multiplatform models and serializers for JOSE data. It uses
-[Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization) and interoperates with the cryptographic
-types from the `indispensable` module.
+Kotlin Multiplatform JOSE models and kotlinx.serialization serializers, with typed headers and payloads
+and preservation of JWS signing bytes.
 
-## Design principles
-
-A JWS signature covers serialized bytes, not an abstract header and payload. For the supported JWS forms, the signing
-input is:
-
-```text
-ASCII(BASE64URL(protected-header bytes)) || '.' || ASCII(BASE64URL(payload bytes))
-```
-
-Semantically equivalent JSON can have different member order, whitespace, or escaping and therefore different signed
-bytes. The library must not parse an incoming protected header into `JwsHeader` and later reserialize it to reconstruct
-the signing input. Instead, it keeps the wire/data object as the source of truth and adds typed views around it:
-
-| Layer | Purpose | Main types |
-|:--|:--|:--|
-| Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JWS`, `JwsCompact`, `JwsFlattened`, `JwsGeneral`, `SignatureElement` |
-| Typed/domain | Provide a typed payload while retaining the wire object | `JwsTyped<J, P>` and its compact, flattened, and general aliases |
-| Effective header | Combine typed header values and retain their protection status | `JwsHeaderWrapped` |
-
-`JwsTyped` contains the retained `jws` object and its decoded `payload`. Send or store `jws`, not a reconstruction from
-`payload`. `JwsTypedSerializerTemplate` serializes only `jws` and derives `payload` again when decoding. Direct users of
-the public `JwsTyped` constructor are responsible for keeping both values consistent.
-
-## JWS representation model
-
-| Form | Type | Header representation |
-|:--|:--|:--|
-| Compact | `JwsCompact` | One protected header; no unprotected header |
-| Flattened JSON | `JwsFlattened` | One signature with optional protected and unprotected fragments |
-| General JSON | `JwsGeneral` | Shared payload and one or more `SignatureElement`s, each with its own header fragments |
-
-The model distinguishes three header views:
-
-- **Protected as transmitted/signed:** the first compact segment or JSON `protected` member. Its decoded JSON bytes
-  are retained in `plainProtectedHeader`, not reduced to a parsed `JwsHeader`.
-- **Unprotected:** the optional `unprotectedHeader: JsonObject`. It remains separate and is not signed.
-- **Combined/effective:** `wrappedHeader: JwsHeaderWrapped` (or `wrappedHeaders` on `JwsGeneral`). Its `header` is the
-  typed strict union of both fragments, while `unprotectedMembers` records which names came from the unprotected one.
-
-A bare `JwsHeader` loses protection status and must not be used for decisions about header placement. Use
-`JwsHeaderWrapped` or the original fragments. The wrapper is a one-way typed view: unmodeled parameters remain in
-`plainProtectedHeader` or `unprotectedHeader` for round trips, and their unprotected names remain in
-`unprotectedMembers`, but their values are not available through `JwsHeader`.
-
-## Serialization invariants
-
-- Incoming signing inputs are derived from the retained `plainProtectedHeader` and `plainPayload` bytes, never by
-  reserializing a typed header or payload.
-- `plainProtectedHeader`, `plainPayload`, and `plainSignature` contain decoded bytes. Pass plain payload bytes to the
-  signing factories; the library handles base64url encoding.
-- Header parameters are protected by default. For flattened JWS, only wire names explicitly listed in
-  `unprotectedMembers` are unprotected. Protected and unprotected fragments may complement each other, but duplicate
-  names are rejected.
-- Conversions retain protected bytes and header placement. Because compact JWS has no unprotected header, only a
-  fully protected flattened JWS can be converted to compact form; general JWS signatures must share one payload.
-
-## Serialization and verification
-
-Use `joseCompliantSerializer` from `io/Encoding.kt` for JOSE JSON. It disables pretty printing and default-value
-encoding, uses `type` as the class discriminator, and ignores unknown keys when decoding typed classes.
-
-The sealed `JWS` serializer preserves the concrete form: JSON strings become `JwsCompact`, objects with `signature`
-become `JwsFlattened`, and objects with `signatures` become `JwsGeneral`. Ambiguous or incomplete shapes are rejected.
-Use `JwsCompact.toString()`/`JwsCompact(...)` for standalone compact data and `JwsCompactStringSerializer` when the
-compact string is embedded in JSON.
-
-Signing factories serialize or partition the header once and pass the resulting exact signing input to the signer.
-For verification, use the stored, wire-derived pairs:
-
-- `JwsCompact.signatureInput` and `JwsCompact.signature`;
-- `JwsFlattened.signatureInput` and `JwsFlattened.signature`; or
-- each corresponding pair in `JwsGeneral.signatureInputs` and `JwsGeneral.signatures`.
-
-Never recreate a signing input from `JwsHeader` or a typed payload. Parsing, typed access, and
-`JwsHeader.publicKey` do not verify a signature or establish key trust; callers must perform verification, trust
-validation, and application-specific checks. Raw signature conversion currently supports EC and RSA signature
-algorithms; unsupported algorithms are rejected.
-
-The older `JwsSigned` API is deprecated in favor of `JwsCompactTyped`.
-
-## JWT payloads
-
-Application payloads may implement `JwtPayload` for standard RFC 7519 claims. Its `@SerialName` annotations are not
-inherited, so implementations must declare their own serialization names. `joseCompliantSerializer` ignores unknown
-keys when decoding typed payloads.
+* [User guide](../docs/docs/indispensable-josef.md)
+* [API reference](https://a-sit-plus.github.io/signum/dokka/indispensable-josef/index.html)
 
 ## Contributing
 
