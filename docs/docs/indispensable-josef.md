@@ -97,7 +97,7 @@ The sealed `JwsRaw` serializer preserves the concrete form:
 * Objects with `signature` become `JwsRawFlattened`.
 * Objects with `signatures` become `JwsRawGeneral`.
 
-Ambiguous or incomplete shapes are rejected. Use `JwsCompactTyped.toString()` and `JwsCompactTyped(...)` for standalone compact
+Ambiguous or incomplete shapes are rejected. Use `JwsCompact.toString()` and `JwsCompact(...)` for standalone compact
 data, and `JwsCompactRawStringSerializer` when embedding a compact string in JSON.
 
 ### Signing and Verification
@@ -128,7 +128,7 @@ implementations, since interface annotations are not inherited; mark unused prop
 For a serializable `AppHeader`:
 
 ```kotlin
-val typed = JwsCompactTyped(receivedCompactString).typed<JsonObject, AppHeader>()
+val typed = JwsCompact(receivedCompactString).typed<JsonObject, AppHeader>()
 val header: AppHeader = typed.header
 val wrapped = JwsHeaderWrapped(header, setOf("app_claim"))
 ```
@@ -145,7 +145,7 @@ Callback signing helpers are deprecated pending a signing service.
 | Typed aliases such as `JwsCompactTyped<P>` | Concrete views such as `JwsCompactTyped<P, H>` |
 | Header/signature properties on wire objects | Header/signature properties on typed views |
 | `jws.typed<J, P>()` | `jws.typed<P, H>()` on the concrete wire form |
-| `JwsCompactTyped.parse<P>()` → pair | `JwsCompactTyped.parse<P, H>()` → triple of wire object, payload, wrapped header |
+| `JwsCompact.parse<P>()` → pair | `JwsCompact.parse<P, H>()` → triple of wire object, payload, wrapped header |
 | Two-argument `JwsTypedSerializerTemplate` | Add the header serializer as the third argument |
 | Payload-signing `JwsTyped` factories | Construct the wire form from payload bytes, then call `.typed<P, H>()` |
 | `JwsFlattened(header, payload, unprotectedMembers, signer)` | `JwsFlattened(JwsHeaderWrapped(header, unprotectedMembers), payload, signer)` |

@@ -210,19 +210,19 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompactTyped.Raw], with [JsonWebToken] as the payload.
+     * third party. May be parsed as a [JwsCompact.Raw], with [JsonWebToken] as the payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactRawStringSerializer::class)
-    val attestationJwt: JwsCompactTyped.Raw? = null,
+    val attestationJwt: JwsCompact.Raw? = null,
 
     /**
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * Should be a [JwsCompactTyped.Raw?], with [JsonWebToken] as the payload
+     * Should be a [JwsCompact.Raw?], with [JsonWebToken] as the payload
      */
     @SerialName(SerialNames.KEY_ATTESTATION)
     @Serializable(with = JwsCompactRawStringSerializer::class)
-    val keyAttestation: JwsCompactTyped.Raw? = null,
+    val keyAttestation: JwsCompact.Raw? = null,
 
     /**
      * SD-JWT VC: Credentials MAY encode Type Metadata directly, providing it as "glue information"
@@ -315,11 +315,11 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.publicKey
     }
 
-    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt, JwsHeader>? by lazy {
+    val keyAttestationParsed: JwsCompact<KeyAttestationJwt, JwsHeader>? by lazy {
         keyAttestation?.typed()
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken, JwsHeader>? by lazy {
+    val verifierAttestationParsed: JwsCompact<JsonWebToken, JwsHeader>? by lazy {
         attestationJwt?.typed()
     }
 

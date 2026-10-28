@@ -18,7 +18,7 @@ class JwsTypedSerializerTemplate<J : JwsRaw, P, H : JwsHeaderBase>(
     encodeAs = { it.jws },
     decodeAs = { jws ->
         when (jws) {
-            is JwsCompactTyped.Raw -> jws.typed(payloadSerializer, headerSerializer)
+            is JwsCompact.Raw -> jws.typed(payloadSerializer, headerSerializer)
             is JwsRawFlattened -> jws.typed(payloadSerializer, headerSerializer)
             is JwsRawGeneral -> jws.typed(payloadSerializer, headerSerializer)
         } as JwsTyped<J, P, H>

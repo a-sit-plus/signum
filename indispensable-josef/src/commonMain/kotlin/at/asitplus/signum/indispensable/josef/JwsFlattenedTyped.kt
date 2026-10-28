@@ -51,4 +51,4 @@ fun <P, H : JwsHeaderBase> JwsRawFlattened.typed(
     }
 
 fun <P, H : JwsHeaderBase> JwsFlattenedTyped<P, H>.toJwsCompactTyped() =
-    JwsCompactTyped(jws.toJwsCompact(), payload, wrappedHeader, signature)
+    JwsCompact(jws.toJwsCompact(), payload, wrappedHeader, signature)
