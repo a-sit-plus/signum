@@ -211,19 +211,19 @@ data class JwsHeader(
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
-     * third party. May be parsed as a [JwsCompact], with [JsonWebToken] as the payload.
+     * third party. May be parsed as a [JwsCompactTyped.JwsCompact], with [JsonWebToken] as the payload.
      */
     @SerialName(SerialNames.ATTESTATION_JWT)
     @Serializable(with = JwsCompactStringSerializer::class)
-    val attestationJwt: JwsCompact? = null,
+    val attestationJwt: JwsCompactTyped.JwsCompact? = null,
 
     /**
      * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * Should be a [JwsCompact], with [JsonWebToken] as the payload
+     * Should be a [JwsCompactTyped.JwsCompact], with [JsonWebToken] as the payload
      */
     @SerialName(SerialNames.KEY_ATTESTATION)
     @Serializable(with = JwsCompactStringSerializer::class)
-    val keyAttestation: JwsCompact? = null,
+    val keyAttestation: JwsCompactTyped.JwsCompact? = null,
 
     /**
      * SD-JWT VC: Credentials MAY encode Type Metadata directly, providing it as "glue information"

@@ -17,7 +17,7 @@ val JwsCustomHeaderTest by matrixSuite {
         val protectedBytes = """{ "extension": "private", "kid": "custom-key", "alg": "RS256" }"""
             .encodeToByteArray()
         val payloadBytes = """{ "sub": "alice" }""".encodeToByteArray()
-        val compact = JwsCompact(protectedBytes, payloadBytes, byteArrayOf(1, 2, 3))
+        val compact = JwsCompactTyped.JwsCompact(protectedBytes, payloadBytes, byteArrayOf(1, 2, 3))
         val typed = compact.typed<JsonObject, CustomJwsHeader>()
 
         (typed.jws === compact) shouldBe true
@@ -36,7 +36,7 @@ val JwsCustomHeaderTest by matrixSuite {
         encoded shouldBe joseCompliantSerializer.encodeToString(JwsCompactStringSerializer, compact)
         val decoded = joseCompliantSerializer.decodeFromString(serializer, encoded)
         decoded shouldBe typed
-        JwsCompact.parse<JsonObject, CustomJwsHeader>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
+        JwsCompactTyped.JwsCompact.parse<JsonObject, CustomJwsHeader>(compact.toString()).getOrThrow().third shouldBe typed.wrappedHeader
         JwsCompactTyped<JsonObject, CustomJwsHeader>(compact.toString()) shouldBe typed
     }
 
@@ -83,7 +83,7 @@ val JwsCustomHeaderTest by matrixSuite {
 
     "sealed typed serializer decodes every concrete JWS form with custom headers" {
         val header = JwsHeaderWrapped(CustomJwsHeader(JwsAlgorithm.Signature.RS256, extension = "private"))
-        val compact = JwsCompact(header, "{}".encodeToByteArray()) { byteArrayOf(1) }
+        val compact = JwsCompactTyped.JwsCompact(header, "{}".encodeToByteArray()) { byteArrayOf(1) }
         val flattened = compact.toJwsFlattened()
         val general = listOf(flattened).toJwsGeneral()
         val serializer = JwsTypedSerializerTemplate(
@@ -112,7 +112,7 @@ val JwsCustomHeaderTest by matrixSuite {
             override fun transformDeserialize(element: JsonElement): JsonElement =
                 JsonObject(element.jsonObject + ("extension" to JsonPrimitive("decoded")))
         }
-        val compact = JwsCompact(
+        val compact = JwsCompactTyped.JwsCompact(
             """{ "alg": "RS256", "extension": "wire" }""".encodeToByteArray(),
             """{ "sub": "alice" }""".encodeToByteArray(),
             byteArrayOf(1, 2, 3),
@@ -156,7 +156,7 @@ val JwsCustomHeaderTest by matrixSuite {
         )
         var called = false
         val result = runCatching {
-            JwsCompact(header, "{}".encodeToByteArray()) {
+            JwsCompactTyped.JwsCompact(header, "{}".encodeToByteArray()) {
                 called = true
                 byteArrayOf(1)
             }

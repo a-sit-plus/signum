@@ -8,9 +8,10 @@ This is a major refactor!
 * make all provider functions suspend
 * Rework `indispensable-josef` (**breaking**):
     * Support custom JWS headers through `JwsHeaderBase`; deprecate `JwsHeader`
+    * Separate decoded `JwsCompact<P, H>`, `JwsFlattened<P, H>`, and `JwsGeneral<P, H>` views from `JwsRaw` and nested `.Raw` wire representations, allowing raw parsing of custom headers and unsupported algorithms
     * Replace `JwsHeader.Part` and `protectedHeader` constructor parameters with `JwsHeaderWrapped<H>` for combined headers and protected/unprotected member placement
-    * Move decoded headers and signatures into concrete `JwsCompactTyped<P, H>`, `JwsFlattenedTyped<P, H>`, and `JwsGeneralTyped<P, H>` views, keeping wire objects independent of header models and supported signature algorithms
     * Typed access now uses `.typed<P, H>()`; `JwsTypedSerializerTemplate` also requires a header serializer
+    * Rename JWS conversions to `toCompact()`, `toFlattened()`, and `toGeneral()`
     * Deprecate callback-based JWS signing factories
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.

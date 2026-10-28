@@ -104,10 +104,10 @@ val JwsFlattened.protectedHeader: JsonObject?
  * This requires the absence of an unprotected header, because compact JWS can only carry protected parameters.
  * Protected bytes are retained without decoding a header model.
  */
-fun JwsFlattened.toJwsCompact(): JwsCompact {
+fun JwsFlattened.toJwsCompact(): JwsCompactTyped.JwsCompact {
     require(unprotectedHeader == null) { "Compact Serialization does not support unprotected header" }
     requireNotNull(plainProtectedHeader)
-    return JwsCompact(
+    return JwsCompactTyped.JwsCompact(
         plainProtectedHeader = plainProtectedHeader,
         plainPayload = plainPayload,
         plainSignature = plainSignature,

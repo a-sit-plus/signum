@@ -105,7 +105,7 @@ sealed class JWS {
         ) {
             require(encoder is JsonEncoder) { "JWS serialization requires a JsonDecoder" }
             when (value) {
-                is JwsCompact -> encoder.encodeSerializableValue(JwsCompactStringSerializer, value)
+                is JwsCompactTyped.JwsCompact -> encoder.encodeSerializableValue(JwsCompactStringSerializer, value)
                 is JwsFlattened -> encoder.encodeSerializableValue(JwsFlattened.serializer(), value)
                 is JwsGeneral -> encoder.encodeSerializableValue(JwsGeneral.serializer(), value)
             }

@@ -185,7 +185,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
     "compact JWS keeps its exact string form and round-trips through flattened" {
         val compactString = compactSerializationAt(0)
-        val compact = JwsCompact(compactString)
+        val compact = JwsCompactTyped.JwsCompact(compactString)
         val typedCompact = compact.typed<JsonObject, JwsHeader>()
 
         typedCompact.wrappedHeader.header.algorithm shouldBe JwsAlgorithm.Signature.RS256
@@ -205,7 +205,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
     "compact JWS invoke methods round-trip as three base64url segments" {
         val compactPattern = Regex("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")
-        val compact = JwsCompact.invoke(
+        val compact = JwsCompactTyped.JwsCompact.invoke(
             protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-1",
@@ -217,7 +217,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         }
 
         val serialized = compact.toString()
-        val reparsed = JwsCompact(serialized)
+        val reparsed = JwsCompactTyped.JwsCompact(serialized)
 
         compactPattern.matches(serialized) shouldBe true
         reparsed shouldBe compact
@@ -229,7 +229,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     }
 
     "compact JWS rejects padded base64url segments" {
-        val canonical = JwsCompact.invoke(
+        val canonical = JwsCompactTyped.JwsCompact.invoke(
             protectedHeader = JwsHeader(
                 algorithm = JwsAlgorithm.Signature.RS256,
                 keyId = "kid-1",
@@ -249,7 +249,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         nonCanonical shouldNotBe canonical
 
-        val result = runCatching { JwsCompact(nonCanonical) }
+        val result = runCatching { JwsCompactTyped.JwsCompact(nonCanonical) }
 
         result.isSuccess shouldBe false
         result.shouldBeFailure().message.shouldContain("Trailing = are not supported")
@@ -348,7 +348,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     "raw JWS forms preserve opaque protected header bytes" {
         val encodedProtectedHeader = "bm90LWpzb24"
         val expectedProtectedHeader = "not-json".encodeToByteArray()
-        val compact = JwsCompact("$encodedProtectedHeader.e30.AQ")
+        val compact = JwsCompactTyped.JwsCompact("$encodedProtectedHeader.e30.AQ")
         val flattened = joseCompliantSerializer.decodeFromString<JwsFlattened>(
             flattenedJson(protectedHeaderBase64 = encodedProtectedHeader)
         )
@@ -451,9 +451,9 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         )
 
         val missingHeaderResult = runCatching { missingProtectedHeader.toJwsCompact() }
-        val missingPartResult = runCatching { JwsCompact("a.b") }
-        val extraPartResult = runCatching { JwsCompact("a.b.c.d") }
-        val invalidBase64Result = runCatching { JwsCompact("!!.e30.AQ") }
+        val missingPartResult = runCatching { JwsCompactTyped.JwsCompact("a.b") }
+        val extraPartResult = runCatching { JwsCompactTyped.JwsCompact("a.b.c.d") }
+        val invalidBase64Result = runCatching { JwsCompactTyped.JwsCompact("!!.e30.AQ") }
 
         missingHeaderResult.isSuccess shouldBe false
         missingHeaderResult.shouldBeFailure().shouldBeInstanceOf<IllegalArgumentException>()
@@ -510,7 +510,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     }
 
     "sealed JWS serializer preserves the concrete JWS form" {
-        val compactValue = JwsCompact(compactSerializationAt(1))
+        val compactValue = JwsCompactTyped.JwsCompact(compactSerializationAt(1))
         val flattenedValue = flattenedSample(
             wrappedHeader = JwsHeaderWrapped(
                 header = JwsHeader(
@@ -534,7 +534,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         joseCompliantSerializer.decodeFromString<JsonElement>(generalSerialized).shouldNotContainKey("type")
 
         val compactDecoded = joseCompliantSerializer.decodeFromString<JWS>(compactSerialized)
-            .shouldBeInstanceOf<JwsCompact>()
+            .shouldBeInstanceOf<JwsCompactTyped.JwsCompact>()
         val flattenedDecoded = joseCompliantSerializer.decodeFromString<JWS>(flattenedSerialized)
             .shouldBeInstanceOf<JwsFlattened>()
         val generalDecoded = joseCompliantSerializer.decodeFromString<JWS>(generalSerialized)

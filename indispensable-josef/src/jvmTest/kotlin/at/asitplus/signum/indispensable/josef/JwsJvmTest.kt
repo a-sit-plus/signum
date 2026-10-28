@@ -48,7 +48,7 @@ val JwsJvmTest by matrixSuite {
                 keyId = "kid-1",
                 type = "application/example+jws",
             )
-            val compact = JwsCompact.invoke(
+            val compact = JwsCompactTyped.JwsCompact.invoke(
                 protectedHeader = header,
                 payload = it.payload,
                 signer = it.signerFor(it.signer1),

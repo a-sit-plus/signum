@@ -25,7 +25,7 @@ val JwsTypedTest by matrixSuite {
         val wrappedHeader = JwsHeaderWrapped(header)
         val expectedProtectedHeader = wrappedHeader.protectedHeader
         val typedCompact = JwsCompactTyped(
-            jws = JwsCompact(
+            jws = JwsCompactTyped.JwsCompact(
                 plainProtectedHeader = expectedProtectedHeader,
                 plainPayload = expectedPayload,
                 plainSignature = byteArrayOf(1, 2, 3, 4),
@@ -52,7 +52,7 @@ val JwsTypedTest by matrixSuite {
             )
         )
         val typedCompact = JwsCompactTyped(
-            jws = JwsCompact(
+            jws = JwsCompactTyped.JwsCompact(
                 plainProtectedHeader = wrappedHeader.protectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
                 plainSignature = byteArrayOf(9, 8, 7, 6),
@@ -83,7 +83,7 @@ val JwsTypedTest by matrixSuite {
             )
         )
         val typedCompact = JwsCompactTyped(
-            jws = JwsCompact(
+            jws = JwsCompactTyped.JwsCompact(
                 plainProtectedHeader = wrappedHeader.protectedHeader,
                 plainPayload = joseCompliantSerializer.encodeToString<JsonObject>(payload).encodeToByteArray(),
                 plainSignature = byteArrayOf(5, 6, 7, 8),
