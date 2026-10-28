@@ -5,6 +5,8 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -107,6 +109,7 @@ val JwsHeaderWrappedTest by matrixSuite {
                 JsonObject(mapOf("extension" to JsonPrimitive("b"))),
             )
         }
-        result.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: extension")
+        result.shouldBeFailure().shouldBeInstanceOf<IllegalArgumentException>()
+            .message.shouldContain("Duplicate keys: extension")
     }
 }

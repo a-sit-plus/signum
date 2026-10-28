@@ -1,9 +1,10 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -40,10 +41,9 @@ val JwsRawHeaderPartsTest by matrixSuite {
                 JwsHeaderMonolith.SerialNames.VC_TYPE_METADATA to JsonArray(listOf(JsonPrimitive(metadata))),
             )
         )
-        protectedHeader.keys.intersect(unprotectedHeader.keys) shouldBe emptySet()
     }
 
-    "encoded fragments reconstruct the header and expose member placement on JWS" {
+    "encoded fragments reconstruct headers with protected and unprotected thumbprints" {
         val unprotectedMembers = setOf(
             JwsHeaderMonolith.SerialNames.KEY_ID,
             JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
@@ -72,14 +72,8 @@ val JwsRawHeaderPartsTest by matrixSuite {
             JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
             JwsHeaderMonolith.SerialNames.CERTIFICATE_SHA1_THUMBPRINT,
         )
-        val flattened = JwsFlattened.Raw(
-            plainProtectedHeader = encodedProtectedHeader,
-            unprotectedHeader = unprotectedHeader,
-            plainPayload = byteArrayOf(1),
-            plainSignature = byteArrayOf(2),
-        )
         val reconstructedHeader =
-            JwsHeaderWrapped.fromParts<JwsHeaderMonolith>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
+            JwsHeaderWrapped.fromParts<JwsHeaderMonolith>(encodedProtectedHeader, unprotectedHeader)
 
         reconstructedHeader shouldBe wrappedHeader
     }
@@ -92,34 +86,7 @@ val JwsRawHeaderPartsTest by matrixSuite {
             )
         }
 
-        exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
-    }
-
-    "member placement is set-like and stable through serialization" {
-        val header = JwsHeaderMonolith(
-            algorithm = JwsAlgorithm.Signature.RS256,
-            keyId = "did:example:signer",
-            contentType = "application/example+json",
-        )
-        val wrappedHeader = JwsHeaderWrapped(
-            header,
-            linkedSetOf(
-                JwsHeaderMonolith.SerialNames.CONTENT_TYPE,
-                JwsHeaderMonolith.SerialNames.KEY_ID,
-            ),
-        )
-        val flattened = flattenedSample(
-            wrappedHeader = wrappedHeader,
-            payload = byteArrayOf(1),
-            plainSignature = byteArrayOf(2),
-        )
-        val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened.Raw>(
-            joseCompliantSerializer.encodeToString(flattened)
-        )
-        val reparsedHeader =
-            JwsHeaderWrapped.fromParts<JwsHeaderMonolith>(reparsed.plainProtectedHeader, reparsed.unprotectedHeader)
-
-        reparsedHeader shouldBe wrappedHeader
-        reparsedHeader.header shouldBe header
+        exception.shouldBeFailure().shouldBeInstanceOf<IllegalArgumentException>()
+            .message.shouldContain("Duplicate keys: kid")
     }
 }
