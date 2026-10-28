@@ -21,14 +21,14 @@ val JwsCustomHeaderTest by matrixSuite {
         val compact = JwsCompact.Raw(protectedBytes, payloadBytes, byteArrayOf(1, 2, 3))
         val typed = compact.typed<SigningHeader, SigningPayload>()
 
-        (typed.jws === compact) shouldBe true
+        (typed.raw === compact) shouldBe true
         typed.wrappedHeader.header.extension shouldBe "private"
         typed.signature.joseBytes shouldBe compact.plainSignature
         val converted = typed.toFlattened().toCompact()
         converted shouldBe typed
-        converted.jws.plainProtectedHeader shouldBe protectedBytes
-        converted.jws.plainPayload shouldBe payloadBytes
-        converted.jws.signatureInput shouldBe compact.signatureInput
+        converted.raw.plainProtectedHeader shouldBe protectedBytes
+        converted.raw.plainPayload shouldBe payloadBytes
+        converted.raw.signatureInput shouldBe compact.signatureInput
 
         val serializer = JwsTypedSerializerTemplate(
             JwsCompactRawStringSerializer, SigningPayload.serializer(), SigningHeader.serializer()
@@ -51,27 +51,27 @@ val JwsCustomHeaderTest by matrixSuite {
         val flattened = headers.mapIndexed { index, header ->
             flattenedSample(header, bytes, signatures[index]).typed<SigningHeader, SigningPayload>()
         }
-        val general = flattened.map { it.jws }.toGeneral().typed<SigningHeader, SigningPayload>()
+        val general = flattened.map { it.raw }.toGeneral().typed<SigningHeader, SigningPayload>()
 
         general.payload shouldBe payload
         general.wrappedHeaders shouldBe headers
         general.signatures.map { it.joseBytes } shouldBe signatures
         general.toFlattened() shouldBe flattened
-        general.jws.signatureInputs shouldBe flattened.map { it.jws.signatureInput }
+        general.raw.signatureInputs shouldBe flattened.map { it.raw.signatureInput }
 
         val flattenedSerializer = JwsTypedSerializerTemplate(
             JwsFlattened.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
         )
         flattened.forEach { typed ->
             val encoded = joseCompliantSerializer.encodeToString(flattenedSerializer, typed)
-            encoded shouldBe joseCompliantSerializer.encodeToString(typed.jws)
+            encoded shouldBe joseCompliantSerializer.encodeToString(typed.raw)
             joseCompliantSerializer.decodeFromString(flattenedSerializer, encoded) shouldBe typed
         }
         val generalSerializer = JwsTypedSerializerTemplate(
             JwsGeneral.Raw.serializer(), SigningPayload.serializer(), SigningHeader.serializer()
         )
         val encoded = joseCompliantSerializer.encodeToString(generalSerializer, general)
-        encoded shouldBe joseCompliantSerializer.encodeToString(general.jws)
+        encoded shouldBe joseCompliantSerializer.encodeToString(general.raw)
         joseCompliantSerializer.decodeFromString(generalSerializer, encoded) shouldBe general
     }
 
@@ -87,7 +87,7 @@ val JwsCustomHeaderTest by matrixSuite {
         listOf(compact, flattened, general).forEach { wire ->
             val encoded = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), wire)
             val typed = joseCompliantSerializer.decodeFromString(serializer, encoded)
-            typed.jws shouldBe wire
+            typed.raw shouldBe wire
             when (typed) {
                 is JwsCompact -> typed.wrappedHeader shouldBe header
                 is JwsFlattened -> typed.wrappedHeader shouldBe header
@@ -128,7 +128,7 @@ val JwsCustomHeaderTest by matrixSuite {
                 is JwsFlattened -> listOf(typed.header)
                 is JwsGeneral -> typed.headers
             } shouldBe listOf(expectedHeader)
-            val encoded = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), typed.jws)
+            val encoded = joseCompliantSerializer.encodeToString(JwsRaw.serializer(), typed.raw)
             joseCompliantSerializer.decodeFromString(serializer, encoded) shouldBe typed
             joseCompliantSerializer.encodeToString(serializer, typed) shouldBe encoded
         }

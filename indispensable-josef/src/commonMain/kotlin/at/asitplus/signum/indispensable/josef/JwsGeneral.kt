@@ -15,7 +15,7 @@ import kotlinx.serialization.serializer
  * A JWS with one shared [payload] and one or more signatures, each with its own JOSE header.
  *
  * This is the decoded form of General JSON Serialization. The payload is decoded as [P], and each signature's
- * protected and unprotected header parameters are combined into an [H]. [jws] retains the original [Raw]
+ * protected and unprotected header parameters are combined into an [H]. [raw] retains the original [Raw]
  * representation, including the bytes used to construct each signature's signing input.
  *
  * Entries at the same index in [headers], [unprotectedHeaderMembers], and [signatures] describe the same signature,
@@ -29,7 +29,7 @@ import kotlinx.serialization.serializer
  */
 @ConsistentCopyVisibility
 data class JwsGeneral<H : JwsHeader, out P> private constructor(
-    override val jws: Raw,
+    override val raw: Raw,
     override val payload: P,
     internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
 ) : JwsTyped<JwsGeneral.Raw, H, P>() {
@@ -40,11 +40,11 @@ data class JwsGeneral<H : JwsHeader, out P> private constructor(
     val signatures = signatureViews.map { it.second }
 
     init {
-        require(signatureViews.size == jws.signatureElements.size) {
+        require(signatureViews.size == raw.signatureElements.size) {
             "Signature views must match the number of wire signature elements"
         }
         require(signatureViews.indices.all { index ->
-            signatureViews[index].second.joseBytes.contentEquals(jws.signatureElements[index].plainSignature)
+            signatureViews[index].second.joseBytes.contentEquals(raw.signatureElements[index].plainSignature)
         }) {
             "Signature views must match the wire signature bytes in order"
         }
@@ -172,7 +172,7 @@ fun <H : JwsHeader, P> JwsGeneral.Raw.typed(
 
 /** Expands into [JwsFlattened] views in signature order, retaining the decoded payload and headers. */
 fun <H : JwsHeader, P> JwsGeneral<H, P>.toFlattened() =
-    jws.toFlattened().zip(signatureViews) { flattened, (wrappedHeader, signature) ->
+    raw.toFlattened().zip(signatureViews) { flattened, (wrappedHeader, signature) ->
         JwsFlattened(flattened, payload, wrappedHeader, signature)
     }
 

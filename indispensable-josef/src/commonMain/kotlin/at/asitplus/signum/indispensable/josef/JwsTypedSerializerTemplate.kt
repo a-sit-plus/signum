@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import kotlinx.serialization.KSerializer
 
 /**
- * Serializes only the retained [JwsTyped.jws] wire object.
+ * Serializes only the retained [JwsTyped.raw] wire object.
  * Decoding reconstructs the concrete typed view with the supplied payload and header serializers,
  * using the JOSE-compliant JSON format. Decoded signatures retain wire order.
  */
@@ -15,7 +15,7 @@ class JwsTypedSerializerTemplate<J : JwsRaw, H : JwsHeader, P>(
     headerSerializer: KSerializer<H>,
 ) : TransformingSerializerTemplate<JwsTyped<J, H, P>, J>(
     parent = jwsSerializer,
-    encodeAs = { it.jws },
+    encodeAs = { it.raw },
     decodeAs = { jws ->
         when (jws) {
             is JwsCompact.Raw -> jws.typed(payloadSerializer, headerSerializer)

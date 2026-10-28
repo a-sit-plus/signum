@@ -26,7 +26,7 @@ val JwsCompactVectorTest by matrixSuite {
                 if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey())
                 else RSASSAVerifier(publicKey.toJcaPublicKey() as RSAPublicKey)
 
-            val result = JWSObject.parse(parsed.jws.toString()).verify(jvmVerifier)
+            val result = JWSObject.parse(parsed.raw.toString()).verify(jvmVerifier)
             result.shouldBeTrue()
         }
     }

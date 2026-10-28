@@ -34,17 +34,17 @@ val JwsVerifierTest by matrixSuite {
     "flattened verification preserves signed bytes and ignores unprotected header changes" {
         val signer = Signer.Ephemeral { ec {} }
         val header = SigningHeader(algorithm = JwsAlgorithm.Signature.ES256, keyId = "original-key")
-        val wire = JwsSigner(listOf(signer)).signFlattened(header, verificationPayload, setOf("kid")).jws
+        val wire = JwsSigner(listOf(signer)).signFlattened(header, verificationPayload, setOf("kid")).raw
         val verifier = signer.makeVerifier()
         val decoded = wire.decodeForVerification()
 
-        verifier.verify(decoded.jws.signatureInput, decoded.signature) shouldBe SignatureVerifier.Success
+        verifier.verify(decoded.raw.signatureInput, decoded.signature) shouldBe SignatureVerifier.Success
 
         val changedUnprotected = wire.copy(
             unprotectedHeader = JsonObject(mapOf("kid" to JsonPrimitive("changed-key"))),
         ).decodeForVerification()
         changedUnprotected.header.keyId shouldBe "changed-key"
-        verifier.verify(changedUnprotected.jws.signatureInput, changedUnprotected.signature) shouldBe
+        verifier.verify(changedUnprotected.raw.signatureInput, changedUnprotected.signature) shouldBe
                 SignatureVerifier.Success
 
         // Whitespace leaves the decoded values unchanged but changes the signed bytes.
@@ -52,13 +52,13 @@ val JwsVerifierTest by matrixSuite {
             plainProtectedHeader = (wire.plainProtectedHeader!!.decodeToString() + " ").encodeToByteArray(),
         ).decodeForVerification()
         changedHeader.header shouldBe decoded.header
-        shouldThrow<InvalidSignature> { verifier.verify(changedHeader.jws.signatureInput, changedHeader.signature) }
+        shouldThrow<InvalidSignature> { verifier.verify(changedHeader.raw.signatureInput, changedHeader.signature) }
 
         val changedPayload = wire.copy(
             plainPayload = (wire.plainPayload.decodeToString() + " ").encodeToByteArray(),
         ).decodeForVerification()
         changedPayload.payload shouldBe decoded.payload
-        shouldThrow<InvalidSignature> { verifier.verify(changedPayload.jws.signatureInput, changedPayload.signature) }
+        shouldThrow<InvalidSignature> { verifier.verify(changedPayload.raw.signatureInput, changedPayload.signature) }
     }
 
     "flattened verification rejects a changed signature and a different key" {
@@ -66,18 +66,18 @@ val JwsVerifierTest by matrixSuite {
         val otherSigner = Signer.Ephemeral { ec {} }
         val wire = JwsSigner(listOf(signer)).signFlattened(
             SigningHeader(algorithm = JwsAlgorithm.Signature.ES256), verificationPayload,
-        ).jws
+        ).raw
         val decoded = wire.decodeForVerification()
         val verifier = signer.makeVerifier()
 
-        verifier.verify(decoded.jws.signatureInput, decoded.signature) shouldBe SignatureVerifier.Success
+        verifier.verify(decoded.raw.signatureInput, decoded.signature) shouldBe SignatureVerifier.Success
         val otherVerifier = otherSigner.makeVerifier()
-        shouldThrow<InvalidSignature> { otherVerifier.verify(decoded.jws.signatureInput, decoded.signature) }
+        shouldThrow<InvalidSignature> { otherVerifier.verify(decoded.raw.signatureInput, decoded.signature) }
 
         val changedSignature = wire.copy(plainSignature = wire.plainSignature.withChangedLastBit())
             .decodeForVerification()
         shouldThrow<InvalidSignature> {
-            verifier.verify(changedSignature.jws.signatureInput, changedSignature.signature)
+            verifier.verify(changedSignature.raw.signatureInput, changedSignature.signature)
         }
     }
 
@@ -100,16 +100,16 @@ val JwsVerifierTest by matrixSuite {
                 if (index == 0) setOf("kid") else setOf("alg", "kid"),
             )
         }
-        val wire = JwsSigner(signers).signGeneral(verificationPayload, headers).jws
+        val wire = JwsSigner(signers).signGeneral(verificationPayload, headers).raw
         val decoded = wire.decodeForVerification()
 
-        decoded.jws.signatureElements[1].plainProtectedHeader shouldBe null
+        decoded.raw.signatureElements[1].plainProtectedHeader shouldBe null
         signers.forEachIndexed { index, signer ->
-            signer.makeVerifier().verify(decoded.jws.signatureInputs[index], decoded.signatures[index]) shouldBe
+            signer.makeVerifier().verify(decoded.raw.signatureInputs[index], decoded.signatures[index]) shouldBe
                     SignatureVerifier.Success
         }
         val flattened = decoded.toFlattened()[1]
-        signers[1].makeVerifier().verify(flattened.jws.signatureInput, flattened.signature) shouldBe
+        signers[1].makeVerifier().verify(flattened.raw.signatureInput, flattened.signature) shouldBe
                 SignatureVerifier.Success
     }
 
@@ -117,17 +117,17 @@ val JwsVerifierTest by matrixSuite {
         val signers = List(2) { Signer.Ephemeral { ec {} } }
         val header = SigningHeader(algorithm = JwsAlgorithm.Signature.ES256, keyId = "shared-header")
         val wire = signers.map { signer ->
-            JwsSigner(listOf(signer)).signFlattened(header, verificationPayload, setOf("kid")).jws
+            JwsSigner(listOf(signer)).signFlattened(header, verificationPayload, setOf("kid")).raw
         }.toGeneral()
         val decoded = wire.decodeForVerification()
         val verifiers = signers.map { it.makeVerifier() }
 
         decoded.headers shouldBe listOf(header, header)
         verifiers.forEachIndexed { index, verifier ->
-            verifier.verify(decoded.jws.signatureInputs[index], decoded.signatures[index]) shouldBe
+            verifier.verify(decoded.raw.signatureInputs[index], decoded.signatures[index]) shouldBe
                     SignatureVerifier.Success
             shouldThrow<InvalidSignature> {
-                verifier.verify(decoded.jws.signatureInputs[index], decoded.signatures[1 - index])
+                verifier.verify(decoded.raw.signatureInputs[index], decoded.signatures[1 - index])
             }
         }
     }
@@ -143,10 +143,10 @@ val JwsVerifierTest by matrixSuite {
                 setOf("kid"),
             )
         }
-        val wire = JwsSigner(listOf(signer)).signGeneral(verificationPayload, headers).jws
+        val wire = JwsSigner(listOf(signer)).signGeneral(verificationPayload, headers).raw
         val decoded = wire.decodeForVerification()
         decoded.signatures.forEachIndexed { index, signature ->
-            verifier.verify(decoded.jws.signatureInputs[index], signature) shouldBe SignatureVerifier.Success
+            verifier.verify(decoded.raw.signatureInputs[index], signature) shouldBe SignatureVerifier.Success
         }
 
         val changedPayload = JwsGeneral.Raw(
@@ -154,7 +154,7 @@ val JwsVerifierTest by matrixSuite {
         ).decodeForVerification()
         changedPayload.payload shouldBe decoded.payload
         changedPayload.signatures.forEachIndexed { index, signature ->
-            shouldThrow<InvalidSignature> { verifier.verify(changedPayload.jws.signatureInputs[index], signature) }
+            shouldThrow<InvalidSignature> { verifier.verify(changedPayload.raw.signatureInputs[index], signature) }
         }
 
         val first = wire.signatureElements[0]
@@ -165,8 +165,8 @@ val JwsVerifierTest by matrixSuite {
         changes.forEach { changedElement ->
             val changed = JwsGeneral.Raw(wire.plainPayload, listOf(changedElement, wire.signatureElements[1]))
                 .decodeForVerification()
-            shouldThrow<InvalidSignature> { verifier.verify(changed.jws.signatureInputs[0], changed.signatures[0]) }
-            verifier.verify(changed.jws.signatureInputs[1], changed.signatures[1]) shouldBe SignatureVerifier.Success
+            shouldThrow<InvalidSignature> { verifier.verify(changed.raw.signatureInputs[0], changed.signatures[0]) }
+            verifier.verify(changed.raw.signatureInputs[1], changed.signatures[1]) shouldBe SignatureVerifier.Success
         }
 
         val changedUnprotected = JwsGeneral.Raw(
@@ -178,7 +178,7 @@ val JwsVerifierTest by matrixSuite {
         ).decodeForVerification()
         changedUnprotected.headers[0].keyId shouldBe "changed-key"
         changedUnprotected.signatures.forEachIndexed { index, signature ->
-            verifier.verify(changedUnprotected.jws.signatureInputs[index], signature) shouldBe SignatureVerifier.Success
+            verifier.verify(changedUnprotected.raw.signatureInputs[index], signature) shouldBe SignatureVerifier.Success
         }
     }
 }

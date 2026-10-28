@@ -40,7 +40,7 @@ val JwsRawTypedTest by matrixSuite {
         )
         val typed = wire.typed<SigningHeader, SigningPayload>()
 
-        (typed.jws === wire) shouldBe true
+        (typed.raw === wire) shouldBe true
         typed.payload shouldBe typedPayload
         typed.header shouldBe header
         typed.unprotectedHeaderMembers shouldBe unprotectedMembers
@@ -69,7 +69,7 @@ val JwsRawTypedTest by matrixSuite {
         typed.unprotectedHeaderMembers shouldBe headers.map { it.unprotectedHeaderMembers }
         typed.signatures.map { it.joseBytes } shouldBe listOf(byteArrayOf(1), byteArrayOf(2))
         val expanded = typed.toFlattened()
-        expanded.map { it.jws } shouldBe flattened
+        expanded.map { it.raw } shouldBe flattened
         expanded.forEach { (it.payload === typed.payload) shouldBe true }
     }
 }

@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
@@ -23,7 +21,7 @@ import kotlinx.serialization.serializer
  * A JWS with one [payload], one [signature], and an entirely protected JOSE [header].
  *
  * This is the decoded form of Compact Serialization: three base64url-encoded segments joined by dots.
- * The payload is decoded as [P], and the protected header as [H]. [jws] retains the original [Raw]
+ * The payload is decoded as [P], and the protected header as [H]. [raw] retains the original [Raw]
  * representation, including the bytes used to construct the signature's signing input.
  *
  * Compact serialization cannot carry unprotected header parameters; [unprotectedHeaderMembers] is empty
@@ -37,7 +35,7 @@ import kotlinx.serialization.serializer
  */
 @ConsistentCopyVisibility
 data class JwsCompact<H : JwsHeader, out P> internal constructor(
-    override val jws: Raw,
+    override val raw: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
@@ -159,7 +157,7 @@ fun <H : JwsHeader, P> JwsCompact.Raw.typed(
 
 /** Converts to a [JwsFlattened] view, retaining the decoded payload, header, and signature. */
 fun <H : JwsHeader, P> JwsCompact<H, P>.toFlattened() =
-    JwsFlattened(jws.toFlattened(), payload, wrappedHeader, signature)
+    JwsFlattened(raw.toFlattened(), payload, wrappedHeader, signature)
 
 /**
  * Serializes a [JwsCompact.Raw] as its compact JWS string form inside JSON.

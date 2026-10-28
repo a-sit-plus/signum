@@ -50,7 +50,7 @@ val JwsSignerTest by matrixSuite {
         roundtrip shouldBe typed
 
         val verifier = signer.signatureAlgorithm.verifierFor(signer.publicKey)
-        verifier.verify(roundtrip.jws.signatureInput, roundtrip.signature) shouldBe SignatureVerifier.Success
+        verifier.verify(roundtrip.raw.signatureInput, roundtrip.signature) shouldBe SignatureVerifier.Success
     }
 
     "compact signing happy path" {
@@ -75,13 +75,13 @@ val JwsSignerTest by matrixSuite {
         val jwsSigner = JwsSigner(listOf(signer))
         for (placement in listOf(emptySet(), setOf("alg", "kid", "extension"))) {
             val typed = jwsSigner.signFlattened(header, SigningPayload("alice"), placement)
-            typed.jws.unprotectedHeader?.keys.orEmpty() shouldBe placement
+            typed.raw.unprotectedHeader?.keys.orEmpty() shouldBe placement
 
             val wireJson =
-                joseCompliantSerializer.encodeToJsonElement(JwsFlattened.Raw.serializer(), typed.jws).jsonObject
+                joseCompliantSerializer.encodeToJsonElement(JwsFlattened.Raw.serializer(), typed.raw).jsonObject
             (JwsRaw.SerialNames.HEADER in wireJson) shouldBe placement.isNotEmpty()
             (JwsRaw.SerialNames.PROTECTED in wireJson) shouldBe placement.isEmpty()
-            signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+            signer.makeVerifier().verify(typed.raw.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
         }
     }
 
@@ -108,13 +108,13 @@ val JwsSignerTest by matrixSuite {
         }
         val typed = jwsSigner.signGeneral(SigningPayload("alice"), parameters, serializer)
         encodings shouldBe 1
-        typed.jws.signatureElements.size shouldBe 2
+        typed.raw.signatureElements.size shouldBe 2
         typed.toFlattened().forEachIndexed { index, flattened ->
-            flattened.jws.plainPayload shouldBe """{"sub":"alice"}""".encodeToByteArray()
+            flattened.raw.plainPayload shouldBe """{"sub":"alice"}""".encodeToByteArray()
             JwsHeaderWrapped.fromParts<SigningHeader>(
-                flattened.jws.plainProtectedHeader, flattened.jws.unprotectedHeader,
+                flattened.raw.plainProtectedHeader, flattened.raw.unprotectedHeader,
             ).header.keyId shouldBe "key-$index"
-            signers[index].makeVerifier().verify(flattened.jws.signatureInput, flattened.signature) shouldBe
+            signers[index].makeVerifier().verify(flattened.raw.signatureInput, flattened.signature) shouldBe
                     SignatureVerifier.Success
         }
     }
@@ -154,11 +154,11 @@ val JwsSignerTest by matrixSuite {
         views.forEach { typed ->
             typed.payload shouldBe payload
             typed.header shouldBe header
-            typed.jws.getPayload(SigningPayload.serializer()).getOrThrow().sub shouldBe "ALICE"
+            typed.raw.getPayload(SigningPayload.serializer()).getOrThrow().sub shouldBe "ALICE"
             JwsHeaderWrapped.fromParts<SigningHeader>(
-                typed.jws.plainProtectedHeader, typed.jws.unprotectedHeader,
+                typed.raw.plainProtectedHeader, typed.raw.unprotectedHeader,
             ).header.extension shouldBe "CUSTOM"
-            signer.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+            signer.makeVerifier().verify(typed.raw.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
         }
     }
 
@@ -174,13 +174,13 @@ val JwsSignerTest by matrixSuite {
         )
         val matching = jwsSigner.signCompact(
             SigningHeader(algorithm, "actual-key", jsonWebKey = embeddedKey), SigningPayload("alice"),
-        ).jws.plainProtectedHeader.toProtectedHeaderJsonObject()
+        ).raw.plainProtectedHeader.toProtectedHeaderJsonObject()
         matching.keys shouldBe setOf("alg", "kid", "jwk")
         matching["kid"] shouldBe JsonPrimitive("actual-key")
         matching["jwk"] shouldBe joseCompliantSerializer.encodeToJsonElement(JsonWebKey.serializer(), embeddedKey)
 
         val omitted = jwsSigner.signCompact(SigningHeader(algorithm), SigningPayload("alice"))
-        omitted.jws.plainProtectedHeader.toProtectedHeaderJsonObject().keys shouldBe setOf("alg")
+        omitted.raw.plainProtectedHeader.toProtectedHeaderJsonObject().keys shouldBe setOf("alg")
     }
 
     "general signing rejects invalid later headers before invoking any signer" {
@@ -233,7 +233,7 @@ val JwsSignerTest by matrixSuite {
         val jwsSigner = JwsSigner(signers)
         signers.clear()
         val typed = jwsSigner.signCompact(SigningHeader(JwsAlgorithm.Signature.ES256), SigningPayload("alice"))
-        original.makeVerifier().verify(typed.jws.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
+        original.makeVerifier().verify(typed.raw.signatureInput, typed.signature) shouldBe SignatureVerifier.Success
     }
 
     "signer cancellation propagates unchanged" {

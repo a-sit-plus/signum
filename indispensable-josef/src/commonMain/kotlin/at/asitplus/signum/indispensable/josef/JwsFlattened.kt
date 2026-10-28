@@ -17,7 +17,7 @@ import kotlinx.serialization.serializer
  * unprotected parameters.
  *
  * This is the decoded form of Flattened JSON Serialization. The payload is decoded as [P], and the protected and
- * unprotected header parameters are combined into an [H]. [jws] retains the original [Raw] representation,
+ * unprotected header parameters are combined into an [H]. [raw] retains the original [Raw] representation,
  * including the bytes used to construct the signature's signing input.
  *
  * [header] exposes the combined header; [unprotectedHeaderMembers] identifies its unprotected parameters by JSON name.
@@ -32,7 +32,7 @@ import kotlinx.serialization.serializer
  */
 @ConsistentCopyVisibility
 data class JwsFlattened<H : JwsHeader, out P> internal constructor(
-    override val jws: Raw,
+    override val raw: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
     val signature: CryptoSignature
@@ -137,7 +137,7 @@ fun <H : JwsHeader, P> JwsFlattened.Raw.typed(
  * The original wire representation must have a protected header and no unprotected header.
  */
 fun <H : JwsHeader, P> JwsFlattened<H, P>.toCompact() =
-    JwsCompact(jws.toCompact(), payload, wrappedHeader, signature)
+    JwsCompact(raw.toCompact(), payload, wrappedHeader, signature)
 
 val JwsFlattened.Raw.protectedHeader: JsonObject?
     get() = plainProtectedHeader?.toProtectedHeaderJsonObject()

@@ -94,7 +94,7 @@ class JwsSigner(signers: List<Signer>) {
             with(signer) { signFlattened(header, payload, payloadBytes) }
         }
         return JwsGeneral(
-            jws = signed.map { it.jws }.toGeneral(),
+            jws = signed.map { it.raw }.toGeneral(),
             payload = payload,
             signatureViews = signed.map { it.wrappedHeader to it.signature },
         )
@@ -118,7 +118,7 @@ class JwsSigner(signers: List<Signer>) {
         val unprotectedHeader = header.unprotectedHeader.takeUnless { it.isEmpty() }
         val signature = signer.sign(JwsRaw.getSignatureInput(protectedHeader, payloadBytes)).signature
         return JwsFlattened(
-            jws = JwsFlattened.Raw(protectedHeader, unprotectedHeader, payloadBytes, signature.joseBytes.copyOf()),
+            raw = JwsFlattened.Raw(protectedHeader, unprotectedHeader, payloadBytes, signature.joseBytes.copyOf()),
             payload = payload,
             wrappedHeader = header,
             signature = signature,

@@ -18,16 +18,16 @@ val JwsGeneralTypedTest by matrixSuite {
         val wire = flattened.toGeneral()
         val typed = wire.typed<SigningHeader, SigningPayload>()
 
-        (typed.jws === wire) shouldBe true
+        (typed.raw === wire) shouldBe true
         typed.signatureViews.size shouldBe 3
         typed.headers.map { it.keyId } shouldBe listOf("shared", "shared", "shared")
         typed.unprotectedHeaderMembers shouldBe List(3) { setOf(JwsHeader.SerialNames.KEY_ID) }
         typed.signatures.map { it.joseBytes } shouldBe flattened.map { it.plainSignature }
         val typedFlattened = typed.toFlattened()
-        typedFlattened.map { it.jws } shouldBe flattened
+        typedFlattened.map { it.raw } shouldBe flattened
         typedFlattened shouldBe flattened.map { it.typed<SigningHeader, SigningPayload>() }
         joseCompliantSerializer.decodeFromString<JwsGeneral.Raw>(
-            joseCompliantSerializer.encodeToString(typed.jws),
+            joseCompliantSerializer.encodeToString(typed.raw),
         ).typed<SigningHeader, SigningPayload>() shouldBe typed
     }
 

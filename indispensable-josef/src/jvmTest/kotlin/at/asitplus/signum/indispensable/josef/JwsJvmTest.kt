@@ -43,7 +43,7 @@ val JwsJvmTest by matrixSuite {
     fixture(::Context) - {
         "compact typed JWS can be encoded and verified by Nimbus" { context ->
             val typed = context.jwsSigner.signCompact(context.headers[0], context.payload)
-            val parsed = JWSObject.parse(typed.jws.toString())
+            val parsed = JWSObject.parse(typed.raw.toString())
 
             parsed.verify(context.verifiers[0]).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
@@ -53,7 +53,7 @@ val JwsJvmTest by matrixSuite {
         "flattened typed JWS can be serialized and verified by Nimbus" { context ->
             val placement = setOf(JwsHeader.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signFlattened(context.headers[0], context.payload, placement)
-            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
+            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.raw))
 
             parsed.signatures.single().verify(context.verifiers[0]).shouldBeTrue()
             parsed.signatures.single().header.keyID shouldBe null
@@ -65,7 +65,7 @@ val JwsJvmTest by matrixSuite {
             val typed = context.jwsSigner.signGeneral(context.payload, context.headers.map { header ->
                 JwsHeaderWrapped(header, placement)
             })
-            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
+            val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.raw))
 
             parsed.signatures.size shouldBe 2
             parsed.signatures.forEachIndexed { index, signature ->
