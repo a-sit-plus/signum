@@ -96,23 +96,6 @@ data class JwsCompact<H : JwsHeader, out P> internal constructor(
 
         companion object {
             /**
-             * Parses compact serialization into a [Raw] value and decodes its payload and wrapped header.
-             */
-            inline fun <reified H : JwsHeader, reified P> parse(
-                base64UrlString: String,
-                serialFormat: Json = joseCompliantSerializer,
-            ): KmmResult<Triple<Raw, P, JwsHeaderWrapped<H>>> =
-                catching {
-                    val jws = Raw(base64UrlString)
-                    val payload = jws.getPayload<P>(serialFormat).getOrThrow()
-                    val header = JwsHeaderWrapped.fromParts<H>(
-                        protectedHeader = jws.plainProtectedHeader,
-                        serialFormat = serialFormat,
-                    )
-                    Triple(jws, payload, header)
-                }
-
-            /**
              * Parses compact serialization into a [Raw] value without decoding its payload or header.
              */
             @Throws(SerializationException::class)

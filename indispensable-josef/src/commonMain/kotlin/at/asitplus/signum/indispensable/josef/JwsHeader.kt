@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
-import at.asitplus.signum.indispensable.josef.JwsHeaderMonolith.SerialNames
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -62,4 +61,18 @@ interface JwsHeader {
 
     /** "crit": Extension parameter names that recipients must understand and process; otherwise the JWS is invalid. */
     val crit: List<String>?
+
+
+    object SerialNames {
+        const val KEY_ID = "kid"
+        const val TYPE = "typ"
+        const val ALGORITHM = "alg"
+        const val CONTENT_TYPE = "cty"
+        const val CERTIFICATE_CHAIN = "x5c"
+        const val JSON_WEB_KEY = "jwk"
+        const val JSON_WEB_KEY_SET_URL = "jku"
+        const val CERTIFICATE_URL = "x5u"
+        const val CERTIFICATE_SHA1_THUMBPRINT = "x5t"
+        const val CERTIFICATE_SHA256_THUMBPRINT = "x5t#S256"
+    }
 }
