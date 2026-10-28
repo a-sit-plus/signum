@@ -6,10 +6,12 @@ This is a major refactor!
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
-* **Breaking:** Remove `protectedHeader` constructor parameters, `JwsHeader.Part`, and its helper functions.
-* Expose effective headers through `wrappedHeader` (`wrappedHeaders` on `JwsGeneral`).
-* Deprecate `JwsHeader` in favor of custom `JwsHeaderBase` models supported by `JwsHeaderWrapped<H>`.
-* **Breaking:** Rename `unprotectedMembers` to `unprotectedHeaderMembers` on wrappers; include only serialized header members.
+* Rework `indispensable-josef` (**breaking**):
+    * Support custom JWS headers through `JwsHeaderBase`; deprecate `JwsHeader`
+    * Replace `JwsHeader.Part` and `protectedHeader` constructor parameters with `JwsHeaderWrapped<H>` for combined headers and protected/unprotected member placement
+    * Move decoded headers and signatures into concrete `JwsCompactTyped<P, H>`, `JwsFlattenedTyped<P, H>`, and `JwsGeneralTyped<P, H>` views, keeping wire objects independent of header models and supported signature algorithms
+    * Typed access now uses `.typed<P, H>()`; `JwsTypedSerializerTemplate` also requires a header serializer
+    * Deprecate callback-based JWS signing factories
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
