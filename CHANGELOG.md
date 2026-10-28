@@ -7,7 +7,8 @@ This is a major refactor!
 * publish javadoc redirect to save space
 * make all provider functions suspend
 * Rework `indispensable-josef` (**breaking**):
-    * Support custom JWS headers through `JwsHeader`; deprecate `JwsHeaderMonolith`
+    * Remove monolithic `JwsHeader` implementation; replaced by `JwsHeader` interface
+    * Remove deprecated `JwsSigned` (use `JwsCompact`), `JsonWebToken`, and related JWT/attestation models
     * Separate decoded `JwsCompact<H, P>`, `JwsFlattened<H, P>`, and `JwsGeneral<H, P>` views from `JwsRaw` and nested `.Raw` wire representations, allowing raw parsing of custom headers and unsupported algorithms
     * Replace `JwsHeader.Part` and `protectedHeader` constructor parameters with `JwsHeaderWrapped<H>` for combined headers and protected/unprotected member placement
     * Typed access now uses `.typed<H, P>()`; `JwsTypedSerializerTemplate` also requires a header serializer
