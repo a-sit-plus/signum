@@ -9,9 +9,9 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -160,20 +160,34 @@ sealed class ECPoint private constructor(
 }
 
 object ECPointSerializer : KSerializer<ECPoint.Normalized> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("ECPointSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: ECPoint.Normalized) {
-        encoder.encodeSerializableValue(ECCurve.serializer(), value.curve)
-        encoder.encodeSerializableValue(ByteArrayBase64Serializer, value.x.toByteArray())
-        encoder.encodeBoolean(value.yCompressed == Sign.POSITIVE)
-    }
+    /** Wire representation of [ECPoint.Normalized]: x coordinate, curve and the sign of y (compressed form). */
+    @Serializable
+    @SerialName("ECPoint")
+    private class Surrogate(
+        @Serializable(with = ByteArrayBase64Serializer::class)
+        val x: ByteArray,
 
-    override fun deserialize(decoder: Decoder): ECPoint.Normalized {
-        val curve = decoder.decodeSerializableValue(ECCurve.serializer())
-        val xBytes = decoder.decodeSerializableValue(ByteArrayBase64Serializer)
-        val yIsPositive = decoder.decodeBoolean()
-        return ECPoint.fromCompressed(curve, xBytes, yIsPositive)
-    }
+        val curve: ECCurve?,
 
+        @SerialName("y_positive")
+        val yPositive: Boolean,
+    )
+
+    override val descriptor: SerialDescriptor = Surrogate.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: ECPoint.Normalized) =
+        encoder.encodeSerializableValue(
+            Surrogate.serializer(),
+            Surrogate(value.x.toByteArray(), value.curve, value.yCompressed == Sign.POSITIVE)
+        )
+
+    override fun deserialize(decoder: Decoder): ECPoint.Normalized =
+        decoder.decodeSerializableValue(Surrogate.serializer()).let {
+            ECPoint.fromCompressed(
+                it.curve ?: throw SerializationException("Unknown curve"),
+                it.x,
+                it.yPositive
+            )
+        }
 }
