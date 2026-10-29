@@ -29,12 +29,14 @@ import kotlinx.serialization.Serializable
 @Serializable(with = CoseSignedSerializer::class)
 @ConsistentCopyVisibility
 data class CoseSigned<P : Any?> internal constructor(
-    val protectedHeader: CoseHeader,
-    val unprotectedHeader: CoseHeader? = null,
     val payload: P?,
     val signature: CryptoSignature,
     val wireFormat: CoseBytes,
 ) {
+
+    val protectedHeader: CoseHeader get() = wireFormat.protectedHeader
+
+    val unprotectedHeader: CoseHeader? get() = wireFormat.unprotectedHeader
 
     /**
      * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally
@@ -53,8 +55,6 @@ data class CoseSigned<P : Any?> internal constructor(
 
         other as CoseSigned<*>
 
-        if (protectedHeader != other.protectedHeader) return false
-        if (unprotectedHeader != other.unprotectedHeader) return false
         if (payload != null) {
             if (other.payload == null) return false
             if (!payload.contentEqualsIfArray(other.payload)) return false
@@ -66,9 +66,7 @@ data class CoseSigned<P : Any?> internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = protectedHeader.hashCode()
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
-        result = 31 * result + (payload?.contentHashCodeIfArray() ?: 0)
+        var result = payload?.contentHashCodeIfArray() ?: 0
         result = 31 * result + signature.hashCode()
         result = 31 * result + wireFormat.hashCode()
         return result
@@ -99,8 +97,6 @@ data class CoseSigned<P : Any?> internal constructor(
             signature: CryptoSignature,
             payloadSerializer: KSerializer<P>,
         ): CoseSigned<P> = CoseSigned<P>(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
             payload = payload,
             signature = signature,
             wireFormat = CoseBytes(

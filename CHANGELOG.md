@@ -18,6 +18,7 @@ This is a major refactor!
     * Use them for `prepareCoseSignatureInput()`/`prepareCoseMacInput()` and for serialization, instead of re-encoding the parsed `CoseHeader`, as required by RFC 9052 Section 4.4
     * Fixes verification of objects whose protected header is encoded differently than Signum would encode it (e.g. other key order, `h'a0'` instead of `h''`), as well as signatures breaking after a deserialize/serialize round trip
     * Add `CoseBytes.rawProtectedHeader`; `CoseBytes` equality now compares these bytes instead of the parsed header
+    * `CoseBytes.protectedHeader` is parsed from `rawProtectedHeader`; `CoseSigned`/`CoseMac` expose `protectedHeader` and `unprotectedHeader` as getters delegating to `wireFormat` (**breaking** for destructuring, as their `componentN()` functions change)
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.

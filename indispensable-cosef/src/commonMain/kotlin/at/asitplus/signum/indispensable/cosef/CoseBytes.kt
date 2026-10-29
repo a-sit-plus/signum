@@ -5,16 +5,13 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 /**
  * Representation of a signed `COSE_Sign1/COSE_MAC0` object, i.e. consisting of protected header, unprotected header and payload.
@@ -24,13 +21,10 @@ import kotlinx.serialization.encoding.Encoder
  *
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
-@Serializable(with = CoseBytesSerializer::class)
+@Serializable
+@CborArray
 @ConsistentCopyVisibility
 data class CoseBytes internal constructor(
-    val protectedHeader: CoseHeader,
-    val unprotectedHeader: CoseHeader?,
-    val payload: ByteArray?,
-    val rawAuthBytes: ByteArray,
     /**
      * Content of the protected header byte string, i.e. the encoded [protectedHeader] exactly as it has been
      * transferred (zero-length for an empty protected header encoded as `h''`).
@@ -40,8 +34,28 @@ data class CoseBytes internal constructor(
      *
      * When creating a new object (see [CoseSigned.create], [CoseMac.create]), this is the encoding of [protectedHeader].
      */
-    val rawProtectedHeader: ByteArray = protectedHeader.toProtectedHeaderBytes(),
+    @SerialName("protectedHeader")
+    @ByteString
+    val rawProtectedHeader: ByteArray,
+    val unprotectedHeader: CoseHeader?,
+    @ByteString
+    val payload: ByteArray?,
+    @ByteString
+    val rawAuthBytes: ByteArray,
 ) {
+
+    internal constructor(
+        protectedHeader: CoseHeader,
+        unprotectedHeader: CoseHeader?,
+        payload: ByteArray?,
+        rawAuthBytes: ByteArray,
+    ) : this(protectedHeader.toProtectedHeaderBytes(), unprotectedHeader, payload, rawAuthBytes)
+
+    /**
+     * Parsed from [rawProtectedHeader], also on deserialization, so that malformed headers are rejected right away.
+     */
+    @Transient
+    val protectedHeader: CoseHeader = rawProtectedHeader.toProtectedCoseHeader()
 
     internal fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
@@ -117,56 +131,6 @@ data class CoseBytes internal constructor(
             coseCompliantSerializer.decodeFromByteArray(it)
         }
     }
-}
-
-/**
- * Wire format of [CoseBytes], keeping the protected header as the byte string it has been transferred in.
- */
-@Serializable
-@CborArray
-private class CoseBytesSurrogate(
-    @ByteString
-    val protectedHeader: ByteArray,
-    val unprotectedHeader: CoseHeader?,
-    @ByteString
-    val payload: ByteArray?,
-    @ByteString
-    val rawAuthBytes: ByteArray,
-)
-
-/**
- * Serializes [CoseBytes] using [CoseBytes.rawProtectedHeader] as is, and retains the protected header bytes
- * on deserialization, so that they can be used for verification and re-serialization.
- */
-@OptIn(ExperimentalSerializationApi::class)
-internal object CoseBytesSerializer : KSerializer<CoseBytes> {
-    override val descriptor: SerialDescriptor = SerialDescriptor(
-        "at.asitplus.signum.indispensable.cosef.CoseBytes",
-        CoseBytesSurrogate.serializer().descriptor
-    )
-
-    override fun serialize(encoder: Encoder, value: CoseBytes) {
-        encoder.encodeSerializableValue(
-            CoseBytesSurrogate.serializer(),
-            CoseBytesSurrogate(
-                protectedHeader = value.rawProtectedHeader,
-                unprotectedHeader = value.unprotectedHeader,
-                payload = value.payload,
-                rawAuthBytes = value.rawAuthBytes,
-            )
-        )
-    }
-
-    override fun deserialize(decoder: Decoder): CoseBytes =
-        decoder.decodeSerializableValue(CoseBytesSurrogate.serializer()).let {
-            CoseBytes(
-                protectedHeader = it.protectedHeader.toProtectedCoseHeader(),
-                unprotectedHeader = it.unprotectedHeader,
-                payload = it.payload,
-                rawAuthBytes = it.rawAuthBytes,
-                rawProtectedHeader = it.protectedHeader,
-            )
-        }
 }
 
 /**
