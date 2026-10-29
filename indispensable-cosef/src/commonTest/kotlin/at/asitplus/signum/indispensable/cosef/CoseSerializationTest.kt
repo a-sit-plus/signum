@@ -413,7 +413,85 @@ val CoseSerializationTest by matrixSuite {
         inputObjectMac shouldBe inputManualMac
     }
 
+    // protected header {16: "t", 1: -257 (RS256)}, i.e. not in the order Signum would encode it
+    val protectedHeaderOtherOrder = "A210617401390100"
+    val payloadHex = "546869732069732074686520636F6E74656E742E"
 
+    "Protected header bytes are retained for CoseSigned" {
+        val input = "8448${protectedHeaderOtherOrder}A054${payloadHex}43626172".decodeToByteArray(Base16())
+
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        cose.protectedHeader shouldBe CoseHeader(algorithm = CoseAlgorithm.Signature.RS256, type = "t")
+        cose.wireFormat.rawProtectedHeader shouldBe protectedHeaderOtherOrder.decodeToByteArray(Base16())
+        // [ "Signature1", protected as received, external_aad, payload ]
+        cose.prepareCoseSignatureInput().encodeToString(Base16Strict).uppercase() shouldBe
+                "846A5369676E61747572653148${protectedHeaderOtherOrder}4054${payloadHex}"
+        cose.serialize(ByteArraySerializer()) shouldBe input
+        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow() shouldBe cose
+        Json.decodeFromString<CoseSigned<ByteArray>>(Json.encodeToString(cose)) shouldBe cose
+
+        val recreated = CoseSigned.create(
+            protectedHeader = cose.protectedHeader,
+            payload = cose.payload,
+            signature = cose.signature,
+            payloadSerializer = ByteArraySerializer(),
+        )
+        // same parsed header, but different bytes on the wire
+        recreated.protectedHeader shouldBe cose.protectedHeader
+        (recreated == cose) shouldBe false
+        recreated.wireFormat.rawProtectedHeader.encodeToString(Base16Strict).uppercase() shouldBe "A201390100106174"
+    }
+
+    "Protected header bytes are retained for CoseSigned with detached payload" {
+        val input = "8448${protectedHeaderOtherOrder}A0F643626172".decodeToByteArray(Base16())
+
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        cose.payload shouldBe null
+        cose.prepareCoseSignatureInput(detachedPayload = payloadHex.decodeToByteArray(Base16()))
+            .encodeToString(Base16Strict).uppercase() shouldBe
+                "846A5369676E61747572653148${protectedHeaderOtherOrder}4054${payloadHex}"
+        cose.serialize(ByteArraySerializer()) shouldBe input
+    }
+
+    "Protected header bytes are retained for CoseMac" {
+        // protected header {16: "t", 1: 5 (HS256)}
+        val protectedHeader = "A21061740105"
+        val input = "8446${protectedHeader}A054${payloadHex}40".decodeToByteArray(Base16())
+
+        val cose = CoseMac.deserialize(ByteArraySerializer(), input).getOrThrow()
+        cose.protectedHeader shouldBe CoseHeader(algorithm = CoseAlgorithm.MAC.HS256, type = "t")
+        // [ "MAC0", protected as received, external_aad, payload ]
+        cose.prepareCoseMacInput().encodeToString(Base16Strict).uppercase() shouldBe
+                "84644D41433046${protectedHeader}4054${payloadHex}"
+        cose.serialize(ByteArraySerializer()) shouldBe input
+        CoseMac.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow() shouldBe cose
+    }
+
+    "Empty protected header encoded as map is retained" {
+        // protected header h'A0' instead of h''
+        val input = "8441A0A10139010054${payloadHex}43626172".decodeToByteArray(Base16())
+
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        cose.protectedHeader shouldBe CoseHeader()
+        cose.wireFormat.rawProtectedHeader shouldBe byteArrayOf(0xA0.toByte())
+        cose.prepareCoseSignatureInput().encodeToString(Base16Strict).uppercase() shouldBe
+                "846A5369676E61747572653141A04054${payloadHex}"
+        cose.serialize(ByteArraySerializer()) shouldBe input
+    }
+
+    "Empty protected header is encoded as zero-length byte string on creation" {
+        val cose = CoseSigned.create(
+            protectedHeader = CoseHeader(),
+            unprotectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
+            payload = payloadHex.decodeToByteArray(Base16()),
+            signature = RsaSignature("bar".encodeToByteArray()),
+            payloadSerializer = ByteArraySerializer(),
+        )
+        cose.wireFormat.rawProtectedHeader shouldBe byteArrayOf()
+        cose.prepareCoseSignatureInput().encodeToString(Base16Strict).uppercase() shouldBe
+                "846A5369676E617475726531404054${payloadHex}"
+        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow() shouldBe cose
+    }
 }
 
 private fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this

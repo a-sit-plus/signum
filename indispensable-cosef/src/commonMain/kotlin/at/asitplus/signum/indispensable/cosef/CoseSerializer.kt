@@ -59,11 +59,8 @@ class CoseSignedSerializer<P : Any?>(
     serialName = "CoseSigned",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val protectedHeader = wire.protectedHeader
-        val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
+        val signature = wire.rawAuthBytes.toSignature(wire.protectedHeader, wire.unprotectedHeader)
         CoseSigned(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = wire.unprotectedHeader,
             payload = wire.payload.toNullablePayload(parameterSerializer),
             signature = signature,
             wireFormat = wire
@@ -83,11 +80,8 @@ class CoseMacSerializer<P : Any?>(
     serialName = "CoseMac",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val protectedHeader = wire.protectedHeader
         val tag = wire.rawAuthBytes
         CoseMac(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = wire.unprotectedHeader,
             payload = wire.payload.toNullablePayload(parameterSerializer),
             tag = tag,
             wireFormat = wire
