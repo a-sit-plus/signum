@@ -32,6 +32,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         element("Partial IV", ByteArraySerializer().descriptor, listOf(CborLabel(6), ByteString()))
         element("x5chain", ListSerializer(ByteArraySerializer()).descriptor, listOf(CborLabel(33), ByteString()))
         element("typ", String.serializer().descriptor, listOf(CborLabel(16)))
+        element("x5t", CoseCertificateHash.serializer().descriptor, listOf(CborLabel(34)))
     }
 
     override fun deserialize(decoder: Decoder): CoseHeader {
@@ -43,7 +44,8 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             "IV" to 5,
             "Partial IV" to 6,
             "x5chain" to 33,
-            "typ" to 16
+            "typ" to 16,
+            "x5t" to 34,
         )
 
         var alg: CoseAlgorithm? = null
@@ -54,6 +56,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         var partialIv: ByteArray? = null
         var x5chain: List<ByteArray>? = null
         var typ: String? = null
+        var x5t: CoseCertificateHash? = null
 
         decoder.decodeStructure(descriptor) {
             while (true) {
@@ -105,6 +108,11 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                     }
 
                     labels["typ"] -> typ = decodeStringElement(String.serializer().descriptor, index)
+                    labels["x5t"] -> x5t = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        CoseCertificateHash.serializer()
+                    )
 
                     else -> break
                 }
@@ -118,7 +126,8 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             iv = iv,
             partialIv = partialIv,
             certificateChain = x5chain,
-            type = typ
+            type = typ,
+            certificateHash = x5t,
         )
     }
 
@@ -187,6 +196,14 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                             certificateChain
                         )
                     }
+                }
+                certificateHash?.let {
+                    encodeSerializableElement(
+                        descriptor,
+                        8,
+                        CoseCertificateHash.serializer(),
+                        certificateHash
+                    )
                 }
                 type?.let {
                     encodeStringElement(
