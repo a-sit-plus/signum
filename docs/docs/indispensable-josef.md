@@ -43,9 +43,10 @@ view is never used to reconstruct an incoming signing input.
 | Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, H, P>`, `JwsCompact<H, P>`, `JwsFlattened<H, P>`, `JwsGeneral<H, P>` |
 | Effective header | Combine modeled header values and retain their protection status | `JwsHeaderWrapped<H>` with `H : JwsHeaderBase` |
 
-`JwsTyped<J, H, P>` retains the wire object as `jws` and decodes its payload, headers, and signatures.
+`JwsTyped<J, H, P>` retains the wire object as `raw` and decodes its payload, headers, and signatures.
 Compact/flattened views expose `header` and `signature`; general views expose ordered `headers` and `signatures`.
-Use `jws` for storage or forwarding. `JwsTypedSerializerTemplate` serializes it and rebuilds decoded views on reading.
+Use `raw` for storage or forwarding. `JwsTypedSerializerTemplate` creates serializers for each concrete JWS form
+that serialize the retained raw representation and rebuild decoded views on reading.
 Create signed values with `JwsSigner` and decode with `.typed()`; typed constructors and copying are internal.
 
 ## JWS Representations
@@ -160,8 +161,20 @@ val wrapped = JwsHeaderWrapped(header, setOf("app_claim"))
 ```
 
 On a raw representation, use `.typed<H, P>(serialFormat)` or `.typed(payloadSerializer, headerSerializer, serialFormat)`.
-`JwsHeaderWrapped` also accepts an explicit header serializer. `JwsTypedSerializerTemplate` takes wire, payload,
-and header serializers; decoded views use `joseCompliantSerializer`.
+`JwsHeaderWrapped` also accepts an explicit header serializer. `JwsTypedSerializerTemplate` takes header and payload
+serializers. Its `jwsCompactSerializer()`, `jwsFlattenedSerializer()`, and `jwsGeneralSerializer()` methods return
+serializers for the corresponding concrete typed views; decoded views use `joseCompliantSerializer`. Compact JWS
+values encode as JSON strings; flattened and general JWS values encode as JSON objects.
+
+```kotlin
+val serializers = JwsTypedSerializerTemplate(
+    headerSerializer = AppHeader.serializer(),
+    payloadSerializer = JsonObject.serializer(),
+)
+val serializer: KSerializer<JwsCompact<AppHeader, JsonObject>> = serializers.jwsCompactSerializer()
+val encoded = joseCompliantSerializer.encodeToString(serializer, typed)
+val decoded: JwsCompact<AppHeader, JsonObject> = joseCompliantSerializer.decodeFromString(serializer, encoded)
+```
 
 ### Migration
 
@@ -171,7 +184,7 @@ and header serializers; decoded views use `joseCompliantSerializer`.
 | Header/signature properties on wire objects | Header/signature properties on typed views |
 | `jws.typed<J, P>()` | `jws.typed<H, P>()` on the concrete wire form |
 | `JwsCompact.parse<P>()` → pair | `JwsCompact.Raw.parse<H, P>()` → triple of wire object, payload, wrapped header |
-| Two-argument `JwsTypedSerializerTemplate` | Add the header serializer as the third argument |
+| `JwsTypedSerializerTemplate(wireSerializer, payloadSerializer, headerSerializer)` | Construct `JwsTypedSerializerTemplate(headerSerializer, payloadSerializer)` and call `jwsCompactSerializer()`, `jwsFlattenedSerializer()`, or `jwsGeneralSerializer()` |
 | Typed and callback signing factories | `JwsSigner.signCompact`, `signFlattened`, or `signGeneral` |
 | Typed constructors and `copy()` | `JwsSigner` or `.typed<H, P>()` |
 | `JwsFlattened(header, payload, unprotectedMembers, signer)` | `JwsSigner(signersByAlgorithm).signFlattened(header, payload, unprotectedMembers)` |
