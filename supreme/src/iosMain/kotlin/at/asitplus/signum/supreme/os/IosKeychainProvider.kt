@@ -19,6 +19,7 @@ import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.swiftasync
 import io.github.aakira.napier.Napier
+import kotlin.coroutines.coroutineContext
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
@@ -111,6 +112,13 @@ sealed class IosSigner(final override val alias: String,
     val needsAuthenticationForEveryUse get() = metadata.needsUnlock && (metadata.unlockTimeout == Duration.ZERO)
     override val attestation get() = metadata.attestation
 
+    /** Tracks the active [LAContext] during biometric authentication for cancellation support. */
+    internal var activeLAContext: LAContext? = null
+
+    internal fun cancelAuthentication() {
+        activeLAContext?.invalidate()
+    }
+
     protected interface PrivateKeyManager { suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration): OwnedCFValue<SecKeyRef> }
     @HazardousMaterials
     /** For InternalsAccessor ONLY!!! */
@@ -146,6 +154,7 @@ sealed class IosSigner(final override val alias: String,
                     localizedCancelTitle = stack.getProperty(
                         UnlockPromptConfiguration::_cancelText,
                         default = UnlockPromptConfiguration.defaultCancelText)
+                    activeLAContext = this
                 }
             } else {
                 recordable = false
@@ -214,6 +223,7 @@ sealed class IosSigner(final override val alias: String,
                     authnContext = ctx, authnTime = TimeSource.Monotonic.markNow())
                 Napier.v { "Successfully recorded LAContext for future re-use" }
             }
+            activeLAContext = null
             if (!needsAuthenticationForEveryUse) {
                 storedKey = newPrivateKey
             }
@@ -222,37 +232,56 @@ sealed class IosSigner(final override val alias: String,
     }
 
     final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<IosSignerSigningConfiguration>) {
-        if (needsAuthentication && !needsAuthenticationForEveryUse) {
-            val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
-            val _ = privateKeyManager.get(null, null, config)
+        val cancellationHandle = if (needsAuthentication) {
+            coroutineContext[Job]?.invokeOnCompletion { cause ->
+                if (cause != null) cancelAuthentication()
+            }
+        } else null
+        try {
+            if (needsAuthentication && !needsAuthenticationForEveryUse) {
+                val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
+                val _ = privateKeyManager.get(null, null, config)
+            }
+        } finally {
+            cancellationHandle?.dispose()
         }
     }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
-    override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
-    SignatureResult.make {
-        require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
-        require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
-        val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
-        val (algorithm, inputFormat) = signatureAlgorithm.suitableSecKeyAlgAndFormat
-        val plaintext = data.convertTo(inputFormat).collapsed().data.single().toNSData()
-        val signatureBytes = try {
-            val key = privateKeyManager.get(kSecKeyOperationTypeSign, algorithm, signingConfig).value
-            corecall {
-                SecKeyCreateSignature(key, algorithm, plaintext.giveToCF(), error)
-            }.takeFromCF<NSData>().toByteArray()
-        } catch (x: CoreFoundationException) { /* secure enclave failure */
-            if (x.nsError.domain == LAErrorDomain) when (x.nsError.code) {
-                LAErrorUserCancel, LAErrorAuthenticationFailed, LAErrorBiometryLockout -> throw UnlockFailed(x.nsError.localizedDescription, x)
-                else -> throw x
-            } else throw x
-        } catch (x: CFCryptoOperationFailed) { /* keychain failure */
-            when (x.osStatus) {
-                errSecUserCanceled, errSecAuthFailed -> throw UnlockFailed(x.message, x)
-                else -> throw x
+    override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> {
+        val cancellationHandle = if (needsAuthentication) {
+            coroutineContext[Job]?.invokeOnCompletion { cause ->
+                if (cause != null) cancelAuthentication()
             }
+        } else null
+        return try {
+            SignatureResult.make {
+                require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
+                require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
+                val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
+                val (algorithm, inputFormat) = signatureAlgorithm.suitableSecKeyAlgAndFormat
+                val plaintext = data.convertTo(inputFormat).collapsed().data.single().toNSData()
+                val signatureBytes = try {
+                    val key = privateKeyManager.get(kSecKeyOperationTypeSign, algorithm, signingConfig).value
+                    corecall {
+                        SecKeyCreateSignature(key, algorithm, plaintext.giveToCF(), error)
+                    }.takeFromCF<NSData>().toByteArray()
+                } catch (x: CoreFoundationException) { /* secure enclave failure */
+                    if (x.nsError.domain == LAErrorDomain) when (x.nsError.code) {
+                        LAErrorUserCancel, LAErrorAuthenticationFailed, LAErrorBiometryLockout -> throw UnlockFailed(x.nsError.localizedDescription, x)
+                        else -> throw x
+                    } else throw x
+                } catch (x: CFCryptoOperationFailed) { /* keychain failure */
+                    when (x.osStatus) {
+                        errSecUserCanceled, errSecAuthFailed -> throw UnlockFailed(x.message, x)
+                        else -> throw x
+                    }
+                }
+                return@make bytesToSignature(signatureBytes)
+            }
+        } finally {
+            cancellationHandle?.dispose()
         }
-        return@make bytesToSignature(signatureBytes)
     }
 
     class ECDSA internal constructor
@@ -277,18 +306,27 @@ sealed class IosSigner(final override val alias: String,
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<IosSignerSigningConfiguration>
         ): ByteArray {
-            require(metadata.allowKeyAgreement) { "Key agreement purpose not set! Key agreement disallowed!" }
-            val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
-            val key = privateKeyManager.get(kSecKeyOperationTypeKeyExchange, kSecKeyAlgorithmECDHKeyExchangeStandard, config).value
-            return corecall {
-                SecKeyCopyKeyExchangeResult(
-                    key,
-                    kSecKeyAlgorithmECDHKeyExchangeStandard,
-                    publicValue.asCryptoPublicKey().toSecKey().value,
-                    parameters = null,
-                    error
-                )
-            }.takeFromCF<NSData>().toByteArray()
+            val cancellationHandle = if (needsAuthentication) {
+                coroutineContext[Job]?.invokeOnCompletion { cause ->
+                    if (cause != null) cancelAuthentication()
+                }
+            } else null
+            return try {
+                require(metadata.allowKeyAgreement) { "Key agreement purpose not set! Key agreement disallowed!" }
+                val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
+                val key = privateKeyManager.get(kSecKeyOperationTypeKeyExchange, kSecKeyAlgorithmECDHKeyExchangeStandard, config).value
+                corecall {
+                    SecKeyCopyKeyExchangeResult(
+                        key,
+                        kSecKeyAlgorithmECDHKeyExchangeStandard,
+                        publicValue.asCryptoPublicKey().toSecKey().value,
+                        parameters = null,
+                        error
+                    )
+                }.takeFromCF<NSData>().toByteArray()
+            } finally {
+                cancellationHandle?.dispose()
+            }
         }
     }
 

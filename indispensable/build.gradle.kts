@@ -20,6 +20,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(kmmresult())
+            api(coroutines())
             api(serialization("json"))
             api(libs.awesn1.crypto)
             api(libs.awesn1.oids)
