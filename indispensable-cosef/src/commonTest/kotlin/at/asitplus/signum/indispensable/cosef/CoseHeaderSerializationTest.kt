@@ -159,6 +159,14 @@ val CoseHeaderSerializationTest by matrixSuite {
         coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
     }
 
+    "COSE header with x5u" {
+        val header = CoseHeader(certificateUrl = "https://a.b/c")
+        val encoded = "a1" + "1823" + "6d" + "https://a.b/c".encodeToByteArray().toHexString()
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
     "COSE header with x5t of unsupported hash algorithms" {
         coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + "2e" + "4101")
             .certificateHash.shouldNotBeNull().algorithm.apply {

@@ -33,6 +33,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         element("x5chain", ListSerializer(ByteArraySerializer()).descriptor, listOf(CborLabel(33), ByteString()))
         element("typ", String.serializer().descriptor, listOf(CborLabel(16)))
         element("x5t", CoseCertificateHash.serializer().descriptor, listOf(CborLabel(34)))
+        element("x5u", String.serializer().descriptor, listOf(CborLabel(35)))
     }
 
     override fun deserialize(decoder: Decoder): CoseHeader {
@@ -46,6 +47,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             "x5chain" to 33,
             "typ" to 16,
             "x5t" to 34,
+            "x5u" to 35,
         )
 
         var alg: CoseAlgorithm? = null
@@ -57,6 +59,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         var x5chain: List<ByteArray>? = null
         var typ: String? = null
         var x5t: CoseCertificateHash? = null
+        var x5u: String? = null
 
         decoder.decodeStructure(descriptor) {
             while (true) {
@@ -114,6 +117,8 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         CoseCertificateHash.serializer()
                     )
 
+                    labels["x5u"] -> x5u = decodeStringElement(String.serializer().descriptor, index)
+
                     else -> break
                 }
             }
@@ -128,6 +133,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             certificateChain = x5chain,
             type = typ,
             certificateHash = x5t,
+            certificateUrl = x5u,
         )
     }
 
@@ -203,6 +209,13 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         8,
                         CoseCertificateHash.serializer(),
                         certificateHash
+                    )
+                }
+                certificateUrl?.let {
+                    encodeStringElement(
+                        descriptor,
+                        9,
+                        certificateUrl
                     )
                 }
                 type?.let {

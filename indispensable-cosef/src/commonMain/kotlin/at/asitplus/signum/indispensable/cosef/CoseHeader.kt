@@ -131,6 +131,20 @@ data class CoseHeader(
     @CborLabel(34)
     @SerialName("x5t")
     val certificateHash: CoseCertificateHash? = null,
+
+    /**
+     * This header parameter provides the ability to identify an X.509 certificate by a URI. The referenced resource
+     * can be of media type `application/pkix-cert`, `application/pkcs7-mime; smime-type="certs-only"`,
+     * `application/cose-x509`, or `application/cose-x509; usage=chain`. The end-entity certificate MUST be integrity
+     * protected by COSE, e.g. by sending [certificateHash] in the protected header. A retrieved certificate that does
+     * not chain to an existing trust anchor MUST NOT be trusted, unless the URI provides integrity protection and
+     * server authentication and the server is configured as trusted to provide new trust anchors.
+     *
+     * See [RFC 9360, Section 2](https://www.rfc-editor.org/rfc/rfc9360.html#section-2).
+     */
+    @CborLabel(35)
+    @SerialName("x5u")
+    val certificateUrl: String? = null,
 ) {
 
 
@@ -155,6 +169,7 @@ data class CoseHeader(
         } else if (other.certificateChain != null) return false
         if (type != other.type) return false
         if (certificateHash != other.certificateHash) return false
+        if (certificateUrl != other.certificateUrl) return false
 
         return true
     }
@@ -169,6 +184,7 @@ data class CoseHeader(
         result = 31 * result + (certificateChain?.hashCode() ?: 0)
         result = 31 * result + (type?.hashCode() ?: 0)
         result = 31 * result + (certificateHash?.hashCode() ?: 0)
+        result = 31 * result + (certificateUrl?.hashCode() ?: 0)
         return result
     }
 
@@ -182,7 +198,8 @@ data class CoseHeader(
                 "partialIv=${partialIv?.encodeToString(Base16Strict)}, " +
                 "certificateChain=${certificateChain?.joinToString { it.encodeToString(Base16Strict) }}, " +
                 "type=$type, " +
-                "certificateHash=$certificateHash" +
+                "certificateHash=$certificateHash, " +
+                "certificateUrl=$certificateUrl" +
                 ")"
     }
 

@@ -21,6 +21,7 @@ This is a major refactor!
     * `CoseBytes.protectedHeader` is parsed from `rawProtectedHeader`; `CoseSigned`/`CoseMac` expose `protectedHeader` and `unprotectedHeader` as getters delegating to `wireFormat` (**breaking** for destructuring, as their `componentN()` functions change)
 * COSE header parameters:
     * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash` and `CoseHashAlgorithm`
+    * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
