@@ -118,6 +118,19 @@ data class CoseHeader(
     @CborLabel(16)
     @SerialName("typ")
     val type: String? = null,
+
+    /**
+     * This header parameter identifies the end-entity X.509 certificate by a hash value (a thumbprint), computed over
+     * the DER-encoded certificate. The identification of the end-entity certificate MUST be integrity protected by
+     * COSE, e.g. by placing this header parameter in the protected header. It can be used alone or together with
+     * [certificateChain] to provide integrity protection of the end-entity certificate. Applications MUST support
+     * the hash algorithm SHA-256.
+     *
+     * See [RFC 9360, Section 2](https://www.rfc-editor.org/rfc/rfc9360.html#section-2).
+     */
+    @CborLabel(34)
+    @SerialName("x5t")
+    val certificateHash: CoseCertificateHash? = null,
 ) {
 
 
@@ -141,6 +154,7 @@ data class CoseHeader(
             if (!other.certificateChain.all { o -> certificateChain.any { it.contentEquals(o) } }) return false
         } else if (other.certificateChain != null) return false
         if (type != other.type) return false
+        if (certificateHash != other.certificateHash) return false
 
         return true
     }
@@ -154,6 +168,7 @@ data class CoseHeader(
         result = 31 * result + (partialIv?.contentHashCode() ?: 0)
         result = 31 * result + (certificateChain?.hashCode() ?: 0)
         result = 31 * result + (type?.hashCode() ?: 0)
+        result = 31 * result + (certificateHash?.hashCode() ?: 0)
         return result
     }
 
@@ -166,7 +181,8 @@ data class CoseHeader(
                 "iv=${iv?.encodeToString(Base16Strict)}, " +
                 "partialIv=${partialIv?.encodeToString(Base16Strict)}, " +
                 "certificateChain=${certificateChain?.joinToString { it.encodeToString(Base16Strict) }}, " +
-                "type=$type" +
+                "type=$type, " +
+                "certificateHash=$certificateHash" +
                 ")"
     }
 

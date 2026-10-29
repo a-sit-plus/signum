@@ -3,7 +3,9 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
@@ -146,6 +148,28 @@ val CoseHeaderSerializationTest by matrixSuite {
         coseCompliantSerializer.decodeFromHexString<CoseHeader>(input).also {
             it.certificateChain.shouldNotBeNull().shouldHaveSize(2)
         }
+    }
+
+    "COSE header with x5t" {
+        val hash = ByteArray(32) { it.toByte() }
+        val header = CoseHeader(certificateHash = CoseCertificateHash(CoseHashAlgorithm.SHA256, hash))
+        val encoded = "a1" + "1822" + "82" + "2f" + "5820" + hash.toHexString()
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with x5t of unsupported hash algorithms" {
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + "2e" + "4101")
+            .certificateHash.shouldNotBeNull().algorithm.apply {
+                this shouldBe CoseHashAlgorithm.OtherNumeric(-15)
+                digest.shouldBeNull()
+            }
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + "63666f6f" + "4101")
+            .certificateHash.shouldNotBeNull().algorithm.apply {
+                this shouldBe CoseHashAlgorithm.Text("foo")
+                digest.shouldBeNull()
+            }
     }
 
 }
