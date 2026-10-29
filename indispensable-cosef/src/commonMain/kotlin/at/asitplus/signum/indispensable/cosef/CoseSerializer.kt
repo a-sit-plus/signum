@@ -1,14 +1,8 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaSignature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -60,7 +54,7 @@ class CoseSignedSerializer<P : Any?>(
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
         val protectedHeader = wire.protectedHeader
-        val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
+        val signature = COSE.getSignature(wire.rawAuthBytes, protectedHeader, wire.unprotectedHeader)
         CoseSigned(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,
@@ -98,40 +92,5 @@ class CoseMacSerializer<P : Any?>(
 private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>): P? = when {
     this == null || this.isEmpty() -> null
     else -> toTypedPayload(serializer)
-}
-
-private fun ByteArray.toSignature(
-    protectedHeader: CoseHeader,
-    unprotectedHeader: CoseHeader?,
-): CryptoSignature =
-    if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        EcdsaSignature.fromP1363Bytes(this)
-    else
-        RsaSignature(this)
-
-private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
-    if (serializer == ByteArraySerializer()) {
-        @Suppress("UNCHECKED_CAST")
-        (this as P)
-    } else {
-        runCatching { fromBytes(serializer) }
-            .getOrElse { fromByteStringWrapper(serializer) }
-    }
-
-private fun <P : Any?> ByteArray.fromBytes(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(serializer, this)
-
-private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(
-        ByteStringWrapperSerializer(serializer),
-        this
-    ).value
-
-private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
-    null -> certificateChain?.firstOrNull()
-        ?.let { Certificate.decodeFromByteArray(it) }
-        ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
-    is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
-    else -> false
 }
 

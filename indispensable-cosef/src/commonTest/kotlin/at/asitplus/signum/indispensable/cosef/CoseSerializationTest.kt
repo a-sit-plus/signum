@@ -415,5 +415,3 @@ val CoseSerializationTest by matrixSuite {
 
 
 }
-
-private fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this
