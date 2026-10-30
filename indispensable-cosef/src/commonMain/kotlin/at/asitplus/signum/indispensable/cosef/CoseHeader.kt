@@ -48,10 +48,12 @@ data class CoseHeader(
      * Leading and trailing whitespace is not permitted. Textual content type values, along with parameters and
      * subparameters, can be located using the IANA "Media Types" registry. Applications SHOULD provide this header
      * parameter if the content structure is potentially ambiguous.
+     *
+     * See [RFC 9052, Section 3.1](https://www.rfc-editor.org/rfc/rfc9052.html#section-3.1).
      */
     @CborLabel(3)
     @SerialName("content type")
-    val contentType: String? = null,
+    val contentType: CoseContentType? = null,
 
     /**
      * This header parameter identifies one piece of data that can be used as input to find the needed cryptographic

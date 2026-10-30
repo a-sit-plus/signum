@@ -26,7 +26,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseHeader") {
         element("alg", CoseAlgorithm.serializer().descriptor, listOf(CborLabel(1)))
         element("crit", ListSerializer(CoseHeaderLabel.serializer()).descriptor, listOf(CborLabel(2)))
-        element("content type", String.serializer().descriptor, listOf(CborLabel(3)))
+        element("content type", CoseContentType.serializer().descriptor, listOf(CborLabel(3)))
         element("kid", ByteArraySerializer().descriptor, listOf(CborLabel(4), ByteString()))
         element("IV", ByteArraySerializer().descriptor, listOf(CborLabel(5), ByteString()))
         element("Partial IV", ByteArraySerializer().descriptor, listOf(CborLabel(6), ByteString()))
@@ -54,7 +54,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
 
         var alg: CoseAlgorithm? = null
         var crit: List<CoseHeaderLabel>? = null
-        var contentType: String? = null
+        var contentType: CoseContentType? = null
         var kid: ByteArray? = null
         var iv: ByteArray? = null
         var partialIv: ByteArray? = null
@@ -83,7 +83,11 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         ListSerializer(CoseHeaderLabel.serializer())
                     ).also { require(it.isNotEmpty()) { "crit must not be empty" } }
 
-                    labels["content type"] -> contentType = decodeStringElement(String.serializer().descriptor, index)
+                    labels["content type"] -> contentType = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        CoseContentType.serializer()
+                    )
                     labels["kid"] -> kid = decodeNullableSerializableElement(
                         ByteArraySerializer().descriptor,
                         index,
@@ -172,9 +176,10 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                     )
                 }
                 contentType?.let {
-                    encodeStringElement(
+                    encodeSerializableElement(
                         descriptor,
                         2,
+                        CoseContentType.serializer(),
                         contentType
                     )
                 }
