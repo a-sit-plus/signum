@@ -145,6 +145,16 @@ data class CoseHeader(
     @CborLabel(35)
     @SerialName("x5u")
     val certificateUrl: String? = null,
+
+    /**
+     * This header parameter contains claims of a CBOR Web Token (CWT, see RFC 8392), e.g. `iat` for the time of
+     * signing, so that they are available without decoding the payload, or for a payload that is not a CWT.
+     *
+     * See [RFC 9597, Section 2](https://www.rfc-editor.org/rfc/rfc9597.html#section-2).
+     */
+    @CborLabel(15)
+    @SerialName("CWT Claims")
+    val cwtClaims: CborWebToken? = null,
 ) {
 
 
@@ -170,6 +180,7 @@ data class CoseHeader(
         if (type != other.type) return false
         if (certificateHash != other.certificateHash) return false
         if (certificateUrl != other.certificateUrl) return false
+        if (cwtClaims != other.cwtClaims) return false
 
         return true
     }
@@ -185,6 +196,7 @@ data class CoseHeader(
         result = 31 * result + (type?.hashCode() ?: 0)
         result = 31 * result + (certificateHash?.hashCode() ?: 0)
         result = 31 * result + (certificateUrl?.hashCode() ?: 0)
+        result = 31 * result + (cwtClaims?.hashCode() ?: 0)
         return result
     }
 
@@ -199,7 +211,8 @@ data class CoseHeader(
                 "certificateChain=${certificateChain?.joinToString { it.encodeToString(Base16Strict) }}, " +
                 "type=$type, " +
                 "certificateHash=$certificateHash, " +
-                "certificateUrl=$certificateUrl" +
+                "certificateUrl=$certificateUrl, " +
+                "cwtClaims=$cwtClaims" +
                 ")"
     }
 
