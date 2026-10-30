@@ -34,10 +34,12 @@ data class CoseHeader(
      * defined by RFC8152 must be understood by new implementations, to remain compatible with senders that adhere to
      * that document and assume all implementations will understand it. When present, the "crit" header parameter MUST
      * be placed in the protected-header-parameters bucket. The array MUST have at least one value in it.
+     *
+     * See [RFC 9052, Section 3.1](https://www.rfc-editor.org/rfc/rfc9052.html#section-3.1).
      */
     @CborLabel(2)
     @SerialName("crit")
-    val criticalHeaders: String? = null,
+    val criticalHeaders: List<CoseHeaderLabel>? = null,
 
     /**
      * This header parameter is used to indicate the content type of the data in the "payload" or "ciphertext" field.
@@ -46,10 +48,12 @@ data class CoseHeader(
      * Leading and trailing whitespace is not permitted. Textual content type values, along with parameters and
      * subparameters, can be located using the IANA "Media Types" registry. Applications SHOULD provide this header
      * parameter if the content structure is potentially ambiguous.
+     *
+     * See [RFC 9052, Section 3.1](https://www.rfc-editor.org/rfc/rfc9052.html#section-3.1).
      */
     @CborLabel(3)
     @SerialName("content type")
-    val contentType: String? = null,
+    val contentType: CoseContentType? = null,
 
     /**
      * This header parameter identifies one piece of data that can be used as input to find the needed cryptographic
@@ -118,6 +122,43 @@ data class CoseHeader(
     @CborLabel(16)
     @SerialName("typ")
     val type: String? = null,
+
+    /**
+     * This header parameter identifies the end-entity X.509 certificate by a hash value (a thumbprint), computed over
+     * the DER-encoded certificate. The identification of the end-entity certificate MUST be integrity protected by
+     * COSE, e.g. by placing this header parameter in the protected header. It can be used alone or together with
+     * [certificateChain] to provide integrity protection of the end-entity certificate. Applications MUST support
+     * the hash algorithm SHA-256.
+     *
+     * See [RFC 9360, Section 2](https://www.rfc-editor.org/rfc/rfc9360.html#section-2).
+     */
+    @CborLabel(34)
+    @SerialName("x5t")
+    val certificateHash: CoseCertificateHash? = null,
+
+    /**
+     * This header parameter provides the ability to identify an X.509 certificate by a URI. The referenced resource
+     * can be of media type `application/pkix-cert`, `application/pkcs7-mime; smime-type="certs-only"`,
+     * `application/cose-x509`, or `application/cose-x509; usage=chain`. The end-entity certificate MUST be integrity
+     * protected by COSE, e.g. by sending [certificateHash] in the protected header. A retrieved certificate that does
+     * not chain to an existing trust anchor MUST NOT be trusted, unless the URI provides integrity protection and
+     * server authentication and the server is configured as trusted to provide new trust anchors.
+     *
+     * See [RFC 9360, Section 2](https://www.rfc-editor.org/rfc/rfc9360.html#section-2).
+     */
+    @CborLabel(35)
+    @SerialName("x5u")
+    val certificateUrl: String? = null,
+
+    /**
+     * This header parameter contains claims of a CBOR Web Token (CWT, see RFC 8392), e.g. `iat` for the time of
+     * signing, so that they are available without decoding the payload, or for a payload that is not a CWT.
+     *
+     * See [RFC 9597, Section 2](https://www.rfc-editor.org/rfc/rfc9597.html#section-2).
+     */
+    @CborLabel(15)
+    @SerialName("CWT Claims")
+    val cwtClaims: CborWebToken? = null,
 ) {
 
 
@@ -141,6 +182,9 @@ data class CoseHeader(
             if (!other.certificateChain.all { o -> certificateChain.any { it.contentEquals(o) } }) return false
         } else if (other.certificateChain != null) return false
         if (type != other.type) return false
+        if (certificateHash != other.certificateHash) return false
+        if (certificateUrl != other.certificateUrl) return false
+        if (cwtClaims != other.cwtClaims) return false
 
         return true
     }
@@ -154,6 +198,9 @@ data class CoseHeader(
         result = 31 * result + (partialIv?.contentHashCode() ?: 0)
         result = 31 * result + (certificateChain?.hashCode() ?: 0)
         result = 31 * result + (type?.hashCode() ?: 0)
+        result = 31 * result + (certificateHash?.hashCode() ?: 0)
+        result = 31 * result + (certificateUrl?.hashCode() ?: 0)
+        result = 31 * result + (cwtClaims?.hashCode() ?: 0)
         return result
     }
 
@@ -166,7 +213,10 @@ data class CoseHeader(
                 "iv=${iv?.encodeToString(Base16Strict)}, " +
                 "partialIv=${partialIv?.encodeToString(Base16Strict)}, " +
                 "certificateChain=${certificateChain?.joinToString { it.encodeToString(Base16Strict) }}, " +
-                "type=$type" +
+                "type=$type, " +
+                "certificateHash=$certificateHash, " +
+                "certificateUrl=$certificateUrl, " +
+                "cwtClaims=$cwtClaims" +
                 ")"
     }
 
