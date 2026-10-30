@@ -11,6 +11,7 @@ import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -162,6 +163,14 @@ val CoseHeaderSerializationTest by matrixSuite {
     "COSE header with x5u" {
         val header = CoseHeader(certificateUrl = "https://a.b/c")
         val encoded = "a1" + "1823" + "6d" + "https://a.b/c".encodeToByteArray().toHexString()
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with CWT Claims" {
+        val header = CoseHeader(cwtClaims = CborWebToken(issuedAt = Instant.fromEpochSeconds(1700000000)))
+        val encoded = "a1" + "0f" + "a1" + "06" + "1a6553f100"
 
         coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
         coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header

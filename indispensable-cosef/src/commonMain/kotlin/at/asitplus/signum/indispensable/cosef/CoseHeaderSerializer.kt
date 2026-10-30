@@ -34,6 +34,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         element("typ", String.serializer().descriptor, listOf(CborLabel(16)))
         element("x5t", CoseCertificateHash.serializer().descriptor, listOf(CborLabel(34)))
         element("x5u", String.serializer().descriptor, listOf(CborLabel(35)))
+        element("CWT Claims", CborWebToken.serializer().descriptor, listOf(CborLabel(15)))
     }
 
     override fun deserialize(decoder: Decoder): CoseHeader {
@@ -48,6 +49,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             "typ" to 16,
             "x5t" to 34,
             "x5u" to 35,
+            "CWT Claims" to 15,
         )
 
         var alg: CoseAlgorithm? = null
@@ -60,6 +62,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         var typ: String? = null
         var x5t: CoseCertificateHash? = null
         var x5u: String? = null
+        var cwtClaims: CborWebToken? = null
 
         decoder.decodeStructure(descriptor) {
             while (true) {
@@ -118,6 +121,11 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                     )
 
                     labels["x5u"] -> x5u = decodeStringElement(String.serializer().descriptor, index)
+                    labels["CWT Claims"] -> cwtClaims = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        CborWebToken.serializer()
+                    )
 
                     else -> break
                 }
@@ -134,6 +142,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             type = typ,
             certificateHash = x5t,
             certificateUrl = x5u,
+            cwtClaims = cwtClaims,
         )
     }
 
@@ -184,6 +193,14 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         5,
                         ByteArraySerializer(),
                         partialIv
+                    )
+                }
+                cwtClaims?.let {
+                    encodeSerializableElement(
+                        descriptor,
+                        10,
+                        CborWebToken.serializer(),
+                        cwtClaims
                     )
                 }
                 certificateChain?.let {

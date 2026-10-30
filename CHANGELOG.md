@@ -22,6 +22,7 @@ This is a major refactor!
 * COSE header parameters:
     * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash` and `CoseHashAlgorithm`
     * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
+    * Add `CWT Claims` (RFC 9597) as `CoseHeader.cwtClaims`
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
