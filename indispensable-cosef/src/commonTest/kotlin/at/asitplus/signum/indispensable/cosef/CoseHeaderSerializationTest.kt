@@ -196,6 +196,24 @@ val CoseHeaderSerializationTest by matrixSuite {
         }
     }
 
+    "COSE header with content type" {
+        val format = CoseHeader(contentType = CoseContentType.ContentFormat(60))
+        val formatEncoded = "a1" + "03" + "183c"
+        coseCompliantSerializer.encodeToHexString(format) shouldBe formatEncoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(formatEncoded) shouldBe format
+
+        val mediaType = CoseHeader(contentType = CoseContentType.MediaType("application/cbor"))
+        val mediaTypeEncoded = "a1" + "03" + "70" + "application/cbor".encodeToByteArray().toHexString()
+        coseCompliantSerializer.encodeToHexString(mediaType) shouldBe mediaTypeEncoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(mediaTypeEncoded) shouldBe mediaType
+    }
+
+    "COSE header with negative content type" {
+        shouldThrow<IllegalArgumentException> {
+            coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1" + "03" + "20")
+        }
+    }
+
     "COSE header with x5t of unsupported hash algorithms" {
         coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + "2e" + "4101")
             .certificateHash.shouldNotBeNull().algorithm.apply {

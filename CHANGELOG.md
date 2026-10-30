@@ -24,6 +24,7 @@ This is a major refactor!
     * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
     * Add `CWT Claims` (RFC 9597) as `CoseHeader.cwtClaims`
     * Change `CoseHeader.criticalHeaders` to a non-empty `List<CoseHeaderLabel>`, as defined in RFC 9052 (**breaking**)
+    * Change `CoseHeader.contentType` to `CoseContentType`, a media type or a CoAP content format, as defined in RFC 9052 (**breaking**)
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
