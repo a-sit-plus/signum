@@ -28,7 +28,7 @@ develocity {
 
 // Include the local build logic as a composite build
 includeBuild("buildlogic")
-val awesn1 = file("../awesn1")
+val awesn1 = file("../awesn1").let { if (!it.exists()) file("./awesn1") else file("../awesn1")  }
 if (awesn1.resolve("build.gradle.kts").isFile) {
     val localVersion = java.util.Properties().apply {
         awesn1.resolve("gradle.properties").inputStream().use(::load)
@@ -59,7 +59,9 @@ include(":internals")
 include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
+include(":indispensable-pkix")
 include(":supreme")
+include(":pkix-supreme")
 if (gradle.startParameter.taskNames.none { it.contains("publish") }) {
     include(":internals-test")
     include(":extensibility-test")
