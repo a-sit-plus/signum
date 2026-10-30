@@ -34,10 +34,12 @@ data class CoseHeader(
      * defined by RFC8152 must be understood by new implementations, to remain compatible with senders that adhere to
      * that document and assume all implementations will understand it. When present, the "crit" header parameter MUST
      * be placed in the protected-header-parameters bucket. The array MUST have at least one value in it.
+     *
+     * See [RFC 9052, Section 3.1](https://www.rfc-editor.org/rfc/rfc9052.html#section-3.1).
      */
     @CborLabel(2)
     @SerialName("crit")
-    val criticalHeaders: String? = null,
+    val criticalHeaders: List<CoseHeaderLabel>? = null,
 
     /**
      * This header parameter is used to indicate the content type of the data in the "payload" or "ciphertext" field.

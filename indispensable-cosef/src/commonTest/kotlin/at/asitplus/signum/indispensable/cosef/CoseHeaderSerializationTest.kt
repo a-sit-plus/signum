@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -174,6 +175,25 @@ val CoseHeaderSerializationTest by matrixSuite {
 
         coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
         coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with crit" {
+        val header = CoseHeader(
+            criticalHeaders = listOf(CoseHeaderLabel.Numeric(267), CoseHeaderLabel.Text("foo"))
+        )
+        val encoded = "a1" + "02" + "82" + "19010b" + "63666f6f"
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with empty crit" {
+        shouldThrow<IllegalArgumentException> {
+            coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1" + "02" + "80")
+        }
+        shouldThrow<IllegalArgumentException> {
+            coseCompliantSerializer.encodeToHexString(CoseHeader(criticalHeaders = listOf()))
+        }
     }
 
     "COSE header with x5t of unsupported hash algorithms" {

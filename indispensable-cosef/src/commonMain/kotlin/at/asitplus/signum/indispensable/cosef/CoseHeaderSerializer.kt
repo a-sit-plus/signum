@@ -25,7 +25,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
 
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseHeader") {
         element("alg", CoseAlgorithm.serializer().descriptor, listOf(CborLabel(1)))
-        element("crit", String.serializer().descriptor, listOf(CborLabel(2)))
+        element("crit", ListSerializer(CoseHeaderLabel.serializer()).descriptor, listOf(CborLabel(2)))
         element("content type", String.serializer().descriptor, listOf(CborLabel(3)))
         element("kid", ByteArraySerializer().descriptor, listOf(CborLabel(4), ByteString()))
         element("IV", ByteArraySerializer().descriptor, listOf(CborLabel(5), ByteString()))
@@ -53,7 +53,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
         )
 
         var alg: CoseAlgorithm? = null
-        var crit: String? = null
+        var crit: List<CoseHeaderLabel>? = null
         var contentType: String? = null
         var kid: ByteArray? = null
         var iv: ByteArray? = null
@@ -77,7 +77,12 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         CoseAlgorithm.serializer()
                     )
 
-                    labels["crit"] -> crit = decodeStringElement(String.serializer().descriptor, index)
+                    labels["crit"] -> crit = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        ListSerializer(CoseHeaderLabel.serializer())
+                    ).also { require(it.isNotEmpty()) { "crit must not be empty" } }
+
                     labels["content type"] -> contentType = decodeStringElement(String.serializer().descriptor, index)
                     labels["kid"] -> kid = decodeNullableSerializableElement(
                         ByteArraySerializer().descriptor,
@@ -158,9 +163,11 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                     )
                 }
                 criticalHeaders?.let {
-                    encodeStringElement(
+                    require(it.isNotEmpty()) { "crit must not be empty" }
+                    encodeSerializableElement(
                         descriptor,
                         1,
+                        ListSerializer(CoseHeaderLabel.serializer()),
                         criticalHeaders
                     )
                 }
