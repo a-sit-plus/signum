@@ -7,6 +7,25 @@ private val typedPayload = SigningPayload("alice")
 private val typedPayloadJson = """{"sub":"alice"}"""
 
 val JwsRawTypedTest by matrixSuite {
+    "typed views support covariant header and payload types" {
+        val compact = JwsCompact<SigningHeader, SigningPayload>("eyJhbGciOiJSUzI1NiJ9.e30.AQ")
+        val flattened = compact.toFlattened()
+        val general = JwsGeneral<SigningHeader, SigningPayload>(listOf(flattened.raw))
+
+        val headerView: JwsHeaderWrapped<JwsHeader> = compact.wrappedHeader
+        val compactView: JwsCompact<JwsHeader, Any?> = compact
+        val flattenedView: JwsFlattened<JwsHeader, Any?> = flattened
+        val generalView: JwsGeneral<JwsHeader, Any?> = general
+
+        headerView.header shouldBe compact.header
+        compactView.toFlattened() shouldBe flattenedView
+        flattenedView.toCompact() shouldBe compactView
+        generalView.toFlattened() shouldBe listOf(flattenedView)
+
+        val views: List<JwsTyped<JwsRaw, JwsHeader, Any?>> = listOf(compactView, flattenedView, generalView)
+        views.forEach { it.payload shouldBe compact.payload }
+    }
+
     "compact facade decodes values and conversions retain the payload view" {
         val compactString = "eyJhbGciOiJSUzI1NiJ9.e30.AQ"
         val typedCompact = JwsTyped<SigningHeader, SigningPayload>(compactString)
