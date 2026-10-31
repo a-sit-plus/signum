@@ -34,7 +34,7 @@ import kotlinx.serialization.serializer
  * Decoding does not verify the signature. To verify it, use [signature] and `jws.signatureInput`.
  */
 @ConsistentCopyVisibility
-data class JwsCompact<H : JwsHeader, out P> internal constructor(
+data class JwsCompact<out H : JwsHeader, out P> internal constructor(
     override val raw: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,

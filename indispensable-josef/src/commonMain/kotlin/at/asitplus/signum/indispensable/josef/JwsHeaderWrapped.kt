@@ -12,7 +12,7 @@ import kotlinx.serialization.serializer
  * Factories cache serialized fragments; retain the original wire object for byte-preserving round trips.
  */
 @ConsistentCopyVisibility
-data class JwsHeaderWrapped<H : JwsHeader> private constructor(
+data class JwsHeaderWrapped<out H : JwsHeader> private constructor(
     val header: H,
     internal val protectedHeaderJson: JsonObject,
     internal val unprotectedHeader: JsonObject,
