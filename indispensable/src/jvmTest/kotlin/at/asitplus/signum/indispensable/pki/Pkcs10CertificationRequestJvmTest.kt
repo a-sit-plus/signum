@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.Signum
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
 import kotlinx.serialization.encodeToByteArray
@@ -17,6 +16,7 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.internals.ensureSize
@@ -77,7 +77,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSR match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+        val cryptoPublicKey = ecPublicKey.toPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -122,7 +122,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSR with attributes match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+        val cryptoPublicKey = ecPublicKey.toPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -183,7 +183,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSRs with extensionRequest match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+        val cryptoPublicKey = ecPublicKey.toPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "localhost"
@@ -247,7 +247,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
     "CSRs with empty extensions match" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+        val cryptoPublicKey = ecPublicKey.toPublicKey()
 
         // create CSR with bouncycastle
         val commonName = "localhost"
@@ -311,14 +311,14 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         csr.tbsCsr.asn1Representation.version shouldBe Pkcs10CertificationRequestInfo.Version.V1
         ((csr.tbsCsr.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
-        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        parsedPublicKey.shouldBeInstanceOf<EcdsaPublicKey>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
     }
 
     "CSR DER roundtrips through awesn1 backing" {
         val keyPair: KeyPair = keyGen.genKeyPair()
-        val cryptoPublicKey = (keyPair.public as ECPublicKey).toCryptoPublicKey()
+        val cryptoPublicKey = (keyPair.public as ECPublicKey).toPublicKey()
         val attribute = CsrAttribute(
             KnownOIDs.keyUsage,
             Asn1Element.parse(KeyUsage(KeyUsage.digitalSignature).encoded)
@@ -366,11 +366,11 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val keyPair1: KeyPair = keyGen.genKeyPair()
         val ecPublicKey1 = keyPair.public as ECPublicKey
-        val cryptoPublicKey1 = ecPublicKey1.toCryptoPublicKey()
+        val cryptoPublicKey1 = ecPublicKey1.toPublicKey()
         val ecPublicKey11 = keyPair.public as ECPublicKey
-        val cryptoPublicKey11 = ecPublicKey11.toCryptoPublicKey()
+        val cryptoPublicKey11 = ecPublicKey11.toPublicKey()
         val ecPublicKey2 = keyPair1.public as ECPublicKey
-        val cryptoPublicKey2 = ecPublicKey2.toCryptoPublicKey()
+        val cryptoPublicKey2 = ecPublicKey2.toPublicKey()
 
         val commonName = "DefaultCryptoService"
         val commonName1 = "DefaultCryptoService1"

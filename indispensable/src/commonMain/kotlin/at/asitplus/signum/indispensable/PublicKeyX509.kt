@@ -11,30 +11,30 @@ import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 
-val CryptoPublicKey.asn1Representation: SubjectPublicKeyInfo
+val PublicKey.asn1Representation: SubjectPublicKeyInfo
     get() = sourceRepresentationFor(X509) as? SubjectPublicKeyInfo ?: run {
         Signum.installIndispensable()
         Signum.load<PublicKeyFormatProvider>().get(this, PublicKeyFormatProvider::encodeToAsn1)
     }
 
-fun CryptoPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): CryptoPublicKey =
+fun PublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): PublicKey =
     Signum.load<PublicKeyFormatProvider>().get(src, PublicKeyFormatProvider::decodeFromAsn1)
 
-operator fun CryptoPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): CryptoPublicKey =
+operator fun PublicKey.Companion.invoke(src: SubjectPublicKeyInfo): PublicKey =
     fromAsn1Representation(src)
 
 /** Representation of the key in the format used by iOS. */
-val CryptoPublicKey.iosEncoded: ByteArray
+val PublicKey.iosEncoded: ByteArray
     get() = asn1Representation.subjectPublicKey.also {
         require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
     }.bitCarryingBytes
 
 interface PublicKeyFormatProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
-    fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = null
+    fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? = null
 
-    fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
-    fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
+    fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): PublicKey?
+    fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): PublicKey?
 }
 
 fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): RsaPublicKey {

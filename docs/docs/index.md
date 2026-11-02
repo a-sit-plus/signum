@@ -217,7 +217,7 @@ recovered shouldBe payload //success!
 
 ### ASN.1 Parsing and Encoding
 
-Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` implement
+Relevant classes like `PublicKey`, `Certificate`, and `CertificationRequest` implement
 `Encodable`; their companions implement `Decodable`. DER uses contextual serializers that bridge
 to awesn1 models. Register `signumAsn1Serializers` with `DefaultDer` once, before its first use,
 or include it in a configured `DER { serializersModule = signumX509Serializers }` instance.
@@ -341,7 +341,7 @@ Since these are essentially data classes, there's really not much magic to using
 The main reason those modules exist, is to keep the core _Indispensable_ module small, so it can be used without pulling
 in unnecessary functionality.
 COSE and JOSE data types come with mapping functionality to core (_Indispensable_) data types,
-such as `CryptoPublicKey` and are guaranteed to parse and serialize correctly.
+such as `PublicKey` and are guaranteed to parse and serialize correctly.
 
 #### COSE Parsing (Indidpensable Cosef)
 As a quick self-contained example, deserializing the following `CoseSigned` structure works as expected:
@@ -359,7 +359,7 @@ The output confirms that parsing was successful:
     CoseSigned(protectedHeader=CoseHeader(algorithm=ES256, criticalHeaders=null, contentType=null, kid=null, iv=null, partialIv=null, coseKey=null, certificateChain=null), unprotectedHeader=CoseHeader(algorithm=null, criticalHeaders=null, contentType=null, kid=3131, iv=null, partialIv=null, coseKey=null, certificateChain=null), payload=546869732069732074686520636F6E74656E742E, signature=8EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36)
 
 #### JWK creation (Indispensable Josef)
-JsonWebKeys can be manually created (just as COSE keys) and converted to `CryptoPublicKey`, so we can pass it to a _Supreme_ verifier:
+JsonWebKeys can be manually created (just as COSE keys) and converted to `PublicKey`, so we can pass it to a _Supreme_ verifier:
 
 ```kotlin
 val parsedN = ("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2" +

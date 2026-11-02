@@ -50,7 +50,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         }
 
         "it can be converted back to CryptoPublicKey" {
-            val recreatedPubKey = jsonWebKey.toCryptoPublicKey().getOrThrow()
+            val recreatedPubKey = jsonWebKey.toPublicKey().getOrThrow()
             (pubKey == recreatedPubKey) shouldBe true
         }
     }
@@ -72,7 +72,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to CryptoPublicKey" {
-            val recreatedPubKey = jwk.toCryptoPublicKey().getOrThrow()
+            val recreatedPubKey = jwk.toPublicKey().getOrThrow()
             (pubKey == recreatedPubKey) shouldBe true
         }
 

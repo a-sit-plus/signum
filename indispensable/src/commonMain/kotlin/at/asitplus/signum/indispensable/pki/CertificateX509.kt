@@ -27,7 +27,7 @@ fun Certificate.Companion.fromAsn1Representation(src: X509Certificate): Certific
     }
     return Certificate(
         TbsCertificate.fromAsn1Representation(src.tbsCertificate),
-        { CryptoSignature(src.signatureAlgorithm, src.signatureValue) },
+        { Signature(src.signatureAlgorithm, src.signatureValue) },
         X509 to src,
     )
 }

@@ -11,24 +11,24 @@ import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
-interface CryptoPrivateKey : Encodable {
+interface PrivateKey : Encodable {
 
-    interface WithPublicKey : CryptoPrivateKey {
-        val publicKey: CryptoPublicKey
+    interface WithPublicKey : PrivateKey {
+        val publicKey: PublicKey
     }
 
     val attributes: Set<Asn1Element>? get() = asn1Representation.attributes
 
-    companion object : Decodable<CryptoPrivateKey> {
+    companion object : Decodable<PrivateKey> {
         init { Signum.installIndispensable() }
 
         fun fromAsn1Representation(
-            element: Pkcs8PrivateKeyInfo): CryptoPrivateKey =
+            element: Pkcs8PrivateKeyInfo): PrivateKey =
             Signum.load<PrivateKeyFormatProvider>()
                 .get(element, PrivateKeyFormatProvider::decodeFromAsn1)
 
         @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
-        fun fromIosEncoded(keyBytes: ByteArray): CryptoPrivateKey.WithPublicKey =
+        fun fromIosEncoded(keyBytes: ByteArray): PrivateKey.WithPublicKey =
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 EcdsaPrivateKey.iosDecodeInternal(keyBytes)
             } else {
@@ -48,7 +48,7 @@ interface CryptoPrivateKey : Encodable {
 // @Service
 interface PrivateKeyFormatProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
-    fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = null
+    fun encodeToAsn1(value: PrivateKey): Pkcs8PrivateKeyInfo? = null
 
-    fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey?
+    fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): PrivateKey?
 }

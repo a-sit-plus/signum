@@ -34,19 +34,19 @@ interface IosMappingProvider {
     fun signatureAlgorithmToSecKeyAlgorithmPreHashed(algorithm: SignatureAlgorithm): SecKeyAlgorithm? { return null }
 
     /** Should parse the signature bytes produced by [SecKeyCreateSignature] when using the algorithm returned by
-     * [signatureAlgorithmToSecKeyAlgorithm] into a [CryptoSignature]. */
-    fun parseSignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? { return null }
+     * [signatureAlgorithmToSecKeyAlgorithm] into a [Signature]. */
+    fun parseSignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): Signature? { return null }
     /** Should produce the signature bytes expected by [SecKeyVerifySignature] when using the algorithm returned by
      * [signatureAlgorithmToSecKeyAlgorithm]. */
-    fun getSignatureBytes(signature: CryptoSignature): ByteArray? { return null }
-    /** Converts a CommonCrypto SecKeyRef to a CryptoPublicKey */
-    fun secKeyToCryptoPublicKey(key: SecKeyRef): CryptoPublicKey? { return null }
+    fun getSignatureBytes(signature: Signature): ByteArray? { return null }
+    /** Converts a CommonCrypto SecKeyRef to a PublicKey */
+    fun secKeyToPublicKey(key: SecKeyRef): PublicKey? { return null }
     /** Converts a CryptoPublicKey to a CommonCrypto SecKeyRef */
-    fun cryptoPublicKeyToSecKey(key: CryptoPublicKey): OwnedCFValue<SecKeyRef>? { return null }
-    /** Converts a CommonCrypto SecKeyRef to a CryptoPrivateKey, if possible */
-    fun secKeyToCryptoPrivateKey(key: SecKeyRef): CryptoPrivateKey.WithPublicKey? { return null }
+    fun publicKeyToSecKey(key: PublicKey): OwnedCFValue<SecKeyRef>? { return null }
+    /** Converts a CommonCrypto SecKeyRef to a PrivateKey, if possible */
+    fun secKeyToPrivateKey(key: SecKeyRef): PrivateKey.WithPublicKey? { return null }
     /** Converts a CryptoPrivateKey to a CommonCrypto SecKeyRef */
-    fun cryptoPrivateKeyToSecKey(key: CryptoPrivateKey.WithPublicKey): OwnedCFValue<SecKeyRef>? { return null }
+    fun privateKeyToSecKey(key: PrivateKey.WithPublicKey): OwnedCFValue<SecKeyRef>? { return null }
 }
 
 /**
@@ -90,12 +90,12 @@ val SignatureAlgorithm.suitableSecKeyAlgAndFormat get(): Pair<SecKeyAlgorithm, S
 }
 
 /** Produces signature bytes that match the algorithms returned by [suitableSecKeyAlgAndFormat] etc. */
-val CryptoSignature.secKeySignature get() =
+val Signature.secKeySignature get() =
     Signum.load<IosMappingProvider>()
         .get(this, IosMappingProvider::getSignatureBytes)
 
 @Deprecated("Renamed", replaceWith = ReplaceWith("this.secKeySignature"))
-val CryptoSignature.iosEncoded get() = this.secKeySignature
+val Signature.iosEncoded get() = this.secKeySignature
 
 /** Parses the signature bytes produced by the algorithms from [suitableSecKeyAlgAndFormat] etc. */
 fun SignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
@@ -106,19 +106,19 @@ fun SignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
 fun SpecializedSignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
     this.algorithm.parseSecKeySignature(sigBytes)
 
-fun CryptoPublicKey.toSecKey() =
+fun PublicKey.toSecKey() =
     Signum.load<IosMappingProvider>()
-        .get(this, IosMappingProvider::cryptoPublicKeyToSecKey)
+        .get(this, IosMappingProvider::publicKeyToSecKey)
 
-fun SecKeyRef?.toCryptoPublicKey() =
+fun SecKeyRef?.toPublicKey() =
     Signum.load<IosMappingProvider>()
-        .get(this!!) { secKeyToCryptoPublicKey(it) }
+        .get(this!!) { secKeyToPublicKey(it) }
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
-fun CryptoPrivateKey.WithPublicKey.toSecKey() =
+fun PrivateKey.WithPublicKey.toSecKey() =
     Signum.load<IosMappingProvider>()
-        .get(this) { cryptoPrivateKeyToSecKey(it) }
+        .get(this) { privateKeyToSecKey(it) }
 
-fun SecKeyRef?.toCryptoPrivateKey() =
+fun SecKeyRef?.toPrivateKey() =
     Signum.load<IosMappingProvider>()
-        .get(this!!) { secKeyToCryptoPrivateKey(it) }
+        .get(this!!) { secKeyToPrivateKey(it) }

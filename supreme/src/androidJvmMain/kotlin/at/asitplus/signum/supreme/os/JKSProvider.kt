@@ -31,7 +31,7 @@ import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
@@ -42,7 +42,7 @@ import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signerFor
-import at.asitplus.signum.indispensable.toCryptoPrivateKey
+import at.asitplus.signum.indispensable.toPrivateKey
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -242,7 +242,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 Signum.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
             val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
-            val publicKey = keyPair.public.toCryptoPublicKey()
+            val publicKey = keyPair.public.toPublicKey()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextPositiveAsn1Integer(20),
                 signatureAlgorithm = certAlg,
@@ -254,7 +254,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             )
 
             val cert = try {
-                certAlg.signerFor(keyPair.private.toCryptoPrivateKey()).sign(tbsCert)
+                certAlg.signerFor(keyPair.private.toPrivateKey()).sign(tbsCert)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)

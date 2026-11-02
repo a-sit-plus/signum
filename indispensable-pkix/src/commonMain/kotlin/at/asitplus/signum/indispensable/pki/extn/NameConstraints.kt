@@ -150,7 +150,7 @@ class NameConstraints internal constructor(
                 .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
                     val str =
-                        ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let {
+                        (attr.value as? Asn1Primitive)?.let {
                             Asn1String.decodeFromTlv(it)
                         }?.value
                     str?.let {
@@ -205,7 +205,7 @@ class NameConstraints internal constructor(
         }
 
         if (!excluded?.trees.isNullOrEmpty()) {
-            for (generalSubtree in excluded!!.trees) {
+            for (generalSubtree in excluded.trees) {
                 val excludedName = generalSubtree.base
                 when (excludedName.constrains(name)) {
                     GeneralName.ConstraintResult.MATCH,
@@ -222,7 +222,7 @@ class NameConstraints internal constructor(
 
             var sameType = false
 
-            for (generalSubtree in permitted!!.trees) {
+            for (generalSubtree in permitted.trees) {
                 val permittedName = generalSubtree.base
                 when (permittedName.constrains(name)) {
                     GeneralName.ConstraintResult.MATCH,

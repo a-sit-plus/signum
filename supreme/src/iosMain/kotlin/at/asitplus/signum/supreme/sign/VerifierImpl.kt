@@ -19,7 +19,7 @@ import platform.Security.SecKeyVerifySignature
 import platform.Security.errSecVerifyFailed
 
 object SupremeCCVerifierProvider : SignatureVerifierProvider {
-    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration) = when(algorithm) {
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration) = when(algorithm) {
         is EcdsaAlgorithm -> {
             require (key is EcdsaPublicKey)
                 { "Attempt to create ECDSA ($algorithm) verifier using non-ECDSA public key ($key)"}
@@ -38,7 +38,7 @@ object SupremeCCVerifierProvider : SignatureVerifierProvider {
 }
 
 abstract class SupremeCCVerifier: SignatureVerifier {
-    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
+    override suspend fun verify(data: SignatureInput, sig: Signature): SignatureVerifier.Success {
         val key = publicKey.toSecKey()
         val (algorithm, format) = signatureAlgorithm.suitableSecKeyAlgAndFormat
         val inputData = data.convertTo(format).collapsed().data.single()
@@ -70,7 +70,7 @@ abstract class SupremeCCVerifier: SignatureVerifier {
         private val targetDigest = publicKey.curve.nativeDigest
         private val inner = Ecdsa(EcdsaAlgorithm(targetDigest, null), publicKey)
 
-        override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
+        override suspend fun verify(data: SignatureInput, sig: Signature): SignatureVerifier.Success {
             @OptIn(HazardousMaterials::class)
             val fakeInput = SignatureInput.unsafeCreate(
                 data.asECDSABigInteger(targetDigest.outputLength).toByteArray().ensureSize(targetDigest.outputLength.bytes),

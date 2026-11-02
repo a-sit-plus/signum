@@ -193,7 +193,7 @@ interface AndroidKeyStoreOperationsProvider {
      * parsing for their algorithm works, as the public key is retrieved from the key's key store certificate.
      */
     fun getAndroidKeystoreSigner(jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo,
-                                 config: AndroidSignerConfiguration, publicKey: CryptoPublicKey,
+                                 config: AndroidSignerConfiguration, publicKey: PublicKey,
                                  attestation: AndroidKeystoreAttestation?): AndroidKeystoreSigner?
 }
 
@@ -258,7 +258,7 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
     }
     override fun getAndroidKeystoreSigner(
         jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo, config: AndroidSignerConfiguration,
-        publicKey: CryptoPublicKey, attestation: AndroidKeystoreAttestation?
+        publicKey: PublicKey, attestation: AndroidKeystoreAttestation?
     ): AndroidKeystoreSigner? = when (publicKey) {
         is EcdsaPublicKey -> {
             val ecConfig = config.ec.v
@@ -328,7 +328,7 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
             ?: throw NoSuchElementException("No key for alias $alias exists")
-        val publicKey: CryptoPublicKey
+        val publicKey: PublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
                         catching { chain.map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
@@ -343,7 +343,7 @@ object AndroidKeyStoreProvider:
                         Napier.v { "Correcting Android 10 AKS signature bug" }
                         publicKey = CertificateFactory.getInstance("X.509")
                             .generateCertificate(chain.first().encoded.inputStream())
-                            .publicKey.toCryptoPublicKey()
+                            .publicKey.toPublicKey()
                         attestation = null
                     } else throw it
                 }
@@ -467,7 +467,7 @@ abstract class AndroidKeystoreSigner protected constructor(
         return@make parseSignatureFromJca(jcaSig)
     }}
 
-    abstract fun parseSignatureFromJca(jcaSig: ByteArray): CryptoSignature
+    abstract fun parseSignatureFromJca(jcaSig: ByteArray): at.asitplus.signum.indispensable.Signature
 
     class ECDSA internal constructor(jcaPrivateKey: PrivateKey,
                                      alias: String,
@@ -494,7 +494,7 @@ abstract class AndroidKeystoreSigner protected constructor(
                     attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), null)
                     init(jcaPrivateKey)
                 }
-                doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey(), true)
+                doPhase(publicValue.asPublicKey().toJcaPublicKey(), true)
                 return generateSecret()
             }
         }

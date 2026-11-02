@@ -109,12 +109,12 @@ Your KDF identifier should implement `KDF`.
 
 For data formats, implement `SignatureAlgorithmsProvider`, `SignatureFormatProvider`, `PublicKeyFormatProvider`, and `PrivateKeyFormatProvider`.
 Your signature algorithm identifier should implement `SignatureAlgorithm`.
-Your signature format class should implement `CryptoSignature`.
-Your public key class should implement `CryptoPublicKey`.
-Your private key class should implement `CryptoPrivateKey`, and likely `CryptoPrivateKey.WithPublicKey`.
+Your signature format class should implement `Signature`.
+Your public key class should implement `PublicKey`.
+Your private key class should implement `PrivateKey`, and likely `CryptoPrivateKey.WithPublicKey`.
 
 `SignatureAlgorithmsProvider` should implement `getAlgorithm` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
-`SignatureFormatProvider` should implement `parseCryptoSignature` to parse `X509SignatureValue`s given an algorithm identifier.
+`SignatureFormatProvider` should implement `parseSignature` to parse `X509SignatureValue`s given an algorithm identifier.
 `PublicKeyFormatProvider` should implement `decodeFromAsn1` and, if desired `decodeFromDidKey`.
 `PrivateKeyFormatProvider` should implement `decodeFromAsn1`.
 Each of these four format providers also exposes `encodeToAsn1` for the corresponding Signum type.
@@ -256,16 +256,16 @@ On Android & JVM, implement `JcaMappingProvider`:
 
 - `getJCAMessageDigestInstance` to map Signum `Digest` -> JCA `MessageDigest`
 - `getJCASignatureInstance` and `getJCASignatureInstancePreHashed` to map Signum `SignatureAlgorithm` -> JCA `Signature`
-  - `parseJCASignatureBytes` and `getJCASignatureBytes` to map Signum `CryptoSignature` <-> output of this JCA `Signature` instance
-- `cryptoPublicKeyToJcaPublicKey` and `jcaPublicKeyToCryptoPublicKey` to map Signum `CryptoPublicKey` <-> JCA `PublicKey`
-- `cryptoPrivateKeyToJcaPrivateKey` and `jcaPrivateKeyToCryptoPrivateKey` to map Signum `CryptoPrivateKey` <-> JCA `PrivateKey`
+  - `parseJCASignatureBytes` and `getJCASignatureBytes` to map Signum `Signature` <-> output of this JCA `Signature` instance
+- `publicKeyToJcaPublicKey` and `jcaPublicKeyToPublicKey` to map Signum `PublicKey` <-> JCA `PublicKey`
+- `privateKeyToJcaPrivateKey` and `jcaPrivateKeyToPrivateKey` to map Signum `PrivateKey` <-> JCA `PrivateKey`
 
 On iOS, implement `IosMappingProvider`:
 
 - `signatureAlgorithmToSecKeyAlgorithm` and `signatureAlgorithmToSecKeyAlgorithmPreHashed` to map Signum `SignatureAlgorithm` -> Security `SecKeyAlgorithm`
-  - `parseSignatureBytes` and `getSignatureBytes` to map Signum `CryptoSignature` <-> Security `SecKeyCreateSignature`/`SecKeyVerifySignature` with the algorithm
-- `secKeyToCryptoPublicKey` and `cryptoPublicKeyToSecKey` to map Signum `CryptoPublicKey` <-> Security `SecKeyRef`
-- `secKeyToCryptoPrivateKey` and `cryptoPrivateKeyToSecKey` to map Signum `CryptoPrivateKey` <-> Security `SecKeyRef`
+  - `parseSignatureBytes` and `getSignatureBytes` to map Signum `Signature` <-> Security `SecKeyCreateSignature`/`SecKeyVerifySignature` with the algorithm
+- `secKeyToPublicKey` and `publicKeyToSecKey` to map Signum `PublicKey` <-> Security `SecKeyRef`
+- `secKeyToPrivateKey` and `privateKeyToSecKey` to map Signum `PrivateKey` <-> Security `SecKeyRef`
 
 
 ## DSL Extensibility

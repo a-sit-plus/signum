@@ -12,18 +12,18 @@ import at.asitplus.signum.indispensable.sign.RsaSignature
 /**
  * Parsed signature value. Unparsed values are [SignatureValue].
  */
-interface CryptoSignature : Encodable {
+interface Signature : Encodable {
 
     // TODO: providerize this; the names do not need to be preserved
     val joseBytes: ByteArray get() = TODO("providerize JOSE/COSE for generic provider-provided signature types")
     val coseBytes: ByteArray get() = joseBytes
 
-        val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${Signum.Der.encodeToTlv(X509SignatureValue.serializer(), asn1Representation).prettyPrint()})"
+        val humanReadableString: String get() = "${this::class.simpleName ?: "Signature"}(signature=${Signum.Der.encodeToTlv(X509SignatureValue.serializer(), asn1Representation).prettyPrint()})"
 
-    @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
+    @Deprecated(message = "Signature types migrated out of Signature as part of providerization",
         replaceWith = ReplaceWith("EcdsaSignature"))
     typealias EC = EcdsaSignature
-    @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
+    @Deprecated(message = "Signature types migrated out of Signature as part of providerization",
         replaceWith = ReplaceWith("RsaSignature"))
     typealias RSA = RsaSignature
 
@@ -43,7 +43,7 @@ interface CryptoSignature : Encodable {
 
 fun SignatureValue.withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
     Signum.load<SignatureFormatProvider>().get(signatureAlgorithm) {
-        parseCryptoSignature(it, this@withSignatureAlgorithm.asn1Representation)
+        parseSignature(it, this@withSignatureAlgorithm.asn1Representation)
     }
 
 fun SignatureValue.withSignatureAlgorithm(signatureAlgorithm: SpecializedSignatureAlgorithm) =
@@ -51,25 +51,25 @@ fun SignatureValue.withSignatureAlgorithm(signatureAlgorithm: SpecializedSignatu
 
 fun SignatureValue.withX509Algorithm(x509Algorithm: X509AlgorithmIdentifier) =
     Signum.load<SignatureFormatProvider>().get(x509Algorithm) {
-        parseCryptoSignature(it, this@withX509Algorithm.asn1Representation)
+        parseSignature(it, this@withX509Algorithm.asn1Representation)
     }
 
 // @Service
 interface SignatureFormatProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
-    fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? = null
+    fun encodeToAsn1(value: Signature): X509SignatureValue? = null
 
     /**
      * If the provider recognizes this [SignatureAlgorithm], it should try to parse the provided [signature].
      * the provided [signature] as such.
      * If the [signatureAlgorithm] is unknown, `null` should be returned. */
-    fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue): CryptoSignature?
+    fun parseSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue): Signature?
 
     /**
      * If the provider recognizes this [X509AlgorithmIdentifier], it should try to parse the provided [signature].
      * If the [X509AlgorithmIdentifier] is unknown, `null` should be returned.
      */
-    fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue): CryptoSignature?
+    fun parseSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue): Signature?
 }
 
 /** An uninterpreted BIT STRING; supply an algorithm before verification. */

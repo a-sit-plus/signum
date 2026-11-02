@@ -14,7 +14,7 @@ import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import java.security.Signature
 
-abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPublicKey, protected val provider: JCAProviderRef) : SignatureVerifier {
+abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: PublicKey, protected val provider: JCAProviderRef) : SignatureVerifier {
     private val jcaPublicKey = key.toJcaPublicKey()
     // fail fast
     init { algorithm.getJCASignatureInstance(provider).apply { initVerify(jcaPublicKey) } }
@@ -22,7 +22,7 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPubl
         data.forEach(jcaSig::update)
         return jcaSig.verify(sig)
     }
-    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
+    override suspend fun verify(data: SignatureInput, sig: at.asitplus.signum.indispensable.Signature): SignatureVerifier.Success {
         val success = when {
             (data.format == null) ->
                 signatureAlgorithm.getJCASignatureInstance(provider)
@@ -49,7 +49,7 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: CryptoPubl
 }
 
 object SupremeJVMVerifierProvider : SignatureVerifierProvider {
-    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration) =
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration) =
         when (algorithm) {
             is EcdsaAlgorithm -> {
                 require(key is EcdsaPublicKey)

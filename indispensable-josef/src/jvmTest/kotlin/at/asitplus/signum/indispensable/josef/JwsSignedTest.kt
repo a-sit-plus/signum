@@ -2,8 +2,8 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.installSupreme
 import at.asitplus.signum.indispensable.sign.Signer
@@ -31,7 +31,7 @@ val JwsSignedTest  by matrixSuite {
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey())
+                if (publicKey is PublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey())
                 else RSASSAVerifier(publicKey.toJcaPublicKey() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)

@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.decodeFromPem
 
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.verifierFor
@@ -44,7 +44,7 @@ val PrivateKeyCommonTests by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = Signum.Der.decodeFromPem<CryptoPrivateKey>(rsa) as CryptoPrivateKey.WithPublicKey
+        val key = Signum.Der.decodeFromPem<PrivateKey>(rsa) as PrivateKey.WithPublicKey
 
         val signer: Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
@@ -64,7 +64,7 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = Signum.Der.decodeFromPem<CryptoPrivateKey>(pkcs8) as EcdsaPrivateKey.WithPublicKey
+        val privateKey = Signum.Der.decodeFromPem<PrivateKey>(pkcs8) as EcdsaPrivateKey.WithPublicKey
 
         val signer: Signer = EcdsaAlgorithm.withSHA256.signerFor(privateKey)
 
@@ -99,7 +99,7 @@ val PrivateKeyCommonTests by matrixSuite {
 
     "Regressions" - {
         "#233" {
-            Signum.Der.decodeFromByteArray<CryptoPrivateKey>("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
+            Signum.Der.decodeFromByteArray<PrivateKey>("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
         }
     }
 }

@@ -62,7 +62,7 @@ operator fun TbsCertificationRequest.Companion.invoke(src: Pkcs10CertificationRe
 fun TbsCertificationRequest.Companion.fromAsn1Representation(src: Pkcs10CertificationRequestInfo): TbsCertificationRequest =
     TbsCertificationRequest(
         subjectName = X500Name.fromAsn1Representation(src.subjectName),
-        publicKeyProvider = { CryptoPublicKey(src.publicKey) },
+        publicKeyProvider = { PublicKey(src.publicKey) },
         attributes = src.attributes.map { CsrAttribute(it) },
         sourceRepresentation = X509 to src,
     )
@@ -75,7 +75,7 @@ fun CertificationRequest.Companion.fromAsn1Representation(src: Pkcs10Certificati
     CertificationRequest(
         tbsCsr = TbsCertificationRequest(src.certificationRequestInfo),
         signatureAlgorithmProvider = { SignatureAlgorithm(src.signatureAlgorithm) },
-        signatureProvider = { CryptoSignature(src.signatureAlgorithm, src.signatureValue) },
+        signatureProvider = { Signature(src.signatureAlgorithm, src.signatureValue) },
         sourceRepresentation = X509 to src,
     )
 

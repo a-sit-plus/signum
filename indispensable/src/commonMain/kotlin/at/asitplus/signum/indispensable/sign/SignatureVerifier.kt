@@ -2,8 +2,8 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.signum.Signum
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.VerifierConfiguration
@@ -16,7 +16,7 @@ import at.asitplus.signum.indispensable.withSignatureAlgorithm
 
 interface SignatureVerifier {
     val signatureAlgorithm: SignatureAlgorithm
-    val publicKey: CryptoPublicKey
+    val publicKey: PublicKey
 
     @Deprecated(message = "Concrete algorithm typess migrated out of SignatureVerifier as part of providerization",
         replaceWith = ReplaceWith("EcdsaVerifier"))
@@ -31,13 +31,13 @@ interface SignatureVerifier {
 
     /** Verify the signature. Returns on success. Throws on failure. */
     @IgnorableReturnValue
-    suspend fun verify(data: SignatureInput, sig: CryptoSignature): Success
+    suspend fun verify(data: SignatureInput, sig: Signature): Success
 }
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
+suspend fun SignatureVerifier.verify(data: ByteArray, sig: Signature) =
     verify(SignatureInput(data), sig)
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: CryptoSignature) =
+suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: Signature) =
     verify(SignatureInput(data), sig)
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(data: SignatureInput, sig: at.asitplus.signum.indispensable.SignatureValue) =
@@ -50,11 +50,11 @@ suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: at.asitplus
     verify(SignatureInput(data), sig)
 
 @IgnorableReturnValue
-suspend inline fun <reified T : Encodable> SignatureVerifier.verify(input: T, signature: CryptoSignature) =
+suspend inline fun <reified T : Encodable> SignatureVerifier.verify(input: T, signature: Signature) =
     verify(Signum.Der.encodeToByteArray(input), signature)
 
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
+suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: Signature) =
     verify(Signum.Der.encodeToByteArray(input), signature)
 
 @IgnorableReturnValue
@@ -83,17 +83,17 @@ interface SignatureVerifierProvider {
     /**
      * If this [algorithm] is supported by this provider, return a verifier for the given [key].
      * - If the [SignatureAlgorithm] is unsupported or unrecognized, providers should return null.
-     * - If the [SignatureAlgorithm] is supported, but the provided [CryptoPublicKey] does not match it, providers should throw.
+     * - If the [SignatureAlgorithm] is supported, but the provided [PublicKey] does not match it, providers should throw.
      */
-    fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration): SignatureVerifier?
+    fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration): SignatureVerifier?
 }
 
-fun SignatureAlgorithm.verifierFor(key: CryptoPublicKey, configure: DSLConfigureFn<VerifierConfiguration> = null): SignatureVerifier {
+fun SignatureAlgorithm.verifierFor(key: PublicKey, configure: DSLConfigureFn<VerifierConfiguration> = null): SignatureVerifier {
     val config = DSL.resolve(::VerifierConfiguration, configure)
     return Signum.load<SignatureVerifierProvider>().get(this) { verifierFor(it, key, config) }
 }
 
-fun SpecializedSignatureAlgorithm.verifierFor(key: CryptoPublicKey) = this.algorithm.verifierFor(key)
+fun SpecializedSignatureAlgorithm.verifierFor(key: PublicKey) = this.algorithm.verifierFor(key)
 
 fun TbsCertificate.verifier(configure: DSLConfigureFn<VerifierConfiguration> = null) =
     this.signatureAlgorithm.verifierFor(this.publicKey, configure)
