@@ -27,8 +27,8 @@ val TbsCertificate.asn1Representation: X509TbsCertificate
             validUntil = Asn1Time.SecondsCapped(validUntil),
             subjectName = requireNotNull(subjectName.asn1Representation) { "Subject has no X.509 representation" },
             subjectPublicKeyInfo = publicKey.asn1Representation,
-            issuerUniqueID = issuerUniqueID?.let { Asn1BitString(BitSet(it)) },
-            subjectUniqueID = subjectUniqueID?.let { Asn1BitString(BitSet(it)) },
+            issuerUniqueID = issuerUniqueID?.let { Asn1BitString(it) },
+            subjectUniqueID = subjectUniqueID?.let { Asn1BitString(it) },
             extensions = extensions.map { it.asn1Representation
                 ?: throw Asn1Exception("Certificate extension ${it.oid} has no X.509/DER representation") },
         )
@@ -49,8 +49,8 @@ fun TbsCertificate.Companion.fromAsn1Representation(
         validUntil = src.validity.validUntil.instant,
         subjectName = X500Name.fromAsn1Representation(src.subjectName),
         publicKeyProvider = { CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo) },
-        issuerUniqueID = src.issuerUniqueID?.toLsb0ByteArray(),
-        subjectUniqueID = src.subjectUniqueID?.toLsb0ByteArray(),
+        issuerUniqueID = src.issuerUniqueID?.bitCarryingBytes,
+        subjectUniqueID = src.subjectUniqueID?.bitCarryingBytes,
         extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),
         sourceRepresentation = X509 to src,
     )

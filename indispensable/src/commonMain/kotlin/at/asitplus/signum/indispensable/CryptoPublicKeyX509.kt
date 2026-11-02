@@ -26,7 +26,7 @@ operator fun CryptoPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): Crypto
 /** Representation of the key in the format used by iOS. */
 val CryptoPublicKey.iosEncoded: ByteArray
     get() = asn1Representation.subjectPublicKey.also {
-        require(it.numPaddingBits == 0.toByte()) { "SPKI is not full octets, cannot convert to iOS" }
+        require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
     }.bitCarryingBytes
 
 interface PublicKeyFormatProvider {

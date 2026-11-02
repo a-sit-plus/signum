@@ -19,8 +19,8 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * */
 class NameConstraints internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
-    var permitted: GeneralSubtrees? = null,
-    var excluded: GeneralSubtrees? = null,
+    val permitted: GeneralSubtrees? = null,
+    val excluded: GeneralSubtrees? = null,
     sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to asn1Representation,
 ) : X509CertificateExtension(
     sourceRepresentation, asn1Representation.oid, asn1Representation.critical, asn1Representation.value,
