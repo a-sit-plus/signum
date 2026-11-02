@@ -1,0 +1,46 @@
+{
+  "version": "OpenSSL 4.0.3 29 Sep 2026 (Library: OpenSSL 4.0.3 29 Sep 2026)",
+  "checked": 42,
+  "mismatches": [
+    {
+      "id": "25-test_verify.t:448",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L448",
+      "description": "accept DSA cert chain with SHA-384 signatures",
+      "expectedValid": true,
+      "observedValid": false,
+      "diagnostic": "CN=OpenSSL Test DSA SHA-384 EE\nerror 20 at 0 depth lookup: unable to get local issuer certificate\nerror <fixtures>/98b26e7cdece339dccc7aafd6c3b3997d4e42d048ba393a92bc9e35b665e7ee1.pem: verification failed\n"
+    },
+    {
+      "id": "25-test_verify.t:450",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L450",
+      "description": "accept DSA cert chain with SHA-512 signatures",
+      "expectedValid": true,
+      "observedValid": false,
+      "diagnostic": "CN=OpenSSL Test DSA SHA-512 EE\nerror 20 at 0 depth lookup: unable to get local issuer certificate\nerror <fixtures>/3631f408d3a3129aca254eed4de8c7339886da676253299e1c9a81b98eea4f5a.pem: verification failed\n"
+    },
+    {
+      "id": "25-test_verify.t:525",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L525",
+      "description": "Name Constraints DNS-like CN not checked by default",
+      "expectedValid": true,
+      "observedValid": false,
+      "diagnostic": "O=Good NC Test Certificate 1, CN=www.good.org, CN=bad.net\nerror 47 at 0 depth lookup: permitted subtree violation\nerror <fixtures>/617731acd3172752ce9b3004df8c69c70cec12d3f9e4a47890e52b333cdf8467.pem: verification failed\n"
+    },
+    {
+      "id": "25-test_verify.t:543",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L543",
+      "description": "Name Constraints CN hostname not checked by default",
+      "expectedValid": true,
+      "observedValid": false,
+      "diagnostic": "O=Bad NC Test Certificate 6, CN=other.good.org, CN=Joe Bloggs, CN=any.good.com\nerror 47 at 0 depth lookup: permitted subtree violation\nerror <fixtures>/4b778c4ed7fb84f2c9b2fcc3c8c94798ef949e35345c3cf9300e880c5f0ab8ee.pem: verification failed\n"
+    },
+    {
+      "id": "25-test_verify.t:546",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L546",
+      "description": "Name Constraints CN BMPSTRING hostname not checked by default",
+      "expectedValid": true,
+      "observedValid": false,
+      "diagnostic": "O=Bad NC Test Certificate 7, CN=other.good.org, CN=Joe Bloggs, CN=any.good.com\nerror 47 at 0 depth lookup: permitted subtree violation\nerror <fixtures>/9dfd6524e4103f11ba41983d75935b851fcd660fd60685f9059b6b0f44900917.pem: verification failed\n"
+    }
+  ]
+}

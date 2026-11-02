@@ -1,0 +1,465 @@
+{
+  "corpusSha256": "04771b527380ad98c90e18c0de48d007b9598ab9bfbb34a96f2a201228d13b9e",
+  "summary": {
+    "boringssl": {
+      "tests": 75,
+      "passed": 72,
+      "failures": 3,
+      "unexpectedAcceptances": 1
+    },
+    "go": {
+      "tests": 109,
+      "passed": 81,
+      "failures": 28,
+      "unexpectedAcceptances": 6
+    },
+    "openssl": {
+      "tests": 42,
+      "passed": 29,
+      "failures": 13,
+      "unexpectedAcceptances": 4
+    }
+  },
+  "failures": [
+    {
+      "source": "boringssl",
+      "id": "issuer-and-subject-not-byte-for-byte-equal/anchor.test",
+      "sourceUrl": "https://github.com/google/boringssl/blob/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest/issuer-and-subject-not-byte-for-byte-equal/anchor.test",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/google/boringssl/blob/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest/issuer-and-subject-not-byte-for-byte-equal/anchor.test\nUpstream: Upstream acceptance control.\nNo loaded PublicKeyFormatProvider is able to handle SubjectPublicKeyInfo(algorithmIdentifier=AlgorithmIdentifier(oid=1.2.840.113549.1.1.1, parameters=Primitive(tag=5 (=0x05) (NULL), length=0 (=0x00), overallLength=2) , (raw=Sequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=13 (=0x0D), overallLength=15), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 1.2.840.113549.1.1.1, Primitive(tag=5 (=0x05) (NULL), length=0 (=0x00), overallLength=2) ])), subjectPublicKey=Asn1BitString(2152 bits (0 padding): [48, -126, 1, 9, 2, -126, 1, 0, 90, 43, 65, 21, -101, -37, 118, 38, 1, -16, 84, 114, 11, -121, 19, 31, -96, -48, 63, -106, -86, 13, -77, 52, -127, -34, 72, 90, -97, -13, 112, 90, -62, -15, 58, -98, 4, -16, 78, -108, 121, -105, -31, -12, -75, 20, 76, -41, 111, -60, -117, 24, -73, -36, 18, 43, 29, 10, -101, -18, 32, 12, 91, -113, -1, -7, -81, -126, -98, -104, 70, -48, 61, 93, 40, -13, -105, 22, -63, 92, -27, 86, -65, 68, -92, 0, -95, 122, -53, -101, 122, 91, -36, -44, -19, -5, -14, -96, 2, 103, 0, 30, 68, -27, -118, 1, -36, -91, -93, 78, -2, -42, 12, 103, -54, 73, -71, -16, -48, -96, -7, 77, 31, 3, -45, -122, -17, 13, -123, 117, 77, -13, -19, -5, -51, 106, 102, 4, 87, -12, 87, -101, -84, 102, -118, 79, -62, -88, 79, 113, -119, 9, -35, 76, 0, -33, -106, -69, -43, -112, 10, -76, -74, 106, 109, -58, -65, -45, -103, 41, -1, 98, -16, 16, -38, 69, -84, 9, 114, 11, -126, 16, -24, 21, -88, -117, 95, -30, -94, 90, 121, 30, -62, 103, -3, -23, 68, 87, 11, 3, -48, 33, 21, 81, -80, 0, -13, -113, 109, -30, 35, -16, 73, 33, -39, 109, -49, 98, 61, -20, -21, -3, 40, -110, 1, 63, 122, -93, 114, 124, -21, -13, -82, -25, -8, 10, -20, 110, -83, 122, -101, 85, -55, 48, 75, -100, -74, 97, 70, 107, 88, 26, -2, -97, 72, 29, 2, 3, 1, 0, 1])).\n- IndispensablePublicKeyFormatsProvider reports: Unsupported key size 2047 bits\n    Error replay info: (data) ACCEPT boringssl: issuer-and-subject-not-byte-for-byte-equal/anchor.test\n      - (data): replay = Indexes(27L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "boringssl",
+      "id": "target-msapplicationpolicies-and-eku/main.test",
+      "sourceUrl": "https://github.com/google/boringssl/blob/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest/target-msapplicationpolicies-and-eku/main.test",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/google/boringssl/blob/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest/target-msapplicationpolicies-and-eku/main.test\nUpstream: Upstream acceptance control.\nCriticalCertificateExtensions: Unsupported critical extensions: [1.3.6.1.4.1.311.21.10]\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT boringssl: target-msapplicationpolicies-and-eku/main.test\n      - (data): replay = Indexes(58L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "boringssl",
+      "id": "unknown-critical-policy-qualifier/main.test",
+      "sourceUrl": "https://github.com/google/boringssl/blob/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest/unknown-critical-policy-qualifier/main.test",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "----- Certificate i=1 (CN=Intermediate) -----\nERROR: Unconsumed critical extension\n  oid: 551D20\n  value: 3013301106022A03300B300906032A03040C026869",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/google/boringssl/blob/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest/unknown-critical-policy-qualifier/main.test\nUpstream: ----- Certificate i=1 (CN=Intermediate) -----\nERROR: Unconsumed critical extension\n  oid: 551D20\n  value: 3013301106022A03300B300906032A03040C026869\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT boringssl: unknown-critical-policy-qualifier/main.test\n      - (data): replay = Indexes(71L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:006:leading period matches subdomains",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:006:leading period matches subdomains\n      - (data): replay = Indexes(123L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:007:leading period matches multiple levels of subdomains",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:007:leading period matches multiple levels of subdomains\n      - (data): replay = Indexes(124L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:008:specifying a permitted list of names does not exclude other name types",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:008:specifying a permitted list of names does not exclude other name types\n      - (data): replay = Indexes(125L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:012:intermediates can further limit their scope if they wish",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:012:intermediates can further limit their scope if they wish\n      - (data): replay = Indexes(129L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:014:roots can exclude subtrees and that doesn't affect other names",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:014:roots can exclude subtrees and that doesn't affect other names\n      - (data): replay = Indexes(131L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:016:intermediates can also exclude names and that doesn't affect other names",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:016:intermediates can also exclude names and that doesn't affect other names\n      - (data): replay = Indexes(133L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:018:having an exclusion doesn't prohibit other types of names",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:018:having an exclusion doesn't prohibit other types of names\n      - (data): replay = Indexes(135L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:022:multiple intermediates with incompatible constraints",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:022:multiple intermediates with incompatible constraints\n      - (data): replay = Indexes(139L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:023:multiple intermediates with incompatible constraints swapped",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:023:multiple intermediates with incompatible constraints swapped\n      - (data): replay = Indexes(140L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:028:unknown name types are unconstrained",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: No CHOICE alternative of at.asitplus.awesn1.crypto.pki.X509GeneralName matches tag 9 (=09) (REAL)\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:028:unknown name types are unconstrained\n      - (data): replay = Indexes(145L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:029:unknown name types allowed in constrained chain",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:029:unknown name types allowed in constrained chain\n      - (data): replay = Indexes(146L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:030:CN is ignored in constrained chain",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:030:CN is ignored in constrained chain\n      - (data): replay = Indexes(147L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:036:IPv6 constraint does not permit IPv4",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "\"10.0.0.1\" is not permitted",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: \"10.0.0.1\" is not permitted\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT go: name_constraints_test.go:036:IPv6 constraint does not permit IPv4\n      - (data): replay = Indexes(153L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:037:IPv4 constraint does not permit IPv6",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "\"2000:abcd::\" is not permitted",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: \"2000:abcd::\" is not permitted\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT go: name_constraints_test.go:037:IPv4 constraint does not permit IPv6\n      - (data): replay = Indexes(154L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:042:email canonicalization",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: NameConstraints violation at cert index 0\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:042:email canonicalization\n      - (data): replay = Indexes(159L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:054:email local part is case-sensitive",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "\"Foo@example.com\" is not permitted",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: \"Foo@example.com\" is not permitted\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT go: name_constraints_test.go:054:email local part is case-sensitive\n      - (data): replay = Indexes(171L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:067:excluded URI host constraint treats wildcard literally",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in Subject Alternative Name at index 0\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:067:excluded URI host constraint treats wildcard literally\n      - (data): replay = Indexes(184L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:082:empty DNS permitted constraint allows anything",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:082:empty DNS permitted constraint allows anything\n      - (data): replay = Indexes(191L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:084:empty email permitted constraint allows anything",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:084:empty email permitted constraint allows anything\n      - (data): replay = Indexes(193L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:086:empty URI permitted constraint allows anything",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:086:empty URI permitted constraint allows anything\n      - (data): replay = Indexes(195L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:090:invalid SANs are ignored with no constraints",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in Subject Alternative Name at index 0\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:090:invalid SANs are ignored with no constraints\n      - (data): replay = Indexes(197L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:095:empty leaf is accepted in constrained chain",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:095:empty leaf is accepted in constrained chain\n      - (data): replay = Indexes(200L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:096:no SANs and non-hostname CN is accepted in constrained chain",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:096:no SANs and non-hostname CN is accepted in constrained chain\n      - (data): replay = Indexes(201L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:097:constraints don't apply to CN",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in NameConstraints extension.\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:097:constraints don't apply to CN\n      - (data): replay = Indexes(202L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:108:excluded constraint, empty DNS san",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "Upstream acceptance control.",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: Upstream acceptance control.\nNameConstraintsValidator: Invalid GeneralName in Subject Alternative Name at index 0\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT go: name_constraints_test.go:108:excluded constraint, empty DNS san\n      - (data): replay = Indexes(213L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:109:subdomain excluded constraints preclude outer wildcard names",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "\"*.example.com\" is excluded by constraint \"foo.example.com\"",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: \"*.example.com\" is excluded by constraint \"foo.example.com\"\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT go: name_constraints_test.go:109:subdomain excluded constraints preclude outer wildcard names\n      - (data): replay = Indexes(214L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:119:subdomain exclusion blocks uppercase wildcard",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "\"*.EXAMPLE.COM\" is excluded by constraint \"sub.example.com\"",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: \"*.EXAMPLE.COM\" is excluded by constraint \"sub.example.com\"\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT go: name_constraints_test.go:119:subdomain exclusion blocks uppercase wildcard\n      - (data): replay = Indexes(224L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "go",
+      "id": "name_constraints_test.go:120:uppercase subdomain exclusion blocks lowercase wildcard",
+      "sourceUrl": "https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "\"*.example.com\" is excluded by constraint \"sub.example.com\"",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go\nUpstream: \"*.example.com\" is excluded by constraint \"sub.example.com\"\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT go: name_constraints_test.go:120:uppercase subdomain exclusion blocks lowercase wildcard\n      - (data): replay = Indexes(225L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:117",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L117",
+      "expectedValid": true,
+      "category": "unexpected-rejection",
+      "description": "accept critical OCSP No Check",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L117\nUpstream: accept critical OCSP No Check\nCriticalCertificateExtensions: Unsupported critical extensions: [1.3.6.1.5.5.7.48.1.5]\nexpected:<true> but was:<false>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:117\n      - (data): replay = Indexes(77L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:424",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L424",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "reject explicit curve leaf with named curve intermediate",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L424\nUpstream: reject explicit curve leaf with named curve intermediate\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT openssl: 25-test_verify.t:424\n      - (data): replay = Indexes(79L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:433",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L433",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept cert generated with EC and SHA3-224",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L433\nUpstream: accept cert generated with EC and SHA3-224\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=2.16.840.1.101.3.4.3.9, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 2.16.840.1.101.3.4.3.9])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:433\n      - (data): replay = Indexes(82L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:435",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L435",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept cert generated with EC and SHA3-256",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L435\nUpstream: accept cert generated with EC and SHA3-256\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=2.16.840.1.101.3.4.3.10, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 2.16.840.1.101.3.4.3.10])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:435\n      - (data): replay = Indexes(83L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:437",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L437",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept cert generated with EC and SHA3-384",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L437\nUpstream: accept cert generated with EC and SHA3-384\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=2.16.840.1.101.3.4.3.11, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 2.16.840.1.101.3.4.3.11])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:437\n      - (data): replay = Indexes(84L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:439",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L439",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept cert generated with EC and SHA3-512",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L439\nUpstream: accept cert generated with EC and SHA3-512\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=2.16.840.1.101.3.4.3.12, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 2.16.840.1.101.3.4.3.12])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:439\n      - (data): replay = Indexes(85L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:448",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L448",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept DSA cert chain with SHA-384 signatures",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L448\nUpstream: accept DSA cert chain with SHA-384 signatures\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=2.16.840.1.101.3.4.3.3, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 2.16.840.1.101.3.4.3.3])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:448\n      - (data): replay = Indexes(86L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:450",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L450",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept DSA cert chain with SHA-512 signatures",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L450\nUpstream: accept DSA cert chain with SHA-512 signatures\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=2.16.840.1.101.3.4.3.4, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 2.16.840.1.101.3.4.3.4])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:450\n      - (data): replay = Indexes(87L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:534",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L534",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "Name Constraints email address not permitted",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L534\nUpstream: Name Constraints email address not permitted\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT openssl: 25-test_verify.t:534\n      - (data): replay = Indexes(96L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:537",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L537",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "Name Constraints subject email address not permitted",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L537\nUpstream: Name Constraints subject email address not permitted\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT openssl: 25-test_verify.t:537\n      - (data): replay = Indexes(97L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:588",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L588",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "CA PSS signature",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L588\nUpstream: CA PSS signature\nNo loaded PublicKeyFormatProvider is able to handle SubjectPublicKeyInfo(algorithmIdentifier=AlgorithmIdentifier(oid=1.2.840.113549.1.1.10, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=11 (=0x0B), overallLength=13), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=9 (=0x09), overallLength=11) 1.2.840.113549.1.1.10])), subjectPublicKey=Asn1BitString(2160 bits (0 padding): [48, -126, 1, 10, 2, -126, 1, 1, 0, -75, -55, 108, 22, -46, 78, 66, 0, 2, 103, 20, -49, -97, 100, -10, -110, -55, -94, 109, 19, 85, 2, 113, 31, 84, 40, 31, 39, 27, 15, 55, 118, -124, 17, 24, 42, -86, 21, -101, 11, -126, -26, 24, 116, 72, 34, 52, 61, 14, -102, 27, 106, -68, -99, 38, 43, -16, 122, -112, -38, -118, -19, 117, -82, 12, 23, -127, -23, -56, -95, -78, 21, -67, 90, -10, -8, -67, -25, -127, -87, 88, 118, 76, 38, -104, -11, 72, -104, -45, 124, 17, -2, 123, -25, 38, -60, -2, 69, 96, 78, -17, 87, -33, -80, -55, -73, -17, 41, -79, -11, 70, 120, 88, 56, 68, -84, -92, 58, 46, -46, 124, -16, -110, 40, 114, -110, 121, -107, 23, 62, 63, 64, 99, 6, 67, -61, -127, -41, -38, -72, 108, -75, 26, 41, 92, 9, -108, -49, 61, -65, -72, 6, -111, 126, 101, 59, -75, -125, -122, -26, -88, 95, 49, 74, 79, -8, 39, -76, 100, 25, 75, 19, -46, 99, 106, -58, 62, 119, 109, 63, -104, 49, 110, -68, 81, 28, -26, -88, -33, -52, -38, -81, -1, -70, 36, -56, 24, -38, 88, 30, 33, -125, 9, -29, 92, 4, -85, -88, -87, 106, 28, -91, 84, -43, 76, -85, 37, -50, -6, -56, 9, -30, -118, 108, -66, 34, -123, -54, 0, 66, -34, -76, -126, 70, 72, -35, 121, 25, -122, -106, 37, -64, 8, -77, 65, 50, 110, 60, -92, -125, 32, 46, -19, -103, 95, -1, 2, 3, 1, 0, 1])).\n- IndispensablePublicKeyFormatsProvider reports: <no explicit error; it likely did not recognize the SubjectPublicKeyInfo>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:588\n      - (data): replay = Indexes(107L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:619",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L619",
+      "expectedValid": true,
+      "category": "algorithm-or-decoder-support",
+      "description": "accept X25519 EE cert issued by trusted Ed25519 self-signed CA cert",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L619\nUpstream: accept X25519 EE cert issued by trusted Ed25519 self-signed CA cert\nNo loaded SignatureAlgorithmsProvider is able to handle AlgorithmIdentifier(oid=1.3.101.112, parameters=null, (raw=SequenceOfSequence(tag=16 CONSTRUCTED (=0x30) (SEQUENCE), length=5 (=0x05), overallLength=7), children=[Primitive(tag=6 (=0x06) (OBJECT IDENTIFIER), length=3 (=0x03), overallLength=5) 1.3.101.112])).\n- IndispensableSignatureAlgorithmsProvider reports: <no explicit error; it likely did not recognize the X509AlgorithmIdentifier>\n    Error replay info: (data) ACCEPT openssl: 25-test_verify.t:619\n      - (data): replay = Indexes(108L)",
+      "diagnosticTruncated": false
+    },
+    {
+      "source": "openssl",
+      "id": "25-test_verify.t:686",
+      "sourceUrl": "https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L686",
+      "expectedValid": false,
+      "category": "unexpected-acceptance",
+      "description": "Bad certificate policy",
+      "diagnostic": "at.asitplus.AssertionError: https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t#L686\nUpstream: Bad certificate policy\nACCEPTED\nexpected:<false> but was:<true>\n    Error replay info: (data) REJECT openssl: 25-test_verify.t:686\n      - (data): replay = Indexes(110L)",
+      "diagnosticTruncated": false
+    }
+  ]
+}

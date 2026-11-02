@@ -1,0 +1,73 @@
+// Adapter appended to the pinned Go name_constraints_test.go types, tables and certificate generators.
+// The upstream helpers generate certificates; this adapter exports every alternative supplied by
+// the source table. It does not discover paths or change the upstream expectedError.
+func main() {
+    type Case struct {
+        Index int `json:"index"`
+        Name string `json:"name"`
+        Roots []string `json:"roots"`
+        Paths [][]string `json:"paths"`
+        ExpectedError string `json:"expectedError"`
+        Policy bool `json:"policy"`
+        GenerationError string `json:"generationError,omitempty"`
+    }
+    cases := []Case{}
+    certPEM := func(c *Certificate) string {
+        return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c.Raw}))
+    }
+    newKey := func() *ecdsa.PrivateKey {
+        key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+        if err != nil { panic(err) }; return key
+    }
+    for i, test := range nameConstraintsTests {
+        item := Case{Index:i, Name:test.name, ExpectedError:test.expectedError,
+            Policy:len(test.requestedEKUs)>0 || len(test.leaf.ekus)>0}
+        rootKey := newKey()
+        var parent *Certificate
+        for _, spec := range test.roots {
+            item.Policy = item.Policy || len(spec.ekus)>0
+            cert, err := makeConstraintsCACert(spec, fmt.Sprintf("Root %d", i), rootKey, nil, rootKey)
+            if err != nil { panic(err) }
+            parent = cert
+            item.Roots = append(item.Roots, certPEM(cert))
+        }
+        parentKey := rootKey
+        // Source levels run root-to-leaf. Alternatives at each level share a name and key.
+        paths := [][]string{{}}
+        for level, alternatives := range test.intermediates {
+            levelKey := newKey()
+            next := [][]string{}
+            var last *Certificate
+            for _, spec := range alternatives {
+                item.Policy = item.Policy || len(spec.ekus)>0
+                cert, err := makeConstraintsCACert(spec, fmt.Sprintf("Intermediate level %d",level), levelKey,parent,parentKey)
+                if err != nil { panic(err) }
+                last = cert
+                for _, path := range paths {
+                    candidate := append([]string{}, path...)
+                    candidate = append(candidate,certPEM(cert))
+                    next = append(next,candidate)
+                }
+            }
+            paths = next
+            parent = last
+            parentKey = levelKey
+        }
+        leaf, err := makeConstraintsLeafCert(test.leaf,newKey(),parent,parentKey)
+        if err != nil {
+            item.GenerationError = err.Error()
+        } else {
+            for _, path := range paths {
+                candidate := []string{certPEM(leaf)}
+                for j:=len(path)-1;j>=0;j-- { candidate=append(candidate,path[j]) }
+                item.Paths=append(item.Paths,candidate)
+            }
+        }
+        cases=append(cases,item)
+    }
+    output := struct {
+        GoVersion string `json:"goVersion"`
+        Cases []Case `json:"cases"`
+    }{runtime.Version(),cases}
+    if err:=json.NewEncoder(os.Stdout).Encode(output);err!=nil {panic(err)}
+}

@@ -116,6 +116,7 @@ The test suites distinguish the following contracts:
 |---|---|
 | `NistPkitsPathTests` | 151 imported [NIST PKITS](https://csrc.nist.gov/projects/pki-testing) cases targeting X.509/RFC 3280, evaluated at a fixed date. Assertions are never caught as expected rejections. Two locally inverted valid-notBefore expectations were restored from PKITS 4.2.3/4.2.4. CRL-signing KU cases test only the KU prerequisite; no CRL tests are imported. Failures identify the responsible validator without matching implementation-specific error prose. |
 | `LimboRfc5280PathTests` | Selected RFC-labelled, path-length, and saved online vectors from [x509-limbo](https://github.com/C2SP/x509-limbo). Upstream JSON expectations are preserved. Each different basic-path expectation has a reason in the adapter. Optional issuance linting has its own context. All seven validity-time cases run; saved online vectors use their recorded times and make no network requests. |
+| `PublicCertificatePathCorpusTests` | 226 additional pinned public vectors: 75 from [BoringSSL](https://github.com/google/boringssl/tree/5d165bc0408b977a80247598834cddd2c99b788f/pki/testdata/verify_certificate_chain_unittest), 42 from [OpenSSL](https://github.com/openssl/openssl/blob/21909a8a544f88d162ce1d2929cdad5ff990fe11/test/recipes/25-test_verify.t), and 109 from [Go](https://github.com/golang/go/blob/a0c8470e9dfe38ac3b594f944238a5678fe9a07e/src/crypto/x509/name_constraints_test.go). Includes 81 expected rejections and 145 acceptance controls. Source expectations are retained; source-specific policy and generation exclusions are recorded individually. |
 | Local DER regressions | State exactly whether they test basic paths, optional issuance linting, or application policy. The previous leading-dot fixture is a negative subtree test: `.allowed.example` cannot permit `nc2.good.example`. The single-CA permitted-subtree fixture tests alternatives, not intersection across CAs. |
 
 The Limbo adapter explicitly excludes alternate-path/reordering cases, caller-specified `max_chain_depth`, two vectors missing their described intermediate (`intermediate-ca-missing-basic-constraints`, `ica-ku-keycertsign`), and the directly trusted peer in `serial::negative`. The latter's serial is still tested by optional issuance linting. It does not consume expected peer names, validation kind, signature-algorithm policy, requested leaf KU, or CRLs. These exclusions must not be counted as tested capabilities.
@@ -127,9 +128,14 @@ The 2026-11-02 run of `./gradlew :indispensable-pkix:jvmTest :pkix-supreme:jvmTe
 | Scope | Passed | Failed |
 |---|---:|---:|
 | `indispensable-pkix` | 125 | 0 |
-| `pkix-supreme` | 322 | 3 |
+| `pkix-supreme` | 504 | 47 |
 | NIST imported path cases (included above) | 151 | 0 |
 | Limbo basic-path/decoder cases (included above) | 105 | 0 |
 | Limbo optional issuance checks (included above) | 12 | 0 |
+| New public corpus (included above) | 182 | 44 |
+
+The new public corpus records 11 unexpected acceptances, 24 unexpected rejections and 9 algorithm/decoder support differences. These are source-compatibility results, not 44 independent RFC violations; in particular, Go wildcard/leading-dot/empty-constraint conventions and optional algorithms/extensions require separate interpretation. The unexpected acceptances include cross-family IP constraints, mailbox local-part matching, email name constraints, a critical policy qualifier, explicit EC parameters and an explicit-policy case. Production validator behavior was not changed to make the corpus pass.
+
+Pinned sources, licenses, regeneration and exclusion criteria are documented in `pkix-supreme/src/jvmTest/corpora/README.md`. The offline fixtures and per-case failure record are `corpora/public-paths.json` and `corpora/public-path-results.json` in JVM test resources. Each recorded difference links to its source and is tied to the snapshot SHA-256.
 
 The three active `KNOWN RFC 5280 GAP` regressions in `PkixDerRegressionTest` require rejection or proper handling of critical DNS subtree `minimum=2`, `maximum=0`, and malformed critical NameConstraints. They isolate the extension validator so an unrelated signature failure cannot make them pass. They are neither skipped nor inverted to bless current behavior; the JVM build remains red until those implementation gaps are addressed. Android and native tests were not run in this pass.
