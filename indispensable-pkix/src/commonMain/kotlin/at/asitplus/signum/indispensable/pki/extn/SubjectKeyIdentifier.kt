@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1OctetString
 import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.encoding.encodeToAsn1OctetStringPrimitive
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.subjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateExtension
@@ -23,7 +23,7 @@ class SubjectKeyIdentifier internal constructor(
         Awesn1X509CertificateExtension(
             KnownOIDs.subjectKeyIdentifier,
             critical,
-            keyIdentifier.encodeToAsn1OctetStringPrimitive().derEncoded,
+            Asn1OctetString(keyIdentifier).derEncoded,
         ),
         keyIdentifier,
     )

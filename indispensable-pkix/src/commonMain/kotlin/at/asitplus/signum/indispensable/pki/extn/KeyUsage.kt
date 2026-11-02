@@ -57,7 +57,7 @@ enum class UsageBit(val index: Long) {
         fun parseExtension(encodedValue: Asn1BitString): Set<UsageBit> {
             val result = mutableSetOf<UsageBit>()
             for (usage in entries) {
-                if (usage.index < encodedValue.logicalBitCount) {
+                if (usage.index < encodedValue.sizeBits) {
                     if (encodedValue[usage.index]) {
                         result.add(usage)
                     }
