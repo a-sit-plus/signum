@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509Certificate
@@ -61,8 +60,8 @@ val EcdsaAlgorithmAsn1Serializer: KSerializer<EcdsaAlgorithm> = X509Serializer(
 val RsaAlgorithmAsn1Serializer: KSerializer<RsaAlgorithm> = X509Serializer(
     X509AlgorithmIdentifier.serializer(), { it.asn1Representation }, { RsaAlgorithm.fromAsn1Representation(it) },
 )
-val CryptoPublicKeyAsn1Serializer: KSerializer<CryptoPublicKey> = X509Serializer(
-    SubjectPublicKeyInfo.serializer(), { it.asn1Representation }, { CryptoPublicKey.fromAsn1Representation(it) },
+val PublicKeyAsn1Serializer: KSerializer<PublicKey> = X509Serializer(
+    SubjectPublicKeyInfo.serializer(), { it.asn1Representation }, { PublicKey.fromAsn1Representation(it) },
 )
 val EcdsaPublicKeyAsn1Serializer: KSerializer<EcdsaPublicKey> = X509Serializer(
     SubjectPublicKeyInfo.serializer(), { it.asn1Representation }, { EcdsaPublicKey(it) },
@@ -91,11 +90,11 @@ val WellKnownDigestAsn1Serializer: KSerializer<WellKnownDigest> = X509Serializer
 )
 
 
-val CryptoPrivateKeyAsn1Serializer: KSerializer<CryptoPrivateKey> = X509Serializer(
-    at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.serializer(), { it.asn1Representation }, { CryptoPrivateKey.fromAsn1Representation(it) },
+val PrivateKeyAsn1Serializer: KSerializer<PrivateKey> = X509Serializer(
+    at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.serializer(), { it.asn1Representation }, { PrivateKey.fromAsn1Representation(it) },
 )
-val CryptoPrivateKeyWithPublicKeyAsn1Serializer: KSerializer<CryptoPrivateKey.WithPublicKey> = X509Serializer(
-    at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.serializer(), { it.asn1Representation }, { CryptoPrivateKey.fromAsn1Representation(it) as? CryptoPrivateKey.WithPublicKey ?: throw SerializationException("Private key has no public key") },
+val PrivateKeyWithPublicKeyAsn1Serializer: KSerializer<PrivateKey.WithPublicKey> = X509Serializer(
+    at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.serializer(), { it.asn1Representation }, { PrivateKey.fromAsn1Representation(it) as? PrivateKey.WithPublicKey ?: throw SerializationException("Private key has no public key") },
 )
 val RsaPrivateKeyAsn1Serializer: KSerializer<RsaPrivateKey> = X509Serializer(
     at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo.serializer(), { it.asn1Representation }, { RsaPrivateKey.fromAsn1Representation(it) },
@@ -115,7 +114,7 @@ val RsaPrivateKeyPrimeInfoAsn1Serializer: KSerializer<RsaPrivateKey.PrimeInfo> =
 val SignatureValueAsn1Serializer: KSerializer<SignatureValue> = X509Serializer(
     at.asitplus.awesn1.crypto.X509SignatureValue.serializer(), { it.asn1Representation }, { SignatureValue.fromAsn1Representation(it) },
 )
-val CryptoSignatureAsn1Serializer: KSerializer<CryptoSignature> = X509Serializer(
+val SignatureAsn1Serializer: KSerializer<Signature> = X509Serializer(
     at.asitplus.awesn1.crypto.X509SignatureValue.serializer(), { it.asn1Representation }, { throw SerializationException("A signature BIT STRING has no algorithm; decode as SignatureValue, then supply its algorithm") },
 )
 val EcdsaSignatureAsn1Serializer: KSerializer<EcdsaSignature> = X509Serializer(
@@ -194,7 +193,7 @@ val signumAsn1Serializers: SerializersModule = SerializersModule {
     contextual(SignatureAlgorithm::class, SignatureAlgorithmAsn1Serializer)
     contextual(EcdsaAlgorithm::class, EcdsaAlgorithmAsn1Serializer)
     contextual(RsaAlgorithm::class, RsaAlgorithmAsn1Serializer)
-    contextual(CryptoPublicKey::class, CryptoPublicKeyAsn1Serializer)
+    contextual(PublicKey::class, PublicKeyAsn1Serializer)
     contextual(EcdsaPublicKey::class, EcdsaPublicKeyAsn1Serializer)
     contextual(RsaPublicKey::class, RsaPublicKeyAsn1Serializer)
     contextual(Digest::class, DigestAsn1Serializer)
@@ -216,15 +215,15 @@ val signumAsn1Serializers: SerializersModule = SerializersModule {
         { require(Digest.fromAsn1Representation(it) == WellKnownDigest.SHA512); WellKnownDigest.SHA512 },
     ))
 
-    contextual(CryptoPrivateKey::class, CryptoPrivateKeyAsn1Serializer)
-    contextual(CryptoPrivateKey.WithPublicKey::class, CryptoPrivateKeyWithPublicKeyAsn1Serializer)
+    contextual(PrivateKey::class, PrivateKeyAsn1Serializer)
+    contextual(PrivateKey.WithPublicKey::class, PrivateKeyWithPublicKeyAsn1Serializer)
     contextual(RsaPrivateKey::class, RsaPrivateKeyAsn1Serializer)
     contextual(EcdsaPrivateKey::class, EcdsaPrivateKeyAsn1Serializer)
     contextual(EcdsaPrivateKey.WithPublicKey::class, EcdsaPrivateKeyWithPublicKeyAsn1Serializer)
     contextual(EcdsaPrivateKey.WithoutPublicKey::class, EcdsaPrivateKeyWithoutPublicKeyAsn1Serializer)
     contextual(RsaPrivateKey.PrimeInfo::class, RsaPrivateKeyPrimeInfoAsn1Serializer)
     contextual(SignatureValue::class, SignatureValueAsn1Serializer)
-    contextual(CryptoSignature::class, CryptoSignatureAsn1Serializer)
+    contextual(Signature::class, SignatureAsn1Serializer)
     contextual(EcdsaSignature::class, EcdsaSignatureAsn1Serializer)
     contextual(EcdsaSignature.IndefiniteLength::class, EcdsaSignatureIndefiniteLengthAsn1Serializer)
     contextual(EcdsaSignature.DefiniteLength::class, EcdsaSignatureDefiniteLengthAsn1Serializer)

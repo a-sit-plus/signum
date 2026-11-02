@@ -13,12 +13,12 @@ import kotlin.time.Instant
 /** Signed certificate contents, with the original decoded source retained separately. */
 class Certificate(
     val tbsCertificate: TbsCertificate,
-    signatureProvider: () -> CryptoSignature/*defer to also parse and round-trip even unsupported sigalgs*/,
+    signatureProvider: () -> Signature/*defer to also parse and round-trip even unsupported sigalgs*/,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
     constructor(
         tbsCertificate: TbsCertificate,
-        signature: CryptoSignature,
+        signature: Signature,
     ) : this(tbsCertificate, { signature }, null) {
         require(tbsCertificate.extensions.allDistinctByOids()) { "Multiple extensions with the same OID found" }
     }
@@ -28,7 +28,7 @@ class Certificate(
     /**
      * convenience getter for the contained [TbsCertificate.publicKey]
      */
-    val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
+    val publicKey: PublicKey get() = tbsCertificate.publicKey
 
     val signatureAlgorithm: SignatureAlgorithm get() = tbsCertificate.signatureAlgorithm
 

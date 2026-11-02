@@ -16,7 +16,7 @@ import at.asitplus.awesn1.sha256WithRSAEncryption
 import at.asitplus.awesn1.sha384WithRSAEncryption
 import at.asitplus.awesn1.sha512WithRSAEncryption
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.SignatureFormatProvider
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.ECCurve
@@ -31,7 +31,7 @@ sealed class EcdsaSignature
     val r: BigInteger,
     val s: BigInteger,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-) : CryptoSignature {
+) : Signature {
     init {
         require(r.isPositive) { "r must be positive" }
         require(s.isPositive) { "s must be positive" }
@@ -155,7 +155,7 @@ sealed class EcdsaSignature
 class RsaSignature(
     val rawBytes: ByteArray,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-) : CryptoSignature {
+) : Signature {
     constructor(rawBytes: ByteArray) : this(rawBytes, null)
 
     override val joseBytes get() = rawBytes
@@ -178,13 +178,13 @@ class RsaSignature(
 }
 
 object IndispensableSignatureFormats : SignatureFormatProvider {
-    override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? = when (value) {
+    override fun encodeToAsn1(value: Signature): X509SignatureValue? = when (value) {
         is EcdsaSignature -> at.asitplus.awesn1.crypto.EcdsaSigValue(value.r.toAsn1Integer(), value.s.toAsn1Integer()).toX509SignatureValue()
         is RsaSignature -> X509SignatureValue(value.rawBytes)
         else -> null
     }
 
-    override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
+    override fun parseSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
         is EcdsaAlgorithm -> {
             val parsedSig = EcdsaSignature.fromAsn1Representation(signature)
             when (val crv = signatureAlgorithm.requiredCurve) {
@@ -196,7 +196,7 @@ object IndispensableSignatureFormats : SignatureFormatProvider {
         else -> null
     }
 
-    override fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue) =
+    override fun parseSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue) =
         when (x509Algorithm.oid) {
 
             KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,

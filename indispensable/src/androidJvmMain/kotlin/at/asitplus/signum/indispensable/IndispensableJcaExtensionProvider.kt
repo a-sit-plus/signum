@@ -24,14 +24,14 @@ import java.security.PublicKey
 
 /** This is not semantics-aware, but allows fallback for public key/private key parsing based on DER formats */
 object FallbackToDERFormat : JcaMappingProvider {
-    override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
+    override fun jcaPublicKeyToPublicKey(publicKey: PublicKey): at.asitplus.signum.indispensable.PublicKey? =
         if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
-            Signum.Der.decodeFromByteArray<CryptoPublicKey>(publicKey.encoded)
+            Signum.Der.decodeFromByteArray<at.asitplus.signum.indispensable.PublicKey>(publicKey.encoded)
         else null
 
-    override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
+    override fun jcaPrivateKeyToPrivateKey(privateKey: PrivateKey): at.asitplus.signum.indispensable.PrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            Signum.Der.decodeFromByteArray<CryptoPrivateKey>(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+            Signum.Der.decodeFromByteArray<at.asitplus.signum.indispensable.PrivateKey>(privateKey.encoded) as at.asitplus.signum.indispensable.PrivateKey.WithPublicKey
         else null
 }
 
@@ -80,40 +80,40 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
         else -> null
     }
 
-    override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? = when (algorithm) {
+    override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): Signature? = when (algorithm) {
         is EcdsaAlgorithm -> EcdsaSignature.fromRawSignatureValue(sigBytes)
         is RsaAlgorithm -> RsaSignature.fromRawSignatureValue(sigBytes)
         else -> null
     }
 
-    override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
+    override fun getJCASignatureBytes(signature: Signature): ByteArray? = when (signature) {
         is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
         else -> null
     }
 
-    override fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey) = when(publicKey) {
+    override fun publicKeyToJcaPublicKey(publicKey: at.asitplus.signum.indispensable.PublicKey) = when(publicKey) {
         is EcdsaPublicKey -> publicKey.toJcaPublicKey()
         is RsaPublicKey -> publicKey.toJcaPublicKey()
         else -> null
     }
 
-    override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey) = when(publicKey) {
-        is java.security.interfaces.RSAPublicKey -> publicKey.toCryptoPublicKey()
-        is java.security.interfaces.ECPublicKey -> publicKey.toCryptoPublicKey()
+    override fun jcaPublicKeyToPublicKey(publicKey: PublicKey) = when(publicKey) {
+        is java.security.interfaces.RSAPublicKey -> publicKey.toPublicKey()
+        is java.security.interfaces.ECPublicKey -> publicKey.toPublicKey()
         else -> null
     }
 
-    override fun cryptoPrivateKeyToJcaPrivateKey(privateKey: CryptoPrivateKey) =
+    override fun privateKeyToJcaPrivateKey(privateKey: at.asitplus.signum.indispensable.PrivateKey) =
         when (privateKey) {
             is RsaPrivateKey -> privateKey.toJcaPrivateKey()
             is EcdsaPrivateKey -> privateKey.toJcaPrivateKey()
             else -> null
         }
 
-    override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey) =
+    override fun jcaPrivateKeyToPrivateKey(privateKey: PrivateKey) =
         when (privateKey) {
-            is java.security.interfaces.RSAPrivateKey -> privateKey.toCryptoPrivateKey()
-            is java.security.interfaces.ECPrivateKey -> privateKey.toCryptoPrivateKey()
+            is java.security.interfaces.RSAPrivateKey -> privateKey.toPrivateKey()
+            is java.security.interfaces.ECPrivateKey -> privateKey.toPrivateKey()
             else -> null
         }
 }

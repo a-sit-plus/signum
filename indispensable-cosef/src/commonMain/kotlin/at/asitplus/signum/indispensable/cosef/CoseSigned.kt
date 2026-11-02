@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
@@ -32,7 +32,7 @@ data class CoseSigned<P : Any?> internal constructor(
     val protectedHeader: CoseHeader,
     val unprotectedHeader: CoseHeader? = null,
     val payload: P?,
-    val signature: CryptoSignature,
+    val signature: Signature,
     val wireFormat: CoseBytes,
 ) {
 
@@ -96,7 +96,7 @@ data class CoseSigned<P : Any?> internal constructor(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,
             payload: P?,
-            signature: CryptoSignature,
+            signature: Signature,
             payloadSerializer: KSerializer<P>,
         ): CoseSigned<P> = CoseSigned<P>(
             protectedHeader = protectedHeader,

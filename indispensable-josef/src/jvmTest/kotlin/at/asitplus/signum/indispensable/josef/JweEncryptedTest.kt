@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.symmetric.randomKey
-import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import com.nimbusds.jose.*
@@ -79,7 +79,7 @@ val JweEncryptedTest by matrixSuite {
         parsed.header.agreementPartyUInfo shouldBe apu
         parsed.header.agreementPartyVInfo shouldBe apv
         parsed.header.jsonWebKeyUrl shouldBe jku
-        val ourJwk = jwk.toECPublicKey().toCryptoPublicKey().toJsonWebKey()
+        val ourJwk = jwk.toECPublicKey().toPublicKey().toJsonWebKey()
         parsed.header.jsonWebKey shouldBe ourJwk
         parsed.header.keyId shouldBe kid
         parsed.header.type shouldBe typ

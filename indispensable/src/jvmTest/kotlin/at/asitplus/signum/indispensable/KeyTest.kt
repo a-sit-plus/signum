@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
 
@@ -45,8 +44,8 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
     "JCA conversions use Signum.Der" {
         val native = KeyPairGenerator.getInstance("EC").apply { initialize(256) }.genKeyPair().private as JcaECPrivateKey
-        val key: CryptoPrivateKey = native.toCryptoPrivateKey()
-        key.toJcaPrivateKey().toCryptoPrivateKey() shouldBe key
+        val key: PrivateKey = native.toPrivateKey()
+        key.toJcaPrivateKey().toPrivateKey() shouldBe key
     }
 
     "RSA CRT validation remains joint and deferred" {
@@ -73,9 +72,9 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                         " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
             }) test { (privKey, pubKey) ->
 
-                val own = pubKey.toCryptoPublicKey()
+                val own = pubKey.toPublicKey()
 
-                val ownPrivate = Signum.Der.decodeFromByteArray<CryptoPrivateKey>(privKey.encoded) as CryptoPrivateKey.WithPublicKey
+                val ownPrivate = Signum.Der.decodeFromByteArray<PrivateKey>(privKey.encoded) as PrivateKey.WithPublicKey
 
                 ownPrivate.publicKey shouldBe own
                 Signum.Der.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
@@ -84,10 +83,10 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 withClue("Basic Conversions") {
                     Signum.Der.encodeToByteArray(own) shouldBe pubKey.encoded
                     Signum.Der.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1Representation(own.asn1Representation) shouldBe own
-                    CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
+                    PublicKey.fromAsn1Representation(own.asn1Representation) shouldBe own
+                    PublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().encoded shouldBe pubKey.encoded
-                    Signum.Der.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(Signum.Der.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
+                    Signum.Der.decodeFromTlv<PublicKey>(Asn1Element.parse(Signum.Der.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
                 }
 
                 withClue("Compressed Test") {
@@ -103,8 +102,8 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-            val pubKey1 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
-            val pubKey2 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
+            val pubKey1 = Signum.Der.decodeFromByteArray<PublicKey>(keyPair.public.encoded)
+            val pubKey2 = Signum.Der.decodeFromByteArray<PublicKey>(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -114,7 +113,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
             val listOfDidKeys = javaClass.classLoader.getResourceAsStream("did_keys.txt")?.reader()?.readLines()
                 ?: throw Exception("Test vectors missing!")
             for (key in listOfDidKeys) {
-                kotlin.runCatching { CryptoPublicKey.fromDid(key) }.wrap().getOrThrow()
+                kotlin.runCatching { PublicKey.fromDid(key) }.wrap().getOrThrow()
             }
         }
     }
@@ -135,7 +134,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val own = RsaPublicKey(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
-                val ownPrivate = Signum.Der.decodeFromByteArray<CryptoPrivateKey>(privKey.encoded) as CryptoPrivateKey.WithPublicKey
+                val ownPrivate = Signum.Der.decodeFromByteArray<PrivateKey>(privKey.encoded) as PrivateKey.WithPublicKey
                 ownPrivate.publicKey shouldBe own
                 Signum.Der.encodeToByteArray(ownPrivate) shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
@@ -154,15 +153,15 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1
                 Signum.Der.encodeToByteArray(own) shouldBe pubKey.encoded //PKCS#8
                 Signum.Der.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
-                CryptoPublicKey.fromAsn1Representation(own.asn1Representation) shouldBe own
-                Signum.Der.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(Signum.Der.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
+                PublicKey.fromAsn1Representation(own.asn1Representation) shouldBe own
+                Signum.Der.decodeFromTlv<PublicKey>(Asn1Element.parse(Signum.Der.encodeToByteArray(own)) as Asn1Sequence) shouldBe own
                 own.toJcaPublicKey().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-            val pubKey1 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
-            val pubKey2 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPair.public.encoded)
+            val pubKey1 = Signum.Der.decodeFromByteArray<PublicKey>(keyPair.public.encoded)
+            val pubKey2 = Signum.Der.decodeFromByteArray<PublicKey>(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -176,10 +175,10 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairRSA1 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
                 val keyPairRSA2 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
-                val pubKey1 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPairEC1.public.encoded)
-                val pubKey2 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPairEC2.public.encoded)
-                val pubKey3 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPairRSA1.public.encoded)
-                val pubKey4 = Signum.Der.decodeFromByteArray<CryptoPublicKey>(keyPairRSA2.public.encoded)
+                val pubKey1 = Signum.Der.decodeFromByteArray<PublicKey>(keyPairEC1.public.encoded)
+                val pubKey2 = Signum.Der.decodeFromByteArray<PublicKey>(keyPairEC2.public.encoded)
+                val pubKey3 = Signum.Der.decodeFromByteArray<PublicKey>(keyPairRSA1.public.encoded)
+                val pubKey4 = Signum.Der.decodeFromByteArray<PublicKey>(keyPairRSA2.public.encoded)
 
                 pubKey1.hashCode() shouldNotBe pubKey2.hashCode()
                 pubKey1.hashCode() shouldNotBe pubKey3.hashCode()

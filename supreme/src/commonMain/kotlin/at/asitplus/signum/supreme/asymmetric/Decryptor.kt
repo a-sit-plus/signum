@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.dsl.DSL
@@ -11,7 +11,7 @@ import at.asitplus.signum.dsl.DSLConfigureFn
 
 sealed interface Decryptor {
     val algorithm: AsymmetricEncryptionAlgorithm
-    val privateKey: CryptoPrivateKey
+    val privateKey: PrivateKey
 
 
     suspend fun decrypt(data: ByteArray): KmmResult<ByteArray>
@@ -58,12 +58,12 @@ internal constructor(
  * @see PlatformDecryptorConfiguration
  */
 fun AsymmetricEncryptionAlgorithm.decryptorFor(
-    privateKey: CryptoPrivateKey,
+    privateKey: PrivateKey,
     configure: ConfigurePlatformDecryptor = null
 ) = decryptorForImpl(privateKey, configure)
 
 private fun AsymmetricEncryptionAlgorithm.decryptorForImpl(
-    privateKey: CryptoPrivateKey, configure: ConfigurePlatformDecryptor,
+    privateKey: PrivateKey, configure: ConfigurePlatformDecryptor,
 ): Decryptor =
     when (this) {
         is AsymmetricEncryptionAlgorithm.RSA -> PlatformRSADecryptor(

@@ -48,7 +48,7 @@ fun TbsCertificate.Companion.fromAsn1Representation(
         validFrom = src.validity.validFrom.instant,
         validUntil = src.validity.validUntil.instant,
         subjectName = X500Name.fromAsn1Representation(src.subjectName),
-        publicKeyProvider = { CryptoPublicKey.fromAsn1Representation(src.subjectPublicKeyInfo) },
+        publicKeyProvider = { PublicKey.fromAsn1Representation(src.subjectPublicKeyInfo) },
         issuerUniqueID = src.issuerUniqueID?.bitCarryingBytes,
         subjectUniqueID = src.subjectUniqueID?.bitCarryingBytes,
         extensions = src.extensions?.map { CertificateExtension(it) }.orEmpty(),

@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
@@ -26,7 +26,7 @@ import kotlinx.serialization.json.Json
 data class JwsSigned<out P : Any>(
     val header: JwsHeader,
     val payload: P,
-    val signature: CryptoSignature,
+    val signature: Signature,
     val plainSignatureInput: ByteArray,
 ) {
 

@@ -1,11 +1,10 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
-import at.asitplus.signum.indispensable.josef.JwsHeader.Companion.fromParts
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
@@ -419,9 +418,9 @@ data class JwsHeader(
      * Tries to compute a public key in descending order from [jsonWebKey], [keyId],
      * or [certificateChain], and takes the first success or null.
      */
-    val publicKey: CryptoPublicKey? by lazy {
-        jsonWebKey?.toCryptoPublicKey()?.getOrNull()
-            ?: keyId?.let { catching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
+    val publicKey: PublicKey? by lazy {
+        jsonWebKey?.toPublicKey()?.getOrNull()
+            ?: keyId?.let { catching { PublicKey.fromDid(it) } }?.getOrNull()
             ?: certificateChain?.leaf?.publicKey
     }
 

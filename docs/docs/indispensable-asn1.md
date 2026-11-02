@@ -73,7 +73,7 @@ Most prominently, it comes with ASN.1 unsigned varint and minimum-length encodin
 
 The ASN.1 engine allows decoding and encoding arbitrary structures from/to `ByteArray`s, as well as kotlinx.io `Source` and `Sink`.
 
-Relevant _Indispensable_ classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
+Relevant _Indispensable_ classes like `PublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
 This is an essential pattern, making the ASN.1 engine work the way it does.
 We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  
@@ -108,7 +108,7 @@ Hence, a typical decoding pipeline looks as follows:
 `Asn1Decodable` provides the following functions for decoding data:
 
 * `doDecode()`, which is the only function that needs to be implemented by high-level types implementing `Asn1Encodable`.
-  To provide a concrete example: This function needs to contain all parsing/decoding logic to construct a `CryptoPublicKey` from an `Asn1Sequence`,
+  To provide a concrete example: This function needs to contain all parsing/decoding logic to construct a `PublicKey` from an `Asn1Sequence`,
   as demonstrated in the [_Indispensable_ source code](https://github.com/a-sit-plus/signum/blob/main/indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/CryptoPublicKey.kt#L109).
 * `verifyTag()` already implements optional tag assertion. The default implementation of  `decodeFromTlv()` (see below) calls this before invoking `doDecode()`.
 * `decodeFromTlv()` takes an ASN.1 element and optional tag to assert, and returns a high-level type. Throws!
@@ -424,7 +424,7 @@ Application 1337 (9 elem)
 You can, of course, also create primitives, by directly invoking builder functions, like `Asn1.Int()` and use the resulting
 ASN.1 primitive as-is.
 !!! tip
-    The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `CryptoPublicKey` using
+    The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `PublicKey` using
     the same concise syntax.  
     **Do checkout the [API docs](dokka/indispensable-asn1/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions!**
 

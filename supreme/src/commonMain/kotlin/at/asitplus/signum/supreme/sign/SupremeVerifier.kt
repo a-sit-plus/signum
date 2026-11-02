@@ -5,8 +5,8 @@ import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.ecmath.straussShamir
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.sign.EcdsaVerifier
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -22,7 +22,7 @@ class InvalidSignature(message: String, cause: Throwable? = null): Throwable(mes
 class KotlinEcdsaVerifier
     internal constructor (override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey)
     : EcdsaVerifier {
-    override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
+    override suspend fun verify(data: SignatureInput, sig: Signature): SignatureVerifier.Success {
         require(sig is EcdsaSignature)
             { "Attempted to validate ${sig::class.simpleName} signature using EC public key" }
 
@@ -54,7 +54,7 @@ class KotlinEcdsaVerifier
 }
 
 object SupremeKotlinVerifierProvider : SignatureVerifierProvider {
-    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration): SignatureVerifier? {
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration): SignatureVerifier? {
         if (config.jvm.v.provider != JCAProviderRef.None) throw UnsupportedOperationException("Not substituting Kotlin verifier when specific JCA provider is requested")
         if (algorithm !is EcdsaAlgorithm) return null
         if (key !is EcdsaPublicKey)
@@ -65,5 +65,5 @@ object SupremeKotlinVerifierProvider : SignatureVerifierProvider {
 
 @Deprecated("platform distinction is unsupported in provider system; if you want a particular instantiation, ask that provider specifically")
 fun SignatureAlgorithm.platformVerifierFor
-            (publicKey: CryptoPublicKey, configure: DSLConfigureFn<VerifierConfiguration> = null) =
+            (publicKey: PublicKey, configure: DSLConfigureFn<VerifierConfiguration> = null) =
     this.verifierFor(publicKey, configure)

@@ -6,7 +6,6 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.sign.asPKCS1
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
@@ -119,12 +118,12 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
         else -> null
     }
 
-    override fun getSignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
+    override fun getSignatureBytes(signature: Signature): ByteArray? = when (signature) {
         is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
         else -> null
     }
 
-    override fun cryptoPublicKeyToSecKey(key: CryptoPublicKey): OwnedCFValue<SecKeyRef>? {
+    override fun publicKeyToSecKey(key: PublicKey): OwnedCFValue<SecKeyRef>? {
         val (keyType, keyBytes) = when (key) {
             is EcdsaPublicKey -> Pair(kSecAttrKeyTypeECSECPrimeRandom, key.iosEncoded)
             is RsaPublicKey -> Pair(kSecAttrKeyTypeRSA, key.iosEncoded)
@@ -140,7 +139,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
         }
     }
 
-    override fun secKeyToCryptoPublicKey(key: SecKeyRef): CryptoPublicKey? {
+    override fun secKeyToPublicKey(key: SecKeyRef): PublicKey? {
         memScoped {
             val keyType = corecall {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
@@ -161,7 +160,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
         }
     }
 
-    override fun cryptoPrivateKeyToSecKey(key: CryptoPrivateKey.WithPublicKey): OwnedCFValue<SecKeyRef>? {
+    override fun privateKeyToSecKey(key: PrivateKey.WithPublicKey): OwnedCFValue<SecKeyRef>? {
         memScoped {
             val (keyType, keySize, keyBytes) = when (key) {
                 is EcdsaPrivateKey.WithPublicKey ->
@@ -182,12 +181,12 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
         }
     }
 
-    override fun secKeyToCryptoPrivateKey(key: SecKeyRef): CryptoPrivateKey.WithPublicKey? {
+    override fun secKeyToPrivateKey(key: SecKeyRef): PrivateKey.WithPublicKey? {
         memScoped {
             val keyType = corecall {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
             }.getAndTake<String>(kSecAttrKeyType)
-            val ctor: ((ByteArray)-> CryptoPrivateKey.WithPublicKey) = when (keyType) {
+            val ctor: ((ByteArray)-> PrivateKey.WithPublicKey) = when (keyType) {
                 kSecAttrKeyTypeRSA.toKotlinString() ->
                     { bytes: ByteArray -> RsaPrivateKey.fromAsn1Representation(Signum.Der.decodeFromByteArray(at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.serializer(), bytes)) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() ->

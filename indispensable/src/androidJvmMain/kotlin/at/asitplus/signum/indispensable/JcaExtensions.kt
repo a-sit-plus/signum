@@ -116,27 +116,27 @@ interface JcaMappingProvider {
 
     /**
      * Should take the bytes produced by signing using the instances returned from
-     * [getJCASignatureInstance]/[getJCASignatureInstancePreHashed] and map them to a [CryptoSignature].
+     * [getJCASignatureInstance]/[getJCASignatureInstancePreHashed] and map them to a [Signature].
      */
-    fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? { return null }
+    fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): at.asitplus.signum.indispensable.Signature? { return null }
 
     /**
-     * Should take a [CryptoSignature] and produce the raw bytes expected for verification using the instances returned
+     * Should take a [Signature] and produce the raw bytes expected for verification using the instances returned
      * from [getJCASignatureInstance]/[getJCASignatureInstancePreHashed].
      */
-    fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? { return null }
+    fun getJCASignatureBytes(signature: at.asitplus.signum.indispensable.Signature): ByteArray? { return null }
 
-    /** Maps this CryptoPublicKey to a JCA PublicKey instance. */
-    fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey): JCAPublicKey? { return null }
+    /** Maps this PublicKey to a JCA PublicKey instance. */
+    fun publicKeyToJcaPublicKey(publicKey: PublicKey): JCAPublicKey? { return null }
 
-    /** Maps this JCA PublicKey instance to a CryptoPublicKey. */
-    fun jcaPublicKeyToCryptoPublicKey(publicKey: JCAPublicKey): CryptoPublicKey? { return null }
+    /** Maps this JCA PublicKey instance to a PublicKey. */
+    fun jcaPublicKeyToPublicKey(publicKey: JCAPublicKey): PublicKey? { return null }
 
-    /** Maps this CryptoPrivateKey to a JCA PrivateKey instance. */
-    fun cryptoPrivateKeyToJcaPrivateKey(privateKey: CryptoPrivateKey): JCAPrivateKey? { return null }
+    /** Maps this PrivateKey to a JCA PrivateKey instance. */
+    fun privateKeyToJcaPrivateKey(privateKey: PrivateKey): JCAPrivateKey? { return null }
 
-    /** Maps this JCA PrivateKey instance to a CryptoPrivateKey. */
-    fun jcaPrivateKeyToCryptoPrivateKey(privateKey: JCAPrivateKey): CryptoPrivateKey.WithPublicKey? { return null }
+    /** Maps this JCA PrivateKey instance to a PrivateKey. */
+    fun jcaPrivateKeyToPrivateKey(privateKey: JCAPrivateKey): PrivateKey.WithPublicKey? { return null }
 }
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
@@ -202,7 +202,7 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Str
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Provider?) =
     this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
 
-val CryptoSignature.jcaSignatureBytes: ByteArray get() =
+val at.asitplus.signum.indispensable.Signature.jcaSignatureBytes: ByteArray get() =
     Signum.load<JcaMappingProvider>()
         .get(this, JcaMappingProvider::getJCASignatureBytes)
 
@@ -217,12 +217,12 @@ fun SpecializedSignatureAlgorithm.parseJCASignature(sigBytes: ByteArray) =
 
 /** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
 @Deprecated("Use algorithm.parseJCASignature", replaceWith = ReplaceWith("algorithm.parseJCASignature(input)"))
-fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: SignatureAlgorithm): CryptoSignature =
+fun at.asitplus.signum.indispensable.Signature.Companion.parseFromJca(input: ByteArray, algorithm: SignatureAlgorithm): at.asitplus.signum.indispensable.Signature =
     algorithm.parseJCASignature(input)
 
 /** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
 @Deprecated("Use algorithm.parseJCASignature", replaceWith = ReplaceWith("algorithm.parseJCASignature(input)"))
-fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: SpecializedSignatureAlgorithm) =
+fun at.asitplus.signum.indispensable.Signature.Companion.parseFromJca(input: ByteArray, algorithm: SpecializedSignatureAlgorithm) =
     algorithm.algorithm.parseJCASignature(input)
 
 internal val WellKnownDigest.jcaName
@@ -251,8 +251,8 @@ val ECCurve.jcaName
 
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
-fun CryptoPublicKey.toJcaPublicKey() =
-    Signum.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
+fun PublicKey.toJcaPublicKey() =
+    Signum.load<JcaMappingProvider>().get(this, JcaMappingProvider::publicKeyToJcaPublicKey)
 
 fun EcdsaPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
@@ -270,7 +270,7 @@ fun RsaPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as java.security.interfaces.RSAPublicKey
 
-fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): EcdsaPublicKey {
+fun java.security.interfaces.ECPublicKey.toPublicKey(): EcdsaPublicKey {
     // TODO: this assumes SPKI encoding then uses bouncycastle on it to find the curve
     // this breaks for non-SPKI encoded ECDSA public keys
     // leaving it untouched for now but we should revisit it
@@ -288,12 +288,12 @@ fun java.security.interfaces.ECPublicKey.toCryptoPublicKey(): EcdsaPublicKey {
     )
 }
 
-fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RsaPublicKey =
+fun java.security.interfaces.RSAPublicKey.toPublicKey(): RsaPublicKey =
     RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
 
-fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
+fun JCAPublicKey.toPublicKey(): PublicKey =
     Signum.load<JcaMappingProvider>()
-        .get(this) { jcaPublicKeyToCryptoPublicKey(it) }
+        .get(this) { jcaPublicKeyToPublicKey(it) }
 
 /**
  * Converts this [Certificate] to a [java.security.cert.X509Certificate].
@@ -316,9 +316,9 @@ fun Certificate.toJcaCertificateBlocking(): java.security.cert.X509Certificate =
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { Signum.Der.decodeFromByteArray<Certificate>(encoded) }
 
-fun CryptoPrivateKey.toJcaPrivateKey() =
+fun PrivateKey.toJcaPrivateKey() =
     Signum.load<JcaMappingProvider>()
-        .get(this) { cryptoPrivateKeyToJcaPrivateKey(it) }
+        .get(this) { privateKeyToJcaPrivateKey(it) }
 
 fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
@@ -330,14 +330,14 @@ fun RsaPrivateKey.toJcaPrivateKey() =
         .generatePrivate(PKCS8EncodedKeySpec(Signum.Der.encodeToByteArray(asPKCS8)))
             as java.security.interfaces.RSAPrivateKey
 
-fun JCAPrivateKey.toCryptoPrivateKey() =
+fun JCAPrivateKey.toPrivateKey() =
     Signum.load<JcaMappingProvider>()
-        .get(this) { jcaPrivateKeyToCryptoPrivateKey(it) }
+        .get(this) { jcaPrivateKeyToPrivateKey(it) }
 
-fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =
+fun java.security.interfaces.ECPrivateKey.toPrivateKey(): EcdsaPrivateKey.WithPublicKey =
     Signum.Der.decodeFromByteArray<EcdsaPrivateKey>(encoded) as EcdsaPrivateKey.WithPublicKey
 
-fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
+fun java.security.interfaces.RSAPrivateKey.toPrivateKey(): RsaPrivateKey =
     Signum.Der.decodeFromByteArray<RsaPrivateKey>(encoded)
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
