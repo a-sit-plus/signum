@@ -54,8 +54,8 @@ class TbsCertificate private constructor(
             validUntil = asn1Representation.validity.validUntil.instant,
             subjectName = X500Name(asn1Representation.subjectName.map(::RelativeDistinguishedName), false),
             publicKey = CryptoPublicKey(asn1Representation.subjectPublicKeyInfo),
-            issuerUniqueID = asn1Representation.issuerUniqueID?.toBitSet()?.toByteArray(),
-            subjectUniqueID = asn1Representation.subjectUniqueID?.toBitSet()?.toByteArray(),
+            issuerUniqueID = asn1Representation.issuerUniqueID?.bitCarryingBytes,
+            subjectUniqueID = asn1Representation.subjectUniqueID?.bitCarryingBytes,
             extensions = asn1Representation.extensions?.map { CertificateExtension(it) }.orEmpty(),
         )
 
@@ -138,8 +138,8 @@ class TbsCertificate private constructor(
             validUntil = Asn1Time.SecondsCapped(providedContent.validUntil),
             subjectName = providedContent.subjectName.requireX509().asn1Representation,
             subjectPublicKeyInfo = providedContent.publicKey.asn1Representation,
-            issuerUniqueID = providedContent.issuerUniqueID?.let { Asn1BitString(BitSet(it)) },
-            subjectUniqueID = providedContent.subjectUniqueID?.let { Asn1BitString(BitSet(it)) },
+            issuerUniqueID = providedContent.issuerUniqueID?.let { Asn1BitString(it) },
+            subjectUniqueID = providedContent.subjectUniqueID?.let { Asn1BitString(it) },
             extensions = providedContent.extensions.map { it.requireX509().asn1Representation },
         )
     }

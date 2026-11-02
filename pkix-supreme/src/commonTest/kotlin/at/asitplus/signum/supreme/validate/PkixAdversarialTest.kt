@@ -1,0 +1,530 @@
+package at.asitplus.signum.supreme.validate
+
+import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
+import at.asitplus.signum.indispensable.pki.SignumPkix
+import at.asitplus.signum.indispensable.pki.TrustAnchor
+import at.asitplus.signum.indispensable.pki.CertificateSerialNumberException
+import at.asitplus.signum.indispensable.pki.SanNotCriticalWithEmptySubjectException
+import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.assertions.throwables.shouldThrow
+import kotlin.time.Instant
+
+/**
+ * DER fixture regressions. Distinguish basic path checks from optional section 4 issuance linting.
+ * https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1
+ */
+@OptIn(ExperimentalPkiApi::class)
+val PkixAdversarialTest by matrixSuite {
+    SignumPkix.install()
+
+    val validationDate = Instant.parse("2027-01-01T00:00:00Z")
+    fun certificate(name: String): Certificate = Certificate.decodeFromPem(PkixAdversarialFixtures.pem(name))
+
+    suspend fun expectValid(root: String, vararg pathFromLeaf: String) {
+        val trustStore = setOf(TrustAnchor.Certificate(certificate(root)))
+        val result = pathFromLeaf.map(::certificate).buildPathAndValidate(
+            CertificateValidationContext(
+                date = validationDate,
+                trustAnchors = trustStore,
+            )
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+    }
+
+    "RFC 5280 6.1.3(b): a SAN may match either permitted subtree of its name type" {
+        // This fixture contains a.example OR b.example in ONE CA, not constraints from two CAs.
+        // Intersection across successive CAs is a different rule (6.1.4(g)).
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3
+        expectValid("mg1", "mg-leaf2", "mg-mid2")
+    }
+
+    "RFC 5280 4.2.1.10: DNS permitted subtree accepts a subdomain at a label boundary" {
+        // This is a positive subdomain fixture, not a negative bare-suffix fixture.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10
+        expectValid("nc-ca", "nc-leaf4", "nc-mid2")
+    }
+
+    "Out-of-subtree fixture fails independently of leading-dot DNS syntax policy" {
+        // The intermediate permits .allowed.example, but the leaf SAN is nc2.good.example.
+        // Accepting leading-dot syntax would still not make this path valid. This fixture cannot
+        // demonstrate an ecosystem syntax gap. RFC basis: 6.1.3(b).
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3
+        val result = listOf(certificate("nc-leaf2"), certificate("nc-mid")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = setOf(TrustAnchor.Certificate(certificate("nc-ca"))))
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
+        result.chainFailures.values.flatMap { it.validatorFailures }
+            .firstOrNull { it.validator is NameConstraintsValidator } shouldNotBe null
+    }
+
+    "RFC 5280 4.2.1.6: empty subject with critical SAN passes both path and issuance checks" {
+        expectValid("es2-root", "es2-leaf")
+        CertValidityValidator().check(certificate("es2-leaf"))
+    }
+
+    "RFC 5280 4.2.1.6: non-critical SAN with empty subject fails optional issuance linting" {
+        // Issuance rule, not a section 6.1 path rejection:
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.6
+        val trustStore = setOf(TrustAnchor.Certificate(certificate("es2-root")))
+        val result = listOf(certificate("es3-leaf")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+        shouldThrow<SanNotCriticalWithEmptySubjectException> { CertValidityValidator().check(certificate("es3-leaf")) }
+    }
+
+    "RFC 5280 6.1.4: target name constraints do not constrain the target itself" {
+        // NC on an end-entity violates issuance rules (4.2.1.10), but the basic path algorithm
+        // applies NC to subsequent certificates, not the certificate carrying the extension.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.4
+        val trustStore = setOf(TrustAnchor.Certificate(certificate("nc-ca")))
+        val result = listOf(certificate("nc-leaf")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+    }
+
+    "Optional RFC 5280 4.1.2.2 issuance linting: zero serial" {
+        expectSerialFailure("z-leaf", "Serial number must not be zero")
+    }
+
+    "Optional RFC 5280 4.1.2.2 issuance linting: negative serial" {
+        expectSerialFailure("n-leaf", "Serial number must be positive")
+    }
+
+    "Optional RFC 5280 4.1.2.2 issuance linting: serial exceeds 20 octets" {
+        expectSerialFailure("m-leaf", "Serial number too long")
+    }
+
+}
+
+@OptIn(ExperimentalPkiApi::class)
+private suspend fun expectSerialFailure(name: String, messagePart: String) {
+    val trustStore = setOf(TrustAnchor.Certificate(PkixAdversarialFixtures.cached("es-root")))
+    val result = listOf(PkixAdversarialFixtures.cached(name)).buildPathAndValidate(
+        CertificateValidationContext(date = Instant.parse("2027-01-01T00:00:00Z"), trustAnchors = trustStore)
+    )
+    result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+    // Conforming issuers must obey these limits; section 6.1 does not impose them on path checking.
+    // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.1.2.2
+    shouldThrow<CertificateSerialNumberException> {
+        CertValidityValidator().check(PkixAdversarialFixtures.cached(name))
+    }.message shouldContain messagePart
+}
+
+/** Embedded PEM fixtures, mirroring [PkixDerFixtures] so the suite stays commonTest-friendly. */
+private object PkixAdversarialFixtures {
+    private val pems = mapOf(
+"es-root" to """
+-----BEGIN CERTIFICATE-----
+MIIC9DCCAdygAwIBAgIUHAPb3D5mO95Lo2Z+wwdO5YWFVfMwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHRVMgUm9vdDAeFw0yNjEwMzExNjE4MjZaFw0zNjEwMjgx
+NjE4MjZaMBIxEDAOBgNVBAMMB0VTIFJvb3QwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQCr8KN+tIVIVdR+xy7Znr4O0IFv13h0HeBs1dILBpwAbZGTZE49
+caUZTl9f2pZD1fViRao/AT5eFjm+qgoZ6fwSUzFLfELNEI7XWvvQEUiQ+gNN5zkr
+JPn4woLHeqY5g8yIfdgV3Jnb2jkzRXswGcx7XoPV17AXBfapY/2VKLkApParnZLW
+84rYtr+UvD21HoWsNUIkNtEJZA4F6PC9j3hq+hN7MTQln58CHBX9APVYJZrETnM4
+pkTlzX3H2YqvOLUbxSSP9cMp2/5wiea73LPg3/zKLgvdhsffcf3dSYOCxXBm/2K/
+klUiAJRqiNF6e4iMb2ruEL+H1FXAhT7Y7Cb/AgMBAAGjQjBAMB0GA1UdDgQWBBSn
+kdQcm5ZSQVd8+8pY3ti8JqaoDDAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQE
+AwICBDANBgkqhkiG9w0BAQsFAAOCAQEAB5UDH5LQ+htCpUI52aUgafuheTsmkBKe
+Q8OgG5rs9mdM0tYGTzBdZPY89xx3D9QSC2pF5QyCv6KOqvDphdNea/ZS8hCitljh
+vfvAF6zZoxu/6d4Za+leAH0cLb0ysVmrtJRgWORYhR4BHGxNmLxVnwGvAWLYrGng
+9lfyqW1JHuPlK+7IlKDvkvu4JizPkfYh2E2RgMtMAWSNmcQWY3h44mGBeJv8CRUA
+C76UobBwZlt98ECoAS7D6U0wNrLMyHqRNV4VWhDsK8H27Qt/6Ct7K0c5DSNRE69Z
+ZotFqMEKO/SYszC2z0jo6FdoOCI17FZmalJDwaY6dwaVfdELULtiFA==
+-----END CERTIFICATE-----
+""",
+"es2-root" to """
+-----BEGIN CERTIFICATE-----
+MIIC9jCCAd6gAwIBAgIUCyPNoCvywgHFt5fccjj2LXrmAsAwDQYJKoZIhvcNAQEL
+BQAwEzERMA8GA1UEAwwIRVMyIFJvb3QwHhcNMjYxMDMxMTYxOTU3WhcNMzYxMDI4
+MTYxOTU3WjATMREwDwYDVQQDDAhFUzIgUm9vdDCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAJj0lvepxJ8IWiR8GCQnWwuIeRvG5uOTb9KrjGJiP50AOGD0
+RGdv1s24mKdTbKT8BkIrYp4S3kJVafo7RNDbwwSXoE5w81x6HHtjbziGsXMTkCQq
+RMS0Cy4a73b4MhCEmj3Ed8U1b8flDAlE5Zs/Lpd6VLoyP8PUC302KZ7D9QaExpBR
+enxqABuWDehJfdvjvuDslR+k4tJtkSjclZxGPQ5QzmtKl4JZDTLSQi1OB+AjcFlE
+nc6e5Wu6uHCcQnMF149XvC/K6UNsOTQGFhXAuyr1ULwJ7s01NddKbRhsSr1FhdZg
+ESTbUFAj7lhnmqH/Yad4IXjt27RBcfupmDDQ3FcCAwEAAaNCMEAwHQYDVR0OBBYE
+FMUqYjvUo7u8xAB1Zvxs/K76Hy80MA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/
+BAQDAgIEMA0GCSqGSIb3DQEBCwUAA4IBAQBRzJJ78H/4okomLidhWusLYyjU5odH
+19dFm4R3Z3YRCq/xKOd/X9yUKDqAVqJvu+tOzkHD3stDXoAdDZxYmBn7yqjTPWH2
+kBlT8c06iztlBXBKIFF81A1upMcqlsP4tr2ISnaY2XvkctzEGdBuhoOvxRORtDns
+E4jAjGMpdARJaklV9gpe5U7fxqWp9/Dtx069MzWKzo7ML150j1GO6TN5gN3A8yET
+wOBcoXdAVTFpd3apN7AxrLykhjuBLI5A9cCc9zkLQLDjVAsFL/ED+xSI7Zx0YU4S
+HuOQQOXL5vmuf/0XW/UDaT+kMgomjMobqkTFLkWKCMVP5tZWzYNUxHDC
+-----END CERTIFICATE-----
+""",
+"es2-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDCzCCAfOgAwIBAgIUcgNRGpp9bwJnO5KnvK9Xv93FiO8wDQYJKoZIhvcNAQEL
+BQAwEzERMA8GA1UEAwwIRVMyIFJvb3QwHhcNMjYxMDMxMTYxOTU3WhcNMjcxMDMx
+MTYxOTU3WjAAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6KpjELKb
++5QzTmyz6gWveTVkUr4vlbV9OwMcUX4O2L7L974y/NL5bUvtXzP21/TQUEKdf5On
+GVPcHWvJjCR6kEo7kSAfl4LpRUctEYOzLVupwwsv04yMBX5/PkhvPzsN75xla8hT
+oLAaGOPAyD75vFfOTJ/0URjp9VvAK9wwiRvzttmBPigNj876sRkjMGEvQcVga6dO
+U0dul6i38Pnd2SB3yqYW1lQubQKnTGUtnRkfLs6o5Y59+0vV5YEWSUJTNjwz7/wW
+Ky7mJugsa+rU6pfhMPpsHQY3heW9ldceps9z3ID5m+U0ma0wRK1k5YMBNWDw39nw
+JWtBTvsRSCFxYwIDAQABo2owaDAZBgNVHREBAf8EDzANggtlczIuZXhhbXBsZTAL
+BgNVHQ8EBAMCB4AwHQYDVR0OBBYEFPxVJo5qJrnFxR+v90zCWiXAIDB0MB8GA1Ud
+IwQYMBaAFMUqYjvUo7u8xAB1Zvxs/K76Hy80MA0GCSqGSIb3DQEBCwUAA4IBAQAj
+bDoBQeM6GOX1DHt/78UV2NkSXL1D07NcqvHefmvESdCKSCPJv3t6oIn9qaZ4aqt3
+fPmPvWT6A2NW5QO+iMt8/UizsHQWJwByqTosRGcVh4xgUC9YOhFwFN1lylV/3OCt
+jwR2vtWhwlEwGd5V8M/8EZs6O0DQlrAp5ZvuvyO8ThBbHovp8N7IV1WGlPeiN6vu
+hDZQrBeNvcZDkw1zMg9xIpN3/IKrXtUC10lkT1Th+gy+G6/ilCt7bdpq/QdYCOnL
+bLmYVhSCbRo9iQoLJ9f7KGR1LfHukV/zrNfyeg0hUJwGdaRRhNj2P6oUIwT3CoZS
+xGUYQqUeaXt7VqcWqwFd
+-----END CERTIFICATE-----
+""",
+"es3-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDCDCCAfCgAwIBAgIUcgNRGpp9bwJnO5KnvK9Xv93FiPAwDQYJKoZIhvcNAQEL
+BQAwEzERMA8GA1UEAwwIRVMyIFJvb3QwHhcNMjYxMDMxMTYxOTU5WhcNMjcxMDMx
+MTYxOTU5WjAAMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlEOmwX7g
+kHMpzhvAgmjeKLrKOi2bC/5VNyDLYWQt797Fkle29gGAugY8od0n6vcSxEOPyEnc
+sUW5Z43ea5aEwPqW+ux/5BR9/2/GYxzb1B9bqH6c38j0p0bgqCf/mSQ1rQbdmEDW
+Xly3Y3VxJUs9XQH2fNagu2Cz/ycvS6bljjxZhtkw/sBujjCalTAJ2ertlSY0GhrJ
+pzyLrGAbzqX5Skhh0I6yCtFci9xrsML8iepxYpWp9h01mO0ihoRpQfX5hz8Q5QDD
+BVjX4qaruVAzyPhmvfuu2FzoR1lnWYwaQ4B8rGx0fPEB3N38nXZNkQL83iQlWkEv
+gAD0zoE+IWMSvQIDAQABo2cwZTAWBgNVHREEDzANggtlczMuZXhhbXBsZTALBgNV
+HQ8EBAMCB4AwHQYDVR0OBBYEFArAboKNZGxAmEg45GMDlpaKQN7OMB8GA1UdIwQY
+MBaAFMUqYjvUo7u8xAB1Zvxs/K76Hy80MA0GCSqGSIb3DQEBCwUAA4IBAQAIAZ/G
+PK3gF5ht0UUtiKmKnxCw6Xcij98V9wMPxtXTHgnqjHdsHb3X5Q5sGdN5fqojCMDF
+iV+LqWBiNC7YDvJN6xBlWDRkQwyBPvEc3K2vERtsCP0qcD0cwiQMOU8vJZPYQd7E
+zQUgJTEn0e8e5P5ZgYpG6EFonkC71uHQ0KsvozycyTxFqe6OcToZbVreWv0WEFKS
+GGbO27hhS2EhuKdxfWki6jyTKZLvwUfhG6O0xNMbl0/9YqgsV2HDb9RkZ3Yn8Ot8
+TzCpDCjx4WdnO923ys7n+bJIrYjUulhtFDtkLRVbIPhhqZWMydNRKfDmvjQe1kAw
+W/qdEqlaXdjLBBu9
+-----END CERTIFICATE-----
+""",
+"z-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDGTCCAgGgAwIBAgIBADANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdFUyBS
+b290MB4XDTI2MTAzMTE2MjAwMVoXDTI3MTAzMTE2MjAwMVowGzEZMBcGA1UEAwwQ
+WmVybyBTZXJpYWwgTGVhZjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+ANQ4do6UI47oC7PBxJhq2Ehl32ksflZ/sZ+prROF+5jCaom6i83i0rg5Zmiw2Jcb
+5dYEGcaAwjjiGVJxzPcIdnpfYswEr26Q3X+dTLfDt5NTF9sKE3S0BtWEaRJhoAx7
+DjzvG10xc2Eqi99wbdMrY4mqA897NA77P5wHYwVoll4NQ2aTsbNdiJAPxkyCP63D
+x3Iq856ytNkrz5iCiQxVVXaRn7BC5OWC/zDmEwRFUvGwAzK6zj7KuNSs1JuS1knz
+D1eqbHXjQSfBjPJmeAusut0EewHYm/Eoi/BiIlNyoik9fgYSfoLkiqXjnQHk1Xom
+KwRtWclfJDoeFNInJ+rArzkCAwEAAaNxMG8wFAYDVR0RBA0wC4IJei5leGFtcGxl
+MAsGA1UdDwQEAwIHgDAdBgNVHQ4EFgQUI+05aminFOsYF9emXNdQ2t32jWQwHwYD
+VR0jBBgwFoAUp5HUHJuWUkFXfPvKWN7YvCamqAwwCgYEKgMEBQQCBQAwDQYJKoZI
+hvcNAQELBQADggEBACHLbCuw2Ijg6D7DGHrVZEIzc/sLibMaPFTm7oxRGT8f3jQJ
+++Gta08ak0NcagGHf3ZiKJm1ibT4D7vMChkB45UwgHD4W+lGjBRw2ovgAeYJsMXz
+qaLQtulwaCaSDkf5wXbiNMVfaH584CTFiVv0B13dyhcx+IM657yrqdvokueqdI3Q
+gUm1wKQbs3F+8Z+pMwEQUCn0MZcjaoDJGDAg0Su2I8WDk5KBm3d8RJEuO/P4TUrV
+94xfZry41wxENPyCQcKatA5Di+Jj8ui5+7BZLCI0kkKIlgLHnYsJA+uVhmrYoXf1
+4r6r5C30gPl8BVAYcA9MaMZJqptD50D5yQ5gZtY=
+-----END CERTIFICATE-----
+""",
+"n-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDGDCCAgCgAwIBAgIB/zANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdFUyBS
+b290MB4XDTI2MTAzMTE2MjAwM1oXDTI3MTAzMTE2MjAwM1owGjEYMBYGA1UEAwwP
+TmVnIFNlcmlhbCBMZWFmMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+u9a7TgTbU8LCZNVXHYuaRplLcTWN+LeMPdSG9KMQopk0vGfhX7cUtro/dGUpJ/iG
+13edJxjMQNlgE3J12RdzXA+bPMSH0JTyW3MIaT7NLccQj+rGBcUB4RttNQf9BGHy
+RrmwayLlwyIElZpZceng04UE2f95WVrHkIbdg5hNbT8A5HR3OqWTq0g4wORCk3HF
+/UImCAlfiogMBZzlUVeZCYhzMeupYzfkkdHoE9acRHK/mca3Wd2PKAeFc5aocFOP
+jufHX3CFgxRBcvecnk2QV7J6GvzvBFQzvdy4H2l6TenkYohAZfvLJ1qOqbGvVOk1
+mVlAsNeQ+ACUST5jEB5p4QIDAQABo3EwbzAUBgNVHREEDTALggluLmV4YW1wbGUw
+CwYDVR0PBAQDAgeAMB0GA1UdDgQWBBTwyXFxdBgNsnpItF5ZvHri/3PYfjAfBgNV
+HSMEGDAWgBSnkdQcm5ZSQVd8+8pY3ti8JqaoDDAKBgQqAwQFBAIFADANBgkqhkiG
+9w0BAQsFAAOCAQEAPZyMUFk7YkYn6IDPbFIIrC8/c1bDeM74qeEz5RpFchEVED0M
+fYr6CdK5JlqnoCzm2uVITMuizPs/VWSh/6afuF/HPfyO+lJjGvNassYtodC9Vu4W
+tCqWIUm6Xbe2BoDpFbtOm8P7yYjVodiJbFwLXWfMwuy9NbpiFys+bcwnv11+bf02
+srSjFHT/dM0LTyrneXpnAev5W9tVk4AjWV5MLPDaaD9lEUDIsbXk13EEZEsAhom2
+rWXGLV6snqPEVWXCRY5kcNxI/8F5dLVIwzCySnaGJmkr6hgaVK0o3vEbIowRDuKF
+96Y48bPkAo9QoJMzdcnbabLkFEntK4oLg8g8VA==
+-----END CERTIFICATE-----
+""",
+"m-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDQjCCAiqgAwIBAgIrESIzRFVmd4iZABEiM0RVZneImQARIjNEVWZ3iJkAESIz
+RFVmd4iZABEiMzANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdFUyBSb290MB4X
+DTI2MTAzMTE2MjAwNVoXDTI3MTAzMTE2MjAwNVowGjEYMBYGA1UEAwwPQmlnIFNl
+cmlhbCBMZWFmMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjPEtXw5p
+9opVpxvdzcZDFaoDHVxPF9XvJfaK228+259cRgBWON9VWzu+oy5Sh2rtJzj88dHt
+hiY5teuNq2Y1kxgaFf2knO1SHZXUwgEjK0XfTgSkWcOB9AmFQG90yuSLFczYmCtJ
+2GGrZESFM0Qx9uCw/htC7l7rdMsJUfrS/El3UuE1AFxrAwsQM6mbHXM4spgZTMjD
+g+iIDL391lLdvklbGUoO4dQc30UJinX4m2ST8xTfUD/3x7bi+ESZ5JAWz+YAK3OO
+q628GAzL8YC0EvxhPfR9kGb8BdR7rjb5bYlSQJUh6Qg3dRmkwIXTJnkXGKce4Qi5
+WtCgydjgK1rVqQIDAQABo3EwbzAUBgNVHREEDTALggltLmV4YW1wbGUwCwYDVR0P
+BAQDAgeAMB0GA1UdDgQWBBTsgDCDJAioGLIU0uEjyNhyey7oHTAfBgNVHSMEGDAW
+gBSnkdQcm5ZSQVd8+8pY3ti8JqaoDDAKBgQqAwQFBAIFADANBgkqhkiG9w0BAQsF
+AAOCAQEAlDQsumUPGllgA+gj/8P7tseRCXr6gzHfhxRJEhJyb3ndNw7nq5ihxtOm
+/iMCI0clO5w6uk0NLaCWD/aLuMDdLVft0Wa8XuGBoTSaW0NY/tg6T0wVhodzrfDr
+PTd8drNL5dncWepQI79Af+WC060qQ0H/Ovh+YTRp4cGs2OAGKm7d8Mdzh8T4PISp
+80J0k2WEAKpKDMJP+556AUoRcZ7GVPeQvOBL2NFB5e5ltFdAUakx1mSSCDKoY1or
+CMVQGfTFndXtjkAjK5j4dtSZawIYa59At38PdS7IKfQvruG6lt09R7Yo8e98Yfrl
+j0Yd0wesHN7XhHD3q6UTY/bzynWxlA==
+-----END CERTIFICATE-----
+""",
+"mg1" to """
+-----BEGIN CERTIFICATE-----
+MIIC9DCCAdygAwIBAgIUMUif9bkuk5DcHKu2PZQOeHS562wwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTUcgUm9vdDAeFw0yNjEwMzExNjIwMDdaFw0zNjEwMjgx
+NjIwMDdaMBIxEDAOBgNVBAMMB01HIFJvb3QwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQDEhfCHpfPpDa9Y1XDhTWeDDSIpJeosGQoivurjQjlRn7sc6N+y
+Ko18NEBy7Yn+gMkPc1au6lYuqV59+ko0LjJciuerBZw839j0XJk8e4P9esoM6nkE
+OmqVVx7gzUctfwqvrweH8T07ZjTLS8c8fiuwd3KW8pO6d901RqH+ibMxqmhex9Vs
+FeneBW8nBVy5Tph2ig/CAw6i58QLvYf4XMYwPuAulrNNBXgKkAriI1MSnVibzmWU
+/eEk+jVvdtxgSGWePCE9VzEQadGkMaiZqYPBjQiBnL8gxqx/eb72qJHnBgA+PAsa
+8Y9eMnAL72esosneFM9a7/UCqwfyuhJo9ZQxAgMBAAGjQjBAMB0GA1UdDgQWBBRj
+M5Mp6NTQG62WiQtvgFmWU1qfzjAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQE
+AwICBDANBgkqhkiG9w0BAQsFAAOCAQEANs5EJfjnnRhmzvLjuAgsXsO+9tPz0TvN
+YBEIOaxVsdicE51ZF4jeB6Ps496/oM/ewoBXS9Hg4x4h1BNNfJOFcbsaN9jqfStT
+QF/OUpFS9FN0f51sl8MZn41uTTYmwL7zedy6+t5c+1/Yjst1DeozYgegHVBhncbZ
+b+Qz4cUGpuH44fTmpLwaU0YLrpyPnzT+Vd2NN+nF7x8syCPybT5uLSGS6UYOsBLV
+TrJMkh5X9d5Z2VFcAhejmZPNADgX7vXuOhWweYHpRsRwrjKcUHV6jtpm2UbBb+GP
+rtAr48WVYCRnj4ahYSCDUlgxLZDSrj++Dxrf8X3nDZy6ndJRxuvb7Q==
+-----END CERTIFICATE-----
+""",
+"mg-mid" to """
+-----BEGIN CERTIFICATE-----
+MIIDQjCCAiqgAwIBAgIUe1aVHEpN/cjgrOFrPETE1eFRL2cwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTUcgUm9vdDAeFw0yNjEwMzExNjIwMDdaFw0zNjEwMjgx
+NjIwMDdaMBExDzANBgNVBAMMBk1HIE1pZDCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBANporrqFeggwrCxpFRnorOh+9aWFW0c+ohb2gT9qvazt8XuZXcSK
+cy/4IZolXpAWXTrCQnOMPMYjzH4rxTbkUTNOJjEqwNRQ2Yib6Et25wN4JqpXYxrH
+Dzmu0sa4ik1XjL7u00ZLoCNFaPNS9zIYXSbvSkbkLSbFd2Or6L7qBv+iSx25LMYe
+fDIzeUq2bhMJh1W0BM14eLU2rDXMGFSPiBK0/v0SVNA6RLPtvgy2rilPo1jqAsEg
+oGSGLiaVoEgxqqfUTxskl9uawKm1xOCqJlJJDHjJmHTFJiiAWqNRc5kDfcIf7pXM
+tpf5E47u8eT589GxLNjli0I5W4wqbbQ2M/0CAwEAAaOBkDCBjTAPBgNVHRMBAf8E
+BTADAQH/MA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQUwj1Huujx16geNqaQkR8p
+sliNWmAwHwYDVR0jBBgwFoAUYzOTKejU0ButlokLb4BZllNan84wKgYDVR0eAQH/
+BCAwHqAcMAyCCi5hLmV4YW1wbGUwDIIKLmIuZXhhbXBsZTANBgkqhkiG9w0BAQsF
+AAOCAQEAfPcfdQLUt7zccmMIU1Xx62IZFDbTNCeOgm27jvoVayxqD/kbwY9Lvh1S
+ih4s2I9HlsvurgxhVnpBhM5bCIDM5HL66pSP69p07+w2fC6YgICci8YvTPGtasUF
+byMyYSAp68zaOHpaj0Y9AATbQ0Ezq1A7uIR+hxIXCSphjVUiMB08rHVKo/qeH0sM
+Puq08xSRt7RYbCtv4CpGfR27623MWSxJ9q1Kpb/5VbXDW2x8EdndwwjTsK+syxkb
++CZGGJloWhF2MT8Ii04ZCkK5H3usylRIv13jY3AkitB/E8rzRYSq41tHSoig96S4
+8uqrIjm8y3nWUH9hiYBonj0Q+5NB7w==
+-----END CERTIFICATE-----
+""",
+"mg-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDGDCCAgCgAwIBAgIUbaRoy2GGNhvQTrOl0DQuWCIU7BkwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGTUcgTWlkMB4XDTI2MTAzMTE2MjAwN1oXDTI3MTAzMTE2
+MjAwN1owEjEQMA4GA1UEAwwHTUcgTGVhZjCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBAKzE129lQMhHh6dmp8M0FoFLQYY/8Y7y9WbyjgySTgKEePKSf/o4
+Iw5xVEBVVkXaYRegZE4dlLKY6gQ5RCO2cKdJUN2Aaa8ACkqehyGmm3wkI4BIHP05
+Vseet/GmVJVBepd4x7P6tMxfQcJA31cSqUGJDpCfgl9lUriDwvP0VlonASfG38tJ
+pv2NLy9nZmtRTVxqrmG5bV4aIPETI16PpSEAd73/41olq7I1qR6mlcMuZJprApwK
+sw07NLzCQm95rsLRR/wQPO+8KGDV2w0sFIajzlcpNtf8HL9BMC/zrGGydGdt5QTK
+GJlasx3uC47w6832gpYGc1kxUbmx9rrl4UUCAwEAAaNnMGUwFgYDVR0RBA8wDYIL
+Yy5iLmV4YW1wbGUwCwYDVR0PBAQDAgeAMB0GA1UdDgQWBBSKPQFp2vm4lpZqpq3k
+1M2eSd78SDAfBgNVHSMEGDAWgBTCPUe66PHXqB42ppCRHymyWI1aYDANBgkqhkiG
+9w0BAQsFAAOCAQEAxJFP++xTGQy8wmdgd5VFRTihDVj5g6JR9JZ0Hn9I2zWgHzo7
+r7ixfJfU0/H0olYnwh+RfnZdx7FxvSF7WaKxhw26Z9FUICGUHy42Qb18rGFa97Hj
+6OwjwdSBwHV4OObAz3GiBoDu7x8ZzzfBoFRyRBFexBSY0aymAHFyme7cF3EDb4ky
+ArCDS/dkHft/Rtq/XmMrdVdEQV97xz7P0jkh1ENwGahz2UITBr09RwjLnJQbfnYK
+WuRZ8XbG/P/hMwK3h8t4mlpFj94FMFkx1EH/OooVwKn2vw4mLru989pS1uZU8axg
+UpBsmh60Qyx7A71iceEyOuwUVwTsMY6erC6Bjw==
+-----END CERTIFICATE-----
+""",
+"nc-ca" to """
+-----BEGIN CERTIFICATE-----
+MIIC9DCCAdygAwIBAgIUK1qVnD/wtZMAHQbMIzi7fuCc7lQwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTkMgUm9vdDAeFw0yNjEwMzExNjE4MTRaFw0zNjEwMjgx
+NjE4MTRaMBIxEDAOBgNVBAMMB05DIFJvb3QwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQDFNzHe38sWjboS/ejdzaEsbNq+08aFjpm72qJpSNMjFkpIEHBC
+uSJpvmMthEOBxD9Ppdh1h2S3r2Q2UFTitNGB6wmn4w1gEwE34TuGu1AC5bMZQth6
+h1dsQVeMJR3p5CEc9U1zwCWAfkjmDP/8cxS79AFrU7Ba+cVBgSa3l22N6tENIZCM
+BX9xL+TRGp/OZu4uJi5/Pqo7UstxABUFTfqwX6Rt6lz9agQ2bpXwHyrXWP7ztbLQ
+0Nac4WRfp8FAVHQy+/KhI6+ERCb9lcO4ydpOFxOEbL7T3I9a74x+USArUQ+FnwFj
+rocdcXA3TA1MWIH3MtJJ1XmAvO66UYEkYQOHAgMBAAGjQjBAMB0GA1UdDgQWBBQE
+Z3DoioYpcIxUEbMCKV1iTV2cHDAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQE
+AwICBDANBgkqhkiG9w0BAQsFAAOCAQEAtstK2i2VL72tBXKrctis250MI2yGY48/
+N4kHPtrmt/fIsKAp7S3Z/qL1EdDe2lYQ9T6pNS63sE9/1lBs3Z7UQDC4noPUdaVn
+3lT5MfaZcVDb870BicjDu2VBa+PK50OM3MHZz1n5ABm00ruKXKSuPEqHy94CBXti
+kRI3JvvJhC4wcF0huzHQKJ9ibQ7BjmgjlLdyGAYHnCrd4RpCXf0OK8jfVwZ6WKnq
+TD+0vYhsP+kMiuXqLyFkZZe9Oe8ahujDbyfuFjQYgE8wNNMIAnSCyCSjoBf4svGl
+sn/P+cbsLK8Uddio1iMkoceu98IKJcKoPj7NDoqjHJrgdFtRlsRY4g==
+-----END CERTIFICATE-----
+""",
+"nc-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDDzCCAfegAwIBAgIUGy9daz8rC1uk5WKJblIEdxdwfxUwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTkMgUm9vdDAeFw0yNjEwMzExNjE4MTRaFw0yNzEwMzEx
+NjE4MTRaMBoxGDAWBgNVBAMMD25jLmV2aWwuZXhhbXBsZTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAKV82sscWl7UXEIY1XZIt1L8m8a3U+ocTNi0iLyQ
+ZqEL2t2Jv7XiyEi8KOX6aAjWNFLemvFtnrlmcPtkw3SyLoU+ybMdzPuAZ0CY3vkt
+pioHh1tnf7p4uv25ZOF0se2CORxOMIgsPhE8oHxJu+Haxu7711mpyOWvISsFyGym
+kQ8zrISdCd2HSbPWLQMBq1pyQTVrcQUX0j6oWmH0/jFQLvGokeTmXqeZnSgGbNui
+bbXNj5gQ0fnsLDw/1X63yXgecvX4VCMttBdVcL/SvK1DVxCjMmIDM3RM7JXsRDgx
+YNCXZmCxP5ekRKknRTBREm3aXq1C1KdKEESvStuqzxYB4X8CAwEAAaNVMFMwLQYD
+VR0RBCYwJIIPYWxsb3dlZC5leGFtcGxlghFmb3JiaWRkZW4uZXhhbXBsZTAiBgNV
+HR4BAf8EGDAWoBQwEoIQLmFsbG93ZWQuZXhhbXBsZTANBgkqhkiG9w0BAQsFAAOC
+AQEANGftOHLUK2G6wy10w3NeUvr0DXTDQh0aCoS4xaqAsobduEd9vcWJNcVSGqr1
+JvmmaxxwooXauBh4dWLqunF0htIxhoxQ1S9zVobpS0XVP3JoYEIiaMr/2NkjheHD
+RRRqBQjAarOyGnaXHtawW+oSvVUktttn6H4lk5fyXDGMq1P2gMC2676ocV37bEsO
+eCNpZce9C5RA0hEup7HbtOGLYXWCBYRgzl4dRXFj8keVKIS1+gaVV39PmTAkzWWu
+pbsfLGLCt0BhTfGMaqfWkNzynzAUuUKUl0EucpuXDRiOLFEVDIECFEIZq9ukQUmy
+iSEEO+Yzo7bONyR2T/4+0jyP8g==
+-----END CERTIFICATE-----
+""",
+"mg-mid2" to """
+-----BEGIN CERTIFICATE-----
+MIIDQTCCAimgAwIBAgIUe1aVHEpN/cjgrOFrPETE1eFRL2gwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTUcgUm9vdDAeFw0yNjExMDIwNDU5MjFaFw0zNjEwMzAw
+NDU5MjFaMBIxEDAOBgNVBAMMB01HIE1pZDIwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQCUVz4rIdPO7Xt8wvvBJQhXS0zPhhAaaNigkpYU93zFc7PF9Ici
+XFcd9oS8LJWPkX3v1gfm4hrB8uDogg/JnG5ajyr/ttkcLnzMkopwC50nQeKZh10m
+r/teasPAT+0mwmOj7crkiXWC11KZGaHRZ9LMwWwdrRusR/1OFUs5erETj+odgXks
+xl7V3SfoWZhBXQ0QCA2Z9rzGciBTFjzXWBrIlgrs06jRwm3F9QFOsSdIitJk57tm
+jr5K93U+QTJtJheyl33TgBmDd+/K+eAux1RtpxUINbvfCbLBO60pFpNArhZUT9uE
+tUQrxNbjm2zogpQ+pi1sBqqg1IAf17eMSJK3AgMBAAGjgY4wgYswDwYDVR0TAQH/
+BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAgQwHQYDVR0OBBYEFJnJ8u0RSK/Gq8R7KYDT
+fDy8Eu95MB8GA1UdIwQYMBaAFGMzkyno1NAbrZaJC2+AWZZTWp/OMCgGA1UdHgEB
+/wQeMBygGjALgglhLmV4YW1wbGUwC4IJYi5leGFtcGxlMA0GCSqGSIb3DQEBCwUA
+A4IBAQBjNJ3zttQky5I4k3iqRX075xrKaWGy0xn5W6GyoihyxiX1MWmBApYKYVtD
+6+KqcmRXLfhaNqyeGw28A4A1y6d8sytDQ0AmzC0O9Jn8VvZ/mPmUBZwUIcQwHJtP
+xZ/NEEdglu3/3ZKtVdcEcE9e0xmqktpI8eeI0vWDsBqxD8CkH4u0Om01Coi9f5tL
+ZwS/nbsOFfTzHD9YpdJ+Ry15IzBJNxYuONr/VmKHhXE7Ev/xJDk7nn1KCwgwCZjQ
+wJEgqc8AzXEaibVeobnZ8pWDh+Slojt8L5DeEmT/fIWtIyA/3sGMRULFjsV23S/C
+wKfd3hQWt7ATRUKZFZD5YlOelqTd
+-----END CERTIFICATE-----
+""",
+"mg-leaf2" to """
+-----BEGIN CERTIFICATE-----
+MIIDGjCCAgKgAwIBAgIUY3kmfukQfHbH1vh95D3PLJroNfswDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTUcgTWlkMjAeFw0yNjExMDIwNDU5MjJaFw0yNzExMDIw
+NDU5MjJaMBMxETAPBgNVBAMMCE1HIExlYWYyMIIBIjANBgkqhkiG9w0BAQEFAAOC
+AQ8AMIIBCgKCAQEAulY8gBi2nC7oVrbEluheadM7XY6Fj3BfO8OnakLZKlLdCQAj
+wDlTykF5CSG/35tAZXysZJ3Bu24NpRfZXxIbip1nn3Lev6bj2spiSxbctERgQFUX
+Iz+m9+hWbTRsft09c9it1YobNgq6Ruc4yNd3iRyz90PtMjH/WQ2de7RyFlFBaq5P
+YwGw/fsC60vVsa5Zq2gSiCK39Bt/cjvkKjuucDoQSaBGQxJJaN8mdDST7p5Dvxz/
+QWdQ4QTFz71cXMkK/CxoHn+Dr2M8aCCjDnDwxFe1hTFQSGuqin9vQrjdYq+DYjQD
+5qoFiQpW8QwOSF8UaZer5pzHqHP/lQsjwAm6dwIDAQABo2cwZTAWBgNVHREEDzAN
+ggtjLmIuZXhhbXBsZTALBgNVHQ8EBAMCB4AwHQYDVR0OBBYEFJtiiX15n5je4yif
+pjJba3xM8yZVMB8GA1UdIwQYMBaAFJnJ8u0RSK/Gq8R7KYDTfDy8Eu95MA0GCSqG
+SIb3DQEBCwUAA4IBAQAqnrQmLNN6C8MB8x3MS7azaA6JL5sgYOrwsef8unzYiWwv
+bZY+n2KcvkEzv+Hny56KNm07cE6qVkiKH7ghhYg6wuJYYs3ceXZbHmsyOLrxnVlo
+nD/xGBL1o4SjI2AyG07M/Ag7o48zGiOf/xWUvdrcy15tgFdMEalUtVh4pvPbFx+u
+uxgMiy3wa5DbAbtfVb2IvjpfT6d+UQlXu9ZJHaH2N7rE0UuAO+2JT2dcRYicCDUa
+kZUQiz9CsJugyKpQ/9SoWNeCBtTe7iOrm0YUKYyomfnedAakogD3WAwmONhhp8qu
+sfyhcAZTcAhENYeE5b5i88kV4XtWiKPz3BcwD+iu
+-----END CERTIFICATE-----
+""",
+"nc-mid2" to """
+-----BEGIN CERTIFICATE-----
+MIIDOjCCAiKgAwIBAgIUGy9daz8rC1uk5WKJblIEdxdwfxcwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTkMgUm9vdDAeFw0yNjExMDIwNDU5MjJaFw0zNjEwMzAw
+NDU5MjJaMBIxEDAOBgNVBAMMB05DIE1pZDIwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQCueJ9eGC0xNbjw4MBaiWPhZhSFF1oNsqKJGO4BqodJRUTYIr29
+ZGVM4ht3xJ7jXQD4wcOTcl8spCdGuIN/TAjq0zG3eEsdpFIOSDNEzY9u9i7UJUnT
+ttL/ImuyxPPwcZwujVsn2OdQdFg73BkQ3/JOE65MIGEnYwGW7gMnYSknVtkLFokz
+jXhmgHwDh2agNKyDpWeSGgxC14N/PHQoKSmHrTJMm0tuEZpvk80B6MneEcbCyAHq
+hNNJBhEt1JRF7Dz+47uczcUpBZl33bd3/hl/eNU9zFS4YiCU/Q56nq3oyUxdh5qy
+0qDDxrwtV8tWysl0xSYH05fI0NvIiRxfX78PAgMBAAGjgYcwgYQwDwYDVR0TAQH/
+BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAgQwHQYDVR0OBBYEFCTO5gxxquGFOSMrpHSv
+xQ9tNAJiMB8GA1UdIwQYMBaAFARncOiKhilwjFQRswIpXWJNXZwcMCEGA1UdHgEB
+/wQXMBWgEzARgg9hbGxvd2VkLmV4YW1wbGUwDQYJKoZIhvcNAQELBQADggEBAG1K
+1zjBIWekQYasCQQhOCqBwgoi01d2tmiDtx9UUA/Z6OHDfZ7L9wd/Vpu9hfFUYQHH
+2PZ5hGeL7GCC2vQwQOY2ACsnw9EQuqsHeSLjJKOhIPfPNwZ2Z7vglts1D5tMWfNl
+yoYfwnroA9SCoqPg4VYdWH9RJh8bJOS3oVI3YyzdlKg8kVltvpUIEq4RN0l7XxAF
+jXv/1y2NY5jWrdRI4RZISYgw/aJiKlw9o1JNSwUvW/jwQOnqz7coYgtSgfA6uEJg
+9P42vori8By4yjCUJRdI7Lik1MTbS6z1qfpxITE8qTlK2zj8+hDDGJ3EwUd7RGWN
+Bz/jyPPK3TIlrow8Qok=
+-----END CERTIFICATE-----
+""",
+"nc-leaf4" to """
+-----BEGIN CERTIFICATE-----
+MIIDLTCCAhWgAwIBAgIUYYvSp6SXkg+Xvd56ErlV5zoyKngwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTkMgTWlkMjAeFw0yNjExMDIwNTAyNThaFw0yNzExMDIw
+NTAyNThaMB4xHDAaBgNVBAMME25jMy5hbGxvd2VkLmV4YW1wbGUwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQCPk9M9vFEztqdpuJchGEvfugrHBnuotwHs
+dQLSI0DJ+BdB+LOpmF3iW1oMMUdZR4i3NoYtTtdNVtKZ3jC03luEwjh94fIaXezd
+xolk1o3AKyBFIqHMYkuQNUJVJchq99apgwz0qN24HWb0dba9I/29rYCdOFtanEIs
+4F/vefz9k8Pv56ep5AjhtndZSzGpWx7EE5F2vzFvl4bO0FGjdt7BIMeFOkj4elyZ
++7BNrWk7X/ai2euqnpeXkmaXlF9vCHCq1Sgszhu3PcRnswHg6ul8nMc//kEWlgzo
+yXs4ElIeWnpPCKc+qoHd5AkWZSbH47yZXiMrtPcOvCKbO7yNEFdpAgMBAAGjbzBt
+MB4GA1UdEQQXMBWCE25jMy5hbGxvd2VkLmV4YW1wbGUwCwYDVR0PBAQDAgeAMB0G
+A1UdDgQWBBTWowrCTmOjujY3yd7HH6N1rIE/mTAfBgNVHSMEGDAWgBQkzuYMcarh
+hTkjK6R0r8UPbTQCYjANBgkqhkiG9w0BAQsFAAOCAQEARNCx7pDqUrQViSX+Z2H9
+hWZJZzrOLMuxYs0Wh1wyLPjvZRin4fsJgC7/FEhH0ZUtAELsJvUiXRpvbELX1s1a
+3UFsKQNIcJGl36cx9HWjMTlihv+xacMzHWG5EieGjSOurq45Jf8aRsoL2wJ3ZJsF
+HXMezzu04cTZfeVH046BDg+6XBXGqly6hLrRUwam3WL52XdAFUlk+DSW7XLob/WB
+ZzSc7BEXSP5wS/0JI+AEV9SP2vHpsyTn+T2uMG1nZVrene6f+5cWUviAO3434zKW
+fwhVVb+FLDQb2ETdLlFq+74XahIansRE1QV9C5LWkbJXzS233hcI9l4KiT5GlgUJ
+wQ==
+-----END CERTIFICATE-----
+""",
+"nc-leaf3" to """
+-----BEGIN CERTIFICATE-----
+MIIDJzCCAg+gAwIBAgIUYYvSp6SXkg+Xvd56ErlV5zoyKncwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTkMgTWlkMjAeFw0yNjExMDIwNDU5MjJaFw0yNzExMDIw
+NDU5MjJaMBsxGTAXBgNVBAMMEG5jMy5nb29kLmV4YW1wbGUwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQCbPcSHVEXSLDN4TMkubcnjqmp3B68PIh5VpY9J
+nJORrv0/MOoQl2l2TBH5o12p0Ro/UBMBBGQ2CQ/UfvLqwTsz/eBIaRUH6NwU+HFJ
+NAmtffsZ8b9msT6Jpvt+2NDVtNLAh+dR8d3XJVJk/0T6IBlqdz8kW81tPOLkwTRv
+ivzaRFxMcAkI6JlhZjrtOunbbN/ifW/i/MVWOO5GmzX2t7hNMT7luhFBCFBnN2U5
+80HIjBX7ZdYgKnR8Wt6CdV2Txrmhsg//hhlYBPmKx2l6xno6ugC7q/nc9nabqlWH
+5ezvopQKJfhBlPsIaFSgT2H78TT3u+MBAwK3JTDl6PvUGUHTAgMBAAGjbDBqMBsG
+A1UdEQQUMBKCEG5jMy5nb29kLmV4YW1wbGUwCwYDVR0PBAQDAgeAMB0GA1UdDgQW
+BBSSND+RKxgPvYZYyNXvH0OjhX6pVzAfBgNVHSMEGDAWgBQkzuYMcarhhTkjK6R0
+r8UPbTQCYjANBgkqhkiG9w0BAQsFAAOCAQEAOrhnVAnZ6S16W9U1diR1D7EfdZxF
+PiD76FjhW3XUD7PVpQ3fS+nAdfHY+XxV+2/0QDbZbWN1dSZwo7Ug5KxB/Az+xsnj
+fUbhP3hZFmuvym1My3gXAT475jfrUpdiSdts8pX79DYXpSl7cY1Ua9X4uZjms6/+
+wsYBZw2wBMCdzDiTZmD7qgjU17tlHDiyEjuxl2THe7jKGXf/G+7Qs3RXAqbw7/tM
+uDr0BPpFDUE4FZxI5INrBp5a72ZGMvGYxzCFpcAc2SVLDBLwvLxDFYztErrLFMT3
+ltGNGMlMlNLebcQQvF1+5GnATjAMKwXR6gYonuTgsdM0WTqcQyiRODFbfA==
+-----END CERTIFICATE-----
+""",
+"nc-mid" to """
+-----BEGIN CERTIFICATE-----
+MIIDOjCCAiKgAwIBAgIUGy9daz8rC1uk5WKJblIEdxdwfxYwDQYJKoZIhvcNAQEL
+BQAwEjEQMA4GA1UEAwwHTkMgUm9vdDAeFw0yNjExMDIwNDMwMDFaFw0zNjEwMzAw
+NDMwMDFaMBExDzANBgNVBAMMBk5DIE1pZDCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBALXOtA0VQOIYiRL7iUVarVIJvdo9WwIDqj8O1bLTkwFMUjZCaWSL
+L3zQk+crpHSGEeR3Fihv/cT6V8SD8Cz3Cn+Hl4PuZ0GdFzAFMNLvhSRPW/UCaRoC
+UrdqBlUccdz4UsgNxqtYjIOQe8hQGGd9HHAwL9dGV4rLXc1lZnfeSYdP983/aGHO
+Gh7mxARmBEfzBk55OuDfNCvQIMGpc7+bEhQBnsvVgYAYL9teqr6Vn23zJWgIQ1R4
+u9xbtHUgDPZK4fx5QBmCnMEnN/Zxq6oXGZ2OlV/SW4syq9vCDnbN/AAVEDxYQKNH
+NdQ9WqD55+v0T4TQDCMp7aiM3smMW3K7fx8CAwEAAaOBiDCBhTAPBgNVHRMBAf8E
+BTADAQH/MA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU6YxUel7q7kBZthIj9Kmd
+VLSklVMwHwYDVR0jBBgwFoAUBGdw6IqGKXCMVBGzAildYk1dnBwwIgYDVR0eAQH/
+BBgwFqAUMBKCEC5hbGxvd2VkLmV4YW1wbGUwDQYJKoZIhvcNAQELBQADggEBALlI
+mrIZSgVkMj+S6I1CjRgccs1mj6UGISboqCJiYfqRmku8SMmYCXjprrgKPYP3NTuN
+39K3UFLkC1QhJU6wiYMRXipKVoRVquO4H1Wcvn+wIEDhlLCnv+fWev3qwj3lVkRA
+HzNXWOr+ag6tGqyPNtffK86wZqliDV/EFSOEO+kHVJ8JBR8JzbjwbHdNF7yI16Ck
+lYKE6A9NVBnPhBV/KYZlqcDGwQ87uF/VGKfc6c5zzkOf2xFc35Pwpju/LzBA9qIF
+JmDGmprQ7+DoA43P9YXQzm0FL+mIxMM8W9wNzJ3YGjsd+h/5xC/HoZVWVBywXZXA
+Ie74OKjTWLhKTLRAUHM=
+-----END CERTIFICATE-----
+""",
+"nc-leaf2" to """
+-----BEGIN CERTIFICATE-----
+MIIDJjCCAg6gAwIBAgIUcYaBj8xAvu7XlZw00KzlJJ3Jn0cwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGTkMgTWlkMB4XDTI2MTEwMjA0MzAwMVoXDTI3MTEwMjA0
+MzAwMVowGzEZMBcGA1UEAwwQbmMyLmdvb2QuZXhhbXBsZTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAOLA1vnsRrVY+t3jbzfHSwsJEEal3xjGwXgny2Wt
+rpMyo+gw9VbC/pZ4U4yqtWpCtRaNdvTpVc/eIt5mhxP1BH/beTyxgOWhOFhc6ZGJ
+u7NTGBIHp0J2FcMT+VqFaIz7KHVlAfTq8VLF6/oVTl8lsKlqol8IcQJ38KiOE7Bc
+SRHojFxdILK6e+joHD9SBct/rNhfaNVW6S3dw8N0q1yWwYvWFpbh5d2IKJC5x/jk
+4fi2mjnbHzG+Jn4up1w10IJ37ehrAF6Ma0wJvn+7E/v+wYj+RclbWSmr5KL3PwIJ
+UTcZNGdXn+xY+5P9qWDpGa+2WFWo3FcNwbcjDKQWPQ84f3kCAwEAAaNsMGowGwYD
+VR0RBBQwEoIQbmMyLmdvb2QuZXhhbXBsZTALBgNVHQ8EBAMCB4AwHQYDVR0OBBYE
+FNDc3TR++w/AihNuydSA9t8M3T5HMB8GA1UdIwQYMBaAFOmMVHpe6u5AWbYSI/Sp
+nVS0pJVTMA0GCSqGSIb3DQEBCwUAA4IBAQA5FJL3wZQY5FIVeZCPnEU5Ed1pPOA/
+huIxmZtS2eSONbMQe/CP9aqBH6HNfvDOZXaGuxEspZBMgF7pWOOFMb0y7tWjv2Iv
+zvgG70SokFurSbg40z9xeD8MRQIO/DBSvCJDM4YT1RCoJ3D21TC3TWRRtMPBxFAW
+qgm5JxEdAtXYNw93ANJKARK1SqfLh3Uiz0orRONv5GFDDQxb7ThdwZpnVhf0ysmy
+NXsMI/608bVIdu6OkmUF9zfxjkta+iPY4V21I5H52deqt21pkuj6C0KeQD/P/VGX
+kHtpjdoZZZcK9xiwqzBHg23vaxeWI/xHvbaZBQNrTPFVvZRr59XjF6eE
+-----END CERTIFICATE-----
+""",
+    )
+
+    private val cache = mutableMapOf<String, Certificate>()
+    fun pem(name: String): String = pems.getValue(name)
+    fun cached(name: String): Certificate = cache.getOrPut(name) { Certificate.decodeFromPem(pems.getValue(name)) }
+}
+
