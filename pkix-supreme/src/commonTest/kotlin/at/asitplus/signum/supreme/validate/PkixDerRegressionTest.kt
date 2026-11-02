@@ -35,8 +35,27 @@ val PkixDerRegressionTest by matrixSuite {
         expectValid("root", "no-ski")
     }
 
-    "a legacy trust anchor need not contain basicConstraints" {
-        expectValid("legacy-root", "legacy-leaf")
+    // RFC 5280 6.1 treats the anchor as input; but a certificate-backed anchor is subject to CA
+    // checks like any path cert. Use TrustAnchor.PublicKey for BC-less legacy roots instead.
+    "a BC-less legacy root must not validate as a certificate anchor" {
+        val trustStore = setOf(TrustAnchor.Certificate(certificate("legacy-root")))
+        val result = listOf(certificate("legacy-leaf")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
+        result.chainFailures.values.flatMap { it.validatorFailures }
+            .any { it.validator is BasicConstraintsValidator } shouldBe true
+    }
+
+    // The same BC-less root, modeled as a public-key anchor, validates fine:
+    // issuer-name match plus signature verification is all a key anchor requires.
+    "a BC-less legacy root still validates as a public-key anchor" {
+        val legacyRoot = certificate("legacy-root")
+        val trustStore = setOf(TrustAnchor.PublicKey(legacyRoot.publicKey, legacyRoot.tbsCertificate.subjectName))
+        val result = listOf(certificate("legacy-leaf")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
     }
 
     "explicit policy succeeds when a leaf contains requested OID and anyPolicy" {

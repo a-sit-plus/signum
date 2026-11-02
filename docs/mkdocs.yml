@@ -87,6 +87,7 @@ nav:
           - Indispensable Josef: indispensable-josef.md
           - Indispensable Cosef: indispensable-cosef.md
           - Signum Supreme: supreme.md
+          - Indispensable PKIX: pkix.md
   - Feature Matrix: features.md
   - Showcase App: app.md
   - API Docs: dokka/index.html

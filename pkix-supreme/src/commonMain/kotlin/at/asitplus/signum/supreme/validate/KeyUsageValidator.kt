@@ -16,6 +16,9 @@ import at.asitplus.signum.indispensable.pki.validationPath
  * Ensures that intermediate CA certificates have the necessary key usage extensions.
  * Checks Expected Key Usage in leaf certificate only
  * Key usage to sign certificates (keyCertSign) and CRLSign is required according to RFC 5280.
+ *
+ * Certificate-form trust anchors are subject to the same key usage checks as any path CA;
+ * public-key anchors have no certificate to inspect and are therefore exempt.
  */
 class KeyUsageValidator: CertificateChainValidator {
 
@@ -45,6 +48,13 @@ class KeyUsageValidator: CertificateChainValidator {
             else {
                 verifyExpectedEKU(currCert, context.expectedEku)
                 context.leafKeyUsageCheck(currCert)
+            }
+        }
+        // A certificate-form trust anchor is a CA too: require keyCertSign on it (RFC 5280 6.1.4(n) analog).
+        // Skipped when the anchor cert is already part of the chain (allowIncludedTrustAnchor) or absent (key anchor).
+        anchoredChain.trustAnchor.cert?.let { anchorCert ->
+            if (anchoredChain.chain.none { it == anchorCert }) {
+                verifySignatureKeyUsage(anchorCert, context.supportRevocationChecking, certPathLen)
             }
         }
         return checkedCriticalExtensions.mapValues { it.value.toSet() }

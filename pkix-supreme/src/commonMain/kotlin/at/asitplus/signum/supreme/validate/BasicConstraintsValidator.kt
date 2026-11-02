@@ -14,7 +14,10 @@ import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
 import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
- * Enforces the X.509 Basic Constraints extension rules for a certificate chain
+ * Enforces the X.509 Basic Constraints extension rules for a certificate chain.
+ *
+ * Certificate-form trust anchors are checked like any CA in the path (basicConstraints present,
+ * critical, cA=true, pathLenConstraint); public-key anchors have no certificate to check and are exempt.
  */
 class BasicConstraintsValidator: CertificateChainValidator {
 
