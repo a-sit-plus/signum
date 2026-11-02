@@ -122,6 +122,8 @@ class GeneralSubtrees(
     /**
      * Creates Subtree containing widest name of that type
      */
+    // ponytail: DNS sentinel "" is an invalid dNSName; a merge that needs it fails closed at the
+    // isValid gate. Proper per-type "exclude everything" encoding needs the dotted-constraint fix.
     private fun createWidestSubtree(name: GeneralName): GeneralSubtree {
         return try {
             val newName: GeneralName = when (name) {

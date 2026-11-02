@@ -42,9 +42,9 @@ val PkixAdversarialTest by matrixSuite {
         expectValid("nc-ca", "nc-leaf4", "nc-mid2")
     }
 
-    // currently failing on purpose: DNSName.validate rejects leading-dot subtrees, while
-    // DNSName.constrains already handles them. Remove this block once the decoder accepts them.
-    "KNOWN GAP: leading-dot DNS name constraints (.example form) are rejected as invalid GeneralName" {
+    // currently failing on purpose: ecosystem conflict — Limbo expects leading-dot DNS constraint
+    // bases to be REJECTED (strict RFC 5280), OpenSSL/Go emit them. Needs a maintainer decision.
+    "KNOWN GAP: leading-dot DNS name constraints (.example form) conflict across ecosystems" {
         expectValid("nc-ca", "nc-leaf2", "nc-mid")
     }
 
