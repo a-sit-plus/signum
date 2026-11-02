@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.pki.MissingSubjectKeyIdentifierException
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 import at.asitplus.signum.indispensable.pki.extn.AuthorityKeyIdentifier
+import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
 import at.asitplus.signum.indispensable.pki.extn.SubjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.root
 
@@ -46,6 +47,10 @@ class KeyIdentifierValidator: CertificateValidator {
 
     @Throws(KeyIdentifierException::class)
     private fun checkSubjectKeyIdentifier(cert: X509Certificate) {
+        // RFC 5280 4.2.2.1: SKI MUST appear in CA certificates (basicConstraints cA=TRUE);
+        // it is only a SHOULD for end-entity certificates, so absence is acceptable there.
+        val isCa = cert.findExtension<BasicConstraints>()?.ca == true
+        if (!isCa) return
         cert.findExtension<SubjectKeyIdentifier>().let {
             if (it == null) throw  MissingSubjectKeyIdentifierException("Missing SubjectKeyIdentifier extension in certificate.")
             if (it.critical) throw CriticalSubjectKeyIdentifierException("SubjectKeyIdentifier extension must not be critical.")

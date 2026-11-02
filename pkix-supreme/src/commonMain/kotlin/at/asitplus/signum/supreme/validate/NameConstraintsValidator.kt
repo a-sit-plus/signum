@@ -79,16 +79,11 @@ class NameConstraintsValidator: CertificateChainValidator {
 
         if (newNameConstraints?.critical == false || previousNameConstraints?.critical == false) throw NameConstraintsException("NameConstraints extension is not critical at cert index $currentCertIndex.")
 
-        return if (previousNameConstraints == null) {
-            newNameConstraints?.copy()
-        } else {
-            try {
-                previousNameConstraints.mergeWith(newNameConstraints)
-            } catch (e: Throwable) {
-                throw NameConstraintsException(e.message ?: "NameConstraints merge failed.")
-            }
-            previousNameConstraints
+        return try {
+            // previous == null: adopt the cert's constraints; mergedWith(null) returns previous
+            previousNameConstraints?.mergedWith(newNameConstraints) ?: newNameConstraints?.copy()
+        } catch (e: Throwable) {
+            throw NameConstraintsException(e.message ?: "NameConstraints merge failed.")
         }
     }
 }
-

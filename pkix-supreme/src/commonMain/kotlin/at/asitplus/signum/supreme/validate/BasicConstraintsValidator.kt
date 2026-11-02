@@ -48,8 +48,9 @@ class BasicConstraintsValidator: CertificateChainValidator {
                 remainingPathLength = remainingPathLength.minus(1u)
             }
 
-            basicConstraints.pathLenConstraint.let { constraint ->
-                if (remainingPathLength == null || constraint!! < remainingPathLength) {
+            basicConstraints.pathLenConstraint?.let { constraint ->
+                // RFC 5280 6.1.4(l)/(m): max_path_length may only shrink
+                if (remainingPathLength == null || constraint < remainingPathLength) {
                     remainingPathLength = constraint
                 }
             }

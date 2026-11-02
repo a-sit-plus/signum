@@ -29,8 +29,8 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * */
 class NameConstraints internal constructor(
     asn1Representation: Awesn1X509CertificateExtension,
-    var permitted: GeneralSubtrees? = null,
-    var excluded: GeneralSubtrees? = null
+    val permitted: GeneralSubtrees? = null,
+    val excluded: GeneralSubtrees? = null
 ) : X509CertificateExtension(asn1Representation) {
 
     /**
@@ -81,41 +81,40 @@ class NameConstraints internal constructor(
             )
         }
     }
-
+    /**
+     * RFC 5280 6.1.4(g): intersect permitted subtrees, union excluded subtrees. Purely functional:
+     * returns a new [NameConstraints]; neither [this] nor [newConstraints] is modified. Trust-store
+     * data therefore survives validation runs untouched.
+     */
     @ExperimentalPkiApi
-    fun mergeWith(newConstraints: NameConstraints?) {
-        if (newConstraints == null) {
-            return
-        }
+    fun mergedWith(newConstraints: NameConstraints?): NameConstraints {
+        if (newConstraints == null) return this
 
         val newExcluded = newConstraints.excluded
-        if (excluded == null) {
-            if (newExcluded != null) {
-                excluded = newExcluded.copy()
-            }
-        } else {
-            if (newExcluded != null) {
-                excluded!!.unionWith(newExcluded)
-            }
+        val mergedExcluded = when {
+            excluded == null -> newExcluded?.copy()
+            newExcluded != null -> excluded.unionWith(newExcluded)
+            else -> excluded
         }
 
         val newPermitted = newConstraints.permitted
-        if (permitted == null) {
-            if (newPermitted != null) {
-                permitted = newPermitted.copy()
+        val (mergedPermitted, extraExclusions) = when {
+            permitted == null -> newPermitted?.let { GeneralSubtrees(it.trees) to null } ?: (null to null)
+            newPermitted != null -> {
+                val (intersection, exclusions) = permitted.intersectWithExclusions(newPermitted)
+                intersection to exclusions
             }
-        } else {
-            if (newPermitted != null) {
-                val toExclude = permitted!!.intersectAndReturnExclusions(newPermitted)
-                if (toExclude != null) {
-                    if (excluded != null) {
-                        excluded!!.unionWith(toExclude)
-                    } else {
-                        excluded = toExclude.copy()
-                    }
-                }
-            }
+            else -> permitted to null
         }
+
+        val finalExcluded = when {
+            extraExclusions == null -> mergedExcluded
+            mergedExcluded != null -> mergedExcluded.unionWith(extraExclusions)
+            else -> extraExclusions
+        }
+
+        // Ensure the merged constraints do not leak state into the anchor: fresh instance every time
+        return NameConstraints(asn1Representation, mergedPermitted, finalExcluded)
     }
 
     /**

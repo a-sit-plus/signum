@@ -65,14 +65,13 @@ class GeneralSubtrees(
     trees: List<GeneralSubtree>
 ) {
 
-    var trees: List<GeneralSubtree> = trees.toMutableList()
-    private set
+    val trees: List<GeneralSubtree> = trees.toList()
 
     /**
      * Removes all redundant entries
      */
     @OptIn(ExperimentalPkiApi::class)
-    private fun minimize(): GeneralSubtrees {
+    private fun minimized(trees: List<GeneralSubtree>): GeneralSubtrees {
         val mutableTrees = trees.toMutableList()
 
         var i = 0
@@ -115,16 +114,11 @@ class GeneralSubtrees(
             }
         }
 
-        trees = mutableTrees
         return GeneralSubtrees(mutableTrees)
     }
 
     @ExperimentalPkiApi
-    fun unionWith(other: GeneralSubtrees) {
-        (trees as MutableList).addAll(other.trees)
-        val _ = minimize()
-    }
-
+    fun unionWith(other: GeneralSubtrees): GeneralSubtrees = minimized(trees + other.trees)
     /**
      * Creates Subtree containing widest name of that type
      */
@@ -147,23 +141,21 @@ class GeneralSubtrees(
     }
 
     /**
-     * Merges permitted NameConstraints
+     * Intersects permitted subtrees per RFC 5280 6.1.4(g)(1). Returns the intersection and,
+     * separately, the exclusions for same-type pairs that do not overlap (the widest-subtree
+     * placeholders). Purely functional: neither operand is modified.
      */
     @ExperimentalPkiApi
-    fun intersectAndReturnExclusions(other: GeneralSubtrees): GeneralSubtrees? {
-
+    fun intersectWithExclusions(other: GeneralSubtrees): Pair<GeneralSubtrees, GeneralSubtrees?> {
         val newThis = mutableListOf<GeneralSubtree>()
-        var newExcluded: MutableList<GeneralSubtree>? = null
+        val newExcluded = mutableListOf<GeneralSubtree>()
 
-        // Step 1: If this is empty, just add everything in other
-        if (trees.isEmpty()) {
-            (this.trees as MutableList).addAll(other.trees)
-            return null
-        }
+        // Step 1: If this is empty, the intersection is simply the other set
+        if (trees.isEmpty()) return GeneralSubtrees(other.trees) to null
 
         // Step 2: Minimize both
-        val primary = this.minimize().trees.toMutableList()
-        val secondary = other.minimize().trees
+        val primary = minimized(trees).trees.toMutableList()
+        val secondary = minimized(other.trees).trees
 
         var i = 0
         while (i < primary.size) {
@@ -171,7 +163,7 @@ class GeneralSubtrees(
             var sameType = false
             var removed = false
 
-            // Step 3a: check each against secondary
+            // Step 3a: check each entry against the other set
             for (candidateGS in secondary) {
                 val candidate = candidateGS.base
                 when (thisEntry.constrains(candidate)) {
@@ -185,7 +177,7 @@ class GeneralSubtrees(
                     }
                     GeneralName.ConstraintResult.MATCH,
                     GeneralName.ConstraintResult.WIDENS -> {
-                        // remove thisEntry, add candidate to newThis
+                        // remove thisEntry, add candidate to the intersection
                         primary.removeAt(i)
                         newThis += candidateGS
                         sameType = false
@@ -196,7 +188,7 @@ class GeneralSubtrees(
                 }
             }
 
-            // Step 3b: if sameType true → no overlap, must exclude widest
+            // Step 3b: same type but no overlap -> the type must be excluded entirely
             if (!removed && sameType) {
                 var intersectionFound = false
                 for (altPrimary in primary) {
@@ -217,10 +209,8 @@ class GeneralSubtrees(
                 }
 
                 if (!intersectionFound) {
-                    if (newExcluded == null) newExcluded = mutableListOf()
-
                     if (thisEntry is DirectoryName) {
-                        // for x500Name exclude actual subtree
+                        // for X.500 names, exclude the actual subtree
                         if (newExcluded.none { it.base == primary[i].base }) {
                             newExcluded += primary[i]
                         }
@@ -233,7 +223,7 @@ class GeneralSubtrees(
                 }
 
                 primary.removeAt(i)
-                continue // don’t advance i since we removed
+                continue // do not advance i since we removed
             }
 
             if (!removed) {
@@ -244,7 +234,7 @@ class GeneralSubtrees(
         // Step 4: add replacements
         primary += newThis
 
-        // Step 5: add entries from secondary that have no type in primary
+        // Step 5: add entries from the other set whose type does not occur in the intersection
         for (entry in secondary) {
             val entryName = entry.base
             var diffType = false
@@ -268,12 +258,7 @@ class GeneralSubtrees(
             }
         }
 
-        // Update this.trees
-        (this.trees as MutableList).clear()
-        (this.trees as MutableList).addAll(primary)
-
-        // Step 6: return exclusions
-        return newExcluded?.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
+        return GeneralSubtrees(primary) to newExcluded.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
     }
 
     fun copy(): GeneralSubtrees = GeneralSubtrees(trees.toList())

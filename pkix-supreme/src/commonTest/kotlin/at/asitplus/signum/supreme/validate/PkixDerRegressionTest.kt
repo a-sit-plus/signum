@@ -53,7 +53,7 @@ val PkixDerRegressionTest by matrixSuite {
 
         // step 1: root -> intermediate 2 -> leaf 2 validates
         listOf(certificate("second-leaf"), certificate("plain-intermediate"))
-            .buildPathAndValidate()
+            .buildPathAndValidate(context)
             .shouldBeInstanceOf<CertificateValidationResult.Success>()
 
         // step 2, root -> intermediate 1 (narrowed) -> leaf 1 validates
