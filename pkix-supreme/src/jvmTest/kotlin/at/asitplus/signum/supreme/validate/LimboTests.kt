@@ -2,14 +2,12 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.Signum
 
-import at.asitplus.signum.indispensable.pki.TrustAnchor
 
 import at.asitplus.signum.indispensable.pki.installPkix
 
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.signum.indispensable.pki.TrustAnchor
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow

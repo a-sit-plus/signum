@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Exception
@@ -9,7 +10,6 @@ import at.asitplus.awesn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.signum.indispensable.pki.TrustAnchor
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.CertificateException
@@ -25,10 +25,8 @@ import kotlin.time.Instant
 
 @OptIn(ExperimentalPkiApi::class)
 val PkixDerRegressionTest by matrixSuite {
-    SignumPkix.install()
-
     val validationDate = Instant.parse("2027-01-01T00:00:00Z")
-    fun certificate(name: String): Certificate = Certificate.decodeFromPem(PkixDerFixtures.pem(name))
+    fun certificate(name: String): Certificate = Signum.Der.decodeFromPem(PkixDerFixtures.pem(name))
     suspend fun validate(
         root: String,
         vararg pathFromLeaf: String,

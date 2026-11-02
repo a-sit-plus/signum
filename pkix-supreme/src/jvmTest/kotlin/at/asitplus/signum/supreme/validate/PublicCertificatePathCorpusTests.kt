@@ -2,12 +2,13 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.signum.indispensable.pki.TrustAnchor
+import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -26,7 +27,7 @@ import kotlin.time.Instant
  */
 @OptIn(ExperimentalPkiApi::class)
 val PublicCertificatePathCorpusTests by matrixSuite {
-    SignumPkix.install()
+    Signum.installPkix()
     val corpus = json.decodeFromString<PublicPathCorpus>(resourceText("corpora/public-paths.json"))
     require(corpus.cases.map { it.source to it.id }.distinct().size == corpus.cases.size)
     require(corpus.cases.all { case ->
@@ -43,7 +44,7 @@ val PublicCertificatePathCorpusTests by matrixSuite {
             // assertion, unsupported crypto operation, or arbitrary exception is never a rejection pass.
             val decoded = try {
                 (case.anchors + case.paths.flatten()).distinct().associateWith { ref ->
-                    Certificate.decodeFromPem(corpus.certificates.getValue(ref))
+                    Signum.Der.decodeFromPem<Certificate>(corpus.certificates.getValue(ref))
                 }
             } catch (error: Asn1Exception) {
                 withClue("Decoding-stage rejection: $error") {

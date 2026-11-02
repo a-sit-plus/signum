@@ -32,6 +32,8 @@ private fun tbsCertificate(
     validFrom: Instant = Instant.fromEpochSeconds(1_700_000_000),
     subjectName: Name = X500Name.EMPTY,
     sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
+    issuerUniqueID: ByteArray? = null,
+    subjectUniqueID: ByteArray? = null,
 ) = TbsCertificate(
     serialNumber = Asn1Integer.ONE,
     signatureAlgorithmProvider = { EcdsaAlgorithm.withSHA256 },
@@ -40,8 +42,8 @@ private fun tbsCertificate(
     validFrom = validFrom,
     validUntil = Instant.fromEpochSeconds(1_800_000_000),
     publicKeyProvider = { ECCurve.SECP_256_R_1.generator.asPublicKey() },
-    issuerUniqueID = null,
-    subjectUniqueID = null,
+    issuerUniqueID = issuerUniqueID,
+    subjectUniqueID = subjectUniqueID,
     extensions = emptyList(),
     sourceRepresentation = sourceRepresentation,
 )
@@ -49,6 +51,21 @@ private fun tbsCertificate(
 private val tbsDer = DER { serializersModule = signumAsn1Serializers }
 
 val TbsCertificateEncodingTest by matrixSuite {
+    "Unique IDs preserve ASN.1 bit order and trailing zero octets" {
+        val issuerId = byteArrayOf(0x01, 0x80.toByte(), 0x00)
+        val subjectId = byteArrayOf(0x80.toByte(), 0x01, 0x00)
+        val source = tbsCertificate(issuerUniqueID = issuerId, subjectUniqueID = subjectId)
+        val model = source.asn1Representation
+        model.issuerUniqueID!!.bitCarryingBytes shouldBe issuerId
+        model.subjectUniqueID!!.bitCarryingBytes shouldBe subjectId
+        model.issuerUniqueID!!.numPaddingBits shouldBe 0
+        model.subjectUniqueID!!.numPaddingBits shouldBe 0
+        val decoded = tbsDer.decodeFromByteArray<TbsCertificate>(tbsDer.encodeToByteArray(source))
+        decoded.issuerUniqueID shouldBe issuerId
+        decoded.subjectUniqueID shouldBe subjectId
+        decoded shouldBe source
+    }
+
     "Contextual serializer dispatch and retained original" {
         val source = tbsCertificate()
         source.sourceRepresentation shouldBe null
