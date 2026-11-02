@@ -17,20 +17,30 @@ val PkixDerRegressionTest by matrixSuite {
 
     val validationDate = Instant.parse("2027-01-01T00:00:00Z")
     fun certificate(name: String): Certificate = Certificate.decodeFromPem(PkixDerFixtures.pem(name))
-
-    suspend fun expectValid(root: String, vararg pathFromLeaf: String, policies: Set<ObjectIdentifier> = emptySet()) {
-        val trustStore = setOf(TrustAnchor.Certificate(certificate(root)))
-        val result = pathFromLeaf.map(::certificate).buildPathAndValidate(
-            CertificateValidationContext(
-                date = validationDate,
-                trustAnchors = trustStore,
-                explicitPolicyRequired = policies.isNotEmpty(),
-                initialPolicies = policies,
-            )
+    suspend fun validate(
+        root: String,
+        vararg pathFromLeaf: String,
+        policies: Set<ObjectIdentifier> = emptySet(),
+        expectedEku: Set<ObjectIdentifier> = emptySet(),
+    ): CertificateValidationResult = pathFromLeaf.map(::certificate).buildPathAndValidate(
+        CertificateValidationContext(
+            date = validationDate,
+            trustAnchors = setOf(TrustAnchor.Certificate(certificate(root))),
+            explicitPolicyRequired = policies.isNotEmpty(),
+            initialPolicies = policies,
+            expectedEku = expectedEku,
         )
-        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
-    }
+    )
 
+    suspend fun expectValid(
+        root: String,
+        vararg pathFromLeaf: String,
+        policies: Set<ObjectIdentifier> = emptySet(),
+        expectedEku: Set<ObjectIdentifier> = emptySet(),
+    ) {
+        validate(root, *pathFromLeaf, policies = policies, expectedEku = expectedEku)
+            .shouldBeInstanceOf<CertificateValidationResult.Success>()
+    }
     "valid end-entity certificate may omit SKI" {
         expectValid("root", "no-ski")
     }
@@ -56,6 +66,36 @@ val PkixDerRegressionTest by matrixSuite {
             CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
         )
         result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+    }
+    "an intermediate CA without keyUsage can still sign certificates" {
+        // RFC 5280 6.1.4(n): keyCertSign is checked only if the extension is present.
+        expectValid("ku-root", "ku-leaf", "ku-absent-ca")
+    }
+
+    "a clientAuth-only intermediate must not issue a serverAuth path" {
+        // The intermediate has critical EKU=clientAuth; the leaf has EKU=serverAuth.
+        val serverAuth = ObjectIdentifier("1.3.6.1.5.5.7.3.1")
+        val result = validate(
+            "ku-root", "server-leaf", "client-auth-ca",
+            expectedEku = setOf(serverAuth),
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
+        result.chainFailures.values.flatMap { it.validatorFailures }
+            .any { it.validator is KeyUsageValidator } shouldBe true
+    }
+
+    "expectedEku requires the requested usage to be present on the leaf" {
+        // no-ski has no EKU extension (also checks the missing-extension case).
+        val serverAuth = ObjectIdentifier("1.3.6.1.5.5.7.3.1")
+        val result = validate("root", "no-ski", expectedEku = setOf(serverAuth))
+        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
+        result.chainFailures.values.flatMap { it.validatorFailures }
+            .any { it.validator is KeyUsageValidator } shouldBe true
+    }
+
+    "DNS name constraints must not interpret a non-DNS subject CN as a DNS SAN" {
+        // CN=Alice, no DNS SAN; the intermediate permits only DNS:example.com.
+        expectValid("root", "cn-leaf", "cn-intermediate")
     }
 
     "explicit policy succeeds when a leaf contains requested OID and anyPolicy" {
@@ -214,6 +254,157 @@ ZdpDUwZp7/eZ3B+louixrbAVSIftDXPwHCmB2dPosVdiZ5bJddvOw6D/acl2dZdA
 o7AayINSFW5Ibll5C9TfL8V2UCMlfssq/sP0L4MfHZVMOb7U/kg1/zTIN1MZnTPA
 fRaNkI6vC2rrxqVhL0KmSlFuVRp7DnBLqgQnCDPQ/YubIPgv/EuNy9U9evzf1X7/
 MJmj0b3p/R9o1PvyPfeJBl1dNBR68LI7QMmSYe8J/d4z0o1GQZk21AHIaA==
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "ku-root" to """
+-----BEGIN CERTIFICATE-----
+MIIDODCCAiCgAwIBAgIUKwcwOV8+Igl+SNEoXJ+L/dZWzDQwDQYJKoZIhvcNAQEL
+BQAwIjEgMB4GA1UEAwwXS1UtT3B0aW9uYWwgUmV2aWV3IFJvb3QwHhcNMjYxMTAy
+MTM1MzM4WhcNMzYxMDMwMTM1MzM4WjAiMSAwHgYDVQQDDBdLVS1PcHRpb25hbCBS
+ZXZpZXcgUm9vdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANPxtPb8
+HcpdgYWxaIUjtDX3VONaJV+R3+FayomzST9jgYpa38Pdl/oO1j12uzjpkkiVC4MM
+DZky2BURjn6d39ncKHD3ga+PrMmHau+2jGakORvRP1U9/Kw6mMNOZx3wX1DiBnNh
+QEzjwtLOCF33zDgyOG1raOqptbu7uAp3b4Bs2WDy2LJSjw0EixewWcCLPBp6HsYC
+c+usUujt9KBCueTwlp/ODU6z5gZEnYEEqyZaGG2k1azfdHiJ6SPdhTKXac/LAVzu
+s4b2KRAz+XvY0YYMtNhJdbbcthrzPhsFys8xXtS24YwjixXKK3qUaahth5ihC+b0
+Z2mb5pBje0gQDu0CAwEAAaNmMGQwHwYDVR0jBBgwFoAUbNEiOm2+YUTp9eTanEHq
+l3Ay6ywwEgYDVR0TAQH/BAgwBgEB/wIBAzAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0O
+BBYEFGzRIjptvmFE6fXk2pxB6pdwMussMA0GCSqGSIb3DQEBCwUAA4IBAQAOSNAw
++S4E6qjHiUQZgRz2uFump7v+cNeKS+EDgyuVJ8IuDfkCifPd8F3b4Rcu5ofsIyIl
+1zwMDbZxxy1+lniVv2Bly0PuDGSkyka5eBFHA/EXFZKdsqpHWUUHADvXNrS6Q+Uf
+AhxIv5lSDxx/HFs3Lm7/G03lL6bFet04jgxMyc5rws1tXBnCIkr+p9tK97a379Lp
+Iwd3FfTzKfBKXM4sWIF/FNVsa9zjItaPn+agwRBNUPPLS/bZy8Z6jEbFKC0sPPsr
+HFuWOOdDUj5JpiuhZ8J32zaef6zp6Xx4PL/xVY6Q1SOmQ3rniPPh8I7uTT0SxmUM
+gNxV5Jdf7TQRTdTf
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "ku-absent-ca" to """
+-----BEGIN CERTIFICATE-----
+MIIDDDCCAfSgAwIBAgICJyUwDQYJKoZIhvcNAQELBQAwIjEgMB4GA1UEAwwXS1Ut
+T3B0aW9uYWwgUmV2aWV3IFJvb3QwHhcNMjYxMTAyMTM1MzM4WhcNMzYxMDMwMTM1
+MzM4WjAYMRYwFAYDVQQDDA1DQSB3aXRob3V0IEtVMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAvOwEVoKkqwuP4UmssEX2UpwtM1/XIl9MVLD246/e92sr
+6NeBCsRQHt3VsHF4i0q/1Vy7c+LkxHjqIUfO6eMup2HPWcT0oi2KwvrRpeYrQk7r
+RI69F4gskIH4222Hw9RK6RJt+aFa2zv9vVhkGoF0V49xXqJGNs85a0yVvZEuIKHB
+4goLCW/hIalD3SyFDXJQQIYkbA1hDr/KnHTCfqCQADeEnGuCYDjsS85FH1CakqoZ
+OWuE0ocJgHKdblxoYR8lkzk23IiYKSB/UdhEabzcN/T36DzMPyHejoqXOmhI94be
+iweFcre28sHuIPr8N9xlflJLyRg3eOePvCUem561MwIDAQABo1YwVDASBgNVHRMB
+Af8ECDAGAQH/AgEAMB0GA1UdDgQWBBQDc977Ohs7oZIHvA147ZVodH0NvDAfBgNV
+HSMEGDAWgBRs0SI6bb5hROn15NqcQeqXcDLrLDANBgkqhkiG9w0BAQsFAAOCAQEA
+UJ1UsWYAeeAmZM7Ecj5z6bas2bMK7ED3UtMZ3P9LoUrpM0sQa33xXEuB9Joq6xMg
+ebkjWixwqnaCAYrvL13l3bzSWkXFlOwaECh2UTQA65txfuAMYJZggY1xyfYuU7II
+Ac+K8qTqvG6y4R2Hltku9+1iSGrWaRU6ouo31+6vsUIVpryPouBRXxJsl6jEEhCO
+/9vwYw4IKP3SBK8hMPW15Rhb6Ztn09hIbSJsf7vKlniW5y+9AYJ6MKE4/OzTJAsw
+fVi3eKVkIeasVzwNuu0AFO0bWW8BHfZhLJrALWHyOfFytVq97XtZ/86nSAvnFoDO
+Fa4se8lgEDC+oDmaC/3bRQ==
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "ku-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDDzCCAfegAwIBAgICJyYwDQYJKoZIhvcNAQELBQAwGDEWMBQGA1UEAwwNQ0Eg
+d2l0aG91dCBLVTAeFw0yNjExMDIxMzUzMzhaFw0zNjEwMzAxMzUzMzhaMBsxGTAX
+BgNVBAMMEEtVIG9wdGlvbmFsIGxlYWYwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+ggEKAoIBAQDvihCq3+bG2M7JckesWzWWcEDs+7xWZRj1ihJr+2Kb9hwdpLII0rs0
+6u9m/EsbxixrmwR1BFxYaSIUVsK98AzMzIhkEyCinqOCI8iymXyWPvbKLQMkWZl7
++/cLCFgvr2jWzs3EATGMOYbrq6H5lrwet/xcYmyCjCPdnikZZaBq3ofyVfifKHeC
+4DEBD2tPjMir4/DRdVJlwe9I7iki/9mzJ7mBjniIYQE1XfM4lWxLj5JPdg1Mz39x
+wtfY1m28bout3eOrJzsYK5qnmFmTxUrFC0daLpaSFwRzeR/5oUoUk051KxDXxrQu
+XXy2rK5VLo7cn4UfBDxUQRK87/EQe8v7AgMBAAGjYDBeMAwGA1UdEwEB/wQCMAAw
+DgYDVR0PAQH/BAQDAgeAMB0GA1UdDgQWBBQHYUrPi3sBCGf8EU2vVtx3Wbo4djAf
+BgNVHSMEGDAWgBQDc977Ohs7oZIHvA147ZVodH0NvDANBgkqhkiG9w0BAQsFAAOC
+AQEAiyR1I+JH2gUfvcyFVeaLlv3GyQw6RnWjNiYYgpY96RwfBADB7ToauRGu51F8
+AXir4aZI7t8rMu1k4Jj9PTcgyS5HylbCS7F4tnPA9jwELBpBAlw74z5saOIPMHz+
+Wgfj+H2N/Gyc0xdP8fPQZZ1F/h+JZUdIozk4ztEr0tBt7B8S9dAnX4bfMMDXKi3B
+8ahnDMYP5vp7Xk0TT7BSaXrnsjI4r3oGwqwMXP01NhT5jaWfdbwhmzDnlpGbaoEf
+BCi2L17GzUhVTAr83pbFQ54yeKmCRH6GNsZclR7cYJCLV/C3olEQAkymlIj+AyfD
+esX2nM6gPvhBHqIPo2+zH+tsqA==
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "client-auth-ca" to """
+-----BEGIN CERTIFICATE-----
+MIIDOTCCAiGgAwIBAgICJycwDQYJKoZIhvcNAQELBQAwIjEgMB4GA1UEAwwXS1Ut
+T3B0aW9uYWwgUmV2aWV3IFJvb3QwHhcNMjYxMTAyMTM1MzQ4WhcNMzYxMDMwMTM1
+MzQ4WjAdMRswGQYDVQQDDBJDbGllbnRBdXRoLU9ubHkgQ0EwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQCy+BwiulOoHV5poj2iMm/3PWkhihJ5vf3zOcyT
+81smPMvrD9Sf7+VyNQoc3ZsOc1n6aFaeskW0/pbOPbi8/ITcfWhjKRQBF9NUF/qr
+22EkMLqgJFrAOTo2A001kfPiNiG7c9ynf6MmjgJO+zER0hgmT/5wDptHKzan1vrs
+P7qiNyIAVX4+BrRcFLTpz7J73Cr0iAh+OcSL+fe6roFTb2PafocQzn6QcjGSAuu5
+giYhyIxZli8hk8oTnONJYuKLl1vTLAMdvs5DEB2g7Of1GRQwxxTOkelM48IzocPx
+heXahz9lGnNgb/Qhur1c/48/nFl3h1T+hEfk42Ib+fALsoELAgMBAAGjfjB8MBIG
+A1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/BAQDAgEGMBYGA1UdJQEB/wQMMAoG
+CCsGAQUFBwMCMB0GA1UdDgQWBBR9LrdUd8yD9pu//JXmu5V0G3OtMDAfBgNVHSME
+GDAWgBRs0SI6bb5hROn15NqcQeqXcDLrLDANBgkqhkiG9w0BAQsFAAOCAQEApnQO
+oSrG8UL9OaNVeisvDWSjcMBK3fV39jHRqNWAWRMota8gD55Xrid5qUuj67ABK6Ci
+pucfMvdfyBzpp78/j8o0vS5jy+GqHyQ/9oZEggpc7P22+OCAsfAXII5vf/gX1lTH
+rsbXFKML47QxATmVAoSCHtviFlxUw1woKgbALUqUeWdxVm5juBkyG6/0rn2hbqyT
+lph2nYP1/qcaJIqGuNbcG7wLraMryPUU4JecYwTYE5PRDPI5qS0EMUsEE39On1sP
+MhsxckLcunqP/7nm50tBeVcCLGq6donh49BS5F+e/ziCagHH7l/TP7RROikyBNNS
+fEbwN4BDoAoQhwQ4bw==
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "server-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDRjCCAi6gAwIBAgICJygwDQYJKoZIhvcNAQELBQAwHTEbMBkGA1UEAwwSQ2xp
+ZW50QXV0aC1Pbmx5IENBMB4XDTI2MTEwMjEzNTM0OFoXDTM2MTAzMDEzNTM0OFow
+GjEYMBYGA1UEAwwPd3d3LmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOC
+AQ8AMIIBCgKCAQEAyKYG/ftxgRUtgFGoO7O7TbutrlbbHur/sVQ9BkZmiSDsjEPd
+gyOXmmX26U1MWpL+8qWZDu6VsYATLvTwCM0kpRjROd/vJzKhogrgZxsnMIYUsrzb
+qYQjUbBAd1Pflzq3higMj0JR2z2iw+RFPhoCzjfVuBUHXsJZwp3pA1ax9imjeEQ/
+AMjMLmDQOOYbVFz6lNprKAxYX3v2tVNR1FVToxSrIFXMUunP5OyTIMVYJjBYRKk/
+ClgK9u1HTVP+RTwcIE7NUIA7agWc4Y2mGiFYZFzWUZgJ1f12dgJoBOfrX3S1I6qe
+2XK8Buos+N7FtCPxjevAFiu6oL0sugnqSQzihQIDAQABo4GSMIGPMAwGA1UdEwEB
+/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUFBwMBMBoGA1Ud
+EQQTMBGCD3d3dy5leGFtcGxlLmNvbTAdBgNVHQ4EFgQUDTR2vT4N8n8kk4kSKw5L
+RdFzh/swHwYDVR0jBBgwFoAUfS63VHfMg/abv/yV5ruVdBtzrTAwDQYJKoZIhvcN
+AQELBQADggEBAH2D5SYQnFiQvLshXo0XwZXZiT1+CIrBqSyVvt8wq2TQADeQJxzl
+6Ysnnuh9jFWfprWaDqISy9qIVDlIq7/VO8wTatwqSqZGzebpSsWEcBSrojKF/pB4
+IZqyc+YHSmc7zfScLZdk0i0MgY6KxALH/w9bZS9mb1Mn8sdPyT08KpsbRnZeVsTL
+eyhVWQiXsFkrIdAheWBPHLZsmkSN/FxDImCrxSqG9xWgKXfUTULcpYAFkTU8UZ6Z
+x2mRiZspA5LC1GWJ7YRGBpqPiK44XrCmHz7y0WOacvPSgnHwI45TX8eGC3jSUhlU
+ccltCBQyP7NTnVAr/371dTjyzGOs+XONaa8=
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "cn-intermediate" to """
+-----BEGIN CERTIFICATE-----
+MIIDOzCCAiOgAwIBAgICA+wwDQYJKoZIhvcNAQELBQAwGzEZMBcGA1UEAwwQUEtJ
+WCBSZXZpZXcgUm9vdDAeFw0yNjEwMzAxMzU4MzhaFw0zNjEwMjcxMzU4MzhaMB0x
+GzAZBgNVBAMMEkNBIGZvciBleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAJ06yUgL4vIMeeQ1hrU7VoOowy+sb1hQNmReRoafz7T8Itta
+Nt3rj6O3JQPPlI0+6n87HPz86VMmUX972KPbhumQlMWDZiGSm6K9PrZr6HIqe+Nt
+1xLjcdvpC/hhM4JrfPppAlO/RZi6a9qirH7sn/1F7JOKL3vHQuU069Q0L6XKX99f
+DGrFXBFlN8jHFiMvmzUU/DT1OlJVzYZy5og479wf9ohqkGpUY+egUaO2rdHZyC47
+j5tOeUBapJrK/y7EjHO11OkHsIpP2RH7L6SiqZT4uz/GesW7RDYEfuf+C/yBBTt6
+5C4H1NlcpkxbB4cVJrtsYD3DVBWb+/CR1til4Z8CAwEAAaOBhjCBgzASBgNVHRMB
+Af8ECDAGAQH/AgEBMA4GA1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUtHpaXjfMNQPP
+GlfKWopcP/wU1KkwHwYDVR0jBBgwFoAU2Jofp9cjISJuoF34Xu9DnICukr0wHQYD
+VR0eAQH/BBMwEaAPMA2CC2V4YW1wbGUuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQB5
+uPPTo00vBeJ9a56oiRh/6m4sMIMjAJUK6XGa6llj1uiWgLrW8UAXpI89pYO5NNOq
+9At/nsvuHXVpG/rFoJCvJL4bMl54GWfgIn5PpH1eQl/Oo3RPul4VSaZGcuy/NJaR
+77x3CTilihuOmLFtkjYs5OTlkUcR29uVcpHks/h8xreAH/Xd0xcE8PW3oo1q24t5
+wr7bJQ9p5UXflVfoCPptprZqr7xffRfeKtjpY9ZzCywPccaXF/+ZmOUbNKhcHC4+
+0LUP1q22S5nvGFAICromWtAJW4cnANeFp5ajqfZ5UDoev3LZzb+yWqFEXy5tqpY6
+UaJg3cg4iOdiUhsj4Z7m
+-----END CERTIFICATE-----
+""".trimIndent(),
+        "cn-leaf" to """
+-----BEGIN CERTIFICATE-----
+MIIDCTCCAfGgAwIBAgICA+0wDQYJKoZIhvcNAQELBQAwHTEbMBkGA1UEAwwSQ0Eg
+Zm9yIGV4YW1wbGUuY29tMB4XDTI2MTAzMDEzNTgzOFoXDTM2MTAyNzEzNTgzOFow
+EDEOMAwGA1UEAwwFQWxpY2UwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQCSh31Rua+h9DgxLidX5EyXTydQtTOhg+X6GxX6+L8p9CFQCmRR0K6msImkg1sq
+UjVqtc+Dq685KujSn9TYFduoMiYMQjPJLjdnV1VcFBFA2dZSa/svKQTYHoj2FrWa
+JTNog/pFDR17hUEYvvtiJCjXAgdfDvUtRjIlqoElu1LTMpMI7/YEMz2uplBZKVI/
+TNh7vUm2U8QmjadXKoPv+OrVqKTeo1VhNF9BKUgGGSd0QMDpKM2iZJMwxF/YGLiP
+mbJtXSUb6y+MAqVMI6JMGxlFTjRbEUkRCyEz6G7AwNs/0uJyouTvYN4kHv14DXYl
+q/Vm2pH/k+AJ2s6c2BjZWNnZAgMBAAGjYDBeMAwGA1UdEwEB/wQCMAAwDgYDVR0P
+AQH/BAQDAgeAMB0GA1UdDgQWBBTTBNQMn9e8CrBTrivF3mwVUB3n0jAfBgNVHSME
+GDAWgBS0elpeN8w1A88aV8pailw//BTUqTANBgkqhkiG9w0BAQsFAAOCAQEAdKTT
+RZ6YyeGtQwQ6+m5NfMkI+kJH+NuEMLT1w6okBoU3+wFuzqtIUyb6i0XXC0xkELJb
+9561JRZg4b0Qxwm0XmbO0TEzlnYe5Qn95PPhBAYw8lmjp8n0Q/aN7gID8IfwKfN6
+t9+pdPIVSBm0Izs5KyIxdXxLPRdUtiDMJmmvq+EQEgdLFc/cuUCy/ZxAUV8beLJz
+VuWVF8N9wSndq+7tnZSeOeoNZxACl1hs2dyGtpRLDiOj1I0I/IStQkHR5Ou7xrxF
+2vs82l4fs3h+IC3rOC5k7tN29GeKFIj7ixyYBLNbTZUkOEsXBG1JhIN6WvwqTxDD
+D3zvu/y9wxt1F22kuA==
 -----END CERTIFICATE-----
 """.trimIndent(),
         "narrowed-intermediate" to """
