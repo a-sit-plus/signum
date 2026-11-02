@@ -13,12 +13,10 @@ import at.asitplus.signum.indispensable.pki.extn.KeyUsage
 import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
- * Ensures that intermediate CA certificates have the necessary key usage extensions.
- * Checks Expected Key Usage in leaf certificate only
- * Key usage to sign certificates (keyCertSign) and CRLSign is required according to RFC 5280.
- *
- * Certificate-form trust anchors are subject to the same key usage checks as any path CA;
- * public-key anchors have no certificate to inspect and are therefore exempt.
+ * Checks keyCertSign on path CAs only when KU is present:
+ * [RFC 5280 6.1.4(n)](https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.4).
+ * Trust anchors are not path certificates. Leaf EKU and KU requirements come from the caller's context;
+ * CA EKU propagation is TLS/application policy, not part of the section 6.1 algorithm.
  */
 class KeyUsageValidator: CertificateChainValidator {
 
@@ -41,7 +39,7 @@ class KeyUsageValidator: CertificateChainValidator {
                 .getOrPut(currCert) { mutableSetOf() }
                 .addAll(supportedExtensions)
             currentCertIndex++
-            val originalIndex = certPathLen - 1 - currentCertIndex
+            val originalIndex = certPathLen - currentCertIndex
             if (currentCertIndex <= certPathLen - 1) {
                 verifySignatureKeyUsage(currCert, context.supportRevocationChecking, originalIndex)
             }
@@ -50,21 +48,15 @@ class KeyUsageValidator: CertificateChainValidator {
                 context.leafKeyUsageCheck(currCert)
             }
         }
-        // A certificate-form trust anchor is a CA too: require keyCertSign on it (RFC 5280 6.1.4(n) analog).
-        // Skipped when the anchor cert is already part of the chain (allowIncludedTrustAnchor) or absent (key anchor).
-        anchoredChain.trustAnchor.cert?.let { anchorCert ->
-            if (anchoredChain.chain.none { it == anchorCert }) {
-                verifySignatureKeyUsage(anchorCert, context.supportRevocationChecking, certPathLen)
-            }
-        }
         return checkedCriticalExtensions.mapValues { it.value.toSet() }
     }
 
     private fun verifySignatureKeyUsage(currCert: X509Certificate, supportRevocationChecking: Boolean, currentCertIndex: Int) {
-        if (currCert.findExtension<KeyUsage>()?.keyUsage?.contains(UsageBit.KEY_CERT_SIGN) != true) {
+        if (currCert.findExtension<KeyUsage>()?.keyUsage?.contains(UsageBit.KEY_CERT_SIGN) == false) {
             throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
         }
-        if (supportRevocationChecking && currCert.findExtension<KeyUsage>()?.keyUsage?.contains(UsageBit.CRL_SIGN) != true) {
+        // Explicit caller policy only: this does not perform CRL validation or establish revocation status.
+        if (supportRevocationChecking && currCert.findExtension<KeyUsage>()?.keyUsage?.contains(UsageBit.CRL_SIGN) == false) {
             throw KeyUsageException("CRL signature key usage extension not present at cert index $currentCertIndex.")
         }
     }

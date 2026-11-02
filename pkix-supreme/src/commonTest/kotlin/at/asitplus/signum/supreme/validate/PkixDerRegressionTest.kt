@@ -1,14 +1,26 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.nameConstraints_2_5_29_30
 import at.asitplus.signum.indispensable.decodeFromPem
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.signum.indispensable.pki.TrustAnchor
+import at.asitplus.signum.indispensable.pki.TbsCertificate
+import at.asitplus.signum.indispensable.pki.CertificateException
+import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
+import at.asitplus.signum.indispensable.pki.extn.GeneralSubtrees
+import at.asitplus.signum.indispensable.pki.extn.NameConstraints
+import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.testballoon.matrix.matrixSuite
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.shouldBe
+import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 import kotlin.time.Instant
 
 @OptIn(ExperimentalPkiApi::class)
@@ -45,16 +57,14 @@ val PkixDerRegressionTest by matrixSuite {
         expectValid("root", "no-ski")
     }
 
-    // RFC 5280 6.1 treats the anchor as input; but a certificate-backed anchor is subject to CA
-    // checks like any path cert. Use TrustAnchor.PublicKey for BC-less legacy roots instead.
-    "a BC-less legacy root must not validate as a certificate anchor" {
+    // Anchor representation must not invent CA issuance checks:
+    // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.1 (d)
+    "RFC 5280 6.1.1(d): a BC-less certificate-form anchor supplies trusted input" {
         val trustStore = setOf(TrustAnchor.Certificate(certificate("legacy-root")))
         val result = listOf(certificate("legacy-leaf")).buildPathAndValidate(
             CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
         )
-        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
-        result.chainFailures.values.flatMap { it.validatorFailures }
-            .any { it.validator is BasicConstraintsValidator } shouldBe true
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
     }
 
     // The same BC-less root, modeled as a public-key anchor, validates fine:
@@ -69,32 +79,37 @@ val PkixDerRegressionTest by matrixSuite {
     }
     "an intermediate CA without keyUsage can still sign certificates" {
         // RFC 5280 6.1.4(n): keyCertSign is checked only if the extension is present.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.4
+        // This fixture violates section 4 issuance rules (KU absent, pathLenConstraint present).
+        // Section 6.1 expressly does not make full profile conformance a validation requirement.
         expectValid("ku-root", "ku-leaf", "ku-absent-ca")
     }
 
-    "a clientAuth-only intermediate must not issue a serverAuth path" {
+    "RFC 5280 basic path validation does not propagate TLS EKU restrictions from CAs" {
         // The intermediate has critical EKU=clientAuth; the leaf has EKU=serverAuth.
+        // CA EKU propagation is an additional TLS-purpose policy, outside section 6.1:
+        // https://docs.openssl.org/master/man1/openssl-verification-options/#extended-key-usage
         val serverAuth = ObjectIdentifier("1.3.6.1.5.5.7.3.1")
         val result = validate(
             "ku-root", "server-leaf", "client-auth-ca",
             expectedEku = setOf(serverAuth),
         )
-        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
-        result.chainFailures.values.flatMap { it.validatorFailures }
-            .any { it.validator is KeyUsageValidator } shouldBe true
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
     }
 
-    "expectedEku requires the requested usage to be present on the leaf" {
+    "RFC 5280 4.2.1.12: absent leaf EKU does not restrict the requested purpose" {
         // no-ski has no EKU extension (also checks the missing-extension case).
+        // Applications MAY separately require EKU presence. expectedEku does not enable that policy:
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.12
         val serverAuth = ObjectIdentifier("1.3.6.1.5.5.7.3.1")
         val result = validate("root", "no-ski", expectedEku = setOf(serverAuth))
-        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
-        result.chainFailures.values.flatMap { it.validatorFailures }
-            .any { it.validator is KeyUsageValidator } shouldBe true
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
     }
 
     "DNS name constraints must not interpret a non-DNS subject CN as a DNS SAN" {
         // CN=Alice, no DNS SAN; the intermediate permits only DNS:example.com.
+        // The subject DN is constrained as directoryName, not reinterpreted as dNSName:
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3 (b)-(c)
         expectValid("root", "cn-leaf", "cn-intermediate")
     }
 
@@ -124,6 +139,64 @@ val PkixDerRegressionTest by matrixSuite {
         listOf(certificate("second-leaf"), certificate("plain-intermediate"))
             .buildPathAndValidate(context)
             .shouldBeInstanceOf<CertificateValidationResult.Success>()
+    }
+
+    // Isolate NameConstraintsValidator: the copied CA retains its old signature, which would
+    // correctly fail ChainValidator. A generic full-path rejection would hide the gaps below.
+    suspend fun expectNameConstraintsRejection(decodeConstraints: () -> NameConstraints) {
+        val template = certificate("client-auth-ca")
+        val tbs = template.tbsCertificate
+        val leaf = certificate("server-leaf")
+        val anchor = TrustAnchor.Certificate(certificate("ku-root"))
+        val result = runCatching {
+            val constraints = decodeConstraints()
+            val intermediate = Certificate(
+                TbsCertificate(
+                    serialNumber = tbs.serialNumber as Asn1Integer.Positive,
+                    signatureAlgorithm = tbs.signatureAlgorithm,
+                    issuerName = tbs.issuerName,
+                    validFrom = tbs.validFrom,
+                    validUntil = tbs.validUntil,
+                    subjectName = tbs.subjectName,
+                    publicKey = tbs.publicKey,
+                    issuerUniqueID = tbs.issuerUniqueID,
+                    subjectUniqueID = tbs.subjectUniqueID,
+                    extensions = tbs.extensions.orEmpty().filterNot { it.oid == constraints.oid } + constraints,
+                ),
+                template.signature,
+            )
+            NameConstraintsValidator().validate(
+                AnchoredCertificateChain(listOf(leaf, intermediate), anchor),
+                CertificateValidationContext(date = validationDate),
+            )
+        }
+        // An unrelated NPE/assertion/etc. must not masquerade as the expected certificate rejection.
+        val cause = result.exceptionOrNull()
+        (cause is CertificateException || cause is Asn1Exception) shouldBe true
+    }
+
+    // These assertions deliberately remain red until the implementation processes the bounds or
+    // rejects unsupported values. www.example.com has distance 1 from example.com.
+    // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10 (minimum/maximum paragraph)
+    "KNOWN RFC 5280 GAP: critical DNS subtree minimum=2 must be enforced or rejected" {
+        expectNameConstraintsRejection { NameConstraints(permitted = GeneralSubtrees(listOf(
+            GeneralSubtree(DNSName(Asn1String.IA5("example.com")), minimum = Asn1Integer(2))
+        ))) }
+    }
+    "KNOWN RFC 5280 GAP: critical DNS subtree maximum=0 must be enforced or rejected" {
+        expectNameConstraintsRejection { NameConstraints(permitted = GeneralSubtrees(listOf(
+            GeneralSubtree(DNSName(Asn1String.IA5("example.com")), maximum = Asn1Integer(0))
+        ))) }
+    }
+    "KNOWN RFC 5280 GAP: malformed critical NameConstraints must not become empty constraints" {
+        // A BOOLEAN is not a permitted/excluded subtree field. The decoder currently falls back
+        // to a typed NameConstraints with neither field, so the validator silently accepts it.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2 (critical extension processing)
+        expectNameConstraintsRejection {
+            NameConstraints.fromAsn1Representation(Awesn1X509CertificateExtension(
+                KnownOIDs.nameConstraints_2_5_29_30, true, byteArrayOf(0x30, 0x03, 0x01, 0x01, 0xff.toByte())
+            ))
+        }
     }
 }
 

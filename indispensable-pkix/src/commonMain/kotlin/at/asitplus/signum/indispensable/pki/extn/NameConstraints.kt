@@ -11,9 +11,7 @@ import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.Name
 import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
 import at.asitplus.signum.indispensable.pki.x500.RFC822Name
@@ -57,6 +55,10 @@ class NameConstraints internal constructor(
     /** Indicates whether the NameConstraints extension contains only valid general names in both the permitted and excluded subtrees. */
     val isValid : Boolean by lazy {
         fun GeneralSubtree.isInvalid(): Boolean {
+            // Known validation gap: minimum/maximum are decoded but not processed or rejected.
+            // Critical constraints using them require handling when this name form occurs later:
+            // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10
+            // PkixDerRegressionTest keeps active failing regressions for both fields.
             val name = base
             if (name.isValid == false) return true
             if (name is IPAddressName && name.addressAndPrefix == null) return true
@@ -71,6 +73,10 @@ class NameConstraints internal constructor(
         override val oid get() = KnownOIDs.nameConstraints_2_5_29_30
 
         override fun fromAsn1Representation(src: Awesn1X509CertificateExtension): NameConstraints {
+            // Known validation gap: a failed decode below becomes empty constraints. For critical
+            // extensions this must eventually reject, not silently waive the constraint (RFC 5280
+            // 4.2). PkixDerRegressionTest pins this with an active failing regression.
+            // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2
             val body = runCatching {
                 DER.decodeFromByteArray(NameConstraintsBody.serializer(), src.value)
             }.getOrNull() ?: return NameConstraints(src)
@@ -154,24 +160,10 @@ class NameConstraints internal constructor(
         }
 
 
-        // If subjectAlternativeNames does not contain an IPAddressName or DNSName,
-        // check whether the last CN in the subjectName can be used
-        val cn = subject.findMostSpecificCommonName()?.value?.asPrimitive()
-        if (cn != null) {
-            try {
-                val cnValue = Asn1String.decodeFromTlv(cn)
-                val isIp = runCatching { IPAddressName.fromString(cnValue.value) }.isSuccess
-
-                val alreadyPresent =
-                    if (isIp) alternativeNames.any { it is IPAddressName } else alternativeNames.any { it is DNSName }
-                if (!alreadyPresent) {
-                    val generalName = if (isIp) IPAddressName.fromString(cnValue.value) else DNSName(Asn1String.IA5(cnValue.value))
-                    alternativeNames.add(generalName)
-                }
-            } catch (_: Throwable) {
-                // cn is not ip or dns
-            }
-        }
+        // RFC 5280 6.1.3(b)-(c) constrains the subject DN as directoryName and SANs by their own
+        // name types. Do not reinterpret a CN (e.g. "Alice") as a DNS/IP SAN. Legacy TLS CN fallback
+        // is application policy, outside basic path validation:
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3
 
         for (alt in alternativeNames) {
             val altName = alt
@@ -253,13 +245,3 @@ internal class NameConstraintsBody(
     @Asn1Tag(0u) val permitted: List<GeneralSubtree>? = null,
     @Asn1Tag(1u) val excluded: List<GeneralSubtree>? = null,
 )
-
-/**
- * The most specific (leaf-most) `commonName` (OID 2.5.4.3) attribute in this [Name]'s RDN sequence, or
- * `null` if it carries none. RFC 5280 orders the RDNSequence most-general-first, so the last CN wins.
- */
-private fun Name.findMostSpecificCommonName(): AttributeTypeAndValue.X509Representable? =
-    relativeDistinguishedNames.asReversed()
-        .flatMap { it.attrsAndValues }
-        .filterIsInstance<AttributeTypeAndValue.X509Representable>()
-        .firstOrNull { it.oid == AttributeTypeAndValue.Descriptor.OID.commonName }

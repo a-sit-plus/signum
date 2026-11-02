@@ -14,10 +14,9 @@ import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
 import at.asitplus.signum.indispensable.pki.validationPath
 
 /**
- * Enforces the X.509 Basic Constraints extension rules for a certificate chain.
- *
- * Certificate-form trust anchors are checked like any CA in the path (basicConstraints present,
- * critical, cA=true, pathLenConstraint); public-key anchors have no certificate to check and are exempt.
+ * Checks path CAs under [RFC 5280 6.1.4(k)-(m)](https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.4).
+ * Trust anchors are inputs, not path certificates (6.1.1(d)). Section 4.2.1.9's issuance requirement
+ * to mark basicConstraints critical is not an additional section 6.1 path check.
  */
 class BasicConstraintsValidator: CertificateChainValidator {
 
@@ -28,7 +27,7 @@ class BasicConstraintsValidator: CertificateChainValidator {
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         var remainingPathLength: UInt? = null
         var currentCertIndex = 0
-        val processingChain = anchoredChain.trustAnchor.cert?.let { anchoredChain.chain + it } ?: anchoredChain.chain
+        val processingChain = anchoredChain.chain
         val certPathLen = processingChain.size
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
         for (currCert in processingChain.validationPath) {
@@ -42,7 +41,7 @@ class BasicConstraintsValidator: CertificateChainValidator {
             val basicConstraints = currCert.findExtension<BasicConstraints>()
                 ?: throw MissingBasicConstraintsException("Missing basicConstraints extension at cert index $originalIndex.")
 
-            checkCaBasicConstraints(currCert, originalIndex)
+            if (!basicConstraints.ca) throw MissingCaFlagException("Missing CA flag at cert index $originalIndex.")
 
             if (remainingPathLength != null && !currCert.isSelfIssued) {
                 if (remainingPathLength.toInt() == 0) {
@@ -62,6 +61,7 @@ class BasicConstraintsValidator: CertificateChainValidator {
     }
 }
 
+/** Optional CA issuance-profile check: [RFC 5280 4.2.1.9](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.9). */
 @Throws(BasicConstraintsException::class)
 fun checkCaBasicConstraints(cert: X509Certificate, certIndex: Int? = null) {
     val location = certIndex?.let { "at cert index $it." } ?: "at trust anchor"

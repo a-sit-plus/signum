@@ -75,6 +75,10 @@ class ChainValidator: CertificateChainValidator {
             throw CertificateChainValidatorException("Subject of issuer cert and issuer of child certificate mismatch.")
         }
 
+        // Remaining implementation deviation: this legacy UID restriction is additional to basic
+        // path validation. RFC 5280 4.1.2.8 specifies no UID processing requirements; it is not a
+        // conformance condition of 6.1.3(a)(4). Retained for a separate behavior/compatibility review.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.1.2.8
         if (!cert.tbsCertificate.issuerUniqueID.contentEquals(issuer.tbsCertificate.subjectUniqueID)) {
             throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
         }

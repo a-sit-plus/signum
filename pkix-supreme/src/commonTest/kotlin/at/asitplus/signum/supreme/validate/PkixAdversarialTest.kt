@@ -5,16 +5,18 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.SignumPkix
 import at.asitplus.signum.indispensable.pki.TrustAnchor
+import at.asitplus.signum.indispensable.pki.CertificateSerialNumberException
+import at.asitplus.signum.indispensable.pki.SanNotCriticalWithEmptySubjectException
 import at.asitplus.testballoon.matrix.matrixSuite
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.assertions.throwables.shouldThrow
 import kotlin.time.Instant
 
 /**
- * Devil's-advocate regression tests for RFC 5280 path validation.
- * Each test pins a specific clause of RFC 5280 that a naive implementation tends to get wrong.
+ * DER fixture regressions. Distinguish basic path checks from optional section 4 issuance linting.
+ * https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1
  */
 @OptIn(ExperimentalPkiApi::class)
 val PkixAdversarialTest by matrixSuite {
@@ -34,53 +36,68 @@ val PkixAdversarialTest by matrixSuite {
         result.shouldBeInstanceOf<CertificateValidationResult.Success>()
     }
 
-    "RFC 5280 6.1.4(l): leaf SANs must stay inside EVERY permitted subtree (intersection, not union)" {
+    "RFC 5280 6.1.3(b): a SAN may match either permitted subtree of its name type" {
+        // This fixture contains a.example OR b.example in ONE CA, not constraints from two CAs.
+        // Intersection across successive CAs is a different rule (6.1.4(g)).
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3
         expectValid("mg1", "mg-leaf2", "mg-mid2")
     }
 
-    "RFC 5280 4.2.1.10: DNS name constraint must not sanction a bare hostname suffix match" {
+    "RFC 5280 4.2.1.10: DNS permitted subtree accepts a subdomain at a label boundary" {
+        // This is a positive subdomain fixture, not a negative bare-suffix fixture.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10
         expectValid("nc-ca", "nc-leaf4", "nc-mid2")
     }
 
-    // currently failing on purpose: ecosystem conflict — Limbo expects leading-dot DNS constraint
-    // bases to be REJECTED (strict RFC 5280), OpenSSL/Go emit them. Needs a maintainer decision.
-    "KNOWN GAP: leading-dot DNS name constraints (.example form) conflict across ecosystems" {
-        expectValid("nc-ca", "nc-leaf2", "nc-mid")
-    }
-
-    "RFC 5280 4.2.1.3: empty subject requires critical SAN" {
-        expectValid("es2-root", "es2-leaf")
-    }
-
-    "RFC 5280 4.2.1.2/4.1.2.2: empty subject with non-critical SAN must fail" {
-        val trustStore = setOf(TrustAnchor.Certificate(certificate("es2-root")))
-        val result = listOf(certificate("es3-leaf")).buildPathAndValidate(
-            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
-        )
-        result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
-        result.chainFailures.values.flatMap { it.validatorFailures }
-            .firstOrNull { it.validator is CertificateValidator } shouldNotBe null
-    }
-
-    "RFC 5280 4.2.1.10: name constraints extension on a leaf certificate must fail" {
-        val trustStore = setOf(TrustAnchor.Certificate(certificate("nc-ca")))
-        val result = listOf(certificate("nc-leaf")).buildPathAndValidate(
-            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+    "Out-of-subtree fixture fails independently of leading-dot DNS syntax policy" {
+        // The intermediate permits .allowed.example, but the leaf SAN is nc2.good.example.
+        // Accepting leading-dot syntax would still not make this path valid. This fixture cannot
+        // demonstrate an ecosystem syntax gap. RFC basis: 6.1.3(b).
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3
+        val result = listOf(certificate("nc-leaf2"), certificate("nc-mid")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = setOf(TrustAnchor.Certificate(certificate("nc-ca"))))
         )
         result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
         result.chainFailures.values.flatMap { it.validatorFailures }
             .firstOrNull { it.validator is NameConstraintsValidator } shouldNotBe null
     }
 
-    "RFC 5280 4.1.2.2: zero serial number must fail" {
+    "RFC 5280 4.2.1.6: empty subject with critical SAN passes both path and issuance checks" {
+        expectValid("es2-root", "es2-leaf")
+        CertValidityValidator().check(certificate("es2-leaf"))
+    }
+
+    "RFC 5280 4.2.1.6: non-critical SAN with empty subject fails optional issuance linting" {
+        // Issuance rule, not a section 6.1 path rejection:
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.6
+        val trustStore = setOf(TrustAnchor.Certificate(certificate("es2-root")))
+        val result = listOf(certificate("es3-leaf")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+        shouldThrow<SanNotCriticalWithEmptySubjectException> { CertValidityValidator().check(certificate("es3-leaf")) }
+    }
+
+    "RFC 5280 6.1.4: target name constraints do not constrain the target itself" {
+        // NC on an end-entity violates issuance rules (4.2.1.10), but the basic path algorithm
+        // applies NC to subsequent certificates, not the certificate carrying the extension.
+        // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.4
+        val trustStore = setOf(TrustAnchor.Certificate(certificate("nc-ca")))
+        val result = listOf(certificate("nc-leaf")).buildPathAndValidate(
+            CertificateValidationContext(date = validationDate, trustAnchors = trustStore)
+        )
+        result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+    }
+
+    "Optional RFC 5280 4.1.2.2 issuance linting: zero serial" {
         expectSerialFailure("z-leaf", "Serial number must not be zero")
     }
 
-    "RFC 5280 4.1.2.2: negative serial number must fail" {
+    "Optional RFC 5280 4.1.2.2 issuance linting: negative serial" {
         expectSerialFailure("n-leaf", "Serial number must be positive")
     }
 
-    "RFC 5280 4.1.2.2: serial number exceeding 20 octets must fail" {
+    "Optional RFC 5280 4.1.2.2 issuance linting: serial exceeds 20 octets" {
         expectSerialFailure("m-leaf", "Serial number too long")
     }
 
@@ -92,10 +109,12 @@ private suspend fun expectSerialFailure(name: String, messagePart: String) {
     val result = listOf(PkixAdversarialFixtures.cached(name)).buildPathAndValidate(
         CertificateValidationContext(date = Instant.parse("2027-01-01T00:00:00Z"), trustAnchors = trustStore)
     )
-    result.shouldBeInstanceOf<CertificateValidationResult.BuildPathFailure>()
-    val failures = result.chainFailures.values.flatMap { it.validatorFailures }
-    failures.firstOrNull { it.validator is CertValidityValidator } shouldNotBe null
-    failures.map { it.errorMessage }.joinToString() shouldContain messagePart
+    result.shouldBeInstanceOf<CertificateValidationResult.Success>()
+    // Conforming issuers must obey these limits; section 6.1 does not impose them on path checking.
+    // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.1.2.2
+    shouldThrow<CertificateSerialNumberException> {
+        CertValidityValidator().check(PkixAdversarialFixtures.cached(name))
+    }.message shouldContain messagePart
 }
 
 /** Embedded PEM fixtures, mirroring [PkixDerFixtures] so the suite stays commonTest-friendly. */

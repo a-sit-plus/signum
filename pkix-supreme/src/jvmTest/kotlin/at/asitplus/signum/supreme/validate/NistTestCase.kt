@@ -10,7 +10,6 @@ data class NistTestCase(
     val leaf: String,
     val isSuccessful: Boolean,
     val failedValidator: String?,
-    val errorMessage: String?,
     val explicitPolicyRequired: Boolean,
     val initialPolicies: List<String> = emptyList(),
     val anyPolicyInhibited: Boolean,

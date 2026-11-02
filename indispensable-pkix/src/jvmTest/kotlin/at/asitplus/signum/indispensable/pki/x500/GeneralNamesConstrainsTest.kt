@@ -130,7 +130,9 @@ val GeneralNamesConstrainsTest by matrixSuite {
 
     val testDNS = "abc.test.com"
     val testDNSIsConstraint = arrayOf("test.com", "abc.test.com")
-    val testDNSIsNotConstraint = arrayOf("wwww.test.com", "ww.test.com", "www.test.com")
+    // RFC 5280 4.2.1.10: suffix matching must respect label boundaries (abc != bc).
+    // https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10
+    val testDNSIsNotConstraint = arrayOf("wwww.test.com", "ww.test.com", "www.test.com", "bc.test.com")
     val widenDNSs = arrayOf("test.com")
     val narrowDNSs = arrayOf("test.com")
 

@@ -9,14 +9,11 @@ import at.asitplus.signum.indispensable.pki.extn.NameConstraints
  * Represents a trusted certificate authority (TrustAnchor), which can be specified either
  * as an [X509Certificate], or as a distinguished name along with a public key.
  *
- * How an anchor is checked depends on its form:
- *
- * - [Certificate]-backed anchors are validated like any CA in the path: basicConstraints must be
- *   present, critical, and carry the CA flag; keyCertSign must be present in the key usage; and
- *   subject/authority key identifier conformance rules apply.
- * - [PublicKey] anchors establish trust by issuer-name match and signature verification only.
- *
- * Legacy roots without a basicConstraints extension should be modeled as [PublicKey] anchors.
+ * Both forms supply trusted input to path validation; the certificate is not itself a path member:
+ * [RFC 5280 6.1.1(d)](https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.1).
+ * Certificate-form anchors also expose name constraints as initial inputs, a local policy allowed by
+ * [RFC 6818 section 4](https://www.rfc-editor.org/rfc/rfc6818.html#section-4).
+ * Extra anchor/issuance checks can be imposed by custom validators.
  *
  * This is the pure data model; the signature-verification behaviour (`isIssuerOf`) is provided as
  * an extension in `pkix-supreme`, mirroring the rest of the architecture (lean data here, crypto

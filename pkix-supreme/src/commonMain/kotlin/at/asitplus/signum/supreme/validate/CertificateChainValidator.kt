@@ -3,16 +3,11 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.indispensable.pki.BundledTrustStore
 
 import at.asitplus.signum.indispensable.pki.TrustAnchor
-import at.asitplus.signum.indispensable.pki.findExtension
 
 import at.asitplus.signum.indispensable.pki.CertificateException
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.KeyUsageException
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
-import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
-import at.asitplus.signum.indispensable.pki.extn.UsageBit
-import at.asitplus.signum.indispensable.pki.extn.KeyUsage
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -53,20 +48,17 @@ data class CertificateValidationContext(
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
     val allowIncludedTrustAnchor: Boolean = true,
     val trustAnchors: Set<TrustAnchor> = (systemTrustStore ?: BundledTrustStore).anchors,
+    /**
+     * Caller-requested leaf purposes, checked if EKU is present. Absence is unrestricted; applications
+     * may separately require presence: [RFC 5280 4.2.1.12](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.12).
+     * Does not impose TLS EKU restrictions on intermediate CAs.
+     */
     val expectedEku: Set<ObjectIdentifier> = emptySet(),
-    /** use this lambda to specify how to handle leaf key usage check */
-    val leafKeyUsageCheck: suspend (X509Certificate) -> Unit = { currCert ->
-        val basicConstraints = currCert.findExtension<BasicConstraints>()
-
-        if (basicConstraints?.ca == true) {
-            if (currCert.findExtension<KeyUsage>()?.keyUsage?.contains(UsageBit.KEY_CERT_SIGN) != true) {
-                throw KeyUsageException("Digital signature key usage extension not present at leaf cert.")
-            }
-        }
-
-        if (basicConstraints?.ca != true && currCert.findExtension<KeyUsage>()?.keyUsage?.contains(UsageBit.KEY_CERT_SIGN) == true) {
-            throw KeyUsageException("Digital signature key usage extension must not be present at leaf cert.")
-        }
-    },
+    /** Additional application-specific leaf KU policy; basic path validation imposes none by default. */
+    val leafKeyUsageCheck: suspend (X509Certificate) -> Unit = {},
+    /**
+     * Additional cRLSign check on path CAs with KU. This is NOT revocation checking: no CRLs/OCSP
+     * are obtained or checked. RFC 5280 6.3.3(f) concerns the actual CRL signer, not every path CA.
+     */
     val supportRevocationChecking: Boolean = false
 )

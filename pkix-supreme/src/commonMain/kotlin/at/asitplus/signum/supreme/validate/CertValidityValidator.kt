@@ -12,7 +12,10 @@ import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 
 /**
- * Checks whether the certificate is constructed correctly, since some components are decoded too leniently
+ * Optional, partial certificate issuance-profile linting; not included in [ValidatorFactory.RFC5280].
+ * Serial rules: [4.1.2.2](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.1.2.2).
+ * Empty-subject SAN criticality: [4.2.1.6](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.6).
+ * Basic path validation deliberately does not require section 4 profile conformance (6.1).
  * */
 class CertValidityValidator: CertificateValidator {
     @ExperimentalPkiApi

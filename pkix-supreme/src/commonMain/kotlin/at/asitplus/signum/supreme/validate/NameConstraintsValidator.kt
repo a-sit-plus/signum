@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.pki.NameConstraintsException
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.nameConstraints_2_5_29_30
+import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 import at.asitplus.signum.indispensable.pki.extn.NameConstraints
 import at.asitplus.signum.indispensable.pki.validationPath
@@ -15,9 +16,9 @@ import at.asitplus.signum.indispensable.pki.validationPath
  * Ensures that each certificate conforms to the permitted and excluded
  * subtrees specified in previous NameConstraints extensions, according to RFC 5280.
  *
- * This validator is stateful with respect to the `startingNameConstraints`
- * property. Callers are responsible for configuring it appropriately
- * before the invocation (typically derived from the selected trust anchor)
+ * [RFC 5280 6.1.3(b)-(c), 6.1.4(g)](https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3).
+ * Anchor constraints are used as initial inputs (an allowed local choice under
+ * [RFC 6818 section 4](https://www.rfc-editor.org/rfc/rfc6818.html#section-4)).
  */
 class NameConstraintsValidator: CertificateChainValidator {
 
@@ -34,7 +35,7 @@ class NameConstraintsValidator: CertificateChainValidator {
         for (currCert in anchoredChain.chain.validationPath) {
             checkedCriticalExtensions
                 .getOrPut(currCert) { mutableSetOf() }
-                .add(KnownOIDs.nameConstraints_2_5_29_30)
+                .addAll(setOf(KnownOIDs.nameConstraints_2_5_29_30, KnownOIDs.subjectAltName_2_5_29_17))
             val originalIndex = certPathLen - 1 - currentCertIndex
             currentCertIndex++
 
@@ -59,10 +60,10 @@ class NameConstraintsValidator: CertificateChainValidator {
                 }
             }
 
-            if (currentCertIndex == certPathLen &&
-                currCert.findExtension<NameConstraints>() != null) throw NameConstraintsException("Leaf certificate must not contain a NameConstraints extension.")
-
-            previousNameConstraints = mergeNameConstraints(currCert, currentCertIndex, previousNameConstraints)
+            // Section 6.1.4 prepares the next certificate; target constraints have no descendants here.
+            if (currentCertIndex != certPathLen) {
+                previousNameConstraints = mergeNameConstraints(currCert, previousNameConstraints)
+            }
         }
 
         return checkedCriticalExtensions.mapValues { it.value.toSet() }
@@ -71,13 +72,13 @@ class NameConstraintsValidator: CertificateChainValidator {
     @OptIn(ExperimentalPkiApi::class)
     private fun mergeNameConstraints(
         currCert: X509Certificate,
-        currentCertIndex: Int,
         previousNameConstraints: NameConstraints?
     ): NameConstraints? {
 
         val newNameConstraints = currCert.findExtension<NameConstraints>()
 
-        if (newNameConstraints?.critical == false || previousNameConstraints?.critical == false) throw NameConstraintsException("NameConstraints extension is not critical at cert index $currentCertIndex.")
+        // 6.1.4(g) processes recognized constraints regardless of criticality. The MUST mark critical
+        // in 4.2.1.10 is an issuance-profile requirement, not an extra basic-path check.
 
         return try {
             // previous == null: adopt the cert's constraints; mergedWith(null) returns previous

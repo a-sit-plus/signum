@@ -17,7 +17,8 @@ fun CertificateValidationResult.shouldBeValid(): Boolean {
 @OptIn(ExperimentalContracts::class)
 fun CertificateValidationResult.shouldBeInvalid(): Boolean {
     contract {
-        returns() implies (this@shouldBeInvalid is CertificateValidationResult.Failure)
+        returns() implies (this@shouldBeInvalid is CertificateValidationResult.Failure ||
+                this@shouldBeInvalid is CertificateValidationResult.BuildPathFailure)
     }
     return isValid.shouldBeFalse()
 }

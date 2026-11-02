@@ -14,6 +14,12 @@ import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
 import at.asitplus.signum.indispensable.pki.extn.SubjectKeyIdentifier
 import at.asitplus.signum.indispensable.pki.root
 
+/**
+ * Optional, partial issuance-profile checks from [RFC 5280 4.2.1.1-2](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.1).
+ * Not part of [ValidatorFactory.RFC5280]: identifiers aid path construction, not signature validation.
+ * This checker also lints the certificate-form anchor and its immediate child; it is not a complete
+ * AKI conformance check over all path certificates.
+ */
 class KeyIdentifierValidator: CertificateValidator {
 
     @ExperimentalPkiApi
@@ -47,7 +53,7 @@ class KeyIdentifierValidator: CertificateValidator {
 
     @Throws(KeyIdentifierException::class)
     private fun checkSubjectKeyIdentifier(cert: X509Certificate) {
-        // RFC 5280 4.2.2.1: SKI MUST appear in CA certificates (basicConstraints cA=TRUE);
+        // RFC 5280 4.2.1.2: SKI MUST appear in CA certificates (basicConstraints cA=TRUE);
         // it is only a SHOULD for end-entity certificates, so absence is acceptable there.
         val isCa = cert.findExtension<BasicConstraints>()?.ca == true
         if (!isCa) return

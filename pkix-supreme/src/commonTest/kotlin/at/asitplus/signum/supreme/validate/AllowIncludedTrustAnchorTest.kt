@@ -9,10 +9,10 @@ import at.asitplus.signum.indispensable.decodeFromPem
 
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
-import at.asitplus.signum.supreme.shouldBeInvalid
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 @OptIn(ExperimentalPkiApi::class)
 val AllowIncludedTrustAnchorTest by matrixSuite{
@@ -169,8 +169,8 @@ val AllowIncludedTrustAnchorTest by matrixSuite{
         val chainWithRoot = AnchoredCertificateChain(listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRootCert), trustAnchor)
         val result = chain.validate(context)
         val resultWithRoot = chainWithRoot.validate(context)
-        result.shouldBeInvalid()
-        resultWithRoot.shouldBeInvalid()
+        result.shouldBeInstanceOf<CertificateValidationResult.Failure>()
+        resultWithRoot.shouldBeInstanceOf<CertificateValidationResult.Failure>()
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
         val validatorFailureWithRoot = resultWithRoot.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
@@ -180,7 +180,7 @@ val AllowIncludedTrustAnchorTest by matrixSuite{
         validatorFailureWithRoot!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
 
         val resultNotAllowed = chainWithRoot.validate(contextNotAllowedRoot)
-        resultNotAllowed.shouldBeInvalid()
+        resultNotAllowed.shouldBeInstanceOf<CertificateValidationResult.Failure>()
         resultNotAllowed.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
     }
 }

@@ -9,7 +9,6 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import java.util.*
-import kotlin.time.Clock
 import kotlin.time.Instant
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 
@@ -20,14 +19,15 @@ val ValidationApiTest by matrixSuite {
 
     val testSuiteLimbo = json.decodeFromString<LimboSuite>(resourceText("limbo.json"))
 
-    // we are sending trust anchors as part of the chain, but expecting that they are included in system trust store, so they will be omitted from the chain during validation
-    context("online testcases") {
+    // Saved Limbo snapshots; no network/system trust-store lookup or TLS identity matching.
+    // Included anchors are removed because they are explicitly trusted in the context (6.1.1(d)).
+    // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.1
+    context("saved online snapshots with explicitly supplied roots") {
         val onlineTests = testSuiteLimbo.testcases.filter {
-            it.id.contains("online", ignoreCase = true)
-                    && !it.id.contains("online::stackoverflow.com", ignoreCase = true)
+            it.id.startsWith("online::")
 
         }
-        onlineTests.asData(nameFn = { "Online testcase validated using provided trusted roots: ${it.id} (${it.expected_result}" }) test {
+        onlineTests.asData(nameFn = { "Saved path: ${it.id} (${it.expected_result})" }) test {
             val trustAnchors = it.trusted_certs.map { pem ->
                 X509Certificate.decodeFromPem(pem)
             }
@@ -39,13 +39,12 @@ val ValidationApiTest by matrixSuite {
             val leaf = X509Certificate.decodeFromPem(it.peer_certificate)
 
             val chain: CertificateChain = listOf(leaf) + intermediates.reversed() + trustAnchors.reversed()
-            val validationTime = it.validation_time?.let(Instant::parse) ?: Clock.System.now()
+            val validationTime = Instant.parse(requireNotNull(it.validation_time) { "Snapshot needs a recorded validation time: ${it.id}" })
 
-            //TOODO: epired system trust store results in path buildign error
             val context = CertificateValidationContext(
                 trustAnchors = setOf(TrustAnchor.Certificate(chain.root)),
                 allowIncludedTrustAnchor = true, // default is true, but for the clarity
-                expectedEku = it.extended_key_usage.mapNotNull { extendedKeyUsages[it] }.toSet(),
+                expectedEku = it.extended_key_usage.map { requireNotNull(extendedKeyUsages[it]) { "Unsupported EKU: $it" } }.toSet(),
                 date = validationTime
             )
 
@@ -64,7 +63,7 @@ val ValidationApiTest by matrixSuite {
         }
     }
 
-    "Validate Attestation Proof With RFC5280 And Custom Rules" {
+    "Custom attestation policy: validate intermediates at a historical time" {
         val attestationProofB64 = listOf(
             """MIIC+jCCAqCgAwIBAgIBATAKBggqhkjOPQQDAjCBiDELMAkGA1UEBhMCVVMxEzARBgNVB
                     AgMCkNhbGlmb3JuaWExFTATBgNVBAoMDEdvb2dsZSwgSW5jLjEQMA4GA1UECwwHQW5kcm9pZ
@@ -120,6 +119,7 @@ val ValidationApiTest by matrixSuite {
 
         chain.buildPathAndValidate(
             CertificateValidationContext(
+                date = Instant.parse("2026-11-02T00:00:00Z"),
                 trustAnchors = setOf(TrustAnchor.Certificate(chain.root)),
             )
         ).isValid shouldBe false
@@ -130,8 +130,10 @@ val ValidationApiTest by matrixSuite {
                     context = context
                 )
             }.toMutableList()
-            validators.removeAll { it is CertValidityValidator || it is KeyIdentifierValidator || it is TimeValidityValidator }
-            validators.add(AttestationTimeValidator())
+            // Explicit application override, not basic validation at context.date (6.1.3(a)(2)).
+            // https://www.rfc-editor.org/rfc/rfc5280.html#section-6.1.3
+            validators.removeAll { it is TimeValidityValidator }
+            validators.add(AttestationTimeValidator(Instant.parse("2020-01-01T00:00:00Z")))
             validators
         }
 
@@ -144,14 +146,15 @@ val ValidationApiTest by matrixSuite {
     }
 }
 
-// Example of custom validator, it checks validity only in intermediate certificate
-class AttestationTimeValidator : CertificateValidator {
+// Illustrative application policy; the caller supplies the historical time. This example does not
+// establish that the time is authentic and deliberately does not check leaf validity or revocation.
+class AttestationTimeValidator(private val attestationTime: Instant) : CertificateValidator {
 
     @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
     ): Set<ObjectIdentifier> {
-        if (!currCert.isValidAt(currCert.tbsCertificate.validUntil)) throw InvalidCertificateValidityPeriodException("Certificate is not valid")
+        currCert.checkValidityAt(attestationTime)
         return emptySet()
     }
 
