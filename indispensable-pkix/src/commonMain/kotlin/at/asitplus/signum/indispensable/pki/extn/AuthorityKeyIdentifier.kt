@@ -73,7 +73,7 @@ class AuthorityKeyIdentifier internal constructor(
  * and the programmatic constructor.
  */
 @Serializable
-private class AuthorityKeyIdentifierBody(
+internal class AuthorityKeyIdentifierBody(
     @Asn1Tag(0u) val keyIdentifier: ByteArray? = null,
     @Asn1Tag(1u) @Serializable(with = GeneralNameListSerializer::class)
     val authorityCertIssuer: List<GeneralName>? = null,

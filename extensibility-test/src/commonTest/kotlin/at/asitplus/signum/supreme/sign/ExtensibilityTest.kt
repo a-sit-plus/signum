@@ -182,12 +182,15 @@ val ExtensibilityTest by matrixSuite {
 
     "Certificates" {
         repeat(50) {
+            // alternate named/empty subject to cover both code paths
+            val useEmptySubject = it % 2 == 0
             val data = Random.nextBytes(1)
             val privateKey = Signer.Ephemeral { cursory {} }
             val theSignature = privateKey.sign(data).signature.encodeToDer()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
-                val certificateName = X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
+                val certificateName =
+                    if (useEmptySubject) X500Name.EMPTY else X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
                 val tbsCertificate = TbsCertificate(
                     serialNumber = Asn1Integer.ONE,
                     validFrom = Clock.System.now(),
@@ -203,20 +206,22 @@ val ExtensibilityTest by matrixSuite {
 
             val parsedCertificate = Certificate.decodeFromDer(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
-            val nameAttributes = (parsedCertificate.tbsCertificate.subjectName as X500Name)
-                .relativeDistinguishedNames
-                .flatMap { it.attrsAndValues }
-                .associateBy { it.oid }
-            fun encodedValue(oid: String) =
-                (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue.X509Representable)
-                    .value.asPrimitive()
-            fun stringValue(oid: String) = Asn1String.decodeFromTlv(encodedValue(oid)).value
-            encodedValue("2.5.4.41").tag shouldBe Asn1Element.Tag.STRING_UTF8
-            encodedValue("2.5.4.12").tag shouldBe Asn1Element.Tag.STRING_UTF8
-            encodedValue("2.5.4.6").tag shouldBe Asn1Element.Tag.STRING_PRINTABLE
-            stringValue("2.5.4.41") shouldBe "JohnDoe"
-            stringValue("2.5.4.12") shouldBe "Dr"
-            stringValue("2.5.4.6") shouldBe "Austria"
+            if (!useEmptySubject) {
+                val nameAttributes = (parsedCertificate.tbsCertificate.subjectName as X500Name)
+                    .relativeDistinguishedNames
+                    .flatMap { it.attrsAndValues }
+                    .associateBy { it.oid }
+                fun encodedValue(oid: String) =
+                    (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue.X509Representable)
+                        .value.asPrimitive()
+                fun stringValue(oid: String) = Asn1String.decodeFromTlv(encodedValue(oid)).value
+                encodedValue("2.5.4.41").tag shouldBe Asn1Element.Tag.STRING_UTF8
+                encodedValue("2.5.4.12").tag shouldBe Asn1Element.Tag.STRING_UTF8
+                encodedValue("2.5.4.6").tag shouldBe Asn1Element.Tag.STRING_PRINTABLE
+                stringValue("2.5.4.41") shouldBe "JohnDoe"
+                stringValue("2.5.4.12") shouldBe "Dr"
+                stringValue("2.5.4.6") shouldBe "Austria"
+            }
             val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
             verifier.verify(parsedCertificate) shouldBe SignatureVerifier.Success
             val parsedSignature = CryptoSignature.decodeFromDer(theSignature)

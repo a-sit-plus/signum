@@ -67,7 +67,7 @@ class BasicConstraints internal constructor(
  * Shared by decode and the programmatic constructor.
  */
 @Serializable
-private class BasicConstraintsBody(
+internal class BasicConstraintsBody(
     val cA: Boolean? = null,
     val pathLenConstraint: Asn1Integer? = null,
 )

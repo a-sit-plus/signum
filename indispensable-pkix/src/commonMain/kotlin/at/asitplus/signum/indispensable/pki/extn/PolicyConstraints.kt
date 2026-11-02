@@ -72,7 +72,7 @@ class PolicyConstraints internal constructor(
  * IMPLICIT context-tagged INTEGERs; shared by decode and the programmatic constructor.
  */
 @Serializable
-private class PolicyConstraintsBody(
+internal class PolicyConstraintsBody(
     @Asn1Tag(0u) val requireExplicitPolicy: Asn1Integer? = null,
     @Asn1Tag(1u) val inhibitPolicyMapping: Asn1Integer? = null,
 )

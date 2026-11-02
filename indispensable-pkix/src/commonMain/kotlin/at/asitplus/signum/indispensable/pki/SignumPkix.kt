@@ -56,8 +56,7 @@ import at.asitplus.signum.indispensable.pki.x500.X400AddressName
  * certificate parsing upgrades the generic extensions/attributes to their typed forms and the RFC
  * 4514 codec renders friendly keywords (`CN=`, `O=`, …) instead of dotted-OID forms.
  *
- * `pkix-supreme`'s validator entry points call [install] internally, so chain validation never runs
- * against an unpopulated registry. Third-party typed extensions/attributes use the very same registry
+ * Third-party typed extensions/attributes use the very same registry
  * SPI ([CertificateExtension.Descriptor]/[AttributeTypeAndValue.Descriptor] + `register()`), registered
  * before the first (de)serialization.
  *

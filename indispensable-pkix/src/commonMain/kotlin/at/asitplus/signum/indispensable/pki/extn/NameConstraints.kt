@@ -250,7 +250,7 @@ class NameConstraints internal constructor(
  * [NameConstraints.fromAsn1Representation] (decode) and the programmatic [NameConstraints] constructor (encode).
  */
 @Serializable
-private class NameConstraintsBody(
+internal class NameConstraintsBody(
     @Asn1Tag(0u) val permitted: List<GeneralSubtree>? = null,
     @Asn1Tag(1u) val excluded: List<GeneralSubtree>? = null,
 )

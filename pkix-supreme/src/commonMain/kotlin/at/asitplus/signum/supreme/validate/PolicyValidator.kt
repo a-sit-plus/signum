@@ -292,6 +292,7 @@ class PolicyValidator: CertificateChainValidator {
 
         if (unmatchedPolicies.isEmpty()) {
             root.prune(certIndex)
+            // RFC 5280 6.1.5(g)(iii)(4): a fully pruned tree is NULL
             return root.takeIf { it.children.isEmpty() }
         }
 

@@ -18,11 +18,15 @@ import at.asitplus.signum.indispensable.decodeFromDer
  * - **Files:** every DER certificate (the `.cer` files) under `certificates/roots/` in that
  *   archive, hex-encoded into the generated `bundledRoots` list by the `generateBundledRootsSource`
  *   task in `indispensable-pkix/build.gradle.kts` at build time.
+ *   The tag is pinned deliberately for reproducible builds; refreshing the bundle is a
+ *   library-release task, not something to churn automatically per build.
  *
  * ## Caveats
- * - **Static snapshot.** Frozen at the pinned tag; it does **not** track later OS trust-store
- *   updates, additions, or — importantly — **removals/distrusts**. Refresh by bumping
- *   `appleTrustStoreRef` and rebuilding.
+ * - **Static snapshot.** The bundle is frozen at build time and does **not** track later OS
+ *   trust-store updates, additions, or — importantly — **removals/distrusts**. The Apple
+ *   distribution this bundle was generated from is documented above; the version embedded in your
+ *   build is whatever the library release was generated with. Treat the bundled set as a
+ *   convenience fallback, not as a source of current trust decisions.
  * - **Apple's trust decisions, not the host's.** On platforms with a real OS store
  *   (JVM/Android/…), prefer the live `systemTrustStore` (provided by `pkix-supreme`) and fall back
  *   to this only when none exists: `systemTrustStore ?: BundledTrustStore`.
