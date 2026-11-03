@@ -340,6 +340,26 @@ fun java.security.interfaces.ECPrivateKey.toPrivateKey(): EcdsaPrivateKey.WithPu
 fun java.security.interfaces.RSAPrivateKey.toPrivateKey(): RsaPrivateKey =
     Signum.Der.decodeFromByteArray<RsaPrivateKey>(encoded)
 
+
+// Keep the KmmResult contract of the crypto-named conversions from main.
+@Deprecated("Renamed to toPublicKey", ReplaceWith("catching { this.toPublicKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPublicKey"))
+fun java.security.interfaces.ECPublicKey.toCryptoPublicKey() = catching { toPublicKey() }
+
+@Deprecated("Renamed to toPublicKey", ReplaceWith("catching { this.toPublicKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPublicKey"))
+fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey() = catching { toPublicKey() }
+
+@Deprecated("Renamed to toPublicKey", ReplaceWith("catching { this.toPublicKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPublicKey"))
+fun JCAPublicKey.toCryptoPublicKey() = catching { toPublicKey() }
+
+@Deprecated("Renamed to toPrivateKey", ReplaceWith("catching { this.toPrivateKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPrivateKey"))
+fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey() = catching { toPrivateKey() }
+
+@Deprecated("Renamed to toPrivateKey", ReplaceWith("catching { this.toPrivateKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPrivateKey"))
+fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey() = catching { toPrivateKey() }
+
+@Deprecated("Renamed to toPrivateKey", ReplaceWith("catching { this.toPrivateKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPrivateKey"))
+fun JCAPrivateKey.toCryptoPrivateKey() = catching { toPrivateKey() }
+
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
     @OptIn(HazardousMaterials::class)
     get() = when (this) {

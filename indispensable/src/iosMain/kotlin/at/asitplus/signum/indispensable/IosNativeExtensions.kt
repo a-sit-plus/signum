@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.catching
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.Signum
@@ -122,3 +123,9 @@ fun PrivateKey.WithPublicKey.toSecKey() =
 fun SecKeyRef?.toPrivateKey() =
     Signum.load<IosMappingProvider>()
         .get(this!!) { secKeyToPrivateKey(it) }
+
+@Deprecated("Renamed to toPublicKey", ReplaceWith("catching { this.toPublicKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPublicKey"))
+fun SecKeyRef?.toCryptoPublicKey() = catching { toPublicKey() }
+
+@Deprecated("Renamed to toPrivateKey", ReplaceWith("catching { this.toPrivateKey() }", "at.asitplus.catching", "at.asitplus.signum.indispensable.toPrivateKey"))
+fun SecKeyRef?.toCryptoPrivateKey() = catching { toPrivateKey() }

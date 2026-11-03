@@ -21,6 +21,9 @@ interface KeyAgreementPublicValue : Encodable {
          * Returns this value as an [EcdsaPublicKey]
          */
         fun asPublicKey(): EcdsaPublicKey
+
+        @Deprecated("Renamed to asPublicKey", ReplaceWith("asPublicKey()"))
+        fun asCryptoPublicKey(): EcdsaPublicKey = asPublicKey()
     }
     companion object : Decodable<KeyAgreementPublicValue> {
         fun fromAsn1Representation(element: SubjectPublicKeyInfo) =
