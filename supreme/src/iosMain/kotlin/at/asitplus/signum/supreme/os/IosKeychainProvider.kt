@@ -5,7 +5,7 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
@@ -272,7 +272,7 @@ sealed class IosSigner(final override val alias: String,
             }
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            EcdsaSignature.decodeFromTlv(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.fromAsn1Representation(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
@@ -307,7 +307,7 @@ sealed class IosSigner(final override val alias: String,
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            RsaSignature.decodeFromTlv(X509SignatureValue(sigBytes))
+            RsaSignature.fromAsn1Representation(X509SignatureValue(sigBytes))
     }
 
 }
@@ -316,13 +316,13 @@ interface IosKeyAlgSpecificMetadata {
     @Serializable
     @SerialName("ecdsa")
     data class ECDSA(
-        val supportedDigests: Set<WellKnownDigest?>
+        val supportedDigests: Set<@Serializable(with = WellKnownDigest.Serializer::class) WellKnownDigest?>
     ) : IosKeyAlgSpecificMetadata
 
     @Serializable
     @SerialName("rsa")
     data class RSA(
-        val supportedDigests: Set<WellKnownDigest>,
+        val supportedDigests: Set<@Serializable(with = WellKnownDigest.Serializer::class) WellKnownDigest>,
         val supportedPaddings: Set<RSAPadding>
     ): IosKeyAlgSpecificMetadata
 }
@@ -508,7 +508,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     }
 
     private suspend fun getSignerInternal(alias: String, publicKey: CryptoPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner =
-        ServiceLoader.load<IosKeychainOperationsProvider>()
+        Signum.load<IosKeychainOperationsProvider>()
             .get(publicKey) { makeIosSigner(alias, it, metadata, config) }
 
     override suspend fun createSigningKey(
@@ -534,7 +534,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val algSpecificMetadata: JsonElement?
             memScoped {
                 val attr: CFMutableDictionaryRef
-                ServiceLoader.load<IosKeychainOperationsProvider>()
+                Signum.load<IosKeychainOperationsProvider>()
                     .get(alias) { makeKeyAttributes(it, config) }
                     .let { attr = it.first; algSpecificMetadata = it.second }
 

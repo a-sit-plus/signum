@@ -1,10 +1,12 @@
 package at.asitplus.signum.supreme.asymmetric
 
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.encodeToPem
+
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.decodeFromPem
-import at.asitplus.signum.indispensable.encodeToPem
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
@@ -56,11 +58,11 @@ class RsaTestData(
                 encoder: Encoder,
                 value: CryptoPrivateKey
             ) {
-                encoder.encodeString(value.encodeToPem())
+                encoder.encodeString(Signum.Der.encodeToPem(value))
             }
 
             override fun deserialize(decoder: Decoder) =
-                CryptoPrivateKey.decodeFromPem(decoder.decodeString())
+                Signum.Der.decodeFromPem<CryptoPrivateKey>(decoder.decodeString())
         }
 
         object PaddingSerializer : KSerializer<RSAPadding> {
@@ -93,6 +95,5 @@ class RsaTestData(
     }
 
 }
-
 
 private val testData = Json.decodeFromString<List<RsaTestData>>(rsaInputString)

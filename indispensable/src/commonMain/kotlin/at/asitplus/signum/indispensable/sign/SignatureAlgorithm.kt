@@ -1,15 +1,13 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.serialization.Der
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.Indispensable
 
-interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
+interface SignatureAlgorithm : Encodable {
 
     @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
         replaceWith = ReplaceWith("EcdsaAAlgorithm"))
@@ -37,8 +35,8 @@ interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
         override fun hashCode() = asn1Representation.hashCode()
     }
 
-    companion object: DerDecodable<X509AlgorithmIdentifier, SignatureAlgorithm> {
-        init { Indispensable.init() }
+    companion object: Decodable<SignatureAlgorithm> {
+        init { Signum.installIndispensable() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
             replaceWith = ReplaceWith("EcdsaAlgorithm.withSHA256"))
@@ -70,22 +68,9 @@ interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
             replaceWith = ReplaceWith("RsaAlgorithm.withSHA512andPSSPadding"))
         val RSAwithSHA512andPSSPadding get() = RsaAlgorithm.withSHA512andPSSPadding
 
-        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der) =
-            ServiceLoader.load<SignatureAlgorithmsProvider>()
-                .getWithUnknown(element, ::Unknown, SignatureAlgorithmsProvider::getAlgorithm)
-
-        @Deprecated("Use decodeFromTlv", replaceWith = ReplaceWith("decodeFromTlv(identifier)"))
-        operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =
-            decodeFromTlv(identifier)
-
     }
 }
 
 interface SpecializedSignatureAlgorithm {
     val algorithm: SignatureAlgorithm
-}
-
-interface SignatureAlgorithmsProvider {
-    /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */
-    fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
 }

@@ -4,7 +4,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -58,7 +58,7 @@ interface IosMappingProvider {
  * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() =
-    ServiceLoader.load<IosMappingProvider>()
+    Signum.load<IosMappingProvider>()
         .get(this, IosMappingProvider::signatureAlgorithmToSecKeyAlgorithm)
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyAlgorithm
@@ -72,7 +72,7 @@ val SpecializedSignatureAlgorithm.secKeyAlgorithm get() = this.algorithm.secKeyA
  * @throws UnsupportedCryptoException if the algorithm cannot be represented by an iOS [SecKeyAlgorithm].
  */
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm get() =
-    ServiceLoader.load<IosMappingProvider>()
+    Signum.load<IosMappingProvider>()
         .get(this, IosMappingProvider::signatureAlgorithmToSecKeyAlgorithmPreHashed)
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed get() = this.algorithm.secKeyAlgorithmPreHashed
@@ -91,7 +91,7 @@ val SignatureAlgorithm.suitableSecKeyAlgAndFormat get(): Pair<SecKeyAlgorithm, S
 
 /** Produces signature bytes that match the algorithms returned by [suitableSecKeyAlgAndFormat] etc. */
 val CryptoSignature.secKeySignature get() =
-    ServiceLoader.load<IosMappingProvider>()
+    Signum.load<IosMappingProvider>()
         .get(this, IosMappingProvider::getSignatureBytes)
 
 @Deprecated("Renamed", replaceWith = ReplaceWith("this.secKeySignature"))
@@ -99,7 +99,7 @@ val CryptoSignature.iosEncoded get() = this.secKeySignature
 
 /** Parses the signature bytes produced by the algorithms from [suitableSecKeyAlgAndFormat] etc. */
 fun SignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
-    ServiceLoader.load<IosMappingProvider>()
+    Signum.load<IosMappingProvider>()
         .get(this) { parseSignatureBytes(it, sigBytes) }
 
 /** @see SignatureAlgorithm.parseSecKeySignature */
@@ -107,18 +107,18 @@ fun SpecializedSignatureAlgorithm.parseSecKeySignature(sigBytes: ByteArray) =
     this.algorithm.parseSecKeySignature(sigBytes)
 
 fun CryptoPublicKey.toSecKey() =
-    ServiceLoader.load<IosMappingProvider>()
+    Signum.load<IosMappingProvider>()
         .get(this, IosMappingProvider::cryptoPublicKeyToSecKey)
 
 fun SecKeyRef?.toCryptoPublicKey() =
-    ServiceLoader.load<IosMappingProvider>()
-        .get(this!!, IosMappingProvider::secKeyToCryptoPublicKey)
+    Signum.load<IosMappingProvider>()
+        .get(this!!) { secKeyToCryptoPublicKey(it) }
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
 fun CryptoPrivateKey.WithPublicKey.toSecKey() =
-    ServiceLoader.load<IosMappingProvider>()
-        .get(this, IosMappingProvider::cryptoPrivateKeyToSecKey)
+    Signum.load<IosMappingProvider>()
+        .get(this) { cryptoPrivateKeyToSecKey(it) }
 
 fun SecKeyRef?.toCryptoPrivateKey() =
-    ServiceLoader.load<IosMappingProvider>()
-        .get(this!!, IosMappingProvider::secKeyToCryptoPrivateKey)
+    Signum.load<IosMappingProvider>()
+        .get(this!!) { secKeyToCryptoPrivateKey(it) }

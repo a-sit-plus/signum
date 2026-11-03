@@ -2,16 +2,15 @@ package at.asitplus.signum.indispensable.digest
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
-import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
-interface Digest : DerEncodable<X509AlgorithmIdentifier> {
+interface Digest : Encodable {
     val name: String
     /** The hash function operates by repeatedly ingesting blocks of this length. Used by RFC 9380 et al. */
     val inputBlockSize: BitLength
@@ -35,21 +34,24 @@ interface Digest : DerEncodable<X509AlgorithmIdentifier> {
         override fun hashCode() = asn1Representation.hashCode()
     }
 
-    companion object : DerDecodable<X509AlgorithmIdentifier, Digest> {
-        init { Indispensable.init() }
+    companion object : Decodable<Digest> {
+        init { Signum.installIndispensable() }
         val SHA1 inline get() = WellKnownDigest.SHA1
         val SHA256 inline get() = WellKnownDigest.SHA256
         val SHA384 inline get() = WellKnownDigest.SHA384
         val SHA512 inline get() = WellKnownDigest.SHA512
 
-        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): Digest = runRethrowing {
-            ServiceLoader.load<DigestProvider>().getWithUnknown(element, ::Unknown, DigestProvider::getDigest)
+        fun fromAsn1Representation(element: X509AlgorithmIdentifier): Digest = runRethrowing {
+            Signum.load<DigestProvider>().getWithUnknown(element, ::Unknown, DigestProvider::getDigest)
         }
     }
 }
 
 // @Service
 interface DigestProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? = null
+
     /** Parse a [Digest] from its [X509AlgorithmIdentifier] form */
     fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest?
 }
@@ -60,5 +62,5 @@ interface DigestOperationProvider {
 }
 
 suspend fun Digest.digest(data: Sequence<ByteArray>): ByteArray =
-    ServiceLoader.load<DigestOperationProvider>().get(this) { doDigest(it, data) }
+    Signum.load<DigestOperationProvider>().get(this) { doDigest(it, data) }
 suspend fun Digest.digest(data: ByteArray) = digest(sequenceOf(data))
