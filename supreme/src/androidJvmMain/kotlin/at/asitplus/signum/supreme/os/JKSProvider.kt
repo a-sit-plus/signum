@@ -1,8 +1,11 @@
 package at.asitplus.signum.supreme.os
 
+import at.asitplus.signum.Signum
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
+
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveAsn1Integer
-import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
@@ -15,9 +18,7 @@ import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.dsl.signer
-import at.asitplus.signum.indispensable.decodeFromDer
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.encodeToDer
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.jcaName
@@ -238,7 +239,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 throw NoSuchElementException("Key with alias $alias already exists")
 
             val (certAlg, keyPair) =
-                ServiceLoader.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
+                Signum.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
             val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
             val publicKey = keyPair.public.toCryptoPublicKey()
@@ -257,7 +258,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)
-                    update(tbsCert.encodeToDer())
+                                        update(Signum.Der.encodeToByteArray(tbsCert))
                     sign()
                 }.let { Certificate(tbsCert, certAlg.parseJCASignature(it)) }
             }
@@ -270,7 +271,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     }
 
     private fun getSigner(alias: String, config: JKSSignerConfiguration, privateKey: PrivateKey, certificate: Certificate) =
-        ServiceLoader.load<JavaKeyStoreOperationsProvider>()
+        Signum.load<JavaKeyStoreOperationsProvider>()
             .get(alias) { getJKSSigner(privateKey, alias, config, SelfAttestation(certificate)) }
 
     override suspend fun getSignerForKey(
@@ -281,7 +282,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
+                        val certificateChain = ctx.ks.getCertificateChain(alias).map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) }
             return getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

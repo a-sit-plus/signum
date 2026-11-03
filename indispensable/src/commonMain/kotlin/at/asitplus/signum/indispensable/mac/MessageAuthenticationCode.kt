@@ -2,15 +2,14 @@ package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.installIndispensable
 
-interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
+interface MessageAuthenticationCode : Encodable {
     /** output size of MAC */
     val outputLength: BitLength
 
@@ -20,8 +19,8 @@ interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
         : MessageAuthenticationCode
     {
         override fun toString() = "$inner (truncated to $outputLength)"
-        override val asn1Representation: X509AlgorithmIdentifier get() =
-            TODO("figure this out in the COSE refactor")
+        override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null
+
     }
 
     fun truncatedTo(length: BitLength): MessageAuthenticationCode = when {
@@ -34,18 +33,18 @@ interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
         }
     }
 
-    companion object : DerDecodable<X509AlgorithmIdentifier, MessageAuthenticationCode> {
-        init { Indispensable.init() }
+    companion object : Decodable<MessageAuthenticationCode> {
+        init { Signum.installIndispensable() }
 
-        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MessageAuthenticationCode = runRethrowing {
-            ServiceLoader.load<MessageAuthenticationCodeProvider>()
+        fun fromAsn1Representation(element: X509AlgorithmIdentifier): MessageAuthenticationCode = runRethrowing {
+            Signum.load<MessageAuthenticationCodeProvider>()
                 .get(element, MessageAuthenticationCodeProvider::getMAC)
         }
     }
 }
 
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray =
-    ServiceLoader.load<MessageAuthenticationCodeOperationProvider>()
+    Signum.load<MessageAuthenticationCodeOperationProvider>()
         .get(this@mac) { doMAC(it, key, msg) }
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = mac(key, sequenceOf(msg))
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = mac(key, msg.asSequence())
@@ -59,6 +58,9 @@ interface SpecializedMessageAuthenticationCode {
 
 // @Service
 interface MessageAuthenticationCodeProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? = null
+
     /** Parse a [MessageAuthenticationCode] from its [X509AlgorithmIdentifier] form */
     fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode?
 }

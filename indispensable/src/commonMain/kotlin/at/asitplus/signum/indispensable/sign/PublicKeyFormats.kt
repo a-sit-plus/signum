@@ -1,21 +1,23 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.Signum
+
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
-import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.rsaEncryption
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
+import at.asitplus.signum.indispensable.invoke
+import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
@@ -23,25 +25,21 @@ import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.PublicKeyFormatProvider
 import at.asitplus.signum.indispensable.fromIosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
-class RsaPublicKey private constructor(
-    providedAsn1Representation: SubjectPublicKeyInfo?,
-    providedContent: Content?,
+class RsaPublicKey(
+    /** modulus */
+    val n: Asn1Integer.Positive,
+    /** public exponent */
+    val e: Asn1Integer.Positive,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoPublicKey {
-    init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
     override val additionalProperties = mutableMapOf<String, String>()
-
-    private data class Content(val n: Asn1Integer.Positive, val e: Asn1Integer.Positive) {
-        constructor(info: Pkcs1RsaPublicKeyInfo) :
-                this(info.modulus as Asn1Integer.Positive, info.publicExponent as Asn1Integer.Positive)
-    }
 
     @Throws(IllegalArgumentException::class)
     constructor(
@@ -50,23 +48,7 @@ class RsaPublicKey private constructor(
 
         /** public exponent */
         e: Asn1Integer.Positive,
-    ) : this(null, Content(n, e))
-
-    constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
-
-    override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.rsa(n, e)
-    }
-
-    private val content: Content by providedContent orLazy {
-        Content(Pkcs1RsaPublicKeyInfo.of(asn1Representation))
-    }
-
-    /** modulus */
-    val n get() = content.n
-
-    /** public exponent */
-    val e get() = content.e
+    ) : this(n, e, null)
 
     val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -103,7 +85,7 @@ class RsaPublicKey private constructor(
      * PKCS#1 encoded RSA Public Key
      */
     val pkcsEncoded by lazy {
-        DER.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
+                Signum.Der.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
     }
 
     override fun equals(other: Any?): Boolean {
@@ -128,9 +110,14 @@ class RsaPublicKey private constructor(
          * @throws Asn1Exception all sorts of exceptions on invalid input
          */
         @Throws(Asn1Exception::class)
-        fun fromPKCS1encoded(input: ByteArray): RsaPublicKey =
-            RsaPublicKey(null,
-                Content(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)))
+        fun fromPKCS1encoded(input: ByteArray): RsaPublicKey {
+            val parsed = Signum.Der.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)
+            return RsaPublicKey(
+                parsed.modulus as Asn1Integer.Positive,
+                parsed.publicExponent as Asn1Integer.Positive,
+                null,
+            )
+        }
 
         @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
         fun fromIosEncoded(input: ByteArray) = fromPKCS1encoded(input)
@@ -150,41 +137,15 @@ class RsaPublicKey private constructor(
  * @see Companion.asPublicKey
  */
 @SerialName("EC")
-class EcdsaPublicKey private constructor(
-    providedAsn1Representation: SubjectPublicKeyInfo?,
-    providedContent: Content?,
+class EcdsaPublicKey(
+    val publicPoint: ECPoint.Normalized,
+    val preferCompressedRepresentation: Boolean,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
-    init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
     override val additionalProperties = mutableMapOf<String, String>()
 
-    private data class Content(
-        val publicPoint: ECPoint.Normalized,
-        val preferCompressedRepresentation: Boolean,
-    )
-
-    constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
-
     override fun asCryptoPublicKey() = this
-
-    override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
-    }
-
-    private val content: Content by providedContent orLazy {
-        val parsed = Sec1EcPublicKeyInfo.of(asn1Representation)
-        val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
-            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
-        when (parsed) {
-            is Sec1EcPublicKeyInfo.Compressed ->
-                fromCompressed(curve, parsed.x, parsed.positiveY)
-            is Sec1EcPublicKeyInfo.Uncompressed ->
-                fromUncompressed(curve, parsed.x, parsed.y)
-        }.content
-    }
-
-    val publicPoint get() = content.publicPoint
-    val preferCompressedRepresentation get() = content.preferCompressedRepresentation
 
     val curve get() = publicPoint.curve
     val x get() = publicPoint.x
@@ -226,8 +187,7 @@ class EcdsaPublicKey private constructor(
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
-            return EcdsaPublicKey(null,
-                Content(this.normalize(), preferCompressed))
+            return EcdsaPublicKey(this.normalize(), preferCompressed, null)
         }
 
         /** Decodes key from big-endian X and sign of Y */
@@ -278,6 +238,12 @@ class EcdsaPublicKey private constructor(
 }
 
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
+    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
+        is RsaPublicKey -> SubjectPublicKeyInfo.rsa(value.n, value.e, Signum.Der)
+        is EcdsaPublicKey -> SubjectPublicKeyInfo.from(at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Uncompressed(value.curve.oid, value.xBytes, value.yBytes))
+        else -> null
+    }
+
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
         EcdsaPublicKey.oid -> EcdsaPublicKey(publicKeyInfo)
         RsaPublicKey.oid -> RsaPublicKey(publicKeyInfo)

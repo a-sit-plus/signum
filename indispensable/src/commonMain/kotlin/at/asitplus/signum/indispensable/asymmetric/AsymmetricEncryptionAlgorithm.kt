@@ -19,7 +19,6 @@ sealed interface RSAPadding : Enumerable {
         override fun toString(): String = "NONE"
     }
 
-
     sealed class OAEP(val digest: Digest) : RSAPadding {
         object SHA1 : OAEP(Digest.SHA1)
         object SHA256 : OAEP(Digest.SHA256)
@@ -38,11 +37,10 @@ sealed interface RSAPadding : Enumerable {
         fun fromString(string: String) = entries.firstOrNull { it.toString() == string }
     }
 
-
 }
 
 // TODO extensible, no more sealed
-// TODO DerEncodable<X509AlgorithmIdentifier>
+// TODO Encodable
 sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */
