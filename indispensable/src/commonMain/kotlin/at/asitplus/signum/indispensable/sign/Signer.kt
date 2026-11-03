@@ -114,7 +114,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
         throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
     return Certificate(
         tbsCertificate = tbsCertificate,
-        signature = sign(tbsCertificate.encodeToDer()).signature
+        signatureValue = sign(tbsCertificate.encodeToDer()).signature
     )
 }
 

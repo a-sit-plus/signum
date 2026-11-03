@@ -116,7 +116,7 @@ class TbsCertificationRequest private constructor(
 /**
  * Very simple implementation of a PKCS#10 Certification Request.
  */
-class CertificationRequest constructor(
+class CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: SignatureAlgorithm,
     val signature: CryptoSignature,

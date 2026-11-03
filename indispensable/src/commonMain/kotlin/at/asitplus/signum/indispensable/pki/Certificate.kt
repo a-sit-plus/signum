@@ -32,8 +32,8 @@ class TbsCertificate constructor(
     val serialNumber: Asn1Integer,
     val signatureAlgorithm: SignatureAlgorithm,
     val issuerName: Name,
-    val validFrom: Instant,
-    val validUntil: Instant,
+    validFrom: Instant,
+    validUntil: Instant,
     val subjectName: Name,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: ByteArray? = null,
@@ -41,6 +41,9 @@ class TbsCertificate constructor(
     val extensions: List<CertificateExtension> = emptyList(),
     providedAsn1Representation: X509TbsCertificate? = null,
 ) : DerEncodable<X509TbsCertificate> {
+
+    val validFrom = validFrom.secondsCapped()
+    val validUntil = validUntil.secondsCapped()
 
     constructor(asn1Representation: X509TbsCertificate) : this(
         serialNumber = asn1Representation.serialNumber,
@@ -143,17 +146,15 @@ class TbsCertificate constructor(
 /**
  * Very simple implementation of an X.509 Certificate
  */
-class Certificate private constructor(
+class Certificate(
     val tbsCertificate: TbsCertificate,
     val signatureValue: DerEncodable<X509SignatureValue>,
-    providedAsn1Representation: X509Certificate?,
+    providedAsn1Representation: X509Certificate? = null,
 ) : DerPemEncodable<X509Certificate> {
 
     override val pemLabel: String get() = canonicalPemLabel
 
     val signature by lazy { signatureValue.withSignatureAlgorithm(tbsCertificate.signatureAlgorithm) }
-
-    constructor (tbsCertificate: TbsCertificate, signature: CryptoSignature) : this(tbsCertificate, signature, null)
 
     constructor(asn1Representation: X509Certificate) : this(
         TbsCertificate(asn1Representation.tbsCertificate),
@@ -243,7 +244,7 @@ class Certificate private constructor(
      * Debug String representation. Uses Base64 encoded DER representation
      */
     override fun toString(): String =
-        "X509Certificate(${
+        "Certificate(${
             DER.encodeToTlv(X509Certificate.serializer(), asn1Representation)
                 .derEncoded
                 .encodeToString(Base64Strict)
