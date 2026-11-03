@@ -59,6 +59,7 @@ include(":internals")
 include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
+include(":indispensable-pkix")
 include(":supreme")
 if (gradle.startParameter.taskNames.none { it.contains("publish") }) {
     include(":internals-test")
