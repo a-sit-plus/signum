@@ -51,6 +51,13 @@ object ServiceLoader {
             }
             throw x
         }
+        inline fun <reified KeyT, ResultT> getWithDefault(
+            what: KeyT, defaultBuilder: (KeyT, UnsupportedCryptoException)->ResultT, loadBlock: T.(KeyT)->(ResultT?)
+        ) = try {
+            get(what, loadBlock)
+        } catch (x: UnsupportedCryptoException) {
+            defaultBuilder(what, x)
+        }
     }
     @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =
         ServiceProviders(clazz.simpleName ?: "<anonymous>", getStorageFromMap(clazz))

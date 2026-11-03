@@ -30,43 +30,30 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
-class RsaPublicKey private constructor(
-    providedAsn1Representation: SubjectPublicKeyInfo?,
-    providedContent: Content?,
+class RsaPublicKey constructor(
+    /** modulus */
+    val n: Asn1Integer.Positive,
+    /** public exponent */
+    val e: Asn1Integer.Positive,
+    providedAsn1Representation: SubjectPublicKeyInfo? = null,
 ) : CryptoPublicKey {
-    init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
     override val additionalProperties = mutableMapOf<String, String>()
 
-    private data class Content(val n: Asn1Integer.Positive, val e: Asn1Integer.Positive) {
-        constructor(info: Pkcs1RsaPublicKeyInfo) :
-                this(info.modulus as Asn1Integer.Positive, info.publicExponent as Asn1Integer.Positive)
-    }
+    constructor(info: Pkcs1RsaPublicKeyInfo, providedAsn1Representation: SubjectPublicKeyInfo?) : this(
+        info.modulus as Asn1Integer.Positive,
+        info.publicExponent as Asn1Integer.Positive,
+        providedAsn1Representation
+    )
 
-    @Throws(IllegalArgumentException::class)
-    constructor(
-        /** modulus */
-        n: Asn1Integer.Positive,
-
-        /** public exponent */
-        e: Asn1Integer.Positive,
-    ) : this(null, Content(n, e))
-
-    constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
+    constructor(asn1Representation: SubjectPublicKeyInfo) : this(
+        Pkcs1RsaPublicKeyInfo.of(asn1Representation),
+        asn1Representation,
+    )
 
     override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
         SubjectPublicKeyInfo.rsa(n, e)
     }
-
-    private val content: Content by providedContent orLazy {
-        Content(Pkcs1RsaPublicKeyInfo.of(asn1Representation))
-    }
-
-    /** modulus */
-    val n get() = content.n
-
-    /** public exponent */
-    val e get() = content.e
 
     val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -129,8 +116,7 @@ class RsaPublicKey private constructor(
          */
         @Throws(Asn1Exception::class)
         fun fromPKCS1encoded(input: ByteArray): RsaPublicKey =
-            RsaPublicKey(null,
-                Content(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)))
+            RsaPublicKey(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input), null)
 
         @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
         fun fromIosEncoded(input: ByteArray) = fromPKCS1encoded(input)
@@ -151,36 +137,37 @@ class RsaPublicKey private constructor(
  */
 @SerialName("EC")
 class EcdsaPublicKey private constructor(
+    private val content: Content,
     providedAsn1Representation: SubjectPublicKeyInfo?,
-    providedContent: Content?,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
-    init { require((providedAsn1Representation != null) != (providedContent != null)) }
 
     override val additionalProperties = mutableMapOf<String, String>()
 
     private data class Content(
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean,
-    )
+    ) {
+        companion object {
+            operator fun invoke(asn1Representation: SubjectPublicKeyInfo): Content {
+                val parsed = Sec1EcPublicKeyInfo.of(asn1Representation)
+                val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
+                    ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
+                return when (parsed) {
+                    is Sec1EcPublicKeyInfo.Compressed ->
+                        EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
+                    is Sec1EcPublicKeyInfo.Uncompressed ->
+                        EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
+                }.content
+            }
+        }
+    }
 
-    constructor(asn1Representation: SubjectPublicKeyInfo) : this(asn1Representation, null)
+    constructor(asn1Representation: SubjectPublicKeyInfo) : this(Content(asn1Representation), asn1Representation)
 
     override fun asCryptoPublicKey() = this
 
     override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
         SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
-    }
-
-    private val content: Content by providedContent orLazy {
-        val parsed = Sec1EcPublicKeyInfo.of(asn1Representation)
-        val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
-            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
-        when (parsed) {
-            is Sec1EcPublicKeyInfo.Compressed ->
-                fromCompressed(curve, parsed.x, parsed.positiveY)
-            is Sec1EcPublicKeyInfo.Uncompressed ->
-                fromUncompressed(curve, parsed.x, parsed.y)
-        }.content
     }
 
     val publicPoint get() = content.publicPoint
@@ -226,8 +213,8 @@ class EcdsaPublicKey private constructor(
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
-            return EcdsaPublicKey(null,
-                Content(this.normalize(), preferCompressed))
+            return EcdsaPublicKey(
+                Content(this.normalize(), preferCompressed), null)
         }
 
         /** Decodes key from big-endian X and sign of Y */

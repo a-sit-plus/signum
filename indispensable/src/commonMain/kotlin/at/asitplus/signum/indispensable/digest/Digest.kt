@@ -16,6 +16,15 @@ interface Digest : DerEncodable<X509AlgorithmIdentifier> {
     /** The length of the hash function's fixed-length digest values */
     val outputLength: BitLength
 
+    private class Unknown(
+        override val asn1Representation: X509AlgorithmIdentifier, private val x: UnsupportedOperationException
+    ) : Digest {
+        override fun toString() = throw x
+        override val name get() = throw x
+        override val inputBlockSize get() = throw x
+        override val outputLength get() = throw x
+    }
+
     companion object : DerDecodable<X509AlgorithmIdentifier, Digest> {
         init { Indispensable.init() }
         val SHA1 inline get() = WellKnownDigest.SHA1
@@ -24,7 +33,7 @@ interface Digest : DerEncodable<X509AlgorithmIdentifier> {
         val SHA512 inline get() = WellKnownDigest.SHA512
 
         override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): Digest = runRethrowing {
-            ServiceLoader.load<DigestProvider>().get(element, DigestProvider::getDigest)
+            ServiceLoader.load<DigestProvider>().getWithDefault(element, ::Unknown, DigestProvider::getDigest)
         }
     }
 }

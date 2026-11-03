@@ -7,6 +7,7 @@ import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
@@ -25,6 +26,11 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
 
     override val pemLabel: String get() = Companion.canonicalPemLabel
 
+    private class Unknown(
+        override val asn1Representation: Pkcs8PrivateKeyInfo,
+        private val x: UnsupportedCryptoException
+    ) : CryptoPrivateKey
+
     companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
         init { Indispensable.init() }
         override val canonicalPemLabel: String get() = Pkcs8PrivateKeyInfo.canonicalPemLabel
@@ -34,7 +40,7 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
             der: Der,
         ): CryptoPrivateKey =
             ServiceLoader.load<PrivateKeyFormatProvider>()
-                .get(element, PrivateKeyFormatProvider::decodeFromAsn1)
+                .getWithDefault(element, ::Unknown, PrivateKeyFormatProvider::decodeFromAsn1)
 
         override fun decodeFromPemBlockPayload(
             serializer: KSerializer<Pkcs8PrivateKeyInfo>,

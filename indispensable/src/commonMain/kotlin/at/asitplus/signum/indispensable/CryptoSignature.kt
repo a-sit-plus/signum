@@ -5,6 +5,7 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaSignature

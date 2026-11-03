@@ -38,40 +38,24 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.internals.orLazy
 
 class EcdsaAlgorithm private constructor(
-    providedParams: Params?,
-    private val providedAsn1: X509AlgorithmIdentifier?,
-) : SignatureAlgorithm, Enumerable {
-    init { require((providedParams != null) != (providedAsn1 != null)) }
-
-    constructor(
-        /** The digest to apply to the data, or `null` to directly process the raw data. */
-        digest: Digest?,
-        /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
-        requiredCurve: ECCurve? = null
-    ) : this(Params(digest, requiredCurve), null)
-
-    constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
-
-    private data class Params(val digest: Digest?, val curve: ECCurve?)
-
-    private val params by providedParams orLazy {
-        Params(when(providedAsn1!!.oid) {
-            KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
-            KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
-            KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
-            KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
-            else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-        }, null).also {
-            require(providedAsn1.parameters == null)
-        }
-    }
-
     /** The digest to apply to the data, or `null` to directly process the raw data. */
-    val digest get() = params.digest
-    override val preHashedSignatureFormat get() = digest
-
+    val digest: Digest?,
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
-    val requiredCurve get() = params.curve
+    val requiredCurve: ECCurve? = null,
+    providedAsn1: X509AlgorithmIdentifier? = null,
+) : SignatureAlgorithm, Enumerable {
+
+    constructor(asn1Representation: X509AlgorithmIdentifier) : this(when(asn1Representation.oid) {
+        KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
+        KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256
+        KnownOIDs.ecdsaWithSHA384 -> Digest.SHA384
+        KnownOIDs.ecdsaWithSHA512 -> Digest.SHA512
+        else -> throw IllegalArgumentException("Unsupported algorithm ${asn1Representation.oid}")
+    }.also {
+        require(asn1Representation.parameters == null)
+    }, null, asn1Representation)
+
+    override val preHashedSignatureFormat get() = digest
 
     override val asn1Representation: X509AlgorithmIdentifier by providedAsn1 orLazy {
         X509AlgorithmIdentifier(
@@ -89,10 +73,10 @@ class EcdsaAlgorithm private constructor(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EcdsaAlgorithm) return false
-        return params == other.params
+        return (digest == other.digest) && (requiredCurve == other.requiredCurve)
     }
 
-    override fun hashCode() = params.hashCode()
+    override fun hashCode() = (31 * digest.hashCode()) + requiredCurve.hashCode()
 
     companion object : Enumeration<EcdsaAlgorithm>, DerDecodable<X509AlgorithmIdentifier, EcdsaAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
@@ -110,41 +94,21 @@ class EcdsaAlgorithm private constructor(
 }
 
 class RsaAlgorithm private constructor(
-    providedParams: Parameters<*>?,
-    private val providedAsn1: X509AlgorithmIdentifier?,
+    val parameters: Parameters<*>,
+    providedAsn1: X509AlgorithmIdentifier?,
 ) : SignatureAlgorithm, Enumerable {
-    init { require((providedParams != null) != (providedAsn1 != null)) }
 
     constructor(
         /** The RSA signature parameters to apply to the data. */
         parameters: Parameters<*>
     ) : this(parameters, null)
 
-    constructor(asn1Representation: X509AlgorithmIdentifier) : this(null, asn1Representation)
+    constructor(asn1Representation: X509AlgorithmIdentifier) : this(Parameters(asn1Representation), asn1Representation)
 
     /**
      * Convenience Ctor to use defaults aside digest
      */
     constructor(padding: Padding, digest: Digest) : this(Parameters(padding, digest))
-
-    /** The RSA signature parameters to apply to the data. */
-    val parameters: Parameters<*> by providedParams orLazy {
-        val oid = providedAsn1!!.oid
-        if (oid == KnownOIDs.rsaPSS) {
-            Parameters.PssPadded(RsaSsaPssParams.of(providedAsn1))
-        } else {
-            when (oid) {
-                KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
-                KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
-                KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
-                KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
-                else -> throw IllegalArgumentException("Unsupported algorithm ${providedAsn1.oid}")
-            }.let { digest ->
-                require(providedAsn1.parameters == Asn1Null)
-                Parameters.Pkcs1Padded(digest)
-            }
-        }
-    }
 
     /** The digest to apply to the data. */
     val digest get() = parameters.digest
@@ -360,6 +324,24 @@ class RsaAlgorithm private constructor(
             operator fun invoke(padding: Padding, digest: Digest) = when (padding) {
                 Padding.PSS -> PssPadded(digest = digest)
                 Padding.PKCS1 -> Pkcs1Padded(digest = digest)
+            }
+
+            operator fun invoke(asn1Representation: X509AlgorithmIdentifier): Parameters<*> {
+                val oid = asn1Representation.oid
+                if (oid == KnownOIDs.rsaPSS) {
+                    return PssPadded(RsaSsaPssParams.of(asn1Representation))
+                } else {
+                    when (oid) {
+                        KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1
+                        KnownOIDs.sha256WithRSAEncryption -> Digest.SHA256
+                        KnownOIDs.sha384WithRSAEncryption -> Digest.SHA384
+                        KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
+                        else -> throw IllegalArgumentException("Unsupported algorithm ${asn1Representation.oid}")
+                    }.let { digest ->
+                        require(asn1Representation.parameters == Asn1Null)
+                        return Pkcs1Padded(digest)
+                    }
+                }
             }
 
             val entries by lazy {

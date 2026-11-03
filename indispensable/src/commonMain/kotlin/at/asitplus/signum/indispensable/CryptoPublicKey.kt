@@ -9,6 +9,7 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import kotlinx.serialization.KSerializer
@@ -45,6 +46,15 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
 
     override val pemLabel: String get() = canonicalPemLabel
 
+    class Unknown(
+        override val asn1Representation: SubjectPublicKeyInfo,
+        private val x: UnsupportedCryptoException,
+    ) : CryptoPublicKey {
+        override val didKeyBytes get() = throw x
+        override val didCodec get() = throw x
+        override val additionalProperties: MutableMap<String, String> get() = throw x
+    }
+
     companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
         init { Indispensable.init() }
         override val canonicalPemLabel: String get() = SubjectPublicKeyInfo.canonicalPemLabel
@@ -69,8 +79,8 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
         }
 
         operator fun invoke(asn1Representation: SubjectPublicKeyInfo) =
-            ServiceLoader.load<PublicKeyFormatProvider>()
-                .get(asn1Representation, PublicKeyFormatProvider::decodeFromAsn1)
+            ServiceLoader.load<PublicKeyFormatProvider>().getWithDefault(
+                asn1Representation, ::Unknown, PublicKeyFormatProvider::decodeFromAsn1)
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(
