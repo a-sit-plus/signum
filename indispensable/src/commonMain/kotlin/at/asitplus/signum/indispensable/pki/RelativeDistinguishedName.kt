@@ -173,7 +173,28 @@ sealed interface AttributeTypeAndValue : Identifiable {
 
     interface Descriptor : Identifiable {
         val canonicalName: String
-        val aliases: Set<String>
+
+        object OID {
+            val commonName = ObjectIdentifier("2.5.4.3")
+            val countryName = ObjectIdentifier("2.5.4.6")
+            val localityName = ObjectIdentifier("2.5.4.7")
+            val stateOrProvinceName = ObjectIdentifier("2.5.4.8")
+            val streetAddress = ObjectIdentifier("2.5.4.9")
+            val organizationName = ObjectIdentifier("2.5.4.10")
+            val organizationalUnitName = ObjectIdentifier("2.5.4.11")
+            val title = ObjectIdentifier("2.5.4.12")
+            val telephoneNumber = ObjectIdentifier("2.5.4.20")
+            val surname = ObjectIdentifier("2.5.4.4")
+            val serialNumber = ObjectIdentifier("2.5.4.5")
+            val name = ObjectIdentifier("2.5.4.41")
+            val givenName = ObjectIdentifier("2.5.4.42")
+            val initials = ObjectIdentifier("2.5.4.43")
+            val generationQualifier = ObjectIdentifier("2.5.4.44")
+            val dnQualifier = ObjectIdentifier("2.5.4.46")
+            val domainComponent = ObjectIdentifier("0.9.2342.19200300.100.1.25")
+            val userId = ObjectIdentifier("0.9.2342.19200300.100.1.1")
+            val emailAddress = ObjectIdentifier("1.2.840.113549.1.9.1")
+        }
 
         fun fromString(value: String): AttributeTypeAndValue
         fun fromAsn1Representation(src: X500AttributeTypeAndValue): X509Representable
@@ -182,7 +203,9 @@ sealed interface AttributeTypeAndValue : Identifiable {
     }
 
     /**
-     * Maps attribute OIDs to their typed [Descriptor]s (and powers RFC 4514 keyword lookup).
+     * Maps attribute OIDs to [Descriptor]s and powers RFC 4514 keyword lookup. Standard attributes
+     * are available as generic structural descriptors without `indispensable-pkix`; that module may
+     * replace them with typed descriptors during startup.
      *
      * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
      * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
@@ -191,7 +214,9 @@ sealed interface AttributeTypeAndValue : Identifiable {
      */
     @OptIn(ExperimentalAtomicApi::class)
     object Registry {
-        private val descriptors = hashMapOf<ObjectIdentifier, Descriptor>()
+        private val descriptors: MutableMap<ObjectIdentifier, Descriptor> = standardX500AttributeDescriptors
+            .associateByTo(mutableMapOf()) { it.oid }
+        private val aliases = standardX500AttributeAliases.toMutableMap()
         private val sealed = AtomicReference<Map<ObjectIdentifier, Descriptor>?>(null)
 
         fun register(descriptor: Descriptor): Descriptor {
@@ -200,6 +225,21 @@ sealed interface AttributeTypeAndValue : Identifiable {
             }
             descriptors[descriptor.oid] = descriptor
             return descriptor
+        }
+
+        fun registerAlias(alias: String, oid: ObjectIdentifier) {
+            check(sealed.load() == null) {
+                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
+            }
+            require(descriptors.containsKey(oid)) { "No AttributeTypeAndValue descriptor registered for $oid." }
+            val normalizedAlias = alias.uppercase()
+            check(descriptors.values.none { it.canonicalName.uppercase() == normalizedAlias }) {
+                "AttributeTypeAndValue alias '$alias' conflicts with a canonical name."
+            }
+            check(aliases[normalizedAlias].let { it == null || it == oid }) {
+                "AttributeTypeAndValue alias '$alias' is already registered for ${aliases[normalizedAlias]}."
+            }
+            aliases[normalizedAlias] = oid
         }
 
         fun oidFor(name: String): ObjectIdentifier? =
@@ -212,10 +252,9 @@ sealed interface AttributeTypeAndValue : Identifiable {
 
         fun descriptorForName(name: String): Descriptor? {
             val normalizedName = name.uppercase()
-            return view().values.firstOrNull {
-                it.canonicalName.uppercase() == normalizedName ||
-                        it.aliases.any { alias -> alias.uppercase() == normalizedName }
-            }
+            val descriptors = view()
+            return aliases[normalizedName]?.let { descriptors[it] }
+                ?: descriptors.values.firstOrNull { it.canonicalName.uppercase() == normalizedName }
         }
 
         private fun view(): Map<ObjectIdentifier, Descriptor> =
@@ -264,6 +303,58 @@ sealed interface AttributeTypeAndValue : Identifiable {
                 ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }
 }
+
+private class StandardX500AttributeDescriptor(
+    override val oid: ObjectIdentifier,
+    override val canonicalName: String,
+    private val stringFactory: (String) -> Asn1String,
+) : AttributeTypeAndValue.Descriptor {
+    override fun fromString(value: String): AttributeTypeAndValue =
+        BaseX509AttributeTypeAndValue(oid, stringFactory(value))
+
+    override fun fromAsn1Representation(src: X500AttributeTypeAndValue) =
+        BaseX509AttributeTypeAndValue(src)
+}
+
+private val standardX500AttributeDescriptors = listOf(
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.commonName, "CN", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.countryName, "C", Asn1String::Printable),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.localityName, "L", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName, "ST", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.streetAddress, "STREET", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationName, "O", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationalUnitName, "OU", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.title, "T", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.telephoneNumber, "TELEPHONENUMBER", Asn1String::Printable),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.surname, "SURNAME", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.serialNumber, "SERIALNUMBER", Asn1String::Printable),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.name, "NAME", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.givenName, "GIVENNAME", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.initials, "INITIALS", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.generationQualifier, "GENERATION", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.dnQualifier, "DNQUALIFIER", Asn1String::Printable),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.domainComponent, "DC", Asn1String::IA5),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.userId, "UID", Asn1String::UTF8),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.emailAddress, "EMAILADDRESS", Asn1String::IA5),
+)
+
+private val standardX500AttributeAliases = mapOf(
+    "COMMONNAME" to AttributeTypeAndValue.Descriptor.OID.commonName,
+    "COUNTRY" to AttributeTypeAndValue.Descriptor.OID.countryName,
+    "COUNTRYNAME" to AttributeTypeAndValue.Descriptor.OID.countryName,
+    "LOCALITY" to AttributeTypeAndValue.Descriptor.OID.localityName,
+    "LOCALITYNAME" to AttributeTypeAndValue.Descriptor.OID.localityName,
+    "S" to AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName,
+    "STATEORPROVINCENAME" to AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName,
+    "STREETADDRESS" to AttributeTypeAndValue.Descriptor.OID.streetAddress,
+    "ORGANIZATION" to AttributeTypeAndValue.Descriptor.OID.organizationName,
+    "ORGANIZATIONNAME" to AttributeTypeAndValue.Descriptor.OID.organizationName,
+    "ORGANIZATIONALUNIT" to AttributeTypeAndValue.Descriptor.OID.organizationalUnitName,
+    "ORGANIZATIONALUNITNAME" to AttributeTypeAndValue.Descriptor.OID.organizationalUnitName,
+    "TITLE" to AttributeTypeAndValue.Descriptor.OID.title,
+    "DNQ" to AttributeTypeAndValue.Descriptor.OID.dnQualifier,
+    "EMAIL" to AttributeTypeAndValue.Descriptor.OID.emailAddress,
+)
 
 
 

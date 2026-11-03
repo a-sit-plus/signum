@@ -40,7 +40,7 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
 
     /** Representation of the key in the format used by iOS */
     val iosEncoded: ByteArray get() = asn1Representation.subjectPublicKey.also {
-        require (it.numPaddingBits == 0.toByte()) { "SPKI is not full octets, cannot convert to iOS" }
+        require (it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
     }.bitCarryingBytes
 
     override val pemLabel: String get() = canonicalPemLabel
