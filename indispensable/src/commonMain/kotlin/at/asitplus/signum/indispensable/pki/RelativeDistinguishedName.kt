@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.Asn1Exception
@@ -9,28 +10,20 @@ import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.internals.orLazy
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlinx.serialization.KSerializer
-
+import at.asitplus.signum.indispensable.Decodable
+import at.asitplus.signum.indispensable.Encodable
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-class RelativeDistinguishedName private constructor(
-    providedAttrsAndValues: Set<AttributeTypeAndValue>?,
-    providedAsn1Representation: X500RelativeDistinguishedName?,
+class RelativeDistinguishedName(
+    attrsAndValuesProvider: () -> Set<AttributeTypeAndValue>,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     performValidation: Boolean,
-) : DerEncodable<X500RelativeDistinguishedName> {
-    init { require((providedAttrsAndValues != null) != (providedAsn1Representation != null)) }
+) : Encodable {
 
-    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this(attrsAndValues, null, true)
+    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this({ attrsAndValues }, null, true)
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
@@ -42,18 +35,7 @@ class RelativeDistinguishedName private constructor(
      */
     constructor(singleItem: X500AttributeTypeAndValue) : this(AttributeTypeAndValue(singleItem))
 
-    internal constructor(
-        asn1Representation: X500RelativeDistinguishedName,
-        performValidation: Boolean = false,
-    ) : this(null, asn1Representation, performValidation)
-
-    override val asn1Representation: X500RelativeDistinguishedName by providedAsn1Representation orLazy {
-        X500RelativeDistinguishedName(attrsAndValues.map { it.requireX509().asn1Representation }.toSet())
-    }
-
-    val attrsAndValues: Set<AttributeTypeAndValue> by providedAttrsAndValues orLazy {
-        asn1Representation.attrsAndValues.map(AttributeTypeAndValue::fromAsn1Representation).toSet()
-    }
+    val attrsAndValues by lazy(attrsAndValuesProvider)
 
     val isValid: Boolean by lazy {
         attrsAndValues.isStructurallyValid() &&
@@ -74,13 +56,7 @@ class RelativeDistinguishedName private constructor(
 
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
-    companion object : DerDecodable<X500RelativeDistinguishedName, RelativeDistinguishedName> {
-
-        override fun decodeFromTlv(
-            element: X500RelativeDistinguishedName,
-            der: Der,
-        ): RelativeDistinguishedName =
-            RelativeDistinguishedName(element, performValidation = false)
+    companion object : Decodable<RelativeDistinguishedName> {
 
         /**
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company").
@@ -140,8 +116,7 @@ class RelativeDistinguishedName private constructor(
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
-
-sealed interface AttributeTypeAndValue : Identifiable {
+interface AttributeTypeAndValue : Identifiable, Encodable {
     val displayName: String?
     val isValid: Boolean?
 
@@ -150,28 +125,23 @@ sealed interface AttributeTypeAndValue : Identifiable {
      * that conforms to the RFC 2253 standard for Distinguished Names (DNs).
      *
      * @return A string representation of the attribute's type and value in RFC 2253 format.
-     * @throws Asn1Exception if the attribute has no X.509 representation (i.e. if it does not implement [X509Representable]),
+     * @throws Asn1Exception if the attribute has no X.509 representation (i.e. if it does not implement [AttributeTypeAndValue]),
      * as the RFC only defines string canonicalization for X.509
      */
-    fun toRfc2253String(): String = requireX509().toRfc2253String()
-
-    interface X509Representable : AttributeTypeAndValue, DerEncodable<X500AttributeTypeAndValue> {
-        val value: Asn1Element
-
-        override fun toRfc2253String(): String {
+    fun toRfc2253String(): String {
             // The stored value is raw (unescaped); re-escape per RFC 4514 for output. Non-string or
             // undecodable values fall back to the hexstring form.
+            val value = requireNotNull(asn1Representation) { "Attribute has no X.509 representation" }.value
             val attrValue = (value as? Asn1Primitive)?.let { prim ->
                 catchingUnwrapped { canonicalizeRfc2253String(Asn1String.decodeFromTlv(prim).value) }
                     .getOrElse { "#" + prim.toDerHexString() }
             } ?: ("#" + value.derEncoded.toHexString())
 
             // RFC 2253 canonical form for case-insensitive matching: fold the value to lower case too
-            return "${Registry.nameFor(oid)?.lowercase() ?: oid}=${attrValue.lowercase()}"
+            return "${Signum.attributeNameFor(oid)?.lowercase() ?: oid}=${attrValue.lowercase()}"
         }
-    }
 
-    interface Descriptor : Identifiable {
+    interface Descriptor<out T : AttributeTypeAndValue> : Decodable<T>, Identifiable {
         val canonicalName: String
 
         object OID {
@@ -196,85 +166,21 @@ sealed interface AttributeTypeAndValue : Identifiable {
             val emailAddress = ObjectIdentifier("1.2.840.113549.1.9.1")
         }
 
-        fun fromString(value: String): AttributeTypeAndValue
-        fun fromAsn1Representation(src: X500AttributeTypeAndValue): X509Representable
+        fun fromString(value: String): T
+        /** Constructs an attribute from its value without retaining a decoded source. */
+        fun fromValue(value: Asn1Element): T
+        fun fromAsn1Representation(src: X500AttributeTypeAndValue): T
 
-        fun register(): Descriptor = Registry.register(this)
-    }
-
-    /**
-     * Maps attribute OIDs to [Descriptor]s and powers RFC 4514 keyword lookup. Standard attributes
-     * are available as generic structural descriptors without `indispensable-pkix`; that module may
-     * replace them with typed descriptors during startup.
-     *
-     * Registration is **startup-only**: descriptors must be registered (via [register], e.g. from
-     * `SignumPkix.install()`) **before the first (de)serialization**. The registry seals on its first
-     * lookup — after that it is immutable and reads are lock-free; later [register] calls throw. This
-     * mirrors the `DefaultDer.register` contract and removes the former runtime-mutable machinery.
-     */
-    @OptIn(ExperimentalAtomicApi::class)
-    object Registry {
-        private val descriptors: MutableMap<ObjectIdentifier, Descriptor> = standardX500AttributeDescriptors
-            .associateByTo(mutableMapOf()) { it.oid }
-        private val aliases = standardX500AttributeAliases.toMutableMap()
-        private val sealed = AtomicReference<Map<ObjectIdentifier, Descriptor>?>(null)
-
-        fun register(descriptor: Descriptor): Descriptor {
-            check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
-            }
-            descriptors[descriptor.oid] = descriptor
-            return descriptor
-        }
-
-        fun registerAlias(alias: String, oid: ObjectIdentifier) {
-            check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
-            }
-            require(descriptors.containsKey(oid)) { "No AttributeTypeAndValue descriptor registered for $oid." }
-            val normalizedAlias = alias.uppercase()
-            check(descriptors.values.none { it.canonicalName.uppercase() == normalizedAlias }) {
-                "AttributeTypeAndValue alias '$alias' conflicts with a canonical name."
-            }
-            check(aliases[normalizedAlias].let { it == null || it == oid }) {
-                "AttributeTypeAndValue alias '$alias' is already registered for ${aliases[normalizedAlias]}."
-            }
-            aliases[normalizedAlias] = oid
-        }
-
-        fun oidFor(name: String): ObjectIdentifier? =
-            descriptorForName(name)?.oid
-
-        fun nameFor(oid: ObjectIdentifier): String? =
-            descriptorFor(oid)?.canonicalName
-
-        fun descriptorFor(oid: ObjectIdentifier): Descriptor? = view()[oid]
-
-        fun descriptorForName(name: String): Descriptor? {
-            val normalizedName = name.uppercase()
-            val descriptors = view()
-            return aliases[normalizedName]?.let { descriptors[it] }
-                ?: descriptors.values.firstOrNull { it.canonicalName.uppercase() == normalizedName }
-        }
-
-        private fun view(): Map<ObjectIdentifier, Descriptor> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
     }
 
 
-    companion object : DerDecodable<X500AttributeTypeAndValue, X509Representable> {
+    companion object : Decodable<AttributeTypeAndValue> {
 
-        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): X509Representable =
-            fromAsn1Representation(X500AttributeTypeAndValue(oid, value))
+        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
+            Signum.attributeDescriptorFor(oid)?.fromValue(value) ?: BaseX509AttributeTypeAndValue(oid, value)
 
-        operator fun invoke(asn1Representation: X500AttributeTypeAndValue): X509Representable =
+        operator fun invoke(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
             fromAsn1Representation(asn1Representation)
-
-        override fun decodeFromTlv(
-            element: X500AttributeTypeAndValue,
-            der: Der,
-        ): X509Representable =
-            fromAsn1Representation(element)
 
         @OptIn(ExperimentalStdlibApi::class)
         fun fromString(type: String, value: String): AttributeTypeAndValue? {
@@ -283,7 +189,7 @@ sealed interface AttributeTypeAndValue : Identifiable {
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
             if (v.length > 1 && v.first() == '#' &&  isHexString(v.substring(1))) {
                 catchingUnwrapped { Asn1Element.parse(v.substring(1).hexToByteArray()) }.getOrNull()?.let { element ->
-                    val oid = Registry.descriptorForName(key)?.oid
+                    val oid = Signum.attributeDescriptorForName(key)?.oid
                         ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
                     return invoke(oid, element)
                 }
@@ -292,14 +198,14 @@ sealed interface AttributeTypeAndValue : Identifiable {
             // and toRfc2253String re-escapes on output (RFC 4514). This keeps the stored value correct
             // (no escape backslashes in the DER) and works for PrintableString/IA5 attributes too.
             val raw = unescapeRfc2253(v)
-            Registry.descriptorForName(key)?.let { return it.fromString(raw) }
+            Signum.attributeDescriptorForName(key)?.let { return it.fromString(raw) }
             // Fall back to a raw dotted-OID attribute type (e.g. "1.2.3.4.5"); value carried as a UTF8String.
             val oid = catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
             return invoke(oid, Asn1String.UTF8(raw).encodeToTlv())
         }
 
-        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): X509Representable =
-            Registry.descriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
+        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
+            Signum.attributeDescriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
                 ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }
 }
@@ -308,15 +214,17 @@ private class StandardX500AttributeDescriptor(
     override val oid: ObjectIdentifier,
     override val canonicalName: String,
     private val stringFactory: (String) -> Asn1String,
-) : AttributeTypeAndValue.Descriptor {
-    override fun fromString(value: String): AttributeTypeAndValue =
+) : AttributeTypeAndValue.Descriptor<BaseX509AttributeTypeAndValue> {
+    override fun fromString(value: String): BaseX509AttributeTypeAndValue =
         BaseX509AttributeTypeAndValue(oid, stringFactory(value))
+
+    override fun fromValue(value: Asn1Element) = BaseX509AttributeTypeAndValue(oid, value)
 
     override fun fromAsn1Representation(src: X500AttributeTypeAndValue) =
         BaseX509AttributeTypeAndValue(src)
 }
 
-private val standardX500AttributeDescriptors = listOf(
+internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.commonName, "CN", Asn1String::UTF8),
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.countryName, "C", Asn1String::Printable),
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.localityName, "L", Asn1String::UTF8),
@@ -338,7 +246,7 @@ private val standardX500AttributeDescriptors = listOf(
     StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.emailAddress, "EMAILADDRESS", Asn1String::IA5),
 )
 
-private val standardX500AttributeAliases = mapOf(
+internal val standardX500AttributeAliases = mapOf(
     "COMMONNAME" to AttributeTypeAndValue.Descriptor.OID.commonName,
     "COUNTRY" to AttributeTypeAndValue.Descriptor.OID.countryName,
     "COUNTRYNAME" to AttributeTypeAndValue.Descriptor.OID.countryName,
@@ -356,22 +264,20 @@ private val standardX500AttributeAliases = mapOf(
     "EMAIL" to AttributeTypeAndValue.Descriptor.OID.emailAddress,
 )
 
-
-
 abstract class BaseAttributeTypeAndValue(
     override val oid: ObjectIdentifier,
 ) : AttributeTypeAndValue {
-    override val displayName: String? get() = AttributeTypeAndValue.Registry.nameFor(oid)
+    override val displayName: String? get() = Signum.attributeNameFor(oid)
     override val isValid: Boolean? = null
 
 }
 
 open class BaseX509AttributeTypeAndValue protected constructor(
-    providedAsn1Representation: X500AttributeTypeAndValue?,
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     oid: ObjectIdentifier,
-    override val value: Asn1Element,
+    val value: Asn1Element,
     validateValue: Boolean,
-) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue.X509Representable {
+) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue {
 
     constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid, value, false)
 
@@ -379,11 +285,7 @@ open class BaseX509AttributeTypeAndValue protected constructor(
     constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid, value.encodeToTlv(), true)
 
     constructor(asn1Representation: X500AttributeTypeAndValue) :
-            this(asn1Representation, asn1Representation.oid, asn1Representation.value, false)
-
-    override val asn1Representation: X500AttributeTypeAndValue by providedAsn1Representation orLazy {
-        X500AttributeTypeAndValue(oid, value)
-    }
+            this(X509 to asn1Representation, asn1Representation.oid, asn1Representation.value, false)
 
     override val isValid: Boolean? by lazy {
         catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrElse { false }
@@ -448,7 +350,3 @@ private fun canonicalizeRfc2253String(input: String): String {
         }
     }.trim()
 }
-
-private fun AttributeTypeAndValue.requireX509(): AttributeTypeAndValue.X509Representable =
-    this as? AttributeTypeAndValue.X509Representable
-        ?: throw Asn1Exception("Attribute $oid has no X.509/DER representation")

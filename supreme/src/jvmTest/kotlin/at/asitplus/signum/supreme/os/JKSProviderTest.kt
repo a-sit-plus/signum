@@ -1,5 +1,8 @@
 package at.asitplus.signum.supreme.os
 
+import at.asitplus.signum.Signum
+import kotlinx.serialization.encodeToByteArray
+
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
@@ -57,7 +60,7 @@ val JKSProviderTest  by matrixSuite {
         shouldThrowAny { ks.getSignerForKey(alias) }
         shouldThrowAny { ks.getSignerForKey(alias) { privateKeyPassword = wrongKeyPassword }}
         val signer = ks.getSignerForKey(alias) { privateKeyPassword = correctKeyPassword }
-        signer.publicKey.encodeToDer().toHexString(HexFormat.UpperCase) shouldBe
+        Signum.Der.encodeToByteArray(signer.publicKey).toHexString(HexFormat.UpperCase) shouldBe
                 "3059301306072A8648CE3D020106082A8648CE3D030107034200046EEDD7DCE99AA264797906CE55BC158E4" +
                 "22EA9722E7EB0F0A6C7C9AB53F4B0D09176D8D169F52872BE2ED31D33C9ABD5785BB1DF96F53213BA659636" +
                 "96527B09"

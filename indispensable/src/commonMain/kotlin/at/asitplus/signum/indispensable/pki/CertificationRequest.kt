@@ -1,16 +1,14 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.Encodable
+
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
-import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
-import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.internals.orLazy
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509CertificateExtension
 /**
  * The meat of a Certification Request:
@@ -20,14 +18,12 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */
-class TbsCertificationRequest private constructor(
+class TbsCertificationRequest(
     val subjectName: Name,
     val publicKey: CryptoPublicKey,
     val attributes: List<CsrAttribute>,
-    providedAsn1Representation: Pkcs10CertificationRequestInfo?,
-) : DerEncodable<Pkcs10CertificationRequestInfo> {
-
-
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
+) : Encodable {
     constructor(
         subjectName: Name,
         publicKey: CryptoPublicKey,
@@ -60,23 +56,14 @@ class TbsCertificationRequest private constructor(
         providedAsn1Representation = asn1Representation
     )
 
-
-    override val asn1Representation: Pkcs10CertificationRequestInfo by providedAsn1Representation orLazy {
-        Pkcs10CertificationRequestInfo(
-            subjectName = subjectName.requireX509().asn1Representation,
-            publicKey = publicKey.asn1Representation,
-            attributes = attributes.mapTo(mutableSetOf()) { it.requireX509().asn1Representation },
-        )
-    }
-
     val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID } }
 
     val extensions: List<CertificateExtension> by lazy {
         attributes.filter { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
             when (extensionAttributes.size) {
                 0 -> emptyList()
-                1 -> extensionAttributes.single().requireX509().value.single().asSequence().map {
-                    CertificateExtension(DER.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
+                1 -> requireNotNull(extensionAttributes.single().asn1Representation).value.single().asSequence().map {
+                                        CertificateExtension(Signum.Der.decodeFromTlv(Awesn1X509CertificateExtension.serializer(), it))
                 }
 
                 else -> throw Asn1StructuralException("Multiple extensionRequest attributes found")
@@ -102,17 +89,7 @@ class TbsCertificationRequest private constructor(
     override fun toString(): String =
         "TbsCertificationRequest(subjectName=$subjectName, publicKey=$publicKey, attributes=$attributes)"
 
-    companion object : DerDecodable<Pkcs10CertificationRequestInfo, TbsCertificationRequest> {
-        @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            element: Pkcs10CertificationRequestInfo,
-            der: Der,
-        ): TbsCertificationRequest =
-            TbsCertificationRequest(element)
-    }
-}
-
-
+    companion object : Decodable<TbsCertificationRequest>
 /**
  * Very simple implementation of a PKCS#10 Certification Request.
  */
@@ -120,26 +97,14 @@ class CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: SignatureAlgorithm,
     val signature: CryptoSignature,
-    providedAsn1Representation: Pkcs10CertificationRequest? = null,
-) : DerPemEncodable<Pkcs10CertificationRequest> {
-
-    override val pemLabel: String get() = canonicalPemLabel
-
+    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
+) : Encodable {
     constructor(asn1Representation: Pkcs10CertificationRequest) : this(
         tbsCsr = TbsCertificationRequest(asn1Representation.certificationRequestInfo),
         signatureAlgorithm = SignatureAlgorithm.decodeFromTlv(asn1Representation.signatureAlgorithm),
         signature = CryptoSignature(asn1Representation.signatureAlgorithm, asn1Representation.signatureValue),
         providedAsn1Representation = asn1Representation
     )
-
-
-    override val asn1Representation: Pkcs10CertificationRequest by providedAsn1Representation orLazy {
-        Pkcs10CertificationRequest(
-            certificationRequestInfo = tbsCsr.asn1Representation,
-            signatureAlgorithm = signatureAlgorithm.asn1Representation,
-            signatureValue = signature.asn1Representation,
-        )
-    }
 
 
     override fun equals(other: Any?): Boolean {
@@ -160,18 +125,7 @@ class CertificationRequest(
     override fun toString(): String =
         "Pkcs10CertificationRequest(tbsCsr=$tbsCsr, signatureAlgorithm=$signatureAlgorithm, signature=$signature)"
 
-    companion object : DerPemDecodable<Pkcs10CertificationRequest, CertificationRequest> {
-
-        override val canonicalPemLabel: String get() = Pkcs10CertificationRequest.canonicalPemLabel
-        override val alternativePemLabels: Set<String> get() = Pkcs10CertificationRequest.alternativePemLabels
-
-        @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(
-            element: Pkcs10CertificationRequest,
-            der: Der,
-        ): CertificationRequest =
-            CertificationRequest(element)
-    }
+    companion object : Decodable<CertificationRequest>
 }
 
 private fun validateAttributes(attributes: List<CsrAttribute>, allowExtensions: Boolean = false) {
@@ -192,7 +146,8 @@ private fun mergeAttributesWithExtensions(
         attributes?.let { addAll(it) }
         extensions?.let {
             add(CsrAttribute(Pkcs10CsrAttribute.ExtensionRequest(it.map { extension ->
-                extension.requireX509().asn1Representation
+                extension.asn1Representation
+                    ?: throw Asn1Exception("Certificate extension ${extension.oid} has no X.509/DER representation")
             })))
         }
     }

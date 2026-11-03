@@ -20,6 +20,7 @@ import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
@@ -60,7 +61,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as EcdsaPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            EcdsaSignature.decodeFromTlv(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
             corecall {
@@ -83,7 +84,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as RsaPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            RsaSignature.decodeFromTlv(X509SignatureValue(signatureBytes))
+            RsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes))
     }
 }
 

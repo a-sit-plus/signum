@@ -10,10 +10,8 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 
-@Serializable(with = WellKnownDigest.Serializer::class)
 sealed class WellKnownDigest(
     override val name: String,
     override val inputBlockSize: BitLength, override val outputLength: BitLength,
@@ -24,9 +22,6 @@ sealed class WellKnownDigest(
     data object SHA256 : WellKnownDigest("SHA256", 512.bit, 256.bit, KnownOIDs.sha_256)
     data object SHA384 : WellKnownDigest("SHA384", 1024.bit, 384.bit, KnownOIDs.sha_384)
     data object SHA512 : WellKnownDigest("SHA512", 1024.bit, 512.bit, KnownOIDs.sha_512)
-
-    override val asn1Representation: X509AlgorithmIdentifier
-        get() = X509AlgorithmIdentifier(oid, null)
 
     companion object : Enumeration<WellKnownDigest> {
         override val entries: Iterable<WellKnownDigest> by lazy { setOf(SHA1, SHA256, SHA384, SHA512) }
@@ -40,6 +35,9 @@ sealed class WellKnownDigest(
 }
 
 object IndispensableDigestsProvider: DigestProvider {
+    override fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? =
+        (value as? WellKnownDigest)?.let { X509AlgorithmIdentifier(it.oid, null) }
+
     override fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest? {
         return WellKnownDigest.entries.firstOrNull { it.oid == algorithmIdentifier.oid }?.also {
             val params = algorithmIdentifier.parameters
@@ -50,6 +48,9 @@ object IndispensableDigestsProvider: DigestProvider {
 }
 
 object IndispensableHMACProvider: MessageAuthenticationCodeProvider {
+    override fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? =
+        (value as? HMAC)?.let { X509AlgorithmIdentifier(it.oid, Asn1Null) }
+
     override fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode? {
         if (algorithmIdentifier.parameters != Asn1Null) return null
         return WellKnownDigest.entries.asSequence().map(HMAC::byDigest)
