@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
@@ -40,6 +41,12 @@ interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
         private val x: UnsupportedCryptoException
     ): MessageAuthenticationCode {
         override val outputLength: BitLength get() = throw x
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Unknown) return false
+            return asn1Representation == other.asn1Representation
+        }
+        override fun hashCode() = asn1Representation.hashCode()
     }
 
     companion object : DerDecodable<X509AlgorithmIdentifier, MessageAuthenticationCode> {

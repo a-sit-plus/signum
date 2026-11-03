@@ -37,7 +37,7 @@ import at.asitplus.signum.indispensable.decodeFromTlv
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.internals.orLazy
 
-class EcdsaAlgorithm private constructor(
+class EcdsaAlgorithm(
     /** The digest to apply to the data, or `null` to directly process the raw data. */
     val digest: Digest?,
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */

@@ -31,7 +31,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import kotlin.getValue
 
 sealed class EcdsaSignature
-@Throws(IllegalArgumentException::class) private constructor(
+@Throws(IllegalArgumentException::class) constructor(
     val r: BigInteger,
     val s: BigInteger,
     providedAsn1Representation: X509SignatureValue? = null,
@@ -176,7 +176,7 @@ sealed class EcdsaSignature
     }
 }
 
-class RsaSignature private constructor(
+class RsaSignature(
     val rawBytes: ByteArray,
     providedAsn1Representation: X509SignatureValue? = null,
 ) : CryptoSignature {

@@ -29,7 +29,14 @@ interface CryptoPrivateKey : DerPemEncodable<Pkcs8PrivateKeyInfo> {
     private class Unknown(
         override val asn1Representation: Pkcs8PrivateKeyInfo,
         private val x: UnsupportedCryptoException
-    ) : CryptoPrivateKey
+    ) : CryptoPrivateKey {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Unknown) return false
+            return asn1Representation == other.asn1Representation
+        }
+        override fun hashCode() = asn1Representation.hashCode()
+    }
 
     companion object : DerPemDecodable<Pkcs8PrivateKeyInfo, CryptoPrivateKey> {
         init { Indispensable.init() }

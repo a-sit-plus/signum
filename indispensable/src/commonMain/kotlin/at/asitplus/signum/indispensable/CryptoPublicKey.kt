@@ -46,13 +46,19 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
 
     override val pemLabel: String get() = canonicalPemLabel
 
-    class Unknown(
+    private class Unknown(
         override val asn1Representation: SubjectPublicKeyInfo,
         private val x: UnsupportedCryptoException,
     ) : CryptoPublicKey {
         override val didKeyBytes get() = throw x
         override val didCodec get() = throw x
         override val additionalProperties: MutableMap<String, String> get() = throw x
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Unknown) return false
+            return asn1Representation == other.asn1Representation
+        }
+        override fun hashCode() = asn1Representation.hashCode()
     }
 
     companion object : DerPemDecodable<SubjectPublicKeyInfo, CryptoPublicKey> {
