@@ -411,6 +411,8 @@ val CertificateExtension.asn1 get() =
 
 val CertificateExtension.Companion.fromAsn1 get() =
     asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { asn1, lookup ->
+        // A provider decoding failure must not turn a malformed known extension into an opaque one.
+        if (lookup.suppressedExceptions.isNotEmpty()) throw lookup
         object : CertificateExtension.Unknown(lookup) {
             override val critical = asn1.critical
             override val oid: ObjectIdentifier = asn1.oid
