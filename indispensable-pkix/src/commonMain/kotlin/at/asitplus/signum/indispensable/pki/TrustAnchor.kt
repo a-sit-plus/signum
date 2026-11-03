@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.pki.Certificate as X509Certificate
 import at.asitplus.signum.indispensable.pki.extn.NameConstraints
 
@@ -21,7 +20,7 @@ import at.asitplus.signum.indispensable.pki.extn.NameConstraints
  */
 sealed class TrustAnchor {
 
-    abstract val publicKey: CryptoPublicKey
+    abstract val publicKey: at.asitplus.signum.indispensable.PublicKey
     abstract val principal: Name?
     abstract val nameConstraints: NameConstraints?
     open val cert: X509Certificate? = null
@@ -30,7 +29,7 @@ sealed class TrustAnchor {
         override val cert: X509Certificate
     ) : TrustAnchor() {
 
-        override val publicKey: CryptoPublicKey = cert.publicKey
+        override val publicKey: at.asitplus.signum.indispensable.PublicKey = cert.publicKey
 
         override val principal: Name = cert.tbsCertificate.subjectName
 
@@ -38,13 +37,13 @@ sealed class TrustAnchor {
     }
 
     class PublicKey(
-        override val publicKey: CryptoPublicKey,
+        override val publicKey: at.asitplus.signum.indispensable.PublicKey,
         override val principal: Name?,
         override val nameConstraints: NameConstraints? = null
     ) : TrustAnchor() {
 
         @HazardousMaterials("Unnamed trust anchor: only use when a raw key truly makes sense.")
-        constructor(publicKey: CryptoPublicKey) : this(publicKey, null)
+        constructor(publicKey: at.asitplus.signum.indispensable.PublicKey) : this(publicKey, null)
     }
 
     fun matchesCertificate(cert: X509Certificate): Boolean {

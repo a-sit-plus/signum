@@ -24,8 +24,8 @@ inline fun <reified T : Encodable> Der.encodeToPemBlock(value: T): PemBlock {
     val model = when (value) {
         is Certificate -> value.asn1Representation
         is CertificationRequest -> value.asn1Representation
-        is CryptoPublicKey -> value.asn1Representation
-        is CryptoPrivateKey -> value.asn1Representation
+        is PublicKey -> value.asn1Representation
+        is PrivateKey -> value.asn1Representation
         else -> value.sourceRepresentationFor(at.asitplus.signum.indispensable.pki.X509)
     }
     val label = (model as? WithPemLabel)?.pemLabel
@@ -56,8 +56,8 @@ internal fun <T : Encodable> Der.decodeSignumPem(
     val spec = when (type) {
         Certificate::class -> X509Certificate
         CertificationRequest::class -> Pkcs10CertificationRequest
-        CryptoPublicKey::class, EcdsaPublicKey::class, RsaPublicKey::class -> SubjectPublicKeyInfo
-        CryptoPrivateKey::class, CryptoPrivateKey.WithPublicKey::class, RsaPrivateKey::class,
+        PublicKey::class, EcdsaPublicKey::class, RsaPublicKey::class -> SubjectPublicKeyInfo
+        PrivateKey::class, PrivateKey.WithPublicKey::class, RsaPrivateKey::class,
         EcdsaPrivateKey::class, EcdsaPrivateKey.WithPublicKey::class, EcdsaPrivateKey.WithoutPublicKey::class -> Pkcs8PrivateKeyInfo
         else -> throw IllegalArgumentException("${type.simpleName} has no PEM label")
     }

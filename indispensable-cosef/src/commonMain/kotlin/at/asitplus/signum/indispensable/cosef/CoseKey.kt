@@ -54,7 +54,7 @@ data class CoseKey(
     val operations: Array<CoseKeyOperation>? = null,
     val baseIv: ByteArray? = null,
     val keyParams: CoseKeyParams?,
-) : SpecializedCryptoPublicKey, SpecializedSymmetricKey {
+) : SpecializedPublicKey, SpecializedSymmetricKey {
     override fun toString(): String {
         return "CoseKey(type=$type," +
                 " keyId=${keyId?.encodeToString(Base16Strict)}," +
@@ -100,12 +100,12 @@ data class CoseKey(
     }
 
     /**
-     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
-     * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey],
-     * [CoseKeyParams.EcYBoolParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
+     * @return a KmmResult wrapped [PublicKey] equivalent if conversion is possible (i.e. if all key params are set)
+     * or the first error. More details in either [CoseKeyParams.RsaParams.toPublicKey],
+     * [CoseKeyParams.EcYBoolParams.toPublicKey] or [CoseKeyParams.EcYByteArrayParams.toPblicKey]
      */
-    override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        keyParams?.toCryptoPublicKey()?.map { it.coseKid = this.keyId; it }
+    override fun toPublicKey(): KmmResult<PublicKey> =
+        keyParams?.toPublicKey()?.map { it.coseKid = this.keyId; it }
             ?: failure(IllegalArgumentException("No public key parameters!"))
 
 
@@ -123,7 +123,7 @@ data class CoseKey(
 
         fun fromDid(input: String): KmmResult<CoseKey> =
             catching {
-                CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow()
+                PublicKey.fromDid(input).toCoseKey().getOrThrow()
             }
 
         fun fromCoordinates(
@@ -132,7 +132,7 @@ data class CoseKey(
             y: ByteArray,
         ): KmmResult<CoseKey> =
             catching {
-                CryptoPublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
+                PublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
                     .getOrThrow()
             }
 
@@ -188,10 +188,10 @@ fun SymmetricKey<*, *, *>.toCoseKey(
 
 
 /**
- * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
+ * Converts [PublicKey] into a KmmResult wrapped [CoseKey]
  * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
  */
-fun CryptoPublicKey.toCoseKey(
+fun PublicKey.toCoseKey(
     algorithm: CoseAlgorithm.Signature? = null,
     keyId: ByteArray? = this.coseKid
 ): KmmResult<CoseKey> =
@@ -249,7 +249,7 @@ fun CryptoPublicKey.toCoseKey(
 
 
 private const val COSE_KID = "coseKid"
-var CryptoPublicKey.coseKid: ByteArray?
+var PublicKey.coseKid: ByteArray?
     get() = additionalProperties[COSE_KID]?.decodeToByteArray(Base64UrlStrict)
     set(value) {
         value?.also { additionalProperties[COSE_KID] = value.encodeToString(Base64UrlStrict) }

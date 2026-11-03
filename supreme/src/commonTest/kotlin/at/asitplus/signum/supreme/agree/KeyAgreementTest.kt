@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.agree
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.decodeFromPem
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.agree.keyAgreement
@@ -25,7 +25,7 @@ val KeyAgreementTest by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
         val other =
-            Signum.Der.decodeFromPem<CryptoPrivateKey>(pkcs8) as KeyAgreementPrivateValue.ECDH
+            Signum.Der.decodeFromPem<PrivateKey>(pkcs8) as KeyAgreementPrivateValue.ECDH
 
         val symmetric1 = self.keyAgreement(other.publicValue)
         val symmetric2 = other.keyAgreement(self.publicValue)

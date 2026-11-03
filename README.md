@@ -255,9 +255,9 @@ A variety of constants, resembling the well-known JCA names, are also available 
 
 As an example, here's how to verify a basic signature using a public key:
 ```kotlin
-val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
+val publicKey: EcdsaPublicKey = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
-val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
+val signature: Signature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
@@ -284,9 +284,9 @@ You can also further configure the verifier, for example to specify the `provide
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
 
 ```kotlin
-val publicKey: CryptoPublicKey.EC = TODO("You have this.")
+val publicKey: EcdsaPublicKey = TODO("You have this.")
 val plaintext: ByteArray = TODO("This is the message.")
-val signature: CryptoSignature.EC = TODO("And this is the signature.")
+val signature: EcdsaSignature = TODO("And this is the signature.")
     
 val verifier = SignatureAlgorithm.ECDSAwithSHA512.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
@@ -375,7 +375,7 @@ reconstructed.decrypt(
 
 ## ASN.1 Demo Reel
 
-Classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
+Classes like `PublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
 Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
 material.
@@ -387,13 +387,13 @@ material.
 val cert = X509Certificate.decodeFromDer(certBytes)
 
 when (val pk = cert.publicKey) {
-    is CryptoPublicKey.EC -> println(
+    is EcdsaPublicKey -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains an EC public key using curve ${pk.curve}"
     )
 
-    is CryptoPublicKey.RSA -> println(
+    is RsaPublicKey -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains a ${pk.bits.number} bit RSA public key"
@@ -508,7 +508,7 @@ Which produces the following output:
 
 ```kotlin
 val ecPublicKey: ECPublicKey = TODO("From platform-specific code")
-val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
+val publicKey = ecPublicKey.toPublicKey()
 
 val commonName = "DefaultCryptoService"
 val signatureAlgorithm = X509SignatureAlgorithm.ES256
@@ -517,7 +517,7 @@ val signatureAlgorithm = X509SignatureAlgorithm.ES256
 val tbsCsr = TbsCertificationRequest(
     version = 0,
     subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
-    publicKey = cryptoPublicKey
+    publicKey = publicKey
 )
 val signed: ByteArray = TODO("pass tbsCsr.encodeToDer() to platform code")
 val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)

@@ -20,13 +20,13 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1X509Certi
  */
 class TbsCertificationRequest(
     val subjectName: Name,
-    publicKeyProvider: () -> CryptoPublicKey,
+    publicKeyProvider: () -> PublicKey,
     val attributes: List<CsrAttribute>,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
     constructor(
         subjectName: Name,
-        publicKey: CryptoPublicKey,
+        publicKey: PublicKey,
         attributes: List<CsrAttribute> = listOf(),
     ) : this(subjectName, { publicKey }, attributes, null) {
         validateAttributes(attributes, allowExtensions = true)
@@ -40,7 +40,7 @@ class TbsCertificationRequest(
     @Throws(IllegalArgumentException::class)
     constructor(
         subjectName: Name,
-        publicKey: CryptoPublicKey,
+        publicKey: PublicKey,
         extensions: List<CertificateExtension>? = null,
         attributesWithoutExtensions: List<CsrAttribute>? = null,
     ) : this(
@@ -49,7 +49,7 @@ class TbsCertificationRequest(
         attributes = mergeAttributesWithExtensions(attributesWithoutExtensions, extensions),
     )
 
-    val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
+    val publicKey: PublicKey by lazy(publicKeyProvider)
 
     val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID } }
 
@@ -93,17 +93,17 @@ class TbsCertificationRequest(
 class CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     signatureAlgorithmProvider: () -> SignatureAlgorithm,
-    signatureProvider: () -> CryptoSignature,
+    signatureProvider: () -> Signature,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : Encodable {
     constructor(
         tbsCsr: TbsCertificationRequest,
         signatureAlgorithm: SignatureAlgorithm,
-        signature: CryptoSignature,
+        signature: Signature,
     ) : this(tbsCsr, { signatureAlgorithm }, { signature }, null)
 
     val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
-    val signature: CryptoSignature by lazy(signatureProvider)
+    val signature: Signature by lazy(signatureProvider)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

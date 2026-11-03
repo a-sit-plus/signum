@@ -361,7 +361,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
             return KeyPair(key, key.publicValue)
         }
 
-        override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asCryptoPublicKey().toAnsiX963Encoded(useCompressed = false)
+        override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asPublicKey().toAnsiX963Encoded(useCompressed = false)
         override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = EcdsaPublicKey.fromAnsiX963Bytes(dhGroup, pkXm)
         override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as EcdsaPrivateKey.WithPublicKey).privateKeyBytes
         override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EcdsaPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)

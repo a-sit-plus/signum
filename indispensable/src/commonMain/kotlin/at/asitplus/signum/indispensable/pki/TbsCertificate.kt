@@ -20,7 +20,7 @@ class TbsCertificate(
     val validFrom: Instant,
     val validUntil: Instant,
     val subjectName: Name,
-    publicKeyProvider: () -> CryptoPublicKey,
+    publicKeyProvider: () -> PublicKey,
     val issuerUniqueID: ByteArray?,
     val subjectUniqueID: ByteArray?,
     val extensions: List<CertificateExtension>,
@@ -34,7 +34,7 @@ class TbsCertificate(
         validFrom: Instant,
         validUntil: Instant,
         subjectName: Name,
-        publicKey: CryptoPublicKey,
+        publicKey: PublicKey,
         issuerUniqueID: ByteArray? = null,
         subjectUniqueID: ByteArray? = null,
         extensions: List<CertificateExtension> = emptyList(),
@@ -57,7 +57,7 @@ class TbsCertificate(
 
     val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
 
-    val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
+    val publicKey: PublicKey by lazy(publicKeyProvider)
 
     /**
      * Contains `SubjectAlternativeName`s parsed from extensions.

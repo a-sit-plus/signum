@@ -50,7 +50,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
         return@make parseSignature(signatureBytes)
     }
 
-    protected abstract fun parseSignature(signatureBytes: ByteArray): CryptoSignature
+    protected abstract fun parseSignature(signatureBytes: ByteArray): Signature
 
     class EC internal constructor(
         privateKey: OwnedCFValue<SecKeyRef>, override val publicKey: EcdsaPublicKey,
@@ -58,7 +58,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     ) : SupremeIosEphemeralSigner(privateKey), ExportableECDSASigner {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey() as EcdsaPrivateKey.WithPublicKey
+            privateKey.value.toPrivateKey() as EcdsaPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
             EcdsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
@@ -68,7 +68,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
                 SecKeyCopyKeyExchangeResult(
                     privateKey.value,
                     kSecKeyAlgorithmECDHKeyExchangeStandard,
-                    publicValue.asCryptoPublicKey().toSecKey().value,
+                    publicValue.asPublicKey().toSecKey().value,
                     parameters = null,
                     error
                 )
@@ -81,7 +81,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
     ) : SupremeIosEphemeralSigner(privateKey), at.asitplus.signum.indispensable.sign.ExportableRSASigner {
         @SecretExposure
         override suspend fun exportPrivateKey() =
-            privateKey.value.toCryptoPrivateKey() as RsaPrivateKey
+            privateKey.value.toPrivateKey() as RsaPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
             RsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes))
@@ -139,7 +139,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
 
     override fun createSignerForKey(
         algorithm: SignatureAlgorithm,
-        privateKey: CryptoPrivateKey.WithPublicKey,
+        privateKey: PrivateKey.WithPublicKey,
         config: InMemorySignerConfiguration
     ): Signer.WithExportableKey? =
         when (algorithm) {

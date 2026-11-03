@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.agree
 
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.fromAsn1Representation
 import at.asitplus.signum.indispensable.Encodable
@@ -14,17 +14,17 @@ import kotlin.jvm.JvmName
  */
 interface KeyAgreementPublicValue : Encodable {
     /**
-     * ECDH key agreement public value. Is always an EC public key, thus comes with [asCryptoPublicKey]
+     * ECDH key agreement public value. Is always an EC public key, thus comes with [asPublicKey]
      */
     interface ECDH: KeyAgreementPublicValue {
         /**
          * Returns this value as an [EcdsaPublicKey]
          */
-        fun asCryptoPublicKey(): EcdsaPublicKey
+        fun asPublicKey(): EcdsaPublicKey
     }
     companion object : Decodable<KeyAgreementPublicValue> {
         fun fromAsn1Representation(element: SubjectPublicKeyInfo) =
-            CryptoPublicKey.fromAsn1Representation(element) as KeyAgreementPublicValue
+            PublicKey.fromAsn1Representation(element) as KeyAgreementPublicValue
 
     }
 }

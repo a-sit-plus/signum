@@ -36,7 +36,7 @@ implementation("at.asitplus.signum:supreme:$supreme_version")
 
 ## Key Design Principles
 The Supreme KMP crypto provider works differently than the JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
-and a `SupremeVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
+and a `SupremeVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `PublicKey` as parameter.
 In addition, creating ephemeral keys is a dedicated operation, decoupled from a `Provider`.
 The actual implementation of cryptographic functionality is delegated to platform-native implementations.
 
@@ -105,7 +105,7 @@ options are passed.
 
 ## Key Management
 The provider enables creating, loading, and deleting signing keys.
-In addition, it is possible to create a signing key (and a signer) from a `CryptoPrivateKey`.
+In addition, it is possible to create a signing key (and a signer) from a `PrivateKey`.
 
 ### Key Generation
 A key's properties cannot be modified after its creation.
@@ -250,7 +250,7 @@ If the operation succeeds, a key was indeed deleted.
 If not, it usually means that a non-existent alias was specified.
 
 ### Private Key Management
-Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object:
+Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `PrivateKey` object:
 
 ```kotlin
 CryptoPrivateKey.decodeFromPem(pkcs8)
@@ -259,7 +259,7 @@ CryptoPrivateKey.decodeFromPem(pkcs8)
 These keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).
 Also, while encrypted keys can be parsed, decryption is currently not natively supported.
 
-#### Creating a Signer from a `CryptoPrivateKey`
+#### Creating a Signer from a `PrivateKey`
 
 !!! note inline end 
     Signers can only be created for private keys that have a public key and/or a curve attached. This may not be the case
@@ -292,7 +292,7 @@ val privKey = signer.exportPrivateKey()
 
 While all signers feature an `exportPrivateKey()` method, only some signers allow for actually exporting private key material.
 Platform-native signers prevent it (i.e. always return a `KmmResult.failure`) when trying to export private keys.
-Keys from signers created from a `CryptoPrivateKey` (see above), as well as ephemeral signers can be exported.
+Keys from signers created from a `PrivateKey` (see above), as well as ephemeral signers can be exported.
 
 
 ## Signature Creation

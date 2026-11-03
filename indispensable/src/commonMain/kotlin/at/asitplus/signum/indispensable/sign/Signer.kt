@@ -31,7 +31,7 @@ interface InMemoryKeysProvider {
      * - On JVM, see Signum's `SupremeEphemeralSigner`, which forwards to `JcaMappingProvider`.
      * - On iOS, see Signum's `SupremeEphemeralIOSSigner`.
      */
-    fun createSignerForKey(algorithm: SignatureAlgorithm, privateKey: CryptoPrivateKey.WithPublicKey, config: InMemorySignerConfiguration): Signer.WithExportableKey?
+    fun createSignerForKey(algorithm: SignatureAlgorithm, privateKey: PrivateKey.WithPublicKey, config: InMemorySignerConfiguration): Signer.WithExportableKey?
 }
 
 /**
@@ -58,7 +58,7 @@ interface InMemoryKeysProvider {
  */
 interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
-    val publicKey: CryptoPublicKey
+    val publicKey: PublicKey
 
     /** Whether the signer may ask for user interaction when [sign] is called */
     val mayRequireUserUnlock: Boolean get() = true
@@ -73,7 +73,7 @@ interface Signer {
 
     interface WithExportableKey : Signer {
         @SecretExposure
-        suspend fun exportPrivateKey(): CryptoPrivateKey.WithPublicKey
+        suspend fun exportPrivateKey(): PrivateKey.WithPublicKey
 
     }
 
@@ -134,7 +134,7 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
  */
 fun SignatureAlgorithm.signerFor(
-    privateKey: CryptoPrivateKey.WithPublicKey,
+    privateKey: PrivateKey.WithPublicKey,
     configure: DSLConfigureFn<InMemorySignerConfiguration> = null)
 : Signer.WithExportableKey {
     val config = DSL.resolve(::InMemorySignerConfiguration, configure)

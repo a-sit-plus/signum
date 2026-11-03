@@ -34,13 +34,13 @@ val RemainingEncodingTest by matrixSuite {
 
     "Signatures use contextual DER and retain raw values until an algorithm is supplied" {
         val rsa = RsaSignature.fromRawSignatureValue(byteArrayOf(1, 2, 3))
-        val signature: CryptoSignature = rsa
+        val signature: Signature = rsa
         val bytes = der.encodeToByteArray(signature)
         der.decodeFromByteArray<RsaSignature>(bytes) shouldBe rsa
         val raw = der.decodeFromByteArray<SignatureValue>(bytes)
         der.encodeToByteArray(raw) shouldBe bytes
         raw.withSignatureAlgorithm(RsaAlgorithm.withSHA256andPKCS1Padding) shouldBe rsa
-        shouldThrowAny { der.decodeFromByteArray<CryptoSignature>(bytes) }
+        shouldThrowAny { der.decodeFromByteArray<Signature>(bytes) }
 
         shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ZERO, BigInteger.ONE) }
         shouldThrowAny { EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.ZERO) }

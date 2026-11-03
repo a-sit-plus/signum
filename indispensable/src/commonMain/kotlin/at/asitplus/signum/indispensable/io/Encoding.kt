@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.iosEncoded
 
 import at.asitplus.awesn1.BERTags
 import at.asitplus.awesn1.serialization.decodeFromDer
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -118,9 +118,9 @@ private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
         Certificate(Signum.Der.decodeFromDer<Awesn1X509Certificate>(src))
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
-object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(
+object IosPublicKeySerializer : TransformingSerializerTemplate<PublicKey, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = CryptoPublicKey::iosEncoded,
+    encodeAs = PublicKey::iosEncoded,
     // TODO: medium term this needs to be replaced with a more sensible encoding
     //  but it needs to stay in sync with clients (cycle type identifier etc)
     decodeAs = { when (it[0].toUByte()) {

@@ -54,8 +54,8 @@ of working with and on cryptographic data.
 The main package housing all data classes is `at.asitplus.signum.indispensable`.
 It contains essentials such as:
 
-* `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
-* `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+* `PublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
+* `PrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
     * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
     * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
@@ -135,7 +135,7 @@ The following functions provide interop functionality with platform types.
 * `CryptoPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key
 * `CryptoPublicKey.EC.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
 * `CryptoPublicKey.RSA.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `PublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey` from a JCA Public Key
+* `PublicKey.toCryptoPublicKey()` creates a `PublicKey` from a JCA Public Key
 * `ECPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
 * `RSAPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
 
@@ -181,7 +181,7 @@ The following functions provide interop functionality with platform types.
 
 ## ASN.1 Engine Addons
 
-Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
+Relevant classes like `PublicKey`, `PrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
 This is an essential pattern, making the ASN.1 engine work the way it does.
 We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  
@@ -189,11 +189,11 @@ The following section provides more details on the various patterns used for ASN
 
 ### Generic Patterns
 
-As mentioned before, classes like `CryptoPublicKey`, `X509Certificate`, and `ObjectIdentifier` all implement `Asn1Encodable`
+As mentioned before, classes like `PublicKey`, `X509Certificate`, and `ObjectIdentifier` all implement `Asn1Encodable`
 while their companions implement `Asn1Decodable`.
 These interfaces essentially provide a mapping between custom types and low-level TLV structures that can directly be encoded, conforming to DER.
 
-In addition, `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
+In addition, `PublicKey`, `PrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
 while their respective companions implement `PemDecodable`.
 This brings about the `encodeToPem` and `decodeFromPem` functions doing what their names imply:
 Encode/decode to/from PEM strings.

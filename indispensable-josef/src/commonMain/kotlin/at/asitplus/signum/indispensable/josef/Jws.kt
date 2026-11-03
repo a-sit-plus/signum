@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
@@ -64,7 +64,7 @@ sealed class JWS {
     }
 
     companion object {
-        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): CryptoSignature =
+        fun getSignature(algorithm: JwsAlgorithm, plainSignature: ByteArray): Signature =
             when (algorithm) {
                 is JwsAlgorithm.Signature.EC -> EcdsaSignature.fromRawBytes(algorithm.ecCurve, plainSignature)
                 is JwsAlgorithm.Signature.RSA -> RsaSignature(plainSignature)

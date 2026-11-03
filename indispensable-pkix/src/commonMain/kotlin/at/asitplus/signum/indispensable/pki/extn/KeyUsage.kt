@@ -26,7 +26,7 @@ class KeyUsage internal constructor(
             oid = KnownOIDs.keyUsage, critical = true,
             // extnValue is the DER of a BIT STRING (what fromAsn1Representation parses back) — NOT the
             // raw BitSet bytes, which would fail to re-decode.
-            value = Asn1BitString(BitSet().apply { usageBits.forEach { this.set(it.index) } }).encodeToTlv().derEncoded
+            value = Asn1NamedBitList(BitSet().apply { usageBits.forEach { this.set(it.index) } }).encodeToTlv().derEncoded
         ),
         keyUsage = usageBits.toSet(),
         sourceRepresentation = null,

@@ -18,7 +18,7 @@ import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
 import at.asitplus.signum.indispensable.invoke
 import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
@@ -37,7 +37,7 @@ class RsaPublicKey(
     /** public exponent */
     val e: Asn1Integer.Positive,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-) : CryptoPublicKey {
+) : PublicKey {
 
     override val additionalProperties = mutableMapOf<String, String>()
 
@@ -141,11 +141,11 @@ class EcdsaPublicKey(
     val publicPoint: ECPoint.Normalized,
     val preferCompressedRepresentation: Boolean,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
+) : PublicKey, KeyAgreementPublicValue.ECDH {
 
     override val additionalProperties = mutableMapOf<String, String>()
 
-    override fun asCryptoPublicKey() = this
+    override fun asPublicKey() = this
 
     val curve get() = publicPoint.curve
     val x get() = publicPoint.x
@@ -225,7 +225,7 @@ class EcdsaPublicKey(
             }
         }
 
-        @Deprecated("Use SecKeyRef.toCryptoPublicKey instead", ReplaceWith("fromAnsiX963Bytes(ECCurve.fromIosEncodedPublicKeyLength(src.size)!!, src)"))
+        @Deprecated("Use SecKeyRef.toPublicKey instead", ReplaceWith("fromAnsiX963Bytes(ECCurve.fromIosEncodedPublicKeyLength(src.size)!!, src)"))
         fun fromIosEncoded(src: ByteArray) =
             fromAnsiX963Bytes(
                 ECCurve.fromIosEncodedPublicKeyLength(src.size)
@@ -238,7 +238,7 @@ class EcdsaPublicKey(
 }
 
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
-    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
+    override fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? = when (value) {
         is RsaPublicKey -> SubjectPublicKeyInfo.rsa(value.n, value.e, Signum.Der)
         is EcdsaPublicKey -> SubjectPublicKeyInfo.from(at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Uncompressed(value.curve.oid, value.xBytes, value.yBytes))
         else -> null

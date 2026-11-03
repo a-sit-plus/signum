@@ -40,7 +40,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
             "None" -> null
             else -> WellKnownDigest.entries.first { it.name == test.dig }
         }
-        val key = Signum.Der.decodeFromByteArray<CryptoPublicKey>(Base64.decode(test.key)) as EcdsaPublicKey
+        val key = Signum.Der.decodeFromByteArray<PublicKey>(Base64.decode(test.key)) as EcdsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = EcdsaSignature.fromRawSignatureValue(Base64.decode(test.sig))

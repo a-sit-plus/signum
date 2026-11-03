@@ -16,7 +16,7 @@ import at.asitplus.awesn1.rsaEncryption
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.ecmath.times
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.indispensable.ECCurve
@@ -34,7 +34,7 @@ class RsaPrivateKey(
     parametersProvider: () -> Parameters,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val attributes: Set<Asn1Element>?,
-) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
+) : PrivateKey, PrivateKey.WithPublicKey {
 
     /** The RSA components form one unit: every semantic access requires valid CRT relationships. */
     data class Parameters(
@@ -140,7 +140,7 @@ sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger,
     override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val attributes: Set<Asn1Element>?,
-) : CryptoPrivateKey {
+) : PrivateKey {
 
     abstract val privateKeyBytes: ByteArray
 
@@ -159,7 +159,7 @@ sealed class EcdsaPrivateKey private constructor(
         sourceRepresentation: Pair<Encodable.Representation, Any>?,
         attributes: Set<Asn1Element>?,
     ) : EcdsaPrivateKey(privateKey, sourceRepresentation, attributes),
-        CryptoPrivateKey.WithPublicKey,
+        PrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
         constructor(
@@ -282,13 +282,13 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
     value.toAsn1Integer() as Asn1Integer.Positive
 
 object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
-    override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
+    override fun encodeToAsn1(value: PrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
         is RsaPrivateKey -> Pkcs8PrivateKeyInfo.Companion(value.asPKCS1, value.attributes, Signum.Der)
         is EcdsaPrivateKey -> Pkcs8PrivateKeyInfo.Companion(value.asSEC1, value.curveOidForPkcs8(), value.attributes, Signum.Der)
         else -> null
     }
 
-    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
+    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : PrivateKey? {
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {
             RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1Representation(privateKeyInfo)
