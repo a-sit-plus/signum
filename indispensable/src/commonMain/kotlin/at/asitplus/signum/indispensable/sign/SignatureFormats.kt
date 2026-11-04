@@ -30,53 +30,46 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlin.getValue
 
-private data class EcSignatureContent(
+sealed class EcdsaSignature
+@Throws(IllegalArgumentException::class) constructor(
     val r: BigInteger,
     val s: BigInteger,
-) {
+    providedAsn1Representation: X509SignatureValue? = null,
+) : CryptoSignature {
+
     init {
         require(r.isPositive) { "r must be positive" }
         require(s.isPositive) { "s must be positive" }
     }
-}
 
-sealed class EcdsaSignature
-@Throws(IllegalArgumentException::class) private constructor(
-    providedContent: EcSignatureContent?,
-    private val providedAsn1Representation: X509SignatureValue?,
-) : CryptoSignature {
-    init { require((providedContent != null) != (providedAsn1Representation != null)) }
+    constructor(info: EcdsaSigValue, providedAsn1Representation: X509SignatureValue?) : this(
+        info.r.toBigInteger(),
+        info.s.toBigInteger(),
+        providedAsn1Representation,
+    )
 
-    private val content: EcSignatureContent by providedContent orLazy {
-        providedAsn1Representation!!.toEcdsaSigValue()
-            .let { (r,s) -> EcSignatureContent(r.toBigInteger(), s.toBigInteger()) }
-    }
-
-    val r: BigInteger get() = content.r
-
-    val s: BigInteger get() = content.s
+    constructor(asn1Representation: X509SignatureValue) : this(
+        asn1Representation.toEcdsaSigValue(), asn1Representation)
 
     override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
         EcdsaSigValue(r.toAsn1Integer(), s.toAsn1Integer()).toX509SignatureValue()
     }
 
     override fun equals(other: Any?): Boolean {
+        if (this === other) return true
         if (other !is EcdsaSignature) return false
-        return s == other.s && r == other.r
+        return r == other.r && s == other.s
     }
 
     override fun toString() = humanReadableString
 
     override fun hashCode() = 31 * s.hashCode() + r.hashCode()
 
-    class IndefiniteLength private constructor(
-        providedContent: EcSignatureContent?,
-        providedAsn1Representation: X509SignatureValue?,
-    ) : EcdsaSignature(providedContent, providedAsn1Representation) {
+    class IndefiniteLength : EcdsaSignature {
 
-        internal constructor(r: BigInteger, s: BigInteger) : this(EcSignatureContent(r, s), null)
+        internal constructor(r: BigInteger, s: BigInteger) : super(r, s)
 
-        internal constructor(asn1Representation: X509SignatureValue) : this(null, asn1Representation)
+        internal constructor(asn1Representation: X509SignatureValue) : super(asn1Representation)
 
         fun withScalarByteLength(l: UInt) =
             DefiniteLength(l, r, s)
@@ -114,7 +107,7 @@ sealed class EcdsaSignature
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-    ) : EcdsaSignature(EcSignatureContent(r, s), null) {
+    ) : EcdsaSignature(r, s, null) {
         init {
             val max = scalarByteLength.toInt() * 8
 
@@ -183,19 +176,13 @@ sealed class EcdsaSignature
     }
 }
 
-class RsaSignature private constructor(
-    providedRawBytes: ByteArray?,
-    providedAsn1Representation: X509SignatureValue?,
+class RsaSignature(
+    val rawBytes: ByteArray,
+    providedAsn1Representation: X509SignatureValue? = null,
 ) : CryptoSignature {
-    init { require((providedRawBytes != null) != (providedAsn1Representation != null)) }
-    constructor(rawBytes: ByteArray) : this(rawBytes, null)
 
     override val asn1Representation: X509SignatureValue by providedAsn1Representation orLazy {
         X509SignatureValue(rawBytes)
-    }
-
-    val rawBytes: ByteArray by providedRawBytes orLazy {
-        asn1Representation.rawBytes
     }
 
     override val joseBytes get() = rawBytes
@@ -212,7 +199,7 @@ class RsaSignature private constructor(
 
     companion object : DerDecodable<X509SignatureValue, RsaSignature> {
         override fun decodeFromTlv(element: X509SignatureValue, der: Der): RsaSignature =
-            RsaSignature(null, element)
+            RsaSignature(element.rawBytes, element)
         fun fromRawSignatureValue(input: ByteArray) = RsaSignature(input)
         @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
         fun parseFromJca(input: ByteArray) = fromRawSignatureValue(input)

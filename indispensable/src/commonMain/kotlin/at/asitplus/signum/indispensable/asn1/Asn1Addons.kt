@@ -70,13 +70,15 @@ fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigIntege
  *         Ensures compliance with DER minimum integer encoding constraints.
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
-fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
+fun CryptoRand.nextBigInteger(nBytes: Int): BigInteger {
     require(nBytes > 0) { "nBytes must be positive" }
     return ByteArray(nBytes)
         .also { nextBytes(it) }
         .let(BigInteger::fromTwosComplementByteArray)
-        .toAsn1Integer()
 }
+
+fun CryptoRand.nextAsn1Integer(nBytes: Int) =
+    nextBigInteger(nBytes).toAsn1Integer()
 
 /**
  * Generates a random positive ASN.1 integer that adheres to DER minimal encoding constraints
@@ -87,19 +89,20 @@ fun CryptoRand.nextAsn1Integer(nBytes: Int): Asn1Integer {
  *         Ensures compliance with DER minimum integer encoding constraints.
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
-tailrec fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positive {
+tailrec fun CryptoRand.nextPositiveBigInteger(nBytes: Int): BigInteger {
     require(nBytes > 0) { "nBytes must be positive" }
     return ByteArray(nBytes)
         .also { nextBytes(it) }
         .also { it[0] = it[0] and 0x7f }
         .let(BigInteger::fromTwosComplementByteArray)
         .also {
-            if (it.isZero()) return nextPositiveAsn1Integer(nBytes)
+            if (it.isZero()) return nextPositiveBigInteger(nBytes)
             /** tail recursion */
         }
-        .toAsn1Integer()
-            as Asn1Integer.Positive
 }
+
+fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int) =
+    nextPositiveBigInteger(nBytes).toAsn1Integer() as Asn1Integer.Positive
 
 /**
  * Generates a random negative ASN.1 integer that adheres to DER minimal encoding constraints
@@ -110,14 +113,15 @@ tailrec fun CryptoRand.nextPositiveAsn1Integer(nBytes: Int): Asn1Integer.Positiv
  *         Ensures compliance with DER minimum integer encoding constraints.
  * @throws IllegalArgumentException if [nBytes] is not greater than zero.
  */
-fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int): Asn1Integer.Negative {
+fun CryptoRand.nextNegativeBigInteger(nBytes: Int): BigInteger {
     return ByteArray(nBytes)
         .also { nextBytes(it) }
         .also { it[0] = it[0] or 0x80.toByte() }
         .let(BigInteger::fromTwosComplementByteArray)
-        .toAsn1Integer()
-            as Asn1Integer.Negative
 }
+
+fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int) =
+    nextNegativeBigInteger(nBytes).toAsn1Integer() as Asn1Integer.Negative
 
 /** @return `true` if no two elements share the same [oid][Identifiable.oid]. */
 fun Collection<Identifiable>.allDistinctByOids(): Boolean =

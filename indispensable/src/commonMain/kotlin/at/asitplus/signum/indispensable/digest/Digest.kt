@@ -4,6 +4,8 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
@@ -16,6 +18,23 @@ interface Digest : DerEncodable<X509AlgorithmIdentifier> {
     /** The length of the hash function's fixed-length digest values */
     val outputLength: BitLength
 
+    @OptIn(SignumInternals::class)
+    private class Unknown(
+        override val asn1Representation: X509AlgorithmIdentifier,
+        override val lookupResult: UnsupportedCryptoException
+    ) : Digest, ServiceLoader.UnknownShim {
+        override fun toString() = "Unknown Digest ($asn1Representation)"
+        override val name get() = throw lookupResult
+        override val inputBlockSize get() = throw lookupResult
+        override val outputLength get() = throw lookupResult
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Unknown) return false
+            return asn1Representation == other.asn1Representation
+        }
+        override fun hashCode() = asn1Representation.hashCode()
+    }
+
     companion object : DerDecodable<X509AlgorithmIdentifier, Digest> {
         init { Indispensable.init() }
         val SHA1 inline get() = WellKnownDigest.SHA1
@@ -24,7 +43,7 @@ interface Digest : DerEncodable<X509AlgorithmIdentifier> {
         val SHA512 inline get() = WellKnownDigest.SHA512
 
         override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): Digest = runRethrowing {
-            ServiceLoader.load<DigestProvider>().get(element, DigestProvider::getDigest)
+            ServiceLoader.load<DigestProvider>().getWithUnknown(element, ::Unknown, DigestProvider::getDigest)
         }
     }
 }

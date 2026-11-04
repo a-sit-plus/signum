@@ -18,6 +18,7 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.testballoon.matrix.matrixSuite
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
@@ -164,10 +165,10 @@ val ExtensibilityTest by matrixSuite {
 
     "X.509 resolution" {
         SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
-        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.Key.ALG) }
+        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.Key.ALG).preHashedSignatureFormat }
 
         val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1Representation.copy(algorithmIdentifier = CursorySignatureScheme.ALG)
-        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.decodeFromTlv(keyWithAlgOid) }
+        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.decodeFromTlv(keyWithAlgOid).additionalProperties }
     }
 
     "Signing" {
@@ -192,7 +193,7 @@ val ExtensibilityTest by matrixSuite {
                 val certificateName =
                     if (useEmptySubject) X500Name.EMPTY else X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
                 val tbsCertificate = TbsCertificate(
-                    serialNumber = Asn1Integer.ONE,
+                    serialNumber = BigInteger.ONE,
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 60.minutes,
                     signatureAlgorithm = CursorySignatureScheme,

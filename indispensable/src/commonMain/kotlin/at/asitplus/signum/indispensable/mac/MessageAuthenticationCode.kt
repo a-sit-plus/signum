@@ -6,6 +6,8 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
@@ -34,12 +36,27 @@ interface MessageAuthenticationCode : DerEncodable<X509AlgorithmIdentifier> {
         }
     }
 
+    @OptIn(SignumInternals::class)
+    private class Unknown(
+        override val asn1Representation: X509AlgorithmIdentifier,
+        override val lookupResult: UnsupportedCryptoException
+    ): MessageAuthenticationCode, ServiceLoader.UnknownShim  {
+        override fun toString() = "Unknown MessageAuthenticationCode ($asn1Representation)"
+        override val outputLength: BitLength get() = throw lookupResult
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Unknown) return false
+            return asn1Representation == other.asn1Representation
+        }
+        override fun hashCode() = asn1Representation.hashCode()
+    }
+
     companion object : DerDecodable<X509AlgorithmIdentifier, MessageAuthenticationCode> {
         init { Indispensable.init() }
 
         override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): MessageAuthenticationCode = runRethrowing {
             ServiceLoader.load<MessageAuthenticationCodeProvider>()
-                .get(element, MessageAuthenticationCodeProvider::getMAC)
+                .getWithUnknown(element, ::Unknown, MessageAuthenticationCodeProvider::getMAC)
         }
     }
 }

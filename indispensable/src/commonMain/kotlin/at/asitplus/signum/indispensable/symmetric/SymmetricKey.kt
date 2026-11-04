@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SecretExposure
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -162,7 +163,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
         val macKey: KmmResult<ByteArray>
 
 
-        class RequiringNonce @HazardousMaterials("This constructor is public to enable testing. DO NOT USE IT!") constructor(
+        class RequiringNonce @SignumInternals("This constructor is public to enable testing. DO NOT USE IT!") constructor(
             override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
             encryptionKey: ByteArray,
             dedicatedMacKey: ByteArray,

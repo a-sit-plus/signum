@@ -1,3 +1,5 @@
+@file:OptIn(SignumInternals::class)
+
 package at.asitplus.signum
 
 import at.asitplus.nonFatalOrThrow
@@ -17,8 +19,15 @@ object ServiceLoader {
     /** This needs the same exact class as [get] will use. You cannot register for intermediate interfaces! */
     inline fun <reified T: Any> register(it: T) { register(it, T::class) }
 
+
+    @SignumInternals
+    interface UnknownShim {
+        val lookupResult: UnsupportedCryptoException
+    }
+
     class ServiceProviders<out T: Any>(@PublishedApi internal val className: String, private val inner: Iterable<T>): Iterable<T> by inner {
         inline fun <reified KeyT, ResultT> get(what: KeyT, loadBlock: T.(KeyT)->(ResultT?)): ResultT {
+            if (what is UnknownShim) throw what.lookupResult
             val failures = mutableListOf<Pair<String, Throwable?>>()
             if (none()) throw UnsupportedCryptoException("No $className is loaded. Did you forget init() somewhere?")
             for (provider in this) {
@@ -50,6 +59,15 @@ object ServiceLoader {
                 failure?.let(x::addSuppressed)
             }
             throw x
+        }
+
+        @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
+        inline fun <reified KeyT, ResultT, UnsupportedT> getWithUnknown(
+            what: KeyT, defaultBuilder: (KeyT, UnsupportedCryptoException)->ResultT, loadBlock: T.(KeyT)->(ResultT?)
+        ) where UnsupportedT : ResultT, UnsupportedT : UnknownShim = try {
+            get(what, loadBlock)
+        } catch (x: UnsupportedCryptoException) {
+            defaultBuilder(what, x)
         }
     }
     @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =

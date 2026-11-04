@@ -1,7 +1,8 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.awesn1.nextPositiveBigInteger
+import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
@@ -243,7 +244,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
             val publicKey = keyPair.public.toCryptoPublicKey()
             val tbsCert = TbsCertificate(
-                serialNumber = CryptoRand.Default.nextPositiveAsn1Integer(20),
+                serialNumber = CryptoRand.Default.nextPositiveBigInteger(20),
                 signatureAlgorithm = certAlg,
                 issuerName = cn,
                 subjectName = cn,

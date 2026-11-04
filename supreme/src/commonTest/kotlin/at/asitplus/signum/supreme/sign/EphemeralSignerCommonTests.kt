@@ -247,7 +247,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val tbsCrt = TbsCertificate(
-                    serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
+                    serialNumber = InsecureRandom.nextPositiveBigInteger(10),
                     signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Foo")),
                     validFrom = Clock.System.now(),
@@ -297,7 +297,7 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val tbsCrt = TbsCertificate(
-                    serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
+                    serialNumber = InsecureRandom.nextPositiveBigInteger(10),
                     signatureAlgorithm = signer.signatureAlgorithm,
                     issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Foo")),
                     validFrom = Clock.System.now(),
