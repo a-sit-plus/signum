@@ -1,7 +1,10 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoSignature
+import kotlin.coroutines.coroutineContext
 import kotlin.jvm.JvmInline
+import kotlinx.coroutines.ensureActive
 
 open class UserInitiatedCancellation(message: String?, cause: Throwable?): Throwable(message, cause)
 class UnlockFailed(message: String? = null, cause: Throwable? = null) : UserInitiatedCancellation(message, cause)
@@ -13,9 +16,23 @@ sealed interface SignatureResult<out T: CryptoSignature> {
     @JvmInline value class Failure(val problem: UserInitiatedCancellation): SignatureResult<Nothing>
 
     companion object {
-        inline fun <SigT: CryptoSignature> make(fn: ()->SigT): SignatureResult<SigT> =
-            try {Success(fn()) }
-            catch (x: UserInitiatedCancellation) { Failure(x) }
+        suspend inline fun <SigT: CryptoSignature> make(fn: ()->SigT): SignatureResult<SigT> {
+            coroutineContext.ensureActive()
+            return catchingUnwrapped {
+                val res = fn()
+                coroutineContext.ensureActive()
+                res
+            }.fold(
+                onSuccess = { Success(it) },
+                onFailure = {
+                    coroutineContext.ensureActive()
+                    when (it) {
+                        is UserInitiatedCancellation -> Failure(it)
+                        else -> throw it
+                    }
+                }
+            )
+        }
     }
 }
 /** Retrieves the contained signature, asserting it exists. If it does not exist, throws the contained problem. */
