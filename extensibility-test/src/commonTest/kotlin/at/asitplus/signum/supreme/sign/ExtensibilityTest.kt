@@ -18,6 +18,7 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.testballoon.matrix.matrixSuite
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
@@ -192,7 +193,7 @@ val ExtensibilityTest by matrixSuite {
                 val certificateName =
                     if (useEmptySubject) X500Name.EMPTY else X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
                 val tbsCertificate = TbsCertificate(
-                    serialNumber = Asn1Integer.ONE,
+                    serialNumber = BigInteger.ONE,
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 60.minutes,
                     signatureAlgorithm = CursorySignatureScheme,

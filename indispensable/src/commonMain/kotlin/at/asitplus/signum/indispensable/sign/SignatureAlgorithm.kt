@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable.sign
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.DerDecodable
 import at.asitplus.signum.indispensable.DerEncodable
 import at.asitplus.signum.indispensable.Indispensable
@@ -22,12 +22,13 @@ interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
     /** The signature input format in which this algorithm accepts pre-hashed input, if any */
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
+    @OptIn(SignumInternals::class)
     private class Unknown(
         override val asn1Representation: X509AlgorithmIdentifier,
-        private val x: UnsupportedCryptoException
-    ) : SignatureAlgorithm {
-        override fun toString() = throw x
-        override val preHashedSignatureFormat: SignatureInputFormat get() = throw x
+        override val lookupResult: UnsupportedCryptoException
+    ) : SignatureAlgorithm, ServiceLoader.UnknownShim {
+        override fun toString() = "Unknown SignatureAlgorithm($asn1Representation)"
+        override val preHashedSignatureFormat: SignatureInputFormat get() = throw lookupResult
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is Unknown) return false
@@ -71,7 +72,7 @@ interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
 
         override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der) =
             ServiceLoader.load<SignatureAlgorithmsProvider>()
-                .getWithDefault(element, ::Unknown, SignatureAlgorithmsProvider::getAlgorithm)
+                .getWithUnknown(element, ::Unknown, SignatureAlgorithmsProvider::getAlgorithm)
 
         @Deprecated("Use decodeFromTlv", replaceWith = ReplaceWith("decodeFromTlv(identifier)"))
         operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =

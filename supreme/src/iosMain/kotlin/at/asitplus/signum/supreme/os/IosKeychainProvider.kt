@@ -6,6 +6,7 @@ import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
@@ -112,7 +113,7 @@ sealed class IosSigner(final override val alias: String,
     override val attestation get() = metadata.attestation
 
     protected interface PrivateKeyManager { suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration): OwnedCFValue<SecKeyRef> }
-    @HazardousMaterials
+    @SignumInternals
     /** For InternalsAccessor ONLY!!! */
     internal val DONOTUSEsecKeyRef get() = runBlocking { privateKeyManager.get(null, null, IosSignerSigningConfiguration()) }
     protected val privateKeyManager = object : PrivateKeyManager {

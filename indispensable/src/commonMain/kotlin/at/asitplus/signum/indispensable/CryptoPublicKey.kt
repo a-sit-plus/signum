@@ -9,6 +9,7 @@ import at.asitplus.awesn1.serialization.Der
 import at.asitplus.catching
 import at.asitplus.io.*
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
@@ -46,13 +47,15 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
 
     override val pemLabel: String get() = canonicalPemLabel
 
+    @OptIn(SignumInternals::class)
     private class Unknown(
         override val asn1Representation: SubjectPublicKeyInfo,
-        private val x: UnsupportedCryptoException,
-    ) : CryptoPublicKey {
-        override val didKeyBytes get() = throw x
-        override val didCodec get() = throw x
-        override val additionalProperties: MutableMap<String, String> get() = throw x
+        override val lookupResult: UnsupportedCryptoException,
+    ) : CryptoPublicKey, ServiceLoader.UnknownShim {
+        override fun toString() = "Unknown CryptoPublicKey ($asn1Representation)"
+        override val didKeyBytes get() = throw lookupResult
+        override val didCodec get() = throw lookupResult
+        override val additionalProperties: MutableMap<String, String> get() = throw lookupResult
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is Unknown) return false
@@ -85,7 +88,7 @@ interface CryptoPublicKey : DerPemEncodable<SubjectPublicKeyInfo> {
         }
 
         operator fun invoke(asn1Representation: SubjectPublicKeyInfo) =
-            ServiceLoader.load<PublicKeyFormatProvider>().getWithDefault(
+            ServiceLoader.load<PublicKeyFormatProvider>().getWithUnknown(
                 asn1Representation, ::Unknown, PublicKeyFormatProvider::decodeFromAsn1)
 
         @Throws(Asn1Exception::class)

@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.awesn1.nextPositiveBigInteger
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.io.MultiBase
@@ -56,6 +56,7 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.parseJCASignature
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 
 val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
 
@@ -82,7 +83,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                 // create certificate with bouncycastle
                 val notBeforeDate = Date.from(Instant.now())
                 val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
-                val serialNumber = InsecureRandom.nextPositiveAsn1Integer(10)
+                val serialNumber = InsecureRandom.nextPositiveBigInteger(10)
                 val commonName = "DefaultCryptoService"
                 val issuer = X500Name("CN=$commonName")
                 val builder = X509v3CertificateBuilder(
@@ -152,7 +153,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
-        val serialNumber = InsecureRandom.nextPositiveAsn1Integer(10)
+        val serialNumber = InsecureRandom.nextPositiveBigInteger(10)
         val commonName = "DefaultCryptoService"
         val signatureAlgorithm = EcdsaAlgorithm.withSHA256
 
@@ -245,7 +246,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
         val validFromDate = (notBeforeDate.toInstant().toKotlinInstant())
         val validUntilDate = (notAfterDate.toInstant().toKotlinInstant())
-        val serialNumber= InsecureRandom.nextPositiveAsn1Integer(10)
+        val serialNumber= InsecureRandom.nextPositiveBigInteger(10)
         val commonName = "DefaultCryptoService"
 
         val signatureAlgorithm256 = EcdsaAlgorithm.withSHA256

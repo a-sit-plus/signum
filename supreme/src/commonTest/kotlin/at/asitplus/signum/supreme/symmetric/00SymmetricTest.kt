@@ -1,4 +1,4 @@
-@file:OptIn(SecretExposure::class)
+@file:OptIn(SecretExposure::class, HazardousMaterials::class, SignumInternals::class)
 
 package at.asitplus.signum.supreme.symmetric
 
@@ -6,6 +6,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.awesn1.encoding.encodeTo4Bytes
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
@@ -27,7 +28,6 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Clock
 
-@OptIn(HazardousMaterials::class)
 val SymmetricTest by matrixSuite {
 
     "README" {

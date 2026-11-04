@@ -15,6 +15,7 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.internals.orLazy
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -25,11 +26,9 @@ import kotlin.time.Instant
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed.
- *
- * @param version semantic certificate version; DER encodes this as version - 1.
  */
-class TbsCertificate constructor(
-    val serialNumber: Asn1Integer,
+class TbsCertificate private constructor(
+    val serialNumber: BigInteger,
     val signatureAlgorithm: SignatureAlgorithm,
     val issuerName: Name,
     validFrom: Instant,
@@ -42,11 +41,33 @@ class TbsCertificate constructor(
     providedAsn1Representation: X509TbsCertificate? = null,
 ) : DerEncodable<X509TbsCertificate> {
 
+    constructor(
+        serialNumber: BigInteger,
+        signatureAlgorithm: SignatureAlgorithm,
+        issuerName: Name,
+        validFrom: Instant,
+        validUntil: Instant,
+        subjectName: Name,
+        publicKey: CryptoPublicKey,
+        issuerUniqueID: ByteArray? = null,
+        subjectUniqueID: ByteArray? = null,
+        extensions: List<CertificateExtension> = emptyList(),
+    ) : this(
+        serialNumber, signatureAlgorithm, issuerName, validFrom, validUntil, subjectName,
+        publicKey, issuerUniqueID, subjectUniqueID, extensions, null
+    ) {
+        serialNumber.encodeToAsn1ContentBytes().size.let { size ->
+            runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
+        }
+        runRethrowing { require(serialNumber.isPositive) { "Serial Number must be positive" } }
+        validateExtensions(extensions)
+    }
+
     val validFrom = validFrom.secondsCapped()
     val validUntil = validUntil.secondsCapped()
 
     constructor(asn1Representation: X509TbsCertificate) : this(
-        serialNumber = asn1Representation.serialNumber,
+        serialNumber = asn1Representation.serialNumber.toBigInteger(),
         signatureAlgorithm = SignatureAlgorithm.decodeFromTlv(asn1Representation.signatureAlgorithm),
         issuerName = X500Name(asn1Representation.issuerName.map(::RelativeDistinguishedName), false),
         validFrom = asn1Representation.validity.validFrom.instant,
@@ -88,18 +109,9 @@ class TbsCertificate constructor(
         return result
     }
 
-
-    init {
-        serialNumber.encodeToAsn1ContentBytes().size.let { size ->
-            runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
-        }
-        runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
-        validateExtensions(extensions)
-    }
-
     override val asn1Representation: X509TbsCertificate by providedAsn1Representation orLazy {
         X509TbsCertificate(
-            serialNumber = serialNumber,
+            serialNumber = serialNumber.toAsn1Integer(),
             signatureAlgorithm = signatureAlgorithm.asn1Representation,
             issuerName = issuerName.requireX509().asn1Representation,
             validFrom = Asn1Time.SecondsCapped(validFrom),

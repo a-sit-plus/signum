@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.awesn1.nextPositiveBigInteger
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
@@ -150,7 +150,7 @@ val JwkTest  by matrixSuite {
 
 private fun randomCertificate() = Certificate(
     TbsCertificate(
-        serialNumber = InsecureRandom.nextPositiveAsn1Integer(10),
+        serialNumber = InsecureRandom.nextPositiveBigInteger(10),
         issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey(),

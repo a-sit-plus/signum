@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.awesn1.nextAsn1Integer
+import at.asitplus.awesn1.nextBigInteger
 import at.asitplus.awesn1.nextNegativeAsn1Integer
 import at.asitplus.awesn1.nextPositiveAsn1Integer
+import at.asitplus.awesn1.nextPositiveBigInteger
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite

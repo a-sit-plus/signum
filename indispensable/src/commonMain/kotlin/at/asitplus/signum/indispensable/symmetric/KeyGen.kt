@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.awesn1.encoding.bitLength
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.misc.BitLength
 import org.kotlincrypto.random.CryptoRand
 import kotlin.jvm.JvmName
@@ -88,11 +89,10 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
     dedicatedMacKey?.let {
         require(it.isNotEmpty()) { "Dedicated MAC key is empty!" }
     }
-    @OptIn(HazardousMaterials::class)
     return when (this.requiresNonce()) {
         true -> when (isAuthenticated()) {
             true -> when (isIntegrated()) {
-                false -> SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
+                false -> @OptIn(SignumInternals::class) SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
                 true -> SymmetricKey.Integrated.Authenticating.RequiringNonce(this, bytes)
             }
 
