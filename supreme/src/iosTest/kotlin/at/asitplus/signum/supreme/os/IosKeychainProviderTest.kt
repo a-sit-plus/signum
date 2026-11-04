@@ -2,13 +2,47 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.catching
 import at.asitplus.shouldSucceed
+import at.asitplus.signum.dsl.IosSignerConfiguration
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.supreme.azString
-import at.asitplus.testballoon.matrix.matrixSuite
+import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 
 val IosKeychainProviderTest by matrixSuite {
+    "Authentication timeout readback" - {
+        data(
+            listOf(null, Duration.ZERO, 10.seconds),
+            nameFn = { it?.toString() ?: "no authentication" },
+        ) test { authenticationTimeout ->
+            val metadata = IosKeyMetadata(
+                attestation = null,
+                rawUnlockTimeout = authenticationTimeout,
+                algSpecific = Json.encodeToJsonElement(IosKeyAlgSpecificMetadata.ECDSA(setOf(Digest.SHA256))),
+            ).let { Json.decodeFromString<IosKeyMetadata>(Json.encodeToString(it)) }
+            val publicKey = with(EcdsaPublicKey) {
+                ECCurve.SECP_256_R_1.generator.asPublicKey()
+            }
+            val signer = IosSigner.ECDSA(
+                alias = "restored-key",
+                publicKey = publicKey,
+                metadata = metadata,
+                config = IosSignerConfiguration(),
+            )
+
+            signer.authenticationTimeout shouldBe authenticationTimeout
+            signer.needsAuthentication shouldBe (authenticationTimeout != null)
+            signer.needsAuthenticationForEveryUse shouldBe (authenticationTimeout == Duration.ZERO)
+        }
+    }
+
     "Creating a key with an alias that already exists" - {
 
         "fails but leaves the existing key untouched when the new config is broken" {
