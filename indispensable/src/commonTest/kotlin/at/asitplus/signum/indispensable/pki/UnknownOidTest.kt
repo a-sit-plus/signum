@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.testballoon.matrix.matrixSuite
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -82,7 +83,7 @@ val UnknownOidTest by matrixSuite {
         val certificate = Certificate.decodeFromDer(encoded)
 
         certificate.encodeToDer() shouldBe encoded
-        certificate.tbsCertificate.serialNumber shouldBe Asn1Integer.ONE
+        certificate.tbsCertificate.serialNumber shouldBe BigInteger.ONE
         certificate.tbsCertificate.signatureAlgorithm.asn1Representation shouldBe unknownAlgorithm
         certificate.publicKey.asn1Representation shouldBe publicKeyInfo
         certificate.signatureValue.asn1Representation shouldBe signatureValue
