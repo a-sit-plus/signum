@@ -28,6 +28,11 @@ import kotlinx.serialization.Serializable
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseSignedSerializer::class)
 @ConsistentCopyVisibility
+@Deprecated(
+    "Replaced by CoseSign1 (wire) + CoseSign1Typed (typed payload)",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CoseSign1Typed")
+)
 data class CoseSigned<P : Any?> internal constructor(
     val protectedHeader: CoseHeader,
     val unprotectedHeader: CoseHeader? = null,
