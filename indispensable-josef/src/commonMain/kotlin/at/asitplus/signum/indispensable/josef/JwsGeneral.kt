@@ -28,7 +28,7 @@ import kotlinx.serialization.serializer
  * Decoding does not verify signatures. To verify signature `i`, use `signatures[i]` and `jws.signatureInputs[i]`.
  */
 @ConsistentCopyVisibility
-data class JwsGeneral<H : JwsHeader, out P> private constructor(
+data class JwsGeneral<out H : JwsHeader, out P> private constructor(
     override val raw: Raw,
     override val payload: P,
     internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
