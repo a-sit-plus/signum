@@ -19,12 +19,14 @@ import kotlinx.serialization.encodeToByteArray
 @Serializable(with = CoseMacSerializer::class)
 @ConsistentCopyVisibility
 data class CoseMac<P : Any?> internal constructor(
-    val protectedHeader: CoseHeader,
-    val unprotectedHeader: CoseHeader? = null,
     val payload: P?,
     val tag: ByteArray,
     val wireFormat: CoseBytes,
 ) {
+
+    val protectedHeader: CoseHeader get() = wireFormat.protectedHeader
+
+    val unprotectedHeader: CoseHeader? get() = wireFormat.unprotectedHeader
 
     /**
      * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally
@@ -43,8 +45,6 @@ data class CoseMac<P : Any?> internal constructor(
 
         other as CoseMac<*>
 
-        if (protectedHeader != other.protectedHeader) return false
-        if (unprotectedHeader != other.unprotectedHeader) return false
         if (payload != null) {
             if (other.payload == null) return false
             if (!payload.contentEqualsIfArray(other.payload)) return false
@@ -56,9 +56,7 @@ data class CoseMac<P : Any?> internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = protectedHeader.hashCode()
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
-        result = 31 * result + (payload?.hashCode() ?: 0)
+        var result = payload?.hashCode() ?: 0
         result = 31 * result + tag.contentHashCode()
         result = 31 * result + wireFormat.hashCode()
         return result
@@ -89,8 +87,6 @@ data class CoseMac<P : Any?> internal constructor(
             tag: ByteArray,
             payloadSerializer: KSerializer<P>,
         ): CoseMac<P> = CoseMac<P>(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
             payload = payload,
             tag = tag,
             wireFormat = CoseBytes(

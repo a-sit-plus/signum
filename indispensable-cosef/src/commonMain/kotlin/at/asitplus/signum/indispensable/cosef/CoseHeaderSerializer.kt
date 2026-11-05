@@ -200,28 +200,43 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
     }
 }
 
+/**
+ * Serializes [CoseHeader] as a protected header, i.e. wrapped in a byte string.
+ *
+ * Note that re-encoding a deserialized header does not necessarily reproduce the original bytes,
+ * see [CoseBytes.rawProtectedHeader] for the bytes as transferred.
+ */
 @OptIn(ExperimentalSerializationApi::class)
 object ProtectedCoseHeaderSerializer : KSerializer<CoseHeader> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ProtectedHeader")
 
     override fun serialize(encoder: Encoder, value: CoseHeader) {
-        val headerBytes = coseCompliantSerializer.encodeToByteArray(CoseHeader.serializer(), value)
-        // Empty map (0xA0) → h'' (zero-length bstr)
-        val wrapped = if (headerBytes.size == 1 && headerBytes[0] == 0xA0.toByte()) {
-            byteArrayOf()
-        } else {
-            headerBytes
-        }
-
-        encoder.encodeSerializableValue(ByteArraySerializer(), wrapped)
+        encoder.encodeSerializableValue(ByteArraySerializer(), value.toProtectedHeaderBytes())
     }
 
-    override fun deserialize(decoder: Decoder): CoseHeader {
-        val raw = decoder.decodeSerializableValue(ByteArraySerializer())
-        return if (raw.isEmpty()) {
-            CoseHeader()
-        } else {
-            coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), raw)
-        }
+    override fun deserialize(decoder: Decoder): CoseHeader =
+        decoder.decodeSerializableValue(ByteArraySerializer()).toProtectedCoseHeader()
+}
+
+/**
+ * Encodes this header as the content of a protected header byte string,
+ * i.e. an empty map (`0xA0`) is encoded as a zero-length byte string (`h''`).
+ */
+internal fun CoseHeader.toProtectedHeaderBytes(): ByteArray {
+    val headerBytes = coseCompliantSerializer.encodeToByteArray(CoseHeader.serializer(), this)
+    // Empty map (0xA0) → h'' (zero-length bstr)
+    return if (headerBytes.size == 1 && headerBytes[0] == 0xA0.toByte()) {
+        byteArrayOf()
+    } else {
+        headerBytes
     }
+}
+
+/**
+ * Decodes the content of a protected header byte string, where a zero-length byte string is an empty header.
+ */
+internal fun ByteArray.toProtectedCoseHeader(): CoseHeader = if (isEmpty()) {
+    CoseHeader()
+} else {
+    coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), this)
 }
