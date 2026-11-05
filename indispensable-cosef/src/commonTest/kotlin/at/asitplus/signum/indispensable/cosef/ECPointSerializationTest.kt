@@ -1,16 +1,22 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ECPointSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.json.Json
 
 @Serializable
 private data class PointHolder(val before: Int, val point: ECPoint.Normalized, val after: String)
@@ -34,9 +40,15 @@ val ECPointSerializationTest by matrixSuite {
     }
 
     "Unknown curve fails with a SerializationException" {
-        val json = Json.encodeToString(ECCurve.SECP_256_R_1.generator)
+        val point = ECCurve.SECP_256_R_1.generator
+        // 2.999 is the OID arc reserved for examples, so it never names a real curve
+        val unknownCurve = ObjectIdentifier("2.999.1")
+        val spki = SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo(unknownCurve, point.xBytes, point.yBytes))
+        val der = DER.encodeToByteArray(SubjectPublicKeyInfo.serializer(), spki)
         shouldThrow<SerializationException> {
-            Json.decodeFromString<ECPoint.Normalized>(json.replace(ECCurve.SECP_256_R_1.jwkName, "not-a-curve"))
+            coseCompliantSerializer.decodeFromByteArray(
+                ECPointSerializer, coseCompliantSerializer.encodeToByteArray(ByteArraySerializer(), der)
+            )
         }
     }
 }
