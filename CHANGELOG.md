@@ -19,6 +19,12 @@ This is a major refactor!
     * Fixes verification of objects whose protected header is encoded differently than Signum would encode it (e.g. other key order, `h'a0'` instead of `h''`), as well as signatures breaking after a deserialize/serialize round trip
     * Add `CoseBytes.rawProtectedHeader`; `CoseBytes` equality now compares these bytes instead of the parsed header
     * `CoseBytes.protectedHeader` is parsed from `rawProtectedHeader`; `CoseSigned`/`CoseMac` expose `protectedHeader` and `unprotectedHeader` as getters delegating to `wireFormat` (**breaking** for destructuring, as their `componentN()` functions change)
+* COSE header parameters:
+    * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash` and `CoseHashAlgorithm`
+    * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
+    * Add `CWT Claims` (RFC 9597) as `CoseHeader.cwtClaims`
+    * Change `CoseHeader.criticalHeaders` to a non-empty `List<CoseHeaderLabel>`, as defined in RFC 9052 (**breaking**)
+    * Change `CoseHeader.contentType` to `CoseContentType`, a media type or a CoAP content format, as defined in RFC 9052 (**breaking**)
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.

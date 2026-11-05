@@ -2,13 +2,17 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
 import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -146,6 +150,81 @@ val CoseHeaderSerializationTest by matrixSuite {
         coseCompliantSerializer.decodeFromHexString<CoseHeader>(input).also {
             it.certificateChain.shouldNotBeNull().shouldHaveSize(2)
         }
+    }
+
+    "COSE header with x5t" {
+        val hash = ByteArray(32) { it.toByte() }
+        val header = CoseHeader(certificateHash = CoseCertificateHash(CoseHashAlgorithm.SHA256, hash))
+        val encoded = "a1" + "1822" + "82" + "2f" + "5820" + hash.toHexString()
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with x5u" {
+        val header = CoseHeader(certificateUrl = "https://a.b/c")
+        val encoded = "a1" + "1823" + "6d" + "https://a.b/c".encodeToByteArray().toHexString()
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with CWT Claims" {
+        val header = CoseHeader(cwtClaims = CborWebToken(issuedAt = Instant.fromEpochSeconds(1700000000)))
+        val encoded = "a1" + "0f" + "a1" + "06" + "1a6553f100"
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with crit" {
+        val header = CoseHeader(
+            criticalHeaders = listOf(CoseHeaderLabel.Numeric(267), CoseHeaderLabel.Text("foo"))
+        )
+        val encoded = "a1" + "02" + "82" + "19010b" + "63666f6f"
+
+        coseCompliantSerializer.encodeToHexString(header) shouldBe encoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(encoded) shouldBe header
+    }
+
+    "COSE header with empty crit" {
+        shouldThrow<IllegalArgumentException> {
+            coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1" + "02" + "80")
+        }
+        shouldThrow<IllegalArgumentException> {
+            coseCompliantSerializer.encodeToHexString(CoseHeader(criticalHeaders = listOf()))
+        }
+    }
+
+    "COSE header with content type" {
+        val format = CoseHeader(contentType = CoseContentType.ContentFormat(60))
+        val formatEncoded = "a1" + "03" + "183c"
+        coseCompliantSerializer.encodeToHexString(format) shouldBe formatEncoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(formatEncoded) shouldBe format
+
+        val mediaType = CoseHeader(contentType = CoseContentType.MediaType("application/cbor"))
+        val mediaTypeEncoded = "a1" + "03" + "70" + "application/cbor".encodeToByteArray().toHexString()
+        coseCompliantSerializer.encodeToHexString(mediaType) shouldBe mediaTypeEncoded
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(mediaTypeEncoded) shouldBe mediaType
+    }
+
+    "COSE header with negative content type" {
+        shouldThrow<IllegalArgumentException> {
+            coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1" + "03" + "20")
+        }
+    }
+
+    "COSE header with x5t of unsupported hash algorithms" {
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + "2e" + "4101")
+            .certificateHash.shouldNotBeNull().algorithm.apply {
+                this shouldBe CoseHashAlgorithm.OtherNumeric(-15)
+                digest.shouldBeNull()
+            }
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + "63666f6f" + "4101")
+            .certificateHash.shouldNotBeNull().algorithm.apply {
+                this shouldBe CoseHashAlgorithm.Text("foo")
+                digest.shouldBeNull()
+            }
     }
 
 }

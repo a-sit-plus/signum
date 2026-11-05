@@ -25,13 +25,16 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
 
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseHeader") {
         element("alg", CoseAlgorithm.serializer().descriptor, listOf(CborLabel(1)))
-        element("crit", String.serializer().descriptor, listOf(CborLabel(2)))
-        element("content type", String.serializer().descriptor, listOf(CborLabel(3)))
+        element("crit", ListSerializer(CoseHeaderLabel.serializer()).descriptor, listOf(CborLabel(2)))
+        element("content type", CoseContentType.serializer().descriptor, listOf(CborLabel(3)))
         element("kid", ByteArraySerializer().descriptor, listOf(CborLabel(4), ByteString()))
         element("IV", ByteArraySerializer().descriptor, listOf(CborLabel(5), ByteString()))
         element("Partial IV", ByteArraySerializer().descriptor, listOf(CborLabel(6), ByteString()))
         element("x5chain", ListSerializer(ByteArraySerializer()).descriptor, listOf(CborLabel(33), ByteString()))
         element("typ", String.serializer().descriptor, listOf(CborLabel(16)))
+        element("x5t", CoseCertificateHash.serializer().descriptor, listOf(CborLabel(34)))
+        element("x5u", String.serializer().descriptor, listOf(CborLabel(35)))
+        element("CWT Claims", CborWebToken.serializer().descriptor, listOf(CborLabel(15)))
     }
 
     override fun deserialize(decoder: Decoder): CoseHeader {
@@ -43,17 +46,23 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             "IV" to 5,
             "Partial IV" to 6,
             "x5chain" to 33,
-            "typ" to 16
+            "typ" to 16,
+            "x5t" to 34,
+            "x5u" to 35,
+            "CWT Claims" to 15,
         )
 
         var alg: CoseAlgorithm? = null
-        var crit: String? = null
-        var contentType: String? = null
+        var crit: List<CoseHeaderLabel>? = null
+        var contentType: CoseContentType? = null
         var kid: ByteArray? = null
         var iv: ByteArray? = null
         var partialIv: ByteArray? = null
         var x5chain: List<ByteArray>? = null
         var typ: String? = null
+        var x5t: CoseCertificateHash? = null
+        var x5u: String? = null
+        var cwtClaims: CborWebToken? = null
 
         decoder.decodeStructure(descriptor) {
             while (true) {
@@ -68,8 +77,17 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         CoseAlgorithm.serializer()
                     )
 
-                    labels["crit"] -> crit = decodeStringElement(String.serializer().descriptor, index)
-                    labels["content type"] -> contentType = decodeStringElement(String.serializer().descriptor, index)
+                    labels["crit"] -> crit = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        ListSerializer(CoseHeaderLabel.serializer())
+                    ).also { require(it.isNotEmpty()) { "crit must not be empty" } }
+
+                    labels["content type"] -> contentType = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        CoseContentType.serializer()
+                    )
                     labels["kid"] -> kid = decodeNullableSerializableElement(
                         ByteArraySerializer().descriptor,
                         index,
@@ -105,6 +123,18 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                     }
 
                     labels["typ"] -> typ = decodeStringElement(String.serializer().descriptor, index)
+                    labels["x5t"] -> x5t = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        CoseCertificateHash.serializer()
+                    )
+
+                    labels["x5u"] -> x5u = decodeStringElement(String.serializer().descriptor, index)
+                    labels["CWT Claims"] -> cwtClaims = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        CborWebToken.serializer()
+                    )
 
                     else -> break
                 }
@@ -118,7 +148,10 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             iv = iv,
             partialIv = partialIv,
             certificateChain = x5chain,
-            type = typ
+            type = typ,
+            certificateHash = x5t,
+            certificateUrl = x5u,
+            cwtClaims = cwtClaims,
         )
     }
 
@@ -134,16 +167,19 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                     )
                 }
                 criticalHeaders?.let {
-                    encodeStringElement(
+                    require(it.isNotEmpty()) { "crit must not be empty" }
+                    encodeSerializableElement(
                         descriptor,
                         1,
+                        ListSerializer(CoseHeaderLabel.serializer()),
                         criticalHeaders
                     )
                 }
                 contentType?.let {
-                    encodeStringElement(
+                    encodeSerializableElement(
                         descriptor,
                         2,
+                        CoseContentType.serializer(),
                         contentType
                     )
                 }
@@ -171,6 +207,14 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         partialIv
                     )
                 }
+                cwtClaims?.let {
+                    encodeSerializableElement(
+                        descriptor,
+                        10,
+                        CborWebToken.serializer(),
+                        cwtClaims
+                    )
+                }
                 certificateChain?.let {
                     if (it.size == 1) {
                         encodeSerializableElement(
@@ -187,6 +231,21 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                             certificateChain
                         )
                     }
+                }
+                certificateHash?.let {
+                    encodeSerializableElement(
+                        descriptor,
+                        8,
+                        CoseCertificateHash.serializer(),
+                        certificateHash
+                    )
+                }
+                certificateUrl?.let {
+                    encodeStringElement(
+                        descriptor,
+                        9,
+                        certificateUrl
+                    )
                 }
                 type?.let {
                     encodeStringElement(
