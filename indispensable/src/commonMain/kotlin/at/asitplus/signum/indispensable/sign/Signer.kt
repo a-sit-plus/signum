@@ -2,13 +2,8 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.dsl.EphemeralSignerConfiguration
-import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
@@ -105,8 +100,6 @@ suspend inline fun Signer.sign(data: ByteArray) =
     sign(SignatureInput(data))
 suspend inline fun Signer.sign(data: Sequence<ByteArray>) =
     sign(SignatureInput(data))
-suspend inline fun <reified T> Signer.sign(input: DerEncodable<T>) =
-    sign(input.encodeToDer())
 
 /** Shorthand helper to create an [Certificate] by signing [tbsCertificate] */
 suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
@@ -114,7 +107,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
         throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
     return Certificate(
         tbsCertificate = tbsCertificate,
-        signatureValue = sign(tbsCertificate.encodeToDer()).signature
+        signatureValue = sign(tbsCertificate.toAsn1.DER()).signature
     )
 }
 
@@ -124,7 +117,7 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
         throw Asn1StructuralException("The signer's public key does not match the TbsCSR's.")
     return CertificationRequest(
         tbsCsr = tbsCsr, signatureAlgorithm = signatureAlgorithm,
-        signature = sign(tbsCsr.encodeToDer()).signature)
+        signatureValue = sign(tbsCsr.toAsn1.DER()).signature)
 }
 
 /**

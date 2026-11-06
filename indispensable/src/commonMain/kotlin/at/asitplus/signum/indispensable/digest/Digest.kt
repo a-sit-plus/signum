@@ -1,57 +1,46 @@
 package at.asitplus.signum.indispensable.digest
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
-interface Digest : DerEncodable<X509AlgorithmIdentifier> {
+interface Digest : WithSourceRepresentation {
     val name: String
     /** The hash function operates by repeatedly ingesting blocks of this length. Used by RFC 9380 et al. */
     val inputBlockSize: BitLength
     /** The length of the hash function's fixed-length digest values */
     val outputLength: BitLength
 
-    @OptIn(SignumInternals::class)
-    private class Unknown(
-        override val asn1Representation: X509AlgorithmIdentifier,
-        override val lookupResult: UnsupportedCryptoException
-    ) : Digest, ServiceLoader.UnknownShim {
-        override fun toString() = "Unknown Digest ($asn1Representation)"
-        override val name get() = throw lookupResult
-        override val inputBlockSize get() = throw lookupResult
-        override val outputLength get() = throw lookupResult
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Unknown) return false
-            return asn1Representation == other.asn1Representation
-        }
-        override fun hashCode() = asn1Representation.hashCode()
+    @SignumInternals
+    class Unknown(lookupResult: UnsupportedCryptoException)
+        : Digest, ServiceLoader.UnknownShim(lookupResult)
+    {
+        override val name get() = fails
+        override val inputBlockSize get() = fails
+        override val outputLength get() = fails
     }
 
-    companion object : DerDecodable<X509AlgorithmIdentifier, Digest> {
-        init { Indispensable.init() }
+    companion object {
+        init { Signum.installIndispensable() }
         val SHA1 inline get() = WellKnownDigest.SHA1
         val SHA256 inline get() = WellKnownDigest.SHA256
         val SHA384 inline get() = WellKnownDigest.SHA384
         val SHA512 inline get() = WellKnownDigest.SHA512
-
-        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der): Digest = runRethrowing {
-            ServiceLoader.load<DigestProvider>().getWithUnknown(element, ::Unknown, DigestProvider::getDigest)
-        }
     }
 }
 
 // @Service
 interface DigestProvider {
+    /** Return the ASN.1 representation, or null if this provider does not support the value. */
+    fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? = null
+
     /** Parse a [Digest] from its [X509AlgorithmIdentifier] form */
-    fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest?
+    fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier): Digest?
 }
 // @Service
 interface DigestOperationProvider {

@@ -1,19 +1,13 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
+import kotlinx.serialization.decodeFromByteArray
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
@@ -23,12 +17,12 @@ import java.security.PublicKey
 object FallbackToDERFormat : JcaMappingProvider {
     override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
         if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
-            CryptoPublicKey.decodeFromDer(publicKey.encoded)
+            Signum.Der.decodeFromByteArray<CryptoPublicKey>(publicKey.encoded)
         else null
 
     override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            CryptoPrivateKey.decodeFromDer(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+            Signum.Der.decodeFromByteArray<CryptoPrivateKey>(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
         else null
 }
 
@@ -84,7 +78,7 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.toAsn1().rawBytes
         else -> null
     }
 
@@ -114,4 +108,3 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
             else -> null
         }
 }
-

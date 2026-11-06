@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable.io
 
 import at.asitplus.awesn1.BERTags
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.decodeFromDer
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.encodeToDer
+import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -20,10 +20,9 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.listSerialDescriptor
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import at.asitplus.awesn1.crypto.pki.X509Certificate as Awesn1X509Certificate
 
 /** Strict Base64 URL encode */
 val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
@@ -32,7 +31,6 @@ val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
     isLenient = false
     padEncoded = false
 }.build())
-
 
 /** Strict Base64 encoder */
 val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
@@ -110,10 +108,10 @@ object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certific
     decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
 )
 
-private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = certificate.encodeToDer()
+private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = Signum.Der.encodeToByteArray(certificate)
 
 private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
-    Certificate(DER.decodeFromDer<Awesn1X509Certificate>(src))
+    Certificate.fromAsn1(src)
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
 object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(
