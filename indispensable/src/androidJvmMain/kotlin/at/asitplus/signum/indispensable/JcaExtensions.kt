@@ -1,35 +1,29 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.dsl.Of
+import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.internals.ImplementationError
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.sec.SECNamedCurves
@@ -37,18 +31,14 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
-import java.security.MessageDigest
-import java.security.KeyFactory
-import java.security.NoSuchAlgorithmException
-import java.security.Provider
-import java.security.PrivateKey as JCAPrivateKey
-import java.security.PublicKey as JCAPublicKey
-import java.security.Signature
+import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
+import java.security.PrivateKey as JCAPrivateKey
+import java.security.PublicKey as JCAPublicKey
 
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
@@ -141,7 +131,7 @@ interface JcaMappingProvider {
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
 fun Digest.getJCAMessageDigestInstance(provider: JCAProviderRef) =
-    Signum.load<JcaMappingProvider>().get(this)
+    ServiceLoader.load<JcaMappingProvider>().get(this)
         { getJCAMessageDigestInstance(it, provider) }
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
@@ -154,7 +144,7 @@ fun Digest.getJCAMessageDigestInstance(provider: Provider?) =
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstance(provider: JCAProviderRef) =
-    Signum.load<JcaMappingProvider>().get(this)
+    ServiceLoader.load<JcaMappingProvider>().get(this)
         { getJCASignatureInstance(it, provider) }
 
 /** Get a pre-configured JCA instance for this algorithm */
@@ -179,7 +169,7 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: Provider?) =
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: JCAProviderRef) =
-    Signum.load<JcaMappingProvider>().get(this)
+    ServiceLoader.load<JcaMappingProvider>().get(this)
         { getJCASignatureInstancePreHashed(it, provider) }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
@@ -203,12 +193,12 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: Pro
     this.algorithm.getJCASignatureInstancePreHashed(JCAProviderRef.Of(provider))
 
 val CryptoSignature.jcaSignatureBytes: ByteArray get() =
-    Signum.load<JcaMappingProvider>()
+    ServiceLoader.load<JcaMappingProvider>()
         .get(this, JcaMappingProvider::getJCASignatureBytes)
 
 /** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
 fun SignatureAlgorithm.parseJCASignature(sigBytes: ByteArray) =
-    Signum.load<JcaMappingProvider>()
+    ServiceLoader.load<JcaMappingProvider>()
         .get(this) { parseJCASignatureBytes(it, sigBytes) }
 
 /** Parses the signature produced by the instances from [SignatureAlgorithm.getJCASignatureInstance]. */
@@ -252,7 +242,7 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 fun CryptoPublicKey.toJcaPublicKey() =
-    Signum.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
+    ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
 
 fun EcdsaPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
@@ -292,7 +282,7 @@ fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RsaPublicKey =
     RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
 
 fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
-    Signum.load<JcaMappingProvider>()
+    ServiceLoader.load<JcaMappingProvider>()
         .get(this) { jcaPublicKeyToCryptoPublicKey(it) }
 
 /**
@@ -317,21 +307,21 @@ fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { Signum.Der.decodeFromByteArray<Certificate>(encoded) }
 
 fun CryptoPrivateKey.toJcaPrivateKey() =
-    Signum.load<JcaMappingProvider>()
+    ServiceLoader.load<JcaMappingProvider>()
         .get(this) { cryptoPrivateKeyToJcaPrivateKey(it) }
 
 fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(Signum.Der.encodeToByteArray(asPKCS8)))
+        .generatePrivate(PKCS8EncodedKeySpec(toAsn1.DER()))
             as java.security.interfaces.ECPrivateKey
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
-        .generatePrivate(PKCS8EncodedKeySpec(Signum.Der.encodeToByteArray(asPKCS8)))
+        .generatePrivate(PKCS8EncodedKeySpec(toAsn1.DER()))
             as java.security.interfaces.RSAPrivateKey
 
 fun JCAPrivateKey.toCryptoPrivateKey() =
-    Signum.load<JcaMappingProvider>()
+    ServiceLoader.load<JcaMappingProvider>()
         .get(this) { jcaPrivateKeyToCryptoPrivateKey(it) }
 
 fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =

@@ -1,22 +1,13 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Signum
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
+import kotlinx.serialization.decodeFromByteArray
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
@@ -87,7 +78,7 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.toAsn1().rawBytes
         else -> null
     }
 

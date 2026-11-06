@@ -2,7 +2,11 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.io.*
+import at.asitplus.io.MultiBase
+import at.asitplus.io.UVarInt
+import at.asitplus.io.multibaseDecode
+import at.asitplus.io.multibaseEncode
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
@@ -12,7 +16,7 @@ import at.asitplus.signum.indispensable.sign.RsaPublicKey
 /**
  * Representation of a public key structure
  */
-interface CryptoPublicKey : Encodable {
+interface CryptoPublicKey : WithSourceRepresentation {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -29,25 +33,16 @@ interface CryptoPublicKey : Encodable {
     val didCodec: UVarInt
     val didKeyBytes: ByteArray
 
-    companion object : Decodable<CryptoPublicKey> {
-        init { Signum.installIndispensable() }
-    @OptIn(SignumInternals::class)
-    private class Unknown(
-        override val asn1Representation: SubjectPublicKeyInfo,
-        override val lookupResult: UnsupportedCryptoException,
-    ) : CryptoPublicKey, ServiceLoader.UnknownShim {
-        override fun toString() = "Unknown CryptoPublicKey ($asn1Representation)"
-        override val didKeyBytes get() = throw lookupResult
-        override val didCodec get() = throw lookupResult
-        override val additionalProperties: MutableMap<String, String> get() = throw lookupResult
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Unknown) return false
-            return asn1Representation == other.asn1Representation
-        }
-        override fun hashCode() = asn1Representation.hashCode()
+    @SignumInternals
+    class Unknown(lookupResult: UnsupportedCryptoException)
+        : CryptoPublicKey, ServiceLoader.UnknownShim(lookupResult) {
+        override val didKeyBytes get() = fails
+        override val didCodec get() = fails
+        override val additionalProperties: MutableMap<String, String> get() = fails
     }
 
+    companion object {
+        init { Signum.installIndispensable() }
 
         /**
          * Parses a DID representation of a public key and
@@ -62,7 +57,7 @@ interface CryptoPublicKey : Encodable {
             val (codec, codecLength) = UVarInt.fromByteArrayPermissive(decoded)
             val keyBytes = decoded.copyOfRange(codecLength, decoded.size)
 
-            return Signum.load<PublicKeyFormatProvider>().get(codec) {
+            return ServiceLoader.load<PublicKeyFormatProvider>().get(codec) {
                 decodeFromDidKey(it, keyBytes)
             }
         }

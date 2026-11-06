@@ -1,43 +1,17 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.signum.indispensable.sourceRepresentationFor
-import at.asitplus.signum.Signum
-
-import at.asitplus.awesn1.Asn1Null
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
-import at.asitplus.awesn1.rsaPSS
-import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.ecdsaWithSHA1
-import at.asitplus.awesn1.ecdsaWithSHA256
-import at.asitplus.awesn1.ecdsaWithSHA384
-import at.asitplus.awesn1.ecdsaWithSHA512
-import at.asitplus.awesn1.sha1WithRSAEncryption
-import at.asitplus.awesn1.sha256WithRSAEncryption
-import at.asitplus.awesn1.sha384WithRSAEncryption
-import at.asitplus.awesn1.sha512WithRSAEncryption
+import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.pki.X509
 import at.asitplus.signum.indispensable.digest.Digest
-
-import at.asitplus.signum.indispensable.installIndispensable
-
-/** Original model first; fresh values are converted only when X.509 is requested. */
-val SignatureAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
-        Signum.installIndispensable()
-        Signum.load<SignatureAlgorithmsProvider>().get(this, SignatureAlgorithmsProvider::encodeToAsn1)
-    }
-
-fun SignatureAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): SignatureAlgorithm =
-    Signum.load<SignatureAlgorithmsProvider>().get(src, SignatureAlgorithmsProvider::getAlgorithm)
-
-operator fun SignatureAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): SignatureAlgorithm =
-    fromAsn1Representation(src)
+import at.asitplus.signum.indispensable.finangleSourceRepresentation
 
 val EcdsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
+    get() = run {
         X509AlgorithmIdentifier(
             oid = when (digest) {
                 Digest.SHA1 -> KnownOIDs.ecdsaWithSHA1
@@ -51,7 +25,7 @@ val EcdsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
     }
 
 val RsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
-    get() = sourceRepresentationFor(X509) as? X509AlgorithmIdentifier ?: run {
+    get() = run {
         when (val currentParameters = parameters) {
             is RsaAlgorithm.Parameters.Pkcs1Padded -> X509AlgorithmIdentifier(
                 when (currentParameters.digest) {
@@ -65,7 +39,7 @@ val RsaAlgorithm.asn1Representation: X509AlgorithmIdentifier
             )
 
             is RsaAlgorithm.Parameters.PssPadded ->
-                    X509AlgorithmIdentifier(currentParameters.asn1Representation, Signum.Der)
+                    X509AlgorithmIdentifier(currentParameters.toAsn1(), Signum.Der)
         }
     }
 
@@ -74,12 +48,12 @@ interface SignatureAlgorithmsProvider {
     fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = null
 
     /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */
-    fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
+    fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
 }
 
 fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): EcdsaAlgorithm =
     EcdsaAlgorithm(
-        digestProvider = {
+        run {
             require(src.parameters == null)
             when (src.oid) {
                 KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
@@ -90,13 +64,13 @@ fun EcdsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier
             }
         },
         requiredCurve = null,
-        sourceRepresentation = X509 to src,
-    )
+        // TODO: the usual
+    ).apply { @OptIn(SignumInternals::class) finangleSourceRepresentation(src) }
 
 operator fun EcdsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): EcdsaAlgorithm = fromAsn1Representation(src)
 
 fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier): RsaAlgorithm =
-    RsaAlgorithm({
+    RsaAlgorithm(run {
         val oid = src.oid
         if (oid == KnownOIDs.rsaPSS) {
             RsaAlgorithm.Parameters.PssPadded(RsaSsaPssParams.of(src, Signum.Der))
@@ -112,6 +86,7 @@ fun RsaAlgorithm.Companion.fromAsn1Representation(src: X509AlgorithmIdentifier):
                 RsaAlgorithm.Parameters.Pkcs1Padded(digest)
             }
         }
-    }, X509 to src)
+        // TODO: the usual
+    }).apply { @OptIn(SignumInternals::class) finangleSourceRepresentation(src) }
 
 operator fun RsaAlgorithm.Companion.invoke(src: X509AlgorithmIdentifier): RsaAlgorithm = fromAsn1Representation(src)

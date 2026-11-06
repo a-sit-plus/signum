@@ -1,25 +1,14 @@
 package at.asitplus.signum.indispensable.sign
-import kotlin.getValue
-import at.asitplus.signum.indispensable.Encodable
 
-import at.asitplus.awesn1.toAsn1Integer
-import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
-import at.asitplus.awesn1.ecdsaWithSHA1
-import at.asitplus.awesn1.ecdsaWithSHA256
-import at.asitplus.awesn1.ecdsaWithSHA384
-import at.asitplus.awesn1.ecdsaWithSHA512
-import at.asitplus.awesn1.rsaPSS
-import at.asitplus.awesn1.sha1WithRSAEncryption
-import at.asitplus.awesn1.sha256WithRSAEncryption
-import at.asitplus.awesn1.sha384WithRSAEncryption
-import at.asitplus.awesn1.sha512WithRSAEncryption
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureFormatProvider
-import at.asitplus.signum.indispensable.Decodable
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.SignatureFormatProvider
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.internals.ensureSize
@@ -30,8 +19,9 @@ sealed class EcdsaSignature
 @Throws(IllegalArgumentException::class) private constructor(
     val r: BigInteger,
     val s: BigInteger,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoSignature {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     init {
         require(r.isPositive) { "r must be positive" }
@@ -51,10 +41,7 @@ sealed class EcdsaSignature
     class IndefiniteLength(
         r: BigInteger,
         s: BigInteger,
-        sourceRepresentation: Pair<Encodable.Representation, Any>?,
-    ) : EcdsaSignature(r, s, sourceRepresentation) {
-
-        internal constructor(r: BigInteger, s: BigInteger) : this(r, s, null)
+    ) : EcdsaSignature(r, s) {
 
         fun withScalarByteLength(l: UInt) =
             DefiniteLength(l, r, s)
@@ -78,7 +65,7 @@ sealed class EcdsaSignature
         override val joseBytes: ByteArray
             get() = throw UnsupportedCryptoException("Cannot convert indefinite length ECDSA signature to COSE/JOSE")
 
-        companion object : Decodable<IndefiniteLength> {
+        companion object {
             private val curvesByScalarLength by lazy { ECCurve.entries.sortedBy { it.scalarLength } }
         }
     }
@@ -87,8 +74,7 @@ sealed class EcdsaSignature
         val scalarByteLength: UInt,
         r: BigInteger,
         s: BigInteger,
-        sourceRepresentation: Pair<Encodable.Representation, Any>? = null,
-    ) : EcdsaSignature(r, s, sourceRepresentation) {
+    ) : EcdsaSignature(r, s) {
         init {
             val max = scalarByteLength.toInt() * 8
 
@@ -109,7 +95,7 @@ sealed class EcdsaSignature
         override val joseBytes get() = p1363Bytes
     }
 
-    companion object : Decodable<IndefiniteLength> {
+    companion object {
 
         fun fromRS(r: BigInteger, s: BigInteger) =
             IndefiniteLength(r, s)
@@ -156,8 +142,9 @@ sealed class EcdsaSignature
 
 class RsaSignature(
     val rawBytes: ByteArray,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoSignature {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     override val joseBytes get() = rawBytes
 
@@ -171,7 +158,7 @@ class RsaSignature(
         return rawBytes.contentEquals(other.rawBytes)
     }
 
-    companion object : Decodable<RsaSignature> {
+    companion object {
         fun fromRawSignatureValue(input: ByteArray) = RsaSignature(input)
         @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
         fun parseFromJca(input: ByteArray) = fromRawSignatureValue(input)

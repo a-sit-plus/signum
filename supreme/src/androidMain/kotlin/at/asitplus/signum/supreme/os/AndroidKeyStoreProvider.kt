@@ -1,85 +1,44 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.decodeFromByteArray
-
 import android.annotation.SuppressLint
 import android.os.Build
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyInfo
-import android.security.keystore.KeyProperties
-import android.security.keystore.StrongBoxUnavailableException
-import android.security.keystore.UserNotAuthenticatedException
+import android.security.keystore.*
 import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.CryptoObject
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.Asn1StructuralException
+import at.asitplus.catching
 import at.asitplus.nonFatalOrThrow
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.supreme.AppLifecycleMonitor
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
-import at.asitplus.signum.indispensable.sign.SignatureResult
-import at.asitplus.signum.indispensable.sign.UnlockFailed
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.dsl.AndroidSignerConfiguration
-import at.asitplus.signum.dsl.AndroidSignerSigningConfiguration
-import at.asitplus.signum.dsl.AndroidSigningKeyConfiguration
-import at.asitplus.signum.dsl.AndroidUnlockPromptConfiguration
-import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.SignatureInput
-import at.asitplus.signum.dsl.DISCOURAGED
-import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.dsl.PREFERRED
-import at.asitplus.signum.dsl.REQUIRED
-import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl.UnlockPromptConfiguration
-import at.asitplus.signum.dsl.attestation
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.dsl.factors
-import at.asitplus.signum.dsl.hardware
-import at.asitplus.signum.dsl.protection
-import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.dsl.signer
-import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.dsl.*
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.supreme.AppLifecycleMonitor
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
-import at.asitplus.signum.indispensable.sign.Signer as SignerI
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.security.KeyFactory
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.PrivateKey
-import java.security.Signature
+import kotlinx.serialization.decodeFromByteArray
+import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import java.time.Instant
-import java.util.Date
+import java.util.*
 import javax.security.auth.x500.X500Principal
 import kotlin.math.max
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
+import at.asitplus.signum.indispensable.sign.Signer as SignerI
 
 internal sealed interface FragmentContext {
     @JvmInline value class OfActivity(val activity: FragmentActivity): FragmentContext
@@ -301,7 +260,7 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        val _ = Signum.load<AndroidKeyStoreOperationsProvider>().get(alias) {
+        val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
             generateKeyPair(it, config)
         }
         return@withContext getSignerForKey(alias, config.signer.v)
@@ -353,7 +312,7 @@ object AndroidKeyStoreProvider:
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
 
-        return@withContext Signum.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
+        return@withContext ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(publicKey) {
             getAndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, it, attestation)
         }
     }

@@ -1,37 +1,36 @@
 package at.asitplus.signum.supreme.sign
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.awesn1.*
-import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.X509
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.modules.SerializersModule
-import io.kotest.matchers.types.shouldBeSameInstanceAs
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.io.UVarInt
+import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.value
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
+import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
 import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.pki.X509
+import at.asitplus.signum.indispensable.pki.value
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.modules.SerializersModule
 import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -104,7 +103,7 @@ object CursorySignatureSchemeProvider :
     val asn1Serializers = SerializersModule {
         contextualAsn1(CursorySignatureScheme::class, X509AlgorithmIdentifier.serializer(),
             { it.asn1Representation },
-            { requireNotNull(getAlgorithm(it)) })
+            { requireNotNull(decodeFromAsn1(it)) })
         contextualAsn1(CursorySignatureScheme.Key::class, SubjectPublicKeyInfo.serializer(),
             { it.asn1Representation },
             { requireNotNull(decodeFromAsn1(it)) as CursorySignatureScheme.Key })
@@ -136,7 +135,7 @@ object CursorySignatureSchemeProvider :
     override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? =
         (value as? CursorySignatureScheme.Signature)?.let { X509SignatureValue(Asn1BitString(it.bit)) }
 
-    override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
+    override fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier) =
         CursorySignatureScheme.takeIf { algorithmIdentifier == CursorySignatureScheme.ALG }
     override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): CursorySignatureScheme.Key? {
         val v = config.cursory.v ?: return null
@@ -196,11 +195,11 @@ object CursorySignatureSchemeProvider :
 
 val ExtensibilityTest by matrixSuite {
     "Rejected combined registration leaves provider priority unchanged" {
-        val before = Signum.load<SignatureAlgorithmsProvider>().toList()
+        val before = ServiceLoader.load<SignatureAlgorithmsProvider>().toList()
         shouldThrow<IllegalStateException> {
             Signum.register(CursorySignatureSchemeProvider, CursorySignatureSchemeProvider.asn1Serializers)
         }
-        Signum.load<SignatureAlgorithmsProvider>().toList() shouldBe before
+        ServiceLoader.load<SignatureAlgorithmsProvider>().toList() shouldBe before
     }
 
     "Concrete contextual serializers on a custom DER instance" {

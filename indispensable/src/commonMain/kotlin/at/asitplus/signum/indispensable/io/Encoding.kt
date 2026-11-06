@@ -1,13 +1,10 @@
 package at.asitplus.signum.indispensable.io
 
-import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.invoke
-import kotlinx.serialization.encodeToByteArray
-import at.asitplus.signum.indispensable.iosEncoded
-
 import at.asitplus.awesn1.BERTags
-import at.asitplus.awesn1.serialization.decodeFromDer
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -23,10 +20,9 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.listSerialDescriptor
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import at.asitplus.awesn1.crypto.pki.X509Certificate as Awesn1X509Certificate
 
 /** Strict Base64 URL encode */
 val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
@@ -115,7 +111,7 @@ object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certific
 private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = Signum.Der.encodeToByteArray(certificate)
 
 private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
-        Certificate(Signum.Der.decodeFromDer<Awesn1X509Certificate>(src))
+    Certificate.fromAsn1(src)
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
 object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(

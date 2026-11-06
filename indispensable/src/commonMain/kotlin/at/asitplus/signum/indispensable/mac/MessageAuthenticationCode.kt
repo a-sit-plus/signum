@@ -1,17 +1,17 @@
 package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.runRethrowing
-import at.asitplus.signum.indispensable.misc.BitLength
-import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.installIndispensable
+import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.misc.bit
 
-interface MessageAuthenticationCode : Encodable {
+interface MessageAuthenticationCode : WithSourceRepresentation {
     /** output size of MAC */
     val outputLength: BitLength
 
@@ -21,8 +21,8 @@ interface MessageAuthenticationCode : Encodable {
         : MessageAuthenticationCode
     {
         override fun toString() = "$inner (truncated to $outputLength)"
-        override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null
-
+        @SignumInternals
+        override val sourceRepresentation = SourceRepresentationStorage()
     }
 
     fun truncatedTo(length: BitLength): MessageAuthenticationCode = when {
@@ -36,32 +36,20 @@ interface MessageAuthenticationCode : Encodable {
     }
 
     @OptIn(SignumInternals::class)
-    private class Unknown(
-        override val asn1Representation: X509AlgorithmIdentifier,
-        override val lookupResult: UnsupportedCryptoException
-    ): MessageAuthenticationCode, ServiceLoader.UnknownShim  {
-        override fun toString() = "Unknown MessageAuthenticationCode ($asn1Representation)"
-        override val outputLength: BitLength get() = throw lookupResult
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Unknown) return false
-            return asn1Representation == other.asn1Representation
-        }
-        override fun hashCode() = asn1Representation.hashCode()
+    class Unknown(lookupResult: UnsupportedCryptoException)
+        : MessageAuthenticationCode, ServiceLoader.UnknownShim(lookupResult)
+    {
+        override val outputLength: BitLength get() = fails
     }
 
 
-    companion object : Decodable<MessageAuthenticationCode> {
+    companion object {
         init { Signum.installIndispensable() }
-        fun fromAsn1Representation(element: X509AlgorithmIdentifier): MessageAuthenticationCode = runRethrowing {
-            Signum.load<MessageAuthenticationCodeProvider>()
-                .getWithUnknown(element, ::Unknown, MessageAuthenticationCodeProvider::getMAC)
-        }
     }
 }
 
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): ByteArray =
-    Signum.load<MessageAuthenticationCodeOperationProvider>()
+    ServiceLoader.load<MessageAuthenticationCodeOperationProvider>()
         .get(this@mac) { doMAC(it, key, msg) }
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: ByteArray) = mac(key, sequenceOf(msg))
 suspend fun MessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = mac(key, msg.asSequence())
@@ -79,7 +67,7 @@ interface MessageAuthenticationCodeProvider {
     fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? = null
 
     /** Parse a [MessageAuthenticationCode] from its [X509AlgorithmIdentifier] form */
-    fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode?
+    fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode?
 }
 
 // @Service

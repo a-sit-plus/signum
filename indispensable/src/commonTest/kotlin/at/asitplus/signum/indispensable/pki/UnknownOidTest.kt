@@ -16,6 +16,8 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.asn1Representation
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrow
@@ -45,7 +47,7 @@ val UnknownOidTest by matrixSuite {
         signature.hashCode() shouldBe SignatureAlgorithm.decodeFromDer(encoded).hashCode()
         digest.hashCode() shouldBe Digest.decodeFromDer(encoded).hashCode()
         mac.hashCode() shouldBe MessageAuthenticationCode.decodeFromDer(encoded).hashCode()
-        signature shouldNotBe SignatureAlgorithm.decodeFromTlv(
+        signature shouldNotBe SignatureAlgorithm.fromAsn1Representation(
             X509AlgorithmIdentifier(ObjectIdentifier(Uuid.random()), Asn1Null)
         )
         shouldThrow<UnsupportedCryptoException> { signature.preHashedSignatureFormat }

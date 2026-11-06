@@ -1,25 +1,27 @@
+@file:OptIn(SignumInternals::class)
+
 package at.asitplus.signum
 
-import at.asitplus.awesn1.serialization.DefaultDer
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.Der
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.awesn1.crypto.pki.X509CertificateExtension as Awesn1Extension
-import at.asitplus.nonFatalOrThrow
+import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.serialization.DefaultDer
+import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.digest.*
-import at.asitplus.signum.indispensable.mac.*
-import at.asitplus.signum.indispensable.kdf.*
-import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.digest.DigestOperationProvider
+import at.asitplus.signum.indispensable.digest.DigestProvider
+import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
+import at.asitplus.signum.indispensable.kdf.KDFProvider
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeOperationProvider
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.pki.*
-import kotlin.reflect.KClass
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithmsProvider
+import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.overwriteWith
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * Application-wide providers, semantic descriptors, and DER configuration.
@@ -28,6 +30,7 @@ import kotlinx.serialization.modules.overwriteWith
  * See docs/docs/default-der.md for registration order and the single-configuration limitation.
  */
 object Signum {
+    init { installIndispensable() }
     private var template: Der? = null
     private val contributors = mutableListOf<SerializersModule>()
     private var consumed = false
@@ -54,7 +57,7 @@ object Signum {
     val Der: Der by lazy {
         consumed = true
         val selected = template
-        var module = signumAsn1Serializers
+        var module = SerializersModule {}
         selected?.let { module = module.overwriteWith(it.serializersModule) }
         contributors.forEach { module = module.overwriteWith(it) }
         if (selected == null) {
@@ -72,153 +75,43 @@ object Signum {
         }
     }
 
-    private val providers = mutableMapOf<KClass<out Any>, ArrayDeque<*>>()
-    @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> getStorageFromMap(clazz: KClass<T>): ArrayDeque<T> =
-        providers.getOrPut(clazz) { ArrayDeque<T>() } as ArrayDeque<T>
-
-    @PublishedApi internal fun <T: Any> registerProvider(it: T, clazz: KClass<T>) {
-        require(it::class != clazz) { "Use Signum.registerProvider<ServiceInterface>(provider)"}
-        getStorageFromMap(clazz).addFirst(it)
-    }
-    /** This needs the same interface as [load] will use. You cannot register for intermediate interfaces! */
-    inline fun <reified T: Any> registerProvider(it: T) { registerProvider(it, T::class) }
-
-    class ServiceProviders<out T: Any>(@PublishedApi internal val className: String, private val inner: Iterable<T>): Iterable<T> by inner {
-        inline fun <reified KeyT, ResultT> get(what: KeyT, loadBlock: T.(KeyT)->(ResultT?)): ResultT {
-            val failures = mutableListOf<Pair<String, Throwable?>>()
-            if (none()) throw UnsupportedCryptoException("No $className is loaded. Did you forget module installation?")
-            for (provider in this) {
-                try {
-                    val result = provider.loadBlock(what)
-                    if (result != null) return result
-                    failures.add(Pair(provider::class.simpleName ?: "<anonymous>", null))
-                } catch (e: Throwable) {
-                    failures.add(Pair(provider::class.simpleName ?: "<anonymous>", e.nonFatalOrThrow()))
-                }
-            }
-            val sb = StringBuilder("No loaded $className is able to handle $what.")
-            for ((provider, failure) in failures) {
-                sb.append('\n')
-                sb.append("- $provider reports: ")
-                if (failure == null) sb.append("<no explicit error; it likely did not recognize the ${KeyT::class.simpleName}>")
-                else {
-                    val failureMessage = failure.message
-                    if (failureMessage.isNullOrEmpty()) sb.append("<it threw ${failure::class.simpleName} with no message>")
-                    else {
-                        val lines = failureMessage.lineSequence().iterator()
-                        sb.append(lines.next())
-                        lines.forEach { sb.append("\n  ").append(it) }
-                    }
-                }
-            }
-            val x = UnsupportedCryptoException(sb.toString())
-            for ((_, failure) in failures) {
-                failure?.let(x::addSuppressed)
-            }
-            throw x
-        }
-    }
-    @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =
-        ServiceProviders(clazz.simpleName ?: "<anonymous>", getStorageFromMap(clazz))
-    @Suppress("UNCHECKED_CAST")
-    inline fun <reified T: Any> load(): ServiceProviders<T> = load(T::class)
-
     /** Register every supported core/platform provider interface, plus its concrete ASN.1 adapters. */
+    // TODO remove this (at least for providers)
     fun register(provider: Any, serializers: SerializersModule? = null) {
         if (serializers != null) check(!consumed) { "Register serializers before first Signum.Der use" }
-        installIndispensable()
         var matched = false
-        if (provider is DigestProvider) { registerProvider<DigestProvider>(provider); matched = true }
-        if (provider is DigestOperationProvider) { registerProvider<DigestOperationProvider>(provider); matched = true }
-        if (provider is MessageAuthenticationCodeProvider) { registerProvider<MessageAuthenticationCodeProvider>(provider); matched = true }
-        if (provider is MessageAuthenticationCodeOperationProvider) { registerProvider<MessageAuthenticationCodeOperationProvider>(provider); matched = true }
-        if (provider is KDFProvider) { registerProvider<KDFProvider>(provider); matched = true }
-        if (provider is KDFOperationProvider) { registerProvider<KDFOperationProvider>(provider); matched = true }
-        if (provider is SignatureAlgorithmsProvider) { registerProvider<SignatureAlgorithmsProvider>(provider); matched = true }
-        if (provider is SignatureFormatProvider) { registerProvider<SignatureFormatProvider>(provider); matched = true }
-        if (provider is PublicKeyFormatProvider) { registerProvider<PublicKeyFormatProvider>(provider); matched = true }
-        if (provider is PrivateKeyFormatProvider) { registerProvider<PrivateKeyFormatProvider>(provider); matched = true }
-        if (provider is InMemoryKeysProvider) { registerProvider<InMemoryKeysProvider>(provider); matched = true }
-        if (provider is SignatureVerifierProvider) { registerProvider<SignatureVerifierProvider>(provider); matched = true }
+        if (provider is DigestProvider) { ServiceLoader.register<DigestProvider>(provider); matched = true }
+        if (provider is DigestOperationProvider) { ServiceLoader.register<DigestOperationProvider>(provider); matched = true }
+        if (provider is MessageAuthenticationCodeProvider) { ServiceLoader.register<MessageAuthenticationCodeProvider>(provider); matched = true }
+        if (provider is MessageAuthenticationCodeOperationProvider) { ServiceLoader.register<MessageAuthenticationCodeOperationProvider>(provider); matched = true }
+        if (provider is KDFProvider) { ServiceLoader.register<KDFProvider>(provider); matched = true }
+        if (provider is KDFOperationProvider) { ServiceLoader.register<KDFOperationProvider>(provider); matched = true }
+        if (provider is SignatureAlgorithmsProvider) { ServiceLoader.register<SignatureAlgorithmsProvider>(provider); matched = true }
+        if (provider is SignatureFormatProvider) { ServiceLoader.register<SignatureFormatProvider>(provider); matched = true }
+        if (provider is PublicKeyFormatProvider) { ServiceLoader.register<PublicKeyFormatProvider>(provider); matched = true }
+        if (provider is PrivateKeyFormatProvider) { ServiceLoader.register<PrivateKeyFormatProvider>(provider); matched = true }
+        if (provider is InMemoryKeysProvider) { ServiceLoader.register<InMemoryKeysProvider>(provider); matched = true }
+        if (provider is SignatureVerifierProvider) { ServiceLoader.register<SignatureVerifierProvider>(provider); matched = true }
+        if (provider is CertificateExtensionProvider) { ServiceLoader.register<CertificateExtensionProvider>(provider); matched = true }
+        if (provider is GeneralNameFormatProvider) { ServiceLoader.register<GeneralNameFormatProvider>(provider); matched = true }
         matched = registerIndispensablePlatformProvider(provider) || matched
         require(matched) { "No supported provider interface on ${provider::class.simpleName}; use registerProvider<ServiceInterface> for module-specific services" }
         serializers?.let(::registerAsn1Serializers)
     }
 
     /** Register the descriptor and its concrete contextual ASN.1 serializer together. */
-    inline fun <reified T : CertificateExtension> register(descriptor: CertificateExtension.Descriptor<T>) {
-        CertificateExtensions.register(descriptor, SerializersModule {
-            contextualAsn1(T::class, Awesn1Extension.serializer(),
-                { requireNotNull(it.asn1Representation) }, { descriptor.fromAsn1Representation(it) })
-        })
-    }
-
-    /** Register the descriptor and its concrete contextual ASN.1 serializer together. */
-    inline fun <reified T : GeneralName> register(descriptor: GeneralName.Descriptor<T>) {
-        GeneralNames.register(descriptor, SerializersModule {
-            contextualAsn1(T::class, X509GeneralName.serializer(),
-                { requireNotNull(it.asn1Representation) }, { descriptor.fromAsn1Representation(it) })
-        })
-    }
-
-    /** Register the descriptor and its concrete contextual ASN.1 serializer together. */
     inline fun <reified T : AttributeTypeAndValue> register(descriptor: AttributeTypeAndValue.Descriptor<T>) {
         Attributes.register(descriptor, SerializersModule {
             contextualAsn1(T::class, X500AttributeTypeAndValue.serializer(),
-                { requireNotNull(it.asn1Representation) }, { descriptor.fromAsn1Representation(it) })
+                // TODO
+                { it.toAsn1() }, { descriptor.fromValue(it.value).apply { finangleSourceRepresentation(it) } })
         })
     }
-
-    fun certificateExtensionDescriptorFor(oid: ObjectIdentifier): CertificateExtension.Descriptor<*>? = CertificateExtensions.descriptorFor(oid)
-    fun generalNameDescriptorFor(tag: Asn1Element.Tag): GeneralName.Descriptor<*>? = GeneralNames.descriptorFor(tag)
     fun attributeDescriptorFor(oid: ObjectIdentifier): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorFor(oid)
     fun attributeDescriptorForName(name: String): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorForName(name)
     fun attributeOidFor(name: String): ObjectIdentifier? = Attributes.oidFor(name)
     fun attributeNameFor(oid: ObjectIdentifier): String? = Attributes.nameFor(oid)
     fun registerAttributeAlias(alias: String, oid: ObjectIdentifier) = Attributes.registerAlias(alias, oid)
-
-    @OptIn(ExperimentalAtomicApi::class)
-    @PublishedApi
-    internal object CertificateExtensions {
-        private val descriptors = mutableMapOf<ObjectIdentifier, CertificateExtension.Descriptor<*>>()
-        private val sealed = AtomicReference<Map<ObjectIdentifier, CertificateExtension.Descriptor<*>>?>(null)
-
-        @PublishedApi
-        internal fun register(descriptor: CertificateExtension.Descriptor<*>, serializers: SerializersModule) {
-            check(sealed.load() == null) {
-                "CertificateExtension registry is sealed; register before the first (de)serialization."
-            }
-            Signum.registerAsn1Serializers(serializers)
-            descriptors[descriptor.oid] = descriptor
-        }
-
-        fun descriptorFor(oid: ObjectIdentifier): CertificateExtension.Descriptor<*>? = view()[oid]
-
-        private fun view(): Map<ObjectIdentifier, CertificateExtension.Descriptor<*>> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
-    }
-
-    @OptIn(ExperimentalAtomicApi::class)
-    @PublishedApi
-    internal object GeneralNames {
-        private val descriptors = mutableMapOf<Asn1Element.Tag, GeneralName.Descriptor<*>>()
-        private val sealed = AtomicReference<Map<Asn1Element.Tag, GeneralName.Descriptor<*>>?>(null)
-
-        @PublishedApi
-        internal fun register(descriptor: GeneralName.Descriptor<*>, serializers: SerializersModule) {
-            check(sealed.load() == null) {
-                "GeneralName registry is sealed; register before the first (de)serialization."
-            }
-            Signum.registerAsn1Serializers(serializers)
-            descriptors[descriptor.tag] = descriptor
-        }
-
-        fun descriptorFor(tag: Asn1Element.Tag): GeneralName.Descriptor<*>? = view()[tag]
-
-        private fun view(): Map<Asn1Element.Tag, GeneralName.Descriptor<*>> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
-    }
 
     @OptIn(ExperimentalAtomicApi::class)
     @PublishedApi

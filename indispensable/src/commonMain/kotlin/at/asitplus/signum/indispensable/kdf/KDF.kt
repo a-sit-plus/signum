@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.kdf
 
-import at.asitplus.signum.Enumerable
-import at.asitplus.signum.Enumeration
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -32,6 +31,6 @@ interface KDFOperationProvider {
  * @param derivedKeyLength the length of the derived key
  */
 suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): ByteArray =
-    Signum.load<KDFOperationProvider>().get(this) {
+    ServiceLoader.load<KDFOperationProvider>().get(this) {
         deriveKey(it, salt, ikm, derivedKeyLength)
     }

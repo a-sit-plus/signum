@@ -1,21 +1,19 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
-
-import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.CertificateExtension
+import at.asitplus.signum.indispensable.pki.Name
+import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.kotest.matchers.shouldBe
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 import kotlin.time.Instant
 
 val CertificateExtensionEncodingTest by matrixSuite {
@@ -23,14 +21,15 @@ val CertificateExtensionEncodingTest by matrixSuite {
         val extension: CertificateExtension = object : CertificateExtension {
             override val oid = ObjectIdentifier("1.2.3.4")
             override val critical = true
-            override val sourceRepresentation: Pair<Encodable.Representation, Any>? = null
+            @OptIn(SignumInternals::class)
+            override val sourceRepresentation = SourceRepresentationStorage()
         }
-        extension.asn1Representation shouldBe null
+        shouldThrow<Asn1Exception> { extension.toAsn1() }
         val tbs = TbsCertificate(
-            serialNumber = Asn1Integer.ONE,
+            serialNumber = BigInteger.ONE,
             signatureAlgorithm = EcdsaAlgorithm.withSHA256,
-            issuerName = X500Name.EMPTY,
-            subjectName = X500Name.EMPTY,
+            issuerName = Name.EMPTY,
+            subjectName = Name.EMPTY,
             validFrom = Instant.fromEpochSeconds(1_700_000_000),
             validUntil = Instant.fromEpochSeconds(1_800_000_000),
             publicKey = ECCurve.SECP_256_R_1.generator.asPublicKey(),
@@ -38,27 +37,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
         )
         val certificate = Certificate(tbs, EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO))
         certificate.tbsCertificate.extensions.single() shouldBeSameInstanceAs extension
-        catchingUnwrapped { Signum.Der.encodeToByteArray(extension) }.isFailure shouldBe true
-        catchingUnwrapped { Signum.Der.encodeToByteArray(tbs) }.isFailure shouldBe true
-        catchingUnwrapped { Signum.Der.encodeToByteArray(certificate) }.isFailure shouldBe true
-    }
-
-    "Representation maps work without an X.509 marker or base class" {
-        val original = X509CertificateExtension(ObjectIdentifier("1.2.3.4"), value = byteArrayOf(1, 2, 3)).asn1Representation
-        val extension: CertificateExtension = object : CertificateExtension {
-            override val oid = original.oid
-            override val critical = original.critical
-            override val sourceRepresentation: Pair<Encodable.Representation, Any>? = X509 to original
-        }
-        extension.asn1Representation shouldBeSameInstanceAs original
-        // Interface-typed lookup selects the registered bridge, including for user-defined implementations.
-        val value: CertificateExtension = extension
-        val der = DER { serializersModule = signumAsn1Serializers }
-        val bytes = der.encodeToByteArray(value)
-        val decoded = der.decodeFromByteArray<CertificateExtension>(bytes)
-        decoded.asn1Representation shouldBeSameInstanceAs decoded.sourceRepresentationFor(X509)
-        der.encodeToByteArray(decoded) shouldBe bytes
-        val generic = X509CertificateExtension(original)
-        der.encodeToByteArray(der.decodeFromByteArray<X509CertificateExtension>(der.encodeToByteArray(generic))) shouldBe bytes
+        shouldThrow<Asn1Exception> { tbs.toAsn1.DER() }
+        shouldThrow<Asn1Exception> { certificate.toAsn1.DER() }
     }
 }

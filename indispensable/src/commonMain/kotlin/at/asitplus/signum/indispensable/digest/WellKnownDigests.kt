@@ -4,10 +4,12 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
-import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import kotlinx.serialization.builtins.serializer
@@ -17,6 +19,8 @@ sealed class WellKnownDigest(
     override val inputBlockSize: BitLength, override val outputLength: BitLength,
     val oid: ObjectIdentifier
 ) : Digest, Enumerable {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     data object SHA1 : WellKnownDigest("SHA1", 512.bit, 160.bit, KnownOIDs.sha1)
     data object SHA256 : WellKnownDigest("SHA256", 512.bit, 256.bit, KnownOIDs.sha_256)
@@ -38,7 +42,7 @@ object IndispensableDigestsProvider: DigestProvider {
     override fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? =
         (value as? WellKnownDigest)?.let { X509AlgorithmIdentifier(it.oid, null) }
 
-    override fun getDigest(algorithmIdentifier: X509AlgorithmIdentifier): Digest? {
+    override fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier): Digest? {
         return WellKnownDigest.entries.firstOrNull { it.oid == algorithmIdentifier.oid }?.also {
             val params = algorithmIdentifier.parameters
             // parameters must be either absent (kotlin null) or NULL (ASN.1 null)
@@ -51,7 +55,7 @@ object IndispensableHMACProvider: MessageAuthenticationCodeProvider {
     override fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? =
         (value as? HMAC)?.let { X509AlgorithmIdentifier(it.oid, Asn1Null) }
 
-    override fun getMAC(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode? {
+    override fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier): MessageAuthenticationCode? {
         if (algorithmIdentifier.parameters != Asn1Null) return null
         return WellKnownDigest.entries.asSequence().map(HMAC::byDigest)
             .first { it.oid == algorithmIdentifier.oid }

@@ -1,11 +1,13 @@
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.signum.indispensable.Encodable
 
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.AbstractSignature
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -13,28 +15,27 @@ import kotlin.time.Instant
 /** Signed certificate contents, with the original decoded source retained separately. */
 class Certificate(
     val tbsCertificate: TbsCertificate,
-    signatureProvider: () -> CryptoSignature/*defer to also parse and round-trip even unsupported sigalgs*/,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-) : Encodable {
-    constructor(
-        tbsCertificate: TbsCertificate,
-        signature: CryptoSignature,
-    ) : this(tbsCertificate, { signature }, null) {
-        require(tbsCertificate.extensions.allDistinctByOids()) { "Multiple extensions with the same OID found" }
+    val signatureValue: AbstractSignature,
+) : WithSourceRepresentation {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+
+    init {
+        require(tbsCertificate.extensions.allDistinctByOids()) {
+            "Multiple extensions with the same OID found"
+        }
     }
 
-    val signature by lazy(signatureProvider)
+    val signature by lazy { signatureValue.withSignatureAlgorithm(tbsCertificate.signatureAlgorithm) }
 
-    /**
-     * convenience getter for the contained [TbsCertificate.publicKey]
-     */
+    /** convenience getter for the contained [TbsCertificate.publicKey] */
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
     val signatureAlgorithm: SignatureAlgorithm get() = tbsCertificate.signatureAlgorithm
 
     /** OIDs of all extensions marked critical. */
     val criticalExtensionOids: Set<ObjectIdentifier>
-        get() = tbsCertificate.extensions.filter { it.critical }.map { it.oid }.toSet()
+        get() = tbsCertificate.extensions.asSequence().filter { it.critical }.map { it.oid }.toSet()
 
     /**
      * A certificate is self-issued if subject and issuer are the same (not the same as self-signed).
@@ -85,7 +86,7 @@ class Certificate(
         date.epochSeconds < tbsCertificate.validFrom.epochSeconds
 
     override fun equals(other: Any?): Boolean = this === other || catchingUnwrapped {
-        other is Certificate && tbsCertificate == other.tbsCertificate && signature == other.signature
+        other is Certificate && tbsCertificate == other.tbsCertificate && signatureValue == other.signatureValue
     }.getOrDefault(false)
 
     override fun hashCode(): Int = catchingUnwrapped {
@@ -96,7 +97,7 @@ class Certificate(
         "Certificate(tbsCertificate=$tbsCertificate, signature=$signature)"
     }.getOrElse { "Certificate(semantic content unavailable)" }
 
-    companion object : Decodable<Certificate>
+    companion object
 }
 
 typealias CertificateChain = List<Certificate>
@@ -108,8 +109,3 @@ val CertificateChain.root: Certificate get() = last()
 inline fun <reified T : CertificateExtension> Certificate.findExtension(): T? =
     tbsCertificate.extensions.firstNotNullOfOrNull { it as? T }
 
-internal fun validateExtensions(extensions: List<CertificateExtension>) {
-    if (!extensions.allDistinctByOids()) {
-        throw Asn1StructuralException("Multiple extensions with the same OID found")
-    }
-}

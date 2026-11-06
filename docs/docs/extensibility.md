@@ -113,7 +113,7 @@ Your signature format class should implement `CryptoSignature`.
 Your public key class should implement `CryptoPublicKey`.
 Your private key class should implement `CryptoPrivateKey`, and likely `CryptoPrivateKey.WithPublicKey`.
 
-`SignatureAlgorithmsProvider` should implement `getAlgorithm` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
+`SignatureAlgorithmsProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
 `SignatureFormatProvider` should implement `parseCryptoSignature` to parse `X509SignatureValue`s given an algorithm identifier.
 `PublicKeyFormatProvider` should implement `decodeFromAsn1` and, if desired `decodeFromDidKey`.
 `PrivateKeyFormatProvider` should implement `decodeFromAsn1`.

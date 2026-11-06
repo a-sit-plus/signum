@@ -1,74 +1,56 @@
 package at.asitplus.signum.indispensable.pki
-import at.asitplus.signum.indispensable.Encodable
 
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.runRethrowing
-import at.asitplus.awesn1.secondsCapped
+import at.asitplus.awesn1.*
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
 /** The semantic certificate contents that are signed. Originals are retained separately. */
 class TbsCertificate(
-    val serialNumber: Asn1Integer,
-    signatureAlgorithmProvider: () -> SignatureAlgorithm,
+    val serialNumber: BigInteger,
+    val signatureAlgorithm: SignatureAlgorithm,
     val issuerName: Name,
-    val validFrom: Instant,
-    val validUntil: Instant,
+    validFrom: Instant,
+    validUntil: Instant,
     val subjectName: Name,
-    publicKeyProvider: () -> CryptoPublicKey,
-    val issuerUniqueID: ByteArray?,
-    val subjectUniqueID: ByteArray?,
-    val extensions: List<CertificateExtension>,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-) : Encodable {
+    val publicKey: CryptoPublicKey,
+    val issuerUniqueID: ByteArray? = null,
+    val subjectUniqueID: ByteArray? = null,
+    val extensions: List<CertificateExtension> = emptyList(),
+    strict: Boolean = true
+) : WithSourceRepresentation {
+    @SignumInternals
+    override val sourceRepresentation = SourceRepresentationStorage()
 
-    constructor(
-        serialNumber: Asn1Integer.Positive,
-        signatureAlgorithm: SignatureAlgorithm,
-        issuerName: Name,
-        validFrom: Instant,
-        validUntil: Instant,
-        subjectName: Name,
-        publicKey: CryptoPublicKey,
-        issuerUniqueID: ByteArray? = null,
-        subjectUniqueID: ByteArray? = null,
-        extensions: List<CertificateExtension> = emptyList(),
-    ) : this(
-        serialNumber,
-        { signatureAlgorithm },
-        issuerName,
-        validFrom.secondsCapped(),
-        validUntil.secondsCapped(),
-        subjectName,
-        { publicKey },
-        issuerUniqueID,
-        subjectUniqueID,
-        extensions,
-        null,
-    ) {
-        runRethrowing { require(!serialNumber.isZero()) { "Serial Number must not be zero" } }
-        validateExtensions(extensions)
+    init {
+        if (strict) {
+            serialNumber.encodeToAsn1ContentBytes().size.let { size ->
+                runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
+            }
+            runRethrowing { require(serialNumber.isPositive) { "Serial Number must be positive" } }
+            if (!extensions.allDistinctByOids()) {
+                throw Asn1StructuralException("Multiple extensions with the same OID found")
+            }
+        }
     }
 
-    val signatureAlgorithm: SignatureAlgorithm by lazy(signatureAlgorithmProvider)
+    val validFrom = validFrom.secondsCapped()
+    val validUntil = validUntil.secondsCapped()
 
-    val publicKey: CryptoPublicKey by lazy(publicKeyProvider)
-
-    /**
-     * Contains `SubjectAlternativeName`s parsed from extensions.
-     */
+    /** Contains `SubjectAlternativeName`s parsed from extensions. */
     @Transient
     // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
     val subjectAlternativeNames: AlternativeNames? by lazy { extensions.findSubjectAltNames() }
 
-    /**
-     * Contains `IssuerAlternativeName`s parsed from extensions.
-     */
+    /** Contains `IssuerAlternativeName`s parsed from extensions. */
     @Transient
     // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
     val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
@@ -113,5 +95,5 @@ class TbsCertificate(
                 "subjectUniqueID=$subjectUniqueID, extensions=$extensions)"
     }.getOrElse { "TbsCertificate(semantic content unavailable)" }
 
-    companion object : Decodable<TbsCertificate>
+    companion object
 }

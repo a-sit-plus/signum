@@ -1,52 +1,24 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveBigInteger
-import at.asitplus.awesn1.toBigInteger
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.dsl.JCAProviderRef
-import at.asitplus.signum.dsl.JCAProviderRefO
-import at.asitplus.signum.dsl.Of
-import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
-import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
-import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.dsl.hardware
-import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.dsl.*
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.toCryptoPublicKey
-import at.asitplus.signum.indispensable.toJcaCertificate
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
-import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.dsl.REQUIRED
-import at.asitplus.signum.indispensable.SelfAttestation
-import at.asitplus.signum.indispensable.parseJCASignature
-import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.sign.sign
-import at.asitplus.signum.indispensable.sign.signerFor
-import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import org.kotlincrypto.random.CryptoRand
 import java.nio.channels.Channels
 import java.nio.channels.FileChannel
@@ -240,7 +212,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 throw NoSuchElementException("Key with alias $alias already exists")
 
             val (certAlg, keyPair) =
-                Signum.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
+                ServiceLoader.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
             val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
             val publicKey = keyPair.public.toCryptoPublicKey()
@@ -272,7 +244,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     }
 
     private fun getSigner(alias: String, config: JKSSignerConfiguration, privateKey: PrivateKey, certificate: Certificate) =
-        Signum.load<JavaKeyStoreOperationsProvider>()
+        ServiceLoader.load<JavaKeyStoreOperationsProvider>()
             .get(alias) { getJKSSigner(privateKey, alias, config, SelfAttestation(certificate)) }
 
     override suspend fun getSignerForKey(

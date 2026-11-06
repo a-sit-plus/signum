@@ -1,13 +1,13 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
 
 actual fun indispensablePlatformInit() {
-    Signum.registerProvider<IosMappingProvider>(IndispensableIosExtensionProvider)
+    ServiceLoader.register<IosMappingProvider>(IndispensableIosExtensionProvider)
 }
 
 internal actual fun registerIndispensablePlatformProvider(provider: Any): Boolean {
-    if (provider !is IosMappingProvider) return false
-    Signum.registerProvider<IosMappingProvider>(provider)
-    return true
+    var matched = false
+    if (provider is IosMappingProvider) { ServiceLoader.register<IosMappingProvider>(provider); matched = true }
+    return matched
 }

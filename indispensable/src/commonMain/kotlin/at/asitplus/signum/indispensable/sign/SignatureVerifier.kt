@@ -1,18 +1,18 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
-
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.VerifierConfiguration
-import kotlinx.serialization.encodeToByteArray
-import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.indispensable.AbstractSignature
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.withSignatureAlgorithm
+import at.asitplus.signum.indispensable.toAsn1
+import kotlinx.serialization.encodeToByteArray
 
 interface SignatureVerifier {
     val signatureAlgorithm: SignatureAlgorithm
@@ -40,18 +40,14 @@ suspend fun SignatureVerifier.verify(data: ByteArray, sig: CryptoSignature) =
 suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: SignatureInput, sig: at.asitplus.signum.indispensable.SignatureValue) =
+suspend fun SignatureVerifier.verify(data: SignatureInput, sig: AbstractSignature) =
     verify(data, sig.withSignatureAlgorithm(signatureAlgorithm))
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: ByteArray, sig: at.asitplus.signum.indispensable.SignatureValue) =
+suspend fun SignatureVerifier.verify(data: ByteArray, sig: AbstractSignature) =
     verify(SignatureInput(data), sig)
 @IgnorableReturnValue
-suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: at.asitplus.signum.indispensable.SignatureValue) =
+suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: AbstractSignature) =
     verify(SignatureInput(data), sig)
-
-@IgnorableReturnValue
-suspend inline fun <reified T : Encodable> SignatureVerifier.verify(input: T, signature: CryptoSignature) =
-    verify(Signum.Der.encodeToByteArray(input), signature)
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
@@ -70,12 +66,12 @@ suspend fun CertificationRequest.verify() =
     this.verifier().verify(this)
 
 @IgnorableReturnValue
-/** Verify the proof of possession of the contained public key. Asserts that [this] matches the encoded [this.publicKey].
- * @see SignatureVerifier.Companion.verify */
+/** Verify the proof of possession of the contained public key. Asserts that [this] matches the encoded [CertificationRequest.publicKey].
+ * @see SignatureVerifier.verify */
 suspend fun SignatureVerifier.verify(input: CertificationRequest): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
-    require(this.publicKey == input.tbsCsr.publicKey)
-    return verify(input.tbsCsr, input.signature)
+    require(this.publicKey == input.publicKey)
+    return verify(input.tbsCsr.toAsn1.DER(), input.signature)
 }
 
 // @Service
@@ -90,7 +86,7 @@ interface SignatureVerifierProvider {
 
 fun SignatureAlgorithm.verifierFor(key: CryptoPublicKey, configure: DSLConfigureFn<VerifierConfiguration> = null): SignatureVerifier {
     val config = DSL.resolve(::VerifierConfiguration, configure)
-    return Signum.load<SignatureVerifierProvider>().get(this) { verifierFor(it, key, config) }
+    return ServiceLoader.load<SignatureVerifierProvider>().get(this) { verifierFor(it, key, config) }
 }
 
 fun SpecializedSignatureAlgorithm.verifierFor(key: CryptoPublicKey) = this.algorithm.verifierFor(key)

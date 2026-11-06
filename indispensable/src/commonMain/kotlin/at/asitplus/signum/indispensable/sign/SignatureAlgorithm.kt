@@ -1,13 +1,13 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.Encodable
 import at.asitplus.signum.SignumInternals
-import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.installIndispensable
 
-interface SignatureAlgorithm : Encodable {
+interface SignatureAlgorithm : WithSourceRepresentation {
 
     @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
         replaceWith = ReplaceWith("EcdsaAAlgorithm"))
@@ -21,21 +21,13 @@ interface SignatureAlgorithm : Encodable {
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
     @OptIn(SignumInternals::class)
-    private class Unknown(
-        override val asn1Representation: X509AlgorithmIdentifier,
-        override val lookupResult: UnsupportedCryptoException
-    ) : SignatureAlgorithm, ServiceLoader.UnknownShim {
-        override fun toString() = "Unknown SignatureAlgorithm($asn1Representation)"
-        override val preHashedSignatureFormat: SignatureInputFormat get() = throw lookupResult
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Unknown) return false
-            return asn1Representation == other.asn1Representation
-        }
-        override fun hashCode() = asn1Representation.hashCode()
+    class Unknown(lookupResult: UnsupportedCryptoException)
+        : SignatureAlgorithm, ServiceLoader.UnknownShim(lookupResult)
+    {
+        override val preHashedSignatureFormat get() = fails
     }
 
-    companion object: Decodable<SignatureAlgorithm> {
+    companion object {
         init { Signum.installIndispensable() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
