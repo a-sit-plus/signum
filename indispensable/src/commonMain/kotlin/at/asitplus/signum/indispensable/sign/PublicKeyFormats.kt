@@ -1,29 +1,18 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.signum.Signum
-
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.ecPublicKey
-import at.asitplus.awesn1.rsaEncryption
 import at.asitplus.awesn1.serialization.decodeFromDer
-import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
-import at.asitplus.signum.indispensable.invoke
-import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.PublicKeyFormatProvider
-import at.asitplus.signum.indispensable.fromIosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -36,8 +25,9 @@ class RsaPublicKey(
     val n: Asn1Integer.Positive,
     /** public exponent */
     val e: Asn1Integer.Positive,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoPublicKey {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     override val additionalProperties = mutableMapOf<String, String>()
 
@@ -106,7 +96,6 @@ class RsaPublicKey(
             return RsaPublicKey(
                 parsed.modulus as Asn1Integer.Positive,
                 parsed.publicExponent as Asn1Integer.Positive,
-                null,
             )
         }
 
@@ -131,8 +120,10 @@ class RsaPublicKey(
 class EcdsaPublicKey(
     val publicPoint: ECPoint.Normalized,
     val preferCompressedRepresentation: Boolean,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+
     override val additionalProperties = mutableMapOf<String, String>()
 
     override fun asCryptoPublicKey() = this
@@ -177,7 +168,7 @@ class EcdsaPublicKey(
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
-            return EcdsaPublicKey(this.normalize(), preferCompressed, null)
+            return EcdsaPublicKey(this.normalize(), preferCompressed)
         }
 
         /** Decodes key from big-endian X and sign of Y */

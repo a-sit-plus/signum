@@ -1,29 +1,29 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
-
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Time
-import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.serialization.DER
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-import at.asitplus.awesn1.io.encodeToSink
+import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.io.decodeFromSource
+import at.asitplus.awesn1.io.encodeToSink
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.decodeFromTlv
-import kotlinx.io.Buffer
-import kotlinx.io.readByteArray
 import at.asitplus.awesn1.serialization.encodeToTlv
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
 import at.asitplus.testballoon.matrix.matrixSuite
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import kotlin.time.Instant
 
 private object ExtraRepresentation : Encodable.Representation
@@ -35,13 +35,13 @@ private fun tbsCertificate(
     issuerUniqueID: ByteArray? = null,
     subjectUniqueID: ByteArray? = null,
 ) = TbsCertificate(
-    serialNumber = Asn1Integer.ONE,
-    signatureAlgorithmProvider = { EcdsaAlgorithm.withSHA256 },
+    serialNumber = BigInteger.ONE,
+    signatureAlgorithm = EcdsaAlgorithm.withSHA256,
     issuerName = X500Name.EMPTY,
     subjectName = subjectName,
     validFrom = validFrom,
     validUntil = Instant.fromEpochSeconds(1_800_000_000),
-    publicKeyProvider = { ECCurve.SECP_256_R_1.generator.asPublicKey() },
+    publicKey = ECCurve.SECP_256_R_1.generator.asPublicKey(),
     issuerUniqueID = issuerUniqueID,
     subjectUniqueID = subjectUniqueID,
     extensions = emptyList(),

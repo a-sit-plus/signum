@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
-
-import at.asitplus.awesn1.*
+import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
@@ -13,31 +13,20 @@ import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
-interface CryptoPrivateKey : Encodable {
+interface CryptoPrivateKey : WithSourceRepresentation {
 
     interface WithPublicKey : CryptoPrivateKey {
         val publicKey: CryptoPublicKey
     }
 
-    val attributes: Set<Asn1Element>? get() = asn1Representation.attributes
+    val attributes: Set<Asn1Element>? get() = toAsn1().attributes
 
-    @OptIn(SignumInternals::class)
-    private class Unknown(
-        override val asn1Representation: Pkcs8PrivateKeyInfo,
-        override val lookupResult: UnsupportedCryptoException
-    ) : CryptoPrivateKey, ServiceLoader.UnknownShim {
-        override fun toString() = "Unknown CryptoPrivateKey ($asn1Representation)"
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Unknown) return false
-            return asn1Representation == other.asn1Representation
-        }
-        override fun hashCode() = asn1Representation.hashCode()
-    }
+    @SignumInternals
+    class Unknown(
+        lookupResult: UnsupportedCryptoException
+    ) : CryptoPrivateKey, ServiceLoader.UnknownShim(lookupResult)
 
-                .getWithUnknown(element, ::Unknown, PrivateKeyFormatProvider::decodeFromAsn1)
-
-    companion object : Decodable<CryptoPrivateKey> {
+    companion object {
         init { Signum.installIndispensable() }
         @Deprecated("Use SecKeyRef.toCryptoPrivateKey instead")
         fun fromIosEncoded(keyBytes: ByteArray): CryptoPrivateKey.WithPublicKey =

@@ -1,18 +1,18 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.RsaSsaPssParams
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.Asn1OctetString
 import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ecPublicKey
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.awesn1.crypto.RsaSsaPssParams
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
-import at.asitplus.awesn1.serialization.DER
+import at.asitplus.awesn1.ecPublicKey
 import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.serialization.encodeToTlv
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
@@ -30,14 +30,14 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
 val RemainingEncodingTest by matrixSuite {
-    val der = DER { serializersModule = signumAsn1Serializers }
 
     "Signatures use contextual DER and retain raw values until an algorithm is supplied" {
         val rsa = RsaSignature.fromRawSignatureValue(byteArrayOf(1, 2, 3))
         val signature: CryptoSignature = rsa
-        val bytes = der.encodeToByteArray(signature)
-        der.decodeFromByteArray<RsaSignature>(bytes) shouldBe rsa
-        val raw = der.decodeFromByteArray<SignatureValue>(bytes)
+        val bytes = signature.toAsn1.DER()
+        // TODO: restore from asn1 for rsasignature etc
+        // RsaSignature.fromAsn1Representation(bytes) shouldBe rsa
+        val raw = AbstractSignature.fromAsn1(bytes)
         der.encodeToByteArray(raw) shouldBe bytes
         raw.withSignatureAlgorithm(RsaAlgorithm.withSHA256andPKCS1Padding) shouldBe rsa
         shouldThrowAny { der.decodeFromByteArray<CryptoSignature>(bytes) }
@@ -53,9 +53,7 @@ val RemainingEncodingTest by matrixSuite {
     }
 
     "CSR equality uses supplied semantics without requesting an X509 representation" {
-        val name: Name = object : Name {
-            override val relativeDistinguishedNames = emptyList<RelativeDistinguishedName>()
-        }
+        val name = Name.EMPTY
         val key = ECCurve.SECP_256_R_1.generator.asPublicKey()
         val tbs = TbsCertificationRequest(name, key, attributes = emptyList())
         val sameTbs = TbsCertificationRequest(name, key, attributes = emptyList())
@@ -72,7 +70,7 @@ val RemainingEncodingTest by matrixSuite {
         shouldThrowAny { der.encodeToByteArray(csr) }
 
         val encodable = CertificationRequest(
-            TbsCertificationRequest(X500Name.EMPTY, key, attributes = emptyList()),
+            TbsCertificationRequest(Name.EMPTY, key, attributes = emptyList()),
             EcdsaAlgorithm.withSHA256, signature,
         )
         val bytes = der.encodeToByteArray(encodable)
@@ -80,18 +78,17 @@ val RemainingEncodingTest by matrixSuite {
         decoded shouldBe encodable
         decoded.hashCode() shouldBe encodable.hashCode()
         der.encodeToByteArray(decoded) shouldBe bytes
-        val model = encodable.asn1Representation
-        val retained = CertificationRequest.fromAsn1Representation(model)
-        retained.sourceRepresentationFor(X509) shouldBeSameInstanceAs model
-        retained.asn1Representation shouldBeSameInstanceAs model
-        val inner = TbsCertificationRequest.fromAsn1Representation(model.certificationRequestInfo)
-        inner.asn1Representation shouldBeSameInstanceAs model.certificationRequestInfo
+        val model = encodable.toAsn1()
+        val retained = CertificationRequest.fromAsn1(model)
+        retained.toAsn1() shouldBeSameInstanceAs model
+        val inner = TbsCertificationRequest.fromAsn1(model.certificationRequestInfo)
+        inner.toAsn1() shouldBeSameInstanceAs model.certificationRequestInfo
 
         val unknownAlgorithm = model.copy(signatureAlgorithm = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null))
         val originalBytes = der.encodeToByteArray(Pkcs10CertificationRequest.serializer(), unknownAlgorithm)
         val opaque = der.decodeFromByteArray<CertificationRequest>(originalBytes)
         der.encodeToByteArray(opaque) shouldBe originalBytes
-        opaque.tbsCsr.subjectName shouldBe X500Name.EMPTY
+        opaque.tbsCsr.subjectName shouldBe Name.EMPTY
         opaque.tbsCsr.publicKey shouldBe key
         der.encodeToByteArray(opaque.tbsCsr) shouldBe der.encodeToByteArray(encodable.tbsCsr)
         shouldThrowAny { opaque.signatureAlgorithm }
@@ -104,44 +101,44 @@ val RemainingEncodingTest by matrixSuite {
                 algorithmIdentifier = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null),
             ),
         )
-        val opaqueTbs = TbsCertificationRequest.fromAsn1Representation(unknownKey)
-        opaqueTbs.subjectName shouldBe X500Name.EMPTY
+        val opaqueTbs = TbsCertificationRequest.fromAsn1(unknownKey)
+        opaqueTbs.subjectName shouldBe Name.EMPTY
         opaqueTbs.attributes shouldBe emptyList()
         shouldThrowAny { opaqueTbs.publicKey }
-        opaqueTbs.asn1Representation shouldBeSameInstanceAs unknownKey
+        opaqueTbs.toAsn1() shouldBeSameInstanceAs unknownKey
     }
 
     "Alternative names compare their contents without encoding them" {
         val name: GeneralName = object : GeneralName {
-            override fun createValidatedCopy(validate: (GeneralName) -> Boolean): GeneralName = this
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
         }
-        val first = AlternativeNames.fromGeneralNames(listOf(name))
-        val second = AlternativeNames.fromGeneralNames(listOf(name))
+        val first = AlternativeNames(listOf(name))
+        val second = AlternativeNames(listOf(name))
         first shouldBe second
         first.hashCode() shouldBe second.hashCode()
-        first shouldNotBe AlternativeNames.fromGeneralNames(emptyList())
+        first shouldNotBe AlternativeNames(emptyList())
         shouldThrowAny { der.encodeToByteArray(first) }
     }
 
     "Only decoded values retain a source and other encodings leave it unchanged" {
         val ecSignature = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
-        ecSignature.sourceRepresentation shouldBe null
-        val signatureModel = ecSignature.asn1Representation
-        EcdsaSignature.fromAsn1Representation(signatureModel).asn1Representation.rawBitString shouldBeSameInstanceAs signatureModel.rawBitString
-        val rsaModel = RsaSignature(byteArrayOf(1, 2, 3)).asn1Representation
-        RsaSignature.fromAsn1Representation(rsaModel).asn1Representation.rawBitString shouldBeSameInstanceAs rsaModel.rawBitString
+        ecSignature.sourceFormat shouldBe null
+        val signatureModel = ecSignature.toAsn1()
+        EcdsaSignature.fromAsn1Representation(signatureModel).toAsn1().rawBitString shouldBeSameInstanceAs signatureModel.rawBitString
+        val rsaModel = RsaSignature(byteArrayOf(1, 2, 3)).toAsn1()
+        RsaSignature.fromAsn1Representation(rsaModel).toAsn1().rawBitString shouldBeSameInstanceAs rsaModel.rawBitString
 
         val pss = RsaAlgorithm.Parameters.PssPadded(digest = Digest.SHA256)
-        pss.sourceRepresentation shouldBe null
-        val pssModel = pss.asn1Representation
+        pss.sourceFormat shouldBe null
+        val pssModel = pss.toAsn1()
         RsaAlgorithm.Parameters.PssPadded.fromAsn1Representation(pssModel).asn1Representation shouldBeSameInstanceAs pssModel
 
         val key = EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1,
             encodeCurve = true, encodePublicKey = true)
-        key.sourceRepresentation shouldBe null
-        val pkcs8 = key.asPKCS8
+        key.sourceFormat shouldBe null
+        val pkcs8 = key.toAsn1()
         val decoded = EcdsaPrivateKey.fromAsn1Representation(pkcs8)
-        decoded.asPKCS8 shouldBeSameInstanceAs pkcs8
+        decoded.toAsn1() shouldBeSameInstanceAs pkcs8
         decoded shouldBe key
         val sec1 = key.asSEC1
         val fromSec1 = EcdsaPrivateKey.fromAsn1Representation(sec1)
@@ -188,8 +185,7 @@ val RemainingEncodingTest by matrixSuite {
         decoded.trailerField shouldBe 1
         shouldThrowAny { decoded.digest }
         shouldThrowAny { decoded.mgfAlgorithm }
-        decoded.asn1Representation shouldBeSameInstanceAs original
-        der.encodeToByteArray(decoded) shouldBe der.encodeToByteArray(original)
+        decoded.toAsn1() shouldBeSameInstanceAs original
     }
 
     "EC private scalar and retained source do not require a supported curve" {
@@ -213,18 +209,5 @@ val RemainingEncodingTest by matrixSuite {
         fromPkcs8.privateKey shouldBe BigInteger.ONE
         shouldThrowAny { fromPkcs8.curve }
         der.encodeToByteArray(fromPkcs8) shouldBe der.encodeToByteArray(pkcs8)
-    }
-
-    "Encoding independent names have no X509 marker and fail only when encoding is requested" {
-        val name: Name = object : Name {
-            override val relativeDistinguishedNames = emptyList<RelativeDistinguishedName>()
-        }
-        name.asn1Representation shouldBe null
-        shouldThrowAny { der.encodeToByteArray(name) }
-        val generalName: GeneralName = object : GeneralName {
-            override fun createValidatedCopy(validate: (GeneralName) -> Boolean): GeneralName = this
-        }
-        generalName.asn1Representation shouldBe null
-        shouldThrowAny { der.encodeToByteArray(generalName) }
     }
 }

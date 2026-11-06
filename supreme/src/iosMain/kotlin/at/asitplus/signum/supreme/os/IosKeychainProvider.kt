@@ -508,7 +508,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     }
 
     private suspend fun getSignerInternal(alias: String, publicKey: CryptoPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner =
-        Signum.load<IosKeychainOperationsProvider>()
+        ServiceLoader.load<IosKeychainOperationsProvider>()
             .get(publicKey) { makeIosSigner(alias, it, metadata, config) }
 
     override suspend fun createSigningKey(
@@ -534,7 +534,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val algSpecificMetadata: JsonElement?
             memScoped {
                 val attr: CFMutableDictionaryRef
-                Signum.load<IosKeychainOperationsProvider>()
+                ServiceLoader.load<IosKeychainOperationsProvider>()
                     .get(alias) { makeKeyAttributes(it, config) }
                     .let { attr = it.first; algSpecificMetadata = it.second }
 

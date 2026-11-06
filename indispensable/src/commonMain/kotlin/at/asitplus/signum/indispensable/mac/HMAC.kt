@@ -1,23 +1,24 @@
 package at.asitplus.signum.indispensable.mac
 
+import at.asitplus.awesn1.*
 import at.asitplus.signum.Signum
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.hmacWithSHA1
-import at.asitplus.awesn1.hmacWithSHA256
-import at.asitplus.awesn1.hmacWithSHA384
-import at.asitplus.awesn1.hmacWithSHA512
-import at.asitplus.signum.indispensable.installIndispensable
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
 /** RFC 2104 HMAC */
-data class HMAC(val digest: Digest, val oid: ObjectIdentifier)
+class HMAC(val digest: Digest, val oid: ObjectIdentifier)
     : MessageAuthenticationCode
 {
 
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+
     override fun toString() = "HMAC-$digest"
+    override fun hashCode() = digest.hashCode()
+    override fun equals(other: Any?) = (other is HMAC) && (digest == other.digest)
 
     companion object {
         init { Signum.installIndispensable() }

@@ -1,41 +1,17 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.signum.Signum
-import at.asitplus.awesn1.serialization.decodeFromTlv
-
-import at.asitplus.awesn1.Asn1Null
-import at.asitplus.awesn1.Asn1OctetString
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.RsaParams
 import at.asitplus.awesn1.crypto.RsaPkcs1PaddingParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.DEFAULT_TRAILER_FIELD
-import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.ecdsaWithSHA1
-import at.asitplus.awesn1.ecdsaWithSHA256
-import at.asitplus.awesn1.ecdsaWithSHA384
-import at.asitplus.awesn1.ecdsaWithSHA512
 import at.asitplus.awesn1.encoding.Asn1
-import at.asitplus.awesn1.rsaPSS
-import at.asitplus.awesn1.runRethrowing
-import at.asitplus.signum.indispensable.digest.asn1Representation
-import at.asitplus.awesn1.sha1
-import at.asitplus.awesn1.sha1WithRSAEncryption
-import at.asitplus.awesn1.sha256WithRSAEncryption
-import at.asitplus.awesn1.sha384WithRSAEncryption
-import at.asitplus.awesn1.sha512WithRSAEncryption
-import at.asitplus.awesn1.sha_224
-import at.asitplus.awesn1.sha_256
-import at.asitplus.awesn1.sha_384
-import at.asitplus.awesn1.sha_512
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 
 class EcdsaAlgorithm(
@@ -43,8 +19,9 @@ class EcdsaAlgorithm(
     val digest: Digest?,
     /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
     val requiredCurve: ECCurve? = null,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : SignatureAlgorithm, Enumerable {
+
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     override val preHashedSignatureFormat get() = digest
 
@@ -56,7 +33,7 @@ class EcdsaAlgorithm(
 
     override fun hashCode() = (31 * digest.hashCode()) + requiredCurve.hashCode()
 
-    companion object : Enumeration<EcdsaAlgorithm>, Decodable<EcdsaAlgorithm> {
+    companion object : Enumeration<EcdsaAlgorithm> {
         override val entries by lazy { listOf(withSHA256, withSHA384, withSHA512) }
 
         val withSHA256 = EcdsaAlgorithm(Digest.SHA256)
@@ -68,9 +45,9 @@ class EcdsaAlgorithm(
 
 class RsaAlgorithm(
     val parameters: Parameters<*>,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
 ) : SignatureAlgorithm, Enumerable {
 
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     /**
      * Convenience Ctor to use defaults aside digest
@@ -95,7 +72,7 @@ class RsaAlgorithm(
                  *  -- numeric information values already published for EMSA-PKCS1-v1_5,
                  *  -- which are also reflected in IEEE 1363a.
                  */
-                +(params.digest.asn1Representation.let {
+                +(params.digest.toAsn1().let {
                     val exceptions = sequenceOf(
                         KnownOIDs.sha1, KnownOIDs.sha_224, KnownOIDs.sha_256, KnownOIDs.sha_384,
                         KnownOIDs.sha_512 /* TODO: sha512-224, sha512-256 */)
@@ -124,7 +101,7 @@ class RsaAlgorithm(
         PSS
     }
 
-    companion object : Enumeration<RsaAlgorithm>, Decodable<RsaAlgorithm> {
+    companion object : Enumeration<RsaAlgorithm> {
         val withSHA256andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA256))
         val withSHA384andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA384))
         val withSHA512andPKCS1Padding = RsaAlgorithm(Parameters.Pkcs1Padded(Digest.SHA512))
@@ -138,7 +115,7 @@ class RsaAlgorithm(
 
     }
 
-    sealed interface Parameters<out T : RsaParams> : Encodable {
+    sealed interface Parameters<out T : RsaParams> : WithSourceRepresentation {
 
         val type: Padding
         val digest: Digest
@@ -146,6 +123,7 @@ class RsaAlgorithm(
         class Pkcs1Padded(override val digest: Digest) :
             Parameters<RsaPkcs1PaddingParams> //TODO: do we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
         {
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
             override val type: Padding get() = Padding.PKCS1
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -167,22 +145,14 @@ class RsaAlgorithm(
         }
 
         class PssPadded(
-            digestProvider: () -> Digest,
-            mgfAlgorithmProvider: () -> MaskGenerationFunction,
-            val saltLength: UInt,
-            val trailerField: Int,
-            override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
+            override val digest: Digest,
+            val mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
+            val saltLength: UInt = digest.outputLength.bytes,
+            val trailerField: Int = DEFAULT_TRAILER_FIELD,
         ) : Parameters<RsaSsaPssParams> {
-            constructor(
-                digest: Digest = Digest.SHA1,
-                mgfAlgorithm: MaskGenerationFunction = MaskGenerationFunction.Pkcs1Mgf1(digest),
-                saltLength: UInt = digest.outputLength.bytes,
-                trailerField: Int = DEFAULT_TRAILER_FIELD,
-            ) : this({ digest }, { mgfAlgorithm }, saltLength, trailerField, null)
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
             override val type: Padding get() = Padding.PSS
-            override val digest: Digest by lazy(digestProvider)
-            val mgfAlgorithm by lazy(mgfAlgorithmProvider)
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -201,26 +171,26 @@ class RsaAlgorithm(
                 return result
             }
 
-            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : Encodable {
+            sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : WithSourceRepresentation {
+                @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
                 data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
                     companion object {
                         val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")
                     }
                 }
 
-                companion object : Decodable<MaskGenerationFunction> {
+                companion object {
                     fun fromAsn1Representation(element: X509AlgorithmIdentifier): MaskGenerationFunction =
                         runRethrowing {
                             when (element.oid) {
-                                Pkcs1Mgf1.oid ->
-                                                                        Pkcs1Mgf1(Digest.fromAsn1Representation(Signum.Der.decodeFromTlv(X509AlgorithmIdentifier.serializer(), element.parameters!!)))
+                                Pkcs1Mgf1.oid -> Pkcs1Mgf1(Digest.fromAsn1(element.parameters!!))
                                 else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
                             }
                         }
                 }
             }
 
-            companion object : Decodable<PssPadded> {
+            companion object {
                 val DEFAULT_SHA256 = PssPadded(digest = Digest.SHA256)
                 val DEFAULT_SHA384 = PssPadded(digest = Digest.SHA384)
                 val DEFAULT_SHA512 = PssPadded(digest = Digest.SHA512)
@@ -253,7 +223,7 @@ object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
         else -> null
     }
 
-    override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm? = when (algorithmIdentifier.oid) {
+    override fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm? = when (algorithmIdentifier.oid) {
         KnownOIDs.ecdsaWithSHA1,
         KnownOIDs.ecdsaWithSHA256,
         KnownOIDs.ecdsaWithSHA384,

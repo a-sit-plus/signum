@@ -1,14 +1,14 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
 
 internal actual fun indispensablePlatformInit() {
-    Signum.registerProvider<JcaMappingProvider>(FallbackToDERFormat)
-    Signum.registerProvider<JcaMappingProvider>(IndispensableJcaExtensionProvider)
+    ServiceLoader.register<JcaMappingProvider>(FallbackToDERFormat)
+    ServiceLoader.register<JcaMappingProvider>(IndispensableJcaExtensionProvider)
 }
 
 internal actual fun registerIndispensablePlatformProvider(provider: Any): Boolean {
-    if (provider !is JcaMappingProvider) return false
-    Signum.registerProvider<JcaMappingProvider>(provider)
-    return true
+    var matched = false
+    if (provider is JcaMappingProvider) { ServiceLoader.register<JcaMappingProvider>(provider); matched = true }
+    return matched
 }

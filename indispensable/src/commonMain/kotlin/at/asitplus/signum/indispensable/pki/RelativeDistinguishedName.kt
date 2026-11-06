@@ -1,29 +1,23 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.Signum
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Primitive
-import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.Identifiable
-import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.allDistinctByOids
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.fromAsn1
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
 class RelativeDistinguishedName(
-    attrsAndValuesProvider: () -> Set<AttributeTypeAndValue>,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-    performValidation: Boolean,
-) : Encodable {
-
-    constructor(attrsAndValues: Set<AttributeTypeAndValue>) : this({ attrsAndValues }, null, true)
+    val attrsAndValues: Set<AttributeTypeAndValue>,
+    performValidation: Boolean = true,
+) : WithSourceRepresentation {
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
@@ -33,9 +27,8 @@ class RelativeDistinguishedName(
      * generic bridge [AttributeTypeAndValue] so callers needn't depend on the typed attributes in
      * `indispensable-pkix`.
      */
-    constructor(singleItem: X500AttributeTypeAndValue) : this(AttributeTypeAndValue(singleItem))
-
-    val attrsAndValues by lazy(attrsAndValuesProvider)
+    constructor(singleItem: X500AttributeTypeAndValue) : this(
+        AttributeTypeAndValue.fromAsn1(singleItem))
 
     val isValid: Boolean by lazy {
         attrsAndValues.isStructurallyValid() &&
@@ -56,11 +49,9 @@ class RelativeDistinguishedName(
 
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
-    companion object : Decodable<RelativeDistinguishedName> {
+    companion object {
 
-        /**
-         * Parse a single RDN string (e.g., "CN=John Doe+O=Company").
-         */
+        /** Parse a single RDN string (e.g., "CN=John Doe+O=Company"). */
         fun fromString(rdnStr: String): RelativeDistinguishedName {
             val atvs = rdnStr.splitRespectingEscapeAndQuotes('+').map { atvStr ->
                 val parts = atvStr.splitFirstUnescaped( '=')
@@ -116,32 +107,55 @@ class RelativeDistinguishedName(
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
-interface AttributeTypeAndValue : Identifiable, Encodable {
-    val displayName: String?
-    val isValid: Boolean?
+// TODO: this should be subclassable by registrations and stuff
+open class AttributeTypeAndValue private constructor(
+    override val oid: ObjectIdentifier,
+    /** Raw X.509 attribute value; fails if the attribute has no X.509 representation. */
+    // TODO: this assumes X.509 basis, still (a comment inline says this is backed by the RFC?)
+    // if this is not true, we should have a shared base interface for value and go from there
+    val value: Asn1Element
+) : Identifiable, WithSourceRepresentation {
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+
+    override fun toString() = "AttributeTypeAndValue(${toRfc2253String()})"
+
+    // TODO: this is where we need to replace attribute lookup
+    val typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()
+    protected val valueAsn1String by lazy { catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()) } }
+
+    open val isValid get() = valueAsn1String.mapCatching { it.isValid }.getOrElse { false }
+
+    val valueString get() =
+        valueAsn1String.mapCatching {
+            canonicalizeRfc2253String(it.value)
+        }.getOrElse { "#" + value.derEncoded.toHexString() }
 
     /**
      * Converts the current AttributeTypeAndValue instance into a string representation
      * that conforms to the RFC 2253 standard for Distinguished Names (DNs).
      *
      * @return A string representation of the attribute's type and value in RFC 2253 format.
-     * @throws Asn1Exception if the attribute has no X.509 representation (i.e. if it does not implement [AttributeTypeAndValue]),
+     * @throws Asn1Exception if the attribute has no X.509 representation,
      * as the RFC only defines string canonicalization for X.509
      */
     fun toRfc2253String(): String {
-            // The stored value is raw (unescaped); re-escape per RFC 4514 for output. Non-string or
-            // undecodable values fall back to the hexstring form.
-            val value = requireNotNull(asn1Representation) { "Attribute has no X.509 representation" }.value
-            val attrValue = (value as? Asn1Primitive)?.let { prim ->
-                catchingUnwrapped { canonicalizeRfc2253String(Asn1String.decodeFromTlv(prim).value) }
-                    .getOrElse { "#" + prim.toDerHexString() }
-            } ?: ("#" + value.derEncoded.toHexString())
+        // RFC 2253 canonical form for case-insensitive matching: fold the value to lower case too
+        return "${typeString.lowercase() }=${valueString.lowercase()}"
+    }
 
-            // RFC 2253 canonical form for case-insensitive matching: fold the value to lower case too
-            return "${Signum.attributeNameFor(oid)?.lowercase() ?: oid}=${attrValue.lowercase()}"
-        }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AttributeTypeAndValue) return false
+        return oid == other.oid && value == other.value
+    }
 
-    interface Descriptor<out T : AttributeTypeAndValue> : Decodable<T>, Identifiable {
+    override fun hashCode(): Int {
+        var result = oid.hashCode()
+        result = 31 * result + value.hashCode()
+        return result
+    }
+
+    interface Descriptor<out T : AttributeTypeAndValue> : Identifiable {
         val canonicalName: String
 
         object OID {
@@ -167,28 +181,24 @@ interface AttributeTypeAndValue : Identifiable, Encodable {
         }
 
         fun fromString(value: String): T
-        /** Constructs an attribute from its value without retaining a decoded source. */
         fun fromValue(value: Asn1Element): T
-        fun fromAsn1Representation(src: X500AttributeTypeAndValue): T
 
     }
 
 
-    companion object : Decodable<AttributeTypeAndValue> {
+    companion object {
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
-            Signum.attributeDescriptorFor(oid)?.fromValue(value) ?: BaseX509AttributeTypeAndValue(oid, value)
+            // TODO: attribute descriptor by oid lookup
+            Signum.attributeDescriptorFor(oid)?.fromValue(value) ?: AttributeTypeAndValue(oid, value)
 
-        operator fun invoke(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
-            fromAsn1Representation(asn1Representation)
-
-        @OptIn(ExperimentalStdlibApi::class)
         fun fromString(type: String, value: String): AttributeTypeAndValue? {
             val key = type.trim()
             val v = value.trim()
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
             if (v.length > 1 && v.first() == '#' &&  isHexString(v.substring(1))) {
                 catchingUnwrapped { Asn1Element.parse(v.substring(1).hexToByteArray()) }.getOrNull()?.let { element ->
+                    // TODO: attribute descriptor by name lookup
                     val oid = Signum.attributeDescriptorForName(key)?.oid
                         ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
                     return invoke(oid, element)
@@ -203,10 +213,6 @@ interface AttributeTypeAndValue : Identifiable, Encodable {
             val oid = catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
             return invoke(oid, Asn1String.UTF8(raw).encodeToTlv())
         }
-
-        fun fromAsn1Representation(asn1Representation: X500AttributeTypeAndValue): AttributeTypeAndValue =
-            Signum.attributeDescriptorFor(asn1Representation.oid)?.fromAsn1Representation(asn1Representation)
-                ?: BaseX509AttributeTypeAndValue(asn1Representation)
     }
 }
 
@@ -214,14 +220,11 @@ private class StandardX500AttributeDescriptor(
     override val oid: ObjectIdentifier,
     override val canonicalName: String,
     private val stringFactory: (String) -> Asn1String,
-) : AttributeTypeAndValue.Descriptor<BaseX509AttributeTypeAndValue> {
-    override fun fromString(value: String): BaseX509AttributeTypeAndValue =
-        BaseX509AttributeTypeAndValue(oid, stringFactory(value))
+) : AttributeTypeAndValue.Descriptor<AttributeTypeAndValue> {
+    override fun fromString(value: String): AttributeTypeAndValue =
+        AttributeTypeAndValue(oid, stringFactory(value).encodeToTlv())
 
-    override fun fromValue(value: Asn1Element) = BaseX509AttributeTypeAndValue(oid, value)
-
-    override fun fromAsn1Representation(src: X500AttributeTypeAndValue) =
-        BaseX509AttributeTypeAndValue(src)
+    override fun fromValue(value: Asn1Element) = AttributeTypeAndValue(oid, value)
 }
 
 internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(
@@ -263,54 +266,6 @@ internal val standardX500AttributeAliases = mapOf(
     "DNQ" to AttributeTypeAndValue.Descriptor.OID.dnQualifier,
     "EMAIL" to AttributeTypeAndValue.Descriptor.OID.emailAddress,
 )
-
-abstract class BaseAttributeTypeAndValue(
-    override val oid: ObjectIdentifier,
-) : AttributeTypeAndValue {
-    override val displayName: String? get() = Signum.attributeNameFor(oid)
-    override val isValid: Boolean? = null
-
-}
-
-open class BaseX509AttributeTypeAndValue protected constructor(
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-    oid: ObjectIdentifier,
-    val value: Asn1Element,
-    validateValue: Boolean,
-) : BaseAttributeTypeAndValue(oid), AttributeTypeAndValue {
-
-    constructor(oid: ObjectIdentifier, value: Asn1Element) : this(null, oid, value, false)
-
-    @Throws(Asn1Exception::class)
-    constructor(oid: ObjectIdentifier, value: Asn1String) : this(null, oid, value.encodeToTlv(), true)
-
-    constructor(asn1Representation: X500AttributeTypeAndValue) :
-            this(X509 to asn1Representation, asn1Representation.oid, asn1Representation.value, false)
-
-    override val isValid: Boolean? by lazy {
-        catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrElse { false }
-    }
-
-    init {
-        if (validateValue && isValid == false) {
-            throw Asn1Exception("Invalid AttributeTypeAndValue: ${displayName?.let { "($it)" }}!")
-        }
-    }
-
-    override fun toString() = "AttributeTypeAndValue(oid=$oid, value=$value)"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is BaseX509AttributeTypeAndValue) return false
-        return oid == other.oid && value == other.value
-    }
-
-    override fun hashCode(): Int {
-        var result = oid.hashCode()
-        result = 31 * result + value.hashCode()
-        return result
-    }
-}
 
 private fun isHexString(s: String): Boolean =
     s.isNotEmpty() && s.length % 2 == 0 && s.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }

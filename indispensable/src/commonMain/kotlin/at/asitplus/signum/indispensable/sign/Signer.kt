@@ -1,17 +1,9 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.encodeToByteArray
-import at.asitplus.signum.indispensable.Encodable
-
 import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.signum.dsl.EphemeralSignerConfiguration
-import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
@@ -98,7 +90,7 @@ interface Signer {
 
     companion object {
         suspend fun Ephemeral(configure: DSLConfigureFn<EphemeralSignerConfiguration> = null) =
-            Signum.load<InMemoryKeysProvider>()
+            ServiceLoader.load<InMemoryKeysProvider>()
                 .get(DSL.resolve(::EphemeralSignerConfiguration, configure))
                     { makeEphemeralSigner(it) }
     }
@@ -108,8 +100,6 @@ suspend inline fun Signer.sign(data: ByteArray) =
     sign(SignatureInput(data))
 suspend inline fun Signer.sign(data: Sequence<ByteArray>) =
     sign(SignatureInput(data))
-suspend inline fun <reified T : Encodable> Signer.sign(input: T) =
-    sign(Signum.Der.encodeToByteArray(input))
 
 /** Shorthand helper to create an [Certificate] by signing [tbsCertificate] */
 suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
@@ -117,7 +107,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
         throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
     return Certificate(
         tbsCertificate = tbsCertificate,
-        signature = sign(Signum.Der.encodeToByteArray(tbsCertificate)).signature
+        signatureValue = sign(tbsCertificate.toAsn1.DER()).signature
     )
 }
 
@@ -127,7 +117,7 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
         throw Asn1StructuralException("The signer's public key does not match the TbsCSR's.")
     return CertificationRequest(
         tbsCsr = tbsCsr, signatureAlgorithm = signatureAlgorithm,
-        signature = sign(Signum.Der.encodeToByteArray(tbsCsr)).signature)
+        signatureValue = sign(tbsCsr.toAsn1.DER()).signature)
 }
 
 /**
@@ -138,7 +128,7 @@ fun SignatureAlgorithm.signerFor(
     configure: DSLConfigureFn<InMemorySignerConfiguration> = null)
 : Signer.WithExportableKey {
     val config = DSL.resolve(::InMemorySignerConfiguration, configure)
-    return Signum.load<InMemoryKeysProvider>().get(privateKey)
+    return ServiceLoader.load<InMemoryKeysProvider>().get(privateKey)
         { createSignerForKey(this@signerFor, it, config) }
 }
 

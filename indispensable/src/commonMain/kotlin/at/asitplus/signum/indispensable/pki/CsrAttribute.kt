@@ -1,50 +1,29 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
-import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.Encodable
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 
-interface CsrAttribute : Identifiable, Encodable {
-
-    companion object : Decodable<CsrAttribute> {
-        operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): CsrAttribute =
-            X509CsrAttribute(oid, value)
-
-        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): CsrAttribute =
-            invoke(oid, setOf(value))
-
-        operator fun invoke(asn1Representation: Pkcs10CsrAttribute): CsrAttribute =
-            X509CsrAttribute(asn1Representation)
-
-        @Throws(Asn1Exception::class)
-        fun fromAsn1Representation(
-            element: Pkcs10CsrAttribute): CsrAttribute =
-            X509CsrAttribute(element)
-
-        val EXTENSION_REQUEST_OID: ObjectIdentifier = Pkcs10CsrAttribute.EXTENSION_REQUEST_OID
-    }
-}
-
-class X509CsrAttribute(
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
+// TODO: properly split this from its asn1 roots
+class CsrAttribute(
     override val oid: ObjectIdentifier,
-    val value: Set<Asn1Element>,
-) : CsrAttribute {
+    val value: Set<Asn1Element>
+) : Identifiable, WithSourceRepresentation {
 
-    constructor(oid: ObjectIdentifier, value: Set<Asn1Element>) : this(null, oid, value)
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 
     constructor(oid: ObjectIdentifier, singleValue: Asn1Element) : this(oid, setOf(singleValue))
 
     constructor(asn1Representation: Pkcs10CsrAttribute) :
-            this(X509 to asn1Representation, asn1Representation.oid, asn1Representation.value)
+            this(asn1Representation.oid, asn1Representation.value)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is X509CsrAttribute) return false
+        if (other !is CsrAttribute) return false
         return oid == other.oid && value == other.value
     }
 
@@ -55,4 +34,11 @@ class X509CsrAttribute(
     }
 
     override fun toString(): String = "X509CsrAttribute(oid=$oid, value=$value)"
+
+    companion object {
+        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): CsrAttribute =
+            CsrAttribute(oid, setOf(value))
+
+        val EXTENSION_REQUEST_OID: ObjectIdentifier = Pkcs10CsrAttribute.EXTENSION_REQUEST_OID
+    }
 }

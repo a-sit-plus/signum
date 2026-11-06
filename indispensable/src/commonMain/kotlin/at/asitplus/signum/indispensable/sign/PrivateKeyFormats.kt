@@ -1,40 +1,26 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.signum.Signum
-import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
-
-import at.asitplus.awesn1.Asn1BitString
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaOtherPrimeInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
-import at.asitplus.awesn1.ecPublicKey
-import at.asitplus.awesn1.rsaEncryption
-import at.asitplus.awesn1.toAsn1Integer
-import at.asitplus.awesn1.toBigInteger
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
+import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.ecmath.times
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.Decodable
-import at.asitplus.signum.indispensable.Encodable
-import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
-import at.asitplus.signum.indispensable.PrivateKeyFormatProvider
-import at.asitplus.signum.indispensable.equalsCryptographically
-import at.asitplus.signum.indispensable.fromIosEncodedPrivateKeyLength
-import at.asitplus.signum.indispensable.iosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
 import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
 class RsaPrivateKey(
-    parametersProvider: () -> Parameters,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
-    override val attributes: Set<Asn1Element>?,
+    private val parameters: Parameters,
+    override val attributes: Set<Asn1Element>? = null,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
+    @SignumInternals
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     /** The RSA components form one unit: every semantic access requires valid CRT relationships. */
     data class Parameters(
@@ -80,8 +66,7 @@ class RsaPrivateKey(
         crtCoefficient: BigInteger,
         otherPrimeInfos: List<PrimeInfo>?,
         attributes: Set<Asn1Element>? = null,
-    ) : this(
-        { Parameters(
+    ) : this(Parameters(
             publicKey = publicKey,
             privateKey = privateKey,
             prime1 = prime1,
@@ -90,12 +75,9 @@ class RsaPrivateKey(
             prime2exponent = prime2exponent,
             crtCoefficient = crtCoefficient,
             otherPrimeInfos = otherPrimeInfos,
-        ) },
-        null,
+        ),
         attributes,
     )
-
-    private val parameters by lazy(parametersProvider)
 
     override val publicKey: RsaPublicKey get() = parameters.publicKey
     val privateKey: BigInteger get() = parameters.privateKey
@@ -119,8 +101,10 @@ class RsaPrivateKey(
         val prime: BigInteger,
         val exponent: BigInteger,
         val coefficient: BigInteger,
-    ) : Encodable {
-        companion object : Decodable<PrimeInfo> {
+    ) : WithSourceRepresentation {
+        @SignumInternals
+        override val sourceRepresentation = SourceRepresentationStorage()
+        companion object {
             fun fromAsn1Representation(
                 element: Pkcs1RsaOtherPrimeInfo): PrimeInfo =
                 PrimeInfo(
@@ -130,7 +114,7 @@ class RsaPrivateKey(
         }
     }
 
-    companion object : Decodable<RsaPrivateKey> {
+    companion object {
         val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
     }
 
@@ -138,9 +122,11 @@ class RsaPrivateKey(
 
 sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger,
-    override val sourceRepresentation: Pair<Encodable.Representation, Any>?,
     override val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey {
+
+    @SignumInternals
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     abstract val privateKeyBytes: ByteArray
 
@@ -156,9 +142,8 @@ sealed class EcdsaPrivateKey private constructor(
         publicKeyProvider: () -> EcdsaPublicKey,
         val encodeCurve: Boolean,
         val encodePublicKey: Boolean,
-        sourceRepresentation: Pair<Encodable.Representation, Any>?,
         attributes: Set<Asn1Element>?,
-    ) : EcdsaPrivateKey(privateKey, sourceRepresentation, attributes),
+    ) : EcdsaPrivateKey(privateKey, attributes),
         CryptoPrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
@@ -169,8 +154,7 @@ sealed class EcdsaPrivateKey private constructor(
             encodePublicKey: Boolean,
             attributes: Set<Asn1Element>? = null,
         ) : this(
-            privateKey, { publicKey }, encodeCurve, encodePublicKey,
-            null, attributes,
+            privateKey, { publicKey }, encodeCurve, encodePublicKey, attributes,
         ) {
             require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
                 "Public key must match the private key!"
@@ -207,19 +191,8 @@ sealed class EcdsaPrivateKey private constructor(
         privateKey: BigInteger,
         val publicKeyBytes: Asn1BitString?,
         private val curveOrderLengthInBytes: Int,
-        sourceRepresentation: Pair<Encodable.Representation, Any>?,
-        attributes: Set<Asn1Element>?,
-    ) : EcdsaPrivateKey(privateKey, sourceRepresentation, attributes) {
-
-        constructor(
-            privateKey: BigInteger,
-            publicKeyBytes: Asn1BitString?,
-            attributes: Set<Asn1Element>? = null,
-            curveOrderLengthInBytes: Int,
-        ) : this(
-            privateKey, publicKeyBytes, curveOrderLengthInBytes,
-            null, attributes,
-        )
+        attributes: Set<Asn1Element>? = null,
+    ) : EcdsaPrivateKey(privateKey, attributes) {
 
         fun withCurve(
             curve: ECCurve,
@@ -256,7 +229,7 @@ sealed class EcdsaPrivateKey private constructor(
 
     }
 
-    companion object : Decodable<EcdsaPrivateKey> {
+    companion object {
         val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
         internal fun iosDecodeInternal(keyBytes: ByteArray): EcdsaPrivateKey.WithPublicKey {
@@ -283,8 +256,8 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
 
 object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
     override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
-        is RsaPrivateKey -> Pkcs8PrivateKeyInfo.Companion(value.asPKCS1, value.attributes, Signum.Der)
-        is EcdsaPrivateKey -> Pkcs8PrivateKeyInfo.Companion(value.asSEC1, value.curveOidForPkcs8(), value.attributes, Signum.Der)
+        is RsaPrivateKey -> Pkcs8PrivateKeyInfo(value.asPKCS1(), value.attributes, Signum.Der)
+        is EcdsaPrivateKey -> Pkcs8PrivateKeyInfo(value.asSEC1(), value.curveOidForPkcs8(), value.attributes, Signum.Der)
         else -> null
     }
 
