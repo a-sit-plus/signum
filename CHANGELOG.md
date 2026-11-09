@@ -25,6 +25,12 @@ This is a major refactor!
     * Add `CWT Claims` (RFC 9597) as `CoseHeader.cwtClaims`
     * Change `CoseHeader.criticalHeaders` to a non-empty `List<CoseHeaderLabel>`, as defined in RFC 9052 (**breaking**)
     * Change `CoseHeader.contentType` to `CoseContentType`, a media type or a CoAP content format, as defined in RFC 9052 (**breaking**)
+* `InstantLongSerializer`: Decode every NumericDate representation allowed by RFC 7519 and RFC 8392
+    * JSON: any JSON number, including fractions and exponents (e.g. `1700000000.5`, `1.7e9`); previously only integers (and integer mantissas with exponents) were accepted
+    * CBOR: half-, single- and double-precision floats in addition to integers
+    * Fractional seconds are retained when decoding; encoding still produces whole seconds
+    * Non-finite and out-of-range values are rejected with a `SerializationException`
+    * The deprecated `at.asitplus.signum.indispensable.cosef.InstantLongSerializer` now delegates to `at.asitplus.signum.indispensable.io.InstantLongSerializer`
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
