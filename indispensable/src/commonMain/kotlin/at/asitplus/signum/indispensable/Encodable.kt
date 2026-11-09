@@ -16,6 +16,8 @@ class SourceRepresentationStorage {
     @OptIn(SignumInternals::class)
     override fun equals(other: Any?) = (other is SourceRepresentationStorage) && (x == other.x)
     @OptIn(SignumInternals::class)
+    infix fun presentAndEquals(other: SourceRepresentationStorage) = (x != null) && this == other
+    @OptIn(SignumInternals::class)
     override fun toString() = x.toString()
 }
 

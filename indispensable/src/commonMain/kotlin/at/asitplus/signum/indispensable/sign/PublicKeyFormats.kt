@@ -1,15 +1,10 @@
 package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
-import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
-import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
@@ -17,7 +12,6 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
 class RsaPublicKey(
@@ -60,14 +54,7 @@ class RsaPublicKey(
     }
 
     override val didCodec get() = DID_KEY_CODEC
-    override val didKeyBytes get() = pkcsEncoded
-
-    /**
-     * PKCS#1 encoded RSA Public Key
-     */
-    val pkcsEncoded by lazy {
-                Signum.Der.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
-    }
+    override val didKeyBytes get() = toAsn1.PKCS1.DER()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -85,22 +72,9 @@ class RsaPublicKey(
 
     companion object {
         val DID_KEY_CODEC = 0x1205u.varint
-        /**
-         * decodes a PKCS#1-encoded RSA key
-         *
-         * @throws Asn1Exception all sorts of exceptions on invalid input
-         */
-        @Throws(Asn1Exception::class)
-        fun fromPKCS1encoded(input: ByteArray): RsaPublicKey {
-            val parsed = Signum.Der.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input)
-            return RsaPublicKey(
-                parsed.modulus as Asn1Integer.Positive,
-                parsed.publicExponent as Asn1Integer.Positive,
-            )
-        }
 
-        @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
-        fun fromIosEncoded(input: ByteArray) = fromPKCS1encoded(input)
+        @Deprecated("Use from pkcs1 directly", replaceWith = ReplaceWith("fromAsn1.PKCS1(input)"))
+        fun fromIosEncoded(input: ByteArray) = fromAsn1.PKCS1(input)
 
         // on companion to prevent platform signature clashes with JVM
         @Suppress("NOTHING_TO_INLINE")
@@ -136,6 +110,7 @@ class EcdsaPublicKey(
     val yCompressed get() = publicPoint.yCompressed
 
     /** ANSI X9.63 encoding (as used in the X.509 signatureValue) */
+    // TODO: should this end up being a source format?
     fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
         when (useCompressed) {
             true -> ANSIECPrefix.forSign(yCompressed) + xBytes
@@ -220,8 +195,8 @@ class EcdsaPublicKey(
 
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
     override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
-        is RsaPublicKey -> SubjectPublicKeyInfo.rsa(value.n, value.e, Signum.Der)
-        is EcdsaPublicKey -> SubjectPublicKeyInfo.from(at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Uncompressed(value.curve.oid, value.xBytes, value.yBytes))
+        is RsaPublicKey -> value.toAsn1()
+        is EcdsaPublicKey -> value.toAsn1()
         else -> null
     }
 
@@ -233,7 +208,7 @@ object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = when(codec) {
         RsaPublicKey.DID_KEY_CODEC ->
-            RsaPublicKey.fromPKCS1encoded(keyBytes)
+            RsaPublicKey.fromAsn1.PKCS1(keyBytes)
         EcdsaPublicKey.DID_KEY_CODEC_P256, UVarInt(0x1290u) ->
             EcdsaPublicKey.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
         EcdsaPublicKey.DID_KEY_CODEC_P384, UVarInt(0x1291u), UVarInt(8u) ->

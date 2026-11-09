@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -14,11 +16,7 @@ import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
  */
 interface CryptoSignature : WithSourceRepresentation, AbstractSignature {
 
-    override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
-        // TODO: this copies the old behavior (always going via asn1) for fully-defined sigs
-        // maybe we want to be more nuanced here?
-        CryptoSignature.fromAsn1(toAsn1())
-            .withSignatureAlgorithm(signatureAlgorithm)
+    override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) = this
 
     // TODO: providerize this; the names do not need to be preserved
     val joseBytes: ByteArray get() = TODO("providerize JOSE/COSE for generic provider-provided signature types")
@@ -42,6 +40,18 @@ interface CryptoSignature : WithSourceRepresentation, AbstractSignature {
         /** Loads the raw signature bytes (the *content* of the X509SignatureValue BIT STRING) */
         fun fromRawSignatureValue(sigBytes: ByteArray) =
             fromAsn1(X509SignatureValue(sigBytes))
+
+        fun signaturesEqual(leftAlg: SignatureAlgorithm, left: AbstractSignature, rightAlg: SignatureAlgorithm, right: AbstractSignature): Boolean {
+            if (leftAlg != rightAlg) return false
+            if (left is CryptoSignature && right is CryptoSignature) return (left == right)
+            @OptIn(SignumInternals::class)
+            // this covers unparsed signatures on both sides
+            if (left.sourceRepresentation presentAndEquals right.sourceRepresentation) return true
+            // ok, now we need to be able to parse both
+            return catchingUnwrapped {
+                left.withSignatureAlgorithm(leftAlg) == right.withSignatureAlgorithm(rightAlg)
+            }.getOrElse { false }
+        }
     }
 }
 

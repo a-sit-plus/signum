@@ -104,7 +104,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
                 is EphemeralRsaConfiguration ->
                     SupremeIosEphemeralSigner.RSA(
                         privateKey = privateKey,
-                        publicKey = RsaPublicKey.fromPKCS1encoded(pubkeyBytes),
+                        publicKey = RsaPublicKey.fromAsn1.PKCS1(pubkeyBytes),
                         signatureAlgorithm = RsaAlgorithm(alg.padding, alg.digest)
                     )
 

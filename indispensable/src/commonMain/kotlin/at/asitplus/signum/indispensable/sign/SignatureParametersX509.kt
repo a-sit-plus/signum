@@ -4,6 +4,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.*
 import at.asitplus.awesn1.crypto.EcdsaSigValue.Companion.toEcdsaSigValue
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.signum.Signum
@@ -44,7 +45,7 @@ val PssPadded.MaskGenerationFunction.toAsn1
     }
 
 @Suppress("UNCHECKED_CAST")
-val RsaPrivateKey.PrimeInfo.toAsn1
+val PrimeInfo.toAsn1
     get() = asn1Encoders<Pkcs1RsaOtherPrimeInfo, _> {
         Pkcs1RsaOtherPrimeInfo(
             prime.toAsn1Integer() as Asn1Integer.Positive,
@@ -53,53 +54,64 @@ val RsaPrivateKey.PrimeInfo.toAsn1
         )
     }
 
-// TODO: consider whether we want this to be its own source format (instead of wrapped into pkcs8)
-// if we do: make pkcs1/sec1 an encoder/decoder pair each, and then make the pkcs8 encoder/decoder use those
-val RsaPrivateKey.asPKCS1 get() =
-    asn1Encoders<Pkcs1RsaPrivateKeyInfo,_> {
-        Pkcs1RsaPrivateKeyInfo.of(this.toAsn1(), Signum.Der)
+class RsaPrivateKeyAsn1Converters(self: RsaPrivateKey) :
+    Asn1EncodingHelpers.Asn1Encoders.WithPEM<Pkcs8PrivateKeyInfo> by
+    (self.asn1Encoders {
+        Pkcs8PrivateKeyInfo(convert(it), it.attributes, Signum.Der)
+    })
+{
+
+    val PKCS1 = self.asn1Encoders(::convert)
+
+    companion object {
+        private fun convert(self: RsaPrivateKey) =
+            Pkcs1RsaPrivateKeyInfo(
+                version = if (self.otherPrimeInfos != null) Pkcs1RsaPrivateKeyInfo.Version.MULTI else Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME,
+                modulus = self.publicKey.n,
+                publicExponent = self.publicKey.e,
+                privateExponent = positive(self.privateKey),
+                prime1 = positive(self.prime1),
+                prime2 = positive(self.prime2),
+                exponent1 = positive(self.prime1exponent),
+                exponent2 = positive(self.prime2exponent),
+                coefficient = positive(self.crtCoefficient),
+                otherPrimeInfos = self.otherPrimeInfos?.map { it.toAsn1() },
+            )
     }
-val EcdsaPrivateKey.asSEC1 get() =
-    asn1Encoders<Sec1EcPrivateKeyInfo,_> {
-        Sec1EcPrivateKeyInfo.of(this.toAsn1(), Signum.Der)
-    }
-
-internal fun RsaPrivateKey.toPkcs1Representation(): Pkcs1RsaPrivateKeyInfo =
-    Pkcs1RsaPrivateKeyInfo(
-        version = if (otherPrimeInfos != null) Pkcs1RsaPrivateKeyInfo.Version.MULTI else Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME,
-        modulus = publicKey.n,
-        publicExponent = publicKey.e,
-        privateExponent = positive(privateKey),
-        prime1 = positive(prime1),
-        prime2 = positive(prime2),
-        exponent1 = positive(prime1exponent),
-        exponent2 = positive(prime2exponent),
-        coefficient = positive(crtCoefficient),
-        otherPrimeInfos = otherPrimeInfos?.map { it.toAsn1() },
-    )
-
-internal fun EcdsaPrivateKey.toSec1Representation(): Sec1EcPrivateKeyInfo =
-    Sec1EcPrivateKeyInfo(
-        version = Sec1EcPrivateKeyInfo.Version.V1,
-        privateKey = privateKeyBytes,
-        parameters = when (this) {
-            is EcdsaPrivateKey.WithPublicKey -> if (encodeCurve) curve.oid else null
-            is EcdsaPrivateKey.WithoutPublicKey -> null
-        },
-        publicKey = when (this) {
-            is EcdsaPrivateKey.WithPublicKey ->
-                if (encodePublicKey) Asn1.BitString(publicKey.iosEncoded).asAsn1BitString() else null
-            is EcdsaPrivateKey.WithoutPublicKey -> publicKeyBytes
-        },
-    )
-
-internal fun decodeEcCurve(element: Asn1Element): ECCurve =
-    ECCurve.withOid(ObjectIdentifier.decodeFromTlv(element as Asn1Primitive))
-
-internal fun EcdsaPrivateKey.curveOidForPkcs8(): ObjectIdentifier = when (this) {
-    is EcdsaPrivateKey.WithPublicKey -> curve.oid
-    is EcdsaPrivateKey.WithoutPublicKey -> throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
 }
+
+val RsaPrivateKey.toAsn1 get() = RsaPrivateKeyAsn1Converters(this)
+
+class EcdsaPrivateKeyAsn1Converters(self: EcdsaPrivateKey) :
+    Asn1EncodingHelpers.Asn1Encoders.WithPEM<Pkcs8PrivateKeyInfo> by
+    (self.asn1Encoders {
+        require (it is EcdsaPrivateKey.WithPublicKey) { "Curve information is missing, PKCS#8 encoding is not possible. Use withCurve()!" }
+        Pkcs8PrivateKeyInfo(it.toAsn1.SEC1(), it.curve.oid, it.attributes, Signum.Der)
+    })
+{
+    val SEC1 = self.asn1Encoders(::convert)
+    companion object {
+        private fun convert(self: EcdsaPrivateKey) =
+            Sec1EcPrivateKeyInfo(
+                version = Sec1EcPrivateKeyInfo.Version.V1,
+                privateKey = self.privateKeyBytes,
+                parameters = when (self) {
+                    is EcdsaPrivateKey.WithPublicKey -> self.curve.oid
+                    is EcdsaPrivateKey.WithoutPublicKey -> null
+                },
+                publicKey = when (self) {
+                    is EcdsaPrivateKey.WithPublicKey ->
+                        Asn1.BitString(self.publicKey.iosEncoded).asAsn1BitString()
+                    is EcdsaPrivateKey.WithoutPublicKey -> self.publicKeyBytes
+                },
+            )
+    }
+}
+
+val EcdsaPrivateKey.toAsn1 get() = EcdsaPrivateKeyAsn1Converters(this)
+
+private fun decodeEcCurve(element: Asn1Element): ECCurve =
+    ECCurve.withOid(ObjectIdentifier.decodeFromTlv(element as Asn1Primitive))
 
 val PssPadded.Companion.fromAsn1 get() = asn1Decoders<RsaSsaPssParams,_> { src ->
     PssPadded(
@@ -153,7 +165,7 @@ object RsaAsn1Constructors :
 
 val RsaPrivateKey.Companion.fromAsn1 get() = RsaAsn1Constructors
 
-val RsaPrivateKey.PrimeInfo.Companion.fromAsn1 get() =
+val PrimeInfo.Companion.fromAsn1 get() =
     asn1Decoders<Pkcs1RsaOtherPrimeInfo,_> { element ->
         PrimeInfo(
             element.prime.toBigInteger(),
@@ -162,7 +174,6 @@ val RsaPrivateKey.PrimeInfo.Companion.fromAsn1 get() =
         )
     }
 
-// TODO: CLEAN THIS UP (there should be one canonical asn1 source for this)
 private fun ecPrivateKey(
     parsed: Sec1EcPrivateKeyInfo,
     curveFromPkcs8: Asn1Element?,
@@ -172,15 +183,13 @@ private fun ecPrivateKey(
     val privateValue = BigInteger.fromByteArray(parsed.privateKey, Sign.POSITIVE)
     return if (parsed.parameters != null || curveFromPkcs8 != null) EcdsaPrivateKey.WithPublicKey(
         privateKey = privateValue,
-        publicKeyProvider = {
+        publicKey = run {
             val resolvedCurve = requireNotNull(
                 parsed.parameters?.let(ECCurve::withOid) ?: curveFromPkcs8?.let(::decodeEcCurve)
             ) { "EC private key has no public key or curve" }
             parsed.publicKey?.let { EcdsaPublicKey.fromAnsiX963Bytes(resolvedCurve, it.bitCarryingBytes) }
                 ?: resolvedCurve.generator.times(privateValue).asPublicKey(preferCompressed = true)
         },
-        encodeCurve = parsed.parameters != null,
-        encodePublicKey = parsed.publicKey != null,
         attributes = attributes,
     ) else EcdsaPrivateKey.WithoutPublicKey(
         privateKey = privateValue,

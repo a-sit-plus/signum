@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveBigInteger
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
@@ -14,7 +13,6 @@ import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
-import kotlinx.serialization.encodeToByteArray
 import org.kotlincrypto.random.CryptoRand
 import java.nio.channels.Channels
 import java.nio.channels.FileChannel
@@ -227,7 +225,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)
-                                        update(Signum.Der.encodeToByteArray(tbsCert))
+                    update(tbsCert.toAsn1.DER())
                     sign()
                 }.let { Certificate(tbsCert, certAlg.parseJCASignature(it)) }
             }

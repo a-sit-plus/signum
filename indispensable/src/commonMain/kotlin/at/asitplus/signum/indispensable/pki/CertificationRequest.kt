@@ -101,14 +101,12 @@ class CertificationRequest(
         if (this === other) return true
         if (other !is CertificationRequest) return false
         return tbsCsr == other.tbsCsr &&
-                signatureAlgorithm == other.signatureAlgorithm &&
-                signatureValue == other.signatureValue
+            CryptoSignature.signaturesEqual(signatureAlgorithm, signatureValue, other.signatureAlgorithm, other.signatureValue)
     }
 
     override fun hashCode(): Int {
         var result = tbsCsr.hashCode()
         result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signatureValue.hashCode()
         return result
     }
 

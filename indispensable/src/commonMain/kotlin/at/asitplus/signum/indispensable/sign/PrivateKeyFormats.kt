@@ -1,10 +1,7 @@
 package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
-import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.*
@@ -131,23 +128,13 @@ sealed class EcdsaPrivateKey private constructor(
 
     class WithPublicKey(
         privateKey: BigInteger,
-        publicKeyProvider: () -> EcdsaPublicKey,
-        val encodeCurve: Boolean,
-        val encodePublicKey: Boolean,
-        attributes: Set<Asn1Element>?,
+        override val publicKey: EcdsaPublicKey,
+        attributes: Set<Asn1Element>? = null,
     ) : EcdsaPrivateKey(privateKey, attributes),
         CryptoPrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
-        constructor(
-            privateKey: BigInteger,
-            publicKey: EcdsaPublicKey,
-            encodeCurve: Boolean,
-            encodePublicKey: Boolean,
-            attributes: Set<Asn1Element>? = null,
-        ) : this(
-            privateKey, { publicKey }, encodeCurve, encodePublicKey, attributes,
-        ) {
+        init {
             require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
                 "Public key must match the private key!"
             }
@@ -156,18 +143,12 @@ sealed class EcdsaPrivateKey private constructor(
         constructor(
             privateKey: BigInteger,
             curve: ECCurve,
-            encodeCurve: Boolean,
-            encodePublicKey: Boolean,
             attributes: Set<Asn1Element>? = null,
         ) : this(
             privateKey,
             curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
-            encodeCurve,
-            encodePublicKey,
             attributes,
         )
-
-        override val publicKey by lazy(publicKeyProvider)
 
         val curve: ECCurve get() = publicKey.curve
 
@@ -188,8 +169,6 @@ sealed class EcdsaPrivateKey private constructor(
 
         fun withCurve(
             curve: ECCurve,
-            encodeCurve: Boolean = true,
-            encodePublicKey: Boolean = (this.publicKeyBytes != null),
         ): WithPublicKey {
             require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes) {
                 "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"
@@ -198,12 +177,10 @@ sealed class EcdsaPrivateKey private constructor(
                 WithPublicKey(
                     privateKey,
                     EcdsaPublicKey.fromAnsiX963Bytes(curve, publicKeyBytes!!.bitCarryingBytes),
-                    encodeCurve,
-                    encodePublicKey,
                     attributes,
                 )
             } else {
-                WithPublicKey(privateKey, curve, encodeCurve, encodePublicKey, attributes)
+                WithPublicKey(privateKey, curve, attributes)
             }
         }
 
@@ -232,8 +209,6 @@ sealed class EcdsaPrivateKey private constructor(
                     keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size),
                     Sign.POSITIVE,
                 ),
-                encodeCurve = false,
-                encodePublicKey = true,
                 publicKey = EcdsaPublicKey.fromIosEncoded(
                     keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)
                 ),
@@ -248,8 +223,8 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
 
 object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
     override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
-        is RsaPrivateKey -> Pkcs8PrivateKeyInfo(value.asPKCS1(), value.attributes, Signum.Der)
-        is EcdsaPrivateKey -> Pkcs8PrivateKeyInfo(value.asSEC1(), value.curveOidForPkcs8(), value.attributes, Signum.Der)
+        is RsaPrivateKey -> value.toAsn1()
+        is EcdsaPrivateKey -> value.toAsn1()
         else -> null
     }
 

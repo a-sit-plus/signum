@@ -474,12 +474,14 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         csr1 shouldNotBe csr11
         csr1 shouldNotBe csr2
 
-        csr.hashCode() shouldNotBe csr1.hashCode()
         csr1.hashCode() shouldBe csr1.hashCode()
         csr11.hashCode() shouldBe csr11.hashCode()
         csr2.hashCode() shouldBe csr2.hashCode()
-        csr1.hashCode() shouldNotBe csr11.hashCode()
-        csr1.hashCode() shouldNotBe csr2.hashCode()
+
+        val decodedCsr = CertificationRequest.fromAsn1(csr.toAsn1.DER())
+        decodedCsr shouldBe csr
+        decodedCsr.hashCode() shouldBe csr.hashCode()
+        setOf(csr, csr1, decodedCsr).size shouldBe 2
 
         /*
             Pkcs10CertificationRequestAttribute
