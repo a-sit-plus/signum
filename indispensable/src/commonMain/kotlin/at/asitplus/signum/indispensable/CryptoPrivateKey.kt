@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
@@ -10,7 +9,7 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.fromAsn1Representation
+import at.asitplus.signum.indispensable.sign.fromAsn1
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
 interface CryptoPrivateKey : WithSourceRepresentation {
@@ -33,7 +32,7 @@ interface CryptoPrivateKey : WithSourceRepresentation {
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) {
                 EcdsaPrivateKey.iosDecodeInternal(keyBytes)
             } else {
-                RsaPrivateKey.fromAsn1Representation(Signum.Der.decodeFromByteArray(Pkcs1RsaPrivateKeyInfo.serializer(), keyBytes))
+                RsaPrivateKey.fromAsn1.PKCS1(keyBytes)
             }
 
     }

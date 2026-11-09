@@ -7,7 +7,7 @@ import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.Signum
-import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 
@@ -27,21 +27,16 @@ interface PublicKeyFormatProvider {
     fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
 }
 
-// TODO: we probably want to move this to an extension?
-fun RsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): RsaPublicKey {
+val RsaPublicKey.Companion.fromAsn1 get() = asn1Decoders { src: SubjectPublicKeyInfo ->
     // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
     val parsed = Pkcs1RsaPublicKeyInfo.of(src, Signum.Der)
-    return RsaPublicKey(
+    RsaPublicKey(
         n = parsed.modulus as Asn1Integer.Positive,
         e = parsed.publicExponent as Asn1Integer.Positive,
-        // TODO: this should use the new decoder lambda stuff
-    ).apply { @OptIn(SignumInternals::class) finangleSourceRepresentation(src) }
+    )
 }
 
-operator fun RsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): RsaPublicKey = fromAsn1Representation(src)
-
-// TODO: we probably want to move this to an extension?
-fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): EcdsaPublicKey {
+val EcdsaPublicKey.Companion.fromAsn1 get() = asn1Decoders { src: SubjectPublicKeyInfo ->
     // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
     val parsed = Sec1EcPublicKeyInfo.of(src, Signum.Der)
     val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
@@ -50,9 +45,5 @@ fun EcdsaPublicKey.Companion.fromAsn1Representation(src: SubjectPublicKeyInfo): 
         is Sec1EcPublicKeyInfo.Compressed -> EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
         is Sec1EcPublicKeyInfo.Uncompressed -> EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
     }
-    return EcdsaPublicKey(key.publicPoint, key.preferCompressedRepresentation)
-        // TODO: this should use the new decoder lambda stuff
-        .apply { @OptIn(SignumInternals::class) finangleSourceRepresentation(src) }
+    EcdsaPublicKey(key.publicPoint, key.preferCompressedRepresentation)
 }
-
-operator fun EcdsaPublicKey.Companion.invoke(src: SubjectPublicKeyInfo): EcdsaPublicKey = fromAsn1Representation(src)

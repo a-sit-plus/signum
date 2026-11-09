@@ -3,41 +3,17 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.crypto.X509SignatureValue
-import at.asitplus.signum.dsl.EphemeralEcdsaConfiguration
-import at.asitplus.signum.dsl.EphemeralRsaConfiguration
-import at.asitplus.signum.dsl.EphemeralSignerConfiguration
-import at.asitplus.signum.dsl.InMemorySignerConfiguration
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.SignatureInput
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
-import at.asitplus.signum.indispensable.sign.fromAsn1Representation
-import at.asitplus.signum.internals.*
-import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.sign.ExportableECDSASigner
-import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
-import at.asitplus.signum.indispensable.sign.SignatureResult
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.toSecKey
-import at.asitplus.signum.internals.corecall
-import at.asitplus.signum.internals.takeFromCF
-import at.asitplus.signum.internals.toByteArray
-import kotlinx.cinterop.*
+import at.asitplus.signum.internals.*
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.memScoped
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
 import platform.Security.*
-import platform.Security.SecKeyCopyKeyExchangeResult
-import platform.Security.kSecKeyAlgorithmECDHKeyExchangeStandard
 
 sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) : Signer.WithExportableKey {
     final override val mayRequireUserUnlock: Boolean get() = false
@@ -61,7 +37,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as EcdsaPrivateKey.WithPublicKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            EcdsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.fromAsn1(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
             corecall {
@@ -84,7 +60,7 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
             privateKey.value.toCryptoPrivateKey() as RsaPrivateKey
 
         override fun parseSignature(signatureBytes: ByteArray) =
-            RsaSignature.fromAsn1Representation(X509SignatureValue(signatureBytes))
+            RsaSignature.fromAsn1(X509SignatureValue(signatureBytes))
     }
 }
 

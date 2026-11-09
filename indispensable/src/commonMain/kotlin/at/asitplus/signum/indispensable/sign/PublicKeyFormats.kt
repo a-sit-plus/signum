@@ -226,8 +226,8 @@ object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
     }
 
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
-        EcdsaPublicKey.oid -> EcdsaPublicKey(publicKeyInfo)
-        RsaPublicKey.oid -> RsaPublicKey(publicKeyInfo)
+        EcdsaPublicKey.oid -> EcdsaPublicKey.fromAsn1(publicKeyInfo)
+        RsaPublicKey.oid -> RsaPublicKey.fromAsn1(publicKeyInfo)
         else -> null
     }
 

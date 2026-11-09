@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
@@ -61,7 +62,7 @@ object SignumEncodingHelpers {
 inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> decodeFrom(
     crossinline fn: (EncodedType)->AbstractType
 ): (EncodedType)->AbstractType = { encoded ->
-    fn(encoded).also { @OptIn(SignumInternals::class) it.finangleSourceRepresentation(encoded) }
+    runRethrowing { fn(encoded) }.also { @OptIn(SignumInternals::class) it.finangleSourceRepresentation(encoded) }
 }
 
 /** A high-level decoding function using a Provider.
@@ -105,7 +106,7 @@ inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresenta
     this@encodeTo.realSourceRepresentation?.let { v ->
         if (v is EncodedType) return v
     }
-    return fn(this@encodeTo)
+    return runRethrowing { fn(this@encodeTo) }
 }
 
 /** A high-level encoding function using a Provider.

@@ -7,14 +7,18 @@ import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.asAsn1BitString
 import at.asitplus.signum.Signum
-import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey.Companion.oid
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Parameters.PssPadded
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey.Parameters
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey.PrimeInfo
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
@@ -97,49 +101,66 @@ internal fun EcdsaPrivateKey.curveOidForPkcs8(): ObjectIdentifier = when (this) 
     is EcdsaPrivateKey.WithoutPublicKey -> throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
 }
 
-fun PssPadded.Companion.fromAsn1Representation(src: RsaSsaPssParams): PssPadded =
+val PssPadded.Companion.fromAsn1 get() = asn1Decoders<RsaSsaPssParams,_> { src ->
     PssPadded(
         digest = Digest.fromAsn1(src.hashAlgorithm),
-        mgfAlgorithm = PssPadded.MaskGenerationFunction.fromAsn1Representation(src.maskGenAlgorithm),
+        mgfAlgorithm = PssPadded.MaskGenerationFunction.fromAsn1(src.maskGenAlgorithm),
         saltLength = src.saltLength.let { require(it >= 0); it.toUInt() },
         trailerField = src.trailerField,
     )
-
-operator fun PssPadded.Companion.invoke(src: RsaSsaPssParams): PssPadded = fromAsn1Representation(src)
-
-fun RsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): RsaPrivateKey = runRethrowing {
-    require(src.algorithmOid == oid) { "Expected RSA private key, got ${src.algorithmOid}" }
-    require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
-    // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
-    RsaPrivateKey(
-        Pkcs1RsaPrivateKeyInfo.of(src, Signum.Der).let { parsed ->
-            Parameters(
-                publicKey = RsaPublicKey(parsed.modulus, parsed.publicExponent),
-                privateKey = parsed.privateExponent.toBigInteger(),
-                prime1 = parsed.prime1.toBigInteger(),
-                prime2 = parsed.prime2.toBigInteger(),
-                prime1exponent = parsed.exponent1.toBigInteger(),
-                prime2exponent = parsed.exponent2.toBigInteger(),
-                crtCoefficient = parsed.coefficient.toBigInteger(),
-                otherPrimeInfos = parsed.otherPrimeInfos?.map { RsaPrivateKey.PrimeInfo.fromAsn1Representation(it) },
-            )
-        },
-    )
 }
 
-fun RsaPrivateKey.Companion.fromAsn1Representation(
-    src: Pkcs1RsaPrivateKeyInfo,
-    attributes: Set<Asn1Element>? = null,
-): RsaPrivateKey {
-    when (src.version) {
-        Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(src.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
-        Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(src.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
+val PssPadded.MaskGenerationFunction.Companion.fromAsn1 get() = asn1Decoders<X509AlgorithmIdentifier,_> { element ->
+    when (element.oid) {
+        Pkcs1Mgf1.oid -> Pkcs1Mgf1(Digest.fromAsn1(element.parameters!!))
+        else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
     }
-    return RsaPrivateKey(Pkcs8PrivateKeyInfo.invoke(src, attributes))
 }
 
-operator fun RsaPrivateKey.Companion.invoke(src: Pkcs8PrivateKeyInfo): RsaPrivateKey = fromAsn1Representation(src)
-operator fun RsaPrivateKey.Companion.invoke(src: Pkcs1RsaPrivateKeyInfo): RsaPrivateKey = fromAsn1Representation(src)
+object RsaAsn1Constructors :
+    Asn1EncodingHelpers.Asn1Decoders<Pkcs8PrivateKeyInfo, RsaPrivateKey> by
+    (asn1Decoders<Pkcs8PrivateKeyInfo,RsaPrivateKey> { src ->
+        require(src.algorithmOid == RsaPrivateKey.oid) { "Expected RSA private key, got ${src.algorithmOid}" }
+        require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
+        // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
+        RsaPrivateKey(
+            Pkcs1RsaPrivateKeyInfo.of(src, Signum.Der).let { parsed ->
+                Parameters(
+                    publicKey = RsaPublicKey(parsed.modulus, parsed.publicExponent),
+                    privateKey = parsed.privateExponent.toBigInteger(),
+                    prime1 = parsed.prime1.toBigInteger(),
+                    prime2 = parsed.prime2.toBigInteger(),
+                    prime1exponent = parsed.exponent1.toBigInteger(),
+                    prime2exponent = parsed.exponent2.toBigInteger(),
+                    crtCoefficient = parsed.coefficient.toBigInteger(),
+                    otherPrimeInfos = parsed.otherPrimeInfos?.map { RsaPrivateKey.PrimeInfo.fromAsn1(it) },
+                )
+            },
+        )
+    })
+{
+
+    val PKCS1 get() = asn1Decoders<Pkcs1RsaPrivateKeyInfo,_>(::invoke)
+
+    operator fun invoke(src: Pkcs1RsaPrivateKeyInfo, attributes : Set<Asn1Element>? = null) = runRethrowing {
+        when (src.version) {
+            Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(src.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
+            Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(src.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
+        }
+        return@runRethrowing invoke(Pkcs8PrivateKeyInfo(src, attributes))
+    }
+}
+
+val RsaPrivateKey.Companion.fromAsn1 get() = RsaAsn1Constructors
+
+val RsaPrivateKey.PrimeInfo.Companion.fromAsn1 get() =
+    asn1Decoders<Pkcs1RsaOtherPrimeInfo,_> { element ->
+        PrimeInfo(
+            element.prime.toBigInteger(),
+            element.exponent.toBigInteger(),
+            element.coefficient.toBigInteger()
+        )
+    }
 
 // TODO: CLEAN THIS UP (there should be one canonical asn1 source for this)
 private fun ecPrivateKey(
@@ -169,42 +190,42 @@ private fun ecPrivateKey(
     )
 }
 
-fun EcdsaPrivateKey.Companion.fromAsn1Representation(
-    src: Sec1EcPrivateKeyInfo,
-    attributes: Set<Asn1Element>? = null,
-): EcdsaPrivateKey {
-    require(src.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${src.version}" }
-    return ecPrivateKey(src, null, attributes)
+object EcdsaAsn1Constructors :
+    Asn1EncodingHelpers.Asn1Decoders<Pkcs8PrivateKeyInfo, EcdsaPrivateKey> by
+    (asn1Decoders { src ->
+        require(src.algorithmOid == oid) { "Expected EC private key, got ${src.algorithmOid}" }
+        require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
+        // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
+        val parsed = Sec1EcPrivateKeyInfo.of(src, Signum.Der)
+        return@asn1Decoders ecPrivateKey(
+            parsed, src.algorithmParameters,
+            src.attributes,
+        )
+    })
+{
+
+    val SEC1 get() = asn1Decoders<Sec1EcPrivateKeyInfo,_>(::invoke)
+
+    operator fun invoke(src: Sec1EcPrivateKeyInfo, attributes: Set<Asn1Element>? = null): EcdsaPrivateKey {
+        require(src.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${src.version}" }
+        return ecPrivateKey(src, null, attributes)
+    }
 }
 
-fun EcdsaPrivateKey.Companion.fromAsn1Representation(src: Pkcs8PrivateKeyInfo): EcdsaPrivateKey {
-    require(src.algorithmOid == oid) { "Expected EC private key, got ${src.algorithmOid}" }
-    require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
-    // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
-    val parsed = Sec1EcPrivateKeyInfo.of(src, Signum.Der)
-    return ecPrivateKey(
-        parsed, src.algorithmParameters,
-        src.attributes,
+val EcdsaPrivateKey.Companion.fromAsn1 get() = EcdsaAsn1Constructors
+
+val EcdsaSignature.Companion.fromAsn1 get() =
+    asn1Decoders<X509SignatureValue,_> { src ->
+    val parsed = src.toEcdsaSigValue()
+    EcdsaSignature.IndefiniteLength(
+        r = parsed.r.toBigInteger(),
+        s = parsed.s.toBigInteger(),
     )
 }
 
-operator fun EcdsaPrivateKey.Companion.invoke(src: Pkcs8PrivateKeyInfo): EcdsaPrivateKey = fromAsn1Representation(src)
-operator fun EcdsaPrivateKey.Companion.invoke(src: Sec1EcPrivateKeyInfo): EcdsaPrivateKey = fromAsn1Representation(src)
+val EcdsaSignature.IndefiniteLength.Companion.fromAsn1 get() = EcdsaSignature.fromAsn1
 
-fun EcdsaSignature.Companion.fromAsn1Representation(src: X509SignatureValue): EcdsaSignature.IndefiniteLength {
-    val parsed = src.toEcdsaSigValue()
-    return EcdsaSignature.IndefiniteLength(
-        r = parsed.r.toBigInteger(),
-        s = parsed.s.toBigInteger(),
-        // TODO the usual
-    ).apply { @OptIn(SignumInternals::class) finangleSourceRepresentation(src) }
-}
-
-fun EcdsaSignature.IndefiniteLength.Companion.fromAsn1Representation(src: X509SignatureValue): EcdsaSignature.IndefiniteLength =
-    EcdsaSignature.fromAsn1Representation(src)
-
-fun RsaSignature.Companion.fromAsn1Representation(src: X509SignatureValue): RsaSignature =
-    RsaSignature(src.rawBytes).apply { @OptIn(SignumInternals::class) finangleSourceRepresentation(src) }
-
-operator fun EcdsaSignature.Companion.invoke(src: X509SignatureValue): EcdsaSignature.IndefiniteLength = fromAsn1Representation(src)
-operator fun RsaSignature.Companion.invoke(src: X509SignatureValue): RsaSignature = fromAsn1Representation(src)
+val RsaSignature.Companion.fromAsn1 get() =
+    asn1Decoders<X509SignatureValue,_> { src ->
+        RsaSignature(src.rawBytes)
+    }

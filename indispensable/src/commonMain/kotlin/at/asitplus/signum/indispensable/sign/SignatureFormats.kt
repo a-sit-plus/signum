@@ -125,7 +125,7 @@ sealed class EcdsaSignature
         fun fromRawBytes(curve: ECCurve, input: ByteArray) = fromP1363Bytes(curve, input)
 
         fun fromRawSignatureValue(sigBytes: ByteArray) =
-            fromAsn1Representation(X509SignatureValue(sigBytes))
+            fromAsn1(X509SignatureValue(sigBytes))
 
         /** Parses a signature produced by the JCA digestwithECDSA algorithm. */
         @Deprecated("Renamed", replaceWith = ReplaceWith("fromRawSignatureValue(input)"))
@@ -174,13 +174,13 @@ object IndispensableSignatureFormats : SignatureFormatProvider {
 
     override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
         is EcdsaAlgorithm -> {
-            val parsedSig = EcdsaSignature.fromAsn1Representation(signature)
+            val parsedSig = EcdsaSignature.fromAsn1(signature)
             when (val crv = signatureAlgorithm.requiredCurve) {
                 null -> parsedSig
                 else -> parsedSig.withCurve(crv)
             }
         }
-        is RsaAlgorithm -> RsaSignature.fromAsn1Representation(signature)
+        is RsaAlgorithm -> RsaSignature.fromAsn1(signature)
         else -> null
     }
 
@@ -189,10 +189,10 @@ object IndispensableSignatureFormats : SignatureFormatProvider {
 
             KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,
             KnownOIDs.sha512WithRSAEncryption, KnownOIDs.rsaPSS
-                -> RsaSignature.fromAsn1Representation(signature)
+                -> RsaSignature.fromAsn1(signature)
 
             KnownOIDs.ecdsaWithSHA1, KnownOIDs.ecdsaWithSHA256, KnownOIDs.ecdsaWithSHA384, KnownOIDs.ecdsaWithSHA512
-                -> EcdsaSignature.fromAsn1Representation(signature)
+                -> EcdsaSignature.fromAsn1(signature)
 
             else -> null
         }
