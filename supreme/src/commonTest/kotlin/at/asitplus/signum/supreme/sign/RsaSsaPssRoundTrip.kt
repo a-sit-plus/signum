@@ -6,6 +6,7 @@ import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.toAsn1
@@ -25,10 +26,10 @@ val RsaSsaPssRoundTripTest by matrixSuite {
 
             mapOf(
                 "from ASN.1" to RsaAlgorithm(
-                    RsaAlgorithm.Parameters.PssPadded(
+                    RsaAlgorithm.Parameters.PssPadded.fromAsn1(
                         RsaSsaPssParams(
                             hashAlgorithm = dataDigest.toAsn1(),
-                            maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                            maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).toAsn1(),
                         )
                     )),
                 "from Signum" to RsaAlgorithm(

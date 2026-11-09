@@ -1,5 +1,10 @@
 package at.asitplus.signum
 
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
+import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
+import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.serialization.decodeFromPem
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.fromAsn1
@@ -136,7 +141,9 @@ val PemTest  by matrixSuite {
             -----END RSA PUBLIC KEY-----
         """.trimIndent()
 
-        CryptoPublicKey.fromAsn1(pkcs1).shouldBeInstanceOf<RsaPublicKey>()
+        val pkcs1Model = Pkcs1RsaPublicKeyInfo.decodeFromPem(pkcs1, Signum.Der)
+        CryptoPublicKey.fromAsn1(SubjectPublicKeyInfo.from(pkcs1Model, Signum.Der))
+            .shouldBeInstanceOf<RsaPublicKey>()
     }
 
     val rnd = Random.nextBytes(35).toHexString() + "\n                  "
@@ -149,13 +156,11 @@ val PemTest  by matrixSuite {
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.fromAsn1(rnd + sec1).let {
+        EcdsaPrivateKey.fromAsn1.SEC1(Sec1EcPrivateKeyInfo.decodeFromPem(rnd + sec1, Signum.Der)).let {
             it.shouldBeInstanceOf<EcdsaPrivateKey>()
-            // TODO
-            //Signum.Der.decodeFromPem<EcdsaPrivateKey>(sec1) shouldBe it
+            EcdsaPrivateKey.fromAsn1(it.toAsn1()) shouldBe it
             kotlin.runCatching {
-                // TODO
-                // Signum.Der.decodeFromPem<RsaPrivateKey>(sec1)
+                RsaPrivateKey.fromAsn1(it.toAsn1())
             }.isSuccess shouldBe false
 
             it.asSEC1.PEM().lines() shouldBe sec1.lines()
@@ -172,11 +177,10 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         CryptoPrivateKey.fromAsn1(rnd + pkcs8).let {
-            // TODO: restore fromAsn1 on these
-            /*Signum.Der.decodeFromPem<EcdsaPrivateKey>(pkcs8) shouldBe it
+            EcdsaPrivateKey.fromAsn1(it.toAsn1()) shouldBe it
             kotlin.runCatching {
-                Signum.Der.decodeFromPem<RsaPrivateKey>(pkcs8)
-            }.isSuccess shouldBe false*/
+                RsaPrivateKey.fromAsn1(it.toAsn1())
+            }.isSuccess shouldBe false
             it.toAsn1.PEM().lines() shouldBe pkcs8.lines()
         }
     }
@@ -516,7 +520,7 @@ val PemTest  by matrixSuite {
             """.trimIndent()
         )
         rsa.forEach {
-            shouldNotThrowAny { CryptoPublicKey.fromAsn1(it) }
+            shouldNotThrowAny { CryptoPrivateKey.fromAsn1(it) }
         }
     }
 }

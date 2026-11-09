@@ -5,7 +5,6 @@ import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
@@ -22,8 +21,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.sec.SECNamedCurves
@@ -291,7 +288,7 @@ fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
  */
 suspend fun Certificate.toJcaCertificate(): java.security.cert.X509Certificate =
     certificateFactoryMutex.withLock {
-        certFactory.generateCertificate(Signum.Der.encodeToByteArray(this).inputStream()) as java.security.cert.X509Certificate
+        certFactory.generateCertificate(toAsn1.DER().inputStream()) as java.security.cert.X509Certificate
     }
 
 /**
@@ -301,10 +298,12 @@ fun Certificate.toJcaCertificateBlocking(): java.security.cert.X509Certificate =
     runBlocking { toJcaCertificate() }
 
 /**
- * Converts this [java.security.cert.X509Certificate] to an [Certificate]
+ * Converts this [java.security.cert.Certificate] to an [Certificate]
  */
-fun java.security.cert.X509Certificate.toKmpCertificate() =
-    catching { Signum.Der.decodeFromByteArray<Certificate>(encoded) }
+fun java.security.cert.Certificate.toKmpCertificate() : Certificate {
+    require (this is java.security.cert.X509Certificate)
+    return Certificate.fromAsn1(this.encoded)
+}
 
 fun CryptoPrivateKey.toJcaPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
@@ -325,10 +324,10 @@ fun JCAPrivateKey.toCryptoPrivateKey() =
         .get(this) { jcaPrivateKeyToCryptoPrivateKey(it) }
 
 fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =
-    Signum.Der.decodeFromByteArray<EcdsaPrivateKey>(encoded) as EcdsaPrivateKey.WithPublicKey
+    EcdsaPrivateKey.fromAsn1(encoded) as EcdsaPrivateKey.WithPublicKey
 
 fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
-    Signum.Der.decodeFromByteArray<RsaPrivateKey>(encoded)
+    RsaPrivateKey.fromAsn1(encoded)
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
     @OptIn(HazardousMaterials::class)

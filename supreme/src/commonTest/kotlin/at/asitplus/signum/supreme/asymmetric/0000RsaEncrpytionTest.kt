@@ -1,15 +1,13 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.decodeFromPem
-import at.asitplus.signum.indispensable.encodeToPem
-
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
@@ -58,11 +56,11 @@ class RsaTestData(
                 encoder: Encoder,
                 value: CryptoPrivateKey
             ) {
-                encoder.encodeString(Signum.Der.encodeToPem(value))
+                encoder.encodeString(value.toAsn1.PEM())
             }
 
             override fun deserialize(decoder: Decoder) =
-                Signum.Der.decodeFromPem<CryptoPrivateKey>(decoder.decodeString())
+                CryptoPrivateKey.fromAsn1(decoder.decodeString())
         }
 
         object PaddingSerializer : KSerializer<RSAPadding> {

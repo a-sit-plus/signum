@@ -204,7 +204,7 @@ open class Asn1DecodersImpl<Asn1Type : Any, AbstractType : WithSourceRepresentat
         invoke(Signum.Der.decodeFromByteArray(serializer, derBytes))
 
     override operator fun invoke(derSource: Source, limit: Long): AbstractType =
-        invoke(Signum.Der.decodeFromSource(serializer, derSource))
+        invoke(Signum.Der.decodeFromSource(serializer, derSource, limit))
 
     /** Parses the type from its hex-encoded DER encoding. */
     override fun fromHexString(derHexBytes: String): AbstractType =
@@ -359,6 +359,10 @@ private class X509UnparsedSignature : AbstractSignature {
         ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {
             parseCryptoSignature(it, toAsn1())
         }
+
+    override fun equals(other: Any?) = (other is AbstractSignature) && (sourceRepresentation == other.sourceRepresentation)
+    override fun hashCode() = sourceRepresentation.hashCode()
+    override fun toString() = "Unparsed CryptoSignature (from X.509: $sourceRepresentation)"
 }
 
 val AbstractSignature.Companion.fromAsn1 get() =

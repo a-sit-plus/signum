@@ -1,15 +1,11 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.encodeToByteArray
-
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
-import kotlinx.serialization.json.*
 import java.io.ByteArrayInputStream
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -18,6 +14,7 @@ import java.nio.file.Paths
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.*
+import kotlinx.serialization.json.*
 
 private val certificateFactory = CertificateFactory.getInstance("X.509")
 
@@ -76,7 +73,7 @@ val CustomParserTests by matrixSuite {
             attestationCertChain.forEachIndexed { index, certificate ->
 
                 withClue(index.toString()) {
-                    Signum.Der.encodeToByteArray(certificate.toKmpCertificate().getOrThrow()) shouldBe certificate.encoded
+                    certificate.toKmpCertificate().getOrThrow().toAsn1.DER() shouldBe certificate.encoded
                 }
             }
         }

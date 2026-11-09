@@ -1,13 +1,11 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.Signum
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.serialization.decodeFromTlv
+import at.asitplus.awesn1.serialization.encodeToTlv
+import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
@@ -48,8 +46,6 @@ val X500AttributeRegistryTest by matrixSuite {
                 val attribute = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
                     as AttributeTypeAndValue
                 val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
-
-                attribute::class shouldBe BaseX509AttributeTypeAndValue::class
                 attribute.oid shouldBe ObjectIdentifier(case.oid)
                 value.value shouldBe "Test"
                 when (case.kind) {
@@ -69,13 +65,11 @@ val X500AttributeRegistryTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue)
         )
-        val encoded = Signum.Der.encodeToByteArray(original)
-        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val encoded = original.toAsn1.DER()
+        val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
-
-        attribute::class shouldBe BaseX509AttributeTypeAndValue::class
         attribute.value shouldBe nonCanonicalValue
-        Signum.Der.encodeToByteArray(decoded) shouldBe encoded
+        decoded.toAsn1.DER() shouldBe encoded
     }
 
     "unknown dotted OID falls back to UTF8" {

@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.io
 
 import at.asitplus.awesn1.BERTags
-import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.iosEncoded
@@ -9,6 +8,7 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.toAsn1
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -20,7 +20,6 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
@@ -97,21 +96,16 @@ object ByteArrayBase64UrlNoPaddingSerializer : TransformingSerializerTemplate<By
 /** De-/serializes X509Certificate as Base64Url-encoded String */
 object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = ::encodeX509CertificateToDer,
-    decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
+    encodeAs = { it.toAsn1.DER() },
+    decodeAs = { Certificate.fromAsn1(it) }
 )
 
 /** De-/serializes X509Certificate as Base64-encoded String */
 object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    encodeAs = ::encodeX509CertificateToDer,
-    decodeAs = ::decodeX509CertificateFromDer // workaround iOS compilation bug KT-71498
+    encodeAs = { it.toAsn1.DER() },
+    decodeAs = { Certificate.fromAsn1(it) }
 )
-
-private fun encodeX509CertificateToDer(certificate: Certificate): ByteArray = Signum.Der.encodeToByteArray(certificate)
-
-private fun decodeX509CertificateFromDer(src: ByteArray): Certificate =
-    Certificate.fromAsn1(src)
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
 object IosPublicKeySerializer : TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(

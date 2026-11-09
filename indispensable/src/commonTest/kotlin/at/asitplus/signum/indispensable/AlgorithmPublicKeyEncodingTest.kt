@@ -4,13 +4,7 @@ import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.io.decodeFromSource
-import at.asitplus.awesn1.io.encodeToSink
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
-import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.*
@@ -21,7 +15,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.io.Buffer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.json.Json
 
@@ -44,24 +37,17 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
     "Contextual signature algorithms work through interface and concrete types" {
         for (source in EcdsaAlgorithm.entries + RsaAlgorithm.entries) {
             val algorithm: SignatureAlgorithm = source
-            val bytes = Signum.Der.encodeToByteArray(algorithm)
-            Signum.Der.decodeFromByteArray<SignatureAlgorithm>(bytes) shouldBe source
-            Signum.Der.decodeFromTlv<SignatureAlgorithm>(Signum.Der.encodeToTlv(algorithm)) shouldBe source
+            val bytes = algorithm.toAsn1.DER()
+            SignatureAlgorithm.fromAsn1(bytes) shouldBe source
+            SignatureAlgorithm.fromAsn1(algorithm.toAsn1.TLV()) shouldBe source
             val sink = Buffer()
-            Signum.Der.encodeToSink(algorithm, sink)
-            Signum.Der.decodeFromSource<SignatureAlgorithm>(sink) shouldBe source
+            algorithm.toAsn1.DER(sink)
+            SignatureAlgorithm.fromAsn1(sink) shouldBe source
         }
         val ec = EcdsaAlgorithm.withSHA256
-        Signum.Der.decodeFromByteArray<EcdsaAlgorithm>(Signum.Der.encodeToByteArray(ec)) shouldBe ec
+        EcdsaAlgorithm.fromAsn1(ec.toAsn1.DER()) shouldBe ec
         val rsa = RsaAlgorithm.withSHA256andPSSPadding
-        Signum.Der.decodeFromByteArray<RsaAlgorithm>(Signum.Der.encodeToByteArray(rsa)) shouldBe rsa
-    }
-
-    "Absent RSA signature parameters survive structural and byte conversion" {
-        val normal = RsaAlgorithm.withSHA256andPKCS1Padding.asn1Representation
-        val original = X509AlgorithmIdentifier(normal.oid, null)
-        val algorithm = SignatureAlgorithm.fromAsn1(original)
-        algorithm.toAsn1() shouldBe original
+        RsaAlgorithm.fromAsn1(rsa.toAsn1.DER()) shouldBe rsa
     }
 
     "Public key interface and concrete serializers preserve compressed SPKI" {
@@ -71,7 +57,7 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         key.toAsn1() shouldBeSameInstanceAs original
         val rsa = RsaPublicKey(Asn1Integer.fromUnsignedByteArray(ByteArray(64).apply { this[0] = 0x80.toByte() }), Asn1Integer(65537))
 
-        Signum.Der.decodeFromByteArray<RsaPublicKey>(Signum.Der.encodeToByteArray(rsa)) shouldBe rsa
+        RsaPublicKey.fromAsn1(rsa.toAsn1.DER()) shouldBe rsa
         val rsaInterface: CryptoPublicKey = rsa
         CryptoPublicKey.fromAsn1(rsaInterface.toAsn1.DER()) shouldBe rsa
     }

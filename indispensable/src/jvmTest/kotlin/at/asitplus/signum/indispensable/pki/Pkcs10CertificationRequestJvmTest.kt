@@ -1,24 +1,18 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.Signum
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.encodeToAsn1Primitive
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.pki.X500Name as SignumX500Name
-import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.parseJCASignature
+import at.asitplus.signum.indispensable.pki.Name as SignumName
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.withClue
@@ -26,6 +20,12 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import java.io.OutputStream
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.interfaces.ECPublicKey
+import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
@@ -35,11 +35,6 @@ import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder
-import java.io.OutputStream
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.PrivateKey
-import java.security.interfaces.ECPublicKey
 
 //now it works for PSS too
 internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey): ContentSigner {
@@ -49,7 +44,7 @@ internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey): ContentSigner
 
     return object : ContentSigner {
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier =
-            AlgorithmIdentifier.getInstance(Signum.Der.encodeToByteArray(this@getContentSigner))
+            AlgorithmIdentifier.getInstance(this@getContentSigner.toAsn1.DER())
 
         override fun getOutputStream(): OutputStream =
             object : OutputStream() {
@@ -84,18 +79,19 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val signatureAlgorithm = EcdsaAlgorithm.withSHA256
 
         val tbsCsr = TbsCertificationRequest(
-            subjectName = SignumX500Name(listOf(
+            subjectName = SignumName(listOf(
                 RelativeDistinguishedName(
                     setOf(
-                        AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(commonName))
+                        AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName(commonName))
                     )
                 )
             )),
-            publicKey = cryptoPublicKey
+            publicKey = cryptoPublicKey,
+            attributes = emptyList(),
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToByteArray(tbsCsr))
+            update(tbsCsr.toAsn1.DER())
         }.sign()
         val csr = CertificationRequest(
             tbsCsr,
@@ -103,7 +99,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             signatureAlgorithm.parseJCASignature(signed)
         )
 
-        val kotlinEncoded = Signum.Der.encodeToByteArray(csr)
+        val kotlinEncoded = csr.toAsn1.DER()
 
         val contentSigner: ContentSigner =
             signatureAlgorithm.getContentSigner(keyPair.private)
@@ -137,10 +133,10 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             .build(contentSigner)
         val tbsCsr = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(listOf(
+            subjectName = SignumName(listOf(
                 RelativeDistinguishedName(
                     setOf(
-                        AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(commonName))
+                        AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName(commonName))
                     )
                 )
             )),
@@ -155,7 +151,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToTlv(tbsCsr).derEncoded)
+            update(tbsCsr.toAsn1.TLV().derEncoded)
         }.sign()
         val csr = CertificationRequest(
             tbsCsr,
@@ -163,12 +159,12 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             signatureAlgorithm.parseJCASignature(signed)
         )
 
-        val kotlinEncoded = Signum.Der.encodeToTlv(csr).derEncoded
+        val kotlinEncoded = csr.toAsn1.TLV().derEncoded
         val jvmEncoded = bcCsr.encoded
         // CSR will never entirely match because of randomness in ECDSA signature
         //kotlinEncoded shouldBe jvmEncoded
         withClue(
-            "kotlinEncoded: ${Signum.Der.encodeToTlv(csr).toDerHexString()}, jvmEncoded: ${
+            "kotlinEncoded: ${csr.toAsn1.TLV().toDerHexString()}, jvmEncoded: ${
                 bcCsr.encoded.toHexString(
                     HexFormat.UpperCase
                 )
@@ -203,7 +199,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             .addAttribute(ASN1ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), ASN1Integer(1337L))
             .build(contentSigner)
         val tbsCsr = TbsCertificationRequest(
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(commonName)))),
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName(commonName))))),
             publicKey = cryptoPublicKey,
             extensions = listOf(
                 CertificateExtension(
@@ -226,7 +222,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToTlv(tbsCsr).derEncoded)
+            update(tbsCsr.toAsn1.TLV().derEncoded)
         }.sign()
         val csr = CertificationRequest(
             tbsCsr,
@@ -234,7 +230,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             signatureAlgorithm.parseJCASignature(signed)
         )
 
-        val kotlinEncoded = Signum.Der.encodeToTlv(csr).derEncoded
+        val kotlinEncoded = csr.toAsn1.TLV().derEncoded
         val jvmEncoded = bcCsr.encoded
         // CSR will never entirely match because of randomness in ECDSA signature
         //kotlinEncoded shouldBe jvmEncoded
@@ -259,7 +255,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             .addAttribute(ASN1ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), ASN1Integer(1337L))
             .build(contentSigner)
         val tbsCsr = TbsCertificationRequest(
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(commonName)))),
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName(commonName))))),
             publicKey = cryptoPublicKey,
             extensions = null,
             attributesWithoutExtensions = listOf(
@@ -271,7 +267,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToTlv(tbsCsr).derEncoded)
+            update(tbsCsr.toAsn1.TLV().derEncoded)
         }.sign()
         val csr = CertificationRequest(
             tbsCsr,
@@ -279,7 +275,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             signatureAlgorithm.parseJCASignature(signed)
         )
 
-        val kotlinEncoded = Signum.Der.encodeToTlv(csr).derEncoded
+        val kotlinEncoded = csr.toAsn1.TLV().derEncoded
         val jvmEncoded = bcCsr.encoded
 
         // CSR will never entirely match because of randomness in ECDSA signature
@@ -303,12 +299,12 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
 
-        val csr = Signum.Der.decodeFromTlv<CertificationRequest>(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
+        val csr = CertificationRequest.fromAsn1(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
         csr.shouldNotBeNull()
 
-        // Signum.Der.encodeToByteArray(x509Certificate) shouldBe certificateHolder.encoded
+        // x509Certificate.toAsn1.DER() shouldBe certificateHolder.encoded
         csr.signatureAlgorithm shouldBe signatureAlgorithm
-        csr.tbsCsr.asn1Representation.version shouldBe Pkcs10CertificationRequestInfo.Version.V1
+        csr.tbsCsr.toAsn1().version shouldBe Pkcs10CertificationRequestInfo.Version.V1
         ((csr.tbsCsr.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
@@ -324,29 +320,27 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             Asn1Element.parse(KeyUsage(KeyUsage.digitalSignature).encoded)
         )
 
-        val decodedAttribute = Signum.Der.decodeFromByteArray<CsrAttribute>(Signum.Der.encodeToByteArray(attribute))
+        val decodedAttribute = CsrAttribute.fromAsn1(attribute.toAsn1.DER())
         decodedAttribute shouldBe attribute
 
         val unknownAttribute = CsrAttribute(
             ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
             1337.encodeToAsn1Primitive(),
         )
-        val encodedUnknownAttribute = Signum.Der.encodeToByteArray(unknownAttribute)
-        val decodedUnknownAttribute: CsrAttribute = Signum.Der.decodeFromByteArray<CsrAttribute>(encodedUnknownAttribute)
+        val encodedUnknownAttribute = unknownAttribute.toAsn1.DER()
+        val decodedUnknownAttribute: CsrAttribute = CsrAttribute.fromAsn1(encodedUnknownAttribute)
 
-        decodedUnknownAttribute::class shouldBe X509CsrAttribute::class
+        decodedUnknownAttribute::class shouldBe CsrAttribute::class
         (decodedUnknownAttribute is CsrAttribute) shouldBe true
-        Signum.Der.encodeToByteArray((decodedUnknownAttribute as CsrAttribute)) shouldBe encodedUnknownAttribute
+        decodedUnknownAttribute.toAsn1.DER() shouldBe encodedUnknownAttribute
 
         val tbsCsr = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(
-                RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName(("Roundtrip CSR"))))
-            ),
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName(("Roundtrip CSR")))))),
             publicKey = cryptoPublicKey,
             attributes = listOf(attribute),
         )
-        val decodedTbsCsr = Signum.Der.decodeFromByteArray<TbsCertificationRequest>(Signum.Der.encodeToByteArray(tbsCsr))
+        val decodedTbsCsr = TbsCertificationRequest.fromAsn1(tbsCsr.toAsn1.DER())
         decodedTbsCsr shouldBe tbsCsr
 
         val csr = CertificationRequest(
@@ -354,7 +348,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
             RsaAlgorithm.withSHA256andPKCS1Padding,
             RsaSignature(byteArrayOf(1, 2, 3, 4))
         )
-        val decodedCsr = Signum.Der.decodeFromByteArray<CertificationRequest>(Signum.Der.encodeToByteArray(csr))
+        val decodedCsr = CertificationRequest.fromAsn1(csr.toAsn1.DER())
         decodedCsr shouldBe csr
     }
 
@@ -377,33 +371,39 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         val tbsCsr1 = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
-            publicKey = cryptoPublicKey1
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName((commonName)))))),
+            publicKey = cryptoPublicKey1,
+            attributes = emptyList(),
         )
         val tbsCsr11 = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
-            publicKey = cryptoPublicKey1
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName((commonName)))))),
+            publicKey = cryptoPublicKey1,
+            attributes = emptyList(),
         )
         val tbsCsr111 = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName1))))),
-            publicKey = cryptoPublicKey1
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName((commonName1)))))),
+            publicKey = cryptoPublicKey1,
+            attributes = emptyList(),
         )
         val tbsCsr12 = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
-            publicKey = cryptoPublicKey11
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName((commonName)))))),
+            publicKey = cryptoPublicKey11,
+            attributes = emptyList(),
         )
         val tbsCsr122 = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName1))))),
-            publicKey = cryptoPublicKey11
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName((commonName1)))))),
+            publicKey = cryptoPublicKey11,
+            attributes = emptyList(),
         )
         val tbsCsr2 = TbsCertificationRequest(
 
-            subjectName = SignumX500Name(RelativeDistinguishedName(AttributeTypeAndValue(X500AttributeTypeAndValue.CommonName((commonName))))),
-            publicKey = cryptoPublicKey2
+            subjectName = SignumName(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName((commonName)))))),
+            publicKey = cryptoPublicKey2,
+            attributes = emptyList(),
         )
 
         // equals and hashCode
@@ -431,19 +431,19 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
         val signed = signatureAlgorithm1.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToByteArray(tbsCsr1))
+            update(tbsCsr1.toAsn1.DER())
         }.sign()
         val signed1 = signatureAlgorithm1.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToByteArray(tbsCsr1))
+            update(tbsCsr1.toAsn1.DER())
         }.sign()
         val signed11 = signatureAlgorithm2.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(Signum.Der.encodeToByteArray(tbsCsr1))
+            update(tbsCsr1.toAsn1.DER())
         }.sign()
         val signed2 = signatureAlgorithm1.getJCASignatureInstance().apply {
             initSign(keyPair1.private)
-            update(Signum.Der.encodeToByteArray(tbsCsr2))
+            update(tbsCsr2.toAsn1.DER())
         }.sign()
 
         val csr = CertificationRequest(

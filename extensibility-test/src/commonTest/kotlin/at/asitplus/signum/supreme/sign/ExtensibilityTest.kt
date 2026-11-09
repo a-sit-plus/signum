@@ -7,7 +7,6 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
@@ -24,13 +23,11 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
-import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
+import org.kotlincrypto.random.CryptoRand
 
 private val Byte.hasHighest get() = (this.countLeadingZeroBits() == 0)
 private val ByteArray.hasHighest get() = get(0).hasHighest
@@ -187,14 +184,16 @@ val ExtensibilityTest by matrixSuite {
 
     "X.509 resolution" {
         val algorithm: SignatureAlgorithm = CursorySignatureScheme
-        Signum.Der.decodeFromByteArray<SignatureAlgorithm>(Signum.Der.encodeToByteArray(algorithm)) shouldBe algorithm
+        SignatureAlgorithm.fromAsn1(algorithm.toAsn1.DER()) shouldBe algorithm
         val key: CryptoPublicKey = CursorySignatureScheme.Key(true)
-        Signum.Der.decodeFromByteArray<CryptoPublicKey>(Signum.Der.encodeToByteArray(key)) shouldBe key
+        CryptoPublicKey.fromAsn1(key.toAsn1.DER()) shouldBe key
         SignatureAlgorithm.fromAsn1(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
-        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.fromAsn1(CursorySignatureScheme.Key.ALG) }
+        val unknownAlgorithm = SignatureAlgorithm.fromAsn1(CursorySignatureScheme.Key.ALG)
+        shouldThrow<UnsupportedCryptoException> { unknownAlgorithm.preHashedSignatureFormat }
 
         val keyWithAlgOid = CursorySignatureScheme.Key(true).toAsn1().copy(algorithmIdentifier = CursorySignatureScheme.ALG)
-        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.fromAsn1(keyWithAlgOid) }
+        val unknownKey = CryptoPublicKey.fromAsn1(keyWithAlgOid)
+        shouldThrow<UnsupportedCryptoException> { unknownKey.didEncoded }
     }
 
     "Signing" {
@@ -213,7 +212,7 @@ val ExtensibilityTest by matrixSuite {
             val useEmptySubject = it % 2 == 0
             val data = Random.nextBytes(1)
             val privateKey = Signer.Ephemeral { cursory {} }
-            val theSignature = Signum.Der.encodeToByteArray(privateKey.sign(data).signature)
+            val theSignature = privateKey.sign(data).signature.toAsn1.DER()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
                 val certificateName =
@@ -227,11 +226,11 @@ val ExtensibilityTest by matrixSuite {
                     issuerName = certificateName,
                     subjectName = certificateName,
                 )
-                val signature = privateKey.sign(Signum.Der.encodeToByteArray(tbsCertificate)).signature
-                Signum.Der.encodeToByteArray(Certificate(tbsCertificate, signature))
+                val signature = privateKey.sign(tbsCertificate.toAsn1.DER()).signature
+                Certificate(tbsCertificate, signature).toAsn1.DER()
             }
 
-            val parsedCertificate = Signum.Der.decodeFromByteArray<Certificate>(theCertificate)
+            val parsedCertificate = Certificate.fromAsn1(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
             if (!useEmptySubject) {
                 val nameAttributes = parsedCertificate.tbsCertificate.subjectName

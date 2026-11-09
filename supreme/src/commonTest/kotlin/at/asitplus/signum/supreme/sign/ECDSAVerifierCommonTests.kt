@@ -1,24 +1,21 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.signum.indispensable.*
-import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.SignatureVerifier
-import at.asitplus.signum.indispensable.sign.verifierFor
-import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
@@ -40,7 +37,7 @@ val ECDSAVerifierCommonTests by matrixSuite {
             "None" -> null
             else -> WellKnownDigest.entries.first { it.name == test.dig }
         }
-        val key = Signum.Der.decodeFromByteArray<CryptoPublicKey>(Base64.decode(test.key)) as EcdsaPublicKey
+        val key = CryptoPublicKey.fromAsn1(Base64.decode(test.key)) as EcdsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = EcdsaSignature.fromRawSignatureValue(Base64.decode(test.sig))

@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.josef
-import at.asitplus.signum.indispensable.sign.asn1Representation
-import at.asitplus.signum.indispensable.sign.invoke
-
 import at.asitplus.KmmResult
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.toAsn1
+import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 
@@ -34,8 +34,8 @@ val ConversionTest by matrixSuite {
     }
     "JWS -> X509 -> JWS is stable" - {
         data(JwsAlgorithm.Signature.entries) test {
-            it.algorithm.asn1Representation.let { x509 ->
-                SignatureAlgorithm(x509).toJwsAlgorithm() shouldSucceedWith it
+            it.algorithm.toAsn1().let { x509 ->
+                SignatureAlgorithm.fromAsn1(x509).toJwsAlgorithm() shouldSucceedWith it
             }
         }
     }
