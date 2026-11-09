@@ -23,6 +23,7 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.toAsn1
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -142,16 +143,15 @@ val RemainingEncodingTest by matrixSuite {
         val pssModel = pss.toAsn1()
         RsaAlgorithm.Parameters.PssPadded.fromAsn1(pssModel).toAsn1() shouldBeSameInstanceAs pssModel
 
-        val key = EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1,
-            encodeCurve = true, encodePublicKey = true)
+        val key = EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1)
         key.realSourceRepresentation shouldBe null
         val pkcs8 = key.toAsn1()
         val decoded = EcdsaPrivateKey.fromAsn1(pkcs8)
         decoded.toAsn1() shouldBeSameInstanceAs pkcs8
         decoded shouldBe key
-        val sec1 = key.asSEC1()
+        val sec1 = key.toAsn1.SEC1()
         val fromSec1 = EcdsaPrivateKey.fromAsn1.SEC1(sec1)
-        fromSec1.asSEC1() shouldBeSameInstanceAs sec1
+        fromSec1.toAsn1.SEC1() shouldBeSameInstanceAs sec1
         fromSec1 shouldBe key
         fromSec1.toAsn1.DER() shouldBe key.toAsn1.DER()
         fromSec1.attributes shouldBe null
@@ -193,26 +193,21 @@ val RemainingEncodingTest by matrixSuite {
         decoded.toAsn1().element shouldBeSameInstanceAs model.element
     }
 
-    "EC private scalar and retained source do not require a supported curve" {
+    "EC private key decoders reject unsupported curves while generic decoding retains the source" {
         val unknownCurve = ObjectIdentifier("1.2.3.4")
         val original = Sec1EcPrivateKeyInfo(
             privateKey = ByteArray(32).apply { this[lastIndex] = 1 },
             parameters = unknownCurve, publicKey = null,
         )
-        val decoded = EcdsaPrivateKey.fromAsn1.SEC1(original) as EcdsaPrivateKey.WithPublicKey
-        decoded.privateKey shouldBe BigInteger.ONE
-        decoded.encodeCurve shouldBe true
-        decoded.encodePublicKey shouldBe false
-        shouldThrowAny { decoded.publicKey }
-        decoded.asSEC1() shouldBeSameInstanceAs original
+        shouldThrowAny { EcdsaPrivateKey.fromAsn1.SEC1(original) }
 
         val pkcs8 = Pkcs8PrivateKeyInfo(
             privateKeyAlgorithm = X509AlgorithmIdentifier(KnownOIDs.ecPublicKey, Signum.Der.encodeToTlv(unknownCurve)),
             privateKey = Asn1OctetString(Signum.Der.encodeToByteArray(original)),
         )
-        val fromPkcs8 = EcdsaPrivateKey.fromAsn1(pkcs8) as EcdsaPrivateKey.WithPublicKey
-        fromPkcs8.privateKey shouldBe BigInteger.ONE
-        shouldThrowAny { fromPkcs8.curve }
+        shouldThrowAny { EcdsaPrivateKey.fromAsn1(pkcs8) }
+        val fromPkcs8 = CryptoPrivateKey.fromAsn1(pkcs8)
+        fromPkcs8.toAsn1() shouldBeSameInstanceAs pkcs8
         fromPkcs8.toAsn1.DER() shouldBe Signum.Der.encodeToByteArray(pkcs8)
     }
 }
