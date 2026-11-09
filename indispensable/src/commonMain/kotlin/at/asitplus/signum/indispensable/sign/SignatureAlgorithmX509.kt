@@ -71,7 +71,7 @@ val RsaAlgorithm.Companion.fromAsn1 get() = asn1Decoders<X509AlgorithmIdentifier
     RsaAlgorithm(run {
         val oid = src.oid
         if (oid == KnownOIDs.rsaPSS) {
-            RsaAlgorithm.Parameters.PssPadded(RsaSsaPssParams.of(src, Signum.Der))
+            RsaAlgorithm.Parameters.PssPadded.fromAsn1(RsaSsaPssParams.of(src, Signum.Der))
         } else {
             when (oid) {
                 KnownOIDs.sha1WithRSAEncryption -> Digest.SHA1

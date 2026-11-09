@@ -10,11 +10,10 @@ import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
-import kotlinx.serialization.encodeToByteArray
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import java.security.AlgorithmParameters
 import java.security.Signature
 import java.security.spec.PSSParameterSpec
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 
 @OptIn(SecretExposure::class)
 val RsaSsaPssAgainstJvm by matrixSuite {
@@ -24,10 +23,10 @@ val RsaSsaPssAgainstJvm by matrixSuite {
 
             mapOf(
                 "from ASN.1" to RsaAlgorithm(
-                    RsaAlgorithm.Parameters.PssPadded(
+                    RsaAlgorithm.Parameters.PssPadded.fromAsn1(
                     RsaSsaPssParams(
-                        hashAlgorithm = dataDigest.asn1Representation,
-                        maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                        hashAlgorithm = dataDigest.toAsn1(),
+                        maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).toAsn1(),
                     )
                 )),
                 "from Signum" to RsaAlgorithm(
@@ -57,7 +56,7 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 val signumSigned = runBlocking { signer.sign(data).signature }
 
                 val jvmParameters = AlgorithmParameters.getInstance("RSASSA-PSS").apply {
-                    init(AlgorithmIdentifier.getInstance(Signum.Der.encodeToByteArray(rsaInstance)).parameters.toASN1Primitive().encoded)
+                    init(AlgorithmIdentifier.getInstance(rsaInstance.toAsn1.DER()).parameters.toASN1Primitive().encoded)
                 }
                 val jvmSigned = Signature.getInstance("RSASSA-PSS").run {
                     setParameter(jvmParameters.getParameterSpec(PSSParameterSpec::class.java))

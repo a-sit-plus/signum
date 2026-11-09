@@ -8,16 +8,12 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
-import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import org.kotlincrypto.random.CryptoRand
 import java.nio.channels.Channels
@@ -214,7 +210,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val (certAlg, keyPair) =
                 ServiceLoader.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
-            val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
+            val cn = Name(listOf(RelativeDistinguishedName(X500AttributeTypeAndValue.CommonName(alias))))
             val publicKey = keyPair.public.toCryptoPublicKey()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextPositiveBigInteger(20),
@@ -255,7 +251,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-                        val certificateChain = ctx.ks.getCertificateChain(alias).map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) }
+            val certificateChain = ctx.ks.getCertificateChain(alias).map { it.toKmpCertificate() }
             return getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

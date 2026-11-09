@@ -108,7 +108,7 @@ private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
 // TODO: this should be subclassable by registrations and stuff
-open class AttributeTypeAndValue private constructor(
+open class AttributeTypeAndValue protected constructor(
     override val oid: ObjectIdentifier,
     /** Raw X.509 attribute value; fails if the attribute has no X.509 representation. */
     // TODO: this assumes X.509 basis, still (a comment inline says this is backed by the RFC?)
@@ -222,9 +222,11 @@ private class StandardX500AttributeDescriptor(
     private val stringFactory: (String) -> Asn1String,
 ) : AttributeTypeAndValue.Descriptor<AttributeTypeAndValue> {
     override fun fromString(value: String): AttributeTypeAndValue =
-        AttributeTypeAndValue(oid, stringFactory(value).encodeToTlv())
+        ATV(oid, stringFactory(value).encodeToTlv())
 
-    override fun fromValue(value: Asn1Element) = AttributeTypeAndValue(oid, value)
+    override fun fromValue(value: Asn1Element): AttributeTypeAndValue = ATV(oid, value)
+
+    private class ATV(oid: ObjectIdentifier, value: Asn1Element) : AttributeTypeAndValue(oid, value)
 }
 
 internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(

@@ -1,11 +1,12 @@
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.sign.asn1Representation
-import at.asitplus.signum.indispensable.sign.invoke
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.toAsn1
+import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -41,17 +42,17 @@ val ConversionTests by matrixSuite {
     }
     "COSE -> SigAlg -> COSE" - {
         data(CoseAlgorithm.Signature.entries) - {
-            it.algorithm.asn1Representation.let { x509 ->
+            it.algorithm.toAsn1().let { x509 ->
                 if (it.algorithm is EcdsaAlgorithm && (it.algorithm as EcdsaAlgorithm).requiredCurve != null) {
                     "Curve information is lost" {
-                        val algorithm = SignatureAlgorithm(x509).toCoseAlgorithm().getOrThrow()
+                        val algorithm = SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm().getOrThrow()
                         algorithm shouldNotBe it
                         algorithm.toString().takeLast(3) shouldBe it.toString().takeLast(3)
                         algorithm.toString().take(2) shouldBe it.toString().take(2)
                     }
                 } else {
                     "is stable" {
-                        SignatureAlgorithm(x509).toCoseAlgorithm() shouldSucceedWith it
+                        SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm() shouldSucceedWith it
                     }
                 }
             }

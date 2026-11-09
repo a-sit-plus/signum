@@ -1,23 +1,20 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.Signum
-import kotlinx.serialization.decodeFromByteArray
-import at.asitplus.signum.indispensable.decodeFromPem
-
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.sign.SignatureVerifier
-import at.asitplus.signum.indispensable.sign.verifierFor
-import at.asitplus.signum.indispensable.sign.verify
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.signum.indispensable.sign.signerFor
+import at.asitplus.signum.indispensable.sign.verifierFor
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
@@ -44,7 +41,7 @@ val PrivateKeyCommonTests by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = Signum.Der.decodeFromPem<CryptoPrivateKey>(rsa) as CryptoPrivateKey.WithPublicKey
+        val key = CryptoPrivateKey.fromAsn1(rsa) as CryptoPrivateKey.WithPublicKey
 
         val signer: Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
@@ -64,7 +61,7 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = Signum.Der.decodeFromPem<CryptoPrivateKey>(pkcs8) as EcdsaPrivateKey.WithPublicKey
+        val privateKey = CryptoPrivateKey.fromAsn1(pkcs8) as EcdsaPrivateKey.WithPublicKey
 
         val signer: Signer = EcdsaAlgorithm.withSHA256.signerFor(privateKey)
 
@@ -99,7 +96,7 @@ val PrivateKeyCommonTests by matrixSuite {
 
     "Regressions" - {
         "#233" {
-            Signum.Der.decodeFromByteArray<CryptoPrivateKey>("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
+            CryptoPrivateKey.fromAsn1("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
         }
     }
 }

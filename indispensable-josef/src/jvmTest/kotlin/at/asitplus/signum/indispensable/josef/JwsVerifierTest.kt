@@ -9,7 +9,8 @@ import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.makeVerifier
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.supreme.Supreme
+import at.asitplus.signum.Signum
+import at.asitplus.signum.supreme.installSupreme
 import at.asitplus.signum.supreme.sign.InvalidSignature
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
@@ -32,7 +33,7 @@ private fun ByteArray.withChangedLastBit() = copyOf().also {
 }
 
 val JwsVerifierTest by matrixSuite {
-    Supreme.init()
+    Signum.installSupreme()
 
     "flattened verification preserves signed bytes and ignores unprotected header changes" {
         val signer = Signer.Ephemeral { ec {} }

@@ -56,7 +56,7 @@ suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSig
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
-    return verify(Signum.Der.encodeToByteArray(input.tbsCertificate), input.signature)
+    return verify(input.tbsCertificate.toAsn1.DER(), input.signature)
 }
 
 fun CertificationRequest.verifier() =
