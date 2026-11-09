@@ -6,11 +6,6 @@ import at.asitplus.signum.indispensable.tag
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.subjectAltName_2_5_29_17
-import at.asitplus.awesn1.crypto.pki.X509Certificate
-import at.asitplus.awesn1.serialization.decodeFromPem
-import at.asitplus.signum.indispensable.pki.AlternativeNames
 import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import io.kotest.assertions.throwables.shouldNotThrowAny
@@ -120,10 +115,8 @@ val GeneralNameDecodingTest by matrixSuite{
                 "ZuIUw9ZOtEByVZgu6BY0xseGOTEhvA==\n" +
                 "-----END CERTIFICATE-----"
 
-        // This fixture has serial number zero; test its SAN without constructing a semantic certificate.
-        val registeredIdModel = X509Certificate.decodeFromPem(sanRegisteredIdPem, Signum.Der)
-        generalNames = AlternativeNames.fromAsn1(registeredIdModel.tbsCertificate.extensions!!
-            .single { it.oid == KnownOIDs.subjectAltName_2_5_29_17 }.value).generalNames
+        cert = Certificate.fromAsn1(sanRegisteredIdPem)
+        generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.size shouldBe 1
         generalNames?.forEach { it.choiceTag() shouldBe X509GeneralName.Tags.registeredID }
 
