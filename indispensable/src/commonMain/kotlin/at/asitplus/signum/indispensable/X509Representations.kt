@@ -360,8 +360,6 @@ private class X509UnparsedSignature : AbstractSignature {
             parseCryptoSignature(it, toAsn1())
         }
 
-    override fun equals(other: Any?) = (other is AbstractSignature) && (sourceRepresentation == other.sourceRepresentation)
-    override fun hashCode() = sourceRepresentation.hashCode()
     override fun toString() = "Unparsed CryptoSignature (from X.509: $sourceRepresentation)"
 }
 
@@ -375,7 +373,7 @@ val AbstractSignature.toAsn1 get() =
     }
 
 val CryptoSignature.Companion.fromAsn1 get() =
-    AbstractSignature.Companion.fromAsn1
+    AbstractSignature.fromAsn1
 
 val CryptoSignature.toAsn1 get() =
     asn1EncodersWith(SignatureFormatProvider::encodeToAsn1)

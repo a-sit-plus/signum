@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 import at.asitplus.signum.dsl.VerifierConfiguration
@@ -12,7 +11,6 @@ import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.toAsn1
-import kotlinx.serialization.encodeToByteArray
 
 interface SignatureVerifier {
     val signatureAlgorithm: SignatureAlgorithm
@@ -51,7 +49,7 @@ suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: AbstractSig
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
-    verify(Signum.Der.encodeToByteArray(input), signature)
+    verify(input.toAsn1.DER(), signature)
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {

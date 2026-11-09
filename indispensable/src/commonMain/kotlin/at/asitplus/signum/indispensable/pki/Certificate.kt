@@ -4,10 +4,7 @@ import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.SignumInternals
-import at.asitplus.signum.indispensable.AbstractSignature
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.SourceRepresentationStorage
-import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -85,13 +82,13 @@ class Certificate(
     fun isNotYetValid(date: Instant = Clock.System.now()): Boolean =
         date.epochSeconds < tbsCertificate.validFrom.epochSeconds
 
-    override fun equals(other: Any?): Boolean = this === other || catchingUnwrapped {
-        other is Certificate && tbsCertificate == other.tbsCertificate && signatureValue == other.signatureValue
-    }.getOrDefault(false)
+    override fun equals(other: Any?): Boolean = this === other || (
+        other is Certificate && tbsCertificate == other.tbsCertificate &&
+            CryptoSignature.signaturesEqual(signatureAlgorithm, signatureValue, other.signatureAlgorithm, other.signatureValue)
+    )
 
-    override fun hashCode(): Int = catchingUnwrapped {
-        31 * tbsCertificate.hashCode() + signature.hashCode()
-    }.getOrDefault(0)
+    override fun hashCode(): Int =
+        31 * tbsCertificate.hashCode()
 
     override fun toString(): String = catchingUnwrapped {
         "Certificate(tbsCertificate=$tbsCertificate, signature=$signature)"

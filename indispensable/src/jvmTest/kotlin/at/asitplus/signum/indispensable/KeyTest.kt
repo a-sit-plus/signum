@@ -13,7 +13,6 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.sign.*
-import at.asitplus.signum.indispensable.sign.fromAsn1
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -22,17 +21,17 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import org.bouncycastle.asn1.ASN1InputStream
+import org.bouncycastle.asn1.ASN1Sequence
+import org.bouncycastle.asn1.DERBitString
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
 import java.security.Security
 import java.security.interfaces.ECPrivateKey as JcaECPrivateKey
 import java.security.interfaces.ECPublicKey as JcaECPublicKey
 import java.security.interfaces.RSAPrivateKey as JcaRSAPrivateKey
 import java.security.interfaces.RSAPublicKey as JcaRSAPublicKey
-import org.bouncycastle.asn1.ASN1InputStream
-import org.bouncycastle.asn1.ASN1Sequence
-import org.bouncycastle.asn1.DERBitString
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 @OptIn(ExperimentalStdlibApi::class)
 val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
@@ -147,7 +146,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
-                own.pkcsEncoded shouldBe keyBytes //PKCS#1
+                own.toAsn1.PKCS1.DER() shouldBe keyBytes //PKCS#1
                 own.toAsn1.DER() shouldBe pubKey.encoded //PKCS#8
                 own.toAsn1.TLV().derEncoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromAsn1(own.toAsn1()) shouldBe own

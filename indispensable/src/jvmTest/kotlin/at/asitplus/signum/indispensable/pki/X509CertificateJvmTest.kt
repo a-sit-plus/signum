@@ -173,7 +173,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         repeat(500) {
             launch {
-                x509Certificate.toJcaCertificate().toKmpCertificate().getOrThrow().toAsn1.DER() shouldBe x509Certificate.toAsn1.DER()
+                x509Certificate.toJcaCertificate().toKmpCertificate().toAsn1.DER() shouldBe x509Certificate.toAsn1.DER()
             }
         }
     }
@@ -339,10 +339,11 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         x509Certificate1 shouldNotBe x509Certificate5
 
         x509Certificate1.hashCode() shouldBe x509Certificate1.hashCode()
-        x509Certificate1.hashCode() shouldNotBe x509Certificate2.hashCode()
-        x509Certificate1.hashCode() shouldNotBe x509Certificate3.hashCode()
-        x509Certificate1.hashCode() shouldNotBe x509Certificate4.hashCode()
-        x509Certificate1.hashCode() shouldNotBe x509Certificate5.hashCode()
+
+        val decodedCertificate = Certificate.fromAsn1(x509Certificate1.toAsn1.DER())
+        decodedCertificate shouldBe x509Certificate1
+        decodedCertificate.hashCode() shouldBe x509Certificate1.hashCode()
+        setOf(x509Certificate1, x509Certificate2, decodedCertificate).size shouldBe 2
 
         /*
             X509CertificateExtension

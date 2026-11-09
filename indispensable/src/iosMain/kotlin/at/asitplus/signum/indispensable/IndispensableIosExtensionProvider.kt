@@ -3,25 +3,14 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.sign.asPKCS1
-import at.asitplus.signum.indispensable.sign.fromAsn1Representation
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.signum.internals.*
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
+import kotlinx.serialization.encodeToByteArray
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
 import platform.Security.*
@@ -146,7 +135,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
             }.getAndTake<String>(kSecAttrKeyType)
             val ctor = when (keyType) {
-                kSecAttrKeyTypeRSA.toKotlinString() -> { bytes: ByteArray -> RsaPublicKey.fromPKCS1encoded(bytes) }
+                kSecAttrKeyTypeRSA.toKotlinString() -> { bytes: ByteArray -> RsaPublicKey.fromAsn1.PKCS1(bytes) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() -> { bytes ->
                     EcdsaPublicKey.fromAnsiX963Bytes(
                         src = bytes,
