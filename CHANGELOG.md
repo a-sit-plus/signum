@@ -20,7 +20,7 @@ This is a major refactor!
     * Add `CoseBytes.rawProtectedHeader`; `CoseBytes` equality now compares these bytes instead of the parsed header
     * `CoseBytes.protectedHeader` is parsed from `rawProtectedHeader`; `CoseSigned`/`CoseMac` expose `protectedHeader` and `unprotectedHeader` as getters delegating to `wireFormat` (**breaking** for destructuring, as their `componentN()` functions change)
 * COSE header parameters:
-    * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash` and `CoseHashAlgorithm`
+    * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash`, using the new `CoseAlgorithm.Hash` (with `Digest.toCoseAlgorithm()`)
     * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
     * Add `CWT Claims` (RFC 9597) as `CoseHeader.cwtClaims`
     * Change `CoseHeader.criticalHeaders` to a non-empty `List<CoseHeaderLabel>`, as defined in RFC 9052 (**breaking**)

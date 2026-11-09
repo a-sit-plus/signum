@@ -200,6 +200,38 @@ sealed interface CoseAlgorithm : Enumerable {
         }
     }
 
+    /**
+     * Hash algorithms, e.g. for the `x5t` header parameter (see [CoseCertificateHash]).
+     *
+     * See [RFC 9054, Section 2](https://www.rfc-editor.org/rfc/rfc9054.html#section-2).
+     */
+    @Serializable(with = CoseAlgorithmSerializer::class)
+    sealed class Hash(override val coseValue: Int, val digest: Digest) : CoseAlgorithm {
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
+        data object SHA1 : Hash(-14, Digest.SHA1)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
+        data object SHA256 : Hash(-16, Digest.SHA256)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
+        data object SHA384 : Hash(-43, Digest.SHA384)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
+        data object SHA512 : Hash(-44, Digest.SHA512)
+
+        companion object : Enumeration<Hash> {
+            override val entries: Collection<Hash> by lazy {
+                setOf(
+                    SHA1,
+                    SHA256,
+                    SHA384,
+                    SHA512,
+                )
+            }
+        }
+    }
+
     sealed class HPKE(
         override val coseValue: Int, val kem_id: Int, val kdf_id: Int, val aead_id: Int)
         : CoseAlgorithm, Enumerable
@@ -272,7 +304,7 @@ sealed interface CoseAlgorithm : Enumerable {
 
     companion object : Enumeration<CoseAlgorithm> {
         override val entries: Collection<CoseAlgorithm> by lazy {
-            DataIntegrity.entries + SymmetricEncryption.entries + HPKE.entries + HPKE_KE.entries
+            DataIntegrity.entries + SymmetricEncryption.entries + Hash.entries + HPKE.entries + HPKE_KE.entries
         }
     }
 
@@ -364,6 +396,17 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
         SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM
         SymmetricEncryptionAlgorithm.AES_192.GCM -> CoseAlgorithm.SymmetricEncryption.A192GCM
         SymmetricEncryptionAlgorithm.AES_256.GCM -> CoseAlgorithm.SymmetricEncryption.A256GCM
+        else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
+    }
+}
+
+/** Tries to find a matching COSE algorithm. Note that only SHA-1 and SHA-2 with 256, 384 and 512 bits are supported. */
+fun Digest.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Hash> = catching {
+    when (this) {
+        Digest.SHA1 -> CoseAlgorithm.Hash.SHA1
+        Digest.SHA256 -> CoseAlgorithm.Hash.SHA256
+        Digest.SHA384 -> CoseAlgorithm.Hash.SHA384
+        Digest.SHA512 -> CoseAlgorithm.Hash.SHA512
         else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
     }
 }
