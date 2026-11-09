@@ -6,11 +6,11 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.toAsn1
 import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.signum.internals.*
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
-import kotlinx.serialization.encodeToByteArray
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
 import platform.Security.*
@@ -156,7 +156,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 is EcdsaPrivateKey.WithPublicKey ->
                     Triple(kSecAttrKeyTypeECSECPrimeRandom, key.curve.coordinateLength.bits.toInt(), key.publicKey.iosEncoded+key.privateKeyBytes)
                 is RsaPrivateKey ->
-                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), Signum.Der.encodeToByteArray(key.asPKCS1))
+                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), key.toAsn1.PKCS1.DER())
                 else -> return null
             }
             val attr = createCFDictionary {

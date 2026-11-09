@@ -13,6 +13,7 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.toAsn1
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -45,7 +46,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
     "RSA CRT validation remains joint and deferred" {
         val encoded = KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.genKeyPair().private.encoded
-        val valid = RsaPrivateKey.fromAsn1(encoded).asPKCS1()
+        val valid = RsaPrivateKey.fromAsn1(encoded).toAsn1.PKCS1()
         val invalid = valid.copy(coefficient = valid.prime1)
         val model = Pkcs8PrivateKeyInfo(invalid)
         val decoded = CryptoPrivateKey.fromAsn1(model)

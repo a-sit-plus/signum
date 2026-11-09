@@ -58,8 +58,8 @@ It contains essentials such as:
 * `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
     * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
-    * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
-    * EC keys also support SEC1 encoding (`.asSEC1`)
+    * RSA keys also support PKCS#1 encoding (`.toAsn1.PKCS1`)
+    * EC keys also support SEC1 encoding (`.toAsn1.SEC1`)
 * `Digest` containing an enumeration of supported digests
 * `ECCurve` representing an EC Curve
 * `ECPoint` representing a point on an elliptic curve

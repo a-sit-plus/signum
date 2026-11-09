@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.toAsn1
 import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
@@ -163,7 +164,7 @@ val PemTest  by matrixSuite {
                 RsaPrivateKey.fromAsn1(it.toAsn1())
             }.isSuccess shouldBe false
 
-            it.asSEC1.PEM().lines() shouldBe sec1.lines()
+            it.toAsn1.SEC1.PEM().lines() shouldBe sec1.lines()
         }
     }
 
