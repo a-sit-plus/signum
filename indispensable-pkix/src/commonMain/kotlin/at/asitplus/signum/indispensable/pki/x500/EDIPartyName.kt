@@ -11,18 +11,19 @@ class EDIPartyName private constructor(
 ) : AbstractGeneralName() {
     override val equalityValue get() = ediParty
 
-    constructor(value: X509GeneralName.EdiParty) : this(value, null)
-
-    constructor(value: Asn1Sequence) : this(X509GeneralName.EdiParty(value), null)
-
-    /** Creates an instance with `isValid` determined by [validate]. */
-    constructor(value: X509GeneralName.EdiParty, validate: (GeneralName) -> Boolean) : this(value, validate(EDIPartyName(value)))
-
     override fun createValidatedCopy(validate: (GeneralName) -> Boolean): EDIPartyName = EDIPartyName(ediParty, validate(this))
 
     override fun toString(): String = ediParty.toString()
 
     companion object {
+        operator fun invoke(value: X509GeneralName.EdiParty): EDIPartyName = EDIPartyName(value, null)
+
+        operator fun invoke(value: Asn1Sequence): EDIPartyName = invoke(X509GeneralName.EdiParty(value))
+
+        /** Creates an instance with `isValid` determined by [validate]. */
+        operator fun invoke(value: X509GeneralName.EdiParty, validate: (GeneralName) -> Boolean): EDIPartyName =
+            EDIPartyName(value, validate(invoke(value)))
+
         val tag = X509GeneralName.Tags.ediPartyName
         internal fun fromAsn1Model(src: X509GeneralName): EDIPartyName {
             return EDIPartyName(src as X509GeneralName.EdiParty, null)

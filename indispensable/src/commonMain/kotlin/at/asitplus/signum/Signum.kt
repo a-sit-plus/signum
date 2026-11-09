@@ -92,6 +92,8 @@ object Signum {
         if (provider is Asn1PrivateKeyFormatProvider) { ServiceLoader.register<Asn1PrivateKeyFormatProvider>(provider); matched = true }
         if (provider is InMemoryKeysProvider) { ServiceLoader.register<InMemoryKeysProvider>(provider); matched = true }
         if (provider is SignatureVerifierProvider) { ServiceLoader.register<SignatureVerifierProvider>(provider); matched = true }
+        if (provider is AttributeTypeAndValueAsn1Provider) { ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(provider); matched = true }
+        if (provider is CsrAttributeAsn1Provider) { ServiceLoader.register<CsrAttributeAsn1Provider>(provider); matched = true }
         if (provider is CertificateExtensionProvider) { ServiceLoader.register<CertificateExtensionProvider>(provider); matched = true }
         if (provider is GeneralNameFormatProvider) { ServiceLoader.register<GeneralNameFormatProvider>(provider); matched = true }
         matched = registerIndispensablePlatformProvider(provider) || matched
@@ -104,7 +106,7 @@ object Signum {
         Attributes.register(descriptor, SerializersModule {
             contextualAsn1(T::class, X500AttributeTypeAndValue.serializer(),
                 // TODO
-                { it.asn1.toRepresentation() }, { descriptor.fromValue(it.value).apply { finangleSourceRepresentation(it) } })
+                { it.asn1.toRepresentation() }, { AttributeTypeAndValue.fromAsn1(it) as T })
         })
     }
     fun attributeDescriptorFor(oid: ObjectIdentifier): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorFor(oid)

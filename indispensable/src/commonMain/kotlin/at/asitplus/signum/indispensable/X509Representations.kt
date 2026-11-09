@@ -446,7 +446,7 @@ val GeneralName.asn1 get() =
 val GeneralName.Companion.fromAsn1 get() =
     asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
 
-// TODO: do we want this to be part of the interface, so implementations can override without being tied to asn1?
+// TODO: Make tag a bigInteger,
 val GeneralName.tag get() = this@tag.asn1.toRepresentation().tag
 
 val AlternativeNames.asn1 get() =
@@ -477,11 +477,15 @@ val AttributeTypeAndValue.asn1 get() =
     asn1Encoders<X500AttributeTypeAndValue, _> { src ->
         X500AttributeTypeAndValue(src.oid, src.value)
     }
+val AttributeTypeAndValue.toAsn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
 
-val AttributeTypeAndValue.Companion.fromAsn1 get() =
-    asn1Decoders<X500AttributeTypeAndValue, _> { src ->
-        AttributeTypeAndValue(src.oid, src.value)
+val AttributeTypeAndValue.Companion.fromAsn1 get() = asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue> { src ->
+    try { ServiceLoader.load<AttributeTypeAndValueAsn1Provider>().get(src, AttributeTypeAndValueAsn1Provider::decodeFromAsn1) }
+    catch (failure: UnsupportedCryptoException) {
+        OpaqueAttributeTypeAndValue(src.oid, failure,
+            isValid = if (Signum.attributeDescriptorFor(src.oid) != null) false else null)
     }
+}
 
 val Name.asn1 get() =
     asn1Encoders<X500Name, _> { src ->
@@ -495,15 +499,12 @@ val Name.Companion.fromAsn1 get() =
         })
     }
 
-val CsrAttribute.asn1 get() =
-    asn1Encoders<Pkcs10CsrAttribute, _> { src ->
-        Pkcs10CsrAttribute(src.oid, src.value)
-    }
+val CsrAttribute.asn1 get() = asn1EncodersWith(CsrAttributeAsn1Provider::encodeToAsn1)
 
-val CsrAttribute.Companion.fromAsn1 get() =
-    asn1Decoders<Pkcs10CsrAttribute, _> { src ->
-        CsrAttribute(src.oid, src.value)
-    }
+val CsrAttribute.Companion.fromAsn1 get() = asn1Decoders<Pkcs10CsrAttribute, CsrAttribute> { src ->
+    try { ServiceLoader.load<CsrAttributeAsn1Provider>().get(src, CsrAttributeAsn1Provider::decodeFromAsn1) }
+    catch (failure: UnsupportedCryptoException) { OpaqueCsrAttribute(src.oid, failure) }
+}
 
 val TbsCertificationRequest.asn1 get() =
     asn1Encoders<Pkcs10CertificationRequestInfo, _> { src ->

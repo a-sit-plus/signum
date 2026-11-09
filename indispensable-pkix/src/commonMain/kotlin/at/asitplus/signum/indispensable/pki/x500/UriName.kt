@@ -12,11 +12,11 @@ import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `uniformResourceIdentifier` GeneralName CHOICE `[6]`. */
 class UriName private constructor(
-    val host: Asn1String.IA5,
+    val host: String,
     val allowWildcard: Boolean,
     performValidation: Boolean,
 ) : AbstractGeneralName() {
-    override val equalityValue get() = host.value
+    override val equalityValue get() = host
 
     val hostDNS: DNSName?
     val hostIP: IPAddressName?
@@ -25,14 +25,14 @@ class UriName private constructor(
 
     @Throws(Asn1Exception::class)
     constructor(value: String, allowWildcard: Boolean = false)
-            : this(Asn1String.IA5(value), allowWildcard, true)
+            : this(value, allowWildcard, true)
 
     init {
-        if (performValidation && host.value.isEmpty()) {
+        if (performValidation && host.isEmpty()) {
             throw IOException("URI name cannot be empty")
         }
 
-        val hostStr = Uri.parse(host.value).host ?: host.value
+        val hostStr = Uri.parse(host).host ?: host
 
         val (tmpHostDNS, tmpHostIP) = when {
             hostStr.startsWith("[") && hostStr.endsWith("]") -> {
@@ -44,7 +44,7 @@ class UriName private constructor(
             else -> {
                 // Try DNS first
                 val normalizedHost = hostStr.removePrefix(".")
-                val dns = runCatching { DNSName(Asn1String.IA5(normalizedHost), allowWildcard) }.getOrNull()
+                val dns = runCatching { DNSName(normalizedHost, allowWildcard) }.getOrNull()
                 val ip = if (dns == null) runCatching { IPAddressName.fromString(hostStr) }.getOrNull() else null
                 dns to ip
             }
@@ -55,19 +55,19 @@ class UriName private constructor(
         isValid = hostDNS != null || hostIP != null
 
         if (performValidation && !isValid) {
-            throw Asn1Exception("Invalid URI name: ${host.value}")
+            throw Asn1Exception("Invalid URI name: ${host}")
         }
     }
 
-    override fun toString(): String = host.value
+    override fun toString(): String = host
 
     @ExperimentalPkiApi
     override fun constrains(input: GeneralName?): ConstraintResult {
         return try {
             super.constrains(input)
         } catch (_: UnsupportedOperationException) {
-            val inputHost = (input as UriName).host.value.lowercase()
-            val thisHost = host.value.lowercase()
+            val inputHost = (input as UriName).host.lowercase()
+            val thisHost = host.lowercase()
 
             when {
                 thisHost == inputHost -> ConstraintResult.MATCH
@@ -100,7 +100,7 @@ class UriName private constructor(
 
         internal fun fromAsn1Model(src: X509GeneralName): UriName = runRethrowing {
             UriName(
-                (src as X509GeneralName.UniformResourceIdentifier).rawValue,
+                (src as X509GeneralName.UniformResourceIdentifier).rawValue.value,
                 allowWildcard = false,
 
                 performValidation = false,

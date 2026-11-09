@@ -239,7 +239,7 @@ val ExtensibilityTest by matrixSuite {
                     .associateBy { it.oid }
                 fun encodedValue(oid: String) =
                     (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue)
-                        .value.asPrimitive()
+                        .toAsn1().value.asPrimitive()
                 fun stringValue(oid: String) = Asn1String.decodeFromTlv(encodedValue(oid)).value
                 encodedValue("2.5.4.41").tag shouldBe Asn1Element.Tag.STRING_UTF8
                 encodedValue("2.5.4.12").tag shouldBe Asn1Element.Tag.STRING_UTF8

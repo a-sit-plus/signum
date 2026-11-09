@@ -133,12 +133,7 @@ private fun mergeAttributesWithExtensions(
     return mutableListOf<CsrAttribute>().apply {
         attributes?.let { addAll(it) }
         extensions?.let {
-            // TODO: this assumes asn1 in the abstract class
-            add(CsrAttribute.fromAsn1(
-                Pkcs10CsrAttribute.ExtensionRequest(it.map {
-                    extension -> extension.asn1.toRepresentation()
-                })
-            ))
+            add(ExtensionRequest(it))
         }
     }
 }

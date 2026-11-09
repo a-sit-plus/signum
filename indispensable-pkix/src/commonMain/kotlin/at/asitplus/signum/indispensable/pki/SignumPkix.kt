@@ -39,6 +39,7 @@ import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.DirectoryName
 import at.asitplus.signum.indispensable.pki.x500.EDIPartyName
 import at.asitplus.signum.indispensable.pki.x500.IPAddressName
+import at.asitplus.signum.indispensable.pki.x500.*
 import at.asitplus.signum.indispensable.pki.x500.OtherName
 import at.asitplus.signum.indispensable.pki.x500.RFC822Name
 import at.asitplus.signum.indispensable.pki.x500.RegisteredIDName
@@ -46,6 +47,7 @@ import at.asitplus.signum.indispensable.pki.x500.UriName
 import at.asitplus.signum.indispensable.pki.x500.X400AddressName
 
 private val initializePkix by lazy {
+    at.asitplus.signum.ServiceLoader.register<PolicyQualifierAsn1Provider>(BuiltinPolicyQualifiers)
     Signum.register(PkixAsn1Provider, SerializersModule {
         contextualAsn1(GeneralSubtree::class, X509GeneralSubtree.serializer(), { it.toAsn1() }, { GeneralSubtree.fromAsn1(it) })
         contextualAsn1(CertificateExtension::class, X509CertificateExtension.serializer(), { it.toAsn1() }, { CertificateExtension.fromAsn1(it) })
@@ -72,6 +74,10 @@ private val initializePkix by lazy {
         generalName<IPAddressName>()
         generalName<RegisteredIDName>()
         generalName<OtherName>()
+        generalName<OpaqueOtherName>()
+        generalName<HardwareModuleName>()
+        generalName<SmtpUtf8Mailbox>()
+        generalName<MacAddressName>()
         generalName<EDIPartyName>()
         generalName<X400AddressName>()
         generalName<DirectoryName>()

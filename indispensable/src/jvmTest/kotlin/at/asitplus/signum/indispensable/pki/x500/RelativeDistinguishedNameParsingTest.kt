@@ -64,10 +64,10 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         // attrsAndValues is a Set; look up by displayName instead of positional index
         val cn =
             rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue
-        Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "John Doe"
+        Asn1String.decodeFromTlv(cn.toAsn1().value.asPrimitive()).value shouldBe "John Doe"
         val o =
             rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue
-        Asn1String.decodeFromTlv(o.value.asPrimitive()).value shouldBe "Company"
+        Asn1String.decodeFromTlv(o.toAsn1().value.asPrimitive()).value shouldBe "Company"
     }
 
     "fromString should throw on invalid RDN" {
@@ -123,21 +123,21 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         // toRfc2253String would lowercase and re-escape this; the stored value must not.
         val atv = AttributeTypeAndValue.fromString("2.5.4.3", """Foo\, Bar""")
                 as AttributeTypeAndValue
-        Asn1String.decodeFromTlv(atv.value.asPrimitive()).value shouldBe "Foo, Bar"
+        Asn1String.decodeFromTlv(atv.toAsn1().value.asPrimitive()).value shouldBe "Foo, Bar"
     }
 
     "parsed value accessor strips surrounding quotes" {
         val rdn = RelativeDistinguishedName.fromString("""2.5.4.3="Foo+Bar"""")
         val cn = rdn.attrsAndValues.single() as AttributeTypeAndValue
         // '+' inside quotes is part of the value, not an ATV separator, and the quotes are dropped.
-        Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "Foo+Bar"
+        Asn1String.decodeFromTlv(cn.toAsn1().value.asPrimitive()).value shouldBe "Foo+Bar"
     }
 
     "hexstring form populates value with the exact DER element and preserves the string type" {
         // "#13025553" == PrintableString "US" (tag 0x13, len 2). toRfc2253String would obscure the tag.
         val atv = AttributeTypeAndValue.fromString("2.5.4.6", "#13025553")
                 as AttributeTypeAndValue
-        val decoded = Asn1String.decodeFromTlv(atv.value.asPrimitive())
+        val decoded = Asn1String.decodeFromTlv(atv.toAsn1().value.asPrimitive())
         decoded.value shouldBe "US"
         (decoded is Asn1String.Printable) shouldBe true
     }
@@ -156,9 +156,13 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
 
         atv.isValid shouldBe false
         // raw value survives untouched and can still be received/decoded
-        atv.value shouldBe invalidIa5
-        atv.value.asPrimitive().content shouldBe byteArrayOf(0x80.toByte())
-        Asn1String.decodeFromTlv(atv.value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
+        atv.toAsn1().value shouldBe invalidIa5
+        atv.toAsn1().value.asPrimitive().content shouldBe byteArrayOf(0x80.toByte())
+        Asn1String.decodeFromTlv(atv.toAsn1().value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
+
+        val nonText = AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), at.asitplus.awesn1.Asn1Integer(1).encodeToTlv())
+        nonText.isValid shouldBe false
+        shouldThrow<Asn1Exception> { RelativeDistinguishedName(nonText) }
     }
 
     "ATV equality should be symmetric across sourceRepresentation" {

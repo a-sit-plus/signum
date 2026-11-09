@@ -105,13 +105,10 @@ data class NameConstraints(
                 .flatMap { it.attrsAndValues }
                 .filter { it.oid == AttributeTypeAndValue.Descriptor.OID.emailAddress }
                 .mapNotNull { attr ->
-                    val str =
-                        ((attr as? at.asitplus.signum.indispensable.pki.AttributeTypeAndValue)?.value as? Asn1Primitive)?.let {
-                            Asn1String.decodeFromTlv(it)
-                        }?.value
+                    val str = (attr as? TextAttributeTypeAndValue)?.text
                     str?.let {
                         runCatching {
-                            RFC822Name(Asn1String.IA5(it))
+                            RFC822Name(it)
                         }.getOrNull()
                     }
                 }
