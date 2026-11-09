@@ -403,6 +403,7 @@ val TbsCertificate.Companion.fromAsn1 get() = asn1Decoders<X509TbsCertificate,_>
         issuerUniqueID = src.issuerUniqueID?.bitCarryingBytes,
         subjectUniqueID = src.subjectUniqueID?.bitCarryingBytes,
         extensions = src.extensions?.map { CertificateExtension.fromAsn1(it) }.orEmpty(),
+        strict = false,
     )
 }
 
@@ -411,8 +412,7 @@ val CertificateExtension.asn1 get() =
 
 val CertificateExtension.Companion.fromAsn1 get() =
     asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { asn1, lookup ->
-        // A provider decoding failure must not turn a malformed known extension into an opaque one.
-        if (lookup.suppressedExceptions.isNotEmpty()) throw lookup
+        // Preserve malformed bodies as Unknown, retaining both the representation and provider failures.
         object : CertificateExtension.Unknown(lookup) {
             override val critical = asn1.critical
             override val oid: ObjectIdentifier = asn1.oid

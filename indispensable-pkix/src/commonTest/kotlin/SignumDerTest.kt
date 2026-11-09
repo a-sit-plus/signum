@@ -1,3 +1,5 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.contextualAsn1
@@ -128,11 +130,22 @@ val SignumDerTest by matrixSuite {
         decoded.permitted!!.trees.size shouldBe 1
     }
 
-    "Known malformed extension bodies throw; unknown bodies remain opaque" {
+    "Malformed and unrecognized extension bodies remain opaque and round-trip" {
         for (oid in listOf(KnownOIDs.nameConstraints_2_5_29_30, KnownOIDs.certificatePolicies_2_5_29_32, KnownOIDs.policyMappings)) {
             val model = at.asitplus.awesn1.crypto.pki.X509CertificateExtension(oid, true, byteArrayOf(0x30, 0x01))
-            shouldThrowAny { CertificateExtension.fromAsn1(model) }
-            shouldThrowAny { Signum.Der.decodeFromByteArray<CertificateExtension>(Signum.Der.encodeToByteArray(model)) }
+            val direct = CertificateExtension.fromAsn1(model).shouldBeInstanceOf<CertificateExtension.Unknown>()
+            direct.oid shouldBe oid
+            direct.critical shouldBe true
+            direct.toAsn1() shouldBeSameInstanceAs model
+            direct.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+
+            val bytes = Signum.Der.encodeToByteArray(model)
+            val decoded = Signum.Der.decodeFromByteArray<CertificateExtension>(bytes)
+                .shouldBeInstanceOf<CertificateExtension.Unknown>()
+            decoded.oid shouldBe oid
+            decoded.critical shouldBe true
+            decoded.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+            Signum.Der.encodeToByteArray<CertificateExtension>(decoded) shouldBe bytes
         }
         val opaque = CertificateExtension(ObjectIdentifier("1.2.3.4.99"), true, byteArrayOf(0x30, 0x01))
         val bytes = Signum.Der.encodeToByteArray<CertificateExtension>(opaque)

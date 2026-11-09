@@ -1,3 +1,5 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.fromAsn1
@@ -34,9 +36,9 @@ import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.testballoon.matrix.matrixSuite
 import at.asitplus.signum.indispensable.pki.extn.UsageBit
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 val X509CertificateExtensionParsingTest by matrixSuite {
 
@@ -46,14 +48,19 @@ val X509CertificateExtensionParsingTest by matrixSuite {
         ext!!::class shouldBe KeyUsage::class
     }
 
-    "invalid keyUsage extension should propagate its decode error" {
+    "Invalid keyUsage becomes Unknown with its decode failure retained" {
         val seq = Asn1.Sequence {
             +KnownOIDs.keyUsage
             +Bool(true)
             +Asn1EncapsulatingOctetString(listOf())
         }
 
-        shouldThrowAny { Signum.Der.decodeFromTlv<CertificateExtension>(seq) }
+        val ext = Signum.Der.decodeFromTlv<CertificateExtension>(seq)
+            .shouldBeInstanceOf<CertificateExtension.Unknown>()
+        ext.oid shouldBe KnownOIDs.keyUsage
+        ext.critical shouldBe true
+        ext.toAsn1().value shouldBe byteArrayOf()
+        ext.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
     }
 
     "Unknown extension remains an opaque representation carrier" {
