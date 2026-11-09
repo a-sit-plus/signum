@@ -21,6 +21,7 @@ import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryption
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -205,19 +206,19 @@ sealed interface CoseAlgorithm : Enumerable {
      *
      * See [RFC 9054, Section 2](https://www.rfc-editor.org/rfc/rfc9054.html#section-2).
      */
-    @Serializable(with = CoseAlgorithmSerializer::class)
+    @Serializable(with = CoseHashAlgorithmSerializer::class)
     sealed class Hash(override val coseValue: Int, val digest: Digest) : CoseAlgorithm {
 
-        @Serializable(with = CoseAlgorithmSerializer::class)
+        @Serializable(with = CoseHashAlgorithmSerializer::class)
         data object SHA1 : Hash(-14, Digest.SHA1)
 
-        @Serializable(with = CoseAlgorithmSerializer::class)
+        @Serializable(with = CoseHashAlgorithmSerializer::class)
         data object SHA256 : Hash(-16, Digest.SHA256)
 
-        @Serializable(with = CoseAlgorithmSerializer::class)
+        @Serializable(with = CoseHashAlgorithmSerializer::class)
         data object SHA384 : Hash(-43, Digest.SHA384)
 
-        @Serializable(with = CoseAlgorithmSerializer::class)
+        @Serializable(with = CoseHashAlgorithmSerializer::class)
         data object SHA512 : Hash(-44, Digest.SHA512)
 
         companion object : Enumeration<Hash> {
@@ -322,6 +323,27 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
     override fun deserialize(decoder: Decoder): CoseAlgorithm {
         val decoded = decoder.decodeInt()
         return CoseAlgorithm.entries.first { it.coseValue == decoded }
+    }
+
+}
+
+/**
+ * Serializes [CoseAlgorithm.Hash], rejecting values of other [CoseAlgorithm]s on deserialization,
+ * which [CoseAlgorithmSerializer] would accept (and Kotlin/JS would not catch by a cast).
+ */
+object CoseHashAlgorithmSerializer : KSerializer<CoseAlgorithm.Hash> {
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("CoseHashAlgorithmSerializer", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: CoseAlgorithm.Hash) {
+        encoder.encodeInt(value.coseValue)
+    }
+
+    override fun deserialize(decoder: Decoder): CoseAlgorithm.Hash {
+        val decoded = decoder.decodeInt()
+        return CoseAlgorithm.Hash.entries.firstOrNull { it.coseValue == decoded }
+            ?: throw SerializationException("Unsupported COSE hash algorithm $decoded")
     }
 
 }

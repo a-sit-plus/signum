@@ -3,11 +3,11 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
 import de.infix.testBalloon.framework.core.TestConfig
@@ -226,7 +226,7 @@ val CoseHeaderSerializationTest by matrixSuite {
     "COSE header with x5t of unsupported hash algorithms" {
         // SHA-256/64 (-15), "foo", ES256 (-7)
         listOf("2e", "63666f6f", "26").forEach { algorithm ->
-            shouldThrowAny {
+            shouldThrow<SerializationException> {
                 coseCompliantSerializer.decodeFromHexString<CoseHeader>("a1182282" + algorithm + "4101")
             }
         }
