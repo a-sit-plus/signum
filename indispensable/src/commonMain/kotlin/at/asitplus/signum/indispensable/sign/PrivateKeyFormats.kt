@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs1RsaOtherPrimeInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
@@ -104,14 +103,7 @@ class RsaPrivateKey(
     ) : WithSourceRepresentation {
         @SignumInternals
         override val sourceRepresentation = SourceRepresentationStorage()
-        companion object {
-            fun fromAsn1Representation(
-                element: Pkcs1RsaOtherPrimeInfo): PrimeInfo =
-                PrimeInfo(
-                    element.prime.toBigInteger(),
-                    element.exponent.toBigInteger(),
-                    element.coefficient.toBigInteger())
-        }
+        companion object
     }
 
     companion object {
@@ -264,8 +256,8 @@ object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
     override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {
-            RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1Representation(privateKeyInfo)
-            EcdsaPrivateKey.oid -> EcdsaPrivateKey.fromAsn1Representation(privateKeyInfo)
+            RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1(privateKeyInfo)
+            EcdsaPrivateKey.oid -> EcdsaPrivateKey.fromAsn1(privateKeyInfo)
             else -> null
         }
     }

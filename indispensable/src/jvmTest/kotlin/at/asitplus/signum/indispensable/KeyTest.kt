@@ -1,24 +1,20 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
-
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.fromAsn1Representation
-import at.asitplus.signum.indispensable.sign.asPKCS1
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.awesn1.serialization.decodeFromTlv
 import at.asitplus.awesn1.toAsn1Integer
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.asPKCS1
+import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -27,6 +23,8 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
@@ -83,8 +81,8 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 withClue("Basic Conversions") {
                     Signum.Der.encodeToByteArray(own) shouldBe pubKey.encoded
-                    Signum.Der.encodeToTlv(SubjectPublicKeyInfo.serializer(), own.asn1Representation).derEncoded shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1Representation(own.asn1Representation) shouldBe own
+                    own.toAsn1.DER() shouldBe pubKey.encoded
+                    CryptoPublicKey.fromAsn1(own.toAsn1()) shouldBe own
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().encoded shouldBe pubKey.encoded
                     Signum.Der.decodeFromTlv<CryptoPublicKey>(Asn1Element.parse(Signum.Der.encodeToByteArray(own)) as Asn1Sequence) shouldBe own

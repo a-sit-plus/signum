@@ -10,7 +10,6 @@ import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.SignumInternals
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
 
@@ -179,15 +178,7 @@ class RsaAlgorithm(
                     }
                 }
 
-                companion object {
-                    fun fromAsn1Representation(element: X509AlgorithmIdentifier): MaskGenerationFunction =
-                        runRethrowing {
-                            when (element.oid) {
-                                Pkcs1Mgf1.oid -> Pkcs1Mgf1(Digest.fromAsn1(element.parameters!!))
-                                else -> throw UnsupportedCryptoException("Unrecognized MGF OID ${element.oid}")
-                            }
-                        }
-                }
+                companion object
             }
 
             companion object {
@@ -218,8 +209,8 @@ class RsaAlgorithm(
 
 object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
     override fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = when (value) {
-        is EcdsaAlgorithm -> value.asn1Representation
-        is RsaAlgorithm -> value.asn1Representation
+        is EcdsaAlgorithm -> value.toAsn1()
+        is RsaAlgorithm -> value.toAsn1()
         else -> null
     }
 
@@ -227,13 +218,13 @@ object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
         KnownOIDs.ecdsaWithSHA1,
         KnownOIDs.ecdsaWithSHA256,
         KnownOIDs.ecdsaWithSHA384,
-        KnownOIDs.ecdsaWithSHA512 -> EcdsaAlgorithm(algorithmIdentifier)
+        KnownOIDs.ecdsaWithSHA512 -> EcdsaAlgorithm.fromAsn1(algorithmIdentifier)
 
         KnownOIDs.sha1WithRSAEncryption,
         KnownOIDs.sha256WithRSAEncryption,
         KnownOIDs.sha384WithRSAEncryption,
         KnownOIDs.sha512WithRSAEncryption,
-        KnownOIDs.rsaPSS -> RsaAlgorithm(algorithmIdentifier)
+        KnownOIDs.rsaPSS -> RsaAlgorithm.fromAsn1(algorithmIdentifier)
 
         else -> null
     }
