@@ -5,6 +5,7 @@ import io.matthewnelson.encoding.base16.Base16ConfigBuilder
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.cbor.CborDecoder
@@ -27,6 +28,18 @@ val coseCompliantSerializer by lazy {
         alwaysUseByteString = true
     }
 }
+
+
+/**
+ * Decodes a CBOR value that is either an integer or a text string (`int / tstr`), as used for COSE labels and
+ * algorithm identifiers. The CBOR parser checks the major type before consuming input, so the fallback is safe.
+ */
+internal inline fun <T> Decoder.decodeIntOrText(fromInt: (Int) -> T, fromText: (String) -> T): T =
+    try {
+        fromInt(decodeInt())
+    } catch (_: SerializationException) {
+        fromText(decodeString())
+    }
 
 
 /**
