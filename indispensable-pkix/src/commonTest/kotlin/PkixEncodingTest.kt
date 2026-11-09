@@ -108,7 +108,7 @@ val PkixEncodingTest by matrixSuite {
         decoded.toAsn1() shouldBeSameInstanceAs decoded.toAsn1()
         val value = Asn1String.Printable("round-trip").encodeToTlv()
         val constructed = AttributeTypeAndValue(CommonName.oid, value) as CommonName
-        constructed.sourceFormat shouldBe "<no source>"
+        constructed.sourceFormat shouldBe "X500AttributeTypeAndValue"
         constructed.toAsn1().value shouldBeSameInstanceAs value
     }
 

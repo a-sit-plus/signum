@@ -32,7 +32,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
                 PolicyConstraints(it.requireExplicitPolicy?.toInt(), it.inhibitPolicyMapping?.toInt(), critical)
             }
             PolicyMappings.oid -> PolicyMappings(Signum.Der.decodeFromByteArray<List<CertificatePolicyMap>>(value), critical)
-            CertificatePolicies.oid -> CertificatePolicies(Signum.Der.decodeFromByteArray<List<PolicyInformation>>(value), critical)
+            CertificatePolicies.oid -> CertificatePolicies(Signum.Der.decodeFromByteArray(kotlinx.serialization.builtins.ListSerializer(PolicyInformationAsn1Serializer), value), critical)
             NameConstraints.oid -> Signum.Der.decodeFromByteArray<NameConstraintsBody>(value).let {
                 NameConstraints(
                     it.permitted?.let { trees -> GeneralSubtrees(trees.map { tree -> GeneralSubtree.fromAsn1(tree) }) },
@@ -60,7 +60,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
                 value.requireExplicitPolicy?.let { Asn1Integer(it) }, value.inhibitPolicyMapping?.let { Asn1Integer(it) },
             ))
             is PolicyMappings -> Signum.Der.encodeToByteArray(value.policyMappings)
-            is CertificatePolicies -> Signum.Der.encodeToByteArray(value.certificatePolicies)
+            is CertificatePolicies -> Signum.Der.encodeToByteArray(kotlinx.serialization.builtins.ListSerializer(PolicyInformationAsn1Serializer), value.certificatePolicies)
             is NameConstraints -> Signum.Der.encodeToByteArray(NameConstraintsBody(
                 value.permitted?.trees?.map { it.toAsn1() }, value.excluded?.trees?.map { it.toAsn1() },
             ))
@@ -76,20 +76,20 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
         is X509GeneralName.IpAddress -> IPAddressName.fromAsn1Model(generalName)
         is X509GeneralName.Directory -> DirectoryName.fromAsn1Model(generalName)
         is X509GeneralName.RegisteredId -> RegisteredIDName.fromAsn1Model(generalName)
-        is X509GeneralName.Other -> OtherName.fromAsn1Model(generalName)
+        is X509GeneralName.Other -> decodeOtherName(generalName)
         is X509GeneralName.EdiParty -> EDIPartyName.fromAsn1Model(generalName)
         is X509GeneralName.X400Address -> X400AddressName.fromAsn1Model(generalName)
         else -> null
     }
 
     override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = when (generalName) {
-        is DNSName -> X509GeneralName.Dns(generalName.value.value)
-        is RFC822Name -> X509GeneralName.Rfc822(generalName.value.value)
-        is UriName -> X509GeneralName.UniformResourceIdentifier(generalName.host.value)
+        is DNSName -> X509GeneralName.Dns(generalName.value)
+        is RFC822Name -> X509GeneralName.Rfc822(generalName.value)
+        is UriName -> X509GeneralName.UniformResourceIdentifier(generalName.host)
         is IPAddressName -> X509GeneralName.IpAddress(generalName.rawBytes)
         is DirectoryName -> X509GeneralName.Directory(generalName.name.toAsn1())
         is RegisteredIDName -> X509GeneralName.RegisteredId(generalName.value)
-        is OtherName -> generalName.other
+        is OtherName -> encodeOtherName(generalName)
         is EDIPartyName -> generalName.ediParty
         is X400AddressName -> generalName.x400Address
         else -> null

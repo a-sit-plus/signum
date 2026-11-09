@@ -52,3 +52,36 @@ class AlternativeNames(val generalNames: List<GeneralName>) : WithSourceRepresen
         }
     }
 }
+
+/** Interpreted SAN/IAN content, usable independently of the extension's encoding. */
+interface AlternativeNamesExtension : CertificateExtension {
+    val generalNames: List<GeneralName>
+}
+
+data class SubjectAlternativeName(
+    override val generalNames: List<GeneralName>,
+    override val critical: Boolean = false,
+) : AlternativeNamesExtension {
+    override val oid get() = KnownOIDs.subjectAltName_2_5_29_17
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+}
+
+data class IssuerAlternativeName(
+    override val generalNames: List<GeneralName>,
+    override val critical: Boolean = false,
+) : AlternativeNamesExtension {
+    override val oid get() = KnownOIDs.issuerAltName_2_5_29_18
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+}
+
+internal object AlternativeNamesAsn1Provider : CertificateExtensionProvider {
+    override fun decodeFromAsn1(asn1: at.asitplus.awesn1.crypto.pki.X509CertificateExtension): CertificateExtension? = when (asn1.oid) {
+        KnownOIDs.subjectAltName_2_5_29_17 -> SubjectAlternativeName(AlternativeNames.fromAsn1(asn1.value).generalNames, asn1.critical)
+        KnownOIDs.issuerAltName_2_5_29_18 -> IssuerAlternativeName(AlternativeNames.fromAsn1(asn1.value).generalNames, asn1.critical)
+        else -> null
+    }
+    override fun encodeToAsn1(value: CertificateExtension): at.asitplus.awesn1.crypto.pki.X509CertificateExtension? =
+        (value as? AlternativeNamesExtension)?.let {
+            at.asitplus.awesn1.crypto.pki.X509CertificateExtension(it.oid, it.critical, AlternativeNames(it.generalNames).asn1.toDer())
+        }
+}

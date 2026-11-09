@@ -11,32 +11,32 @@ import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `dNSName` GeneralName CHOICE `[2]`. */
 class DNSName private constructor(
-    val value: Asn1String.IA5,
+    val value: String,
     val allowWildcard: Boolean,
     performValidation: Boolean,
 ) : AbstractGeneralName() {
-    override val equalityValue get() = value.value
+    override val equalityValue get() = value
 
     /**
      * @throws Asn1Exception if illegal DNSName is provided
      */
     @Throws(Asn1Exception::class)
-    constructor(value: Asn1String.IA5, allowWildcard: Boolean = true)
+    constructor(value: String, allowWildcard: Boolean = true)
             : this(value, allowWildcard, true)
 
-    override val isValid: Boolean by lazy { validate(value.value, allowWildcard) }
+    override val isValid: Boolean by lazy { value.all { it.code < 128 } && validate(value, allowWildcard) }
 
     init { if (performValidation && !isValid) throw Asn1Exception("Invalid DNSName.") }
 
-    override fun toString(): String = value.value
+    override fun toString(): String = value
 
     @ExperimentalPkiApi
     override fun constrains(input: GeneralName?): ConstraintResult {
         return try {
             super.constrains(input)
         } catch (_: UnsupportedOperationException) {
-            val thisName = value.value.lowercase()
-            val inputName = (input as DNSName).value.value.lowercase()
+            val thisName = value.lowercase()
+            val inputName = (input as DNSName).value.lowercase()
 
             when {
                 thisName == inputName -> ConstraintResult.MATCH
@@ -63,10 +63,13 @@ class DNSName private constructor(
     }
 
     companion object {
+        operator fun invoke(value: Asn1String.IA5, allowWildcard: Boolean = true): DNSName =
+            DNSName(value.value, allowWildcard)
+
         val tag = X509GeneralName.Tags.dnsName
 
         internal fun fromAsn1Model(src: X509GeneralName): DNSName = runRethrowing {
-            DNSName((src as X509GeneralName.Dns).rawValue, allowWildcard = true, performValidation = false)
+            DNSName((src as X509GeneralName.Dns).rawValue.value, allowWildcard = true, performValidation = false)
         }
 
         private fun validate(value: String, allowWildcard: Boolean): Boolean {

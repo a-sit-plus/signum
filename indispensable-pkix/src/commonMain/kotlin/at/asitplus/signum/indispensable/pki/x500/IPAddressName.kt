@@ -11,9 +11,10 @@ import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 class IPAddressName internal constructor(
     val address: IpAddress<*, *>?,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
-    val rawBytes: ByteArray,
+    private val unparsedBytes: ByteArray?,
     performValidation: Boolean,
 ) : AbstractGeneralName() {
+    val rawBytes: ByteArray get() = unparsedBytes ?: addressAndPrefix?.toX509Octets() ?: requireNotNull(address).octets
     override val equalityValue get() = rawBytes
 
     override val isValid: Boolean by lazy { address != null }
@@ -27,14 +28,14 @@ class IPAddressName internal constructor(
      */
     @Throws(Asn1Exception::class)
     constructor(address: IpAddress<*, *>, addressAndPrefix: IpAddressAndPrefix<*, *>? = null)
-            : this(address, addressAndPrefix, addressAndPrefix?.toX509Octets() ?: address.octets, true)
+            : this(address, addressAndPrefix, null, true)
 
     /**
      * @throws Asn1Exception if illegal IpAddress is provided
      */
     @Throws(Asn1Exception::class)
     constructor(addressAndPrefix: IpAddressAndPrefix<*, *>)
-            : this(addressAndPrefix.address, addressAndPrefix, addressAndPrefix.toX509Octets(), true)
+            : this(addressAndPrefix.address, addressAndPrefix, null, true)
 
     val network: IpNetwork<*, *>? by lazy {
         when (addressAndPrefix) {
@@ -111,12 +112,12 @@ class IPAddressName internal constructor(
             val content = (src as X509GeneralName.IpAddress).rawValue.content
             return when (content.size) {
                 IpFamily.V4.numberOfOctets -> IPAddressName(
-                    IpAddress.V4(content), rawBytes = content, performValidation = false,
+                    IpAddress.V4(content), unparsedBytes = content, performValidation = false,
 
                 )
 
                 IpFamily.V6.numberOfOctets -> IPAddressName(
-                    IpAddress.V6(content), rawBytes = content, performValidation = false,
+                    IpAddress.V6(content), unparsedBytes = content, performValidation = false,
 
                 )
 

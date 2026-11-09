@@ -16,6 +16,10 @@ class ModuleTestSession : TestSession() {
         Signum.installPkix()
         Signum.register(RegisteredExtensionProvider, registeredExtensionSerializers)
         Signum.registerAttributeAlias("CUSTOMCN", CommonName.oid)
+        val jsonAttribute = at.asitplus.signum.indispensable.pki.J509.attribute(CommonName("startup"))
+        check(at.asitplus.signum.indispensable.pki.J509.attribute(jsonAttribute) is CommonName)
+        // This would fail if the JSON path had initialized Signum.Der.
+        Signum.registerAsn1Serializers(kotlinx.serialization.modules.SerializersModule {})
         Signum.Der
     }
 }

@@ -9,25 +9,25 @@ import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `rfc822Name` GeneralName CHOICE `[1]`. */
 class RFC822Name private constructor(
-    val value: Asn1String.IA5,
+    val value: String,
     performValidation: Boolean,
 ) : AbstractGeneralName() {
-    override val equalityValue get() = value.value
+    override val equalityValue get() = value
 
     /**
      * @throws Asn1Exception if illegal RFC822Name is provided
      */
     @Throws(Asn1Exception::class)
-    constructor(value: Asn1String.IA5) : this(value, true)
+    constructor(value: String) : this(value, true)
 
-    override val isValid: Boolean by lazy { value.isValid && validate() }
+    override val isValid: Boolean by lazy { value.all { it.code < 128 } && validate() }
 
     init { if (performValidation && !isValid) throw Asn1Exception("Invalid RFC822Name.") }
 
-    override fun toString(): String = value.value
+    override fun toString(): String = value
 
     private fun validate(): Boolean {
-        val str = value.value
+        val str = value
         if (str.isEmpty()) return false
         if (str.count { it == '@' } > 1) return false
         val atIndex = str.indexOf('@')
@@ -43,8 +43,8 @@ class RFC822Name private constructor(
         return try {
             super.constrains(input)
         } catch (_: UnsupportedOperationException) {
-            val thisName = value.value.lowercase()
-            val inputName = (input as RFC822Name).value.value.lowercase()
+            val thisName = value.lowercase()
+            val inputName = (input as RFC822Name).value.lowercase()
             fun isEmailLike(name: String) = '@' in name
             fun hasDomainPrefix(name: String) = name.startsWith(".")
 
@@ -71,8 +71,10 @@ class RFC822Name private constructor(
     }
 
     companion object {
+        operator fun invoke(value: Asn1String.IA5): RFC822Name = RFC822Name(value.value)
+
         val tag = X509GeneralName.Tags.rfc822Name
         internal fun fromAsn1Model(src: X509GeneralName): RFC822Name =
-            RFC822Name((src as X509GeneralName.Rfc822).rawValue, false)
+            RFC822Name((src as X509GeneralName.Rfc822).rawValue.value, false)
     }
 }

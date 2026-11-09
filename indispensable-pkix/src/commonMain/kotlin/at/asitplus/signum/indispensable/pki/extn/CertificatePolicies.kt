@@ -1,17 +1,12 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.awesn1.*
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.pki.CertificateExtension
-import at.asitplus.signum.Signum
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlin.jvm.JvmInline
-import kotlinx.serialization.Serializable
+import com.eygraber.uri.Uri
 
 /**
  * Certificate Policies Extension
@@ -30,106 +25,40 @@ data class CertificatePolicies(
     }
 }
 
-/**
- * ```
- * PolicyInformation ::= SEQUENCE {
- *   policyIdentifier   CertPolicyId,
- *   policyQualifiers   SEQUENCE SIZE (1..MAX) OF PolicyQualifierInfo OPTIONAL }
- * ```
- */
-@Serializable
+/** A policy and its open qualifier list. */
 data class PolicyInformation(
     override val oid: ObjectIdentifier,
-    val policyQualifiers: List<PolicyQualifierInfo> = emptyList()
+    val policyQualifiers: List<PolicyQualifierInfo> = emptyList(),
 ) : Identifiable
 
-/**
- * ```
- * PolicyQualifierInfo ::= SEQUENCE {
- *   policyQualifierId   PolicyQualifierId,
- *   qualifier           ANY DEFINED BY policyQualifierId }
- * ```
- * The [qualifier] branch is a fixed CHOICE selected by [oid] (`id-qt-cps` / `id-qt-unotice`), so it is
- * (de)serialized by a small custom serializer that peeks the discriminator OID and dispatches to the
- * matching awesn1 serializer — the only permitted manual step, everything else stays kotlinx-serialization.
- */
-@Serializable(with = PolicyQualifierInfo.Companion::class)
-data class PolicyQualifierInfo(
+interface PolicyQualifierInfo : Identifiable, at.asitplus.signum.indispensable.WithSourceRepresentation
+
+data class CpsUri(val uri: Uri) : PolicyQualifierInfo {
+    constructor(uri: String) : this(Uri.parse(uri))
+
+    override val oid get() = KnownOIDs.cps
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    init { require(uri.toString().all { it.code < 128 }) { "A CPS URI must contain only ASCII characters" } }
+}
+
+data class UserNotice(
+    val noticeRef: NoticeReference? = null,
+    val explicitText: String? = null,
+) : PolicyQualifierInfo {
+    override val oid get() = KnownOIDs.unotice
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+}
+
+data class NoticeReference(val organization: String, val noticeNumbers: List<com.ionspin.kotlin.bignum.integer.BigInteger>)
+
+class OpaquePolicyQualifierInfo(
     override val oid: ObjectIdentifier,
-    val qualifier: Qualifier
-) : Identifiable {
-
-    companion object : KSerializer<PolicyQualifierInfo> {
-
-        /** Wire shape: `SEQUENCE { OID, ANY }` — the qualifier is captured opaquely, then dispatched by OID. */
-        @Serializable
-        private class Wire(val oid: ObjectIdentifier, val qualifier: Asn1Element)
-
-        override val descriptor: SerialDescriptor get() = Wire.serializer().descriptor
-
-        override fun deserialize(decoder: Decoder): PolicyQualifierInfo {
-            val wire = decoder.decodeSerializableValue(Wire.serializer())
-            val qualifier: Qualifier = when (wire.oid) {
-                KnownOIDs.cps -> Qualifier.CPSUri(Signum.Der.decodeFromTlv(Asn1String.IA5.serializer(), wire.qualifier))
-                KnownOIDs.unotice -> Signum.Der.decodeFromTlv(Qualifier.UserNotice.serializer(), wire.qualifier)
-                else -> throw SerializationException("Unsupported PolicyQualifierInfo OID: ${wire.oid}")
-            }
-            return PolicyQualifierInfo(wire.oid, qualifier)
-        }
-
-        override fun serialize(encoder: Encoder, value: PolicyQualifierInfo) {
-            val qualifierElement: Asn1Element = when (val q = value.qualifier) {
-                is Qualifier.CPSUri -> Signum.Der.encodeToTlv(Asn1String.IA5.serializer(), q.uri)
-                is Qualifier.UserNotice -> Signum.Der.encodeToTlv(Qualifier.UserNotice.serializer(), q)
-            }
-            encoder.encodeSerializableValue(Wire.serializer(), Wire(value.oid, qualifierElement))
-        }
-    }
+    val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+) : PolicyQualifierInfo {
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    @OptIn(SignumInternals::class)
+    override fun equals(other: Any?): Boolean = this === other || other is OpaquePolicyQualifierInfo &&
+            oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
+    override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+    override fun toString(): String = "OpaquePolicyQualifierInfo($oid, $sourceRepresentation)"
 }
-
-sealed interface Qualifier {
-
-    data class CPSUri(val uri: Asn1String.IA5) : Qualifier
-
-    /**
-     * ```
-     * UserNotice ::= SEQUENCE {
-     *   noticeRef     NoticeReference OPTIONAL,
-     *   explicitText  DisplayText     OPTIONAL }
-     * ```
-     * The two optional members are distinguished by their leading tag (a SEQUENCE vs. a string).
-     */
-    @Serializable
-    data class UserNotice(
-        val noticeRef: NoticeReference? = null,
-        val explicitText: DisplayText? = null
-    ) : Qualifier
-}
-
-/**
- * ```
- * NoticeReference ::= SEQUENCE {
- *   organization   DisplayText,
- *   noticeNumbers  SEQUENCE OF INTEGER }
- * ```
- */
-@Serializable
-data class NoticeReference(
-    val organization: DisplayText,
-    val noticeNumbers: List<Asn1Integer>
-)
-
-/**
- * ```
- * DisplayText ::= CHOICE {
- *   ia5String      IA5String,
- *   visibleString  VisibleString,
- *   bmpString      BMPString,
- *   utf8String     UTF8String }
- * ```
- * Modeled as a thin wrapper around [Asn1String], whose serializer round-trips the concrete string tag.
- * A value class (not a data class) so it encodes as the bare string, without a spurious SEQUENCE wrapper.
- */
-@JvmInline
-@Serializable
-value class DisplayText(val value: Asn1String)

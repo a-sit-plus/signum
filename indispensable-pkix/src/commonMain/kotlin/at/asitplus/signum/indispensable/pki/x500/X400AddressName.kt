@@ -11,18 +11,19 @@ class X400AddressName private constructor(
 ) : AbstractGeneralName() {
     override val equalityValue get() = x400Address
 
-    constructor(value: X509GeneralName.X400Address) : this(value, null)
-
-    constructor(value: Asn1Sequence) : this(X509GeneralName.X400Address(value), null)
-
-    /** Creates an instance with `isValid` determined by [validate]. */
-    constructor(value: X509GeneralName.X400Address, validate: (GeneralName) -> Boolean) : this(value, validate(X400AddressName(value)))
-
     override fun createValidatedCopy(validate: (GeneralName) -> Boolean): X400AddressName = X400AddressName(x400Address, validate(this))
 
     override fun toString(): String = x400Address.toString()
 
     companion object {
+        operator fun invoke(value: X509GeneralName.X400Address): X400AddressName = X400AddressName(value, null)
+
+        operator fun invoke(value: Asn1Sequence): X400AddressName = invoke(X509GeneralName.X400Address(value))
+
+        /** Creates an instance with `isValid` determined by [validate]. */
+        operator fun invoke(value: X509GeneralName.X400Address, validate: (GeneralName) -> Boolean): X400AddressName =
+            X400AddressName(value, validate(invoke(value)))
+
         val tag = X509GeneralName.Tags.x400Address
         internal fun fromAsn1Model(src: X509GeneralName): X400AddressName {
             return X400AddressName(src as X509GeneralName.X400Address, null)

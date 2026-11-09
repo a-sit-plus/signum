@@ -66,7 +66,7 @@ val X500AttributeRegistryTest by matrixSuite {
         val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
-        attribute.value shouldBe nonCanonicalValue
+        attribute.asn1.toRepresentation().value shouldBe nonCanonicalValue
         decoded.asn1.toDer() shouldBe encoded
     }
 
