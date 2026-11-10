@@ -48,7 +48,9 @@ class AlternativeNames(val generalNames: List<GeneralName>) : WithSourceRepresen
             if (!matches.hasNext()) return null
             val matchedExtension = matches.next()
             if (matches.hasNext()) throw Asn1StructuralException("More than one extension with oid $oid found")
-            return AlternativeNames.fromAsn1(derBytes = matchedExtension.asn1.toRepresentation().value)
+            val names = (matchedExtension as? AlternativeNamesExtension)?.generalNames
+                ?: throw UnsupportedOperationException("Cannot interpret alternative names in their source representation")
+            return AlternativeNames(names)
         }
     }
 }

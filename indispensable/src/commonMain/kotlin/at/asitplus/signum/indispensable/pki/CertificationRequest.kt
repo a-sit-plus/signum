@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.allDistinctByOids
-import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -47,15 +46,14 @@ class TbsCertificationRequest(
         attributes = mergeAttributesWithExtensions(attributesWithoutExtensions, extensions),
     )
 
-    val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID } }
+    val attributesWithoutExtensions: List<CsrAttribute> by lazy { attributes.filterNot { it.oid == CsrAttribute.EXTENSION_REQUEST_OID } }
 
     val extensions: List<CertificateExtension> by lazy {
-        attributes.filter { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
+        attributes.filter { it.oid == CsrAttribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
             when (extensionAttributes.size) {
                 0 -> emptyList()
-                1 -> requireNotNull(extensionAttributes.single().asn1.toRepresentation()).value.single().asSequence().map {
-                    CertificateExtension.fromAsn1(it)
-                }
+                1 -> (extensionAttributes.single() as? ExtensionRequest)?.extensions
+                    ?: throw UnsupportedOperationException("Cannot interpret the extensionRequest attribute in its source representation")
 
                 else -> throw Asn1StructuralException("Multiple extensionRequest attributes found")
             }
@@ -118,7 +116,7 @@ class CertificationRequest(
 
 private fun validateAttributes(attributes: List<CsrAttribute>, allowExtensions: Boolean = false) {
     require(attributes.allDistinctByOids()) { "Multiple attributes with same OID found" }
-    if (!allowExtensions) require(attributes.none { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }) {
+    if (!allowExtensions) require(attributes.none { it.oid == CsrAttribute.EXTENSION_REQUEST_OID }) {
         "Certificate extension passed as part of regular attributes"
     }
 }

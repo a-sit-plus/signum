@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.tag
+import com.ionspin.kotlin.bignum.integer.BigInteger
 
 import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.DER
@@ -58,7 +59,7 @@ val AlternativeNamesTest by matrixSuite {
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.registeredID, X509GeneralName.Tags.directoryName,
-        )
+        ).map { BigInteger.fromULong(it.tagValue) }
         (decoded.generalNames[2] as DirectoryName).name.toRfc2253String() shouldBe "cn=directory" // RFC 2253 canonical: type + value lower-cased
         decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
     }
@@ -74,7 +75,7 @@ val AlternativeNamesTest by matrixSuite {
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.ipAddress, X509GeneralName.Tags.registeredID,
-        )
+        ).map { BigInteger.fromULong(it.tagValue) }
         decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
     }
 

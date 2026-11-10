@@ -30,6 +30,7 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.Asn1SignatureAlgorithmProvider
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.KSerializer
@@ -446,8 +447,7 @@ val GeneralName.asn1 get() =
 val GeneralName.Companion.fromAsn1 get() =
     asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
 
-// TODO: Make tag a bigInteger,
-val GeneralName.tag get() = this@tag.asn1.toRepresentation().tag
+val GeneralName.tag: BigInteger get() = BigInteger.fromULong(this@tag.asn1.toRepresentation().tag.tagValue)
 
 val AlternativeNames.asn1 get() =
     asn1Encoders<X509GeneralNames,_> {
@@ -473,11 +473,7 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
         }.toSet())
     }
 
-val AttributeTypeAndValue.asn1 get() =
-    asn1Encoders<X500AttributeTypeAndValue, _> { src ->
-        X500AttributeTypeAndValue(src.oid, src.value)
-    }
-val AttributeTypeAndValue.toAsn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
+val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
 
 val AttributeTypeAndValue.Companion.fromAsn1 get() = asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue> { src ->
     try { ServiceLoader.load<AttributeTypeAndValueAsn1Provider>().get(src, AttributeTypeAndValueAsn1Provider::decodeFromAsn1) }

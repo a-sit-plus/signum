@@ -11,7 +11,7 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -205,7 +205,7 @@ class OpaqueAttributeTypeAndValue(
 val AttributeTypeAndValue.typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()
 val AttributeTypeAndValue.valueString: String get() = when (this) {
     is TextAttributeTypeAndValue -> canonicalizeRfc2253String(text)
-    else -> toAsn1().value.let { value ->
+    else -> asn1.toRepresentation().value.let { value ->
         catchingUnwrapped { canonicalizeRfc2253String(Asn1String.decodeFromTlv(value.asPrimitive()).value) }
             .getOrElse { "#" + value.derEncoded.toHexString() }
     }

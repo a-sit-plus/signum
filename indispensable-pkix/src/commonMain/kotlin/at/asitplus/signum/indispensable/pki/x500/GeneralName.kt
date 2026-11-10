@@ -48,7 +48,7 @@ internal object GeneralNameSerializer : KSerializer<GeneralName> {
     private val delegate = at.asitplus.awesn1.crypto.pki.X509GeneralName.serializer()
     override val descriptor get() = delegate.descriptor
     override fun serialize(encoder: Encoder, value: GeneralName) =
-        encoder.encodeSerializableValue(delegate, value.toAsn1())
+        encoder.encodeSerializableValue(delegate, value.asn1.toRepresentation())
     override fun deserialize(decoder: Decoder): GeneralName =
         GeneralName.fromAsn1(decoder.decodeSerializableValue(delegate))
 }

@@ -121,7 +121,6 @@ val RemainingEncodingTest by matrixSuite {
     "Alternative names compare their contents without encoding them" {
         val name: GeneralName = object : GeneralName {
             @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-            override val tag get() = BigInteger.ONE
         }
         val first = AlternativeNames(listOf(name))
         val second = AlternativeNames(listOf(name))

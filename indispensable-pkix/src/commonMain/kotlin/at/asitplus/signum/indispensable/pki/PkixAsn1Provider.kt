@@ -5,7 +5,7 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.pki.extn.*
 import at.asitplus.signum.indispensable.pki.x500.*
 import kotlinx.serialization.decodeFromByteArray
@@ -62,7 +62,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
             is PolicyMappings -> Signum.Der.encodeToByteArray(value.policyMappings)
             is CertificatePolicies -> Signum.Der.encodeToByteArray(kotlinx.serialization.builtins.ListSerializer(PolicyInformationAsn1Serializer), value.certificatePolicies)
             is NameConstraints -> Signum.Der.encodeToByteArray(NameConstraintsBody(
-                value.permitted?.trees?.map { it.toAsn1() }, value.excluded?.trees?.map { it.toAsn1() },
+                value.permitted?.trees?.map { it.asn1.toRepresentation() }, value.excluded?.trees?.map { it.asn1.toRepresentation() },
             ))
             else -> return null
         }
@@ -87,7 +87,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
         is RFC822Name -> X509GeneralName.Rfc822(generalName.value)
         is UriName -> X509GeneralName.UniformResourceIdentifier(generalName.host)
         is IPAddressName -> X509GeneralName.IpAddress(generalName.rawBytes)
-        is DirectoryName -> X509GeneralName.Directory(generalName.name.toAsn1())
+        is DirectoryName -> X509GeneralName.Directory(generalName.name.asn1.toRepresentation())
         is RegisteredIDName -> X509GeneralName.RegisteredId(generalName.value)
         is OtherName -> encodeOtherName(generalName)
         is EDIPartyName -> generalName.ediParty
