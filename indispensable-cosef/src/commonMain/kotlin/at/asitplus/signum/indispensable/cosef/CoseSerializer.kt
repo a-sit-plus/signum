@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.Signum
 import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -131,7 +131,7 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-                ?.let { Signum.Der.decodeFromByteArray<Certificate>(it) }
+                ?.let { Certificate.fromAsn1(it) }
         ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
     is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
     else -> false

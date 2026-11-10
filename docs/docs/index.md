@@ -217,18 +217,16 @@ recovered shouldBe payload //success!
 
 ### ASN.1 Parsing and Encoding
 
-Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` implement
-`Encodable`; their companions implement `Decodable`. DER uses contextual serializers that bridge
-to awesn1 models. Register `signumAsn1Serializers` with `DefaultDer` once, before its first use,
-or include it in a configured `DER { serializersModule = signumX509Serializers }` instance.
-Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
-material.
+Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` retain their decoded
+source representations. Use `fromAsn1` to decode them and `toAsn1.DER()` to encode them.
+These helpers use `Signum.Der` to serialize the underlying awesn1 models; no contextual serializers
+for the Signum types need to be registered.
+These helpers support parsing and examining certificates, creating CSRs, and transferring key material.
 Parsing and re-encoding an X.509 certificate works as follows:
 
 ```kotlin
 
-DefaultDer.register(signumX509Serializers) // once at application startup
-val cert = DER.decodeFromByteArray<Certificate>(certBytes)
+val cert = Certificate.fromAsn1(certBytes)
 
 when (val pk = cert.publicKey) {
     is EcdsaPublicKey -> println(
@@ -244,7 +242,7 @@ when (val pk = cert.publicKey) {
     )
 }
 
-println("Re-encoding it produces the same bytes? ${DER.encodeToByteArray(cert) contentEquals certBytes}")
+println("Re-encoding it produces the same bytes? ${cert.toAsn1.DER() contentEquals certBytes}")
 ```
 
 Which produces the following output:

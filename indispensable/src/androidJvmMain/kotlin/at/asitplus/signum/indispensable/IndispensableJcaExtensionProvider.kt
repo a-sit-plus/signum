@@ -1,13 +1,11 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
-import kotlinx.serialization.decodeFromByteArray
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
@@ -17,12 +15,12 @@ import java.security.PublicKey
 object FallbackToDERFormat : JcaMappingProvider {
     override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
         if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
-            Signum.Der.decodeFromByteArray<CryptoPublicKey>(publicKey.encoded)
+            CryptoPublicKey.fromAsn1(publicKey.encoded)
         else null
 
     override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            Signum.Der.decodeFromByteArray<CryptoPrivateKey>(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+            CryptoPrivateKey.fromAsn1(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
         else null
 }
 
