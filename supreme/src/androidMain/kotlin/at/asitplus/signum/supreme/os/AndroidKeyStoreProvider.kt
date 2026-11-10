@@ -13,7 +13,6 @@ import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.catching
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
@@ -28,7 +27,6 @@ import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.serialization.decodeFromByteArray
 import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.spec.ECGenParameterSpec
@@ -290,7 +288,7 @@ object AndroidKeyStoreProvider:
         val publicKey: CryptoPublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-                        catching { chain.map { Signum.Der.decodeFromByteArray<Certificate>(it.encoded) } }.let { r ->
+                        catching { chain.map { Certificate.fromAsn1(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
                     publicKey = it.leaf.publicKey
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null
