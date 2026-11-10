@@ -6,10 +6,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
-import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
-import java.security.PrivateKey
-import java.security.PublicKey
+import java.security.*
 
 /** This is not semantics-aware, but allows fallback for public key/private key parsing based on DER formats */
 object FallbackToDERFormat : JcaMappingProvider {
@@ -23,6 +20,14 @@ object FallbackToDERFormat : JcaMappingProvider {
             CryptoPrivateKey.fromAsn1(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
         else null
 }
+
+private fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
+    when (provider) {
+        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> Signature.getInstance(alg)
+        else -> throw ImplementationError("invalid JCAProvider ref")
+    }
 
 /** This provides semantics-aware operations for types supported by Indispensable */
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
