@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.sign.asn1
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
@@ -45,7 +46,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
     "RSA CRT validation remains joint and deferred" {
         val encoded = KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.genKeyPair().private.encoded
-        val valid = RsaPrivateKey.fromAsn1(encoded).asn1.PKCS1.toRepresentation()
+        val valid = RsaPrivateKey.fromAsn1(encoded).asn1.pkcs1.toRepresentation()
         val invalid = valid.copy(coefficient = valid.prime1)
         val model = Pkcs8PrivateKeyInfo(invalid)
         val decoded = CryptoPrivateKey.fromAsn1(model)
@@ -77,12 +78,12 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
 
                 withClue("Basic Conversions") {
-                    own.toAsn1.toDer() shouldBe pubKey.encoded
-                    own.toAsn1.toDer() shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1(own.toAsn1()) shouldBe own
+                    own.asn1.toDer() shouldBe pubKey.encoded
+                    own.asn1.toDer() shouldBe pubKey.encoded
+                    CryptoPublicKey.fromAsn1(own.asn1.toRepresentation()) shouldBe own
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().encoded shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1(Asn1Element.parse(own.toAsn1.toDer()) as Asn1Sequence) shouldBe own
+                    CryptoPublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
                 }
 
                 withClue("Compressed Test") {
@@ -146,10 +147,10 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
-                own.asn1.PKCS1.toDer() shouldBe keyBytes //PKCS#1
+                own.asn1.pkcs1.toDer() shouldBe keyBytes //PKCS#1
                 own.asn1.toDer() shouldBe pubKey.encoded //PKCS#8
                 own.asn1.toTlv().derEncoded shouldBe pubKey.encoded
-                CryptoPublicKey.fromAsn1(own.toAsn1()) shouldBe own
+                CryptoPublicKey.fromAsn1(own.asn1.toRepresentation()) shouldBe own
                 CryptoPublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
                 own.toJcaPublicKey().encoded shouldBe pubKey.encoded
             }

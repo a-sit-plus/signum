@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.indispensable.sign.*
@@ -27,8 +28,8 @@ val RsaSsaPssAgainstJvm by matrixSuite {
                 "from ASN.1" to RsaAlgorithm(
                     RsaAlgorithm.Parameters.PssPadded.fromAsn1(
                     RsaSsaPssParams(
-                        hashAlgorithm = dataDigest.toAsn1(),
-                        maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).toAsn1(),
+                        hashAlgorithm = dataDigest.asn1.toRepresentation(),
+                        maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1.toRepresentation(),
                     )
                 )),
                 "from Signum" to RsaAlgorithm(

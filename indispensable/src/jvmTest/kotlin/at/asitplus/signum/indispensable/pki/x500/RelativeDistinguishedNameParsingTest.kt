@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
@@ -141,9 +142,9 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         (decoded is Asn1String.Printable) shouldBe true
     }
 
-    "toAsn1 accessor reflects the RDN's attributes" {
+    "ASN.1 accessor reflects the RDN's attributes" {
         val cn = X500AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice"))
-        RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(cn)).toAsn1() shouldBe X500RelativeDistinguishedName(setOf(cn))
+        RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(cn)).asn1.toRepresentation() shouldBe X500RelativeDistinguishedName(setOf(cn))
     }
 
     "ATV isValid accessor reflects the stored value" {
@@ -163,7 +164,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "ATV equality should be symmetric across sourceRepresentation" {
         val oid = ObjectIdentifier("2.5.4.3")
         val generic = AttributeTypeAndValue(oid, Asn1String.UTF8("Alice").encodeToTlv())
-        val x509 = AttributeTypeAndValue.fromAsn1(generic.toAsn1())
+        val x509 = AttributeTypeAndValue.fromAsn1(generic.asn1.toRepresentation())
 
         generic shouldBe x509
         x509 shouldBe generic
@@ -172,7 +173,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "GeneralName should retain the typed X.509 representation" {
         val dnsName = X509GeneralName.Dns("example.com")
 
-        GeneralName.fromAsn1(dnsName).toAsn1() shouldBe dnsName
+        GeneralName.fromAsn1(dnsName).asn1.toRepresentation() shouldBe dnsName
     }
 
     /**

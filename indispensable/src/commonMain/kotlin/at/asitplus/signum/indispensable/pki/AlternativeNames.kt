@@ -4,6 +4,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 
 /**
@@ -47,7 +48,7 @@ class AlternativeNames(val generalNames: List<GeneralName>) : WithSourceRepresen
             if (!matches.hasNext()) return null
             val matchedExtension = matches.next()
             if (matches.hasNext()) throw Asn1StructuralException("More than one extension with oid $oid found")
-            return AlternativeNames.fromAsn1(derBytes = matchedExtension.toAsn1().value)
+            return AlternativeNames.fromAsn1(derBytes = matchedExtension.asn1.toRepresentation().value)
         }
     }
 }

@@ -38,7 +38,7 @@ private fun certificate() = Certificate(
 val CertificateEncodingTest by matrixSuite {
 
     "Retained outer and signed TBS models do not require supported algorithms" {
-        val template = certificate().toAsn1()
+        val template = certificate().asn1.toRepresentation()
         val unknown = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null)
         val tbs = X509TbsCertificate(
             version = null,
@@ -55,12 +55,12 @@ val CertificateEncodingTest by matrixSuite {
         val decoded = Certificate.fromAsn1(bytes)
         decoded.asn1.toDer() shouldBe bytes
         decoded.tbsCertificate.asn1.toDer() shouldBe Signum.Der.encodeToByteArray(tbs)
-        Certificate.fromAsn1(original).toAsn1()  shouldBeSameInstanceAs original
+        Certificate.fromAsn1(original).asn1.toRepresentation()  shouldBeSameInstanceAs original
         shouldThrow<UnsupportedCryptoException> { decoded.signature }
     }
 
     "Outer signature algorithm must match the signed TBS algorithm" {
-        val source = certificate().toAsn1()
+        val source = certificate().asn1.toRepresentation()
         val mismatched = X509Certificate(
             source.tbsCertificate,
             X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null),

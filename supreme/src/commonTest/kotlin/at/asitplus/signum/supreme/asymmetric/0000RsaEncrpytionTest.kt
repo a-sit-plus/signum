@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.asymmetric
 
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
@@ -55,7 +56,7 @@ class RsaTestData(
                 encoder: Encoder,
                 value: CryptoPrivateKey
             ) {
-                encoder.encodeString(value.toAsn1.toPem())
+                encoder.encodeString(value.asn1.toPem())
             }
 
             override fun deserialize(decoder: Decoder) =

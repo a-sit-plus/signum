@@ -1,3 +1,5 @@
+import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
@@ -39,7 +41,7 @@ val ConversionTests by matrixSuite {
     }
     "COSE -> SigAlg -> COSE" - {
         data(CoseAlgorithm.Signature.entries) - {
-            it.algorithm.toAsn1().let { x509 ->
+            it.algorithm.asn1.toRepresentation().let { x509 ->
                 if (it.algorithm is EcdsaAlgorithm && (it.algorithm as EcdsaAlgorithm).requiredCurve != null) {
                     "Curve information is lost" {
                         val algorithm = SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm().getOrThrow()

@@ -201,9 +201,9 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             Certificate.fromAsn1(Asn1Element.parse(certificateHolder.encoded) as Asn1Sequence)
         x509Certificate.shouldNotBeNull()
 
-        // x509Certificate.toAsn1.DER() shouldBe certificateHolder.encoded
+        // x509Certificate.asn1.toDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.toAsn1().version shouldBe X509TbsCertificate.Version.V3
+        x509Certificate.tbsCertificate.asn1.toRepresentation().version shouldBe X509TbsCertificate.Version.V3
         ((x509Certificate.tbsCertificate.issuerName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         ((x509Certificate.tbsCertificate.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber.toJavaBigInteger() shouldBe serialNumber
@@ -418,7 +418,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         decoded shouldBe extension
         decoded.oid shouldBe KnownOIDs.keyUsage
         decoded.critical shouldBe true
-        decoded.toAsn1().shouldNotBeNull().value shouldBe extnValue.content
+        decoded.asn1.toRepresentation().shouldNotBeNull().value shouldBe extnValue.content
         decoded.asn1.toDer() shouldBe encoded
     }
 
@@ -433,7 +433,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         val decoded = CertificateExtension.fromAsn1(encoded)
 
         decoded.critical shouldBe false
-        decoded.toAsn1().shouldNotBeNull().rawCritical shouldBe 0x00.toByte()
+        decoded.asn1.toRepresentation().shouldNotBeNull().rawCritical shouldBe 0x00.toByte()
         decoded.asn1.toDer() shouldBe encoded
     }
 

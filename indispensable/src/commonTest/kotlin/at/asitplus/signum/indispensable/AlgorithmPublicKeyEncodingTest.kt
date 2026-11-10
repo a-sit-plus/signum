@@ -54,7 +54,7 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         val ec = ECCurve.SECP_256_R_1.generator.asPublicKey()
         val original = SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Compressed(ec.curve.oid, ec.xBytes, true))
         val key: CryptoPublicKey = CryptoPublicKey.fromAsn1(original)
-        key.toAsn1() shouldBeSameInstanceAs original
+        key.asn1.toRepresentation() shouldBeSameInstanceAs original
         val rsa = RsaPublicKey(Asn1Integer.fromUnsignedByteArray(ByteArray(64).apply { this[0] = 0x80.toByte() }), Asn1Integer(65537))
 
         RsaPublicKey.fromAsn1(rsa.asn1.toDer()) shouldBe rsa

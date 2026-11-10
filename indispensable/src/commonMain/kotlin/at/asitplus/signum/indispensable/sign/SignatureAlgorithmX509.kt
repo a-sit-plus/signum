@@ -39,7 +39,7 @@ val RsaAlgorithm.asn1 get() =
             )
 
             is RsaAlgorithm.Parameters.PssPadded ->
-                    X509AlgorithmIdentifier(currentParameters.toAsn1.toRepresentation(), Signum.Der)
+                    X509AlgorithmIdentifier(currentParameters.asn1.toRepresentation(), Signum.Der)
         }
     }
 
