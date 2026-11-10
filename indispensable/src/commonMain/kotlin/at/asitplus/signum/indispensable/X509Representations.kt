@@ -9,6 +9,8 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.crypto.pki.*
 import at.asitplus.awesn1.io.decodeFromSource
 import at.asitplus.awesn1.io.encodeToSink
+import at.asitplus.awesn1.serialization.PemDeserializable
+import at.asitplus.awesn1.serialization.WithPemLabel
 import at.asitplus.awesn1.serialization.decodeAllFromPem
 import at.asitplus.awesn1.serialization.decodeFromPem
 import at.asitplus.awesn1.serialization.encodeToPem
@@ -213,7 +215,7 @@ open class Asn1DecodersImpl<Asn1Type : Any, AbstractType : WithSourceRepresentat
     class WithPEM<Asn1Type : WithPemLabel, AbstractType: WithSourceRepresentation> @SignumInternals constructor(
         convertingBuilder: (Asn1Type)->AbstractType,
         serializer: KSerializer<Asn1Type>,
-        private val pemSpec: PemLabelSpec<Asn1Type>
+        private val pemSpec: PemDeserializable<Asn1Type>
     ) :
         Asn1DecodersImpl<Asn1Type, AbstractType>(convertingBuilder, serializer),
         Asn1Decoders.WithPEM<Asn1Type, AbstractType>
@@ -234,7 +236,7 @@ inline fun <reified Asn1Type: Any, reified AbstractType: WithSourceRepresentatio
         Signum.Der.serializersModule.serializer<Asn1Type>())
 
 inline fun <reified Asn1Type: WithPemLabel, reified AbstractType: WithSourceRepresentation> asn1Decoders(
-    companion: PemLabelSpec<Asn1Type>,
+    companion: PemDeserializable<Asn1Type>,
     crossinline fn: (Asn1Type)->AbstractType
 ): Asn1Decoders.WithPEM<Asn1Type, AbstractType> =
     Asn1DecodersImpl.WithPEM(
@@ -283,7 +285,7 @@ inline fun <
     reified AbstractType: WithSourceRepresentation,
     UnknownType
 > asn1DecodersWith(
-    companion: PemLabelSpec<Asn1Type>,
+    companion: PemDeserializable<Asn1Type>,
     crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
     crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType
 ) : Asn1Decoders.WithPEM<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
@@ -301,7 +303,7 @@ inline fun <
     reified AbstractType: WithSourceRepresentation,
     UnknownType
 > asn1DecodersWith(
-    companion: PemLabelSpec<Asn1Type>,
+    companion: PemDeserializable<Asn1Type>,
     crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
     crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException)->UnknownType
 ) : Asn1Decoders.WithPEM<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
