@@ -104,7 +104,7 @@ object Signum {
         Attributes.register(descriptor, SerializersModule {
             contextualAsn1(T::class, X500AttributeTypeAndValue.serializer(),
                 // TODO
-                { it.toAsn1() }, { descriptor.fromValue(it.value).apply { finangleSourceRepresentation(it) } })
+                { it.asn1.toRepresentation() }, { descriptor.fromValue(it.value).apply { finangleSourceRepresentation(it) } })
         })
     }
     fun attributeDescriptorFor(oid: ObjectIdentifier): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorFor(oid)

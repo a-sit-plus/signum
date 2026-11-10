@@ -54,7 +54,7 @@ class RsaPublicKey(
     }
 
     override val didCodec get() = DID_KEY_CODEC
-    override val didKeyBytes get() = toAsn1.PKCS1.DER()
+    override val didKeyBytes get() = asn1.PKCS1.toDer()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -195,8 +195,8 @@ class EcdsaPublicKey(
 
 object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
     override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
-        is RsaPublicKey -> value.toAsn1()
-        is EcdsaPublicKey -> value.toAsn1()
+        is RsaPublicKey -> value.asn1.toRepresentation()
+        is EcdsaPublicKey -> value.asn1.toRepresentation()
         else -> null
     }
 

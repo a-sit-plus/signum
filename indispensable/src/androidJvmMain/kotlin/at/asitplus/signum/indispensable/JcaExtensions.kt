@@ -288,7 +288,7 @@ fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
  */
 suspend fun Certificate.toJcaCertificate(): java.security.cert.X509Certificate =
     certificateFactoryMutex.withLock {
-        certFactory.generateCertificate(toAsn1.DER().inputStream()) as java.security.cert.X509Certificate
+        certFactory.generateCertificate(this@toJcaCertificate.asn1.toDer().inputStream()) as java.security.cert.X509Certificate
     }
 
 /**
@@ -311,12 +311,12 @@ fun CryptoPrivateKey.toJcaPrivateKey() =
 
 fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(toAsn1.DER()))
+        .generatePrivate(PKCS8EncodedKeySpec(asn1.toDer()))
             as java.security.interfaces.ECPrivateKey
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
-        .generatePrivate(PKCS8EncodedKeySpec(toAsn1.DER()))
+        .generatePrivate(PKCS8EncodedKeySpec(asn1.toDer()))
             as java.security.interfaces.RSAPrivateKey
 
 fun JCAPrivateKey.toCryptoPrivateKey() =

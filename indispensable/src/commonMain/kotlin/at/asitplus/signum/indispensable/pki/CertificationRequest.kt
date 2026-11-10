@@ -53,7 +53,7 @@ class TbsCertificationRequest(
         attributes.filter { it.oid == Pkcs10CsrAttribute.EXTENSION_REQUEST_OID }.let { extensionAttributes ->
             when (extensionAttributes.size) {
                 0 -> emptyList()
-                1 -> requireNotNull(extensionAttributes.single().toAsn1()).value.single().asSequence().map {
+                1 -> requireNotNull(extensionAttributes.single().asn1.toRepresentation()).value.single().asSequence().map {
                     CertificateExtension.fromAsn1(it)
                 }
 
@@ -136,7 +136,7 @@ private fun mergeAttributesWithExtensions(
             // TODO: this assumes asn1 in the abstract class
             add(CsrAttribute.fromAsn1(
                 Pkcs10CsrAttribute.ExtensionRequest(it.map {
-                    extension -> extension.toAsn1()
+                    extension -> extension.asn1.toRepresentation()
                 })
             ))
         }

@@ -23,11 +23,11 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
-import org.kotlincrypto.random.CryptoRand
 
 private val Byte.hasHighest get() = (this.countLeadingZeroBits() == 0)
 private val ByteArray.hasHighest get() = get(0).hasHighest
@@ -184,9 +184,9 @@ val ExtensibilityTest by matrixSuite {
 
     "X.509 resolution" {
         val algorithm: SignatureAlgorithm = CursorySignatureScheme
-        SignatureAlgorithm.fromAsn1(algorithm.toAsn1.DER()) shouldBe algorithm
+        SignatureAlgorithm.fromAsn1(algorithm.asn1.toDer()) shouldBe algorithm
         val key: CryptoPublicKey = CursorySignatureScheme.Key(true)
-        CryptoPublicKey.fromAsn1(key.toAsn1.DER()) shouldBe key
+        CryptoPublicKey.fromAsn1(key.asn1.toDer()) shouldBe key
         SignatureAlgorithm.fromAsn1(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
         val unknownAlgorithm = SignatureAlgorithm.fromAsn1(CursorySignatureScheme.Key.ALG)
         shouldThrow<UnsupportedCryptoException> { unknownAlgorithm.preHashedSignatureFormat }
@@ -212,7 +212,7 @@ val ExtensibilityTest by matrixSuite {
             val useEmptySubject = it % 2 == 0
             val data = Random.nextBytes(1)
             val privateKey = Signer.Ephemeral { cursory {} }
-            val theSignature = privateKey.sign(data).signature.toAsn1.DER()
+            val theSignature = privateKey.sign(data).signature.asn1.toDer()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
                 val certificateName =
@@ -226,8 +226,8 @@ val ExtensibilityTest by matrixSuite {
                     issuerName = certificateName,
                     subjectName = certificateName,
                 )
-                val signature = privateKey.sign(tbsCertificate.toAsn1.DER()).signature
-                Certificate(tbsCertificate, signature).toAsn1.DER()
+                val signature = privateKey.sign(tbsCertificate.asn1.toDer()).signature
+                Certificate(tbsCertificate, signature).asn1.toDer()
             }
 
             val parsedCertificate = Certificate.fromAsn1(theCertificate)

@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.toAsn1
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -96,14 +95,14 @@ object ByteArrayBase64UrlNoPaddingSerializer : TransformingSerializerTemplate<By
 /** De-/serializes X509Certificate as Base64Url-encoded String */
 object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = { it.toAsn1.DER() },
+    encodeAs = { it.toAsn1.toDer() },
     decodeAs = { Certificate.fromAsn1(it) }
 )
 
 /** De-/serializes X509Certificate as Base64-encoded String */
 object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    encodeAs = { it.toAsn1.DER() },
+    encodeAs = { it.toAsn1.toDer() },
     decodeAs = { Certificate.fromAsn1(it) }
 )
 

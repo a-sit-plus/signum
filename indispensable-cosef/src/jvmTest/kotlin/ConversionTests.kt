@@ -2,11 +2,8 @@ import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
-import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.toAsn1
-import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe

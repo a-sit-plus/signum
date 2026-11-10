@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
 import at.asitplus.signum.indispensable.digest.Digest
 
-val EcdsaAlgorithm.toAsn1 get() =
+val EcdsaAlgorithm.asn1 get() =
     asn1Encoders<X509AlgorithmIdentifier,_> {
         X509AlgorithmIdentifier(
             oid = when (digest) {
@@ -24,7 +24,7 @@ val EcdsaAlgorithm.toAsn1 get() =
         )
     }
 
-val RsaAlgorithm.toAsn1 get() =
+val RsaAlgorithm.asn1 get() =
     asn1Encoders<X509AlgorithmIdentifier,_> {
         when (val currentParameters = parameters) {
             is RsaAlgorithm.Parameters.Pkcs1Padded -> X509AlgorithmIdentifier(
@@ -39,7 +39,7 @@ val RsaAlgorithm.toAsn1 get() =
             )
 
             is RsaAlgorithm.Parameters.PssPadded ->
-                    X509AlgorithmIdentifier(currentParameters.toAsn1(), Signum.Der)
+                    X509AlgorithmIdentifier(currentParameters.toAsn1.toRepresentation(), Signum.Der)
         }
     }
 

@@ -223,8 +223,8 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
 
 object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
     override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
-        is RsaPrivateKey -> value.toAsn1()
-        is EcdsaPrivateKey -> value.toAsn1()
+        is RsaPrivateKey -> value.asn1.toRepresentation()
+        is EcdsaPrivateKey -> value.asn1.toRepresentation()
         else -> null
     }
 

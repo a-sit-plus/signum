@@ -107,7 +107,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): Certificate {
         throw Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's.")
     return Certificate(
         tbsCertificate = tbsCertificate,
-        signatureValue = sign(tbsCertificate.toAsn1.DER()).signature
+        signatureValue = sign(tbsCertificate.asn1.toDer()).signature
     )
 }
 
@@ -117,7 +117,7 @@ suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): CertificationRequest {
         throw Asn1StructuralException("The signer's public key does not match the TbsCSR's.")
     return CertificationRequest(
         tbsCsr = tbsCsr, signatureAlgorithm = signatureAlgorithm,
-        signatureValue = sign(tbsCsr.toAsn1.DER()).signature)
+        signatureValue = sign(tbsCsr.asn1.toDer()).signature)
 }
 
 /**

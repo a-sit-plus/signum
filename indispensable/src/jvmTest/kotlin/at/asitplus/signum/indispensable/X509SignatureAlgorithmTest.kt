@@ -7,15 +7,15 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import java.io.File
 import kotlinx.io.UnsafeIoApi
+import java.io.File
 
 @OptIn(UnsafeIoApi::class)
 val X509SignatureAlgorithmTest by matrixSuite {
@@ -32,8 +32,8 @@ val X509SignatureAlgorithmTest by matrixSuite {
                 decoded.signatureAlgorithm.preHashedSignatureFormat
             }
 
-            withClue(decoded.toAsn1.PEM()) {
-                decoded.toAsn1.DER() shouldBe it.second
+            withClue(decoded.asn1.toPem()) {
+                decoded.asn1.toDer() shouldBe it.second
             }
         }
     }

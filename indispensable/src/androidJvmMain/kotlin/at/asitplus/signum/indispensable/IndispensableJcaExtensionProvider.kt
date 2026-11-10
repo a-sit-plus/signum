@@ -76,7 +76,7 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is EcdsaSignature, is RsaSignature -> signature.toAsn1().rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.asn1.toRepresentation().rawBytes
         else -> null
     }
 
