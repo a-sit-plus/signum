@@ -35,7 +35,7 @@ interface Digest : WithSourceRepresentation {
 }
 
 // @Service
-interface DigestProvider {
+interface Asn1DigestAlgorithmProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
     fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? = null
 

@@ -57,7 +57,7 @@ interface CryptoPublicKey : WithSourceRepresentation {
             val (codec, codecLength) = UVarInt.fromByteArrayPermissive(decoded)
             val keyBytes = decoded.copyOfRange(codecLength, decoded.size)
 
-            return ServiceLoader.load<PublicKeyFormatProvider>().get(codec) {
+            return ServiceLoader.load<Asn1PublicKeyFormatProvider>().get(codec) {
                 decodeFromDidKey(it, keyBytes)
             }
         }

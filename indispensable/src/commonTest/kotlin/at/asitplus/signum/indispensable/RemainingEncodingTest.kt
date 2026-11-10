@@ -155,7 +155,6 @@ val RemainingEncodingTest by matrixSuite {
         fromSec1.asn1.sec1.toRepresentation() shouldBeSameInstanceAs sec1
         fromSec1 shouldBe key
         fromSec1.asn1.toDer() shouldBe key.asn1.toDer()
-        fromSec1.attributes shouldBe null
         fromSec1.realSourceRepresentation shouldBeSameInstanceAs sec1
         decoded.realSourceRepresentation shouldBeSameInstanceAs pkcs8
         key.realSourceRepresentation shouldBe null

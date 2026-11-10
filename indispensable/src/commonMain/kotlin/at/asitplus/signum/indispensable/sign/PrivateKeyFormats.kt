@@ -177,10 +177,9 @@ sealed class EcdsaPrivateKey private constructor(
                 WithPublicKey(
                     privateKey,
                     EcdsaPublicKey.fromAnsiX963Bytes(curve, publicKeyBytes),
-                    attributes,
                 )
             } else {
-                WithPublicKey(privateKey, curve, attributes)
+                WithPublicKey(privateKey, curve)
             }
         }
 
@@ -221,7 +220,7 @@ sealed class EcdsaPrivateKey private constructor(
 internal fun positive(value: BigInteger): Asn1Integer.Positive =
     value.toAsn1Integer() as Asn1Integer.Positive
 
-object IndispensablePrivateKeyFormatsProvider : PrivateKeyFormatProvider {
+object IndispensableAsn1PrivateKeyFormatsProvider : Asn1PrivateKeyFormatProvider {
     override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
         is RsaPrivateKey -> value.asn1.toRepresentation()
         is EcdsaPrivateKey -> value.asn1.toRepresentation()

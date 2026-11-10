@@ -57,7 +57,7 @@ val PrimeInfo.asn1
 class RsaPrivateKeyAsn1Converters(self: RsaPrivateKey) :
     Asn1EncodingHelpers.Asn1Encoders.WithPEM<Pkcs8PrivateKeyInfo> by
     (self.asn1Encoders {
-        Pkcs8PrivateKeyInfo(it.asn1.pkcs1.toRepresentation(), it.attributes, Signum.Der)
+        Pkcs8PrivateKeyInfo(it.asn1.pkcs1.toRepresentation(), null, Signum.Der)
     })
 {
 
@@ -84,7 +84,7 @@ class EcdsaPrivateKeyAsn1Converters(self: EcdsaPrivateKey) :
     Asn1EncodingHelpers.Asn1Encoders.WithPEM<Pkcs8PrivateKeyInfo> by
     (self.asn1Encoders {
         require (it is EcdsaPrivateKey.WithPublicKey) { "Curve information is missing, PKCS#8 encoding is not possible. Use withCurve()!" }
-        Pkcs8PrivateKeyInfo(it.asn1.sec1.toRepresentation(), it.curve.oid, it.attributes, Signum.Der)
+        Pkcs8PrivateKeyInfo(it.asn1.sec1.toRepresentation(), it.curve.oid, null, Signum.Der)
     })
 {
     val sec1 = self.asn1Encoders {

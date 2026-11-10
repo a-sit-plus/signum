@@ -93,15 +93,15 @@ val EphemeralSignerConfiguration.cursory get() =
     _algSpecific.option("CURSORY", CursorySignatureScheme.Key::Config)
 
 object CursorySignatureSchemeProvider :
-    SignatureAlgorithmsProvider, InMemoryKeysProvider, PublicKeyFormatProvider, PrivateKeyFormatProvider,
+    Asn1SignatureAlgorithmProvider, InMemoryKeysProvider, Asn1PublicKeyFormatProvider, Asn1PrivateKeyFormatProvider,
         SignatureVerifierProvider, SignatureFormatProvider
 {
 
     fun install() {
-        ServiceLoader.register<SignatureAlgorithmsProvider>(this)
+        ServiceLoader.register<Asn1SignatureAlgorithmProvider>(this)
         ServiceLoader.register<SignatureFormatProvider>(this)
-        ServiceLoader.register<PublicKeyFormatProvider>(this)
-        ServiceLoader.register<PrivateKeyFormatProvider>(this)
+        ServiceLoader.register<Asn1PublicKeyFormatProvider>(this)
+        ServiceLoader.register<Asn1PrivateKeyFormatProvider>(this)
         ServiceLoader.register<InMemoryKeysProvider>(this)
         ServiceLoader.register<SignatureVerifierProvider>(this)
     }
