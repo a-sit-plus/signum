@@ -218,7 +218,7 @@ recovered shouldBe payload //success!
 ### ASN.1 Parsing and Encoding
 
 Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` retain their decoded
-source representations. Use `fromAsn1` to decode them and `toAsn1.DER()` to encode them.
+source representations. Use `fromAsn1` to decode them and `asn1.toDer()` to encode them.
 These helpers use `Signum.Der` to serialize the underlying awesn1 models; no contextual serializers
 for the Signum types need to be registered.
 These helpers support parsing and examining certificates, creating CSRs, and transferring key material.
@@ -242,7 +242,7 @@ when (val pk = cert.publicKey) {
     )
 }
 
-println("Re-encoding it produces the same bytes? ${cert.toAsn1.DER() contentEquals certBytes}")
+println("Re-encoding it produces the same bytes? ${cert.asn1.toDer() contentEquals certBytes}")
 ```
 
 Which produces the following output:

@@ -54,7 +54,7 @@ class RsaPublicKey(
     }
 
     override val didCodec get() = DID_KEY_CODEC
-    override val didKeyBytes get() = asn1.pkcs1.toDer()
+    override val didKeyBytes get() = this@RsaPublicKey.asn1.pkcs1.toDer()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

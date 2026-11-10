@@ -19,7 +19,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 /** Representation of the key in the format used by iOS. */
 val CryptoPublicKey.iosEncoded: ByteArray
-    get() = asn1.toRepresentation().subjectPublicKey.also {
+    get() = this@iosEncoded.asn1.toRepresentation().subjectPublicKey.also {
         require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
     }.bitCarryingBytes
 
@@ -80,7 +80,7 @@ class EcdsaPublicKeyAsn1Converters(self: EcdsaPublicKey) :
     }
 }
 
-val EcdsaPublicKey.toAsn1 get() = EcdsaPublicKeyAsn1Converters(this)
+val EcdsaPublicKey.asn1 get() = EcdsaPublicKeyAsn1Converters(this)
 
 object EcdsaPublicKeyAsn1Constructors :
     Asn1EncodingHelpers.Asn1Decoders.WithPEM<SubjectPublicKeyInfo, EcdsaPublicKey> by

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.InternalAwesn1Api
@@ -56,9 +57,9 @@ val X509CertParserTest by matrixSuite {
             val cert = Certificate.fromAsn1(certBytes)
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
-                        "Actual: ${cert.toAsn1.toDer().encodeToString(Base16)}"
+                        "Actual: ${cert.asn1.toDer().encodeToString(Base16)}"
             ) {
-                cert.toAsn1.toDer() shouldBe jcaCert.encoded
+                cert.asn1.toDer() shouldBe jcaCert.encoded
 
                 cert shouldBe Certificate.fromAsn1(certBytes)
 
@@ -113,7 +114,7 @@ val X509CertParserTest by matrixSuite {
             }
         }) test { crt ->
             val parsed = Certificate.fromAsn1(Asn1Element.parse(crt.encoded) as Asn1Sequence)
-            val own = parsed.toAsn1.toDer()
+            val own = parsed.asn1.toDer()
             withClue(
                 "Expect: ${kotlin.io.encoding.Base64.Mime.encode(crt.encoded)}\n" + "Actual: ${
                     kotlin.io.encoding.Base64.Mime.encode(
@@ -146,8 +147,8 @@ val X509CertParserTest by matrixSuite {
                 val decoded = Certificate.fromAsn1(src)
                 decoded shouldBe Certificate.fromAsn1(it.second)
 
-                withClue(decoded.toAsn1.toPem()) {
-                    decoded.toAsn1.toDer() shouldBe it.second
+                withClue(decoded.asn1.toPem()) {
+                    decoded.asn1.toDer() shouldBe it.second
                 }
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
@@ -189,7 +190,7 @@ val X509CertParserTest by matrixSuite {
                 val cert = Certificate.fromAsn1(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
-                cert.toAsn1.toTlv().derEncoded shouldBe encodedSrc
+                cert.asn1.toTlv().derEncoded shouldBe encodedSrc
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()

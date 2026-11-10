@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.io
 
 import at.asitplus.awesn1.BERTags
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
@@ -95,14 +96,14 @@ object ByteArrayBase64UrlNoPaddingSerializer : TransformingSerializerTemplate<By
 /** De-/serializes X509Certificate as Base64Url-encoded String */
 object X509CertificateBase64UrlSerializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = { it.toAsn1.toDer() },
+    encodeAs = { it.asn1.toDer() },
     decodeAs = { Certificate.fromAsn1(it) }
 )
 
 /** De-/serializes X509Certificate as Base64-encoded String */
 object X509CertificateBase64Serializer : TransformingSerializerTemplate<Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
-    encodeAs = { it.toAsn1.toDer() },
+    encodeAs = { it.asn1.toDer() },
     decodeAs = { Certificate.fromAsn1(it) }
 )
 

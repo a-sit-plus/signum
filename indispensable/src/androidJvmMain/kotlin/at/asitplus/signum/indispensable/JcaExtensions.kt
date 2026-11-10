@@ -301,12 +301,12 @@ fun CryptoPrivateKey.toJcaPrivateKey() =
 
 fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(asn1.toDer()))
+        .generatePrivate(PKCS8EncodedKeySpec(this@toJcaPrivateKey.asn1.toDer()))
             as java.security.interfaces.ECPrivateKey
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
-        .generatePrivate(PKCS8EncodedKeySpec(asn1.toDer()))
+        .generatePrivate(PKCS8EncodedKeySpec(this@toJcaPrivateKey.asn1.toDer()))
             as java.security.interfaces.RSAPrivateKey
 
 fun JCAPrivateKey.toCryptoPrivateKey() =

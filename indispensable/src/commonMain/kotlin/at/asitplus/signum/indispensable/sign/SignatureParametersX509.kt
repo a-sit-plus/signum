@@ -24,19 +24,19 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
 @Suppress("UNCHECKED_CAST")
-val <reified T : RsaParams> RsaAlgorithm.Parameters<T>.toAsn1
+val <reified T : RsaParams> RsaAlgorithm.Parameters<T>.asn1
     inline get() = asn1Encoders<T, RsaAlgorithm.Parameters<T>> { when (this) {
         is RsaAlgorithm.Parameters.Pkcs1Padded -> RsaPkcs1PaddingParams
         is PssPadded -> RsaSsaPssParams(
             hashAlgorithm = digest.asn1.toRepresentation(),
-            maskGenAlgorithm = mgfAlgorithm.toAsn1.toRepresentation(),
+            maskGenAlgorithm = mgfAlgorithm.asn1.toRepresentation(),
             saltLength = saltLength.also { require(it <= Int.MAX_VALUE.toUInt()) }.toInt(),
             trailerField = trailerField,
         )
     } as T }
 
 @Suppress("UNCHECKED_CAST")
-val PssPadded.MaskGenerationFunction.toAsn1
+val PssPadded.MaskGenerationFunction.asn1
     get() = asn1Encoders<X509AlgorithmIdentifier, _> {
         X509AlgorithmIdentifier(
             oid,
@@ -45,7 +45,7 @@ val PssPadded.MaskGenerationFunction.toAsn1
     }
 
 @Suppress("UNCHECKED_CAST")
-val PrimeInfo.toAsn1
+val PrimeInfo.asn1
     get() = asn1Encoders<Pkcs1RsaOtherPrimeInfo, _> {
         Pkcs1RsaOtherPrimeInfo(
             prime.toAsn1Integer() as Asn1Integer.Positive,
@@ -72,7 +72,7 @@ class RsaPrivateKeyAsn1Converters(self: RsaPrivateKey) :
             exponent1 = positive(it.prime1exponent),
             exponent2 = positive(it.prime2exponent),
             coefficient = positive(it.crtCoefficient),
-            otherPrimeInfos = it.otherPrimeInfos?.map<PrimeInfo, Pkcs1RsaOtherPrimeInfo> { it.toAsn1.toRepresentation() },
+            otherPrimeInfos = it.otherPrimeInfos?.map<PrimeInfo, Pkcs1RsaOtherPrimeInfo> { it.asn1.toRepresentation() },
         )
     }
 

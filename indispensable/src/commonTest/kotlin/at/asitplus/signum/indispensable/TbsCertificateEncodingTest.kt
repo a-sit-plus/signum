@@ -48,7 +48,7 @@ val TbsCertificateEncodingTest by matrixSuite {
         val issuerId = byteArrayOf(0x01, 0x80.toByte(), 0x00)
         val subjectId = byteArrayOf(0x80.toByte(), 0x01, 0x00)
         val source = tbsCertificate(issuerUniqueID = issuerId, subjectUniqueID = subjectId)
-        val model = source.toAsn1()
+        val model = source.asn1.toRepresentation()
         model.issuerUniqueID!!.bitCarryingBytes shouldBe issuerId
         model.subjectUniqueID!!.bitCarryingBytes shouldBe subjectId
         model.issuerUniqueID!!.numPaddingBits shouldBe 0
@@ -77,9 +77,9 @@ val TbsCertificateEncodingTest by matrixSuite {
         TbsCertificate.fromAsn1(buffer) shouldBe source
         shouldThrowAny { TbsCertificate.fromAsn1(Buffer().apply { write(bytes) }, limit = 1) }
         source.realSourceRepresentation shouldBe null
-        decoded.toAsn1() shouldBeSameInstanceAs decoded.realSourceRepresentation
-        val original = source.toAsn1()
-        TbsCertificate.fromAsn1(original).toAsn1() shouldBeSameInstanceAs original
+        decoded.asn1.toRepresentation() shouldBeSameInstanceAs decoded.realSourceRepresentation
+        val original = source.asn1.toRepresentation()
+        TbsCertificate.fromAsn1(original).asn1.toRepresentation() shouldBeSameInstanceAs original
         shouldThrowAny { DER { maxInputLength = 1 }.decodeFromByteArray<X509TbsCertificate>(bytes) }
     }
 
@@ -87,7 +87,7 @@ val TbsCertificateEncodingTest by matrixSuite {
         val template = tbsCertificate()
         val foreignModel = ExtraRepresentation(2)
         val source = decodeFrom { _: ExtraRepresentation -> tbsCertificate() }(foreignModel)
-        source.toAsn1() shouldBe template.toAsn1()
+        source.asn1.toRepresentation() shouldBe template.asn1.toRepresentation()
         source.realSourceRepresentation shouldBeSameInstanceAs foreignModel
         source shouldBe template
         source.hashCode() shouldBe template.hashCode()
@@ -96,7 +96,7 @@ val TbsCertificateEncodingTest by matrixSuite {
     }
 
     "Unsupported original algorithms can round-trip without semantic decoding" {
-        val template = tbsCertificate().toAsn1()
+        val template = tbsCertificate().asn1.toRepresentation()
         val original = X509TbsCertificate(
             serialNumber = template.serialNumber,
             signatureAlgorithm = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null),

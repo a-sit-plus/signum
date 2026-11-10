@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -61,11 +63,11 @@ val X500AttributeRegistryTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue)
         )
-        val encoded = original.toAsn1.toDer()
+        val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
         attribute.value shouldBe nonCanonicalValue
-        decoded.toAsn1.toDer() shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
     }
 
     "unknown dotted OID falls back to UTF8" {

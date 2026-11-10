@@ -24,7 +24,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
             @OptIn(SignumInternals::class)
             override val sourceRepresentation = SourceRepresentationStorage()
         }
-        shouldThrow<Asn1Exception> { extension.toAsn1() }
+        shouldThrow<Asn1Exception> { extension.asn1.toRepresentation() }
         val tbs = TbsCertificate(
             serialNumber = BigInteger.ONE,
             signatureAlgorithm = EcdsaAlgorithm.withSHA256,

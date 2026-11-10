@@ -24,6 +24,7 @@ import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
+import at.asitplus.signum.indispensable.sign.asn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrow
@@ -87,11 +88,11 @@ val RemainingEncodingTest by matrixSuite {
         decoded shouldBe encodable
         decoded.hashCode() shouldBe encodable.hashCode()
         decoded.asn1.toDer() shouldBe bytes
-        val model = encodable.toAsn1()
+        val model = encodable.asn1.toRepresentation()
         val retained = CertificationRequest.fromAsn1(model)
-        retained.toAsn1() shouldBeSameInstanceAs model
+        retained.asn1.toRepresentation() shouldBeSameInstanceAs model
         val inner = TbsCertificationRequest.fromAsn1(model.certificationRequestInfo)
-        inner.toAsn1() shouldBeSameInstanceAs model.certificationRequestInfo
+        inner.asn1.toRepresentation() shouldBeSameInstanceAs model.certificationRequestInfo
 
         val unknownAlgorithm = model.copy(signatureAlgorithm = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null))
         val originalBytes = Signum.Der.encodeToByteArray(Pkcs10CertificationRequest.serializer(), unknownAlgorithm)
@@ -114,12 +115,13 @@ val RemainingEncodingTest by matrixSuite {
         opaqueTbs.subjectName shouldBe Name.EMPTY
         opaqueTbs.attributes shouldBe emptyList()
         shouldThrow<UnsupportedCryptoException> { opaqueTbs.publicKey.didEncoded }
-        opaqueTbs.toAsn1() shouldBeSameInstanceAs unknownKey
+        opaqueTbs.asn1.toRepresentation() shouldBeSameInstanceAs unknownKey
     }
 
     "Alternative names compare their contents without encoding them" {
         val name: GeneralName = object : GeneralName {
             @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            override val tag get() = BigInteger.ONE
         }
         val first = AlternativeNames(listOf(name))
         val second = AlternativeNames(listOf(name))
@@ -132,25 +134,25 @@ val RemainingEncodingTest by matrixSuite {
     "Only decoded values retain a source and other encodings leave it unchanged" {
         val ecSignature = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
         ecSignature.realSourceRepresentation shouldBe null
-        val signatureModel = ecSignature.toAsn1()
-        EcdsaSignature.fromAsn1(signatureModel).toAsn1().rawBitString shouldBeSameInstanceAs signatureModel.rawBitString
-        val rsaModel = RsaSignature(byteArrayOf(1, 2, 3)).toAsn1()
-        RsaSignature.fromAsn1(rsaModel).toAsn1().rawBitString shouldBeSameInstanceAs rsaModel.rawBitString
+        val signatureModel = ecSignature.asn1.toRepresentation()
+        EcdsaSignature.fromAsn1(signatureModel).asn1.toRepresentation().rawBitString shouldBeSameInstanceAs signatureModel.rawBitString
+        val rsaModel = RsaSignature(byteArrayOf(1, 2, 3)).asn1.toRepresentation()
+        RsaSignature.fromAsn1(rsaModel).asn1.toRepresentation().rawBitString shouldBeSameInstanceAs rsaModel.rawBitString
 
         val pss = RsaAlgorithm.Parameters.PssPadded(digest = Digest.SHA256)
         pss.realSourceRepresentation shouldBe null
-        val pssModel = pss.toAsn1()
-        RsaAlgorithm.Parameters.PssPadded.fromAsn1(pssModel).toAsn1() shouldBeSameInstanceAs pssModel
+        val pssModel = pss.asn1.toRepresentation()
+        RsaAlgorithm.Parameters.PssPadded.fromAsn1(pssModel).asn1.toRepresentation() shouldBeSameInstanceAs pssModel
 
         val key = EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1)
         key.realSourceRepresentation shouldBe null
-        val pkcs8 = key.toAsn1()
+        val pkcs8 = key.asn1.toRepresentation()
         val decoded = EcdsaPrivateKey.fromAsn1(pkcs8)
-        decoded.toAsn1() shouldBeSameInstanceAs pkcs8
+        decoded.asn1.toRepresentation() shouldBeSameInstanceAs pkcs8
         decoded shouldBe key
-        val sec1 = key.asn1.SEC1.toRepresentation()
+        val sec1 = key.asn1.sec1.toRepresentation()
         val fromSec1 = EcdsaPrivateKey.fromAsn1.SEC1(sec1)
-        fromSec1.asn1.SEC1.toRepresentation() shouldBeSameInstanceAs sec1
+        fromSec1.asn1.sec1.toRepresentation() shouldBeSameInstanceAs sec1
         fromSec1 shouldBe key
         fromSec1.asn1.toDer() shouldBe key.asn1.toDer()
         fromSec1.attributes shouldBe null
@@ -162,9 +164,9 @@ val RemainingEncodingTest by matrixSuite {
 
         val names = AlternativeNames(emptyList())
         names.realSourceRepresentation shouldBe null
-        val namesModel = requireNotNull(names.toAsn1())
+        val namesModel = requireNotNull(names.asn1.toRepresentation())
         names.realSourceRepresentation shouldBe null
-        requireNotNull(AlternativeNames.fromAsn1(namesModel).toAsn1()).entries shouldBeSameInstanceAs namesModel.entries
+        requireNotNull(AlternativeNames.fromAsn1(namesModel).asn1.toRepresentation()).entries shouldBeSameInstanceAs namesModel.entries
     }
 
     "MACs and PSS parameters use their structural codecs" {
@@ -174,13 +176,13 @@ val RemainingEncodingTest by matrixSuite {
         MessageAuthenticationCode.fromAsn1(mac.asn1.toDer()) shouldBe mac
         shouldThrowAny { mac.truncatedTo(128.bit).asn1.toDer() }
         val params = RsaAlgorithm.Parameters.PssPadded(digest = Digest.SHA384)
-        RsaAlgorithm.Parameters.PssPadded.fromAsn1(params.toAsn1.toTlv()) shouldBe params
+        RsaAlgorithm.Parameters.PssPadded.fromAsn1(params.asn1.toTlv()) shouldBe params
         val parameters: RsaAlgorithm.Parameters<at.asitplus.awesn1.crypto.RsaSsaPssParams> = params
         RsaAlgorithm.Parameters.PssPadded.fromAsn1(
-            parameters.toAsn1.toDer(),
+            parameters.asn1.toDer(),
         ) shouldBe params
         val mgf = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(Digest.SHA256)
-        RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.fromAsn1(mgf.toAsn1.toDer()) shouldBe mgf
+        RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.fromAsn1(mgf.asn1.toDer()) shouldBe mgf
     }
 
     "Generic signature algorithms defer unsupported PSS digest and MGF identifiers until usage" {
@@ -189,7 +191,7 @@ val RemainingEncodingTest by matrixSuite {
         val model = X509AlgorithmIdentifier(original, Signum.Der)
         val decoded = SignatureAlgorithm.fromAsn1(model)
         shouldThrow<UnsupportedCryptoException> { decoded.preHashedSignatureFormat }
-        decoded.toAsn1().element shouldBeSameInstanceAs model.element
+        decoded.asn1.toRepresentation().element shouldBeSameInstanceAs model.element
     }
 
     "EC private key decoders reject unsupported curves while generic decoding retains the source" {
@@ -206,7 +208,7 @@ val RemainingEncodingTest by matrixSuite {
         )
         shouldThrowAny { EcdsaPrivateKey.fromAsn1(pkcs8) }
         val fromPkcs8 = CryptoPrivateKey.fromAsn1(pkcs8)
-        fromPkcs8.toAsn1() shouldBeSameInstanceAs pkcs8
+        fromPkcs8.asn1.toRepresentation() shouldBeSameInstanceAs pkcs8
         fromPkcs8.asn1.toDer() shouldBe Signum.Der.encodeToByteArray(pkcs8)
     }
 }

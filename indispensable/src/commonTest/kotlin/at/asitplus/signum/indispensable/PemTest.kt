@@ -7,10 +7,12 @@ import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.awesn1.serialization.decodeFromPem
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.asn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.shouldBe
@@ -162,7 +164,7 @@ val PemTest  by matrixSuite {
                 RsaPrivateKey.fromAsn1(it.asn1.toRepresentation())
             }.isSuccess shouldBe false
 
-            it.asn1.SEC1.toPem().lines() shouldBe sec1.lines()
+            it.asn1.sec1.toPem().lines() shouldBe sec1.lines()
         }
     }
 
@@ -176,9 +178,9 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         CryptoPrivateKey.fromAsn1(rnd + pkcs8).let {
-            EcdsaPrivateKey.fromAsn1(it.toAsn1()) shouldBe it
+            EcdsaPrivateKey.fromAsn1(it.asn1.toRepresentation()) shouldBe it
             kotlin.runCatching {
-                RsaPrivateKey.fromAsn1(it.toAsn1())
+                RsaPrivateKey.fromAsn1(it.asn1.toRepresentation())
             }.isSuccess shouldBe false
             it.asn1.toPem().lines() shouldBe pkcs8.lines()
         }

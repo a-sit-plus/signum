@@ -299,9 +299,9 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val csr = CertificationRequest.fromAsn1(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
         csr.shouldNotBeNull()
 
-        // x509Certificate.toAsn1.DER() shouldBe certificateHolder.encoded
+        // x509Certificate.asn1.toDer() shouldBe certificateHolder.encoded
         csr.signatureAlgorithm shouldBe signatureAlgorithm
-        csr.tbsCsr.toAsn1().version shouldBe Pkcs10CertificationRequestInfo.Version.V1
+        csr.tbsCsr.asn1.toRepresentation().version shouldBe Pkcs10CertificationRequestInfo.Version.V1
         ((csr.tbsCsr.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()

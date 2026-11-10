@@ -191,7 +191,7 @@ val ExtensibilityTest by matrixSuite {
         val unknownAlgorithm = SignatureAlgorithm.fromAsn1(CursorySignatureScheme.Key.ALG)
         shouldThrow<UnsupportedCryptoException> { unknownAlgorithm.preHashedSignatureFormat }
 
-        val keyWithAlgOid = CursorySignatureScheme.Key(true).toAsn1().copy(algorithmIdentifier = CursorySignatureScheme.ALG)
+        val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1.toRepresentation().copy(algorithmIdentifier = CursorySignatureScheme.ALG)
         val unknownKey = CryptoPublicKey.fromAsn1(keyWithAlgOid)
         shouldThrow<UnsupportedCryptoException> { unknownKey.didEncoded }
     }
