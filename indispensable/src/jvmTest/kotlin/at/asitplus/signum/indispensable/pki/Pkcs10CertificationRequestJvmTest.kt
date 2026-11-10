@@ -327,7 +327,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val encodedUnknownAttribute = unknownAttribute.asn1.toDer()
         val decodedUnknownAttribute: CsrAttribute = CsrAttribute.fromAsn1(encodedUnknownAttribute)
 
-        decodedUnknownAttribute.shouldBeInstanceOf<OpaqueCsrAttribute>()
+        decodedUnknownAttribute.oid shouldBe unknownAttribute.oid
         decodedUnknownAttribute.asn1.toDer() shouldBe encodedUnknownAttribute
 
         val tbsCsr = TbsCertificationRequest(

@@ -5,10 +5,6 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.GeneralName
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 /** Relation of this name to another name of the same form. */
 enum class ConstraintResult { DIFF_TYPE, MATCH, NARROWS, WIDENS, SAME_TYPE }
@@ -42,15 +38,3 @@ private fun GeneralName.fallbackConstrains(input: GeneralName?): ConstraintResul
     isValid == false || input.isValid == false -> throw Asn1Exception("Invalid ${this::class.simpleName}")
     else -> throw UnsupportedOperationException("No constraint relation for ${this::class.simpleName}")
 }
-
-/** Nested wire models use the same provider conversions and application DER configuration. */
-internal object GeneralNameSerializer : KSerializer<GeneralName> {
-    private val delegate = at.asitplus.awesn1.crypto.pki.X509GeneralName.serializer()
-    override val descriptor get() = delegate.descriptor
-    override fun serialize(encoder: Encoder, value: GeneralName) =
-        encoder.encodeSerializableValue(delegate, value.asn1.toRepresentation())
-    override fun deserialize(decoder: Decoder): GeneralName =
-        GeneralName.fromAsn1(decoder.decodeSerializableValue(delegate))
-}
-
-internal object GeneralNameListSerializer : KSerializer<List<GeneralName>> by ListSerializer(GeneralNameSerializer)

@@ -2,7 +2,6 @@
 
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.contextualAsn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.asn1
 
@@ -56,14 +55,6 @@ internal object RegisteredExtensionProvider : CertificateExtensionProvider {
         }
 }
 
-internal val registeredExtensionSerializers = SerializersModule {
-    contextualAsn1(
-        RegisteredCertificateExtension::class,
-        at.asitplus.awesn1.crypto.pki.X509CertificateExtension.serializer(),
-        { it.asn1.toRepresentation() }, { CertificateExtension.fromAsn1(it) as RegisteredCertificateExtension },
-    )
-}
-
 // Selected once by the test-session constructor; neither core nor PKIX serializers are pre-included.
 internal val pkixDerTemplate = DER {
     maxNestingDepth = 80
@@ -86,20 +77,23 @@ val SignumDerTest by matrixSuite {
         shouldThrowAny { Signum.registerAsn1Serializers(SerializersModule {}) }
     }
 
-    "Provider and serializer registration support concrete and generic decoding" {
+    "Provider decoding needs no contextual semantic serializers" {
+        Signum.Der.serializersModule.getContextual(CertificateExtension::class) shouldBe null
+        Signum.Der.serializersModule.getContextual(GeneralName::class) shouldBe null
+        Signum.Der.serializersModule.getContextual(at.asitplus.signum.indispensable.pki.attributes.CommonName::class) shouldBe null
         val source = RegisteredCertificateExtension("custom")
-        val bytes = Signum.Der.encodeToByteArray(source)
-        val concrete = Signum.Der.decodeFromByteArray<RegisteredCertificateExtension>(bytes)
-        val generic = Signum.Der.decodeFromByteArray<CertificateExtension>(bytes)
+        val bytes = source.asn1.toDer()
+        val concrete = CertificateExtension.fromAsn1(bytes).shouldBeInstanceOf<RegisteredCertificateExtension>()
+        val generic = CertificateExtension.fromAsn1(bytes)
         generic.shouldBeInstanceOf<RegisteredCertificateExtension>()
         concrete shouldBe source
-        Signum.Der.encodeToByteArray(concrete) shouldBe bytes
+        concrete.asn1.toDer() shouldBe bytes
         requireNotNull(concrete.asn1.toRepresentation())
         Signum.attributeOidFor("customcn") shouldBe at.asitplus.signum.indispensable.pki.attributes.CommonName.oid
     }
 
     "Rejected serializer registration leaves the active provider usable" {
-        shouldThrowAny { Signum.register(RegisteredExtensionProvider, registeredExtensionSerializers) }
+        shouldThrowAny { Signum.register(RegisteredExtensionProvider, SerializersModule {}) }
         val source = RegisteredCertificateExtension("still registered")
         CertificateExtension.fromAsn1(source.asn1.toRepresentation()) shouldBe source
     }
@@ -107,18 +101,18 @@ val SignumDerTest by matrixSuite {
     "Custom otherName registration reaches nested AKI and NameConstraints codecs" {
         val name = OtherName(X509GeneralName.Other(RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8("custom")))))
         val aki = AuthorityKeyIdentifier(authorityCertIssuer = listOf(name))
-        val akiBytes = Signum.Der.encodeToByteArray(aki)
-        val decodedAki = Signum.Der.decodeFromByteArray<AuthorityKeyIdentifier>(akiBytes)
+        val akiBytes = aki.asn1.toDer()
+        val decodedAki = (CertificateExtension.fromAsn1(akiBytes) as AuthorityKeyIdentifier)
         (decodedAki.authorityCertIssuer.single().asn1.toRepresentation() as X509GeneralName.Other).value
             .shouldBeInstanceOf<RegisteredOtherName>()
-        Signum.Der.encodeToByteArray(decodedAki) shouldBe akiBytes
+        decodedAki.asn1.toDer() shouldBe akiBytes
 
         val constraints = NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(name))))
-        val bytes = Signum.Der.encodeToByteArray(constraints)
-        val decoded = Signum.Der.decodeFromByteArray<NameConstraints>(bytes)
+        val bytes = constraints.asn1.toDer()
+        val decoded = (CertificateExtension.fromAsn1(bytes) as NameConstraints)
         (decoded.permitted!!.trees.single().base.asn1.toRepresentation() as X509GeneralName.Other).value
             .shouldBeInstanceOf<RegisteredOtherName>()
-        Signum.Der.encodeToByteArray(decoded) shouldBe bytes
+        decoded.asn1.toDer() shouldBe bytes
     }
 
     "Selected depth limit reaches embedded constraint bodies" {
@@ -126,7 +120,7 @@ val SignumDerTest by matrixSuite {
         repeat(40) { payload = Asn1Sequence(listOf(payload)) }
         val name = OtherName(X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(ObjectIdentifier("1.2.3.4.99"), payload)))
         val source = NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(name))))
-        val decoded = Signum.Der.decodeFromByteArray<NameConstraints>(Signum.Der.encodeToByteArray(source))
+        val decoded = (CertificateExtension.fromAsn1(source.asn1.toDer()) as NameConstraints)
         decoded.permitted!!.trees.size shouldBe 1
     }
 
@@ -140,27 +134,27 @@ val SignumDerTest by matrixSuite {
             direct.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
 
             val bytes = Signum.Der.encodeToByteArray(model)
-            val decoded = Signum.Der.decodeFromByteArray<CertificateExtension>(bytes)
+            val decoded = CertificateExtension.fromAsn1(bytes)
                 .shouldBeInstanceOf<CertificateExtension.Unknown>()
             decoded.oid shouldBe oid
             decoded.critical shouldBe true
             decoded.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
-            Signum.Der.encodeToByteArray<CertificateExtension>(decoded) shouldBe bytes
+            (decoded).asn1.toDer() shouldBe bytes
         }
         val opaque = CertificateExtension(ObjectIdentifier("1.2.3.4.99"), true, byteArrayOf(0x30, 0x01))
-        val bytes = Signum.Der.encodeToByteArray<CertificateExtension>(opaque)
-        Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<CertificateExtension>(bytes)) shouldBe bytes
+        val bytes = (opaque).asn1.toDer()
+        CertificateExtension.fromAsn1(bytes).asn1.toDer() shouldBe bytes
     }
 
     "GeneralSubtree preserves original wire form with semantic equality" {
         val name = DNSName(Asn1String.IA5("example.com"))
         val omitted = GeneralSubtree(name)
-        val explicit = GeneralSubtree.fromAsn1(X509GeneralSubtree(name, Asn1Integer(0)))
+        val explicit = GeneralSubtree.fromAsn1(X509GeneralSubtree(name.asn1.toRepresentation(), Asn1Integer(0)))
         explicit shouldBe omitted
         explicit.hashCode() shouldBe omitted.hashCode()
         explicit.asn1.toRepresentation() shouldBeSameInstanceAs explicit.asn1.toRepresentation()
-        val bytes = Signum.Der.encodeToByteArray(explicit)
-        Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<GeneralSubtree>(bytes)) shouldBe bytes
+        val bytes = explicit.asn1.toDer()
+        GeneralSubtree.fromAsn1(bytes).asn1.toDer() shouldBe bytes
     }
 
     "GeneralSubtree permits an independent serializer without selecting the X509 shape" {

@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.pki.extn.*
 import kotlinx.serialization.*
-import kotlinx.serialization.encoding.*
+import kotlinx.serialization.builtins.ListSerializer
 
 /** ASN.1 adapters for understood qualifier OIDs; unrecognized payloads retain their original source. */
 interface PolicyQualifierAsn1Provider {
@@ -25,27 +25,25 @@ private data class NoticeWire(val noticeRef: NoticeReferenceWire? = null, val ex
 @Serializable
 private data class NoticeReferenceWire(val organization: Asn1String, val numbers: List<Asn1Integer>)
 
-internal object PolicyInformationAsn1Serializer : KSerializer<PolicyInformation> {
-    override val descriptor get() = PolicyWire.serializer().descriptor
-    override fun deserialize(decoder: Decoder): PolicyInformation {
-        val wire = decoder.decodeSerializableValue(PolicyWire.serializer())
-        return PolicyInformation(wire.oid, wire.qualifiers.map { src ->
+internal fun decodeCertificatePolicies(bytes: ByteArray): List<PolicyInformation> =
+    Signum.Der.decodeFromByteArray(ListSerializer(PolicyWire.serializer()), bytes).map { wire ->
+        PolicyInformation(wire.oid, wire.qualifiers.map { src ->
             decodeFrom<QualifierWire, PolicyQualifierInfo> {
                 try {
                     ServiceLoader.load<PolicyQualifierAsn1Provider>().get(it) { decodeFromAsn1(it.oid, it.qualifier) }
-                } catch (failure: UnsupportedCryptoException) { OpaquePolicyQualifierInfo(it.oid, failure) }
+                } catch (failure: UnsupportedCryptoException) { PolicyQualifierInfo(it.oid, failure) }
             }(src)
         })
     }
-    override fun serialize(encoder: Encoder, value: PolicyInformation) {
-        val qualifiers = value.policyQualifiers.map { q ->
+
+internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteArray =
+    Signum.Der.encodeToByteArray(ListSerializer(PolicyWire.serializer()), policies.map { policy ->
+        PolicyWire(policy.oid, policy.policyQualifiers.map { q ->
             q.encodeTo<QualifierWire, PolicyQualifierInfo> {
                 QualifierWire(it.oid, ServiceLoader.load<PolicyQualifierAsn1Provider>().get(it, PolicyQualifierAsn1Provider::encodeToAsn1))
             }
-        }
-        encoder.encodeSerializableValue(PolicyWire.serializer(), PolicyWire(value.oid, qualifiers))
-    }
-}
+        })
+    })
 
 internal object BuiltinPolicyQualifiers : PolicyQualifierAsn1Provider {
     override fun decodeFromAsn1(oid: ObjectIdentifier, value: Asn1Element): PolicyQualifierInfo? = when (oid) {

@@ -134,8 +134,24 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
 
     }
 
-
     companion object {
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+            isValid: Boolean? = null,
+        ): AttributeTypeAndValue = Unknown(oid, decodingFailure, isValid)
+
+        private class Unknown(
+            override val oid: ObjectIdentifier,
+            val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+            override val isValid: Boolean? = null,
+        ) : AttributeTypeAndValue {
+            override val sourceRepresentation = SourceRepresentationStorage()
+            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
+                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
+            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+            override fun toString(): String = "AttributeTypeAndValue.Unknown($oid, $sourceRepresentation)"
+        }
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
             fromAsn1(X500AttributeTypeAndValue(oid, value))
@@ -169,7 +185,7 @@ open class TextAttributeTypeAndValue(
     final override val oid: ObjectIdentifier,
     val text: String,
 ) : AttributeTypeAndValue {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     override val isValid: Boolean get() = when (oid) {
         AttributeTypeAndValue.Descriptor.OID.domainComponent,
         AttributeTypeAndValue.Descriptor.OID.emailAddress -> text.all { it.code < 128 }

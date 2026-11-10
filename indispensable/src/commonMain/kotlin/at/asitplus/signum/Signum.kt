@@ -3,7 +3,6 @@
 package at.asitplus.signum
 
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
@@ -70,7 +69,7 @@ object Signum {
         }
     }
 
-    /** Register every supported core/platform provider interface, plus its concrete ASN.1 adapters. */
+    /** Register every supported core/platform provider interface and optional wire serializers. */
     // TODO remove this (at least for providers)
     fun register(provider: Any, serializers: SerializersModule? = null) {
         if (serializers != null) check(!consumed) { "Register serializers before first Signum.Der use" }
@@ -96,13 +95,9 @@ object Signum {
         serializers?.let(::registerAsn1Serializers)
     }
 
-    /** Register the descriptor and its concrete contextual ASN.1 serializer together. */
-    inline fun <reified T : AttributeTypeAndValue> register(descriptor: AttributeTypeAndValue.Descriptor<T>) {
-        Attributes.register(descriptor, SerializersModule {
-            contextualAsn1(T::class, X500AttributeTypeAndValue.serializer(),
-                // TODO
-                { it.asn1.toRepresentation() }, { AttributeTypeAndValue.fromAsn1(it) as T })
-        })
+    /** Register semantic attribute metadata independently of ASN.1 serialization. */
+    fun register(descriptor: AttributeTypeAndValue.Descriptor<*>) {
+        Attributes.register(descriptor)
     }
     fun attributeDescriptorFor(oid: ObjectIdentifier): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorFor(oid)
     fun attributeDescriptorForName(name: String): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorForName(name)
@@ -119,17 +114,16 @@ object Signum {
         private val sealed = AtomicReference<Map<ObjectIdentifier, AttributeTypeAndValue.Descriptor<*>>?>(null)
 
         @PublishedApi
-        internal fun register(descriptor: AttributeTypeAndValue.Descriptor<*>, serializers: SerializersModule) {
+        internal fun register(descriptor: AttributeTypeAndValue.Descriptor<*>) {
             check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
+                "AttributeTypeAndValue registry is sealed; register before the first attribute lookup."
             }
-            Signum.registerAsn1Serializers(serializers)
             descriptors[descriptor.oid] = descriptor
         }
 
         fun registerAlias(alias: String, oid: ObjectIdentifier) {
             check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first (de)serialization."
+                "AttributeTypeAndValue registry is sealed; register before the first attribute lookup."
             }
             require(descriptors.containsKey(oid)) { "No AttributeTypeAndValue descriptor registered for $oid." }
             val normalizedAlias = alias.uppercase()

@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.serialization.Asn1Tag
-import at.asitplus.signum.indispensable.pki.x500.GeneralNameListSerializer
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
 
 /**
  * Authority Key Identifier extension. RFC 5280 §4.2.1.1 — MUST be non-critical.
@@ -45,7 +45,6 @@ data class AuthorityKeyIdentifier(
 @Serializable
 internal class AuthorityKeyIdentifierBody(
     @Asn1Tag(0u) val keyIdentifier: ByteArray? = null,
-    @Asn1Tag(1u) @Serializable(with = GeneralNameListSerializer::class)
-    val authorityCertIssuer: List<GeneralName>? = null,
+    @Asn1Tag(1u) val authorityCertIssuer: List<X509GeneralName>? = null,
     @Asn1Tag(2u) val authorityCertSerialNumber: Asn1Integer? = null,
 )

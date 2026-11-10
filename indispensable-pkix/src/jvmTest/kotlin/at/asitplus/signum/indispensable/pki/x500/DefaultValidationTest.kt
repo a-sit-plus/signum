@@ -5,15 +5,15 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
+import io.kotest.assertions.throwables.shouldThrow
 
 val DefaultValidationTest by matrixSuite {
 
-    "EDIPartyName without custom validation " {
-        val name = EDIPartyName(Asn1.Sequence { +Asn1.Int(1) })
-        name.isValid shouldBe null
-
-        val validated = name.createValidatedCopy { true }
-        validated.isValid shouldBe true
+    "EDIPartyName validates its semantic fields" {
+        EDIPartyName("Party").isValid shouldBe true
+        EDIPartyName("Party", "Assigner").isValid shouldBe true
+        shouldThrow<IllegalArgumentException> { EDIPartyName("") }
+        shouldThrow<IllegalArgumentException> { EDIPartyName("Party", "") }
     }
 
     "OtherName without custom validation " {

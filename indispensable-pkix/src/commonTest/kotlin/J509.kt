@@ -39,7 +39,7 @@ internal object J509 {
     fun attribute(node: JsonObject): AttributeTypeAndValue = read(node) {
         val oid = it.oid()
         val value = it.optional("text")?.jsonPrimitive?.content
-        if (value == null) OpaqueAttributeTypeAndValue(oid)
+        if (value == null) AttributeTypeAndValue(oid)
         else at.asitplus.signum.Signum.attributeDescriptorFor(oid)?.fromString(value) ?: TextAttributeTypeAndValue(oid, value)
     }
     private fun name(value: Name) = JsonArray(value.relativeDistinguishedNames.map { rdn -> JsonArray(rdn.attrsAndValues.map(::attribute)) })
@@ -61,7 +61,7 @@ internal object J509 {
             HardwareModuleName.OID -> HardwareModuleName(ObjectIdentifier(value.s("hardwareType")), value.s("serial").hexToByteArray())
             SmtpUtf8Mailbox.OID -> SmtpUtf8Mailbox(value.s("address"))
             MacAddressName.OID -> MacAddressName(value.s("address").hexToByteArray())
-            else -> OpaqueOtherName(oid)
+            else -> OtherName(oid)
         }
     }
     private fun generalName(value: GeneralName): JsonObject {
@@ -74,6 +74,8 @@ internal object J509 {
                 is IPAddressName -> obj("kind" to text("ip"), "value" to text(it.toString()))
                 is RegisteredIDName -> obj("kind" to text("oid"), "value" to text(it.value))
                 is DirectoryName -> obj("kind" to text("directory"), "value" to name(it.name))
+                is EDIPartyName -> obj("kind" to text("edi"), "partyName" to text(it.partyName),
+                    "nameAssigner" to (it.nameAssigner?.let(::text) ?: JsonNull))
                 else -> error("Unsupported J509 name")
             }
         }
@@ -88,6 +90,7 @@ internal object J509 {
                 "ip" -> IPAddressName.fromString(it.s("value"))
                 "oid" -> RegisteredIDName(ObjectIdentifier(it.s("value")))
                 "directory" -> DirectoryName(name(it.getValue("value")))
+                "edi" -> EDIPartyName(it.s("partyName"), it["nameAssigner"]?.jsonPrimitive?.contentOrNull)
                 else -> error("Unsupported J509 name")
             }
         }
@@ -110,7 +113,7 @@ internal object J509 {
             UserNotice().oid -> UserNotice(payload.optional("notice")?.jsonObject?.let { n ->
                 NoticeReference(n.s("organization"), n.list("numbers").map { number -> BigInteger.parseString(number.jsonPrimitive.content) })
             }, payload.optional("text")?.jsonPrimitive?.content)
-            else -> OpaquePolicyQualifierInfo(oid)
+            else -> PolicyQualifierInfo(oid)
         }
     }
     private fun subtree(value: GeneralSubtree) = obj("base" to generalName(value.base), "min" to text(value.minimum), "max" to (value.maximum?.let(::text) ?: JsonNull))
@@ -159,7 +162,7 @@ internal object J509 {
     }
     fun csrAttribute(node: JsonObject): CsrAttribute = read(node) {
         if (it.oid() == CsrAttribute.EXTENSION_REQUEST_OID) ExtensionRequest(it.list("extensions").map { e -> extension(e.jsonObject) })
-        else OpaqueCsrAttribute(it.oid())
+        else CsrAttribute(it.oid())
     }
 
     private fun certificate(value: TbsCertificate): JsonObject = write(value) {

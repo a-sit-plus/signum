@@ -21,7 +21,7 @@ internal object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider, CsrAt
     override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {
         val descriptor = Signum.attributeDescriptorFor(value.oid) ?: return null
         val text = Asn1String.decodeFromTlv(value.value.asPrimitive())
-        if (text.isValid == false) return OpaqueAttributeTypeAndValue(value.oid, isValid = false)
+        if (text.isValid == false) return AttributeTypeAndValue(value.oid, isValid = false)
         return descriptor.fromString(text.value)
     }
 
