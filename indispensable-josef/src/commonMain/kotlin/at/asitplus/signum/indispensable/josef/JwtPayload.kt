@@ -12,6 +12,10 @@ import kotlin.time.Instant
  *
  * `@SerialName` annotations are just for convenience and
  * ARE NOT BEING INHERITED to the implementing class!
+ * The same holds for `@Serializable(with = …)`: implementations must annotate their
+ * [notBefore], [issuedAt] and [expiration] overrides with
+ * `@Serializable(with = InstantLongSerializer::class)` themselves, to correctly handle
+ * every NumericDate representation (e.g. `1700000000`, `1700000000.5`, `1.7e9`).
  *
  * See [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)
  */
