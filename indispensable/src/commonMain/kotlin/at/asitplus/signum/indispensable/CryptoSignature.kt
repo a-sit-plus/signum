@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
 
 /**
- * Parsed signature value. Unparsed values are [SignatureValue].
+ * Parsed signature value. Unparsed values are [AbstractSignature] but not [CryptoSignature].
  */
 interface CryptoSignature : WithSourceRepresentation, AbstractSignature {
 
