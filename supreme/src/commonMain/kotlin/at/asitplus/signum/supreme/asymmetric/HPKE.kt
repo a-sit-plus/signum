@@ -4,25 +4,16 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.agree.keyAgreement
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.symmetric.AuthCapability
-import at.asitplus.signum.indispensable.symmetric.KeyType
-import at.asitplus.signum.indispensable.symmetric.NonceTrait
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.authTag
-import at.asitplus.signum.indispensable.symmetric.authTagSize
-import at.asitplus.signum.indispensable.symmetric.from
-import at.asitplus.signum.indispensable.symmetric.keyFrom
-import at.asitplus.signum.indispensable.symmetric.nonceSize
-import at.asitplus.signum.indispensable.symmetric.sealedBox
+import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.agree.Ephemeral
-import at.asitplus.signum.indispensable.agree.keyAgreement
 import at.asitplus.signum.supreme.kdf.expandStep
 import at.asitplus.signum.supreme.kdf.extractStep
 import at.asitplus.signum.supreme.symmetric.Encryptor
@@ -357,14 +348,14 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                 sk = os2ip(bytes)
                 counter += 1
             }
-            val key = EcdsaPrivateKey.WithPublicKey(sk, dhGroup, true, true)
+            val key = EcdsaPrivateKey.WithPublicKey(sk, dhGroup)
             return KeyPair(key, key.publicValue)
         }
 
         override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asCryptoPublicKey().toAnsiX963Encoded(useCompressed = false)
         override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = EcdsaPublicKey.fromAnsiX963Bytes(dhGroup, pkXm)
         override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as EcdsaPrivateKey.WithPublicKey).privateKeyBytes
-        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EcdsaPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup, true, true)
+        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EcdsaPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup)
 
         private suspend fun ExtractAndExpand(dh: ByteArray, kem_context: ByteArray): ByteArray {
             val eae_prk = LabeledExtract(byteArrayOf(), "eae_prk".encodeToByteArray(), dh)

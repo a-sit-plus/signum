@@ -58,8 +58,8 @@ It contains essentials such as:
 * `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
     * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
-    * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
-    * EC keys also support SEC1 encoding (`.asSEC1`)
+    * RSA keys also support PKCS#1 encoding (`.asn1.pkcs1`)
+    * EC keys also support SEC1 encoding (`.asn1.sec1`)
 * `Digest` containing an enumeration of supported digests
 * `ECCurve` representing an EC Curve
 * `ECPoint` representing a point on an elliptic curve
@@ -181,10 +181,9 @@ The following functions provide interop functionality with platform types.
 
 ## ASN.1 Engine Addons
 
-Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
-implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-This is an essential pattern, making the ASN.1 engine work the way it does.
-We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  
+Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `Certificate`, `Pkcs10CertificationRequest`, etc. all
+have `asn1` extensions and their respective companions have `fromAsn1` extensions.
+This is an essential pattern, making the ASN.1 engine work the way it does.  
 The following section provides more details on the various patterns used for ASN.1 encoding and decoding.
 
 ### Generic Patterns

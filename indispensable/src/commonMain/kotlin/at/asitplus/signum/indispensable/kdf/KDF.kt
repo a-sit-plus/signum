@@ -1,15 +1,14 @@
 package at.asitplus.signum.indispensable.kdf
 
-import at.asitplus.signum.Enumerable
-import at.asitplus.signum.Enumeration
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
 
 interface KDF {
     companion object {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
     }
 }
 

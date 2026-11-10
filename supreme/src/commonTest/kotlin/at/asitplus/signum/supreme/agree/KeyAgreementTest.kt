@@ -4,17 +4,17 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.agree.keyAgreement
-import at.asitplus.signum.indispensable.decodeFromPem
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+
 val KeyAgreementTest by matrixSuite {
 
     "000 Key Agreement Simple Equality Test" {
         val self = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1)
-
 
         val pkcs8 = """
             -----BEGIN PRIVATE KEY-----
@@ -24,7 +24,7 @@ val KeyAgreementTest by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
         val other =
-            CryptoPrivateKey.decodeFromPem(pkcs8) as KeyAgreementPrivateValue.ECDH
+            CryptoPrivateKey.fromAsn1(pkcs8) as KeyAgreementPrivateValue.ECDH
 
         val symmetric1 = self.keyAgreement(other.publicValue)
         val symmetric2 = other.keyAgreement(self.publicValue)

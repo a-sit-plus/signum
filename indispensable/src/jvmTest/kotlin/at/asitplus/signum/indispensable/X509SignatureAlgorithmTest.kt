@@ -3,37 +3,37 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.io.UnsafeIoApi
 import java.io.File
-import io.kotest.assertions.throwables.shouldThrowAny
 
 @OptIn(UnsafeIoApi::class)
 val X509SignatureAlgorithmTest by matrixSuite {
 
     val (certsUnsupported, certsSupported) = readCerts()
 
-    compact("!OK certs with DSA signature algorithms, should parse") - {
+    //works now properly too
+    compact("OK certs with DSA signature algorithms, should parse") - {
         data(certsUnsupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = Certificate.decodeFromTlv(src)
+            val decoded = Certificate.fromAsn1(src)
 
-            shouldThrowAny {
-
-                decoded.signatureAlgorithm.toString()
+            shouldThrow<UnsupportedCryptoException> {
+                decoded.signatureAlgorithm.preHashedSignatureFormat
             }
 
-
-            withClue(decoded.encodeToPem()) {
-                decoded.encodeToDer() shouldBe it.second
+            withClue(decoded.asn1.toPem()) {
+                decoded.asn1.toDer() shouldBe it.second
             }
         }
     }
@@ -41,12 +41,11 @@ val X509SignatureAlgorithmTest by matrixSuite {
     compact("OK certs with supported signature algorithms") - {
         data(certsSupported, nameFn = { it.first }) test {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
-            val decoded = Certificate.decodeFromTlv(src)
+            val decoded = Certificate.fromAsn1(src)
             decoded.signatureAlgorithm shouldBeIn (EcdsaAlgorithm.entries + RsaAlgorithm.entries)
             shouldNotThrow<Throwable> { decoded.signature.toString() }
         }
     }
-
 
 }
 

@@ -112,13 +112,13 @@ fun CryptoPublicKey.toSecKey() =
 
 fun SecKeyRef?.toCryptoPublicKey() =
     ServiceLoader.load<IosMappingProvider>()
-        .get(this!!, IosMappingProvider::secKeyToCryptoPublicKey)
+        .get(this!!) { secKeyToCryptoPublicKey(it) }
 
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
 fun CryptoPrivateKey.WithPublicKey.toSecKey() =
     ServiceLoader.load<IosMappingProvider>()
-        .get(this, IosMappingProvider::cryptoPrivateKeyToSecKey)
+        .get(this) { cryptoPrivateKeyToSecKey(it) }
 
 fun SecKeyRef?.toCryptoPrivateKey() =
     ServiceLoader.load<IosMappingProvider>()
-        .get(this!!, IosMappingProvider::secKeyToCryptoPrivateKey)
+        .get(this!!) { secKeyToCryptoPrivateKey(it) }

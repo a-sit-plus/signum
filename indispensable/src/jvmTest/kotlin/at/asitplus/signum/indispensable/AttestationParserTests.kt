@@ -73,7 +73,7 @@ val CustomParserTests by matrixSuite {
             attestationCertChain.forEachIndexed { index, certificate ->
 
                 withClue(index.toString()) {
-                    certificate.toKmpCertificate().getOrThrow().encodeToDer() shouldBe certificate.encoded
+                    certificate.toKmpCertificate().asn1.toDer() shouldBe certificate.encoded
                 }
             }
         }

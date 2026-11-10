@@ -1,13 +1,9 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.getContentSigner
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaSignature
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DLSequence
@@ -58,7 +54,7 @@ val SignatureCodecTest  by matrixSuite {
             Signature.getInstance("${digest}withECDSAinP1363Format").run {
                 initVerify(keys.public)
                 update(data)
-                verify(EcdsaSignature.fromRawSignatureValue(sig).encodeToDer())
+                verify(EcdsaSignature.fromRawSignatureValue(sig).asn1.toDer())
             }
 
         }
@@ -79,8 +75,6 @@ val SignatureCodecTest  by matrixSuite {
                 update(data)
                 sign()
             }
-
-
 
             RsaSignature.fromRawSignatureValue(sig).jcaSignatureBytes shouldBe sig
             signatureAlgorithm
@@ -107,9 +101,9 @@ val SignatureCodecTest  by matrixSuite {
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            RsaSignature.fromRawSignatureValue(certificateHolder.signature).encodeToDer() shouldBe bcSig
-            signatureAlgorithm
-                .parseJCASignature(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            RsaSignature.fromRawSignatureValue(certificateHolder.signature).asn1.toDer() shouldBe bcSig
+            (signatureAlgorithm
+                .parseJCASignature(certificateHolder.signature)).asn1.toDer() shouldBe bcSig
 
         }
     }

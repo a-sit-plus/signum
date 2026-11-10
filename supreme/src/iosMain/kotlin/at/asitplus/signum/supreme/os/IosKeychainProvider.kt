@@ -4,7 +4,6 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.CryptoOperationFailed
-import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
@@ -14,7 +13,6 @@ import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.digest.digest
-import at.asitplus.signum.indispensable.sign.SignatureInput
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
@@ -272,7 +270,7 @@ sealed class IosSigner(final override val alias: String,
             }
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            EcdsaSignature.decodeFromTlv(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
+            EcdsaSignature.fromAsn1(X509SignatureValue(sigBytes)).withCurve(publicKey.curve)
 
         override suspend fun keyAgreement(
             publicValue: KeyAgreementPublicValue.ECDH,
@@ -307,7 +305,7 @@ sealed class IosSigner(final override val alias: String,
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            RsaSignature.decodeFromTlv(X509SignatureValue(sigBytes))
+            RsaSignature.fromAsn1(X509SignatureValue(sigBytes))
     }
 
 }
@@ -316,13 +314,13 @@ interface IosKeyAlgSpecificMetadata {
     @Serializable
     @SerialName("ecdsa")
     data class ECDSA(
-        val supportedDigests: Set<WellKnownDigest?>
+        val supportedDigests: Set<@Serializable(with = WellKnownDigest.Serializer::class) WellKnownDigest?>
     ) : IosKeyAlgSpecificMetadata
 
     @Serializable
     @SerialName("rsa")
     data class RSA(
-        val supportedDigests: Set<WellKnownDigest>,
+        val supportedDigests: Set<@Serializable(with = WellKnownDigest.Serializer::class) WellKnownDigest>,
         val supportedPaddings: Set<RSAPadding>
     ): IosKeyAlgSpecificMetadata
 }

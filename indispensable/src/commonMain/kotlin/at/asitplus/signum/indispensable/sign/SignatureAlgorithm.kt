@@ -1,15 +1,13 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.DerDecodable
-import at.asitplus.signum.indispensable.DerEncodable
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.installIndispensable
 
-interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
+interface SignatureAlgorithm : WithSourceRepresentation {
 
     @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
         replaceWith = ReplaceWith("EcdsaAAlgorithm"))
@@ -23,22 +21,14 @@ interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
     @OptIn(SignumInternals::class)
-    private class Unknown(
-        override val asn1Representation: X509AlgorithmIdentifier,
-        override val lookupResult: UnsupportedCryptoException
-    ) : SignatureAlgorithm, ServiceLoader.UnknownShim {
-        override fun toString() = "Unknown SignatureAlgorithm($asn1Representation)"
-        override val preHashedSignatureFormat: SignatureInputFormat get() = throw lookupResult
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Unknown) return false
-            return asn1Representation == other.asn1Representation
-        }
-        override fun hashCode() = asn1Representation.hashCode()
+    class Unknown(lookupResult: UnsupportedCryptoException)
+        : SignatureAlgorithm, ServiceLoader.UnknownShim(lookupResult)
+    {
+        override val preHashedSignatureFormat get() = fails
     }
 
-    companion object: DerDecodable<X509AlgorithmIdentifier, SignatureAlgorithm> {
-        init { Indispensable.init() }
+    companion object {
+        init { Signum.installIndispensable() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",
             replaceWith = ReplaceWith("EcdsaAlgorithm.withSHA256"))
@@ -70,22 +60,9 @@ interface SignatureAlgorithm : DerEncodable<X509AlgorithmIdentifier> {
             replaceWith = ReplaceWith("RsaAlgorithm.withSHA512andPSSPadding"))
         val RSAwithSHA512andPSSPadding get() = RsaAlgorithm.withSHA512andPSSPadding
 
-        override fun decodeFromTlv(element: X509AlgorithmIdentifier, der: Der) =
-            ServiceLoader.load<SignatureAlgorithmsProvider>()
-                .getWithUnknown(element, ::Unknown, SignatureAlgorithmsProvider::getAlgorithm)
-
-        @Deprecated("Use decodeFromTlv", replaceWith = ReplaceWith("decodeFromTlv(identifier)"))
-        operator fun invoke(identifier: X509AlgorithmIdentifier): SignatureAlgorithm =
-            decodeFromTlv(identifier)
-
     }
 }
 
 interface SpecializedSignatureAlgorithm {
     val algorithm: SignatureAlgorithm
-}
-
-interface SignatureAlgorithmsProvider {
-    /** Parse a [SignatureAlgorithm] from its [X509AlgorithmIdentifier] form */
-    fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier): SignatureAlgorithm?
 }

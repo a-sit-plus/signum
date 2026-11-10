@@ -3,17 +3,12 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.SignatureVerifier
-import at.asitplus.signum.indispensable.sign.verifierFor
-import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.sign.sign
-import at.asitplus.signum.indispensable.sign.signature
-import at.asitplus.signum.indispensable.sign.signerFor
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
@@ -30,10 +25,10 @@ val RsaSsaPssRoundTripTest by matrixSuite {
 
             mapOf(
                 "from ASN.1" to RsaAlgorithm(
-                    RsaAlgorithm.Parameters.PssPadded(
+                    RsaAlgorithm.Parameters.PssPadded.fromAsn1(
                         RsaSsaPssParams(
-                            hashAlgorithm = dataDigest.asn1Representation,
-                            maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1Representation,
+                            hashAlgorithm = dataDigest.asn1.toRepresentation(),
+                            maskGenAlgorithm = RsaAlgorithm.Parameters.PssPadded.MaskGenerationFunction.Pkcs1Mgf1(mgfDigest).asn1.toRepresentation(),
                         )
                     )),
                 "from Signum" to RsaAlgorithm(
@@ -45,7 +40,6 @@ val RsaSsaPssRoundTripTest by matrixSuite {
                     )
                 )
             ).asData("Parameters", nameFn = { i, (name, _) -> "$i: $name" }) - { (_, rsaInstance) ->
-
 
                 val key = runBlocking {
                     Signer.Ephemeral {

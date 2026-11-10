@@ -4,24 +4,16 @@ import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
-import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.dsl.Of
+import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.internals.ImplementationError
+import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -34,19 +26,14 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
-import java.security.MessageDigest
-import java.security.KeyFactory
-import java.security.NoSuchAlgorithmException
-import java.security.Provider
-import java.security.PrivateKey as JCAPrivateKey
-import java.security.PublicKey as JCAPublicKey
-import java.security.Signature
+import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
-
+import java.security.PrivateKey as JCAPrivateKey
+import java.security.PublicKey as JCAPublicKey
 
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
@@ -74,14 +61,6 @@ internal val RsaAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec g
         trailerField
     )
 }
-
-internal fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
-    when (provider) {
-        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
-        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
-        is JCAProviderRef.None -> Signature.getInstance(alg)
-        else -> throw ImplementationError("invalid JCAProvider ref")
-    }
 
 interface JcaMappingProvider {
     /**
@@ -231,7 +210,6 @@ internal val WellKnownDigest.jcaName
         WellKnownDigest.SHA512 -> "SHA-512"
     }
 
-
 internal val WellKnownDigest?.jcaAlgorithmComponent
     get() = when (this) {
         null -> "NONE"
@@ -249,7 +227,6 @@ val ECCurve.jcaName
     }
 
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
-
 
 fun CryptoPublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::cryptoPublicKeyToJcaPublicKey)
@@ -293,7 +270,7 @@ fun java.security.interfaces.RSAPublicKey.toCryptoPublicKey(): RsaPublicKey =
 
 fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
     ServiceLoader.load<JcaMappingProvider>()
-        .get(this, JcaMappingProvider::jcaPublicKeyToCryptoPublicKey)
+        .get(this) { jcaPublicKeyToCryptoPublicKey(it) }
 
 /**
  * Converts this [Certificate] to a [java.security.cert.X509Certificate].
@@ -301,7 +278,7 @@ fun JCAPublicKey.toCryptoPublicKey(): CryptoPublicKey =
  */
 suspend fun Certificate.toJcaCertificate(): java.security.cert.X509Certificate =
     certificateFactoryMutex.withLock {
-        certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
+        certFactory.generateCertificate(this@toJcaCertificate.asn1.toDer().inputStream()) as java.security.cert.X509Certificate
     }
 
 /**
@@ -311,35 +288,36 @@ fun Certificate.toJcaCertificateBlocking(): java.security.cert.X509Certificate =
     runBlocking { toJcaCertificate() }
 
 /**
- * Converts this [java.security.cert.X509Certificate] to an [Certificate]
+ * Converts this [java.security.cert.Certificate] to an [Certificate]
  */
-fun java.security.cert.X509Certificate.toKmpCertificate() =
-    catching { Certificate.decodeFromDer(encoded) }
+fun java.security.cert.Certificate.toKmpCertificate() : Certificate {
+    require (this is java.security.cert.X509Certificate)
+    return Certificate.fromAsn1(this.encoded)
+}
 
 fun CryptoPrivateKey.toJcaPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
-        .get(this, JcaMappingProvider::cryptoPrivateKeyToJcaPrivateKey)
+        .get(this) { cryptoPrivateKeyToJcaPrivateKey(it) }
 
 fun EcdsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+        .generatePrivate(PKCS8EncodedKeySpec(this@toJcaPrivateKey.asn1.toDer()))
             as java.security.interfaces.ECPrivateKey
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
-        .generatePrivate(PKCS8EncodedKeySpec(asPKCS8.encodeToDer()))
+        .generatePrivate(PKCS8EncodedKeySpec(this@toJcaPrivateKey.asn1.toDer()))
             as java.security.interfaces.RSAPrivateKey
 
 fun JCAPrivateKey.toCryptoPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
-        .get(this, JcaMappingProvider::jcaPrivateKeyToCryptoPrivateKey)
+        .get(this) { jcaPrivateKeyToCryptoPrivateKey(it) }
 
 fun java.security.interfaces.ECPrivateKey.toCryptoPrivateKey(): EcdsaPrivateKey.WithPublicKey =
-    EcdsaPrivateKey.decodeFromDer(encoded) as EcdsaPrivateKey.WithPublicKey
+    EcdsaPrivateKey.fromAsn1(encoded) as EcdsaPrivateKey.WithPublicKey
 
 fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
-    RsaPrivateKey.decodeFromDer(encoded)
-
+    RsaPrivateKey.fromAsn1(encoded)
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
     @OptIn(HazardousMaterials::class)
