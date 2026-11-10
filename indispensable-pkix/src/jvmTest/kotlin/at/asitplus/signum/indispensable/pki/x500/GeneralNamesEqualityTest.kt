@@ -29,9 +29,10 @@ val GeneralNamesEqualityTest by matrixSuite {
     }
 
     "EDIPartyName equals and hashcode" {
-        EDIPartyName(seq1) shouldBe EDIPartyName(seq1)
-        EDIPartyName(seq1).hashCode() shouldBe EDIPartyName(seq1).hashCode()
-        EDIPartyName(seq1) shouldNotBe EDIPartyName(seq2)
+        EDIPartyName("Party", "Assigner") shouldBe EDIPartyName("Party", "Assigner")
+        EDIPartyName("Party", "Assigner").hashCode() shouldBe EDIPartyName("Party", "Assigner").hashCode()
+        EDIPartyName("Party", "Assigner") shouldNotBe EDIPartyName("Other", "Assigner")
+        EDIPartyName("Party", "Assigner") shouldNotBe EDIPartyName("Party")
     }
 
     "OtherName equals and hashcode" {

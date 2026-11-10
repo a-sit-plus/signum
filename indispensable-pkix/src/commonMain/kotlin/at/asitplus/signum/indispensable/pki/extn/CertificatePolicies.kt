@@ -31,7 +31,27 @@ data class PolicyInformation(
     val policyQualifiers: List<PolicyQualifierInfo> = emptyList(),
 ) : Identifiable
 
-interface PolicyQualifierInfo : Identifiable, at.asitplus.signum.indispensable.WithSourceRepresentation
+interface PolicyQualifierInfo : Identifiable, at.asitplus.signum.indispensable.WithSourceRepresentation {
+    companion object {
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+        ): PolicyQualifierInfo = Unknown(oid, decodingFailure)
+
+        private class Unknown(
+            override val oid: ObjectIdentifier,
+            val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+        ) : PolicyQualifierInfo {
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            @OptIn(SignumInternals::class)
+            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
+                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
+            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+            override fun toString(): String = "PolicyQualifierInfo.Unknown($oid, $sourceRepresentation)"
+        }
+
+    }
+}
 
 data class CpsUri(val uri: Uri) : PolicyQualifierInfo {
     constructor(uri: String) : this(Uri.parse(uri))
@@ -50,15 +70,3 @@ data class UserNotice(
 }
 
 data class NoticeReference(val organization: String, val noticeNumbers: List<com.ionspin.kotlin.bignum.integer.BigInteger>)
-
-class OpaquePolicyQualifierInfo(
-    override val oid: ObjectIdentifier,
-    val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
-) : PolicyQualifierInfo {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-    @OptIn(SignumInternals::class)
-    override fun equals(other: Any?): Boolean = this === other || other is OpaquePolicyQualifierInfo &&
-            oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-    override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-    override fun toString(): String = "OpaquePolicyQualifierInfo($oid, $sourceRepresentation)"
-}

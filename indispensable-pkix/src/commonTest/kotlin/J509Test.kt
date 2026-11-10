@@ -37,7 +37,8 @@ val J509Test by matrixSuite {
         val hardware = HardwareModuleName(policyOid, byteArrayOf(1, 2, 3))
         val names = listOf(DNSName("example.com"), RFC822Name("me@example.com"), UriName("https://example.com"),
             IPAddressName.fromString("192.0.2.1"), RegisteredIDName(policyOid), DirectoryName(Name.EMPTY),
-            hardware, SmtpUtf8Mailbox("mé@example.test"), MacAddressName(byteArrayOf(0, 1, 2, 3, 4, 5)))
+            hardware, SmtpUtf8Mailbox("mé@example.test"), MacAddressName(byteArrayOf(0, 1, 2, 3, 4, 5)),
+            EDIPartyName("Party"), EDIPartyName("Pärtÿ", "Assigner"))
         val cps = CpsUri(Uri.parse("https://example.com/policy"))
         cps.uri.host shouldBe "example.com"
         cps shouldBe CpsUri("https://example.com/policy")
@@ -79,14 +80,19 @@ val J509Test by matrixSuite {
 
     "All four open families preserve native JSON carriers and reject unsupported ASN.1 conversion" {
         val raw = Json.parseToJsonElement("""{"oid":"1.2.3.999","value":{"native":[true,42]},"extra":"preserve me"}""").jsonObject
-        val atv = J509.attribute(raw).shouldBeInstanceOf<OpaqueAttributeTypeAndValue>()
-        val csr = J509.csrAttribute(raw).shouldBeInstanceOf<OpaqueCsrAttribute>()
-        val name = J509.other(raw).shouldBeInstanceOf<OpaqueOtherName>()
-        val qualifier = J509.qualifier(raw).shouldBeInstanceOf<OpaquePolicyQualifierInfo>()
+        val atv = J509.attribute(raw)
+        val csr = J509.csrAttribute(raw)
+        val name: OtherName = J509.other(raw)
+        val qualifier = J509.qualifier(raw)
+        listOf(atv.oid, csr.oid, name.oid, qualifier.oid) shouldBe List(4) { ObjectIdentifier("1.2.3.999") }
         J509.attribute(atv) shouldBeSameInstanceAs raw
         J509.csrAttribute(csr) shouldBeSameInstanceAs raw
         J509.other(name) shouldBeSameInstanceAs raw
         J509.qualifier(qualifier) shouldBeSameInstanceAs raw
+        listOf(atv, csr, name, qualifier) shouldBe listOf(J509.attribute(raw), J509.csrAttribute(raw), J509.other(raw), J509.qualifier(raw))
+        val validatedName = name.createValidatedCopy { true }
+        validatedName.isValid shouldBe true
+        J509.other(validatedName) shouldBeSameInstanceAs raw
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
         nativeNames.subjectAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
         nativeNames.issuerAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
@@ -112,7 +118,7 @@ val J509Test by matrixSuite {
                 at.asitplus.awesn1.Asn1String.UTF8("opaque").encodeToTlv())))))
         val ext = CertificateExtension.fromAsn1(at.asitplus.awesn1.crypto.pki.X509CertificateExtension(CertificatePolicies.oid, false, body))
             .shouldBeInstanceOf<CertificatePolicies>()
-        ext.certificatePolicies.single().policyQualifiers.single().shouldBeInstanceOf<OpaquePolicyQualifierInfo>()
+        ext.certificatePolicies.single().policyQualifiers.single().oid shouldBe ObjectIdentifier("1.2.3.999")
         CertificatePolicies(ext.certificatePolicies).asn1.toRepresentation().value shouldBe body
     }
 }

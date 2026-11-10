@@ -9,31 +9,33 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 /** An open OID-selected name family. Interpreted subtypes are independent of their source format. */
 interface OtherName : GeneralName, Identifiable {
     fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName =
-        throw UnsupportedOperationException("Custom validation copies are available on OpaqueOtherName")
+        throw UnsupportedOperationException("Custom validation copies are only available for uninterpreted otherName values")
 
     companion object {
+        operator fun invoke(oid: ObjectIdentifier): OtherName = Unknown(oid)
+
+        private class Unknown private constructor(
+            override val oid: ObjectIdentifier,
+            override val isValid: Boolean?,
+            @property:SignumInternals override val sourceRepresentation: SourceRepresentationStorage,
+        ) : OtherName {
+            constructor(oid: ObjectIdentifier) : this(oid, null, SourceRepresentationStorage())
+            @OptIn(SignumInternals::class)
+            override fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName =
+                Unknown(oid, validate(this), sourceRepresentation)
+            @OptIn(SignumInternals::class)
+            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
+                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
+            @OptIn(SignumInternals::class)
+            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+            @OptIn(SignumInternals::class)
+            override fun toString(): String = "OtherName.Unknown($oid, $sourceRepresentation)"
+        }
+
         operator fun invoke(value: X509GeneralName.Other): OtherName = GeneralName.fromAsn1(value) as OtherName
         operator fun invoke(value: X509GeneralName.Other, validate: (GeneralName) -> Boolean): OtherName =
             invoke(value).createValidatedCopy(validate)
     }
-}
-
-class OpaqueOtherName private constructor(
-    override val oid: ObjectIdentifier,
-    override val isValid: Boolean?,
-    @property:SignumInternals override val sourceRepresentation: SourceRepresentationStorage,
-) : OtherName {
-    constructor(oid: ObjectIdentifier) : this(oid, null, SourceRepresentationStorage())
-    @OptIn(SignumInternals::class)
-    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName =
-        OpaqueOtherName(oid, validate(this), sourceRepresentation)
-    @OptIn(SignumInternals::class)
-    override fun equals(other: Any?): Boolean = this === other || other is OpaqueOtherName &&
-            oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-    @OptIn(SignumInternals::class)
-    override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-    @OptIn(SignumInternals::class)
-    override fun toString(): String = "OpaqueOtherName($oid, $sourceRepresentation)"
 }
 
 data class HardwareModuleName(val hardwareType: ObjectIdentifier, val serial: ByteArray) : OtherName {

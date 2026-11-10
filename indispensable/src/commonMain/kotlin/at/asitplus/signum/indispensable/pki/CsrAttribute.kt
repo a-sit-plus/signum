@@ -11,6 +11,23 @@ import at.asitplus.signum.indispensable.*
 /** An open CSR attribute family, without a format-specific payload contract. */
 interface CsrAttribute : Identifiable, WithSourceRepresentation {
     companion object {
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            decodingFailure: UnsupportedCryptoException? = null,
+        ): CsrAttribute = Unknown(oid, decodingFailure)
+
+        private class Unknown(
+            override val oid: ObjectIdentifier,
+            val decodingFailure: UnsupportedCryptoException? = null,
+        ) : CsrAttribute {
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            @OptIn(SignumInternals::class)
+            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
+                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
+            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+            override fun toString(): String = "CsrAttribute.Unknown($oid, $sourceRepresentation)"
+        }
+
         val EXTENSION_REQUEST_OID = ObjectIdentifier("1.2.840.113549.1.9.14")
         operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): CsrAttribute =
             fromAsn1(Pkcs10CsrAttribute(oid, value))
@@ -23,16 +40,4 @@ data class ExtensionRequest(val extensions: List<CertificateExtension>) : CsrAtt
     override val oid get() = CsrAttribute.EXTENSION_REQUEST_OID
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
     init { require(extensions.isNotEmpty()) { "At least one extension is required" } }
-}
-
-class OpaqueCsrAttribute(
-    override val oid: ObjectIdentifier,
-    val decodingFailure: UnsupportedCryptoException? = null,
-) : CsrAttribute {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-    @OptIn(SignumInternals::class)
-    override fun equals(other: Any?): Boolean = this === other || other is OpaqueCsrAttribute &&
-            oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-    override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-    override fun toString(): String = "OpaqueCsrAttribute($oid, $sourceRepresentation)"
 }

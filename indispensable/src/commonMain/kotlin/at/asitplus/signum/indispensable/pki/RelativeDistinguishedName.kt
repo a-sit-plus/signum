@@ -137,8 +137,25 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
 
     }
 
-
     companion object {
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+            isValid: Boolean? = null,
+        ): AttributeTypeAndValue = Unknown(oid, decodingFailure, isValid)
+
+        private class Unknown(
+            override val oid: ObjectIdentifier,
+            val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+            override val isValid: Boolean? = null,
+        ) : AttributeTypeAndValue {
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            @OptIn(SignumInternals::class)
+            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
+                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
+            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+            override fun toString(): String = "AttributeTypeAndValue.Unknown($oid, $sourceRepresentation)"
+        }
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
             fromAsn1(X500AttributeTypeAndValue(oid, value))
@@ -187,19 +204,6 @@ open class TextAttributeTypeAndValue(
     override fun equals(other: Any?): Boolean = other is TextAttributeTypeAndValue && oid == other.oid && text == other.text
     override fun hashCode(): Int = 31 * oid.hashCode() + text.hashCode()
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
-}
-
-class OpaqueAttributeTypeAndValue(
-    override val oid: ObjectIdentifier,
-    val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
-    override val isValid: Boolean? = null,
-) : AttributeTypeAndValue {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-    @OptIn(SignumInternals::class)
-    override fun equals(other: Any?): Boolean = this === other || other is OpaqueAttributeTypeAndValue &&
-            oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-    override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-    override fun toString(): String = "OpaqueAttributeTypeAndValue($oid, $sourceRepresentation)"
 }
 
 val AttributeTypeAndValue.typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()

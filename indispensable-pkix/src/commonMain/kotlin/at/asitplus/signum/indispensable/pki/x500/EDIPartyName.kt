@@ -2,31 +2,29 @@ package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.GeneralName
 
-/** RFC 5280 `ediPartyName` GeneralName CHOICE `[5]`. Carries the awesn1 [X509GeneralName.EdiParty] verbatim. */
-class EDIPartyName private constructor(
-    val ediParty: X509GeneralName.EdiParty,
-    override val isValid: Boolean?,
-) : AbstractGeneralName() {
-    override val equalityValue get() = ediParty
+/** RFC 5280 `ediPartyName`: a party name and its optional name assigner. */
+data class EDIPartyName(
+    val partyName: String,
+    val nameAssigner: String? = null,
+) : GeneralName {
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val isValid get() = true
 
-    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): EDIPartyName = EDIPartyName(ediParty, validate(this))
-
-    override fun toString(): String = ediParty.toString()
+    init {
+        require(partyName.isNotEmpty()) { "EDI party name cannot be empty" }
+        require(nameAssigner == null || nameAssigner.isNotEmpty()) { "EDI name assigner cannot be empty" }
+    }
 
     companion object {
-        operator fun invoke(value: X509GeneralName.EdiParty): EDIPartyName = EDIPartyName(value, null)
+        operator fun invoke(value: X509GeneralName.EdiParty): EDIPartyName = GeneralName.fromAsn1(value) as EDIPartyName
 
         operator fun invoke(value: Asn1Sequence): EDIPartyName = invoke(X509GeneralName.EdiParty(value))
 
-        /** Creates an instance with `isValid` determined by [validate]. */
-        operator fun invoke(value: X509GeneralName.EdiParty, validate: (GeneralName) -> Boolean): EDIPartyName =
-            EDIPartyName(value, validate(invoke(value)))
-
         val tag = X509GeneralName.Tags.ediPartyName
-        internal fun fromAsn1Model(src: X509GeneralName): EDIPartyName {
-            return EDIPartyName(src as X509GeneralName.EdiParty, null)
-        }
     }
 }

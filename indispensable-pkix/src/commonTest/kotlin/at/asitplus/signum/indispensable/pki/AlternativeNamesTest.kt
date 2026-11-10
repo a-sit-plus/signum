@@ -1,14 +1,11 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.tag
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
-import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.pki.attributes.*
 
@@ -54,14 +51,14 @@ val AlternativeNamesTest by matrixSuite {
         )
 
         val built = AlternativeNames(generalNames)
-        val encoded = built.let { Signum.Der.encodeToByteArray(it) }
-        val decoded = Signum.Der.decodeFromByteArray<AlternativeNames>(encoded)
+        val encoded = built.let { it.asn1.toDer() }
+        val decoded = (AlternativeNames.fromAsn1(encoded))
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.registeredID, X509GeneralName.Tags.directoryName,
         ).map { BigInteger.fromULong(it.tagValue) }
         (decoded.generalNames[2] as DirectoryName).name.toRfc2253String() shouldBe "cn=directory" // RFC 2253 canonical: type + value lower-cased
-        decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
+        decoded.let { it.asn1.toDer() } shouldBe encoded
     }
 
     "asn1-built alternative names preserve original DER" {
@@ -71,17 +68,17 @@ val AlternativeNamesTest by matrixSuite {
             0x87.toByte(), 0x04, 0x7f, 0x00, 0x00, 0x01,                                            // [7] 127.0.0.1
             0x88.toByte(), 0x03, 0x2a, 0x03, 0x04,                                                  // [8] 1.2.3.4
         )
-        val decoded = Signum.Der.decodeFromTlv<AlternativeNames>(Asn1Element.parse(encoded))
+        val decoded = (AlternativeNames.fromAsn1(Asn1Element.parse(encoded)))
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.ipAddress, X509GeneralName.Tags.registeredID,
         ).map { BigInteger.fromULong(it.tagValue) }
-        decoded.let { Signum.Der.encodeToByteArray(it) } shouldBe encoded
+        decoded.let { it.asn1.toDer() } shouldBe encoded
     }
 
     "duplicate subject alternative name extension rejected" {
         val encoded = AlternativeNames(listOf(DNSName(Asn1String.IA5("example.com"))))
-            .let { Signum.Der.encodeToByteArray(it) }
+            .let { it.asn1.toDer() }
         val extensions = listOf(
             CertificateExtension(KnownOIDs.subjectAltName_2_5_29_17, value = encoded),
             CertificateExtension(KnownOIDs.subjectAltName_2_5_29_17, value = encoded),

@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 private data class HardwareModuleWire(val hardwareType: ObjectIdentifier, val serial: ByteArray)
 
 internal fun decodeOtherName(src: X509GeneralName.Other): OtherName {
-    val raw = src.value as? X509GeneralName.Other.SemanticValue.Generic ?: return OpaqueOtherName(src.value.oid)
+    val raw = src.value as? X509GeneralName.Other.SemanticValue.Generic ?: return OtherName(src.value.oid)
     return at.asitplus.catchingUnwrapped {
         when (raw.oid) {
             HardwareModuleName.OID -> Signum.Der.decodeFromTlv(HardwareModuleWire.serializer(), raw.value).let {
@@ -18,9 +18,9 @@ internal fun decodeOtherName(src: X509GeneralName.Other): OtherName {
             }
             SmtpUtf8Mailbox.OID -> SmtpUtf8Mailbox(Signum.Der.decodeFromTlv(Asn1String.UTF8.serializer(), raw.value).value)
             MacAddressName.OID -> MacAddressName(Signum.Der.decodeFromTlv(kotlinx.serialization.builtins.ByteArraySerializer(), raw.value))
-            else -> OpaqueOtherName(raw.oid)
+            else -> OtherName(raw.oid)
         }
-    }.getOrElse { OpaqueOtherName(raw.oid) }
+    }.getOrElse { OtherName(raw.oid) }
 }
 
 internal fun encodeOtherName(src: OtherName): X509GeneralName.Other? {

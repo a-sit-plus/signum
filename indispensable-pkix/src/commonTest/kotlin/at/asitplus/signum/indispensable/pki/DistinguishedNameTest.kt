@@ -1,10 +1,9 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.fromAsn1
 
 import at.asitplus.signum.Signum
-import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.decodeFromByteArray
 
 import at.asitplus.signum.indispensable.pki.attributes.*
 
@@ -126,7 +125,7 @@ val DistinguishedNameTest by matrixSuite {
             )
         )
 
-        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(Signum.Der.encodeToByteArray(rdn))
+        val decoded = (RelativeDistinguishedName.fromAsn1(rdn.asn1.toDer()))
 
         decoded shouldBe rdn
         decoded.attrsAndValues.size shouldBe 5
@@ -140,14 +139,14 @@ val DistinguishedNameTest by matrixSuite {
             )
         )
 
-        val encoded = Signum.Der.encodeToByteArray(rdn)
-        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val encoded = rdn.asn1.toDer()
+        val decoded = (RelativeDistinguishedName.fromAsn1(encoded))
         val attr = decoded.attrsAndValues.single()
 
-        attr::class shouldBe OpaqueAttributeTypeAndValue::class
+        (attr is TextAttributeTypeAndValue) shouldBe false
         attr.oid shouldBe ObjectIdentifier("1.2.3.4.5.6.7")
         (attr.asn1.toRepresentation() != null) shouldBe true
-        Signum.Der.encodeToByteArray(decoded) shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
     }
 
     "AttributeTypeAndValue oid factory returns known subtype" {
@@ -224,13 +223,13 @@ val DistinguishedNameTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(case.descriptor.oid, nonCanonicalValue)
         )
-        val encoded = Signum.Der.encodeToByteArray(original)
-        val decoded = Signum.Der.decodeFromByteArray<RelativeDistinguishedName>(encoded)
+        val encoded = original.asn1.toDer()
+        val decoded = (RelativeDistinguishedName.fromAsn1(encoded))
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
 
         attribute::class shouldBe case.expected("Test")::class
         attribute.asn1.toRepresentation().value shouldBe nonCanonicalValue
-        Signum.Der.encodeToByteArray(decoded) shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
     }
 
     "AttributeTypeAndValue RFC2253 string escaping"  {
