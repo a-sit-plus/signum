@@ -7,9 +7,9 @@ import at.asitplus.signum.Enumeration
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import kotlinx.serialization.builtins.serializer
@@ -38,7 +38,7 @@ sealed class WellKnownDigest(
     )
 }
 
-object IndispensableDigestsProvider: DigestProvider {
+object IndispensableDigestsAlgorithmProviderAsn1: Asn1DigestAlgorithmProvider {
     override fun encodeToAsn1(value: Digest): X509AlgorithmIdentifier? =
         (value as? WellKnownDigest)?.let { X509AlgorithmIdentifier(it.oid, null) }
 
@@ -51,7 +51,7 @@ object IndispensableDigestsProvider: DigestProvider {
     }
 }
 
-object IndispensableHMACProvider: MessageAuthenticationCodeProvider {
+object IndispensableHMACProvider: Asn1MACAlgorithmProvider {
     override fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? =
         (value as? HMAC)?.let { X509AlgorithmIdentifier(it.oid, Asn1Null) }
 

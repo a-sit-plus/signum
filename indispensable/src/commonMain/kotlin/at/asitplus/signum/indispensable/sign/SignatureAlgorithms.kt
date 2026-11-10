@@ -207,7 +207,7 @@ class RsaAlgorithm(
 
 }
 
-object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
+object IndispensableAsn1SignatureAlgorithmProvider : Asn1SignatureAlgorithmProvider {
     override fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = when (value) {
         is EcdsaAlgorithm -> value.asn1.toRepresentation()
         is RsaAlgorithm -> value.asn1.toRepresentation()

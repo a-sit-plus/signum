@@ -43,7 +43,7 @@ val RsaAlgorithm.asn1 get() =
         }
     }
 
-interface SignatureAlgorithmsProvider {
+interface Asn1SignatureAlgorithmProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
     fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = null
 

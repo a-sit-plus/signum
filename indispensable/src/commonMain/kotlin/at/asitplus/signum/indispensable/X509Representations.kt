@@ -23,13 +23,13 @@ import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeWith
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
+import at.asitplus.signum.indispensable.digest.Asn1DigestAlgorithmProvider
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.digest.DigestProvider
+import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.sign.Asn1SignatureAlgorithmProvider
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithmsProvider
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.KSerializer
@@ -316,28 +316,28 @@ inline fun <
 //// ==========================================
 
 val SignatureAlgorithm.asn1 get() =
-    asn1EncodersWith(SignatureAlgorithmsProvider::encodeToAsn1)
+    asn1EncodersWith(Asn1SignatureAlgorithmProvider::encodeToAsn1)
 
 val SignatureAlgorithm.Companion.fromAsn1 get() =
-    asn1DecodersWith(SignatureAlgorithmsProvider::decodeFromAsn1, SignatureAlgorithm::Unknown)
+    asn1DecodersWith(Asn1SignatureAlgorithmProvider::decodeFromAsn1, SignatureAlgorithm::Unknown)
 
 val Digest.asn1 get() =
-    asn1EncodersWith(DigestProvider::encodeToAsn1)
+    asn1EncodersWith(Asn1DigestAlgorithmProvider::encodeToAsn1)
 
 val Digest.Companion.fromAsn1 get() =
-    asn1DecodersWith(DigestProvider::decodeFromAsn1, Digest::Unknown)
+    asn1DecodersWith(Asn1DigestAlgorithmProvider::decodeFromAsn1, Digest::Unknown)
 
 val MessageAuthenticationCode.asn1 get() =
-    asn1EncodersWith(MessageAuthenticationCodeProvider::encodeToAsn1)
+    asn1EncodersWith(Asn1MACAlgorithmProvider::encodeToAsn1)
 
 val MessageAuthenticationCode.Companion.fromAsn1 get() =
-    asn1DecodersWith(MessageAuthenticationCodeProvider::decodeFromAsn1, MessageAuthenticationCode::Unknown)
+    asn1DecodersWith(Asn1MACAlgorithmProvider::decodeFromAsn1, MessageAuthenticationCode::Unknown)
 
 val CryptoPublicKey.asn1 get() =
-    asn1EncodersWith(PublicKeyFormatProvider::encodeToAsn1)
+    asn1EncodersWith(Asn1PublicKeyFormatProvider::encodeToAsn1)
 
 val CryptoPublicKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(SubjectPublicKeyInfo.Companion, PublicKeyFormatProvider::decodeFromAsn1, CryptoPublicKey::Unknown)
+    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, CryptoPublicKey::Unknown)
 
 val KeyAgreementPublicValue.Companion.fromAsn1 get() =
     asn1Decoders<SubjectPublicKeyInfo,_> {
@@ -345,10 +345,10 @@ val KeyAgreementPublicValue.Companion.fromAsn1 get() =
     }
 
 val CryptoPrivateKey.asn1 get() =
-    asn1EncodersWith(PrivateKeyFormatProvider::encodeToAsn1)
+    asn1EncodersWith(Asn1PrivateKeyFormatProvider::encodeToAsn1)
 
 val CryptoPrivateKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, PrivateKeyFormatProvider::decodeFromAsn1, CryptoPrivateKey::Unknown)
+    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, CryptoPrivateKey::Unknown)
 
 private class X509UnparsedSignature : AbstractSignature {
     @SignumInternals

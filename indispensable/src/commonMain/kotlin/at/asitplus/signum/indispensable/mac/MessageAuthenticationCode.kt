@@ -62,7 +62,7 @@ interface SpecializedMessageAuthenticationCode {
 }
 
 // @Service
-interface MessageAuthenticationCodeProvider {
+interface Asn1MACAlgorithmProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
     fun encodeToAsn1(value: MessageAuthenticationCode): X509AlgorithmIdentifier? = null
 

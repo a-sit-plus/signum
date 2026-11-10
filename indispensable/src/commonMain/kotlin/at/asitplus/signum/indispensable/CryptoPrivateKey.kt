@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
@@ -17,8 +16,6 @@ interface CryptoPrivateKey : WithSourceRepresentation {
     interface WithPublicKey : CryptoPrivateKey {
         val publicKey: CryptoPublicKey
     }
-
-    val attributes: Set<Asn1Element>? get() = asn1().attributes
 
     @SignumInternals
     class Unknown(
@@ -46,7 +43,7 @@ interface CryptoPrivateKey : WithSourceRepresentation {
 }
 
 // @Service
-interface PrivateKeyFormatProvider {
+interface Asn1PrivateKeyFormatProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
     fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = null
 

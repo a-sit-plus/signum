@@ -8,15 +8,15 @@ import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.DefaultDer
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.digest.Asn1DigestAlgorithmProvider
 import at.asitplus.signum.indispensable.digest.DigestOperationProvider
-import at.asitplus.signum.indispensable.digest.DigestProvider
 import at.asitplus.signum.indispensable.kdf.KDFOperationProvider
 import at.asitplus.signum.indispensable.kdf.KDFProvider
+import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeOperationProvider
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCodeProvider
 import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.sign.Asn1SignatureAlgorithmProvider
 import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithmsProvider
 import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.overwriteWith
@@ -80,16 +80,16 @@ object Signum {
     fun register(provider: Any, serializers: SerializersModule? = null) {
         if (serializers != null) check(!consumed) { "Register serializers before first Signum.Der use" }
         var matched = false
-        if (provider is DigestProvider) { ServiceLoader.register<DigestProvider>(provider); matched = true }
+        if (provider is Asn1DigestAlgorithmProvider) { ServiceLoader.register<Asn1DigestAlgorithmProvider>(provider); matched = true }
         if (provider is DigestOperationProvider) { ServiceLoader.register<DigestOperationProvider>(provider); matched = true }
-        if (provider is MessageAuthenticationCodeProvider) { ServiceLoader.register<MessageAuthenticationCodeProvider>(provider); matched = true }
+        if (provider is Asn1MACAlgorithmProvider) { ServiceLoader.register<Asn1MACAlgorithmProvider>(provider); matched = true }
         if (provider is MessageAuthenticationCodeOperationProvider) { ServiceLoader.register<MessageAuthenticationCodeOperationProvider>(provider); matched = true }
         if (provider is KDFProvider) { ServiceLoader.register<KDFProvider>(provider); matched = true }
         if (provider is KDFOperationProvider) { ServiceLoader.register<KDFOperationProvider>(provider); matched = true }
-        if (provider is SignatureAlgorithmsProvider) { ServiceLoader.register<SignatureAlgorithmsProvider>(provider); matched = true }
+        if (provider is Asn1SignatureAlgorithmProvider) { ServiceLoader.register<Asn1SignatureAlgorithmProvider>(provider); matched = true }
         if (provider is SignatureFormatProvider) { ServiceLoader.register<SignatureFormatProvider>(provider); matched = true }
-        if (provider is PublicKeyFormatProvider) { ServiceLoader.register<PublicKeyFormatProvider>(provider); matched = true }
-        if (provider is PrivateKeyFormatProvider) { ServiceLoader.register<PrivateKeyFormatProvider>(provider); matched = true }
+        if (provider is Asn1PublicKeyFormatProvider) { ServiceLoader.register<Asn1PublicKeyFormatProvider>(provider); matched = true }
+        if (provider is Asn1PrivateKeyFormatProvider) { ServiceLoader.register<Asn1PrivateKeyFormatProvider>(provider); matched = true }
         if (provider is InMemoryKeysProvider) { ServiceLoader.register<InMemoryKeysProvider>(provider); matched = true }
         if (provider is SignatureVerifierProvider) { ServiceLoader.register<SignatureVerifierProvider>(provider); matched = true }
         if (provider is CertificateExtensionProvider) { ServiceLoader.register<CertificateExtensionProvider>(provider); matched = true }
