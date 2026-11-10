@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.Signum
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.x500.*
 import kotlinx.serialization.Serializable
 
@@ -22,8 +21,7 @@ internal fun decodeOtherName(src: X509GeneralName.Other): OtherName {
             else -> OtherName(raw.oid)
         }
     }.getOrElse { failure ->
-        OtherName(raw.oid, failure as? UnsupportedCryptoException
-            ?: UnsupportedCryptoException("Cannot decode otherName ${raw.oid}", failure))
+        InvalidOtherName(raw.oid, failure)
     }
 }
 

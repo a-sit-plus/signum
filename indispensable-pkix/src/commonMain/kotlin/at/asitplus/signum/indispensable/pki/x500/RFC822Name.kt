@@ -8,21 +8,14 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `rfc822Name` GeneralName CHOICE `[1]`. */
-class RFC822Name private constructor(
+class RFC822Name(
     val value: String,
-    performValidation: Boolean,
 ) : AbstractGeneralName() {
     override val equalityValue get() = value
 
-    /**
-     * @throws Asn1Exception if illegal RFC822Name is provided
-     */
-    @Throws(Asn1Exception::class)
-    constructor(value: String) : this(value, true)
-
-    override val isValid: Boolean by lazy { value.all { it.code < 128 } && validate() }
-
-    init { if (performValidation && !isValid) throw Asn1Exception("Invalid RFC822Name.") }
+    init {
+        if (!value.all { it.code < 128 } || !validate()) throw Asn1Exception("Invalid RFC822Name.")
+    }
 
     override fun toString(): String = value
 
@@ -75,6 +68,6 @@ class RFC822Name private constructor(
 
         val tag = X509GeneralName.Tags.rfc822Name
         internal fun fromAsn1Model(src: X509GeneralName): RFC822Name =
-            RFC822Name((src as X509GeneralName.Rfc822).rawValue.value, false)
+            RFC822Name((src as X509GeneralName.Rfc822).value)
     }
 }

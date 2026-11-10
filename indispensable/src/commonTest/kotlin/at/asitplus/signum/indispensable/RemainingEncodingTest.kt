@@ -160,11 +160,7 @@ val RemainingEncodingTest by matrixSuite {
         ecSignature.realSourceRepresentation shouldBe null
         pss.realSourceRepresentation shouldBe null
 
-        val names = AlternativeNames(emptyList())
-        names.realSourceRepresentation shouldBe null
-        val namesModel = requireNotNull(names.asn1.toRepresentation())
-        names.realSourceRepresentation shouldBe null
-        requireNotNull(AlternativeNames.fromAsn1(namesModel).asn1.toRepresentation()).entries shouldBeSameInstanceAs namesModel.entries
+
     }
 
     "MACs and PSS parameters use their structural codecs" {

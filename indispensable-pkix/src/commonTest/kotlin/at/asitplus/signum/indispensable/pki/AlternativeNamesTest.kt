@@ -1,5 +1,10 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.tag
@@ -23,6 +28,9 @@ import at.asitplus.signum.indispensable.pki.x500.DirectoryName
 import at.asitplus.signum.indispensable.pki.x500.RegisteredIDName
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.shouldBe
 
 private fun serializer() = X509GeneralNames.serializer()
@@ -30,6 +38,24 @@ private fun serializer() = X509GeneralNames.serializer()
 private fun List<GeneralName>.tags() = map { it.tag }
 
 val AlternativeNamesTest by matrixSuite {
+
+    "Alternative names compare their contents without encoding them" {
+        val name: GeneralName = object : GeneralName {
+            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+        }
+        val first = AlternativeNames(listOf(name))
+        val second = AlternativeNames(listOf(name))
+        first shouldBe second
+        first.hashCode() shouldBe second.hashCode()
+        first shouldNotBe AlternativeNames(emptyList())
+        shouldThrowAny { first.asn1.toDer() }
+
+        val names = AlternativeNames(emptyList())
+        names.sourceFormat shouldBe "<no source>"
+        val namesModel = requireNotNull(names.asn1.toRepresentation())
+        names.sourceFormat shouldBe "<no source>"
+        requireNotNull(AlternativeNames.fromAsn1(namesModel).asn1.toRepresentation()).entries shouldBeSameInstanceAs namesModel.entries
+    }
 
     "Provider-decoded and constructed names agree on equality and hash codes" {
         val typed: GeneralName = DNSName(Asn1String.IA5("example.com"))

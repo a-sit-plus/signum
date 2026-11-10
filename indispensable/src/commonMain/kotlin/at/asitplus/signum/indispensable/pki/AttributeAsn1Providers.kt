@@ -21,13 +21,12 @@ internal object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider, CsrAt
     override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {
         val descriptor = Signum.attributeDescriptorFor(value.oid) ?: return null
         val text = Asn1String.decodeFromTlv(value.value.asPrimitive())
-        if (text.isValid == false) return AttributeTypeAndValue(value.oid, isValid = false)
+        require(text.isValid != false) { "Malformed attribute string ${value.oid}" }
         return descriptor.fromString(text.value)
     }
 
     override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? {
         if (value !is TextAttributeTypeAndValue) return null
-        require(value.isValid) { "Invalid text attribute ${value.oid}" }
         val text = when (value.oid) {
             AttributeTypeAndValue.Descriptor.OID.domainComponent,
             AttributeTypeAndValue.Descriptor.OID.emailAddress -> Asn1String.IA5(value.text)

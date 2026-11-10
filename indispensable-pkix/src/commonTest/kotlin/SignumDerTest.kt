@@ -124,21 +124,21 @@ val SignumDerTest by matrixSuite {
         decoded.permitted!!.trees.size shouldBe 1
     }
 
-    "Malformed and unrecognized extension bodies remain opaque and round-trip" {
+    "Malformed recognized extension bodies are invalid and round-trip" {
         for (oid in listOf(KnownOIDs.nameConstraints_2_5_29_30, KnownOIDs.certificatePolicies_2_5_29_32, KnownOIDs.policyMappings)) {
             val model = at.asitplus.awesn1.crypto.pki.X509CertificateExtension(oid, true, byteArrayOf(0x30, 0x01))
-            val direct = CertificateExtension.fromAsn1(model).shouldBeInstanceOf<CertificateExtension.Unknown>()
+            val direct = CertificateExtension.fromAsn1(model).shouldBeInstanceOf<InvalidCertificateExtension>()
             direct.oid shouldBe oid
             direct.critical shouldBe true
             direct.asn1.toRepresentation() shouldBeSameInstanceAs model
-            direct.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+            direct.failure.message.isNullOrEmpty() shouldBe false
 
             val bytes = Signum.Der.encodeToByteArray(model)
             val decoded = CertificateExtension.fromAsn1(bytes)
-                .shouldBeInstanceOf<CertificateExtension.Unknown>()
+                .shouldBeInstanceOf<InvalidCertificateExtension>()
             decoded.oid shouldBe oid
             decoded.critical shouldBe true
-            decoded.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+            decoded.failure.message.isNullOrEmpty() shouldBe false
             (decoded).asn1.toDer() shouldBe bytes
         }
         val opaque = CertificateExtension(ObjectIdentifier("1.2.3.4.99"), true, byteArrayOf(0x30, 0x01))

@@ -17,7 +17,6 @@ class DirectoryName(
 ) : AbstractGeneralName() {
     override val equalityValue get() = name
 
-    override val isValid: Boolean get() = name.isValid
 
     override fun toString(): String = name.toString()
 

@@ -104,15 +104,7 @@ val J509Test by matrixSuite {
                 }
             } shouldBeSameInstanceAs shim.lookupResult
         }
-        val nameShim = name.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
-        listOf(true, false).forEach { valid ->
-            val validatedName = name.createValidatedCopy { valid }
-            validatedName.isValid shouldBe valid
-            val validatedShim = validatedName.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
-            validatedShim.sourceRepresentation shouldBeSameInstanceAs nameShim.sourceRepresentation
-            validatedShim.lookupResult shouldBeSameInstanceAs nameShim.lookupResult
-            J509.other(validatedName) shouldBeSameInstanceAs raw
-        }
+        name.isValid shouldBe null
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
         nativeNames.subjectAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
         nativeNames.issuerAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
@@ -120,7 +112,7 @@ val J509Test by matrixSuite {
         shouldThrowAny { csr.asn1.toRepresentation() }
         shouldThrowAny { name.asn1.toRepresentation() }
         shouldThrowAny { CertificatePolicies(listOf(PolicyInformation(policyOid, listOf(qualifier)))).asn1.toRepresentation() }
-        Name(listOf(RelativeDistinguishedName(atv))).isValid shouldBe true
+        Name(listOf(RelativeDistinguishedName(atv))).isValid shouldBe null
         shouldThrowAny { Name(listOf(RelativeDistinguishedName(atv))).asn1.toRepresentation() }
     }
 
@@ -132,18 +124,14 @@ val J509Test by matrixSuite {
         J509.qualifier(original).getValue("value").jsonObject.getValue("text").jsonPrimitive.content shouldBe "before"
     }
 
-    "Malformed ASN.1 otherName retains its decoder failure when validated" {
+    "Malformed ASN.1 otherName retains its failure and source as an invalid value" {
         val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
             MacAddressName.OID, Asn1String.UTF8("wrong payload type").encodeToTlv(),
         ))
-        val name = OtherName(source)
-        val shim = name.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
-        shim.lookupResult.cause.shouldNotBeNull()
-        val copy = name.createValidatedCopy { true }
-        val copyShim = copy.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
-        copyShim.lookupResult shouldBeSameInstanceAs shim.lookupResult
-        copyShim.sourceRepresentation shouldBeSameInstanceAs shim.sourceRepresentation
-        (copy.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
+        val name = OtherName(source).shouldBeInstanceOf<InvalidOtherName>()
+        name.failure.message.shouldNotBeNull()
+        name.isValid shouldBe false
+        (name.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
     }
 
     "Unknown ASN.1 qualifiers remain nested opaque values instead of hiding the whole extension" {

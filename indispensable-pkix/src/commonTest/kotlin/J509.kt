@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
+import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
@@ -38,9 +39,17 @@ internal object J509 {
     }
     fun attribute(node: JsonObject): AttributeTypeAndValue = read(node) {
         val oid = it.oid()
-        val value = it.optional("text")?.jsonPrimitive?.content
-        if (value == null) AttributeTypeAndValue(oid)
-        else at.asitplus.signum.Signum.attributeDescriptorFor(oid)?.fromString(value) ?: TextAttributeTypeAndValue(oid, value)
+        val descriptor = at.asitplus.signum.Signum.attributeDescriptorFor(oid)
+        try {
+            val value = it.optional("text")?.jsonPrimitive?.content
+            if (value == null && descriptor == null) AttributeTypeAndValue(oid)
+            else {
+                require(value != null && isValidPkixAttributeText(oid, value)) { "Invalid J509 attribute $oid" }
+                descriptor?.fromString(value) ?: TextAttributeTypeAndValue(oid, value)
+            }
+        } catch (failure: Throwable) {
+            InvalidAttributeTypeAndValue(oid, failure.nonFatalOrThrow())
+        }
     }
     private fun name(value: Name) = JsonArray(value.relativeDistinguishedNames.map { rdn -> JsonArray(rdn.attrsAndValues.map(::attribute)) })
     private fun name(node: JsonElement) = Name(node.jsonArray.map { rdn -> RelativeDistinguishedName(rdn.jsonArray.map { attribute(it.jsonObject) }.toSet()) })
@@ -161,8 +170,12 @@ internal object J509 {
         obj("oid" to text(it.oid), "extensions" to JsonArray(it.extensions.map(::extension)))
     }
     fun csrAttribute(node: JsonObject): CsrAttribute = read(node) {
-        if (it.oid() == CsrAttribute.EXTENSION_REQUEST_OID) ExtensionRequest(it.list("extensions").map { e -> extension(e.jsonObject) })
-        else CsrAttribute(it.oid())
+        if (it.oid() != CsrAttribute.EXTENSION_REQUEST_OID) CsrAttribute(it.oid())
+        else try {
+            ExtensionRequest(it.list("extensions").map { e -> extension(e.jsonObject) })
+        } catch (failure: Throwable) {
+            InvalidCsrAttribute(it.oid(), failure.nonFatalOrThrow())
+        }
     }
 
     private fun certificate(value: TbsCertificate): JsonObject = write(value) {

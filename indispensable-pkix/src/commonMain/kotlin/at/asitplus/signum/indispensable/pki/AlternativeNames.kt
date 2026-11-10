@@ -4,17 +4,13 @@ import at.asitplus.awesn1.*
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
-import at.asitplus.signum.indispensable.asn1
-import at.asitplus.signum.indispensable.fromAsn1
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
  * container class constructed from a certificate's [TbsCertificate.extensions] (filtered by OID).
  *
- * The contents are exposed as a typed list of [GeneralName]s, which is the single source of truth.
- * As this class parses [GeneralName]s upon initialisation, it may throw various kinds of [Throwable]s.
- * These are **not** limited to [Asn1Exception]s, which is why construction should be wrapped inside a
- * [runRethrowing] block, as done in [findSubjectAltNames] and [findIssuerAltNames].
+ * The contents are exposed as a semantic list of [GeneralName]s. ASN.1 conversion is supplied by
+ * this module; certificate accessors read the interpreted SAN/IAN extensions without conversion.
  *
  * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6).
  */
@@ -76,14 +72,10 @@ data class IssuerAlternativeName(
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 }
 
-internal object AlternativeNamesAsn1Provider : CertificateExtensionProvider {
-    override fun decodeFromAsn1(asn1: at.asitplus.awesn1.crypto.pki.X509CertificateExtension): CertificateExtension? = when (asn1.oid) {
-        KnownOIDs.subjectAltName_2_5_29_17 -> SubjectAlternativeName(AlternativeNames.fromAsn1(asn1.value).generalNames, asn1.critical)
-        KnownOIDs.issuerAltName_2_5_29_18 -> IssuerAlternativeName(AlternativeNames.fromAsn1(asn1.value).generalNames, asn1.critical)
-        else -> null
-    }
-    override fun encodeToAsn1(value: CertificateExtension): at.asitplus.awesn1.crypto.pki.X509CertificateExtension? =
-        (value as? AlternativeNamesExtension)?.let {
-            at.asitplus.awesn1.crypto.pki.X509CertificateExtension(it.oid, it.critical, AlternativeNames(it.generalNames).asn1.toDer())
-        }
-}
+/** Subject alternative names interpreted by the installed PKIX provider. */
+val TbsCertificate.subjectAlternativeNames: AlternativeNames?
+    get() = with(AlternativeNames) { extensions.findSubjectAltNames() }
+
+/** Issuer alternative names interpreted by the installed PKIX provider. */
+val TbsCertificate.issuerAlternativeNames: AlternativeNames?
+    get() = with(AlternativeNames) { extensions.findIssuerAltNames() }
