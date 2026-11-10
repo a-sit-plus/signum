@@ -7,7 +7,6 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.JCAProviderRef
-import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
@@ -15,7 +14,6 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.internals.ImplementationError
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -63,14 +61,6 @@ internal val RsaAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec g
         trailerField
     )
 }
-
-fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
-    when (provider) {
-        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
-        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
-        is JCAProviderRef.None -> Signature.getInstance(alg)
-        else -> throw ImplementationError("invalid JCAProvider ref")
-    }
 
 interface JcaMappingProvider {
     /**
