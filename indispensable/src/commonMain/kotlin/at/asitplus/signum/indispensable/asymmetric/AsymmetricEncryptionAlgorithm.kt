@@ -3,10 +3,10 @@ package at.asitplus.signum.indispensable.asymmetric
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.rsaEncryption
-import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.digest.Digest
 
 sealed interface RSAPadding : Enumerable {
     @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
@@ -40,7 +40,7 @@ sealed interface RSAPadding : Enumerable {
 }
 
 // TODO extensible, no more sealed
-// TODO Encodable
+// TODO WithSourceRepresentation
 sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */

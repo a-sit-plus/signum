@@ -95,7 +95,7 @@ object Signum {
         if (provider is CertificateExtensionProvider) { ServiceLoader.register<CertificateExtensionProvider>(provider); matched = true }
         if (provider is GeneralNameFormatProvider) { ServiceLoader.register<GeneralNameFormatProvider>(provider); matched = true }
         matched = registerIndispensablePlatformProvider(provider) || matched
-        require(matched) { "No supported provider interface on ${provider::class.simpleName}; use registerProvider<ServiceInterface> for module-specific services" }
+        require(matched) { "No supported provider interface on ${provider::class.simpleName}; use ServiceLoader.register<ServiceInterface> for module-specific services" }
         serializers?.let(::registerAsn1Serializers)
     }
 

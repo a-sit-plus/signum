@@ -181,10 +181,9 @@ The following functions provide interop functionality with platform types.
 
 ## ASN.1 Engine Addons
 
-Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
-implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-This is an essential pattern, making the ASN.1 engine work the way it does.
-We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  
+Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `Certificate`, `Pkcs10CertificationRequest`, etc. all
+have `asn1` extensions and their respective companions have `fromAsn1` extensions.
+This is an essential pattern, making the ASN.1 engine work the way it does.  
 The following section provides more details on the various patterns used for ASN.1 encoding and decoding.
 
 ### Generic Patterns
