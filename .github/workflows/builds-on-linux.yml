@@ -13,6 +13,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.TOKEN || github.token }}
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
