@@ -2,12 +2,10 @@
 
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.asn1
-import at.asitplus.signum.indispensable.sign.fromAsn1Representation
 import at.asitplus.signum.internals.*
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
@@ -109,7 +107,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
     }
 
     override fun getSignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.asn1.toRepresentation().rawBytes
         else -> null
     }
 
@@ -156,7 +154,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 is EcdsaPrivateKey.WithPublicKey ->
                     Triple(kSecAttrKeyTypeECSECPrimeRandom, key.curve.coordinateLength.bits.toInt(), key.publicKey.iosEncoded+key.privateKeyBytes)
                 is RsaPrivateKey ->
-                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), key.asn1.PKCS1.toDer())
+                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), key.asn1.pkcs1.toDer())
                 else -> return null
             }
             val attr = createCFDictionary {
@@ -178,7 +176,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
             }.getAndTake<String>(kSecAttrKeyType)
             val ctor: ((ByteArray)-> CryptoPrivateKey.WithPublicKey) = when (keyType) {
                 kSecAttrKeyTypeRSA.toKotlinString() ->
-                    { bytes: ByteArray -> RsaPrivateKey.fromAsn1Representation(Signum.Der.decodeFromByteArray(at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.serializer(), bytes)) }
+                    { bytes: ByteArray -> RsaPrivateKey.fromAsn1.PKCS1(bytes) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() ->
                     EcdsaPrivateKey::iosDecodeInternal
                 else -> return null

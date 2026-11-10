@@ -4,6 +4,7 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
