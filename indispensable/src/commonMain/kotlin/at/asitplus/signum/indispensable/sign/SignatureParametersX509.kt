@@ -99,7 +99,7 @@ class EcdsaPrivateKeyAsn1Converters(self: EcdsaPrivateKey) :
                 is EcdsaPrivateKey.WithPublicKey ->
                     Asn1.BitString(it.publicKey.iosEncoded).asAsn1BitString()
 
-                is EcdsaPrivateKey.WithoutPublicKey -> it.publicKeyBytes
+                is EcdsaPrivateKey.WithoutPublicKey -> it.publicKeyBytes?.let(Asn1BitString::invoke)
             },
         )
     }
@@ -190,7 +190,7 @@ private fun ecPrivateKey(
         attributes = attributes,
     ) else EcdsaPrivateKey.WithoutPublicKey(
         privateKey = privateValue,
-        publicKeyBytes = parsed.publicKey,
+        publicKeyBytes = parsed.publicKey?.let { require(it.numPaddingBits == 0); it.bitCarryingBytes },
         curveOrderLengthInBytes = parsed.privateKey.size,
         attributes = attributes,
     )

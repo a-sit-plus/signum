@@ -162,7 +162,7 @@ sealed class EcdsaPrivateKey private constructor(
 
     class WithoutPublicKey(
         privateKey: BigInteger,
-        val publicKeyBytes: Asn1BitString?,
+        val publicKeyBytes: ByteArray?,
         private val curveOrderLengthInBytes: Int,
         attributes: Set<Asn1Element>? = null,
     ) : EcdsaPrivateKey(privateKey, attributes) {
@@ -176,7 +176,7 @@ sealed class EcdsaPrivateKey private constructor(
             return if (publicKeyBytes != null) {
                 WithPublicKey(
                     privateKey,
-                    EcdsaPublicKey.fromAnsiX963Bytes(curve, publicKeyBytes!!.bitCarryingBytes),
+                    EcdsaPublicKey.fromAnsiX963Bytes(curve, publicKeyBytes),
                     attributes,
                 )
             } else {
