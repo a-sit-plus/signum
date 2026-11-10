@@ -53,8 +53,8 @@ val CertificateEncodingTest by matrixSuite {
         val original = X509Certificate(tbs, unknown, template.signatureValue)
         val bytes = Signum.Der.encodeToByteArray(original)
         val decoded = Certificate.fromAsn1(bytes)
-        decoded.toAsn1.DER() shouldBe bytes
-        decoded.tbsCertificate.toAsn1.DER() shouldBe Signum.Der.encodeToByteArray(tbs)
+        decoded.asn1.toDer() shouldBe bytes
+        decoded.tbsCertificate.asn1.toDer() shouldBe Signum.Der.encodeToByteArray(tbs)
         Certificate.fromAsn1(original).toAsn1()  shouldBeSameInstanceAs original
         shouldThrow<UnsupportedCryptoException> { decoded.signature }
     }
@@ -71,7 +71,7 @@ val CertificateEncodingTest by matrixSuite {
 
     "Existing PEM helpers use the certificate bridge" {
         val source = certificate()
-        val pem = source.toAsn1.PEM()
+        val pem = source.asn1.toPem()
         Certificate.fromAsn1(pem) shouldBe source
     }
 }

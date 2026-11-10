@@ -13,7 +13,6 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.sign.*
-import at.asitplus.signum.indispensable.sign.toAsn1
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -46,14 +45,14 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
     "RSA CRT validation remains joint and deferred" {
         val encoded = KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.genKeyPair().private.encoded
-        val valid = RsaPrivateKey.fromAsn1(encoded).toAsn1.PKCS1()
+        val valid = RsaPrivateKey.fromAsn1(encoded).asn1.PKCS1.toRepresentation()
         val invalid = valid.copy(coefficient = valid.prime1)
         val model = Pkcs8PrivateKeyInfo(invalid)
         val decoded = CryptoPrivateKey.fromAsn1(model)
-        Pkcs1RsaPrivateKeyInfo.of(decoded.toAsn1(), Signum.Der) shouldBe invalid
+        Pkcs1RsaPrivateKeyInfo.of(decoded.asn1.toRepresentation(), Signum.Der) shouldBe invalid
         shouldThrow<UnsupportedCryptoException> { (decoded.toJcaPrivateKey() as JcaRSAPrivateKey).modulus }
         shouldThrow<UnsupportedCryptoException> { (decoded.toJcaPrivateKey() as JcaRSAPrivateKey).privateExponent }
-        Pkcs1RsaPrivateKeyInfo.of(decoded.toAsn1(), Signum.Der) shouldBe invalid
+        Pkcs1RsaPrivateKeyInfo.of(decoded.asn1.toRepresentation(), Signum.Der) shouldBe invalid
     }
 
     compact("EC") - {
@@ -74,16 +73,16 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 val ownPrivate = CryptoPrivateKey.fromAsn1(privKey.encoded) as CryptoPrivateKey.WithPublicKey
 
                 ownPrivate.publicKey shouldBe own
-                ownPrivate.toAsn1.DER() shouldBe privKey.encoded
+                ownPrivate.asn1.toDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
 
                 withClue("Basic Conversions") {
-                    own.toAsn1.DER() shouldBe pubKey.encoded
-                    own.toAsn1.DER() shouldBe pubKey.encoded
+                    own.toAsn1.toDer() shouldBe pubKey.encoded
+                    own.toAsn1.toDer() shouldBe pubKey.encoded
                     CryptoPublicKey.fromAsn1(own.toAsn1()) shouldBe own
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().encoded shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1(Asn1Element.parse(own.toAsn1.DER()) as Asn1Sequence) shouldBe own
+                    CryptoPublicKey.fromAsn1(Asn1Element.parse(own.toAsn1.toDer()) as Asn1Sequence) shouldBe own
                 }
 
                 withClue("Compressed Test") {
@@ -133,7 +132,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val ownPrivate = CryptoPrivateKey.fromAsn1(privKey.encoded) as CryptoPrivateKey.WithPublicKey
                 ownPrivate.publicKey shouldBe own
-                ownPrivate.toAsn1.DER() shouldBe privKey.encoded
+                ownPrivate.asn1.toDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
 
                 val own1 = RsaPublicKey(
@@ -147,11 +146,11 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
-                own.toAsn1.PKCS1.DER() shouldBe keyBytes //PKCS#1
-                own.toAsn1.DER() shouldBe pubKey.encoded //PKCS#8
-                own.toAsn1.TLV().derEncoded shouldBe pubKey.encoded
+                own.asn1.PKCS1.toDer() shouldBe keyBytes //PKCS#1
+                own.asn1.toDer() shouldBe pubKey.encoded //PKCS#8
+                own.asn1.toTlv().derEncoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromAsn1(own.toAsn1()) shouldBe own
-                CryptoPublicKey.fromAsn1(Asn1Element.parse(own.toAsn1.DER()) as Asn1Sequence) shouldBe own
+                CryptoPublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
                 own.toJcaPublicKey().encoded shouldBe pubKey.encoded
             }
         }

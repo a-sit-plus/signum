@@ -9,11 +9,7 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.awesn1.crypto.pki.*
 import at.asitplus.awesn1.io.decodeFromSource
 import at.asitplus.awesn1.io.encodeToSink
-import at.asitplus.awesn1.serialization.PemDeserializable
-import at.asitplus.awesn1.serialization.WithPemLabel
-import at.asitplus.awesn1.serialization.decodeAllFromPem
-import at.asitplus.awesn1.serialization.decodeFromPem
-import at.asitplus.awesn1.serialization.encodeToPem
+import at.asitplus.awesn1.serialization.*
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
@@ -49,40 +45,40 @@ import kotlin.experimental.ExperimentalTypeInference
  * The methods in this class are useful for extension authors that want their custom types
  * to convert from/to ASN.1 (via awesn1).
  * See the rest of this file for detailed usage examples, but very generally:
- * - `val YourType.toAsn1 get() = asn1Encoders { Asn1Type(...) }`
- *    gives you `toAsn1()`, `toAsn1.TLV()`, `toAsn1.DER()`, etc.
+ * - `val YourType.asn1 get() = asn1Encoders { Asn1Type(...) }`
+ *    gives you `asn1.toRepresentation()`, `asn1.toTlv()`, `asn1.toDer()`, etc.
  * - `val YourType.Companion.fromAsn1 get() = asn1Decoders { src: Asn1Type -> YourType(...) }`
  *    gives you `fromAsn1()` and all of its overloads (TLV, DER, etc.)
  *
- * Recommended usage is as `import ...Asn1EncodingHelpers.toAsn1` and
- * `import ...Asn1EncodingHelpers.fromAsn1`.
+ * Recommended usage is as `import ...Asn1EncodingHelpers.asn1Encoders` and
+ * `import ...Asn1EncodingHelpers.asn1Decoders`.
  * Do **not** directly interface with the Impl classes.
  * Doing so is **unsupported** and will risk (among other things) breaking round trip re-encoding.
  */
 object Asn1EncodingHelpers {
 /** Usage:
- * - to ASN.1 type: `toAsn1()`
- * - to ASN.1 TLV: `toAsn1.TLV()`
- * - to ASN.1 DER: `toAsn1.DER()`
+ * - to ASN.1 type: `.asn1.toRepresentation()`
+ * - to ASN.1 TLV: `asn1.toTlv()`
+ * - to ASN.1 DER: `asn1.toDer()`
  */
 interface Asn1Encoders<out Asn1Type: Any> {
     /** Converts the type to its ASN.1 representation. */
-    operator fun invoke(): Asn1Type
+    fun toRepresentation(): Asn1Type
     /** Converts the type to ASN.1 TLV. */
-    fun TLV(): Asn1Element
+    fun toTlv(): Asn1Element
     /** Converts the type to ASN.1 DER bytes. */
-    fun DER(): ByteArray
+    fun toDer(): ByteArray
     /** Converts the type to ASN.1 DER and writes to the sink. */
-    fun DER(sink: Sink)
+    fun toDer(sink: Sink)
 
     /** Usage:
-     * - to ASN.1 type: `toAsn1()`
-     * - to ASN.1 TLV: `toAsn1.TLV()`
-     * - to ASN.1 DER: `toAsn1.DER()`
-     * - to ASN.1 PEM: `toAsn1.PEM()`
+     * - to ASN.1 type: `.asn1.toRepresentation()`
+     * - to ASN.1 TLV: `.asn1.toTlv()`
+     * - to ASN.1 DER: `.asn1.toDer()`
+     * - to ASN.1 PEM: `asn1.toPem()`
      */
     interface WithPEM<out Asn1Type: WithPemLabel> : Asn1Encoders<Asn1Type> {
-        fun PEM(): String
+        fun toPem(): String
     }
 }
 
@@ -90,15 +86,15 @@ open class Asn1EncodersImpl<Asn1Type: Any> @SignumInternals constructor (
     private val convertingBuilder: ()->Asn1Type,
     protected val serializer: KSerializer<Asn1Type>,
 ) : Asn1Encoders<Asn1Type> {
-    override fun invoke(): Asn1Type = convertingBuilder()
-    override fun TLV(): Asn1Element = Signum.Der.encodeToTlv(serializer, invoke())
-    override fun DER(): ByteArray = Signum.Der.encodeToByteArray(serializer, invoke())
-    override fun DER(sink: Sink) = Signum.Der.encodeToSink(serializer, invoke(), sink)
+    override fun toRepresentation(): Asn1Type = convertingBuilder()
+    override fun toTlv(): Asn1Element = Signum.Der.encodeToTlv(serializer, toRepresentation())
+    override fun toDer(): ByteArray = Signum.Der.encodeToByteArray(serializer, toRepresentation())
+    override fun toDer(sink: Sink) = Signum.Der.encodeToSink(serializer, toRepresentation(), sink)
     class WithPEM<Asn1Type: WithPemLabel> @SignumInternals constructor(
         convertingBuilder: ()->Asn1Type,
         serializer: KSerializer<Asn1Type>
     ): Asn1EncodersImpl<Asn1Type>(convertingBuilder, serializer), Asn1Encoders.WithPEM<Asn1Type> {
-        override fun PEM(): String = invoke().encodeToPem(serializer, Signum.Der)
+        override fun toPem(): String = toRepresentation().encodeToPem(serializer, Signum.Der)
     }
 }
 
@@ -319,25 +315,25 @@ inline fun <
 //// GENERIC CODE DONE; actual extensions below
 //// ==========================================
 
-val SignatureAlgorithm.toAsn1 get() =
+val SignatureAlgorithm.asn1 get() =
     asn1EncodersWith(SignatureAlgorithmsProvider::encodeToAsn1)
 
 val SignatureAlgorithm.Companion.fromAsn1 get() =
     asn1DecodersWith(SignatureAlgorithmsProvider::decodeFromAsn1, SignatureAlgorithm::Unknown)
 
-val Digest.toAsn1 get() =
+val Digest.asn1 get() =
     asn1EncodersWith(DigestProvider::encodeToAsn1)
 
 val Digest.Companion.fromAsn1 get() =
     asn1DecodersWith(DigestProvider::decodeFromAsn1, Digest::Unknown)
 
-val MessageAuthenticationCode.toAsn1 get() =
+val MessageAuthenticationCode.asn1 get() =
     asn1EncodersWith(MessageAuthenticationCodeProvider::encodeToAsn1)
 
 val MessageAuthenticationCode.Companion.fromAsn1 get() =
     asn1DecodersWith(MessageAuthenticationCodeProvider::decodeFromAsn1, MessageAuthenticationCode::Unknown)
 
-val CryptoPublicKey.toAsn1 get() =
+val CryptoPublicKey.asn1 get() =
     asn1EncodersWith(PublicKeyFormatProvider::encodeToAsn1)
 
 val CryptoPublicKey.Companion.fromAsn1 get() =
@@ -348,7 +344,7 @@ val KeyAgreementPublicValue.Companion.fromAsn1 get() =
         CryptoPublicKey.fromAsn1(it) as KeyAgreementPublicValue
     }
 
-val CryptoPrivateKey.toAsn1 get() =
+val CryptoPrivateKey.asn1 get() =
     asn1EncodersWith(PrivateKeyFormatProvider::encodeToAsn1)
 
 val CryptoPrivateKey.Companion.fromAsn1 get() =
@@ -359,7 +355,7 @@ private class X509UnparsedSignature : AbstractSignature {
     override val sourceRepresentation = SourceRepresentationStorage()
     override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
         ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {
-            parseCryptoSignature(it, toAsn1())
+            parseCryptoSignature(it, this@X509UnparsedSignature.asn1.toRepresentation())
         }
 
     override fun toString() = "Unparsed CryptoSignature (from X.509: $sourceRepresentation)"
@@ -368,30 +364,30 @@ private class X509UnparsedSignature : AbstractSignature {
 val AbstractSignature.Companion.fromAsn1 get() =
     asn1Decoders<X509SignatureValue, AbstractSignature> { X509UnparsedSignature() }
 
-val AbstractSignature.toAsn1 get() =
+val AbstractSignature.asn1 get() =
     when (this) {
-        is CryptoSignature -> toAsn1
+        is CryptoSignature -> this@asn1.asn1
         else -> asn1Encoders<X509SignatureValue, _> { throw UnsupportedOperationException("Unparsed signature in format ${this.sourceFormat} cannot be converted to ASN.1") }
     }
 
 val CryptoSignature.Companion.fromAsn1 get() =
     AbstractSignature.fromAsn1
 
-val CryptoSignature.toAsn1 get() =
+val CryptoSignature.asn1 get() =
     asn1EncodersWith(SignatureFormatProvider::encodeToAsn1)
 
-val TbsCertificate.toAsn1 get() = asn1Encoders<X509TbsCertificate,_> {
+val TbsCertificate.asn1 get() = asn1Encoders<X509TbsCertificate,_> {
     X509TbsCertificate(
         serialNumber = serialNumber.toAsn1Integer(),
-        signatureAlgorithm = signatureAlgorithm.toAsn1(),
-        issuerName = issuerName.toAsn1(),
+        signatureAlgorithm = signatureAlgorithm.asn1.toRepresentation(),
+        issuerName = issuerName.asn1.toRepresentation(),
         validFrom = Asn1Time.SecondsCapped(validFrom),
         validUntil = Asn1Time.SecondsCapped(validUntil),
-        subjectName = subjectName.toAsn1(),
-        subjectPublicKeyInfo = publicKey.toAsn1(),
+        subjectName = subjectName.asn1.toRepresentation(),
+        subjectPublicKeyInfo = publicKey.asn1.toRepresentation(),
         issuerUniqueID = issuerUniqueID?.let { Asn1BitString(it) },
         subjectUniqueID = subjectUniqueID?.let { Asn1BitString(it) },
-        extensions = extensions.map { it.toAsn1() }
+        extensions = extensions.map { it.asn1.toRepresentation() }
     )
 }
 
@@ -410,7 +406,7 @@ val TbsCertificate.Companion.fromAsn1 get() = asn1Decoders<X509TbsCertificate,_>
     )
 }
 
-val CertificateExtension.toAsn1 get() =
+val CertificateExtension.asn1 get() =
     asn1EncodersWith(CertificateExtensionProvider::encodeToAsn1)
 
 val CertificateExtension.Companion.fromAsn1 get() =
@@ -421,12 +417,12 @@ val CertificateExtension.Companion.fromAsn1 get() =
         }
     }
 
-val Certificate.toAsn1 get() =
+val Certificate.asn1 get() =
     asn1Encoders<X509Certificate, _> { src ->
         X509Certificate(
-            tbsCertificate = src.tbsCertificate.toAsn1(),
-            signatureAlgorithm = src.tbsCertificate.signatureAlgorithm.toAsn1(),
-            signatureValue = src.signatureValue.toAsn1(),
+            tbsCertificate = src.tbsCertificate.asn1.toRepresentation(),
+            signatureAlgorithm = src.tbsCertificate.signatureAlgorithm.asn1.toRepresentation(),
+            signatureValue = src.signatureValue.asn1.toRepresentation(),
         )
     }
 
@@ -442,18 +438,18 @@ val Certificate.Companion.fromAsn1 get() =
             signatureValue = CryptoSignature.fromAsn1(src.signatureValue))
     }
 
-val GeneralName.toAsn1 get() =
+val GeneralName.asn1 get() =
     asn1EncodersWith(GeneralNameFormatProvider::encodeToAsn1)
 
 val GeneralName.Companion.fromAsn1 get() =
     asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
 
 // TODO: do we want this to be part of the interface, so implementations can override without being tied to asn1?
-val GeneralName.tag get() = toAsn1().tag
+val GeneralName.tag get() = this@tag.asn1.toRepresentation().tag
 
-val AlternativeNames.toAsn1 get() =
+val AlternativeNames.asn1 get() =
     asn1Encoders<X509GeneralNames,_> {
-        X509GeneralNames(generalNames.map { it.toAsn1() })
+        X509GeneralNames(generalNames.map { it.asn1.toRepresentation() })
     }
 
 val AlternativeNames.Companion.fromAsn1 get() =
@@ -461,10 +457,10 @@ val AlternativeNames.Companion.fromAsn1 get() =
         AlternativeNames(src.entries.map { GeneralName.fromAsn1(it) })
     }
 
-val RelativeDistinguishedName.toAsn1 get() =
+val RelativeDistinguishedName.asn1 get() =
     asn1Encoders<X500RelativeDistinguishedName, _> { src ->
         X500RelativeDistinguishedName(src.attrsAndValues.map {
-            it.toAsn1()
+            it.asn1.toRepresentation()
         }.toSet())
     }
 
@@ -475,7 +471,7 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
         }.toSet())
     }
 
-val AttributeTypeAndValue.toAsn1 get() =
+val AttributeTypeAndValue.asn1 get() =
     asn1Encoders<X500AttributeTypeAndValue, _> { src ->
         X500AttributeTypeAndValue(src.oid, src.value)
     }
@@ -485,9 +481,9 @@ val AttributeTypeAndValue.Companion.fromAsn1 get() =
         AttributeTypeAndValue(src.oid, src.value)
     }
 
-val Name.toAsn1 get() =
+val Name.asn1 get() =
     asn1Encoders<X500Name, _> { src ->
-        X500Name(src.relativeDistinguishedNames.map { it.toAsn1() })
+        X500Name(src.relativeDistinguishedNames.map { it.asn1.toRepresentation() })
     }
 
 val Name.Companion.fromAsn1 get() =
@@ -497,7 +493,7 @@ val Name.Companion.fromAsn1 get() =
         })
     }
 
-val CsrAttribute.toAsn1 get() =
+val CsrAttribute.asn1 get() =
     asn1Encoders<Pkcs10CsrAttribute, _> { src ->
         Pkcs10CsrAttribute(src.oid, src.value)
     }
@@ -507,12 +503,12 @@ val CsrAttribute.Companion.fromAsn1 get() =
         CsrAttribute(src.oid, src.value)
     }
 
-val TbsCertificationRequest.toAsn1 get() =
+val TbsCertificationRequest.asn1 get() =
     asn1Encoders<Pkcs10CertificationRequestInfo, _> { src ->
         Pkcs10CertificationRequestInfo(
-            subjectName = src.subjectName.toAsn1(),
-            publicKey = src.publicKey.toAsn1(),
-            attributes = src.attributes.map { it.toAsn1() }.toSet(),
+            subjectName = src.subjectName.asn1.toRepresentation(),
+            publicKey = src.publicKey.asn1.toRepresentation(),
+            attributes = src.attributes.map { it.asn1.toRepresentation() }.toSet(),
         )
     }
 
@@ -525,12 +521,12 @@ val TbsCertificationRequest.Companion.fromAsn1 get() =
         )
     }
 
-val CertificationRequest.toAsn1 get() =
+val CertificationRequest.asn1 get() =
     asn1Encoders<Pkcs10CertificationRequest, _> { src ->
         Pkcs10CertificationRequest(
-            certificationRequestInfo = src.tbsCsr.toAsn1(),
-            signatureAlgorithm = src.signatureAlgorithm.toAsn1(),
-            signatureValue = src.signatureValue.toAsn1(),
+            certificationRequestInfo = src.tbsCsr.asn1.toRepresentation(),
+            signatureAlgorithm = src.signatureAlgorithm.asn1.toRepresentation(),
+            signatureValue = src.signatureValue.asn1.toRepresentation(),
         )
     }
 

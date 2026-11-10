@@ -20,10 +20,10 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import kotlin.time.Instant
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.decodeFromByteArray
+import kotlin.time.Instant
 
 private data class ExtraRepresentation(val serialNumber: Int)
 
@@ -53,7 +53,7 @@ val TbsCertificateEncodingTest by matrixSuite {
         model.subjectUniqueID!!.bitCarryingBytes shouldBe subjectId
         model.issuerUniqueID!!.numPaddingBits shouldBe 0
         model.subjectUniqueID!!.numPaddingBits shouldBe 0
-        val decoded = TbsCertificate.fromAsn1(source.toAsn1.DER())
+        val decoded = TbsCertificate.fromAsn1(source.asn1.toDer())
         decoded.issuerUniqueID shouldBe issuerId
         decoded.subjectUniqueID shouldBe subjectId
         decoded shouldBe source
@@ -63,16 +63,16 @@ val TbsCertificateEncodingTest by matrixSuite {
         val source = tbsCertificate()
         source.realSourceRepresentation shouldBe null
         val value = source
-        val bytes = value.toAsn1.DER()
+        val bytes = value.asn1.toDer()
         val decoded = TbsCertificate.fromAsn1(bytes)
-        decoded.toAsn1.DER() shouldBe bytes
+        decoded.asn1.toDer() shouldBe bytes
         decoded shouldBe source
         decoded.hashCode() shouldBe source.hashCode()
-        val tlv = source.toAsn1.TLV()
+        val tlv = source.asn1.toTlv()
         tlv.derEncoded shouldBe bytes
         TbsCertificate.fromAsn1(tlv) shouldBe source
         val buffer = Buffer()
-        source.toAsn1.DER(buffer)
+        source.asn1.toDer(buffer)
         buffer.peek().readByteArray() shouldBe bytes
         TbsCertificate.fromAsn1(buffer) shouldBe source
         shouldThrowAny { TbsCertificate.fromAsn1(Buffer().apply { write(bytes) }, limit = 1) }
@@ -91,7 +91,7 @@ val TbsCertificateEncodingTest by matrixSuite {
         source.realSourceRepresentation shouldBeSameInstanceAs foreignModel
         source shouldBe template
         source.hashCode() shouldBe template.hashCode()
-        source.toAsn1.DER() shouldBe template.toAsn1.DER()
+        source.asn1.toDer() shouldBe template.asn1.toDer()
         source.realSourceRepresentation shouldBeSameInstanceAs foreignModel
     }
 
@@ -108,13 +108,13 @@ val TbsCertificateEncodingTest by matrixSuite {
         )
         val bytes = Signum.Der.encodeToTlv(original).derEncoded
         val decoded = TbsCertificate.fromAsn1(bytes)
-        decoded.toAsn1.DER() shouldBe bytes
+        decoded.asn1.toDer() shouldBe bytes
         decoded.serialNumber shouldBe original.serialNumber.toBigInteger()
         decoded.validFrom shouldBe original.validity.validFrom.instant
         decoded.subjectName shouldBe Name.EMPTY
         decoded.publicKey shouldBe tbsCertificate().publicKey
         shouldThrowAny { decoded.signatureAlgorithm.preHashedSignatureFormat }
-        decoded.toAsn1.DER() shouldBe bytes
+        decoded.asn1.toDer() shouldBe bytes
     }
 
 }

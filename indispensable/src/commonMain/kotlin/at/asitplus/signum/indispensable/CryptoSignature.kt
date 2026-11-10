@@ -22,7 +22,7 @@ interface CryptoSignature : WithSourceRepresentation, AbstractSignature {
     val joseBytes: ByteArray get() = TODO("providerize JOSE/COSE for generic provider-provided signature types")
     val coseBytes: ByteArray get() = joseBytes
 
-    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${toAsn1.TLV().prettyPrint()})"
+    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${this@CryptoSignature.asn1.toTlv().prettyPrint()})"
 
     @Deprecated(message = "Signature types migrated out of CryptoSignature as part of providerization",
         replaceWith = ReplaceWith("EcdsaSignature"))
@@ -60,7 +60,7 @@ fun AbstractSignature.withSignatureAlgorithm(signatureAlgorithm: SpecializedSign
 
 fun AbstractSignature.withX509Algorithm(x509Algorithm: X509AlgorithmIdentifier) =
     ServiceLoader.load<SignatureFormatProvider>().get(x509Algorithm) {
-        parseCryptoSignature(it, this@withX509Algorithm.toAsn1())
+        parseCryptoSignature(it, this@withX509Algorithm.asn1.toRepresentation())
     }
 
 // @Service

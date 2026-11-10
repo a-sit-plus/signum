@@ -4,14 +4,9 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.awesn1.nextPositiveBigInteger
-import at.asitplus.awesn1.serialization.DER
 import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.InsecureRandom
-import at.asitplus.signum.indispensable.parseJCASignature
-import at.asitplus.signum.indispensable.pki.Name as SignumName
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -27,22 +22,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.Security
-import java.security.cert.CertificateFactory
-import java.security.interfaces.ECPublicKey
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.*
-import javax.security.auth.x500.X500Principal
-import kotlin.math.absoluteValue
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.days
-import kotlin.time.toKotlinInstant
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.DERSequence
@@ -58,6 +38,21 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+import java.math.BigInteger
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.Security
+import java.security.cert.CertificateFactory
+import java.security.interfaces.ECPublicKey
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.*
+import javax.security.auth.x500.X500Principal
+import kotlin.math.absoluteValue
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.days
+import kotlin.time.toKotlinInstant
+import at.asitplus.signum.indispensable.pki.Name as SignumName
 
 val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
 
@@ -70,7 +65,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
         val decoded = Certificate.fromAsn1(pssCertFromJvm!!.encoded)
-        decoded.toAsn1.DER() shouldBe pssCertFromJvm.encoded
+        decoded.asn1.toDer() shouldBe pssCertFromJvm.encoded
     }
 
     compact("Cert generation against BC") - {
@@ -115,11 +110,11 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                 )
                 val signed = signatureAlgorithm.getJCASignatureInstance().apply {
                     initSign(keyPair.private)
-                    update(tbsCertificate.toAsn1.TLV().derEncoded)
+                    update(tbsCertificate.asn1.toTlv().derEncoded)
                 }.sign()
                 val test = signatureAlgorithm.parseJCASignature(signed)
                 val x509Certificate = Certificate(tbsCertificate, test)
-                val kotlinEncoded = x509Certificate.toAsn1.DER()
+                val kotlinEncoded = x509Certificate.asn1.toDer()
                 val jvmEncoded = certificateHolder.encoded
                 println(
                     "Certificates will never entirely match because of randomness in ECDSA signature" +
@@ -166,14 +161,14 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(tbsCertificate.toAsn1.TLV().derEncoded)
+            update(tbsCertificate.asn1.toTlv().derEncoded)
         }.sign()
         val test = signatureAlgorithm.parseJCASignature(signed)
         val x509Certificate = Certificate(tbsCertificate, test)
 
         repeat(500) {
             launch {
-                x509Certificate.toJcaCertificate().toKmpCertificate().toAsn1.DER() shouldBe x509Certificate.toAsn1.DER()
+                x509Certificate.toJcaCertificate().toKmpCertificate().asn1.toDer() shouldBe x509Certificate.asn1.toDer()
             }
         }
     }
@@ -310,15 +305,15 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         val signed1 = signatureAlgorithm256.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(tbsCertificate1.toAsn1.TLV().derEncoded)
+            update(tbsCertificate1.asn1.toTlv().derEncoded)
         }.sign()
         val signed2 = signatureAlgorithm256.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(tbsCertificate2.toAsn1.TLV().derEncoded)
+            update(tbsCertificate2.asn1.toTlv().derEncoded)
         }.sign()
         val signed3 = signatureAlgorithm512.getJCASignatureInstance().apply {
             initSign(keyPair.private)
-            update(tbsCertificate3.toAsn1.TLV().derEncoded)
+            update(tbsCertificate3.asn1.toTlv().derEncoded)
         }.sign()
         val signature1 =
             (EcdsaSignature.fromRawSignatureValue(signed1)).withCurve(ECCurve.SECP_256_R_1)
@@ -340,7 +335,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         x509Certificate1.hashCode() shouldBe x509Certificate1.hashCode()
 
-        val decodedCertificate = Certificate.fromAsn1(x509Certificate1.toAsn1.DER())
+        val decodedCertificate = Certificate.fromAsn1(x509Certificate1.asn1.toDer())
         decodedCertificate shouldBe x509Certificate1
         decodedCertificate.hashCode() shouldBe x509Certificate1.hashCode()
         setOf(x509Certificate1, x509Certificate2, decodedCertificate).size shouldBe 2
@@ -417,14 +412,14 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             value = extnValue,
         )
 
-        val encoded = extension.toAsn1.DER()
+        val encoded = extension.asn1.toDer()
         val decoded = CertificateExtension.fromAsn1(encoded)
 
         decoded shouldBe extension
         decoded.oid shouldBe KnownOIDs.keyUsage
         decoded.critical shouldBe true
         decoded.toAsn1().shouldNotBeNull().value shouldBe extnValue.content
-        decoded.toAsn1.DER() shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
     }
 
     "CertificateExtension preserves raw false critical" {
@@ -439,7 +434,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
 
         decoded.critical shouldBe false
         decoded.toAsn1().shouldNotBeNull().rawCritical shouldBe 0x00.toByte()
-        decoded.toAsn1.DER() shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
     }
 
 }

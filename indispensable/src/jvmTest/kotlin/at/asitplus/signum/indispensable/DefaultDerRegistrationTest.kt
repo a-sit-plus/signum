@@ -17,9 +17,9 @@ val DefaultDerRegistrationTest by matrixSuite {
         val pem = checkNotNull(Certificate::class.java.getResourceAsStream("/ff/A-Trust-Root-05.crt"))
             .bufferedReader().use { it.readText() }
         val certificate = Certificate.fromAsn1(pem)
-        val bytes = certificate.toAsn1.DER()
-        Certificate.fromAsn1(bytes).toAsn1.DER() shouldBe bytes
-        val tbsBytes = certificate.tbsCertificate.toAsn1.DER()
-        TbsCertificate.fromAsn1(tbsBytes).toAsn1.DER() shouldBe tbsBytes
+        val bytes = certificate.asn1.toDer()
+        Certificate.fromAsn1(bytes).asn1.toDer() shouldBe bytes
+        val tbsBytes = certificate.tbsCertificate.asn1.toDer()
+        TbsCertificate.fromAsn1(tbsBytes).asn1.toDer() shouldBe tbsBytes
     }
 }

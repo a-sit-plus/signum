@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.toAsn1
 
 interface SignatureVerifier {
     val signatureAlgorithm: SignatureAlgorithm
@@ -49,12 +48,12 @@ suspend fun SignatureVerifier.verify(data: Sequence<ByteArray>, sig: AbstractSig
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: TbsCertificate, signature: CryptoSignature) =
-    verify(input.toAsn1.DER(), signature)
+    verify(input.asn1.toDer(), signature)
 
 @IgnorableReturnValue
 suspend fun SignatureVerifier.verify(input: Certificate): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
-    return verify(input.tbsCertificate.toAsn1.DER(), input.signature)
+    return verify(input.tbsCertificate.asn1.toDer(), input.signature)
 }
 
 fun CertificationRequest.verifier() =
@@ -69,7 +68,7 @@ suspend fun CertificationRequest.verify() =
 suspend fun SignatureVerifier.verify(input: CertificationRequest): SignatureVerifier.Success {
     require(this.signatureAlgorithm == input.signatureAlgorithm)
     require(this.publicKey == input.publicKey)
-    return verify(input.tbsCsr.toAsn1.DER(), input.signature)
+    return verify(input.tbsCsr.asn1.toDer(), input.signature)
 }
 
 // @Service

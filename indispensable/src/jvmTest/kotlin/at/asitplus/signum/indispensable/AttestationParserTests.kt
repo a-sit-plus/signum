@@ -6,6 +6,7 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
+import kotlinx.serialization.json.*
 import java.io.ByteArrayInputStream
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -14,7 +15,6 @@ import java.nio.file.Paths
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.*
-import kotlinx.serialization.json.*
 
 private val certificateFactory = CertificateFactory.getInstance("X.509")
 
@@ -73,7 +73,7 @@ val CustomParserTests by matrixSuite {
             attestationCertChain.forEachIndexed { index, certificate ->
 
                 withClue(index.toString()) {
-                    certificate.toKmpCertificate().toAsn1.DER() shouldBe certificate.encoded
+                    certificate.toKmpCertificate().asn1.toDer() shouldBe certificate.encoded
                 }
             }
         }

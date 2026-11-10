@@ -11,8 +11,6 @@ import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.sign.*
-import at.asitplus.signum.indispensable.sign.toAsn1
-import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.shouldBe
@@ -35,7 +33,7 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         val cert = Certificate.fromAsn1(pemEC)
-        cert.toAsn1.PEM() shouldBe pemEC
+        cert.asn1.toPem() shouldBe pemEC
         val pemRSA = """
             -----BEGIN CERTIFICATE-----
             MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
@@ -71,7 +69,7 @@ val PemTest  by matrixSuite {
         """.trimIndent()
 
         val certRSA = Certificate.fromAsn1(pemRSA)
-        certRSA.toAsn1.PEM() shouldBe pemRSA
+        certRSA.asn1.toPem() shouldBe pemRSA
     }
 
     "EC Public Key" {
@@ -159,12 +157,12 @@ val PemTest  by matrixSuite {
 
         EcdsaPrivateKey.fromAsn1.SEC1(Sec1EcPrivateKeyInfo.decodeFromPem(rnd + sec1, Signum.Der)).let {
             it.shouldBeInstanceOf<EcdsaPrivateKey>()
-            EcdsaPrivateKey.fromAsn1(it.toAsn1()) shouldBe it
+            EcdsaPrivateKey.fromAsn1(it.asn1.toRepresentation()) shouldBe it
             kotlin.runCatching {
-                RsaPrivateKey.fromAsn1(it.toAsn1())
+                RsaPrivateKey.fromAsn1(it.asn1.toRepresentation())
             }.isSuccess shouldBe false
 
-            it.toAsn1.SEC1.PEM().lines() shouldBe sec1.lines()
+            it.asn1.SEC1.toPem().lines() shouldBe sec1.lines()
         }
     }
 
@@ -182,7 +180,7 @@ val PemTest  by matrixSuite {
             kotlin.runCatching {
                 RsaPrivateKey.fromAsn1(it.toAsn1())
             }.isSuccess shouldBe false
-            it.toAsn1.PEM().lines() shouldBe pkcs8.lines()
+            it.asn1.toPem().lines() shouldBe pkcs8.lines()
         }
     }
 

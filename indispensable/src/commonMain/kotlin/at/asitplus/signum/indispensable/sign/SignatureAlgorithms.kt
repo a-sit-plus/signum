@@ -71,7 +71,7 @@ class RsaAlgorithm(
                  *  -- numeric information values already published for EMSA-PKCS1-v1_5,
                  *  -- which are also reflected in IEEE 1363a.
                  */
-                +(params.digest.toAsn1().let {
+                +(params.digest.asn1.toRepresentation().let {
                     val exceptions = sequenceOf(
                         KnownOIDs.sha1, KnownOIDs.sha_224, KnownOIDs.sha_256, KnownOIDs.sha_384,
                         KnownOIDs.sha_512 /* TODO: sha512-224, sha512-256 */)
@@ -209,8 +209,8 @@ class RsaAlgorithm(
 
 object IndispensableSignatureAlgorithmsProvider : SignatureAlgorithmsProvider {
     override fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? = when (value) {
-        is EcdsaAlgorithm -> value.toAsn1()
-        is RsaAlgorithm -> value.toAsn1()
+        is EcdsaAlgorithm -> value.asn1.toRepresentation()
+        is RsaAlgorithm -> value.asn1.toRepresentation()
         else -> null
     }
 

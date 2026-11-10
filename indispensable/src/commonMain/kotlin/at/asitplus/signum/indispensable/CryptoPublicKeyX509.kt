@@ -19,7 +19,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 /** Representation of the key in the format used by iOS. */
 val CryptoPublicKey.iosEncoded: ByteArray
-    get() = toAsn1().subjectPublicKey.also {
+    get() = asn1.toRepresentation().subjectPublicKey.also {
         require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
     }.bitCarryingBytes
 
@@ -56,21 +56,21 @@ class RsaPublicKeyAsn1Converters(self: RsaPublicKey) :
     Asn1EncodingHelpers.Asn1Encoders.WithPEM<SubjectPublicKeyInfo> by
     (self.asn1Encoders { SubjectPublicKeyInfo.from(convert(it)) })
 {
-    val PKCS1 = self.asn1Encoders(::convert)
+    val pkcs1 = self.asn1Encoders(::convert)
 
     companion object {
         private fun convert(self: RsaPublicKey) = Pkcs1RsaPublicKeyInfo(self.n, self.e)
     }
 }
 
-val RsaPublicKey.toAsn1 get() = RsaPublicKeyAsn1Converters(this)
+val RsaPublicKey.asn1 get() = RsaPublicKeyAsn1Converters(this)
 
 class EcdsaPublicKeyAsn1Converters(self: EcdsaPublicKey) :
     Asn1EncodingHelpers.Asn1Encoders.WithPEM<SubjectPublicKeyInfo> by
     (self.asn1Encoders { SubjectPublicKeyInfo.from(convert(self)) })
 {
 
-    val SEC1 = self.encodeTo(::convert)
+    val toSec1 = { self.encodeTo(::convert) }
 
     companion object {
         private fun convert(self: EcdsaPublicKey) = when (self.preferCompressedRepresentation) {

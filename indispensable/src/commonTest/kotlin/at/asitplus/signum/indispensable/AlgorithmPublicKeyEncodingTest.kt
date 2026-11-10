@@ -30,24 +30,24 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         Json.encodeToString(metadata) shouldBe json
         Json.decodeFromString<DigestMetadata>(json) shouldBe metadata
         val digest: WellKnownDigest = WellKnownDigest.SHA256
-        val bytes = digest.toAsn1.DER()
+        val bytes = digest.asn1.toDer()
         Digest.fromAsn1(bytes) shouldBe digest
         shouldThrowAny { DER {}.encodeToByteArray(digest) }
     }
     "Contextual signature algorithms work through interface and concrete types" {
         for (source in EcdsaAlgorithm.entries + RsaAlgorithm.entries) {
             val algorithm: SignatureAlgorithm = source
-            val bytes = algorithm.toAsn1.DER()
+            val bytes = algorithm.asn1.toDer()
             SignatureAlgorithm.fromAsn1(bytes) shouldBe source
-            SignatureAlgorithm.fromAsn1(algorithm.toAsn1.TLV()) shouldBe source
+            SignatureAlgorithm.fromAsn1(algorithm.asn1.toTlv()) shouldBe source
             val sink = Buffer()
-            algorithm.toAsn1.DER(sink)
+            algorithm.asn1.toDer(sink)
             SignatureAlgorithm.fromAsn1(sink) shouldBe source
         }
         val ec = EcdsaAlgorithm.withSHA256
-        EcdsaAlgorithm.fromAsn1(ec.toAsn1.DER()) shouldBe ec
+        EcdsaAlgorithm.fromAsn1(ec.asn1.toDer()) shouldBe ec
         val rsa = RsaAlgorithm.withSHA256andPSSPadding
-        RsaAlgorithm.fromAsn1(rsa.toAsn1.DER()) shouldBe rsa
+        RsaAlgorithm.fromAsn1(rsa.asn1.toDer()) shouldBe rsa
     }
 
     "Public key interface and concrete serializers preserve compressed SPKI" {
@@ -57,8 +57,8 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         key.toAsn1() shouldBeSameInstanceAs original
         val rsa = RsaPublicKey(Asn1Integer.fromUnsignedByteArray(ByteArray(64).apply { this[0] = 0x80.toByte() }), Asn1Integer(65537))
 
-        RsaPublicKey.fromAsn1(rsa.toAsn1.DER()) shouldBe rsa
+        RsaPublicKey.fromAsn1(rsa.asn1.toDer()) shouldBe rsa
         val rsaInterface: CryptoPublicKey = rsa
-        CryptoPublicKey.fromAsn1(rsaInterface.toAsn1.DER()) shouldBe rsa
+        CryptoPublicKey.fromAsn1(rsaInterface.asn1.toDer()) shouldBe rsa
     }
 }

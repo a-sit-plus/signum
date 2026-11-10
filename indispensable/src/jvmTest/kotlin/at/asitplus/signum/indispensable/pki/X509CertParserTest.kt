@@ -7,7 +7,6 @@ import at.asitplus.awesn1.encoding.internal.readAsn1Element
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.wrapInUnsafeSource
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -17,19 +16,19 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.FileReader
-import java.io.InputStream
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate as JcaCertificate
-import kotlin.random.Random
-import kotlin.random.nextInt
 import kotlinx.io.UnsafeIoApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.FileReader
+import java.io.InputStream
+import java.security.cert.CertificateFactory
+import kotlin.random.Random
+import kotlin.random.nextInt
+import java.security.cert.X509Certificate as JcaCertificate
 
 @OptIn(UnsafeIoApi::class, InternalAwesn1Api::class)
 val X509CertParserTest by matrixSuite {
@@ -57,9 +56,9 @@ val X509CertParserTest by matrixSuite {
             val cert = Certificate.fromAsn1(certBytes)
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
-                        "Actual: ${cert.toAsn1.DER().encodeToString(Base16)}"
+                        "Actual: ${cert.toAsn1.toDer().encodeToString(Base16)}"
             ) {
-                cert.toAsn1.DER() shouldBe jcaCert.encoded
+                cert.toAsn1.toDer() shouldBe jcaCert.encoded
 
                 cert shouldBe Certificate.fromAsn1(certBytes)
 
@@ -114,7 +113,7 @@ val X509CertParserTest by matrixSuite {
             }
         }) test { crt ->
             val parsed = Certificate.fromAsn1(Asn1Element.parse(crt.encoded) as Asn1Sequence)
-            val own = parsed.toAsn1.DER()
+            val own = parsed.toAsn1.toDer()
             withClue(
                 "Expect: ${kotlin.io.encoding.Base64.Mime.encode(crt.encoded)}\n" + "Actual: ${
                     kotlin.io.encoding.Base64.Mime.encode(
@@ -147,8 +146,8 @@ val X509CertParserTest by matrixSuite {
                 val decoded = Certificate.fromAsn1(src)
                 decoded shouldBe Certificate.fromAsn1(it.second)
 
-                withClue(decoded.toAsn1.PEM()) {
-                    decoded.toAsn1.DER() shouldBe it.second
+                withClue(decoded.toAsn1.toPem()) {
+                    decoded.toAsn1.toDer() shouldBe it.second
                 }
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
@@ -190,7 +189,7 @@ val X509CertParserTest by matrixSuite {
                 val cert = Certificate.fromAsn1(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
-                cert.toAsn1.TLV().derEncoded shouldBe encodedSrc
+                cert.toAsn1.toTlv().derEncoded shouldBe encodedSrc
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()

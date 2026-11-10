@@ -12,7 +12,6 @@ import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
-import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.comparables.shouldBeGreaterThan

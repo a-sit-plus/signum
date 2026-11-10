@@ -5,7 +5,6 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
 
 /**
  * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)

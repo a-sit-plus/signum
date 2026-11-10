@@ -18,7 +18,7 @@ interface CryptoPrivateKey : WithSourceRepresentation {
         val publicKey: CryptoPublicKey
     }
 
-    val attributes: Set<Asn1Element>? get() = toAsn1().attributes
+    val attributes: Set<Asn1Element>? get() = asn1().attributes
 
     @SignumInternals
     class Unknown(

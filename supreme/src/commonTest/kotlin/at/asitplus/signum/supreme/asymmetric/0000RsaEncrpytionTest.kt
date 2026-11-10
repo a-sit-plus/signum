@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.toAsn1
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
@@ -56,7 +55,7 @@ class RsaTestData(
                 encoder: Encoder,
                 value: CryptoPrivateKey
             ) {
-                encoder.encodeString(value.toAsn1.PEM())
+                encoder.encodeString(value.toAsn1.toPem())
             }
 
             override fun deserialize(decoder: Decoder) =

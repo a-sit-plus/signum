@@ -11,21 +11,22 @@ import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.fromAsn1
-import at.asitplus.signum.indispensable.sign.toAsn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.serialization.encodeToByteArray
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlinx.serialization.encodeToByteArray
 
 val UnknownOidTest by matrixSuite {
     val unknownAlgorithm = X509AlgorithmIdentifier(ObjectIdentifier(Uuid.random()), Asn1Null)
@@ -38,9 +39,9 @@ val UnknownOidTest by matrixSuite {
         val digest = Digest.fromAsn1(encoded)
         val mac = MessageAuthenticationCode.fromAsn1(encoded)
 
-        signature.toAsn1.DER() shouldBe encoded
-        digest.toAsn1.DER() shouldBe encoded
-        mac.toAsn1.DER() shouldBe encoded
+        signature.asn1.toDer() shouldBe encoded
+        digest.toAsn1.toDer() shouldBe encoded
+        mac.toAsn1.toDer() shouldBe encoded
         signature shouldBe SignatureAlgorithm.fromAsn1(encoded)
         digest shouldBe Digest.fromAsn1(encoded)
         mac shouldBe MessageAuthenticationCode.fromAsn1(encoded)
@@ -58,7 +59,7 @@ val UnknownOidTest by matrixSuite {
     "unknown public and private key algorithms round-trip without interpreting key bytes" {
         val publicDer = DER.encodeToByteArray(publicKeyInfo)
         val publicKey = CryptoPublicKey.fromAsn1(publicDer)
-        publicKey.toAsn1.DER() shouldBe publicDer
+        publicKey.toAsn1.toDer() shouldBe publicDer
         publicKey shouldBe CryptoPublicKey.fromAsn1(publicDer)
         publicKey.hashCode() shouldBe CryptoPublicKey.fromAsn1(publicDer).hashCode()
         shouldThrow<UnsupportedCryptoException> { publicKey.didEncoded }
@@ -66,7 +67,7 @@ val UnknownOidTest by matrixSuite {
         val privateKeyInfo = Pkcs8PrivateKeyInfo(unknownAlgorithm, Asn1OctetString(byteArrayOf(7, 8, 9)))
         val privateDer = DER.encodeToByteArray(privateKeyInfo)
         val privateKey = CryptoPrivateKey.fromAsn1(privateDer)
-        privateKey.toAsn1.DER() shouldBe privateDer
+        privateKey.toAsn1.toDer() shouldBe privateDer
         privateKey shouldBe CryptoPrivateKey.fromAsn1(privateDer)
         privateKey.hashCode() shouldBe CryptoPrivateKey.fromAsn1(privateDer).hashCode()
     }
@@ -84,7 +85,7 @@ val UnknownOidTest by matrixSuite {
         val encoded = DER.encodeToByteArray(X509Certificate(tbs, unknownAlgorithm, signatureValue))
         val certificate = Certificate.fromAsn1(encoded)
 
-        certificate.toAsn1.DER() shouldBe encoded
+        certificate.toAsn1.toDer() shouldBe encoded
         certificate.tbsCertificate.serialNumber shouldBe BigInteger.ONE
         certificate.tbsCertificate.signatureAlgorithm.toAsn1() shouldBe unknownAlgorithm
         certificate.publicKey.toAsn1() shouldBe publicKeyInfo
@@ -105,7 +106,7 @@ val UnknownOidTest by matrixSuite {
         val encoded = DER.encodeToByteArray(request)
         val decoded = CertificationRequest.fromAsn1(encoded)
 
-        decoded.toAsn1.DER() shouldBe encoded
+        decoded.toAsn1.toDer() shouldBe encoded
         decoded.tbsCsr.subjectName shouldBe subject
         decoded.tbsCsr.publicKey.toAsn1() shouldBe publicKeyInfo
         decoded.signatureAlgorithm shouldBe algorithm

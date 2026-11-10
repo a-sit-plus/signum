@@ -37,7 +37,7 @@ val CertificateExtensionEncodingTest by matrixSuite {
         )
         val certificate = Certificate(tbs, EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO))
         certificate.tbsCertificate.extensions.single() shouldBeSameInstanceAs extension
-        shouldThrow<Asn1Exception> { tbs.toAsn1.DER() }
-        shouldThrow<Asn1Exception> { certificate.toAsn1.DER() }
+        shouldThrow<Asn1Exception> { tbs.asn1.toDer() }
+        shouldThrow<Asn1Exception> { certificate.asn1.toDer() }
     }
 }
