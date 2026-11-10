@@ -302,7 +302,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         // x509Certificate.asn1.toDer() shouldBe certificateHolder.encoded
         csr.signatureAlgorithm shouldBe signatureAlgorithm
         csr.tbsCsr.asn1.toRepresentation().version shouldBe Pkcs10CertificationRequestInfo.Version.V1
-        ((csr.tbsCsr.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).toAsn1().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
+        ((csr.tbsCsr.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).asn1.toRepresentation().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
         parsedPublicKey.xBytes shouldBe keyX
@@ -327,8 +327,7 @@ val Pkcs10CertificationRequestJvmTest by matrixSuite {
         val encodedUnknownAttribute = unknownAttribute.asn1.toDer()
         val decodedUnknownAttribute: CsrAttribute = CsrAttribute.fromAsn1(encodedUnknownAttribute)
 
-        decodedUnknownAttribute::class shouldBe CsrAttribute::class
-        (decodedUnknownAttribute is CsrAttribute) shouldBe true
+        decodedUnknownAttribute.shouldBeInstanceOf<OpaqueCsrAttribute>()
         decodedUnknownAttribute.asn1.toDer() shouldBe encodedUnknownAttribute
 
         val tbsCsr = TbsCertificationRequest(

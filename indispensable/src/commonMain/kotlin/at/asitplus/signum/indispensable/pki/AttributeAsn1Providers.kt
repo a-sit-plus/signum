@@ -5,7 +5,7 @@ import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 
 interface AttributeTypeAndValueAsn1Provider {
     fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue?
@@ -46,7 +46,7 @@ internal object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider, CsrAt
         else null
 
     override fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute? = when (value) {
-        is ExtensionRequest -> Pkcs10CsrAttribute.ExtensionRequest(value.extensions.map { it.toAsn1() })
+        is ExtensionRequest -> Pkcs10CsrAttribute.ExtensionRequest(value.extensions.map { it.asn1.toRepresentation() })
         else -> null
     }
 }

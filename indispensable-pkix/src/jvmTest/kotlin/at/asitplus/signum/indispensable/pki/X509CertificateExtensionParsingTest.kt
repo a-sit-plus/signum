@@ -3,8 +3,9 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.tag
+import com.ionspin.kotlin.bignum.integer.BigInteger
 
 import at.asitplus.signum.Signum
 import at.asitplus.awesn1.serialization.decodeFromTlv
@@ -59,7 +60,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
             .shouldBeInstanceOf<CertificateExtension.Unknown>()
         ext.oid shouldBe KnownOIDs.keyUsage
         ext.critical shouldBe true
-        ext.toAsn1().value shouldBe byteArrayOf()
+        ext.asn1.toRepresentation().value shouldBe byteArrayOf()
         ext.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
     }
 
@@ -72,7 +73,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
 
         val ext = runCatching { Signum.Der.decodeFromTlv<CertificateExtension>(seq) }.getOrNull()
         ext!!.oid shouldBe ObjectIdentifier("1.2.3.4.5.6.7.8.9")
-        ext.toAsn1().value shouldBe byteArrayOf()
+        ext.asn1.toRepresentation().value shouldBe byteArrayOf()
     }
 
     "valid authority key identifier" {
@@ -188,7 +189,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
         val permitted = GeneralSubtrees(mutableListOf(GeneralSubtree(DNSName(Asn1String.IA5("example.com")))))
         val decoded = Signum.Der.decodeFromTlv<CertificateExtension>(Signum.Der.encodeToTlv<CertificateExtension>(NameConstraints(permitted = permitted))) as NameConstraints
         decoded.permitted?.trees?.size shouldBe 1
-        (decoded.permitted?.trees?.first()?.base as? GeneralName)?.tag shouldBe X509GeneralName.Tags.dnsName
+        (decoded.permitted?.trees?.first()?.base as? GeneralName)?.tag shouldBe BigInteger.fromULong(X509GeneralName.Tags.dnsName.tagValue)
         decoded.excluded shouldBe null
     }
 

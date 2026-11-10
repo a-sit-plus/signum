@@ -59,7 +59,7 @@ val J509Test by matrixSuite {
         decoded.subjectName.relativeDistinguishedNames.single().attrsAndValues.first()
             .shouldBeInstanceOf<CommonName>().text shouldBe "subject"
 
-        val der = decoded.toAsn1.DER()
+        val der = decoded.asn1.toDer()
         val fromDer = TbsCertificate.fromAsn1(der)
         fromDer shouldBe source
         J509.decode(J509.encode(fromDer)) shouldBe source
@@ -73,8 +73,8 @@ val J509Test by matrixSuite {
         val csr = TbsCertificationRequest(Name.EMPTY, ECCurve.SECP_256_R_1.generator.asPublicKey(), attributes = listOf(attribute))
         csr.extensions.single().oid shouldBe ObjectIdentifier("1.2.3.999")
         J509.csrAttribute(attribute) shouldBeSameInstanceAs json
-        shouldThrowAny { csr.toAsn1() }
-        shouldThrowAny { j509Contents(csr.extensions).toAsn1() }
+        shouldThrowAny { csr.asn1.toRepresentation() }
+        shouldThrowAny { j509Contents(csr.extensions).asn1.toRepresentation() }
     }
 
     "All four open families preserve native JSON carriers and reject unsupported ASN.1 conversion" {
@@ -87,12 +87,15 @@ val J509Test by matrixSuite {
         J509.csrAttribute(csr) shouldBeSameInstanceAs raw
         J509.other(name) shouldBeSameInstanceAs raw
         J509.qualifier(qualifier) shouldBeSameInstanceAs raw
-        shouldThrowAny { atv.toAsn1() }
-        shouldThrowAny { csr.toAsn1() }
-        shouldThrowAny { name.toAsn1() }
-        shouldThrowAny { CertificatePolicies(listOf(PolicyInformation(policyOid, listOf(qualifier)))).toAsn1() }
+        val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
+        nativeNames.subjectAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
+        nativeNames.issuerAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
+        shouldThrowAny { atv.asn1.toRepresentation() }
+        shouldThrowAny { csr.asn1.toRepresentation() }
+        shouldThrowAny { name.asn1.toRepresentation() }
+        shouldThrowAny { CertificatePolicies(listOf(PolicyInformation(policyOid, listOf(qualifier)))).asn1.toRepresentation() }
         Name(listOf(RelativeDistinguishedName(atv))).isValid shouldBe true
-        shouldThrowAny { Name(listOf(RelativeDistinguishedName(atv))).toAsn1() }
+        shouldThrowAny { Name(listOf(RelativeDistinguishedName(atv))).asn1.toRepresentation() }
     }
 
     "Semantic copies discard the old JSON source" {
@@ -110,7 +113,7 @@ val J509Test by matrixSuite {
         val ext = CertificateExtension.fromAsn1(at.asitplus.awesn1.crypto.pki.X509CertificateExtension(CertificatePolicies.oid, false, body))
             .shouldBeInstanceOf<CertificatePolicies>()
         ext.certificatePolicies.single().policyQualifiers.single().shouldBeInstanceOf<OpaquePolicyQualifierInfo>()
-        CertificatePolicies(ext.certificatePolicies).toAsn1().value shouldBe body
+        CertificatePolicies(ext.certificatePolicies).asn1.toRepresentation().value shouldBe body
     }
 }
 

@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.Signum
 import kotlinx.serialization.encodeToByteArray
@@ -146,7 +146,7 @@ val DistinguishedNameTest by matrixSuite {
 
         attr::class shouldBe OpaqueAttributeTypeAndValue::class
         attr.oid shouldBe ObjectIdentifier("1.2.3.4.5.6.7")
-        (attr.toAsn1() != null) shouldBe true
+        (attr.asn1.toRepresentation() != null) shouldBe true
         Signum.Der.encodeToByteArray(decoded) shouldBe encoded
     }
 
@@ -160,12 +160,12 @@ val DistinguishedNameTest by matrixSuite {
     }
 
     "AttributeTypeAndValue string constructors use attribute syntax" {
-        CommonName("Jane Doe").toAsn1().value shouldBe Asn1String.UTF8("Jane Doe").encodeToTlv()
-        Country("AT").toAsn1().value shouldBe Asn1String.Printable("AT").encodeToTlv()
-        DomainComponent("example").toAsn1().value shouldBe Asn1String.IA5("example").encodeToTlv()
-        DistinguishedNameQualifier("dnq").toAsn1().value shouldBe Asn1String.Printable("dnq").encodeToTlv()
-        EmailAddress("jane@example.test").toAsn1().value shouldBe Asn1String.IA5("jane@example.test").encodeToTlv()
-        SerialNumber("12345").toAsn1().value shouldBe Asn1String.Printable("12345").encodeToTlv()
+        CommonName("Jane Doe").asn1.toRepresentation().value shouldBe Asn1String.UTF8("Jane Doe").encodeToTlv()
+        Country("AT").asn1.toRepresentation().value shouldBe Asn1String.Printable("AT").encodeToTlv()
+        DomainComponent("example").asn1.toRepresentation().value shouldBe Asn1String.IA5("example").encodeToTlv()
+        DistinguishedNameQualifier("dnq").asn1.toRepresentation().value shouldBe Asn1String.Printable("dnq").encodeToTlv()
+        EmailAddress("jane@example.test").asn1.toRepresentation().value shouldBe Asn1String.IA5("jane@example.test").encodeToTlv()
+        SerialNumber("12345").asn1.toRepresentation().value shouldBe Asn1String.Printable("12345").encodeToTlv()
     }
 
     "RDN manual construction rejects empty set" {
@@ -216,7 +216,7 @@ val DistinguishedNameTest by matrixSuite {
 
     data(typedAttributes, nameFn = { "non-canonical ${it.descriptor.canonicalName}" }) test { case ->
         val canonical = case.expected("Test") as AttributeTypeAndValue
-        val nonCanonicalValue = when (Asn1String.decodeFromTlv(canonical.toAsn1().value.asPrimitive())) {
+        val nonCanonicalValue = when (Asn1String.decodeFromTlv(canonical.asn1.toRepresentation().value.asPrimitive())) {
             is Asn1String.UTF8 -> Asn1String.Printable("Test")
             is Asn1String.Printable, is Asn1String.IA5 -> Asn1String.UTF8("Test")
             else -> error("unexpected canonical X.500 string type")
@@ -229,7 +229,7 @@ val DistinguishedNameTest by matrixSuite {
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
 
         attribute::class shouldBe case.expected("Test")::class
-        attribute.toAsn1().value shouldBe nonCanonicalValue
+        attribute.asn1.toRepresentation().value shouldBe nonCanonicalValue
         Signum.Der.encodeToByteArray(decoded) shouldBe encoded
     }
 

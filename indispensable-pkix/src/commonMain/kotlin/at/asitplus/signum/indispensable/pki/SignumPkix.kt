@@ -49,15 +49,15 @@ import at.asitplus.signum.indispensable.pki.x500.X400AddressName
 private val initializePkix by lazy {
     at.asitplus.signum.ServiceLoader.register<PolicyQualifierAsn1Provider>(BuiltinPolicyQualifiers)
     Signum.register(PkixAsn1Provider, SerializersModule {
-        contextualAsn1(GeneralSubtree::class, X509GeneralSubtree.serializer(), { it.toAsn1() }, { GeneralSubtree.fromAsn1(it) })
-        contextualAsn1(CertificateExtension::class, X509CertificateExtension.serializer(), { it.toAsn1() }, { CertificateExtension.fromAsn1(it) })
-        contextualAsn1(GeneralName::class, X509GeneralName.serializer(), { it.toAsn1() }, { GeneralName.fromAsn1(it) })
-        contextualAsn1(Certificate::class, X509Certificate.serializer(), { it.toAsn1() }, { Certificate.fromAsn1(it) })
-        contextualAsn1(TbsCertificate::class, X509TbsCertificate.serializer(), { it.toAsn1() }, { TbsCertificate.fromAsn1(it) })
-        contextualAsn1(Name::class, X500Name.serializer(), { it.toAsn1() }, { Name.fromAsn1(it) })
-        contextualAsn1(RelativeDistinguishedName::class, X500RelativeDistinguishedName.serializer(), { it.toAsn1() }, { RelativeDistinguishedName.fromAsn1(it) })
-        contextualAsn1(AttributeTypeAndValue::class, X500AttributeTypeAndValue.serializer(), { it.toAsn1() }, { AttributeTypeAndValue.fromAsn1(it) })
-        contextualAsn1(AlternativeNames::class, X509GeneralNames.serializer(), { it.toAsn1() }, { AlternativeNames.fromAsn1(it) })
+        contextualAsn1(GeneralSubtree::class, X509GeneralSubtree.serializer(), { it.asn1.toRepresentation() }, { GeneralSubtree.fromAsn1(it) })
+        contextualAsn1(CertificateExtension::class, X509CertificateExtension.serializer(), { it.asn1.toRepresentation() }, { CertificateExtension.fromAsn1(it) })
+        contextualAsn1(GeneralName::class, X509GeneralName.serializer(), { it.asn1.toRepresentation() }, { GeneralName.fromAsn1(it) })
+        contextualAsn1(Certificate::class, X509Certificate.serializer(), { it.asn1.toRepresentation() }, { Certificate.fromAsn1(it) })
+        contextualAsn1(TbsCertificate::class, X509TbsCertificate.serializer(), { it.asn1.toRepresentation() }, { TbsCertificate.fromAsn1(it) })
+        contextualAsn1(Name::class, X500Name.serializer(), { it.asn1.toRepresentation() }, { Name.fromAsn1(it) })
+        contextualAsn1(RelativeDistinguishedName::class, X500RelativeDistinguishedName.serializer(), { it.asn1.toRepresentation() }, { RelativeDistinguishedName.fromAsn1(it) })
+        contextualAsn1(AttributeTypeAndValue::class, X500AttributeTypeAndValue.serializer(), { it.asn1.toRepresentation() }, { AttributeTypeAndValue.fromAsn1(it) })
+        contextualAsn1(AlternativeNames::class, X509GeneralNames.serializer(), { it.asn1.toRepresentation() }, { AlternativeNames.fromAsn1(it) })
         extension<BasicConstraints>()
         extension<NameConstraints>()
         extension<PolicyConstraints>()
@@ -110,10 +110,10 @@ private val initializePkix by lazy {
 fun Signum.installPkix() { initializePkix }
 
 private inline fun <reified T : CertificateExtension> SerializersModuleBuilder.extension() =
-    contextualAsn1(T::class, X509CertificateExtension.serializer(), { it.toAsn1() }, { CertificateExtension.fromAsn1(it) as T })
+    contextualAsn1(T::class, X509CertificateExtension.serializer(), { it.asn1.toRepresentation() }, { CertificateExtension.fromAsn1(it) as T })
 
 private inline fun <reified T : GeneralName> SerializersModuleBuilder.generalName() =
-    contextualAsn1(T::class, X509GeneralName.serializer(), { it.toAsn1() }, { GeneralName.fromAsn1(it) as T })
+    contextualAsn1(T::class, X509GeneralName.serializer(), { it.asn1.toRepresentation() }, { GeneralName.fromAsn1(it) as T })
 
 /** The chain ordered from trust anchor to leaf (reverse of the conventional leaf-first order). */
 val CertificateChain.validationPath: CertificateChain get() = reversed()

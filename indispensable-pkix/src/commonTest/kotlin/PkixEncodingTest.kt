@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
@@ -36,17 +36,17 @@ val PkixEncodingTest by matrixSuite {
     "A different source representation converts through the ASN.1 provider without being replaced" {
         val original = OtherConstraintsRepresentation(true)
         val semantic = decodeFrom<OtherConstraintsRepresentation, BasicConstraints> { BasicConstraints(it.ca) }(original)
-        CertificateExtension.fromAsn1(semantic.toAsn1()) shouldBe BasicConstraints(true)
+        CertificateExtension.fromAsn1(semantic.asn1.toRepresentation()) shouldBe BasicConstraints(true)
         semantic.encodeTo<OtherConstraintsRepresentation, BasicConstraints> {
             error("The original representation should be retained")
         } shouldBeSameInstanceAs original
     }
 
     "Copying a decoded extension encodes the new fields instead of the original source" {
-        val decoded = CertificateExtension.fromAsn1(BasicConstraints(true, 3u).toAsn1()) as BasicConstraints
+        val decoded = CertificateExtension.fromAsn1(BasicConstraints(true, 3u).asn1.toRepresentation()) as BasicConstraints
         val copy = decoded.copy(ca = false, pathLenConstraint = null)
         copy.sourceFormat shouldBe "<no source>"
-        CertificateExtension.fromAsn1(copy.toAsn1()) shouldBe BasicConstraints(false)
+        CertificateExtension.fromAsn1(copy.asn1.toRepresentation()) shouldBe BasicConstraints(false)
         decoded.pathLenConstraint shouldBe 3u
     }
 
@@ -69,9 +69,9 @@ val PkixEncodingTest by matrixSuite {
         )
         extensions.forEach { source ->
             source.sourceFormat shouldBe "<no source>"
-            val original = source.toAsn1()
+            val original = source.asn1.toRepresentation()
             val decoded = CertificateExtension.fromAsn1(original)
-            decoded.toAsn1() shouldBeSameInstanceAs original
+            decoded.asn1.toRepresentation() shouldBeSameInstanceAs original
             Signum.Der.encodeToByteArray<CertificateExtension>(source) shouldBe
                 Signum.Der.encodeToByteArray<CertificateExtension>(decoded)
             source.sourceFormat shouldBe "<no source>"
@@ -88,9 +88,9 @@ val PkixEncodingTest by matrixSuite {
         )
         names.forEach { source ->
             source.sourceFormat shouldBe "<no source>"
-            val original = requireNotNull((source as GeneralName).toAsn1())
+            val original = requireNotNull((source as GeneralName).asn1.toRepresentation())
             val decoded = GeneralName.fromAsn1(original)
-            decoded.toAsn1() shouldBeSameInstanceAs original
+            decoded.asn1.toRepresentation() shouldBeSameInstanceAs original
             Signum.Der.encodeToByteArray<GeneralName>(source) shouldBe
                 Signum.Der.encodeToByteArray<GeneralName>(decoded)
             source.sourceFormat shouldBe "<no source>"
@@ -100,20 +100,20 @@ val PkixEncodingTest by matrixSuite {
     "Concrete extensions use contextual DER and retain their native models" {
         val source = KeyUsage(UsageBit.DIGITAL_SIGNATURE, UsageBit.KEY_CERT_SIGN)
         val decoded = checkRoundTrip(source)
-        decoded.toAsn1() shouldBeSameInstanceAs decoded.toAsn1()
+        decoded.asn1.toRepresentation() shouldBeSameInstanceAs decoded.asn1.toRepresentation()
     }
 
     "Concrete attributes use contextual DER and retain their native models" {
         val decoded = checkRoundTrip(CommonName("round-trip"))
-        decoded.toAsn1() shouldBeSameInstanceAs decoded.toAsn1()
+        decoded.asn1.toRepresentation() shouldBeSameInstanceAs decoded.asn1.toRepresentation()
         val value = Asn1String.Printable("round-trip").encodeToTlv()
         val constructed = AttributeTypeAndValue(CommonName.oid, value) as CommonName
         constructed.sourceFormat shouldBe "X500AttributeTypeAndValue"
-        constructed.toAsn1().value shouldBeSameInstanceAs value
+        constructed.asn1.toRepresentation().value shouldBeSameInstanceAs value
     }
 
     "Concrete names use contextual DER and retain their native models" {
         val decoded = checkRoundTrip(DNSName(Asn1String.IA5("example.com")))
-        decoded.toAsn1() shouldBeSameInstanceAs decoded.toAsn1()
+        decoded.asn1.toRepresentation() shouldBeSameInstanceAs decoded.asn1.toRepresentation()
     }
 }

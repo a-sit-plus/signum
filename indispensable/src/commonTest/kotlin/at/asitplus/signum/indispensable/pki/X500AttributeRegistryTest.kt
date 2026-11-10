@@ -43,7 +43,7 @@ val X500AttributeRegistryTest by matrixSuite {
             data(case.names) test { name ->
                 val attribute = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
                     as AttributeTypeAndValue
-                val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
+                val value = Asn1String.decodeFromTlv(attribute.asn1.toRepresentation().value.asPrimitive())
                 attribute.oid shouldBe ObjectIdentifier(case.oid)
                 value.value shouldBe "Test"
                 when (case.kind) {
@@ -73,7 +73,7 @@ val X500AttributeRegistryTest by matrixSuite {
     "unknown dotted OID falls back to UTF8" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
             as AttributeTypeAndValue
-        val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
+        val value = Asn1String.decodeFromTlv(attribute.asn1.toRepresentation().value.asPrimitive())
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")
         (value is Asn1String.UTF8) shouldBe true

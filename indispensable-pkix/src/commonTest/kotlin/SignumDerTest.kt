@@ -4,7 +4,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.contextualAsn1
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.toAsn1
+import at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
@@ -60,7 +60,7 @@ internal val registeredExtensionSerializers = SerializersModule {
     contextualAsn1(
         RegisteredCertificateExtension::class,
         at.asitplus.awesn1.crypto.pki.X509CertificateExtension.serializer(),
-        { it.toAsn1() }, { CertificateExtension.fromAsn1(it) as RegisteredCertificateExtension },
+        { it.asn1.toRepresentation() }, { CertificateExtension.fromAsn1(it) as RegisteredCertificateExtension },
     )
 }
 
@@ -94,14 +94,14 @@ val SignumDerTest by matrixSuite {
         generic.shouldBeInstanceOf<RegisteredCertificateExtension>()
         concrete shouldBe source
         Signum.Der.encodeToByteArray(concrete) shouldBe bytes
-        requireNotNull(concrete.toAsn1())
+        requireNotNull(concrete.asn1.toRepresentation())
         Signum.attributeOidFor("customcn") shouldBe at.asitplus.signum.indispensable.pki.attributes.CommonName.oid
     }
 
     "Rejected serializer registration leaves the active provider usable" {
         shouldThrowAny { Signum.register(RegisteredExtensionProvider, registeredExtensionSerializers) }
         val source = RegisteredCertificateExtension("still registered")
-        CertificateExtension.fromAsn1(source.toAsn1()) shouldBe source
+        CertificateExtension.fromAsn1(source.asn1.toRepresentation()) shouldBe source
     }
 
     "Custom otherName registration reaches nested AKI and NameConstraints codecs" {
@@ -109,14 +109,14 @@ val SignumDerTest by matrixSuite {
         val aki = AuthorityKeyIdentifier(authorityCertIssuer = listOf(name))
         val akiBytes = Signum.Der.encodeToByteArray(aki)
         val decodedAki = Signum.Der.decodeFromByteArray<AuthorityKeyIdentifier>(akiBytes)
-        (decodedAki.authorityCertIssuer.single().toAsn1() as X509GeneralName.Other).value
+        (decodedAki.authorityCertIssuer.single().asn1.toRepresentation() as X509GeneralName.Other).value
             .shouldBeInstanceOf<RegisteredOtherName>()
         Signum.Der.encodeToByteArray(decodedAki) shouldBe akiBytes
 
         val constraints = NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(name))))
         val bytes = Signum.Der.encodeToByteArray(constraints)
         val decoded = Signum.Der.decodeFromByteArray<NameConstraints>(bytes)
-        (decoded.permitted!!.trees.single().base.toAsn1() as X509GeneralName.Other).value
+        (decoded.permitted!!.trees.single().base.asn1.toRepresentation() as X509GeneralName.Other).value
             .shouldBeInstanceOf<RegisteredOtherName>()
         Signum.Der.encodeToByteArray(decoded) shouldBe bytes
     }
@@ -136,7 +136,7 @@ val SignumDerTest by matrixSuite {
             val direct = CertificateExtension.fromAsn1(model).shouldBeInstanceOf<CertificateExtension.Unknown>()
             direct.oid shouldBe oid
             direct.critical shouldBe true
-            direct.toAsn1() shouldBeSameInstanceAs model
+            direct.asn1.toRepresentation() shouldBeSameInstanceAs model
             direct.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
 
             val bytes = Signum.Der.encodeToByteArray(model)
@@ -158,7 +158,7 @@ val SignumDerTest by matrixSuite {
         val explicit = GeneralSubtree.fromAsn1(X509GeneralSubtree(name, Asn1Integer(0)))
         explicit shouldBe omitted
         explicit.hashCode() shouldBe omitted.hashCode()
-        explicit.toAsn1() shouldBeSameInstanceAs explicit.toAsn1()
+        explicit.asn1.toRepresentation() shouldBeSameInstanceAs explicit.asn1.toRepresentation()
         val bytes = Signum.Der.encodeToByteArray(explicit)
         Signum.Der.encodeToByteArray(Signum.Der.decodeFromByteArray<GeneralSubtree>(bytes)) shouldBe bytes
     }

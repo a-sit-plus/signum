@@ -17,7 +17,7 @@ internal data class X509GeneralSubtree(
     @Asn1Tag(1u) val maximum: Asn1Integer? = null,
 )
 
-internal val GeneralSubtree.toAsn1 get() = asn1Encoders<X509GeneralSubtree, _> {
+internal val GeneralSubtree.asn1 get() = asn1Encoders<X509GeneralSubtree, _> {
     X509GeneralSubtree(base, minimum.takeUnless { it == BigInteger.ZERO }?.toAsn1Integer(), maximum?.toAsn1Integer())
 }
 
