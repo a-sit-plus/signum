@@ -7,7 +7,9 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
@@ -140,22 +142,17 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     companion object {
         operator fun invoke(
             oid: ObjectIdentifier,
-            decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+            decodingFailure: UnsupportedCryptoException? = null,
             isValid: Boolean? = null,
-        ): AttributeTypeAndValue = Unknown(oid, decodingFailure, isValid)
+        ): AttributeTypeAndValue = Unknown(
+            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for attribute $oid"), isValid,
+        )
 
         private class Unknown(
             override val oid: ObjectIdentifier,
-            val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
+            lookupResult: UnsupportedCryptoException,
             override val isValid: Boolean? = null,
-        ) : AttributeTypeAndValue {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-            @OptIn(SignumInternals::class)
-            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
-                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-            override fun toString(): String = "AttributeTypeAndValue.Unknown($oid, $sourceRepresentation)"
-        }
+        ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
             fromAsn1(X500AttributeTypeAndValue(oid, value))

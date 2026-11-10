@@ -3,7 +3,11 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.attributes.*
 import at.asitplus.signum.indispensable.pki.extn.*
@@ -14,7 +18,9 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.eygraber.uri.Uri
 import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.json.*
@@ -90,9 +96,23 @@ val J509Test by matrixSuite {
         J509.other(name) shouldBeSameInstanceAs raw
         J509.qualifier(qualifier) shouldBeSameInstanceAs raw
         listOf(atv, csr, name, qualifier) shouldBe listOf(J509.attribute(raw), J509.csrAttribute(raw), J509.other(raw), J509.qualifier(raw))
-        val validatedName = name.createValidatedCopy { true }
-        validatedName.isValid shouldBe true
-        J509.other(validatedName) shouldBeSameInstanceAs raw
+        listOf(atv, csr, name, qualifier).forEach { fallback ->
+            val shim = fallback.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+            shouldThrow<UnsupportedCryptoException> {
+                ServiceLoader.load<GeneralNameFormatProvider>().get<Any, Unit>(fallback) {
+                    error("Unknown values must not retry provider lookup")
+                }
+            } shouldBeSameInstanceAs shim.lookupResult
+        }
+        val nameShim = name.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+        listOf(true, false).forEach { valid ->
+            val validatedName = name.createValidatedCopy { valid }
+            validatedName.isValid shouldBe valid
+            val validatedShim = validatedName.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+            validatedShim.sourceRepresentation shouldBeSameInstanceAs nameShim.sourceRepresentation
+            validatedShim.lookupResult shouldBeSameInstanceAs nameShim.lookupResult
+            J509.other(validatedName) shouldBeSameInstanceAs raw
+        }
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
         nativeNames.subjectAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
         nativeNames.issuerAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
@@ -110,6 +130,20 @@ val J509Test by matrixSuite {
         copy.sourceFormat shouldBe "<no source>"
         J509.qualifier(copy).getValue("value").jsonObject.getValue("text").jsonPrimitive.content shouldBe "after"
         J509.qualifier(original).getValue("value").jsonObject.getValue("text").jsonPrimitive.content shouldBe "before"
+    }
+
+    "Malformed ASN.1 otherName retains its decoder failure when validated" {
+        val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
+            MacAddressName.OID, Asn1String.UTF8("wrong payload type").encodeToTlv(),
+        ))
+        val name = OtherName(source)
+        val shim = name.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+        shim.lookupResult.cause.shouldNotBeNull()
+        val copy = name.createValidatedCopy { true }
+        val copyShim = copy.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+        copyShim.lookupResult shouldBeSameInstanceAs shim.lookupResult
+        copyShim.sourceRepresentation shouldBeSameInstanceAs shim.sourceRepresentation
+        (copy.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
     }
 
     "Unknown ASN.1 qualifiers remain nested opaque values instead of hiding the whole extension" {

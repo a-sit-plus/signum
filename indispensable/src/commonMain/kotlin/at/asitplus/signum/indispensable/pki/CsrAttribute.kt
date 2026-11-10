@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
@@ -14,19 +15,14 @@ interface CsrAttribute : Identifiable, WithSourceRepresentation {
         operator fun invoke(
             oid: ObjectIdentifier,
             decodingFailure: UnsupportedCryptoException? = null,
-        ): CsrAttribute = Unknown(oid, decodingFailure)
+        ): CsrAttribute = Unknown(
+            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for CSR attribute $oid"),
+        )
 
         private class Unknown(
             override val oid: ObjectIdentifier,
-            val decodingFailure: UnsupportedCryptoException? = null,
-        ) : CsrAttribute {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-            @OptIn(SignumInternals::class)
-            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
-                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-            override fun toString(): String = "CsrAttribute.Unknown($oid, $sourceRepresentation)"
-        }
+            lookupResult: UnsupportedCryptoException,
+        ) : CsrAttribute, ServiceLoader.UnknownShim(lookupResult)
 
         val EXTENSION_REQUEST_OID = ObjectIdentifier("1.2.840.113549.1.9.14")
         operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): CsrAttribute =

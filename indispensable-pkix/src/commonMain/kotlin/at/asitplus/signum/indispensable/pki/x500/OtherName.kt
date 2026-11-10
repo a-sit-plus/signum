@@ -1,8 +1,12 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.GeneralName
 
@@ -12,24 +16,21 @@ interface OtherName : GeneralName, Identifiable {
         throw UnsupportedOperationException("Custom validation copies are only available for uninterpreted otherName values")
 
     companion object {
-        operator fun invoke(oid: ObjectIdentifier): OtherName = Unknown(oid)
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            decodingFailure: UnsupportedCryptoException? = null,
+        ): OtherName = Unknown(
+            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for otherName $oid"),
+        )
 
-        private class Unknown private constructor(
+        private class Unknown(
             override val oid: ObjectIdentifier,
-            override val isValid: Boolean?,
-            @property:SignumInternals override val sourceRepresentation: SourceRepresentationStorage,
-        ) : OtherName {
-            constructor(oid: ObjectIdentifier) : this(oid, null, SourceRepresentationStorage())
-            @OptIn(SignumInternals::class)
+            lookupResult: UnsupportedCryptoException,
+            override val isValid: Boolean? = null,
+            source: SourceRepresentationStorage = SourceRepresentationStorage(),
+        ) : OtherName, ServiceLoader.UnknownShim(lookupResult, source) {
             override fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName =
-                Unknown(oid, validate(this), sourceRepresentation)
-            @OptIn(SignumInternals::class)
-            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
-                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-            @OptIn(SignumInternals::class)
-            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-            @OptIn(SignumInternals::class)
-            override fun toString(): String = "OtherName.Unknown($oid, $sourceRepresentation)"
+                Unknown(oid, lookupResult, validate(this), sourceRepresentation)
         }
 
         operator fun invoke(value: X509GeneralName.Other): OtherName = GeneralName.fromAsn1(value) as OtherName

@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.Signum
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.x500.*
 import kotlinx.serialization.Serializable
 
@@ -20,7 +21,10 @@ internal fun decodeOtherName(src: X509GeneralName.Other): OtherName {
             MacAddressName.OID -> MacAddressName(Signum.Der.decodeFromTlv(kotlinx.serialization.builtins.ByteArraySerializer(), raw.value))
             else -> OtherName(raw.oid)
         }
-    }.getOrElse { OtherName(raw.oid) }
+    }.getOrElse { failure ->
+        OtherName(raw.oid, failure as? UnsupportedCryptoException
+            ?: UnsupportedCryptoException("Cannot decode otherName ${raw.oid}", failure))
+    }
 }
 
 internal fun encodeOtherName(src: OtherName): X509GeneralName.Other? {

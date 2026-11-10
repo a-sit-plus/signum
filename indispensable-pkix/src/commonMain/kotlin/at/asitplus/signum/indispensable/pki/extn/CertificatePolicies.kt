@@ -3,7 +3,9 @@
 package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.awesn1.*
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import com.eygraber.uri.Uri
@@ -35,20 +37,15 @@ interface PolicyQualifierInfo : Identifiable, at.asitplus.signum.indispensable.W
     companion object {
         operator fun invoke(
             oid: ObjectIdentifier,
-            decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
-        ): PolicyQualifierInfo = Unknown(oid, decodingFailure)
+            decodingFailure: UnsupportedCryptoException? = null,
+        ): PolicyQualifierInfo = Unknown(
+            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for policy qualifier $oid"),
+        )
 
         private class Unknown(
             override val oid: ObjectIdentifier,
-            val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
-        ) : PolicyQualifierInfo {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-            @OptIn(SignumInternals::class)
-            override fun equals(other: Any?): Boolean = this === other || other is Unknown &&
-                    oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-            override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-            override fun toString(): String = "PolicyQualifierInfo.Unknown($oid, $sourceRepresentation)"
-        }
+            lookupResult: UnsupportedCryptoException,
+        ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(lookupResult)
 
     }
 }
