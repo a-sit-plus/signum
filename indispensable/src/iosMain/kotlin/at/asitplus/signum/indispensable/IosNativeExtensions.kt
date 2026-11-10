@@ -4,7 +4,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
