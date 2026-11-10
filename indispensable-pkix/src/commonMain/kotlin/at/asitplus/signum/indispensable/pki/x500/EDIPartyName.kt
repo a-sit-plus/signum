@@ -13,7 +13,6 @@ data class EDIPartyName(
     val nameAssigner: String? = null,
 ) : GeneralName {
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-    override val isValid get() = true
 
     init {
         require(partyName.isNotEmpty()) { "EDI party name cannot be empty" }

@@ -10,23 +10,15 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `dNSName` GeneralName CHOICE `[2]`. */
-class DNSName private constructor(
+class DNSName(
     val value: String,
-    val allowWildcard: Boolean,
-    performValidation: Boolean,
+    val allowWildcard: Boolean = true,
 ) : AbstractGeneralName() {
     override val equalityValue get() = value
 
-    /**
-     * @throws Asn1Exception if illegal DNSName is provided
-     */
-    @Throws(Asn1Exception::class)
-    constructor(value: String, allowWildcard: Boolean = true)
-            : this(value, allowWildcard, true)
-
-    override val isValid: Boolean by lazy { value.all { it.code < 128 } && validate(value, allowWildcard) }
-
-    init { if (performValidation && !isValid) throw Asn1Exception("Invalid DNSName.") }
+    init {
+        if (!value.all { it.code < 128 } || !validate(value, allowWildcard)) throw Asn1Exception("Invalid DNSName.")
+    }
 
     override fun toString(): String = value
 
@@ -69,7 +61,7 @@ class DNSName private constructor(
         val tag = X509GeneralName.Tags.dnsName
 
         internal fun fromAsn1Model(src: X509GeneralName): DNSName = runRethrowing {
-            DNSName((src as X509GeneralName.Dns).rawValue.value, allowWildcard = true, performValidation = false)
+            DNSName((src as X509GeneralName.Dns).value, allowWildcard = true)
         }
 
         private fun validate(value: String, allowWildcard: Boolean): Boolean {

@@ -8,6 +8,7 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.pki.GeneralName
+import at.asitplus.signum.indispensable.pki.subjectAlternativeNames
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.shouldBe

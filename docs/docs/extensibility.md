@@ -199,6 +199,9 @@ Register it with `Signum.register(MyExtensionProvider)`; return `null` for unsup
 No separate extension registry or contextual semantic serializer is required.
 
 `GeneralNameFormatProvider` follows the same pattern for `GeneralName` and `X509GeneralName`.
+SAN/IAN models, their ASN.1 conversions, and the `TbsCertificate.subjectAlternativeNames` and
+`issuerAlternativeNames` extension properties belong to `indispensable-pkix`. Install PKIX before
+reading these interpreted extensions; core retains unsupported extensions in their original representation.
 The open `OtherName` family and policy qualifiers retain uninterpreted payloads in their source
 representation. Applications may interpret raw payloads manually or provide explicit conversions;
 open-polymorphic wire registration is optional.
@@ -215,9 +218,21 @@ Descriptors contain semantic metadata and string construction. They do not regis
 initialize `Signum.Der`. `Signum.attributeOidFor`, `attributeNameFor`, and `attributeDescriptorForName`
 provide name resolution.
 
-Unknown and malformed extension bodies become `CertificateExtension.Unknown`, retaining the original
-OID, critical flag, wire payload, and provider lookup failures. Encoding back to the source format
-preserves that representation. Conversion to another format requires a supporting provider.
+With PKIX installed, recognized payloads that fail decoding become `InvalidCertificateExtension`,
+`InvalidGeneralName`, `InvalidOtherName`, `InvalidAttributeTypeAndValue`, `InvalidCsrAttribute`, or
+`InvalidPolicyQualifierInfo`. All extend `InvalidPkixValue`, retaining the decoding failure and source;
+they do not extend `ServiceLoader.UnknownShim`. Unsupported discriminators still produce unknown values.
+Custom PKIX providers should likewise return an invalid value for a recognized payload they cannot decode.
+Returning an invalid value completes provider selection; lower-priority providers are not retried.
+
+The core name types have no `isValid` member. RDN construction checks only structure, so names and
+certificates can retain invalid attributes. PKIX supplies `isInvalid` and derived `isValid` extensions;
+unknown values and the uninterpreted X.400 carrier remain unclassified. Recovery can inspect the source
+and produce a semantic value independently; there is no validity-flipping copy operation.
+
+Encoding back to the source format preserves its representation, including invalid payloads. Conversion
+to another format requires a supporting provider. Certificate serial-number parsing remains lenient,
+while programmatic serial-number construction remains strict.
 
 ## Platform type conversions
 

@@ -6,8 +6,6 @@ import at.asitplus.signum.indispensable.digest.Asn1DigestAlgorithmProvider
 import at.asitplus.signum.indispensable.digest.IndispensableDigestsAlgorithmProviderAsn1
 import at.asitplus.signum.indispensable.digest.IndispensableHMACProvider
 import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
-import at.asitplus.signum.indispensable.pki.AlternativeNamesAsn1Provider
-import at.asitplus.signum.indispensable.pki.CertificateExtensionProvider
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.pki.*
 
@@ -23,7 +21,6 @@ private val initialize by lazy {
     ServiceLoader.register<Asn1PrivateKeyFormatProvider>(IndispensableAsn1PrivateKeyFormatsProvider)
     ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(AttributeAsn1Provider)
     ServiceLoader.register<CsrAttributeAsn1Provider>(AttributeAsn1Provider)
-    ServiceLoader.register<CertificateExtensionProvider>(AlternativeNamesAsn1Provider)
 
     indispensablePlatformInit()
 }

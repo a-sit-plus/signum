@@ -8,14 +8,6 @@ import at.asitplus.signum.indispensable.WithSourceRepresentation
 
 /** An encoding-independent RFC 5280/C509 `GeneralName`. */
 interface GeneralName : WithSourceRepresentation {
-    /**
-     * Returns whether this name is valid:
-     * - `true`: validation succeeded
-     * - `false`: validation failed
-     * - `null`: no validation implemented (the generic [GeneralName] never validates)
-     */
-    val isValid: Boolean? get() = null
-
     @SignumInternals
     class Unknown(lookupResult: UnsupportedCryptoException)
         : GeneralName, ServiceLoader.UnknownShim(lookupResult)

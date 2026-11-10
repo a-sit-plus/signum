@@ -12,15 +12,12 @@ class IPAddressName internal constructor(
     val address: IpAddress<*, *>?,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     private val unparsedBytes: ByteArray?,
-    performValidation: Boolean,
 ) : AbstractGeneralName() {
     val rawBytes: ByteArray get() = unparsedBytes ?: addressAndPrefix?.toX509Octets() ?: requireNotNull(address).octets
     override val equalityValue get() = rawBytes
 
-    override val isValid: Boolean by lazy { address != null }
-
     init {
-        if (performValidation && !isValid) throw Asn1Exception("Invalid IpAddressName.")
+        if (address == null) throw Asn1Exception("Invalid IpAddressName.")
     }
 
     /**
@@ -28,14 +25,14 @@ class IPAddressName internal constructor(
      */
     @Throws(Asn1Exception::class)
     constructor(address: IpAddress<*, *>, addressAndPrefix: IpAddressAndPrefix<*, *>? = null)
-            : this(address, addressAndPrefix, null, true)
+            : this(address, addressAndPrefix, null)
 
     /**
      * @throws Asn1Exception if illegal IpAddress is provided
      */
     @Throws(Asn1Exception::class)
     constructor(addressAndPrefix: IpAddressAndPrefix<*, *>)
-            : this(addressAndPrefix.address, addressAndPrefix, null, true)
+            : this(addressAndPrefix.address, addressAndPrefix, null)
 
     val network: IpNetwork<*, *>? by lazy {
         when (addressAndPrefix) {
@@ -112,17 +109,17 @@ class IPAddressName internal constructor(
             val content = (src as X509GeneralName.IpAddress).rawValue.content
             return when (content.size) {
                 IpFamily.V4.numberOfOctets -> IPAddressName(
-                    IpAddress.V4(content), unparsedBytes = content, performValidation = false,
+                    IpAddress.V4(content), unparsedBytes = content,
 
                 )
 
                 IpFamily.V6.numberOfOctets -> IPAddressName(
-                    IpAddress.V6(content), unparsedBytes = content, performValidation = false,
+                    IpAddress.V6(content), unparsedBytes = content,
 
                 )
 
                 else -> IpInterface.fromX509Octets(content).let {
-                    IPAddressName(it.address, it, content, false)
+                    IPAddressName(it.address, it, content)
                 }
             }
         }

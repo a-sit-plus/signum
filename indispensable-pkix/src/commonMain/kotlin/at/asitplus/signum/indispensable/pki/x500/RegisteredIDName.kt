@@ -10,7 +10,6 @@ class RegisteredIDName(
     override val equalityValue get() = value
 
     /** Always valid: [ObjectIdentifier] is guaranteed valid by its own constructor. */
-    override val isValid: Boolean get() = true
 
     override fun toString(): String = value.toString()
 

@@ -26,13 +26,10 @@ class RelativeDistinguishedName(
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
-    val isValid: Boolean by lazy {
-        attrsAndValues.isStructurallyValid() &&
-                attrsAndValues.all { it.isValid != false }
-    }
+    internal fun hasValidStructure(): Boolean = attrsAndValues.isStructurallyValid()
 
     init {
-        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
+        if (performValidation && !hasValidStructure()) throw Asn1Exception("Invalid RelativeDistinguishedName structure!")
     }
 
     override fun equals(other: Any?): Boolean {
@@ -108,8 +105,6 @@ private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
 
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
-    val isValid: Boolean? get() = null
-
     interface Descriptor<out T : AttributeTypeAndValue> : Identifiable {
         val canonicalName: String
 
@@ -143,15 +138,13 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
         operator fun invoke(
             oid: ObjectIdentifier,
             decodingFailure: UnsupportedCryptoException? = null,
-            isValid: Boolean? = null,
         ): AttributeTypeAndValue = Unknown(
-            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for attribute $oid"), isValid,
+            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for attribute $oid"),
         )
 
         private class Unknown(
             override val oid: ObjectIdentifier,
             lookupResult: UnsupportedCryptoException,
-            override val isValid: Boolean? = null,
         ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
@@ -187,17 +180,6 @@ open class TextAttributeTypeAndValue(
     val text: String,
 ) : AttributeTypeAndValue {
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-    override val isValid: Boolean get() = when (oid) {
-        AttributeTypeAndValue.Descriptor.OID.domainComponent,
-        AttributeTypeAndValue.Descriptor.OID.emailAddress -> text.all { it.code < 128 }
-        AttributeTypeAndValue.Descriptor.OID.countryName,
-        AttributeTypeAndValue.Descriptor.OID.dnQualifier,
-        AttributeTypeAndValue.Descriptor.OID.serialNumber,
-        AttributeTypeAndValue.Descriptor.OID.telephoneNumber -> text.all {
-            it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it in " '()+,-./:=?"
-        }
-        else -> true
-    }
     override fun equals(other: Any?): Boolean = other is TextAttributeTypeAndValue && oid == other.oid && text == other.text
     override fun hashCode(): Int = 31 * oid.hashCode() + text.hashCode()
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"

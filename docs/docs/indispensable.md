@@ -96,7 +96,8 @@ The `pki` package contains data classes relevant in the PKI context:
 
 * `X509Certificate` does what you think it does
     * `X509CertificateExtension` contains a convenience abstraction of X.509 certificate extensions 
-    * `AlternativeNames` contains definitions of subject/issuer alternative names
+    * Subject/issuer alternative names (`AlternativeNames`, SAN, and IAN) are supplied by `indispensable-pkix`,
+      including the `TbsCertificate.subjectAlternativeNames` and `issuerAlternativeNames` extension properties.
     * `RelativeDistinguishedName` contains definitions of RDNs (Common Name, City, …)
 * `Pkcs10CertificateRequest` contains a CSR abstraction
     * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension

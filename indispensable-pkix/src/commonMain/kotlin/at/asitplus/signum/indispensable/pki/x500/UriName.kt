@@ -11,24 +11,18 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `uniformResourceIdentifier` GeneralName CHOICE `[6]`. */
-class UriName private constructor(
-    val host: String,
-    val allowWildcard: Boolean,
-    performValidation: Boolean,
+class UriName(
+    value: String,
+    val allowWildcard: Boolean = false,
 ) : AbstractGeneralName() {
+    val host: String = value
     override val equalityValue get() = host
 
     val hostDNS: DNSName?
     val hostIP: IPAddressName?
 
-    override val isValid: Boolean
-
-    @Throws(Asn1Exception::class)
-    constructor(value: String, allowWildcard: Boolean = false)
-            : this(value, allowWildcard, true)
-
     init {
-        if (performValidation && host.isEmpty()) {
+        if (host.isEmpty()) {
             throw IOException("URI name cannot be empty")
         }
 
@@ -52,9 +46,7 @@ class UriName private constructor(
 
         hostDNS = tmpHostDNS
         hostIP = tmpHostIP
-        isValid = hostDNS != null || hostIP != null
-
-        if (performValidation && !isValid) {
+        if (hostDNS == null && hostIP == null) {
             throw Asn1Exception("Invalid URI name: ${host}")
         }
     }
@@ -100,10 +92,8 @@ class UriName private constructor(
 
         internal fun fromAsn1Model(src: X509GeneralName): UriName = runRethrowing {
             UriName(
-                (src as X509GeneralName.UniformResourceIdentifier).rawValue.value,
+                (src as X509GeneralName.UniformResourceIdentifier).value,
                 allowWildcard = false,
-
-                performValidation = false,
 
             )
         }

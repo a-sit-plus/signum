@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
+import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
@@ -46,12 +47,18 @@ internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteA
     })
 
 internal object BuiltinPolicyQualifiers : PolicyQualifierAsn1Provider {
-    override fun decodeFromAsn1(oid: ObjectIdentifier, value: Asn1Element): PolicyQualifierInfo? = when (oid) {
-        KnownOIDs.cps -> CpsUri(Signum.Der.decodeFromTlv(Asn1String.IA5.serializer(), value).value)
-        KnownOIDs.unotice -> Signum.Der.decodeFromTlv(NoticeWire.serializer(), value).let { notice ->
-            UserNotice(notice.noticeRef?.let { NoticeReference(it.organization.value, it.numbers.map { n -> n.toBigInteger() }) }, notice.explicitText?.value)
+    override fun decodeFromAsn1(oid: ObjectIdentifier, value: Asn1Element): PolicyQualifierInfo? = try {
+        when (oid) {
+            KnownOIDs.cps -> CpsUri(Signum.Der.decodeFromTlv(
+                Asn1String.IA5.serializer(), value.assertTag(Asn1Element.Tag.STRING_IA5),
+            ).value)
+            KnownOIDs.unotice -> Signum.Der.decodeFromTlv(NoticeWire.serializer(), value).let { notice ->
+                UserNotice(notice.noticeRef?.let { NoticeReference(it.organization.value, it.numbers.map { n -> n.toBigInteger() }) }, notice.explicitText?.value)
+            }
+            else -> null
         }
-        else -> null
+    } catch (failure: Throwable) {
+        InvalidPolicyQualifierInfo(oid, failure.nonFatalOrThrow())
     }
     override fun encodeToAsn1(value: PolicyQualifierInfo): Asn1Element? = when (value) {
         is CpsUri -> Signum.Der.encodeToTlv(Asn1String.IA5.serializer(), Asn1String.IA5(value.uri.toString()))

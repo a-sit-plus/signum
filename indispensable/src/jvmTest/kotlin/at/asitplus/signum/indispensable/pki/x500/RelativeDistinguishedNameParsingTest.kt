@@ -147,22 +147,20 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(cn)).asn1.toRepresentation() shouldBe X500RelativeDistinguishedName(setOf(cn))
     }
 
-    "ATV isValid accessor reflects the stored value" {
-        AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice").encodeToTlv()).isValid shouldBe true
+    "Core ATV decoding preserves malformed payloads without semantic RDN rejection" {
+        (AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice").encodeToTlv()) as TextAttributeTypeAndValue).text shouldBe "Alice"
 
         // IA5's permitted [\x00-\x7f] range
         val invalidIa5 = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
         val atv = AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5)
 
-        atv.isValid shouldBe false
         // raw value survives untouched and can still be received/decoded
         atv.asn1.toRepresentation().value shouldBe invalidIa5
         atv.asn1.toRepresentation().value.asPrimitive().content shouldBe byteArrayOf(0x80.toByte())
         Asn1String.decodeFromTlv(atv.asn1.toRepresentation().value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
 
         val nonText = AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), at.asitplus.awesn1.Asn1Integer(1).encodeToTlv())
-        nonText.isValid shouldBe false
-        shouldThrow<Asn1Exception> { RelativeDistinguishedName(nonText) }
+        RelativeDistinguishedName(nonText).attrsAndValues.single() shouldBe nonText
     }
 
     "ATV equality should be symmetric across sourceRepresentation" {

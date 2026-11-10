@@ -7,26 +7,19 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 /** RFC 5280 `x400Address` GeneralName CHOICE `[3]`. Carries the awesn1 [X509GeneralName.X400Address] verbatim. */
 class X400AddressName private constructor(
     val x400Address: X509GeneralName.X400Address,
-    override val isValid: Boolean?,
 ) : AbstractGeneralName() {
     override val equalityValue get() = x400Address
-
-    override fun createValidatedCopy(validate: (GeneralName) -> Boolean): X400AddressName = X400AddressName(x400Address, validate(this))
 
     override fun toString(): String = x400Address.toString()
 
     companion object {
-        operator fun invoke(value: X509GeneralName.X400Address): X400AddressName = X400AddressName(value, null)
+        operator fun invoke(value: X509GeneralName.X400Address): X400AddressName = X400AddressName(value)
 
         operator fun invoke(value: Asn1Sequence): X400AddressName = invoke(X509GeneralName.X400Address(value))
 
-        /** Creates an instance with `isValid` determined by [validate]. */
-        operator fun invoke(value: X509GeneralName.X400Address, validate: (GeneralName) -> Boolean): X400AddressName =
-            X400AddressName(value, validate(invoke(value)))
-
         val tag = X509GeneralName.Tags.x400Address
         internal fun fromAsn1Model(src: X509GeneralName): X400AddressName {
-            return X400AddressName(src as X509GeneralName.X400Address, null)
+            return X400AddressName(src as X509GeneralName.X400Address)
         }
     }
 }

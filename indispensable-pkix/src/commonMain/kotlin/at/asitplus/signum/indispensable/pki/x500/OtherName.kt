@@ -12,9 +12,6 @@ import at.asitplus.signum.indispensable.pki.GeneralName
 
 /** An open OID-selected name family. Interpreted subtypes are independent of their source format. */
 interface OtherName : GeneralName, Identifiable {
-    fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName =
-        throw UnsupportedOperationException("Custom validation copies are only available for uninterpreted otherName values")
-
     companion object {
         operator fun invoke(
             oid: ObjectIdentifier,
@@ -26,16 +23,9 @@ interface OtherName : GeneralName, Identifiable {
         private class Unknown(
             override val oid: ObjectIdentifier,
             lookupResult: UnsupportedCryptoException,
-            override val isValid: Boolean? = null,
-            source: SourceRepresentationStorage = SourceRepresentationStorage(),
-        ) : OtherName, ServiceLoader.UnknownShim(lookupResult, source) {
-            override fun createValidatedCopy(validate: (GeneralName) -> Boolean): OtherName =
-                Unknown(oid, lookupResult, validate(this), sourceRepresentation)
-        }
+        ) : OtherName, ServiceLoader.UnknownShim(lookupResult)
 
         operator fun invoke(value: X509GeneralName.Other): OtherName = GeneralName.fromAsn1(value) as OtherName
-        operator fun invoke(value: X509GeneralName.Other, validate: (GeneralName) -> Boolean): OtherName =
-            invoke(value).createValidatedCopy(validate)
     }
 }
 
@@ -55,7 +45,6 @@ data class SmtpUtf8Mailbox(val address: String) : OtherName {
 
 data class MacAddressName(val address: ByteArray) : OtherName {
     override val oid get() = OID
-    override val isValid get() = true
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
     init { require(address.size == 6 || address.size == 8) { "A MAC address must contain 6 or 8 octets" } }
     override fun equals(other: Any?): Boolean = other is MacAddressName && address.contentEquals(other.address)

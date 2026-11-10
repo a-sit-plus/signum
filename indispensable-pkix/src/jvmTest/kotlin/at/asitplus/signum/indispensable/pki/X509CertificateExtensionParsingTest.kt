@@ -48,7 +48,7 @@ val X509CertificateExtensionParsingTest by matrixSuite {
         ext!!::class shouldBe KeyUsage::class
     }
 
-    "Invalid keyUsage becomes Unknown with its decode failure retained" {
+    "Invalid keyUsage is classified separately from unknown extensions" {
         val seq = Asn1.Sequence {
             +KnownOIDs.keyUsage
             +Bool(true)
@@ -56,11 +56,11 @@ val X509CertificateExtensionParsingTest by matrixSuite {
         }
 
         val ext = CertificateExtension.fromAsn1(seq)
-            .shouldBeInstanceOf<CertificateExtension.Unknown>()
+            .shouldBeInstanceOf<InvalidCertificateExtension>()
         ext.oid shouldBe KnownOIDs.keyUsage
         ext.critical shouldBe true
         ext.asn1.toRepresentation().value shouldBe byteArrayOf()
-        ext.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+        ext.failure.message.isNullOrEmpty() shouldBe false
     }
 
     "Unknown extension remains an opaque representation carrier" {

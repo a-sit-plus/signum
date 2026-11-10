@@ -449,16 +449,6 @@ val GeneralName.Companion.fromAsn1 get() =
 
 val GeneralName.tag: BigInteger get() = BigInteger.fromULong(this@tag.asn1.toRepresentation().tag.tagValue)
 
-val AlternativeNames.asn1 get() =
-    asn1Encoders<X509GeneralNames,_> {
-        X509GeneralNames(generalNames.map { it.asn1.toRepresentation() })
-    }
-
-val AlternativeNames.Companion.fromAsn1 get() =
-    asn1Decoders<X509GeneralNames,_> { src ->
-        AlternativeNames(src.entries.map { GeneralName.fromAsn1(it) })
-    }
-
 val RelativeDistinguishedName.asn1 get() =
     asn1Encoders<X500RelativeDistinguishedName, _> { src ->
         X500RelativeDistinguishedName(src.attrsAndValues.map {
@@ -478,8 +468,7 @@ val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn
 val AttributeTypeAndValue.Companion.fromAsn1 get() = asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue> { src ->
     try { ServiceLoader.load<AttributeTypeAndValueAsn1Provider>().get(src, AttributeTypeAndValueAsn1Provider::decodeFromAsn1) }
     catch (failure: UnsupportedCryptoException) {
-        AttributeTypeAndValue(src.oid, failure,
-            isValid = if (Signum.attributeDescriptorFor(src.oid) != null) false else null)
+        AttributeTypeAndValue(src.oid, failure)
     }
 }
 
