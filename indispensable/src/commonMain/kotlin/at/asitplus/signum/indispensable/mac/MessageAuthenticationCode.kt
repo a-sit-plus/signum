@@ -21,7 +21,6 @@ interface MessageAuthenticationCode : WithSourceRepresentation {
         : MessageAuthenticationCode
     {
         override fun toString() = "$inner (truncated to $outputLength)"
-        @SignumInternals
         override val sourceRepresentation = SourceRepresentationStorage()
     }
 

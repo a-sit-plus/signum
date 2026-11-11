@@ -21,7 +21,7 @@ class RsaPublicKey(
     val e: Asn1Integer.Positive,
 ) : CryptoPublicKey {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override val additionalProperties = mutableMapOf<String, String>()
 
@@ -96,7 +96,7 @@ class EcdsaPublicKey(
     val preferCompressedRepresentation: Boolean,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override val additionalProperties = mutableMapOf<String, String>()
 

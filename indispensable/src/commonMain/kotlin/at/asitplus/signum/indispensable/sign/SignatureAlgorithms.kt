@@ -20,7 +20,7 @@ class EcdsaAlgorithm(
     val requiredCurve: ECCurve? = null,
 ) : SignatureAlgorithm, Enumerable {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override val preHashedSignatureFormat get() = digest
 
@@ -46,7 +46,7 @@ class RsaAlgorithm(
     val parameters: Parameters<*>,
 ) : SignatureAlgorithm, Enumerable {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     /**
      * Convenience Ctor to use defaults aside digest
@@ -122,7 +122,7 @@ class RsaAlgorithm(
         class Pkcs1Padded(override val digest: Digest) :
             Parameters<RsaPkcs1PaddingParams> //TODO: do we want to keep cursed encodings? I don't think so in this case, because re-encoding a cursed encoding will only ever be part of a larger structure that already has it
         {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            override val sourceRepresentation = SourceRepresentationStorage()
             override val type: Padding get() = Padding.PKCS1
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -149,7 +149,7 @@ class RsaAlgorithm(
             val saltLength: UInt = digest.outputLength.bytes,
             val trailerField: Int = DEFAULT_TRAILER_FIELD,
         ) : Parameters<RsaSsaPssParams> {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            override val sourceRepresentation = SourceRepresentationStorage()
 
             override val type: Padding get() = Padding.PSS
 
@@ -171,7 +171,7 @@ class RsaAlgorithm(
             }
 
             sealed class MaskGenerationFunction(val oid: ObjectIdentifier) : WithSourceRepresentation {
-                @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+                override val sourceRepresentation = SourceRepresentationStorage()
                 data class Pkcs1Mgf1(val digest: Digest = Digest.SHA1) : MaskGenerationFunction(oid) {
                     companion object {
                         val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.8")

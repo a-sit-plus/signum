@@ -7,6 +7,7 @@ import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.AbstractSignature
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate

@@ -351,7 +351,6 @@ val CryptoPrivateKey.Companion.fromAsn1 get() =
     asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, CryptoPrivateKey::Unknown)
 
 private class X509UnparsedSignature : AbstractSignature {
-    @SignumInternals
     override val sourceRepresentation = SourceRepresentationStorage()
     override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
         ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {

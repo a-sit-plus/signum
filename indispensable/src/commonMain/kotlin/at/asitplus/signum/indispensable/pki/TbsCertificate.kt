@@ -27,7 +27,6 @@ class TbsCertificate(
     val extensions: List<CertificateExtension> = emptyList(),
     strict: Boolean = true
 ) : WithSourceRepresentation {
-    @SignumInternals
     override val sourceRepresentation = SourceRepresentationStorage()
 
     init {

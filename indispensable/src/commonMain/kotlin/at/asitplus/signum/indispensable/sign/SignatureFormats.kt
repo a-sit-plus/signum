@@ -21,7 +21,7 @@ sealed class EcdsaSignature
     val s: BigInteger,
 ) : CryptoSignature {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     init {
         require(r.isPositive) { "r must be positive" }
@@ -144,7 +144,7 @@ class RsaSignature(
     val rawBytes: ByteArray,
 ) : CryptoSignature {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override val joseBytes get() = rawBytes
 

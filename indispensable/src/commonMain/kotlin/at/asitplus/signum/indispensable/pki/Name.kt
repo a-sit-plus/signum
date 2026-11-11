@@ -14,7 +14,7 @@ class Name(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean = true
 ) : WithSourceRepresentation {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     val isValid by lazy { relativeDistinguishedNames.all { it.isValid } }
     init { if (performValidation && !isValid) throw Asn1Exception("Invalid Name.") }

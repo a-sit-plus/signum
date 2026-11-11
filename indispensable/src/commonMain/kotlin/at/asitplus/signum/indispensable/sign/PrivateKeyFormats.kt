@@ -14,7 +14,6 @@ import com.ionspin.kotlin.bignum.integer.Sign
 class RsaPrivateKey(
     private val parameters: Parameters,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
-    @SignumInternals
     override val sourceRepresentation = SourceRepresentationStorage()
 
     /** The RSA components form one unit: every semantic access requires valid CRT relationships. */
@@ -95,7 +94,6 @@ class RsaPrivateKey(
         val exponent: BigInteger,
         val coefficient: BigInteger,
     ) : WithSourceRepresentation {
-        @SignumInternals
         override val sourceRepresentation = SourceRepresentationStorage()
         companion object
     }
@@ -110,7 +108,6 @@ sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger
 ) : CryptoPrivateKey {
 
-    @SignumInternals
     override val sourceRepresentation = SourceRepresentationStorage()
 
     abstract val privateKeyBytes: ByteArray

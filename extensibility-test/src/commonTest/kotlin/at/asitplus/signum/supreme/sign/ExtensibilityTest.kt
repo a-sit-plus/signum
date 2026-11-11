@@ -39,16 +39,16 @@ private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte(
  * XOR them together. Very signature, very secure! Wow!
  */
 object CursorySignatureScheme : SignatureAlgorithm {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
     data class Signature(val bit: Boolean) : CryptoSignature {
-        @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+        override val sourceRepresentation = SourceRepresentationStorage()
         override fun equals(other: Any?) = other is Signature && bit == other.bit
         override fun hashCode() = bit.hashCode()
     }
     data class Key(val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
-        @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+        override val sourceRepresentation = SourceRepresentationStorage()
         override fun equals(other: Any?) = other is Key && bit == other.bit
         override fun hashCode() = bit.hashCode()
         companion object {
@@ -60,7 +60,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
         inner class Private : CryptoPrivateKey.WithPublicKey {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            override val sourceRepresentation = SourceRepresentationStorage()
             override val publicKey = this@Key
             override fun equals(other: Any?) = other is Private && publicKey == other.publicKey
             override fun hashCode() = publicKey.hashCode()
