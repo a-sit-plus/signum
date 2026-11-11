@@ -18,8 +18,8 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import java.security.interfaces.ECPublicKey
 
-val none = Signum.installSupreme()
 val JwsJvmTest by matrixSuite {
+    Signum.installSupreme()
 
     class Context {
         val payload = SigningPayload("alice")
