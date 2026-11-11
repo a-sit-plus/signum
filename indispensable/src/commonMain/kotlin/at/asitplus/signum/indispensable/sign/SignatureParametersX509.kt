@@ -142,22 +142,22 @@ object RsaAsn1Constructors :
                     prime1exponent = parsed.exponent1.toBigInteger(),
                     prime2exponent = parsed.exponent2.toBigInteger(),
                     crtCoefficient = parsed.coefficient.toBigInteger(),
-                    otherPrimeInfos = parsed.otherPrimeInfos?.map { RsaPrivateKey.PrimeInfo.fromAsn1(it) },
+                    otherPrimeInfos = parsed.otherPrimeInfos?.map { PrimeInfo.fromAsn1(it) },
                 )
             },
         )
     })
 {
 
-    val PKCS1 get() = asn1Decoders<Pkcs1RsaPrivateKeyInfo,_>(::invoke)
-
-    operator fun invoke(src: Pkcs1RsaPrivateKeyInfo, attributes : Set<Asn1Element>? = null) = runRethrowing {
+    val PKCS1 get() = asn1Decoders { src: Pkcs1RsaPrivateKeyInfo ->
         when (src.version) {
             Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(src.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
             Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(src.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
         }
-        return@runRethrowing invoke(Pkcs8PrivateKeyInfo(src, attributes))
+        invoke(Pkcs8PrivateKeyInfo(src))
     }
+
+    operator fun invoke(src: Pkcs1RsaPrivateKeyInfo) = PKCS1(src)
 }
 
 val RsaPrivateKey.Companion.fromAsn1 get() = RsaAsn1Constructors
@@ -174,7 +174,6 @@ val PrimeInfo.Companion.fromAsn1 get() =
 private fun ecPrivateKey(
     parsed: Sec1EcPrivateKeyInfo,
     curveFromPkcs8: Asn1Element?,
-    attributes: Set<Asn1Element>?,
 ): EcdsaPrivateKey {
     require(parsed.version == Sec1EcPrivateKeyInfo.Version.V1) { "EC private key version must be 1" }
     val privateValue = BigInteger.fromByteArray(parsed.privateKey, Sign.POSITIVE)
@@ -187,12 +186,10 @@ private fun ecPrivateKey(
             parsed.publicKey?.let { EcdsaPublicKey.fromAnsiX963Bytes(resolvedCurve, it.bitCarryingBytes) }
                 ?: resolvedCurve.generator.times(privateValue).asPublicKey(preferCompressed = true)
         },
-        attributes = attributes,
     ) else EcdsaPrivateKey.WithoutPublicKey(
         privateKey = privateValue,
         publicKeyBytes = parsed.publicKey?.let { require(it.numPaddingBits == 0); it.bitCarryingBytes },
         curveOrderLengthInBytes = parsed.privateKey.size,
-        attributes = attributes,
     )
 }
 
@@ -205,17 +202,16 @@ object EcdsaAsn1Constructors :
         val parsed = Sec1EcPrivateKeyInfo.of(src, Signum.Der)
         return@asn1Decoders ecPrivateKey(
             parsed, src.algorithmParameters,
-            src.attributes,
         )
     })
 {
 
-    val SEC1 get() = asn1Decoders<Sec1EcPrivateKeyInfo,_>(::invoke)
-
-    operator fun invoke(src: Sec1EcPrivateKeyInfo, attributes: Set<Asn1Element>? = null): EcdsaPrivateKey {
+    val SEC1 get() = asn1Decoders { src: Sec1EcPrivateKeyInfo ->
         require(src.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${src.version}" }
-        return ecPrivateKey(src, null, attributes)
+        ecPrivateKey(src, null)
     }
+
+    operator fun invoke(src: Sec1EcPrivateKeyInfo) = SEC1(src)
 }
 
 val EcdsaPrivateKey.Companion.fromAsn1 get() = EcdsaAsn1Constructors
