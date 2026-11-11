@@ -27,11 +27,12 @@ class HMAC(val digest: Digest, val oid: ObjectIdentifier)
         val SHA384 = HMAC(Digest.SHA384, KnownOIDs.hmacWithSHA384)
         val SHA512 = HMAC(Digest.SHA512, KnownOIDs.hmacWithSHA512)
 
+        /** Creates an independent HMAC value rather than returning one of the shared presets. */
         fun byDigest(digest: WellKnownDigest) = when (digest) {
-            WellKnownDigest.SHA1 -> SHA1
-            WellKnownDigest.SHA256 -> SHA256
-            WellKnownDigest.SHA384 -> SHA384
-            WellKnownDigest.SHA512 -> SHA512
+            is WellKnownDigest.SHA1 -> HMAC(digest, KnownOIDs.hmacWithSHA1)
+            is WellKnownDigest.SHA256 -> HMAC(digest, KnownOIDs.hmacWithSHA256)
+            is WellKnownDigest.SHA384 -> HMAC(digest, KnownOIDs.hmacWithSHA384)
+            is WellKnownDigest.SHA512 -> HMAC(digest, KnownOIDs.hmacWithSHA512)
         }
     }
 

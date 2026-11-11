@@ -23,10 +23,10 @@ import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
 
 private fun component(digest: WellKnownDigest?) = when(digest) {
-    WellKnownDigest.SHA1 -> "SHA1"
-    WellKnownDigest.SHA256 -> "SHA256"
-    WellKnownDigest.SHA384 -> "SHA384"
-    WellKnownDigest.SHA512 -> "SHA512"
+    is WellKnownDigest.SHA1 -> "SHA1"
+    is WellKnownDigest.SHA256 -> "SHA256"
+    is WellKnownDigest.SHA384 -> "SHA384"
+    is WellKnownDigest.SHA512 -> "SHA512"
     null -> "NONE"
 }
 val VerifierTests by matrixSuite {

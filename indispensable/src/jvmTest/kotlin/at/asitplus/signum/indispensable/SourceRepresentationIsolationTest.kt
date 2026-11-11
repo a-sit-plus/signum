@@ -61,6 +61,13 @@ val SourceRepresentationIsolationTest by matrixSuite(matrixConfig { execution = 
 
 internal object SourceRepresentationScenarios {
     private fun digest(name: String) = WellKnownDigest.entries.single { it.name == name }
+    private fun hmac(name: String) = when (name) {
+        "SHA1" -> HMAC.SHA1
+        "SHA256" -> HMAC.SHA256
+        "SHA384" -> HMAC.SHA384
+        "SHA512" -> HMAC.SHA512
+        else -> error(name)
+    }
 
     @JvmStatic
     fun digestSources(name: String) {
@@ -77,7 +84,7 @@ internal object SourceRepresentationScenarios {
 
     @JvmStatic
     fun hmacPreset(name: String) {
-        val preset = HMAC.byDigest(digest(name))
+        val preset = hmac(name)
         preset.sourceFormat shouldBe "<no source>"
         val _ = MessageAuthenticationCode.fromAsn1(X509AlgorithmIdentifier(preset.oid, Asn1Null))
 
