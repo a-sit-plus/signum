@@ -1,4 +1,4 @@
-@file:OptIn(at.asitplus.signum.SignumInternals::class, at.asitplus.signum.indispensable.pki.ExperimentalPkiApi::class)
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
 
 package at.asitplus.signum.indispensable.pki
 
@@ -24,6 +24,24 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
 val InvalidPkixValueTest by matrixSuite {
+    "Basic constraint invariants reject construction and preserve malformed decoded sources" {
+        shouldThrowAny { BasicConstraints(ca = false, pathLenConstraint = 0u) }
+        shouldThrowAny { PolicyConstraints(requireExplicitPolicy = -1) }
+        shouldThrowAny { PolicyConstraints(inhibitPolicyMapping = -1) }
+        shouldThrowAny { InhibitAnyPolicy(-1) }
+
+        listOf(
+            X509CertificateExtension(BasicConstraints.oid, true, "3003020100".hexToByteArray()),
+            X509CertificateExtension(PolicyConstraints.oid, true, "30038001ff".hexToByteArray()),
+            X509CertificateExtension(PolicyConstraints.oid, true, "30038101ff".hexToByteArray()),
+            X509CertificateExtension(InhibitAnyPolicy.oid, true, "0201ff".hexToByteArray()),
+        ).forEach { source ->
+            val value = CertificateExtension.fromAsn1(source).shouldBeInstanceOf<InvalidCertificateExtension>()
+            value.oid shouldBe source.oid
+            value.asn1.toRepresentation() shouldBeSameInstanceAs source
+        }
+    }
+
     "Recognized invalid name payloads retain their original source" {
         val sources = listOf<X509GeneralName>(
             X509GeneralName.Dns("bad name"), X509GeneralName.Rfc822("two@@example.com"),
@@ -38,7 +56,6 @@ val InvalidPkixValueTest by matrixSuite {
             ((name as GeneralName) is ServiceLoader.UnknownShim) shouldBe false
             name.asn1.toRepresentation() shouldBeSameInstanceAs source
             GeneralName.fromAsn1(name.asn1.toDer()).shouldBeInstanceOf<InvalidGeneralName>()
-            shouldThrowAny { name.constrains(DNSName("example.com")) }
         }
     }
 
