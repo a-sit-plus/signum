@@ -32,6 +32,26 @@ Module installers are extension functions on `Signum`, defined in their respecti
 Indispensable does not depend on Supreme or PKIX. Core provider installation remains lazy and idempotent;
 it is also available explicitly as `Signum.installIndispensable()`.
 
+### DER templates
+
+On first access, Signum creates its own DER instance from a configuration template. By default, the
+template is awesn1's finalized `DER`: Signum copies its settings and serializers, then applies its
+registered extension serializers. `Signum.Der !== DER`, even when the instances produce the same bytes
+and enforce the same limits.
+
+awesn1 may already have encoded or decoded values before Signum starts. Its default instance remains
+a valid template after the `DefaultDer` registry has sealed; Signum does not register anything into
+that registry. For example:
+
+```kotlin
+val awesn1Der = DER
+val bytes = awesn1Der.encodeToByteArray(EcdsaSigValue(Asn1Integer.ONE, Asn1Integer(2)))
+
+val signature = EcdsaSignature.fromRawSignatureValue(bytes)
+check(Signum.Der !== awesn1Der)
+check(signature.asn1.toRepresentation().rawBytes.contentEquals(bytes))
+```
+
 Optionally select a custom configuration **before** installing extensions:
 
 ```kotlin
@@ -47,15 +67,29 @@ val bytes = Signum.Der.encodeToByteArray(foobarPublicKey)
 val key = Signum.Der.decodeFromByteArray<FoobarPublicKey>(bytes)
 ```
 
-`setDer` supplies a template: Signum creates a new instance preserving its settings and existing serializers,
-then adds its core and registered extension serializers. Omit `setDer` to use awesn1's default `DER` instance;
-Signum registers the complete module there before resolving it. First access to `Signum.Der` seals serializer registration.
-Call `setDer` at most once, before any serializer contribution. Late selection or serializer contribution throws.
+Signum copies all four template settings (`encodeDefaults`, `explicitNulls`, `maxInputLength`, and
+`maxNestingDepth`) and its serializers. `Signum.Der` is distinct from a custom template too. Selecting
+a custom template does not initialize awesn1's default `DER` or seal its `DefaultDer` registry.
+Signum helpers use the single finalized `Signum.Der`; they do not accept a separate configuration for each call.
+
+### Startup order and serializer precedence
+
+The two registries have independent lifecycles:
+
+- Configure awesn1's `DefaultDer` settings and register its serializers before the first access to
+  awesn1's `DER`.
+- Optionally call `Signum.setDer(...)` once, then install Signum extensions and contribute serializers
+  before the first access to `Signum.Der`. Earlier use of awesn1's `DER` does not close this window.
+- Repeated accesses return the same Signum instance. Late template selection or Signum serializer
+  contribution throws. Signum's contributions do not modify the awesn1 instance or registry.
+
+Perform startup configuration on one thread. Calling a Signum encoding or decoding helper can access
+`Signum.Der`, so complete Signum serializer registration before using those helpers.
 Each descriptor registry seals on its first lookup; combined descriptor/serializer registration requires
 both stores to remain open. Provider-only registration retains its existing mutable behavior, allowing
 lazy module installation. Centralization does not introduce a single shared freeze point.
-Configure and install on one thread during startup; do not access awesn1's default `DER` before bootstrap.
-Serializer precedence is core, then the custom template, then contributions in registration order;
+
+Serializer precedence is the selected template, then contributions in registration order;
 later contributions replace earlier registrations for the same type.
 Register native open-polymorphic payload serializers (such as custom `otherName` types) through
 `Signum.registerAsn1Serializers` alongside your provider installation.
@@ -66,6 +100,8 @@ Semantic types implement `Encodable`; their companions can implement `Decodable<
 These interfaces replace `DerEncodable` and `DerDecodable` and do not prescribe an ASN.1 representation.
 Encoding and decoding use contextual serializers through `Signum.Der`, including awesn1's TLV and kotlinx.io APIs.
 Signum's PEM extensions also use `Signum.Der`.
+`maxInputLength` constrains DER byte input, including nested byte decoding; it does not constrain
+encoded output or re-check the byte size of an already-parsed TLV element.
 
 `Encodable.sourceRepresentation` is a nullable `Pair<Encodable.Representation, Any>`: one format key
 and the original decoded model. The key implements an open interface; `X509` identifies an ASN.1 source,

@@ -7,12 +7,12 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import kotlinx.serialization.modules.SerializersModule
 
 val DefaultDerRegistrationTest by matrixSuite {
     "Test session registers Certificate and TbsCertificate once" {
-        Signum.Der shouldBeSameInstanceAs DER
+        Signum.Der shouldNotBeSameInstanceAs DER
         shouldThrowAny { Signum.registerAsn1Serializers(SerializersModule {}) }
         val pem = checkNotNull(Certificate::class.java.getResourceAsStream("/ff/A-Trust-Root-05.crt"))
             .bufferedReader().use { it.readText() }
