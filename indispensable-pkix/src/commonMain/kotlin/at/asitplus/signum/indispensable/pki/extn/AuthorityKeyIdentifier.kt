@@ -30,21 +30,21 @@ data class AuthorityKeyIdentifier(
             keyIdentifier.contentEquals(other.keyIdentifier) && authorityCertIssuer == other.authorityCertIssuer &&
             authorityCertSerialNumber == other.authorityCertSerialNumber
     override fun hashCode(): Int = 31 * (31 * (31 * keyIdentifier.contentHashCode() + authorityCertIssuer.hashCode()) + authorityCertSerialNumber.hashCode()) + critical.hashCode()
-}
 
-/**
- * ```
- * AuthorityKeyIdentifier ::= SEQUENCE {
- *   keyIdentifier             [0] KeyIdentifier             OPTIONAL,   -- OCTET STRING
- *   authorityCertIssuer       [1] GeneralNames              OPTIONAL,   -- SEQUENCE OF GeneralName
- *   authorityCertSerialNumber [2] CertificateSerialNumber   OPTIONAL }  -- INTEGER
- * ```
- * All members are IMPLICIT context-tagged. `keyIdentifier` is a `ByteArray` (awesn1 encodes it as the
- * OCTET STRING); [1]/[2] infer their tags from the `List` / `Asn1Integer` descriptors. Used by the ASN.1 provider for encoding and decoding.
- */
-@Serializable
-internal class AuthorityKeyIdentifierBody(
-    @Asn1Tag(0u) val keyIdentifier: ByteArray? = null,
-    @Asn1Tag(1u) val authorityCertIssuer: List<X509GeneralName>? = null,
-    @Asn1Tag(2u) val authorityCertSerialNumber: Asn1Integer? = null,
-)
+    /**
+     * ```
+     * AuthorityKeyIdentifier ::= SEQUENCE {
+     *   keyIdentifier             [0] KeyIdentifier             OPTIONAL,   -- OCTET STRING
+     *   authorityCertIssuer       [1] GeneralNames              OPTIONAL,   -- SEQUENCE OF GeneralName
+     *   authorityCertSerialNumber [2] CertificateSerialNumber   OPTIONAL }  -- INTEGER
+     * ```
+     * All members are IMPLICIT context-tagged. `keyIdentifier` is a `ByteArray` (awesn1 encodes it as the
+     * OCTET STRING); [1]/[2] infer their tags from the `List` / `Asn1Integer` descriptors. Used by the ASN.1 provider for encoding and decoding.
+     */
+    @Serializable
+    internal class Asn1Representation(
+        @Asn1Tag(0u) val keyIdentifier: ByteArray? = null,
+        @Asn1Tag(1u) val authorityCertIssuer: List<X509GeneralName>? = null,
+        @Asn1Tag(2u) val authorityCertSerialNumber: Asn1Integer? = null,
+    )
+}

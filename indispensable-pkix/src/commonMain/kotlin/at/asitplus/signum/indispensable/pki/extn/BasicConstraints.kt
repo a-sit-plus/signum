@@ -25,18 +25,18 @@ data class BasicConstraints(
     }
 
     init { require(ca || pathLenConstraint == null) { "Only CA certificates may have a path length constraint" } }
-}
 
-/**
- * ```
- * BasicConstraints ::= SEQUENCE {
- *   cA                BOOLEAN DEFAULT FALSE,
- *   pathLenConstraint INTEGER (0..MAX) OPTIONAL }
- * ```
- * Used by the ASN.1 provider for encoding and decoding.
- */
-@Serializable
-internal class BasicConstraintsBody(
-    val cA: Boolean? = null,
-    val pathLenConstraint: Asn1Integer? = null,
-)
+    /**
+     * ```
+     * BasicConstraints ::= SEQUENCE {
+     *   cA                BOOLEAN DEFAULT FALSE,
+     *   pathLenConstraint INTEGER (0..MAX) OPTIONAL }
+     * ```
+     * Used by the ASN.1 provider for encoding and decoding.
+     */
+    @Serializable
+    internal class Asn1Representation(
+        val cA: Boolean? = null,
+        val pathLenConstraint: Asn1Integer? = null,
+    )
+}

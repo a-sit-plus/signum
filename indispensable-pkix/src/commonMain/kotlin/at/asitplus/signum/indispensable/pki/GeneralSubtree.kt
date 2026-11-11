@@ -1,5 +1,9 @@
 package at.asitplus.signum.indispensable.pki.extn
 
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.crypto.pki.X509GeneralName
+import at.asitplus.awesn1.serialization.Asn1Tag
+import kotlinx.serialization.Serializable
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
@@ -14,6 +18,14 @@ data class GeneralSubtree(
 ) : WithSourceRepresentation {
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
     companion object
+
+    /** ASN.1 wire shape; semantic values and copies do not retain it as a constructor field. */
+    @Serializable
+    internal data class Asn1Representation(
+        val base: X509GeneralName,
+        @Asn1Tag(0u) val minimum: Asn1Integer? = null,
+        @Asn1Tag(1u) val maximum: Asn1Integer? = null,
+    )
 }
 
 /** An ordered collection of name subtrees, independent of constraint-processing algorithms. */

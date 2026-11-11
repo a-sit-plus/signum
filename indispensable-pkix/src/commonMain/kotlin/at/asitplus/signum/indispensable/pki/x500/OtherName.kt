@@ -3,6 +3,7 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.*
+import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
@@ -34,6 +35,9 @@ data class HardwareModuleName(val hardwareType: ObjectIdentifier, val serial: By
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
     override fun equals(other: Any?): Boolean = other is HardwareModuleName && hardwareType == other.hardwareType && serial.contentEquals(other.serial)
     override fun hashCode(): Int = 31 * hardwareType.hashCode() + serial.contentHashCode()
+    @Serializable
+    internal data class Asn1Representation(val hardwareType: ObjectIdentifier, val serial: ByteArray)
+
     companion object { val OID = ObjectIdentifier("1.3.6.1.5.5.7.8.4") }
 }
 

@@ -149,7 +149,7 @@ val SignumDerTest by matrixSuite {
     "GeneralSubtree preserves original wire form with semantic equality" {
         val name = DNSName(Asn1String.IA5("example.com"))
         val omitted = GeneralSubtree(name)
-        val explicit = GeneralSubtree.fromAsn1(X509GeneralSubtree(name.asn1.toRepresentation(), Asn1Integer(0)))
+        val explicit = GeneralSubtree.fromAsn1(GeneralSubtree.Asn1Representation(name.asn1.toRepresentation(), Asn1Integer(0)))
         explicit shouldBe omitted
         explicit.hashCode() shouldBe omitted.hashCode()
         explicit.asn1.toRepresentation() shouldBeSameInstanceAs explicit.asn1.toRepresentation()

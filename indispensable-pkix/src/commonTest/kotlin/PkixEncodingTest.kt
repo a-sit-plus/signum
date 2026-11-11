@@ -86,7 +86,7 @@ val PkixEncodingTest by matrixSuite {
         copy.sourceFormat shouldBe "<no source>"
         val roundTripped = GeneralSubtree.fromAsn1(copy.asn1.toDer())
         roundTripped.minimum shouldBe com.ionspin.kotlin.bignum.integer.BigInteger.ONE
-        decoded.sourceFormat shouldBe "X509GeneralSubtree"
+        decoded.sourceFormat shouldBe "Asn1Representation"
     }
 
     "Programmatic PKIX extensions retain no source before or after encoding" {
