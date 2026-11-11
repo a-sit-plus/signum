@@ -62,7 +62,6 @@ object CursorySignatureScheme : SignatureAlgorithm {
         inner class Private : CryptoPrivateKey.WithPublicKey {
             @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
             override val publicKey = this@Key
-            override val attributes: Set<Asn1Element>? = null
             override fun equals(other: Any?) = other is Private && publicKey == other.publicKey
             override fun hashCode() = publicKey.hashCode()
         }
