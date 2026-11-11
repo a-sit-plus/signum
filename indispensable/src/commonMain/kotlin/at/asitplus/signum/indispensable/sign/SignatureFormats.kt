@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.sign
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -167,7 +168,7 @@ class RsaSignature(
 
 object IndispensableSignatureFormats : SignatureFormatProvider {
     override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? = when (value) {
-        is EcdsaSignature -> at.asitplus.awesn1.crypto.EcdsaSigValue(value.r.toAsn1Integer(), value.s.toAsn1Integer()).toX509SignatureValue()
+        is EcdsaSignature -> at.asitplus.awesn1.crypto.EcdsaSigValue(value.r.toAsn1Integer(), value.s.toAsn1Integer()).toX509SignatureValue(Signum.Der)
         is RsaSignature -> X509SignatureValue(value.rawBytes)
         else -> null
     }

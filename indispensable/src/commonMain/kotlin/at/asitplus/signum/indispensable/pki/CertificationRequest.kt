@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.awesn1.allDistinctByOids
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -137,7 +138,7 @@ private fun mergeAttributesWithExtensions(
             add(CsrAttribute.fromAsn1(
                 Pkcs10CsrAttribute.ExtensionRequest(it.map {
                     extension -> extension.asn1.toRepresentation()
-                })
+                }, Signum.Der)
             ))
         }
     }

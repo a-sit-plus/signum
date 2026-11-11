@@ -58,7 +58,7 @@ val RsaPublicKey.Companion.fromAsn1 get() = RsaPublicKeyAsn1Constructors
 
 class RsaPublicKeyAsn1Converters(self: RsaPublicKey) :
     Asn1EncodingHelpers.Asn1Encoders.WithPEM<SubjectPublicKeyInfo> by
-    (self.asn1Encoders { SubjectPublicKeyInfo.from(convert(it)) })
+    (self.asn1Encoders { SubjectPublicKeyInfo.from(convert(it), Signum.Der) })
 {
     val pkcs1 = self.asn1Encoders(::convert)
 
