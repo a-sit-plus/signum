@@ -93,6 +93,7 @@ class RsaPublicKey(
 @SerialName("EC")
 class EcdsaPublicKey(
     val publicPoint: ECPoint.Normalized,
+    // TODO: remove this once COSE/JOSE are source formats
     val preferCompressedRepresentation: Boolean,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
 

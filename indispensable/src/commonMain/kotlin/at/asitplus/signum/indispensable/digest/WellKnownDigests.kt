@@ -4,7 +4,6 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
