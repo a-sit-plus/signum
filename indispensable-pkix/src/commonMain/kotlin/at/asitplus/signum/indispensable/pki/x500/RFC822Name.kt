@@ -1,11 +1,8 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `rfc822Name` GeneralName CHOICE `[1]`. */
 class RFC822Name(
@@ -29,38 +26,6 @@ class RFC822Name(
         // Domain may start with '.', but cannot be just '.'
         if (domain.startsWith(".") && domain.length == 1) return false
         return true
-    }
-
-    @ExperimentalPkiApi
-    override fun constrains(input: GeneralName?): ConstraintResult {
-        return try {
-            super.constrains(input)
-        } catch (_: UnsupportedOperationException) {
-            val thisName = value.lowercase()
-            val inputName = (input as RFC822Name).value.lowercase()
-            fun isEmailLike(name: String) = '@' in name
-            fun hasDomainPrefix(name: String) = name.startsWith(".")
-
-            when {
-                thisName == inputName -> ConstraintResult.MATCH
-
-                thisName.endsWith(inputName) -> when {
-                    isEmailLike(inputName) -> ConstraintResult.SAME_TYPE
-                    hasDomainPrefix(inputName) -> ConstraintResult.NARROWS
-                    thisName.getOrNull(thisName.lastIndexOf(inputName) - 1) == '@' -> ConstraintResult.NARROWS
-                    else -> ConstraintResult.SAME_TYPE
-                }
-
-                inputName.endsWith(thisName) -> when {
-                    isEmailLike(thisName) -> ConstraintResult.SAME_TYPE
-                    hasDomainPrefix(thisName) -> ConstraintResult.WIDENS
-                    inputName.getOrNull(inputName.lastIndexOf(thisName) - 1) == '@' -> ConstraintResult.WIDENS
-                    else -> ConstraintResult.SAME_TYPE
-                }
-
-                else -> ConstraintResult.SAME_TYPE
-            }
-        }
     }
 
     companion object {

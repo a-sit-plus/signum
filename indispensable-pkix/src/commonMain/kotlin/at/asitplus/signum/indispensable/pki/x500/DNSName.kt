@@ -1,13 +1,10 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.cidre.IpAddress
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.runRethrowing
-import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `dNSName` GeneralName CHOICE `[2]`. */
 class DNSName(
@@ -21,38 +18,6 @@ class DNSName(
     }
 
     override fun toString(): String = value
-
-    @ExperimentalPkiApi
-    override fun constrains(input: GeneralName?): ConstraintResult {
-        return try {
-            super.constrains(input)
-        } catch (_: UnsupportedOperationException) {
-            val thisName = value.lowercase()
-            val inputName = (input as DNSName).value.lowercase()
-
-            when {
-                thisName == inputName -> ConstraintResult.MATCH
-
-                thisName.endsWith(inputName) -> {
-                    val index = thisName.lastIndexOf(inputName)
-                    val charBefore = thisName.getOrNull(index - 1)
-                    val inputStartsWithDot = inputName.startsWith('.')
-                    if ((charBefore == '.' && !inputStartsWithDot) || (charBefore != '.' && inputStartsWithDot))
-                        ConstraintResult.NARROWS else ConstraintResult.SAME_TYPE
-                }
-
-                inputName.endsWith(thisName) -> {
-                    val index = inputName.lastIndexOf(thisName)
-                    val charBefore = inputName.getOrNull(index - 1)
-                    val thisStartsWithDot = thisName.startsWith('.')
-                    if ((charBefore == '.' && !thisStartsWithDot) || (charBefore != '.' && thisStartsWithDot))
-                        ConstraintResult.WIDENS else ConstraintResult.SAME_TYPE
-                }
-
-                else -> ConstraintResult.SAME_TYPE
-            }
-        }
-    }
 
     companion object {
         operator fun invoke(value: Asn1String.IA5, allowWildcard: Boolean = true): DNSName =

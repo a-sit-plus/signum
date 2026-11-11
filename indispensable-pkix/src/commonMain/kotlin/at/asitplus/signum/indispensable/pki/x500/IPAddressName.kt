@@ -3,9 +3,6 @@ package at.asitplus.signum.indispensable.pki.x500
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.cidre.*
-import at.asitplus.signum.indispensable.pki.ExperimentalPkiApi
-import at.asitplus.signum.indispensable.pki.GeneralName
-import at.asitplus.signum.indispensable.pki.x500.ConstraintResult
 
 /** RFC 5280 `iPAddress` GeneralName CHOICE `[7]`. */
 class IPAddressName internal constructor(
@@ -43,64 +40,6 @@ class IPAddressName internal constructor(
     }
 
     override fun toString(): String = addressAndPrefix?.toString() ?: address.toString()
-
-    @ExperimentalPkiApi
-    override fun constrains(input: GeneralName?): ConstraintResult {
-        return try {
-            super.constrains(input)
-        } catch (_: UnsupportedOperationException) {
-
-            val other = input as? IPAddressName ?: return ConstraintResult.DIFF_TYPE
-
-            if (this == other) return ConstraintResult.MATCH
-
-            val thisNetwork = network
-            val otherNetwork = other.network
-            val thisAddress = address
-            val otherAddress = other.address
-
-            when {
-                thisNetwork == null && otherNetwork == null -> {
-                    thisAddress!!.withSameFamily(otherAddress!!) {
-                        ConstraintResult.SAME_TYPE
-                    } ?: ConstraintResult.DIFF_TYPE
-                }
-
-                thisNetwork != null && otherNetwork != null -> {
-                    thisNetwork.withSameFamily(otherNetwork) {
-                        when {
-                            left == right -> ConstraintResult.MATCH
-                            left.contains(right) -> ConstraintResult.WIDENS
-                            right.contains(left) -> ConstraintResult.NARROWS
-                            else -> ConstraintResult.SAME_TYPE
-                        }
-                    } ?: ConstraintResult.DIFF_TYPE
-                }
-
-                thisNetwork != null && otherAddress != null -> {
-                    thisNetwork.withSameFamily(otherAddress) {
-                        if (network.contains(address)) {
-                            ConstraintResult.WIDENS
-                        } else {
-                            ConstraintResult.SAME_TYPE
-                        }
-                    } ?: ConstraintResult.DIFF_TYPE
-                }
-
-                thisAddress != null && otherNetwork != null -> {
-                    thisAddress.withSameFamily(otherNetwork) {
-                        if (network.contains(address)) {
-                            ConstraintResult.NARROWS
-                        } else {
-                            ConstraintResult.SAME_TYPE
-                        }
-                    } ?: ConstraintResult.DIFF_TYPE
-                }
-
-                else -> ConstraintResult.SAME_TYPE
-            }
-        }
-    }
 
     companion object {
         val tag = X509GeneralName.Tags.ipAddress
