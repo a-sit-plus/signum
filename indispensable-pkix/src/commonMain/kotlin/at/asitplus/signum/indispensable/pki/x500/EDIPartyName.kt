@@ -1,6 +1,10 @@
 package at.asitplus.signum.indispensable.pki.x500
 
 import at.asitplus.awesn1.Asn1Sequence
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.serialization.Asn1Tag
+import at.asitplus.awesn1.serialization.ExplicitlyTagged
+import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
@@ -17,6 +21,21 @@ data class EDIPartyName(
     init {
         require(partyName.isNotEmpty()) { "EDI party name cannot be empty" }
         require(nameAssigner == null || nameAssigner.isNotEmpty()) { "EDI name assigner cannot be empty" }
+    }
+
+    @Serializable
+    internal data class Asn1Representation(
+        @Asn1Tag(0u, constructed = Asn1Tag.ConstructedBit.CONSTRUCTED)
+        val nameAssigner: ExplicitlyTagged<Asn1String>? = null,
+        @Asn1Tag(1u, constructed = Asn1Tag.ConstructedBit.CONSTRUCTED)
+        val partyName: ExplicitlyTagged<Asn1String>,
+    ) {
+        init {
+            require(listOfNotNull(nameAssigner?.value, partyName.value).all {
+                (it is Asn1String.Teletex || it is Asn1String.Printable || it is Asn1String.Universal ||
+                        it is Asn1String.UTF8 || it is Asn1String.BMP) && it.isValid != false
+            }) { "EDI names must contain valid DirectoryStrings" }
+        }
     }
 
     companion object {

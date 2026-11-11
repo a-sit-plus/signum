@@ -1,28 +1,17 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
-import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import kotlinx.serialization.Serializable
 
-/** ASN.1 wire shape; semantic values and copies do not retain it as a constructor field. */
-@Serializable
-internal data class X509GeneralSubtree(
-    val base: X509GeneralName,
-    @Asn1Tag(0u) val minimum: Asn1Integer? = null,
-    @Asn1Tag(1u) val maximum: Asn1Integer? = null,
-)
-
-internal val GeneralSubtree.asn1 get() = asn1Encoders<X509GeneralSubtree, _> {
-    X509GeneralSubtree(base.asn1.toRepresentation(), minimum.takeUnless { it == BigInteger.ZERO }?.toAsn1Integer(), maximum?.toAsn1Integer())
+internal val GeneralSubtree.asn1 get() = asn1Encoders<GeneralSubtree.Asn1Representation, _> {
+    GeneralSubtree.Asn1Representation(base.asn1.toRepresentation(), minimum.takeUnless { it == BigInteger.ZERO }?.toAsn1Integer(), maximum?.toAsn1Integer())
 }
 
-internal val GeneralSubtree.Companion.fromAsn1 get() = asn1Decoders<X509GeneralSubtree, _> {
+internal val GeneralSubtree.Companion.fromAsn1 get() = asn1Decoders<GeneralSubtree.Asn1Representation, _> {
     GeneralSubtree(GeneralName.fromAsn1(it.base), it.minimum?.toBigInteger() ?: BigInteger.ZERO, it.maximum?.toBigInteger())
 }

@@ -31,19 +31,19 @@ data class PolicyConstraints(
         require(requireExplicitPolicy == null || requireExplicitPolicy >= 0)
         require(inhibitPolicyMapping == null || inhibitPolicyMapping >= 0)
     }
-}
 
-/**
- * ```
- * PolicyConstraints ::= SEQUENCE {
- *   requireExplicitPolicy [0] SkipCerts OPTIONAL,
- *   inhibitPolicyMapping  [1] SkipCerts OPTIONAL }
- * SkipCerts ::= INTEGER (0..MAX)
- * ```
- * IMPLICIT context-tagged INTEGERs; shared by decode and the programmatic constructor.
- */
-@Serializable
-internal class PolicyConstraintsBody(
-    @Asn1Tag(0u) val requireExplicitPolicy: Asn1Integer? = null,
-    @Asn1Tag(1u) val inhibitPolicyMapping: Asn1Integer? = null,
-)
+    /**
+     * ```
+     * PolicyConstraints ::= SEQUENCE {
+     *   requireExplicitPolicy [0] SkipCerts OPTIONAL,
+     *   inhibitPolicyMapping  [1] SkipCerts OPTIONAL }
+     * SkipCerts ::= INTEGER (0..MAX)
+     * ```
+     * IMPLICIT context-tagged INTEGERs; shared by decode and the programmatic constructor.
+     */
+    @Serializable
+    internal class Asn1Representation(
+        @Asn1Tag(0u) val requireExplicitPolicy: Asn1Integer? = null,
+        @Asn1Tag(1u) val inhibitPolicyMapping: Asn1Integer? = null,
+    )
+}

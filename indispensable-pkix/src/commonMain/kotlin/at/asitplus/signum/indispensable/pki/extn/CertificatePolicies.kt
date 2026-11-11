@@ -9,6 +9,7 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import com.eygraber.uri.Uri
+import kotlinx.serialization.Serializable
 
 /**
  * Certificate Policies Extension
@@ -31,10 +32,19 @@ data class CertificatePolicies(
 data class PolicyInformation(
     override val oid: ObjectIdentifier,
     val policyQualifiers: List<PolicyQualifierInfo> = emptyList(),
-) : Identifiable
+) : Identifiable {
+    @Serializable
+    internal data class Asn1Representation(
+        val oid: ObjectIdentifier,
+        val qualifiers: List<PolicyQualifierInfo.Companion.Asn1Representation> = emptyList(),
+    )
+}
 
 interface PolicyQualifierInfo : Identifiable, at.asitplus.signum.indispensable.WithSourceRepresentation {
     companion object {
+        @Serializable
+        internal data class Asn1Representation(val oid: ObjectIdentifier, val qualifier: Asn1Element)
+
         operator fun invoke(
             oid: ObjectIdentifier,
             decodingFailure: UnsupportedCryptoException? = null,
@@ -62,8 +72,17 @@ data class UserNotice(
     val noticeRef: NoticeReference? = null,
     val explicitText: String? = null,
 ) : PolicyQualifierInfo {
+    @Serializable
+    internal data class Asn1Representation(
+        val noticeRef: NoticeReference.Asn1Representation? = null,
+        val explicitText: Asn1String? = null,
+    )
+
     override val oid get() = KnownOIDs.unotice
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
 }
 
-data class NoticeReference(val organization: String, val noticeNumbers: List<com.ionspin.kotlin.bignum.integer.BigInteger>)
+data class NoticeReference(val organization: String, val noticeNumbers: List<com.ionspin.kotlin.bignum.integer.BigInteger>) {
+    @Serializable
+    internal data class Asn1Representation(val organization: Asn1String, val numbers: List<Asn1Integer>)
+}

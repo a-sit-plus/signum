@@ -16,19 +16,10 @@ interface PolicyQualifierAsn1Provider {
     fun encodeToAsn1(value: PolicyQualifierInfo): Asn1Element?
 }
 
-@Serializable
-private data class QualifierWire(val oid: ObjectIdentifier, val qualifier: Asn1Element)
-@Serializable
-private data class PolicyWire(val oid: ObjectIdentifier, val qualifiers: List<QualifierWire> = emptyList())
-@Serializable
-private data class NoticeWire(val noticeRef: NoticeReferenceWire? = null, val explicitText: Asn1String? = null)
-@Serializable
-private data class NoticeReferenceWire(val organization: Asn1String, val numbers: List<Asn1Integer>)
-
 internal fun decodeCertificatePolicies(bytes: ByteArray): List<PolicyInformation> =
-    Signum.Der.decodeFromByteArray(ListSerializer(PolicyWire.serializer()), bytes).map { wire ->
+    Signum.Der.decodeFromByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), bytes).map { wire ->
         PolicyInformation(wire.oid, wire.qualifiers.map { src ->
-            decodeFrom<QualifierWire, PolicyQualifierInfo> {
+            decodeFrom<PolicyQualifierInfo.Companion.Asn1Representation, PolicyQualifierInfo> {
                 try {
                     ServiceLoader.load<PolicyQualifierAsn1Provider>().get(it) { decodeFromAsn1(it.oid, it.qualifier) }
                 } catch (failure: UnsupportedCryptoException) { PolicyQualifierInfo(it.oid, failure) }
@@ -37,10 +28,10 @@ internal fun decodeCertificatePolicies(bytes: ByteArray): List<PolicyInformation
     }
 
 internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteArray =
-    Signum.Der.encodeToByteArray(ListSerializer(PolicyWire.serializer()), policies.map { policy ->
-        PolicyWire(policy.oid, policy.policyQualifiers.map { q ->
-            q.encodeTo<QualifierWire, PolicyQualifierInfo> {
-                QualifierWire(it.oid, ServiceLoader.load<PolicyQualifierAsn1Provider>().get(it, PolicyQualifierAsn1Provider::encodeToAsn1))
+    Signum.Der.encodeToByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), policies.map { policy ->
+        PolicyInformation.Asn1Representation(policy.oid, policy.policyQualifiers.map { q ->
+            q.encodeTo<PolicyQualifierInfo.Companion.Asn1Representation, PolicyQualifierInfo> {
+                PolicyQualifierInfo.Companion.Asn1Representation(it.oid, ServiceLoader.load<PolicyQualifierAsn1Provider>().get(it, PolicyQualifierAsn1Provider::encodeToAsn1))
             }
         })
     })
@@ -51,7 +42,7 @@ internal object BuiltinPolicyQualifiers : PolicyQualifierAsn1Provider {
             KnownOIDs.cps -> CpsUri(Signum.Der.decodeFromTlv(
                 Asn1String.IA5.serializer(), value.assertTag(Asn1Element.Tag.STRING_IA5),
             ).value)
-            KnownOIDs.unotice -> Signum.Der.decodeFromTlv(NoticeWire.serializer(), value).let { notice ->
+            KnownOIDs.unotice -> Signum.Der.decodeFromTlv(UserNotice.Asn1Representation.serializer(), value).let { notice ->
                 UserNotice(notice.noticeRef?.let { NoticeReference(it.organization.value, it.numbers.map { n -> n.toBigInteger() }) }, notice.explicitText?.value)
             }
             else -> null
@@ -59,8 +50,8 @@ internal object BuiltinPolicyQualifiers : PolicyQualifierAsn1Provider {
 
     override fun encodeToAsn1(value: PolicyQualifierInfo): Asn1Element? = when (value) {
         is CpsUri -> Signum.Der.encodeToTlv(Asn1String.IA5.serializer(), Asn1String.IA5(value.uri.toString()))
-        is UserNotice -> Signum.Der.encodeToTlv(NoticeWire.serializer(), NoticeWire(
-            value.noticeRef?.let { NoticeReferenceWire(Asn1String.UTF8(it.organization), it.noticeNumbers.map { n -> n.toAsn1Integer() }) },
+        is UserNotice -> Signum.Der.encodeToTlv(UserNotice.Asn1Representation.serializer(), UserNotice.Asn1Representation(
+            value.noticeRef?.let { NoticeReference.Asn1Representation(Asn1String.UTF8(it.organization), it.noticeNumbers.map { n -> n.toAsn1Integer() }) },
             value.explicitText?.let { Asn1String.UTF8(it) },
         ))
         else -> null
