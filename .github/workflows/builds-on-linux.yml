@@ -35,6 +35,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           submodules: recursive
+      # Temporary composite-build dependency while awesn1 changes are unpublished.
+      - name: Clone awesn1 beside Signum
+        shell: bash
+        run: git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
