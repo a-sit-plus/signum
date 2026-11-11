@@ -13,9 +13,9 @@ import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA256
-import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA384
-import at.asitplus.signum.indispensable.digest.WellKnownDigest.SHA512
+import at.asitplus.signum.indispensable.digest.WellKnownDigest.Companion.SHA256
+import at.asitplus.signum.indispensable.digest.WellKnownDigest.Companion.SHA384
+import at.asitplus.signum.indispensable.digest.WellKnownDigest.Companion.SHA512
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm

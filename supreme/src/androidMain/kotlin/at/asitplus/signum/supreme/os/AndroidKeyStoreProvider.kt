@@ -191,10 +191,10 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
     }
 
     private fun keyProperty(digest: Digest?) = when (digest) {
-        WellKnownDigest.SHA1 -> KeyProperties.DIGEST_SHA1
-        WellKnownDigest.SHA256 -> KeyProperties.DIGEST_SHA256
-        WellKnownDigest.SHA384 -> KeyProperties.DIGEST_SHA384
-        WellKnownDigest.SHA512 -> KeyProperties.DIGEST_SHA512
+        is WellKnownDigest.SHA1 -> KeyProperties.DIGEST_SHA1
+        is WellKnownDigest.SHA256 -> KeyProperties.DIGEST_SHA256
+        is WellKnownDigest.SHA384 -> KeyProperties.DIGEST_SHA384
+        is WellKnownDigest.SHA512 -> KeyProperties.DIGEST_SHA512
         null -> KeyProperties.DIGEST_NONE
         else -> throw UnsupportedCryptoException("Unknown digest $digest")
     }
@@ -204,10 +204,10 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
     }
     private fun jcaComponent(digest: WellKnownDigest?) = when (digest) {
         null -> "NONE"
-        WellKnownDigest.SHA1 -> "SHA1"
-        WellKnownDigest.SHA256 -> "SHA256"
-        WellKnownDigest.SHA384 -> "SHA384"
-        WellKnownDigest.SHA512 -> "SHA512"
+        is WellKnownDigest.SHA1 -> "SHA1"
+        is WellKnownDigest.SHA256 -> "SHA256"
+        is WellKnownDigest.SHA384 -> "SHA384"
+        is WellKnownDigest.SHA512 -> "SHA512"
     }
     private fun jcaComponent(padding: RsaAlgorithm.Padding) = when (padding) {
         RsaAlgorithm.Padding.PSS -> "RSA/PSS"

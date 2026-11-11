@@ -633,7 +633,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                         publicKey = publicKey, challenge = attestationConfig.challenge)
                     val clientDataJSON = clientData.prepareDigestInput()
 
-                    val digest = WellKnownDigest.SHA256.digest(clientDataJSON)
+                    val digest = Digest.SHA256.digest(clientDataJSON)
                     val assertionKeyAttestation = swiftasync {
                         service.attestKey(keyId, digest.toNSData(), callback)
                     }.toByteArray()

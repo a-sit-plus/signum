@@ -52,10 +52,10 @@ internal val RsaAlgorithm.Parameters.PssPadded.jcaPSSParams : PSSParameterSpec g
         outerDigest.jcaName,
         "MGF1",
         when (innerDigest) {
-            WellKnownDigest.SHA1 -> MGF1ParameterSpec.SHA1
-            WellKnownDigest.SHA256 -> MGF1ParameterSpec.SHA256
-            WellKnownDigest.SHA384 -> MGF1ParameterSpec.SHA384
-            WellKnownDigest.SHA512 -> MGF1ParameterSpec.SHA512
+            is WellKnownDigest.SHA1 -> MGF1ParameterSpec.SHA1
+            is WellKnownDigest.SHA256 -> MGF1ParameterSpec.SHA256
+            is WellKnownDigest.SHA384 -> MGF1ParameterSpec.SHA384
+            is WellKnownDigest.SHA512 -> MGF1ParameterSpec.SHA512
         },
         saltLength.toInt(),
         trailerField
@@ -204,19 +204,19 @@ fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: Speciali
 
 internal val WellKnownDigest.jcaName
     get() = when (this) {
-        WellKnownDigest.SHA1 -> "SHA-1"
-        WellKnownDigest.SHA256 -> "SHA-256"
-        WellKnownDigest.SHA384 -> "SHA-384"
-        WellKnownDigest.SHA512 -> "SHA-512"
+        is WellKnownDigest.SHA1 -> "SHA-1"
+        is WellKnownDigest.SHA256 -> "SHA-256"
+        is WellKnownDigest.SHA384 -> "SHA-384"
+        is WellKnownDigest.SHA512 -> "SHA-512"
     }
 
 internal val WellKnownDigest?.jcaAlgorithmComponent
     get() = when (this) {
         null -> "NONE"
-        WellKnownDigest.SHA1 -> "SHA1"
-        WellKnownDigest.SHA256 -> "SHA256"
-        WellKnownDigest.SHA384 -> "SHA384"
-        WellKnownDigest.SHA512 -> "SHA512"
+        is WellKnownDigest.SHA1 -> "SHA1"
+        is WellKnownDigest.SHA256 -> "SHA256"
+        is WellKnownDigest.SHA384 -> "SHA384"
+        is WellKnownDigest.SHA512 -> "SHA512"
     }
 
 val ECCurve.jcaName
