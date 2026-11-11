@@ -118,19 +118,6 @@ val RemainingEncodingTest by matrixSuite {
         opaqueTbs.asn1.toRepresentation() shouldBeSameInstanceAs unknownKey
     }
 
-    "Alternative names compare their contents without encoding them" {
-        val name: GeneralName = object : GeneralName {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-            override val tag get() = BigInteger.ONE
-        }
-        val first = AlternativeNames(listOf(name))
-        val second = AlternativeNames(listOf(name))
-        first shouldBe second
-        first.hashCode() shouldBe second.hashCode()
-        first shouldNotBe AlternativeNames(emptyList())
-        shouldThrowAny { first.asn1.toDer() }
-    }
-
     "Only decoded values retain a source and other encodings leave it unchanged" {
         val ecSignature = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
         ecSignature.realSourceRepresentation shouldBe null
@@ -161,11 +148,7 @@ val RemainingEncodingTest by matrixSuite {
         ecSignature.realSourceRepresentation shouldBe null
         pss.realSourceRepresentation shouldBe null
 
-        val names = AlternativeNames(emptyList())
-        names.realSourceRepresentation shouldBe null
-        val namesModel = requireNotNull(names.asn1.toRepresentation())
-        names.realSourceRepresentation shouldBe null
-        requireNotNull(AlternativeNames.fromAsn1(namesModel).asn1.toRepresentation()).entries shouldBeSameInstanceAs namesModel.entries
+
     }
 
     "MACs and PSS parameters use their structural codecs" {

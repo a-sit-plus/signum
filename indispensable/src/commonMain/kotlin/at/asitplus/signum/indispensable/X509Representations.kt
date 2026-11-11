@@ -30,6 +30,7 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.Asn1SignatureAlgorithmProvider
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.KSerializer
@@ -403,6 +404,7 @@ val TbsCertificate.Companion.fromAsn1 get() = asn1Decoders<X509TbsCertificate,_>
         issuerUniqueID = src.issuerUniqueID?.bitCarryingBytes,
         subjectUniqueID = src.subjectUniqueID?.bitCarryingBytes,
         extensions = src.extensions?.map { CertificateExtension.fromAsn1(it) }.orEmpty(),
+        strict = false,
     )
 }
 
@@ -411,6 +413,7 @@ val CertificateExtension.asn1 get() =
 
 val CertificateExtension.Companion.fromAsn1 get() =
     asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { asn1, lookup ->
+        // Preserve malformed bodies as Unknown, retaining both the representation and provider failures.
         object : CertificateExtension.Unknown(lookup) {
             override val critical = asn1.critical
             override val oid: ObjectIdentifier = asn1.oid
@@ -444,18 +447,7 @@ val GeneralName.asn1 get() =
 val GeneralName.Companion.fromAsn1 get() =
     asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
 
-// TODO: do we want this to be part of the interface, so implementations can override without being tied to asn1?
-val GeneralName.tag get() = this@tag.asn1.toRepresentation().tag
-
-val AlternativeNames.asn1 get() =
-    asn1Encoders<X509GeneralNames,_> {
-        X509GeneralNames(generalNames.map { it.asn1.toRepresentation() })
-    }
-
-val AlternativeNames.Companion.fromAsn1 get() =
-    asn1Decoders<X509GeneralNames,_> { src ->
-        AlternativeNames(src.entries.map { GeneralName.fromAsn1(it) })
-    }
+val GeneralName.tag: BigInteger get() = BigInteger.fromULong(this@tag.asn1.toRepresentation().tag.tagValue)
 
 val RelativeDistinguishedName.asn1 get() =
     asn1Encoders<X500RelativeDistinguishedName, _> { src ->
@@ -471,15 +463,14 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
         }.toSet())
     }
 
-val AttributeTypeAndValue.asn1 get() =
-    asn1Encoders<X500AttributeTypeAndValue, _> { src ->
-        X500AttributeTypeAndValue(src.oid, src.value)
-    }
+val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
 
-val AttributeTypeAndValue.Companion.fromAsn1 get() =
-    asn1Decoders<X500AttributeTypeAndValue, _> { src ->
-        AttributeTypeAndValue(src.oid, src.value)
+val AttributeTypeAndValue.Companion.fromAsn1 get() = asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue> { src ->
+    try { ServiceLoader.load<AttributeTypeAndValueAsn1Provider>().get(src, AttributeTypeAndValueAsn1Provider::decodeFromAsn1) }
+    catch (failure: UnsupportedCryptoException) {
+        AttributeTypeAndValue(src.oid, failure)
     }
+}
 
 val Name.asn1 get() =
     asn1Encoders<X500Name, _> { src ->
@@ -493,15 +484,12 @@ val Name.Companion.fromAsn1 get() =
         })
     }
 
-val CsrAttribute.asn1 get() =
-    asn1Encoders<Pkcs10CsrAttribute, _> { src ->
-        Pkcs10CsrAttribute(src.oid, src.value)
-    }
+val CsrAttribute.asn1 get() = asn1EncodersWith(CsrAttributeAsn1Provider::encodeToAsn1)
 
-val CsrAttribute.Companion.fromAsn1 get() =
-    asn1Decoders<Pkcs10CsrAttribute, _> { src ->
-        CsrAttribute(src.oid, src.value)
-    }
+val CsrAttribute.Companion.fromAsn1 get() = asn1Decoders<Pkcs10CsrAttribute, CsrAttribute> { src ->
+    try { ServiceLoader.load<CsrAttributeAsn1Provider>().get(src, CsrAttributeAsn1Provider::decodeFromAsn1) }
+    catch (failure: UnsupportedCryptoException) { CsrAttribute(src.oid, failure) }
+}
 
 val TbsCertificationRequest.asn1 get() =
     asn1Encoders<Pkcs10CertificationRequestInfo, _> { src ->

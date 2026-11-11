@@ -1,3 +1,5 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
@@ -5,10 +7,13 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.asn1
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -21,22 +26,10 @@ class RelativeDistinguishedName(
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
-    /**
-     * Convenience: a single-attribute RDN from an awesn1 [X500AttributeTypeAndValue], e.g.
-     * `RelativeDistinguishedName(X500AttributeTypeAndValue.CommonName("ACME"))`. Wraps it in the
-     * generic bridge [AttributeTypeAndValue] so callers needn't depend on the typed attributes in
-     * `indispensable-pkix`.
-     */
-    constructor(singleItem: X500AttributeTypeAndValue) : this(
-        AttributeTypeAndValue.fromAsn1(singleItem))
-
-    val isValid: Boolean by lazy {
-        attrsAndValues.isStructurallyValid() &&
-                attrsAndValues.all { it.isValid != false }
-    }
+    internal fun hasValidStructure(): Boolean = attrsAndValues.isStructurallyValid()
 
     init {
-        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName!")
+        if (performValidation && !hasValidStructure()) throw Asn1Exception("Invalid RelativeDistinguishedName structure!")
     }
 
     override fun equals(other: Any?): Boolean {
@@ -50,6 +43,9 @@ class RelativeDistinguishedName(
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
     companion object {
+        /** Creates a single-attribute RDN from its ASN.1 representation. */
+        operator fun invoke(singleItem: X500AttributeTypeAndValue): RelativeDistinguishedName =
+            RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(singleItem))
 
         /** Parse a single RDN string (e.g., "CN=John Doe+O=Company"). */
         fun fromString(rdnStr: String): RelativeDistinguishedName {
@@ -107,54 +103,8 @@ class RelativeDistinguishedName(
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
-// TODO: this should be subclassable by registrations and stuff
-open class AttributeTypeAndValue protected constructor(
-    override val oid: ObjectIdentifier,
-    /** Raw X.509 attribute value; fails if the attribute has no X.509 representation. */
-    // TODO: this assumes X.509 basis, still (a comment inline says this is backed by the RFC?)
-    // if this is not true, we should have a shared base interface for value and go from there
-    val value: Asn1Element
-) : Identifiable, WithSourceRepresentation {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
-
-    override fun toString() = "AttributeTypeAndValue(${toRfc2253String()})"
-
-    // TODO: this is where we need to replace attribute lookup
-    val typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()
-    protected val valueAsn1String by lazy { catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()) } }
-
-    open val isValid get() = valueAsn1String.mapCatching { it.isValid }.getOrElse { false }
-
-    val valueString get() =
-        valueAsn1String.mapCatching {
-            canonicalizeRfc2253String(it.value)
-        }.getOrElse { "#" + value.derEncoded.toHexString() }
-
-    /**
-     * Converts the current AttributeTypeAndValue instance into a string representation
-     * that conforms to the RFC 2253 standard for Distinguished Names (DNs).
-     *
-     * @return A string representation of the attribute's type and value in RFC 2253 format.
-     * @throws Asn1Exception if the attribute has no X.509 representation,
-     * as the RFC only defines string canonicalization for X.509
-     */
-    fun toRfc2253String(): String {
-        // RFC 2253 canonical form for case-insensitive matching: fold the value to lower case too
-        return "${typeString.lowercase() }=${valueString.lowercase()}"
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is AttributeTypeAndValue) return false
-        return oid == other.oid && value == other.value
-    }
-
-    override fun hashCode(): Int {
-        var result = oid.hashCode()
-        result = 31 * result + value.hashCode()
-        return result
-    }
-
+/** An open attribute family. Only interpreted subtypes expose semantic values. */
+interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     interface Descriptor<out T : AttributeTypeAndValue> : Identifiable {
         val canonicalName: String
 
@@ -181,16 +131,24 @@ open class AttributeTypeAndValue protected constructor(
         }
 
         fun fromString(value: String): T
-        fun fromValue(value: Asn1Element): T
 
     }
 
-
     companion object {
+        operator fun invoke(
+            oid: ObjectIdentifier,
+            decodingFailure: UnsupportedCryptoException? = null,
+        ): AttributeTypeAndValue = Unknown(
+            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for attribute $oid"),
+        )
+
+        private class Unknown(
+            override val oid: ObjectIdentifier,
+            lookupResult: UnsupportedCryptoException,
+        ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
-            // TODO: attribute descriptor by oid lookup
-            Signum.attributeDescriptorFor(oid)?.fromValue(value) ?: AttributeTypeAndValue(oid, value)
+            fromAsn1(X500AttributeTypeAndValue(oid, value))
 
         fun fromString(type: String, value: String): AttributeTypeAndValue? {
             val key = type.trim()
@@ -216,39 +174,54 @@ open class AttributeTypeAndValue protected constructor(
     }
 }
 
+/** Text is semantic; its original ASN.1 string tag belongs to the retained representation. */
+open class TextAttributeTypeAndValue(
+    final override val oid: ObjectIdentifier,
+    val text: String,
+) : AttributeTypeAndValue {
+    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override fun equals(other: Any?): Boolean = other is TextAttributeTypeAndValue && oid == other.oid && text == other.text
+    override fun hashCode(): Int = 31 * oid.hashCode() + text.hashCode()
+    override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
+}
+
+val AttributeTypeAndValue.typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()
+val AttributeTypeAndValue.valueString: String get() = when (this) {
+    is TextAttributeTypeAndValue -> canonicalizeRfc2253String(text)
+    else -> asn1.toRepresentation().value.let { value ->
+        catchingUnwrapped { canonicalizeRfc2253String(Asn1String.decodeFromTlv(value.asPrimitive()).value) }
+            .getOrElse { "#" + value.derEncoded.toHexString() }
+    }
+}
+fun AttributeTypeAndValue.toRfc2253String(): String = "${typeString.lowercase()}=${valueString.lowercase()}"
+
 private class StandardX500AttributeDescriptor(
     override val oid: ObjectIdentifier,
     override val canonicalName: String,
-    private val stringFactory: (String) -> Asn1String,
-) : AttributeTypeAndValue.Descriptor<AttributeTypeAndValue> {
-    override fun fromString(value: String): AttributeTypeAndValue =
-        ATV(oid, stringFactory(value).encodeToTlv())
-
-    override fun fromValue(value: Asn1Element): AttributeTypeAndValue = ATV(oid, value)
-
-    private class ATV(oid: ObjectIdentifier, value: Asn1Element) : AttributeTypeAndValue(oid, value)
+) : AttributeTypeAndValue.Descriptor<TextAttributeTypeAndValue> {
+    override fun fromString(value: String) = TextAttributeTypeAndValue(oid, value)
 }
 
 internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.commonName, "CN", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.countryName, "C", Asn1String::Printable),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.localityName, "L", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName, "ST", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.streetAddress, "STREET", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationName, "O", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationalUnitName, "OU", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.title, "T", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.telephoneNumber, "TELEPHONENUMBER", Asn1String::Printable),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.surname, "SURNAME", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.serialNumber, "SERIALNUMBER", Asn1String::Printable),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.name, "NAME", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.givenName, "GIVENNAME", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.initials, "INITIALS", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.generationQualifier, "GENERATION", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.dnQualifier, "DNQUALIFIER", Asn1String::Printable),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.domainComponent, "DC", Asn1String::IA5),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.userId, "UID", Asn1String::UTF8),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.emailAddress, "EMAILADDRESS", Asn1String::IA5),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.commonName, "CN"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.countryName, "C"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.localityName, "L"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName, "ST"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.streetAddress, "STREET"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationName, "O"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationalUnitName, "OU"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.title, "T"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.telephoneNumber, "TELEPHONENUMBER"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.surname, "SURNAME"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.serialNumber, "SERIALNUMBER"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.name, "NAME"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.givenName, "GIVENNAME"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.initials, "INITIALS"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.generationQualifier, "GENERATION"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.dnQualifier, "DNQUALIFIER"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.domainComponent, "DC"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.userId, "UID"),
+    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.emailAddress, "EMAILADDRESS"),
 )
 
 internal val standardX500AttributeAliases = mapOf(

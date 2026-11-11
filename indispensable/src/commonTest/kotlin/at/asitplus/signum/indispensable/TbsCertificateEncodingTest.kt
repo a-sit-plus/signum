@@ -8,6 +8,7 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.encodeToTlv
+import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
@@ -20,18 +21,21 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlin.time.Instant
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.decodeFromByteArray
-import kotlin.time.Instant
+import kotlinx.serialization.encodeToByteArray
 
 private data class ExtraRepresentation(val serialNumber: Int)
 
 private fun tbsCertificate(
     issuerUniqueID: ByteArray? = null,
     subjectUniqueID: ByteArray? = null,
+    serialNumber: BigInteger = BigInteger.ONE,
+    extensions: List<CertificateExtension> = emptyList(),
 ) = TbsCertificate(
-    serialNumber = BigInteger.ONE,
+    serialNumber = serialNumber,
     signatureAlgorithm = EcdsaAlgorithm.withSHA256,
     issuerName = Name.EMPTY,
     subjectName = Name.EMPTY,
@@ -40,10 +44,42 @@ private fun tbsCertificate(
     publicKey = ECCurve.SECP_256_R_1.generator.asPublicKey(),
     issuerUniqueID = issuerUniqueID,
     subjectUniqueID = subjectUniqueID,
-    extensions = emptyList(),
+    extensions = extensions,
 )
 
 val TbsCertificateEncodingTest by matrixSuite {
+    "Parsing tolerates serial-number profile violations while creation stays strict" {
+        val template = tbsCertificate().asn1.toRepresentation()
+        fun wire(serial: BigInteger, extensions: List<CertificateExtension> = emptyList()) = X509TbsCertificate(
+            serialNumber = serial.toAsn1Integer(),
+            signatureAlgorithm = template.signatureAlgorithm,
+            issuerName = template.issuerName,
+            validFrom = Asn1Time.SecondsCapped(template.validity.validFrom.instant),
+            validUntil = Asn1Time.SecondsCapped(template.validity.validUntil.instant),
+            subjectName = template.subjectName,
+            subjectPublicKeyInfo = template.subjectPublicKeyInfo,
+            extensions = extensions.map { it.asn1.toRepresentation() },
+        )
+        for (serial in listOf(BigInteger.ZERO, BigInteger(-1), BigInteger.ONE.shl(160))) {
+            shouldThrowAny { tbsCertificate(serialNumber = serial) }
+            val model = wire(serial)
+            val bytes = Signum.Der.encodeToByteArray(model)
+            val decoded = TbsCertificate.fromAsn1(bytes)
+            decoded.serialNumber shouldBe serial
+            decoded.asn1.toDer() shouldBe bytes
+            TbsCertificate.fromAsn1(model).asn1.toRepresentation() shouldBeSameInstanceAs model
+        }
+        val validSerial = BigInteger.ONE.shl(158)
+        tbsCertificate(serialNumber = validSerial).serialNumber shouldBe validSerial
+
+        val extension = CertificateExtension(ObjectIdentifier("1.2.3.4"), value = byteArrayOf())
+        val duplicates = listOf(extension, extension)
+        shouldThrowAny { tbsCertificate(extensions = duplicates) }
+        shouldThrowAny {
+            TbsCertificate.fromAsn1(Signum.Der.encodeToByteArray(wire(BigInteger.ONE, duplicates)))
+        }
+    }
+
     "Unique IDs preserve ASN.1 bit order and trailing zero octets" {
         val issuerId = byteArrayOf(0x01, 0x80.toByte(), 0x00)
         val subjectId = byteArrayOf(0x80.toByte(), 0x01, 0x00)

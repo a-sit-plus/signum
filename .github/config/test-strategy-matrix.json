@@ -3,48 +3,48 @@
     {
       "os": "ubuntu-latest",
       "name": "linuxNativeRunner",
-      "testCommand": "./gradlew linuxX64Test --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew linuxX64Test --scan"
     },
     {
       "os": "ubuntu-latest",
       "name": "jvmRunner",
-      "testCommand": "./gradlew jvmTest --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew jvmTest --scan"
     },
     {
       "os": "ubuntu-latest",
       "name": "androidRunner",
       "enableKvm": true,
-      "testCommand": "./gradlew pixelAVDAndroidDeviceTest --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew pixelAVDAndroidDeviceTest --scan"
     },
     {
       "os": "ubuntu-latest",
       "name": "jsRunner",
-      "testCommand": "./gradlew jsTest --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew jsTest --scan"
     },
     {
       "os": "ubuntu-latest",
       "name": "wasmJsRunner",
-      "testCommand": "./gradlew wasmJsTest --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew wasmJsTest --scan"
     },
     {
       "os": "windows-latest",
       "name": "mingwRunner",
-      "testCommand": "./gradlew mingwX64Test --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew mingwX64Test --scan"
     },
     {
       "os": "macos-latest",
       "name": "iosRunner",
-      "testCommand": "./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary iosSimulatorArm64Test --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary iosSimulatorArm64Test --scan"
     },
     {
       "os": "macos-latest",
       "name": "appleOtherRunner",
-      "testCommand": "./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary tvosSimulatorArm64Test watchosSimulatorArm64Test --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary tvosSimulatorArm64Test watchosSimulatorArm64Test --scan"
     },
     {
       "os": "macos-latest",
       "name": "macRunner",
-      "testCommand": "./gradlew macosArm64Test --scan"
+      "testCommand": "git clone --depth 1 --branch fixes https://github.com/a-sit-plus/awesn1.git ../awesn1 && ./gradlew macosArm64Test --scan"
     }
   ]
 }

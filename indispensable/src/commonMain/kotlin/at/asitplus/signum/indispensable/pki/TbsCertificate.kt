@@ -6,14 +6,15 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
-/** The semantic certificate contents that are signed. Originals are retained separately. */
+/**
+ * The semantic certificate contents that are signed. Originals are retained separately.
+ * @param strict Enforce serial-number issuance constraints. Parsing disables this to accept existing
+ * certificates with non-positive or oversized serial numbers; structural checks still apply.
+ */
 class TbsCertificate(
     val serialNumber: BigInteger,
     val signatureAlgorithm: SignatureAlgorithm,
@@ -36,24 +37,14 @@ class TbsCertificate(
                 runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
             }
             runRethrowing { require(serialNumber.isPositive) { "Serial Number must be positive" } }
-            if (!extensions.allDistinctByOids()) {
-                throw Asn1StructuralException("Multiple extensions with the same OID found")
-            }
+        }
+        if (!extensions.allDistinctByOids()) {
+            throw Asn1StructuralException("Multiple extensions with the same OID found")
         }
     }
 
     val validFrom = validFrom.secondsCapped()
     val validUntil = validUntil.secondsCapped()
-
-    /** Contains `SubjectAlternativeName`s parsed from extensions. */
-    @Transient
-    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-    val subjectAlternativeNames: AlternativeNames? by lazy { extensions.findSubjectAltNames() }
-
-    /** Contains `IssuerAlternativeName`s parsed from extensions. */
-    @Transient
-    // Nested conversion uses the application-wide DER configuration (docs/docs/default-der.md).
-    val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
     private fun semanticEquals(other: TbsCertificate): Boolean {
         if (this === other) return true

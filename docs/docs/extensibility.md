@@ -95,8 +95,8 @@ Your MAC identifier should implement `MessageAuthenticationCode`.
 `MessageAuthenticationCodeProvider` should implement `getMAC` to map an `X509AlgorithmIdentifier` to your MAC identifier class, and `encodeToAsn1` for the reverse conversion.
 `MessageAuthenticationCodeOperationProvider` should implement the actual MAC operation as `doMAC`.
 
-Concrete digest and MAC types also need contextual ASN.1 serializers when consumers encode or decode them
-directly. Use the [serializer and installation pattern](#contextual-asn1-serializers-and-installation) below.
+Digest and MAC identifiers convert through their ASN.1 providers. Use `.asn1.toDer()` and
+`fromAsn1(...)`; no contextual serializer registration is needed for the semantic classes.
 
 ## Key Derivation Functions
 
@@ -120,43 +120,38 @@ Your private key class should implement `CryptoPrivateKey`, and likely `CryptoPr
 Each of these four format providers also exposes `encodeToAsn1` for the corresponding Signum type.
 Return `null` for values your provider does not support. The encoding methods default to `null`, so providers that only decode remain valid.
 
-The `asn1Representation` extension getters first use `sourceRepresentationFor(X509)`, which returns
-the original model only if the source format matches, then ask the registered providers to construct one.
-Producing another format's model leaves the source pair unchanged.
-Your provider should construct the model directly rather than calling the same base-type getter recursively.
+The `.asn1.toRepresentation()` extensions reuse a matching retained source, or ask the registered
+providers to construct the wire model. Producing another format leaves the original source unchanged.
+Your provider should construct the model directly rather than recursively calling the same base conversion.
 
-### Contextual ASN.1 serializers and installation
+### Explicit wire serializers and installation
 
-Register a contextual serializer for each concrete type consumers will encode or decode directly.
-The base-interface serializers in `signumAsn1Serializers` already use the format providers, but contextual registration for a base interface does not cover its subclasses.
-The types themselves do not need `@Serializable` annotations. A class-level generated or custom serializer
-takes precedence over contextual registration; avoid fixing an X.509 serializer on a shared semantic type.
-
-Use `contextualAsn1` to bridge your type to an awesn1 model:
-
-```kotlin
-val asn1Serializers = SerializersModule {
-    contextualAsn1(
-        FoobarPublicKey::class,
-        SubjectPublicKeyInfo.serializer(),
-        toModel = { it.asn1Representation },
-        fromModel = { FoobarPublicKey.fromAsn1Representation(it) },
-    )
-    // Register private keys, algorithm identifiers, and concrete signatures similarly.
-}
-```
-
-The conversion from the model must return the concrete registered type.
-For a generic signature, the BIT STRING does not identify its algorithm: decode as `SignatureValue`, then supply an algorithm using `withSignatureAlgorithm`.
-A concrete signature serializer may decode directly if its type provides enough information.
-
-Expose one installation entry point for your extension, alongside its serializer module:
+Register the provider; semantic Signum classes need no contextual ASN.1 serializers:
 
 ```kotlin
 fun install() {
-    Signum.register(FoobarProvider, serializers = asn1Serializers)
+    Signum.register(FoobarProvider)
 }
+
+val der = publicKey.asn1.toDer()
+val decoded = CryptoPublicKey.fromAsn1(der)
 ```
+
+Within a provider, use a serializable wire type and its explicit serializer:
+
+```kotlin
+val wire = Signum.Der.decodeFromByteArray(MyWire.serializer(), bytes)
+val bytes = Signum.Der.encodeToByteArray(MyWire.serializer(), wire)
+```
+
+Keep wire fields in wire types as well: for example, use `X509GeneralName` and convert it to/from
+`GeneralName` at the provider boundary. The semantic class stays independent of the encoding.
+Use `Signum.Der` for nested serialization so application configuration is honored.
+
+A generic signature's BIT STRING does not identify its algorithm. Decode as `AbstractSignature`,
+then supply an algorithm using `withSignatureAlgorithm`.
+Optional open-polymorphic registrations for application-defined wire types can still be contributed
+through `Signum.registerAsn1Serializers` before first DER use.
 
 ### Signing operations
 
@@ -196,53 +191,51 @@ For actual operations, implement the following:
         - This extension property should be used by all of your provider integrations.
           This enables seamless platform-specific key creation and usage from common code.
 
-## Certificate extensions
+## Certificate extensions and names
 
-A custom extension implements `CertificateExtension`. Its companion implements
-`CertificateExtension.Descriptor<MyExtension>`, which extends `Decodable<MyExtension>`, and provides
-its OID and `fromAsn1Representation` returning the concrete type.
+A custom extension implements `CertificateExtension`, including its OID, critical flag, and source storage.
+A `CertificateExtensionProvider` converts between that semantic type and `X509CertificateExtension`.
+Register it with `Signum.register(MyExtensionProvider)`; return `null` for unsupported types or OIDs.
+No separate extension registry or contextual semantic serializer is required.
+
+`GeneralNameFormatProvider` follows the same pattern for `GeneralName` and `X509GeneralName`.
+SAN/IAN models, their ASN.1 conversions, and the `TbsCertificate.subjectAlternativeNames` and
+`issuerAlternativeNames` extension properties belong to `indispensable-pkix`. Install PKIX before
+reading these interpreted extensions; core retains unsupported extensions in their original representation.
+The open `OtherName` family and policy qualifiers retain uninterpreted payloads in their source
+representation. Applications may interpret raw payloads manually or provide explicit conversions;
+open-polymorphic wire registration is optional.
+
+For an X.500 text attribute, register its `AttributeTypeAndValue.Descriptor` before the first attribute
+lookup, then optionally add aliases:
 
 ```kotlin
-fun install() {
-    Signum.register(FoobarCertificateExtension)
-}
-```
-
-This one call installs both the OID descriptor and the concrete contextual ASN.1 serializer. No separate
-serializer module or `@Serializable` annotation is needed. The bridge uses the extension's
-`asn1Representation` and the descriptor's conversion from awesn1's `X509CertificateExtension`.
-
-The same pattern applies to `GeneralName.Descriptor<MyName>` (keyed by CHOICE tag) and
-`AttributeTypeAndValue.Descriptor<MyAttribute>` (keyed by OID):
-
-```kotlin
-Signum.register(MyName)
 Signum.register(MyAttribute)
 Signum.registerAttributeAlias("MYATTR", MyAttribute.oid)
 ```
 
-Attribute descriptors also supply a canonical name and `fromString`. Register aliases after their
-descriptor and before attribute lookup. `Signum.attributeOidFor`, `attributeNameFor`, and
-`attributeDescriptorForName` provide name resolution.
+Descriptors contain semantic metadata and string construction. They do not register serializers or
+initialize `Signum.Der`. `Signum.attributeOidFor`, `attributeNameFor`, and `attributeDescriptorForName`
+provide name resolution.
 
-Descriptor lookup uses `Signum.certificateExtensionDescriptorFor`, `generalNameDescriptorFor`, or
-`attributeDescriptorFor`. Registration must precede both the first lookup in that registry and first
-`Signum.Der` access; rejected combined registrations leave the descriptor and serializer stores unchanged.
-PKIX uses these same calls for its built-in types; only types without descriptors, such as `GeneralSubtree`,
-need a separate serializer contribution.
+Providers return `null` for unsupported inputs and throw when decoding fails. Either outcome lets the
+loader try the next provider; the first successful result completes selection. Only after all providers
+fail does decoding produce an unknown value extending `ServiceLoader.UnknownShim`, retaining the source
+representation and aggregated provider failures. This applies to malformed recognized payloads as well
+as unsupported discriminators. A custom provider can therefore decode inputs rejected by the built-in
+parser, using the same dispatch mechanism.
 
-A custom native `otherName` payload still needs its open-polymorphic serializer registration through
-`Signum.registerAsn1Serializers`. Registering a GeneralName descriptor handles the CHOICE alternative,
-not every possible payload OID inside it.
+`OtherNameAsn1Provider` and `PolicyQualifierAsn1Provider` handle their respective inner OID families;
+register these module-specific services with `ServiceLoader.register<ProviderInterface>(provider)`.
+To retry a previously unknown value after adding a provider, decode its retained source representation.
 
-There is no `X509Representable` marker. `CertificateExtension.asn1Representation` is nullable: it reads
-`sourceRepresentationFor(X509)`, or constructs the model for an `X509CertificateExtension`. If neither is available,
-it returns `null` and DER encoding throws.
-If constructing or decoding an extension body requires serialization, use `Signum.Der` so embedded values
-use the application's registered serializers and configuration.
+The core name types have no `isValid` member. RDN construction checks only structure, so names and
+certificates can retain uninterpreted attributes. Basic semantic constructor checks remain in place;
+certificate-path validation belongs to separate validators.
 
-Unknown extension OIDs retain their opaque payloads. Decode failures for registered extension OIDs
-propagate; do not turn malformed bodies into empty constraints, empty policies, or a generic known extension.
+Encoding back to the source format preserves its representation, including invalid payloads. Conversion
+to another format requires a supporting provider. Certificate serial-number parsing remains lenient,
+while programmatic serial-number construction remains strict.
 
 ## Platform type conversions
 

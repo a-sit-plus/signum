@@ -30,7 +30,12 @@ on:
 
 jobs:
   test-manually:
-    uses: a-sit-plus/internal-workflows/.github/workflows/test-manually.yml@v3
+    uses: a-sit-plus/internal-workflows/.github/workflows/test-manually.yml@feature/tokenize
+    secrets: inherit
+    permissions:
+      contents: write
+      checks: write
+      packages: read
     with:
       override-cache: ${{ inputs.override-cache }}
       matrix-path: ${{ inputs.matrix-path }}

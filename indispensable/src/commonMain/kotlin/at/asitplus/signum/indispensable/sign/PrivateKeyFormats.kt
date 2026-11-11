@@ -13,7 +13,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 class RsaPrivateKey(
     private val parameters: Parameters,
-    override val attributes: Set<Asn1Element>? = null,
+    val attributes: Set<Asn1Element>? = null,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
     @SignumInternals
     override val sourceRepresentation = SourceRepresentationStorage()
@@ -111,7 +111,7 @@ class RsaPrivateKey(
 
 sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger,
-    override val attributes: Set<Asn1Element>?,
+    val attributes: Set<Asn1Element>?,
 ) : CryptoPrivateKey {
 
     @SignumInternals
