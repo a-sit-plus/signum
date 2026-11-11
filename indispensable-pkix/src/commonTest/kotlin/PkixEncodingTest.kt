@@ -55,10 +55,10 @@ val PkixEncodingTest by matrixSuite {
         GeneralName.fromAsn1(copy.asn1.toDer()) shouldBe copy
     }
 
-    "Malformed EDI payloads are invalid and retain their ASN.1 source" {
+    "Malformed EDI payloads are unknown and retain their ASN.1 source" {
         listOf("a500", "a504a1020c00", "a509a10716055061727479", "a505a1030c0180").forEach { hex ->
             val original = hex.hexToByteArray()
-            val name = GeneralName.fromAsn1(original).shouldBeInstanceOf<InvalidGeneralName>()
+            val name = GeneralName.fromAsn1(original).shouldBeInstanceOf<GeneralName.Unknown>()
             name.asn1.toDer() shouldBe original
         }
     }

@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.pki.attributes.*
 
 private val initializePkix by lazy {
     at.asitplus.signum.ServiceLoader.register<PolicyQualifierAsn1Provider>(BuiltinPolicyQualifiers)
+    at.asitplus.signum.ServiceLoader.register<OtherNameAsn1Provider>(BuiltinOtherNames)
     Signum.register(PkixAsn1Provider)
 
     Signum.register(CommonName)

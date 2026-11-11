@@ -20,7 +20,6 @@ import com.eygraber.uri.Uri
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.json.*
@@ -104,7 +103,6 @@ val J509Test by matrixSuite {
                 }
             } shouldBeSameInstanceAs shim.lookupResult
         }
-        name.isValid shouldBe null
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
         nativeNames.subjectAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
         nativeNames.issuerAlternativeNames!!.generalNames.single() shouldBeSameInstanceAs name
@@ -112,7 +110,6 @@ val J509Test by matrixSuite {
         shouldThrowAny { csr.asn1.toRepresentation() }
         shouldThrowAny { name.asn1.toRepresentation() }
         shouldThrowAny { CertificatePolicies(listOf(PolicyInformation(policyOid, listOf(qualifier)))).asn1.toRepresentation() }
-        Name(listOf(RelativeDistinguishedName(atv))).isValid shouldBe null
         shouldThrowAny { Name(listOf(RelativeDistinguishedName(atv))).asn1.toRepresentation() }
     }
 
@@ -124,13 +121,12 @@ val J509Test by matrixSuite {
         J509.qualifier(original).getValue("value").jsonObject.getValue("text").jsonPrimitive.content shouldBe "before"
     }
 
-    "Malformed ASN.1 otherName retains its failure and source as an invalid value" {
+    "Malformed ASN.1 otherName retains its failure and source as an unknown" {
         val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
             MacAddressName.OID, Asn1String.UTF8("wrong payload type").encodeToTlv(),
         ))
-        val name = OtherName(source).shouldBeInstanceOf<InvalidOtherName>()
-        name.failure.message.shouldNotBeNull()
-        name.isValid shouldBe false
+        val name = OtherName(source)
+        name.shouldBeInstanceOf<ServiceLoader.UnknownShim>().lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
         (name.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
     }
 

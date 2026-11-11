@@ -3,6 +3,10 @@ import at.asitplus.signum.indispensable.pki.pkixDerTemplate
 import at.asitplus.signum.indispensable.pki.RegisteredExtensionProvider
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
 import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.indispensable.pki.LenientPkixProvider
+import at.asitplus.signum.indispensable.pki.OtherNameAsn1Provider
+import at.asitplus.signum.indispensable.pki.PolicyQualifierAsn1Provider
 import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
 import at.asitplus.signum.indispensable.sourceFormat
 import de.infix.testBalloon.framework.core.TestSession
@@ -12,6 +16,9 @@ class ModuleTestSession : TestSession() {
         // Construction must not initialize DER before applications can configure it.
         check(BasicConstraints(true).sourceFormat == "<no source>")
         Signum.setDer(pkixDerTemplate)
+        Signum.register(LenientPkixProvider)
+        ServiceLoader.register<OtherNameAsn1Provider>(LenientPkixProvider)
+        ServiceLoader.register<PolicyQualifierAsn1Provider>(LenientPkixProvider)
         Signum.installPkix()
         Signum.register(RegisteredExtensionProvider)
         Signum.registerAttributeAlias("CUSTOMCN", CommonName.oid)
