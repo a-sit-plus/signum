@@ -23,6 +23,7 @@ class Certificate(
         }
     }
 
+    // TODO: the cursed workaround because this language sucks
     val signature by lazy { signatureValue.withSignatureAlgorithm(tbsCertificate.signatureAlgorithm) }
 
     /** convenience getter for the contained [TbsCertificate.publicKey] */
