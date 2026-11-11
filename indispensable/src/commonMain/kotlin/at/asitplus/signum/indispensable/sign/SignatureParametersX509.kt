@@ -154,7 +154,7 @@ object RsaAsn1Constructors :
             Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(src.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
             Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(src.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
         }
-        invoke(Pkcs8PrivateKeyInfo(src))
+        invoke(Pkcs8PrivateKeyInfo(src, der = Signum.Der))
     }
 
     operator fun invoke(src: Pkcs1RsaPrivateKeyInfo) = PKCS1(src)
@@ -218,7 +218,7 @@ val EcdsaPrivateKey.Companion.fromAsn1 get() = EcdsaAsn1Constructors
 
 val EcdsaSignature.Companion.fromAsn1 get() =
     asn1Decoders<X509SignatureValue,_> { src ->
-    val parsed = src.toEcdsaSigValue()
+    val parsed = src.toEcdsaSigValue(Signum.Der)
     EcdsaSignature.IndefiniteLength(
         r = parsed.r.toBigInteger(),
         s = parsed.s.toBigInteger(),
