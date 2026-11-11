@@ -27,7 +27,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
  * Application-wide providers, semantic descriptors, and DER configuration.
  * Configure on one thread during startup, before first use. Descriptor registries seal on first lookup;
  * serializer contributions seal on first [Der] access. Provider-only registration remains mutable.
- * See docs/docs/default-der.md for registration order and the single-configuration limitation.
+ * See docs/docs/extensibility.md for registration order and the single-configuration limitation.
  */
 object Signum {
     init { installIndispensable() }
@@ -38,7 +38,7 @@ object Signum {
     /**
      * Select a configuration template before serializer registration. Its settings and serializers
      * are retained in a new instance, combined with Signum's serializers and subsequent contributions.
-     * Omitting this call uses awesn1's default DER after registering Signum's serializers there.
+     * Omitting this call uses awesn1's finalized default [DER] as the template, even if it was already used.
      */
     fun setDer(der: Der) {
         check(!consumed && template == null && contributors.isEmpty()) {
@@ -53,25 +53,23 @@ object Signum {
         if (module !in contributors) contributors += module
     }
 
-    /** The finalized instance used by every Signum DER codec and helper. First access seals registration. */
+    /**
+     * The finalized instance used by every Signum DER codec and helper. First access seals registration.
+     * If no template was selected with [setDer], awesn1's default [DER] supplies the settings and serializers.
+     * A fresh [at.asitplus.awesn1.serialization.Der] instance combines that template with Signum's contributions;
+     * it can copy an already-used default without registering into the sealed [DefaultDer] registry.
+     */
     val Der: Der by lazy {
         consumed = true
-        val selected = template
-        var module = SerializersModule {}
-        selected?.let { module = module.overwriteWith(it.serializersModule) }
+        val selected = template ?: DER
+        var module = selected.serializersModule
         contributors.forEach { module = module.overwriteWith(it) }
-        if (selected == null) {
-            // Resolve awesn1's default only after registration, avoiding premature initialization.
-            DefaultDer.register(module)
-            DER
-        } else {
-            DER {
-                encodeDefaults = selected.configuration.encodeDefaults
-                explicitNulls = selected.configuration.explicitNulls
-                maxInputLength = selected.configuration.maxInputLength
-                maxNestingDepth = selected.configuration.maxNestingDepth
-                serializersModule = module
-            }
+        DER {
+            encodeDefaults = selected.configuration.encodeDefaults
+            explicitNulls = selected.configuration.explicitNulls
+            maxInputLength = selected.configuration.maxInputLength
+            maxNestingDepth = selected.configuration.maxNestingDepth
+            serializersModule = module
         }
     }
 

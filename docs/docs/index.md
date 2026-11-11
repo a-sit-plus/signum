@@ -221,6 +221,8 @@ Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationReques
 source representations. Use `fromAsn1` to decode them and `asn1.toDer()` to encode them.
 These helpers use `Signum.Der` to serialize the underlying awesn1 models; no contextual serializers
 for the Signum types need to be registered.
+By default, Signum copies awesn1's finalized `DER` configuration into its own instance, including when
+awesn1 has already used it. See [DER templates and startup order](extensibility.md#der-templates) for configuration and registration details.
 These helpers support parsing and examining certificates, creating CSRs, and transferring key material.
 Parsing and re-encoding an X.509 certificate works as follows:
 

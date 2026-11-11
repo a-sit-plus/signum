@@ -25,6 +25,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.modules.SerializersModule
 import java.io.File
 import java.lang.reflect.InvocationTargetException
@@ -36,8 +39,13 @@ val DerLifecycleRegressionTest by matrixSuite(matrixConfig { execution = Executi
         isolatedDerScenario("digestSources")
     }
 
-    test("Signum can reuse the default DER after awesn1 has initialized it") {
+    //working as intended. not a bug Leaving it here as a memento
+    /*test("Signum can reuse the default DER after awesn1 has initialized it") {
         isolatedDerScenario("defaultDerBeforeSignum")
+    }*/
+
+    test("Signum copies the default DER template after awesn1 has used it") {
+        isolatedDerScenario("defaultDerTemplateAfterUse")
     }
 
     "Nested DER codecs" - {
@@ -88,11 +96,53 @@ internal object DerLifecycleRegressionScenarios {
         second.asn1.toRepresentation() shouldBe withoutParameters
     }
 
-    @JvmStatic
+    //working as intended. not a bug. Signum cioies it over and uses DefaultDer as a template to do its own
+    /*@JvmStatic
     fun defaultDerBeforeSignum() {
         val defaultDer = DER
 
         Signum.Der shouldBeSameInstanceAs defaultDer
+    }*/
+
+    @JvmStatic
+    fun defaultDerTemplateAfterUse() {
+        DefaultDer.maxInputLength = 8
+        val inheritedSerializer = Asn1IntegerHexStringSerializer
+        DefaultDer.register(SerializersModule {
+            contextual(Asn1Integer::class, inheritedSerializer)
+        })
+        val defaultDer = DER
+        val model = EcdsaSigValue(Asn1Integer.ONE, Asn1Integer(2))
+        val bytes = defaultDer.encodeToByteArray(model)
+        defaultDer.decodeFromDer<EcdsaSigValue>(bytes) shouldBe model
+        shouldThrow<IllegalStateException> { DefaultDer.register(SerializersModule {}) }
+
+        val contributedSerializer = X509SignatureValue.serializer()
+        Signum.registerAsn1Serializers(SerializersModule {
+            contextual(X509SignatureValue::class, contributedSerializer)
+        })
+        val signature = EcdsaSignature.fromRawSignatureValue(bytes)
+        signature.r shouldBe BigInteger.ONE
+        signature.s shouldBe BigInteger.TWO
+        signature.asn1.toRepresentation().rawBytes shouldBe bytes
+
+        val signumDer = Signum.Der
+        signumDer shouldNotBeSameInstanceAs defaultDer
+        Signum.Der shouldBeSameInstanceAs signumDer
+        signumDer.configuration.copy(serializersModule = defaultDer.serializersModule) shouldBe defaultDer.configuration
+        signumDer.serializersModule.getContextual(Asn1Integer::class) shouldBeSameInstanceAs inheritedSerializer
+        signumDer.serializersModule.getContextual(X509SignatureValue::class) shouldBeSameInstanceAs contributedSerializer
+        defaultDer.serializersModule.getContextual(X509SignatureValue::class) shouldBe null
+        signumDer.decodeFromDer<EcdsaSigValue>(bytes) shouldBe model
+        shouldThrow<IllegalStateException> { Signum.registerAsn1Serializers(SerializersModule {}) }
+
+        val oversized = "300702020080020102".hexToByteArray()
+        shouldThrow<SerializationException> {
+            defaultDer.decodeFromDer<EcdsaSigValue>(oversized)
+        }.message shouldContain "(limit = 8)"
+        shouldThrow<Asn1Exception> {
+            EcdsaSignature.fromRawSignatureValue(oversized)
+        }.message shouldContain "(limit = 8)"
     }
 
     @JvmStatic

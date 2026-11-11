@@ -131,7 +131,7 @@ object RsaAsn1Constructors :
     (asn1Decoders<Pkcs8PrivateKeyInfo,RsaPrivateKey> { src ->
         require(src.algorithmOid == RsaPrivateKey.oid) { "Expected RSA private key, got ${src.algorithmOid}" }
         require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
-        // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
+        // Nested parsing uses the application-wide DER configuration (docs/docs/extensibility.md).
         RsaPrivateKey(
             Pkcs1RsaPrivateKeyInfo.of(src, Signum.Der).let { parsed ->
                 Parameters(
@@ -198,7 +198,7 @@ object EcdsaAsn1Constructors :
     (asn1Decoders { src ->
         require(src.algorithmOid == oid) { "Expected EC private key, got ${src.algorithmOid}" }
         require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
-        // Nested parsing uses the application-wide DER configuration (docs/docs/default-der.md).
+        // Nested parsing uses the application-wide DER configuration (docs/docs/extensibility.md).
         val parsed = Sec1EcPrivateKeyInfo.of(src, Signum.Der)
         return@asn1Decoders ecPrivateKey(
             parsed, src.algorithmParameters,
