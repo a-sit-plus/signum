@@ -13,7 +13,6 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 class RsaPrivateKey(
     private val parameters: Parameters,
-    override val attributes: Set<Asn1Element>? = null,
 ) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
     @SignumInternals
     override val sourceRepresentation = SourceRepresentationStorage()
@@ -61,7 +60,6 @@ class RsaPrivateKey(
         prime2exponent: BigInteger,
         crtCoefficient: BigInteger,
         otherPrimeInfos: List<PrimeInfo>?,
-        attributes: Set<Asn1Element>? = null,
     ) : this(Parameters(
             publicKey = publicKey,
             privateKey = privateKey,
@@ -72,7 +70,6 @@ class RsaPrivateKey(
             crtCoefficient = crtCoefficient,
             otherPrimeInfos = otherPrimeInfos,
         ),
-        attributes,
     )
 
     override val publicKey: RsaPublicKey get() = parameters.publicKey
@@ -110,8 +107,7 @@ class RsaPrivateKey(
 }
 
 sealed class EcdsaPrivateKey private constructor(
-    val privateKey: BigInteger,
-    override val attributes: Set<Asn1Element>?,
+    val privateKey: BigInteger
 ) : CryptoPrivateKey {
 
     @SignumInternals
@@ -129,8 +125,7 @@ sealed class EcdsaPrivateKey private constructor(
     class WithPublicKey(
         privateKey: BigInteger,
         override val publicKey: EcdsaPublicKey,
-        attributes: Set<Asn1Element>? = null,
-    ) : EcdsaPrivateKey(privateKey, attributes),
+    ) : EcdsaPrivateKey(privateKey),
         CryptoPrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
@@ -143,11 +138,9 @@ sealed class EcdsaPrivateKey private constructor(
         constructor(
             privateKey: BigInteger,
             curve: ECCurve,
-            attributes: Set<Asn1Element>? = null,
         ) : this(
             privateKey,
             curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
-            attributes,
         )
 
         val curve: ECCurve get() = publicKey.curve
@@ -165,7 +158,7 @@ sealed class EcdsaPrivateKey private constructor(
         val publicKeyBytes: ByteArray?,
         private val curveOrderLengthInBytes: Int,
         attributes: Set<Asn1Element>? = null,
-    ) : EcdsaPrivateKey(privateKey, attributes) {
+    ) : EcdsaPrivateKey(privateKey) {
 
         fun withCurve(
             curve: ECCurve,
