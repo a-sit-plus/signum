@@ -33,6 +33,7 @@ data class PolicyInformation(
     override val oid: ObjectIdentifier,
     val policyQualifiers: List<PolicyQualifierInfo> = emptyList(),
 ) : Identifiable {
+    /** ASN.1 schema from [RFC 5280, Section 4.2.1.4](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.4). */
     @Serializable
     internal data class Asn1Representation(
         val oid: ObjectIdentifier,
@@ -42,6 +43,7 @@ data class PolicyInformation(
 
 interface PolicyQualifierInfo : Identifiable, at.asitplus.signum.indispensable.WithSourceRepresentation {
     companion object {
+        /** ASN.1 schema from [RFC 5280, Section 4.2.1.4](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.4). */
         @Serializable
         internal data class Asn1Representation(val oid: ObjectIdentifier, val qualifier: Asn1Element)
 
@@ -72,6 +74,7 @@ data class UserNotice(
     val noticeRef: NoticeReference? = null,
     val explicitText: String? = null,
 ) : PolicyQualifierInfo {
+    /** ASN.1 schema from [RFC 5280, Section 4.2.1.4](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.4). */
     @Serializable
     internal data class Asn1Representation(
         val noticeRef: NoticeReference.Asn1Representation? = null,
@@ -83,6 +86,7 @@ data class UserNotice(
 }
 
 data class NoticeReference(val organization: String, val noticeNumbers: List<com.ionspin.kotlin.bignum.integer.BigInteger>) {
+    /** ASN.1 schema from [RFC 5280, Section 4.2.1.4](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.4). */
     @Serializable
     internal data class Asn1Representation(val organization: Asn1String, val numbers: List<Asn1Integer>)
 }

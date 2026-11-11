@@ -32,6 +32,8 @@ data class AuthorityKeyIdentifier(
     override fun hashCode(): Int = 31 * (31 * (31 * keyIdentifier.contentHashCode() + authorityCertIssuer.hashCode()) + authorityCertSerialNumber.hashCode()) + critical.hashCode()
 
     /**
+     * ASN.1 schema from [RFC 5280, Section 4.2.1.1](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.1).
+     *
      * ```
      * AuthorityKeyIdentifier ::= SEQUENCE {
      *   keyIdentifier             [0] KeyIdentifier             OPTIONAL,   -- OCTET STRING

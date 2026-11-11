@@ -26,6 +26,8 @@ data class NameConstraints(
     }
 
     /**
+     * ASN.1 schema from [RFC 5280, Section 4.2.1.10](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10).
+     *
      * ```
      * NameConstraints ::= SEQUENCE {
      *   permittedSubtrees [0] GeneralSubtrees OPTIONAL,

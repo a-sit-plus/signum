@@ -19,7 +19,10 @@ data class GeneralSubtree(
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
     companion object
 
-    /** ASN.1 wire shape; semantic values and copies do not retain it as a constructor field. */
+    /**
+     * ASN.1 schema from [RFC 5280, Section 4.2.1.10](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.10).
+     * Semantic values and copies do not retain this wire shape as a constructor field.
+     */
     @Serializable
     internal data class Asn1Representation(
         val base: X509GeneralName,

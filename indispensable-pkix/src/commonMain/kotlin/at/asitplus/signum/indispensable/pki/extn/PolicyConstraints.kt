@@ -33,6 +33,8 @@ data class PolicyConstraints(
     }
 
     /**
+     * ASN.1 schema from [RFC 5280, Section 4.2.1.11](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.11).
+     *
      * ```
      * PolicyConstraints ::= SEQUENCE {
      *   requireExplicitPolicy [0] SkipCerts OPTIONAL,

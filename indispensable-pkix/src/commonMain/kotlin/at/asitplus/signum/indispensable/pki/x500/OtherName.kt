@@ -35,6 +35,7 @@ data class HardwareModuleName(val hardwareType: ObjectIdentifier, val serial: By
     @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
     override fun equals(other: Any?): Boolean = other is HardwareModuleName && hardwareType == other.hardwareType && serial.contentEquals(other.serial)
     override fun hashCode(): Int = 31 * hardwareType.hashCode() + serial.contentHashCode()
+    /** ASN.1 schema from [RFC 4108, Section 5](https://www.rfc-editor.org/rfc/rfc4108.html#section-5). */
     @Serializable
     internal data class Asn1Representation(val hardwareType: ObjectIdentifier, val serial: ByteArray)
 
