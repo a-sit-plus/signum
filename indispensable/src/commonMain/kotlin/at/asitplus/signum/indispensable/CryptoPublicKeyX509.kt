@@ -18,10 +18,14 @@ import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import com.ionspin.kotlin.bignum.integer.Sign
 
 /** Representation of the key in the format used by iOS. */
+// TODO: this should probably be its own source format
 val CryptoPublicKey.iosEncoded: ByteArray
-    get() = this@iosEncoded.asn1.toRepresentation().subjectPublicKey.also {
-        require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
-    }.bitCarryingBytes
+    get() = when (this) {
+        is EcdsaPublicKey -> this.toAnsiX963Encoded(useCompressed = false)
+        else -> this.asn1.toRepresentation().subjectPublicKey.also {
+            require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
+        }.bitCarryingBytes
+    }
 
 interface Asn1PublicKeyFormatProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */

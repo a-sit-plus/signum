@@ -26,8 +26,8 @@ object ServiceLoader {
         val lookupResult: UnsupportedCryptoException
     ) : WithSourceRepresentation {
         final override val sourceRepresentation = SourceRepresentationStorage()
-        final override fun equals(other: Any?) = (other is UnknownShim) && (sourceRepresentation == other.sourceRepresentation)
-        final override fun hashCode() = sourceRepresentation.hashCode()
+        final override fun equals(other: Any?) = (other is UnknownShim) && (this::class == other::class) && (sourceRepresentation == other.sourceRepresentation)
+        final override fun hashCode() = this::class.hashCode() * 31 + sourceRepresentation.hashCode()
         final override fun toString() = "Failed to parse ($sourceRepresentation)"
         protected val fails : Nothing get() = throw lookupResult
     }
