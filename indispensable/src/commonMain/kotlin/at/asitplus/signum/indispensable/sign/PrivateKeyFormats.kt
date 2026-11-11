@@ -157,7 +157,6 @@ sealed class EcdsaPrivateKey private constructor(
         privateKey: BigInteger,
         val publicKeyBytes: ByteArray?,
         private val curveOrderLengthInBytes: Int,
-        attributes: Set<Asn1Element>? = null,
     ) : EcdsaPrivateKey(privateKey) {
 
         fun withCurve(
