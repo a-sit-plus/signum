@@ -218,17 +218,20 @@ Descriptors contain semantic metadata and string construction. They do not regis
 initialize `Signum.Der`. `Signum.attributeOidFor`, `attributeNameFor`, and `attributeDescriptorForName`
 provide name resolution.
 
-With PKIX installed, recognized payloads that fail decoding become `InvalidCertificateExtension`,
-`InvalidGeneralName`, `InvalidOtherName`, `InvalidAttributeTypeAndValue`, `InvalidCsrAttribute`, or
-`InvalidPolicyQualifierInfo`. All extend `InvalidPkixValue`, retaining the decoding failure and source;
-they do not extend `ServiceLoader.UnknownShim`. Unsupported discriminators still produce unknown values.
-Custom PKIX providers should likewise return an invalid value for a recognized payload they cannot decode.
-Returning an invalid value completes provider selection; lower-priority providers are not retried.
+Providers return `null` for unsupported inputs and throw when decoding fails. Either outcome lets the
+loader try the next provider; the first successful result completes selection. Only after all providers
+fail does decoding produce an unknown value extending `ServiceLoader.UnknownShim`, retaining the source
+representation and aggregated provider failures. This applies to malformed recognized payloads as well
+as unsupported discriminators. A custom provider can therefore decode inputs rejected by the built-in
+parser, using the same dispatch mechanism.
+
+`OtherNameAsn1Provider` and `PolicyQualifierAsn1Provider` handle their respective inner OID families;
+register these module-specific services with `ServiceLoader.register<ProviderInterface>(provider)`.
+To retry a previously unknown value after adding a provider, decode its retained source representation.
 
 The core name types have no `isValid` member. RDN construction checks only structure, so names and
-certificates can retain invalid attributes. PKIX supplies `isInvalid` and derived `isValid` extensions;
-unknown values and the uninterpreted X.400 carrier remain unclassified. Recovery can inspect the source
-and produce a semantic value independently; there is no validity-flipping copy operation.
+certificates can retain uninterpreted attributes. Basic semantic constructor checks remain in place;
+certificate-path validation belongs to separate validators.
 
 Encoding back to the source format preserves its representation, including invalid payloads. Conversion
 to another format requires a supporting provider. Certificate serial-number parsing remains lenient,

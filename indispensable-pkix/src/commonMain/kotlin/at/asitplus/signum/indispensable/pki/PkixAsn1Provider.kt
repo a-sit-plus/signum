@@ -3,9 +3,6 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
-import at.asitplus.nonFatalOrThrow
 import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Signum
@@ -33,9 +30,9 @@ private data class EdiPartyWire(
 }
 
 /** ASN.1 is one representation of the PKIX types; dispatch uses the existing provider mechanism. */
-object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvider, AttributeTypeAndValueAsn1Provider, CsrAttributeAsn1Provider {
-    override fun decodeFromAsn1(asn1: X509CertificateExtension): CertificateExtension? = try {
-        with(asn1) {
+object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvider {
+    override fun decodeFromAsn1(asn1: X509CertificateExtension): CertificateExtension? {
+        return with(asn1) {
             when (oid) {
                 BasicConstraints.oid -> Signum.Der.decodeFromByteArray<BasicConstraintsBody>(value).let {
                     val ca = it.cA ?: false
@@ -67,8 +64,6 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
                 else -> null
             }
         }
-    } catch (failure: Throwable) {
-        InvalidCertificateExtension(asn1.oid, asn1.critical, failure.nonFatalOrThrow())
     }
 
     override fun encodeToAsn1(value: CertificateExtension): X509CertificateExtension? {
@@ -97,7 +92,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
         return X509CertificateExtension(value.oid, value.critical, body)
     }
 
-    override fun decodeFromAsn1(generalName: X509GeneralName): GeneralName? = try {
+    override fun decodeFromAsn1(generalName: X509GeneralName): GeneralName? =
         when (generalName) {
             is X509GeneralName.Dns -> DNSName.fromAsn1Model(generalName)
             is X509GeneralName.Rfc822 -> RFC822Name.fromAsn1Model(generalName)
@@ -112,9 +107,6 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
             is X509GeneralName.X400Address -> X400AddressName.fromAsn1Model(generalName)
             else -> null
         }
-    } catch (failure: Throwable) {
-        InvalidGeneralName(failure.nonFatalOrThrow())
-    }
 
     override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = when (generalName) {
         is DNSName -> X509GeneralName.Dns(generalName.value)
@@ -131,30 +123,5 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
         is X400AddressName -> generalName.x400Address
         else -> null
     }
-
-    override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {
-        val descriptor = Signum.attributeDescriptorFor(value.oid) ?: return null
-        return try {
-            val text = Asn1String.decodeFromTlv(value.value.asPrimitive())
-            require(text.isValid != false) { "Malformed attribute string ${value.oid}" }
-            require(isValidPkixAttributeText(value.oid, text.value)) { "Invalid attribute value ${value.oid}" }
-            descriptor.fromString(text.value)
-        } catch (failure: Throwable) {
-            InvalidAttributeTypeAndValue(value.oid, failure.nonFatalOrThrow())
-        }
-    }
-
-    override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
-
-    override fun decodeFromAsn1(value: Pkcs10CsrAttribute): CsrAttribute? {
-        if (value.oid != CsrAttribute.EXTENSION_REQUEST_OID) return null
-        return try {
-            ExtensionRequest(value.value.single().asSequence().map { CertificateExtension.fromAsn1(it) })
-        } catch (failure: Throwable) {
-            InvalidCsrAttribute(value.oid, failure.nonFatalOrThrow())
-        }
-    }
-
-    override fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute? = null
 
 }

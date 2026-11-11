@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.nonFatalOrThrow
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
@@ -44,11 +45,11 @@ internal object J509 {
             val value = it.optional("text")?.jsonPrimitive?.content
             if (value == null && descriptor == null) AttributeTypeAndValue(oid)
             else {
-                require(value != null && isValidPkixAttributeText(oid, value)) { "Invalid J509 attribute $oid" }
+                require(value != null) { "Invalid J509 attribute $oid" }
                 descriptor?.fromString(value) ?: TextAttributeTypeAndValue(oid, value)
             }
         } catch (failure: Throwable) {
-            InvalidAttributeTypeAndValue(oid, failure.nonFatalOrThrow())
+            AttributeTypeAndValue(oid, UnsupportedCryptoException("Cannot decode J509 attribute $oid", failure.nonFatalOrThrow()))
         }
     }
     private fun name(value: Name) = JsonArray(value.relativeDistinguishedNames.map { rdn -> JsonArray(rdn.attrsAndValues.map(::attribute)) })
@@ -174,7 +175,7 @@ internal object J509 {
         else try {
             ExtensionRequest(it.list("extensions").map { e -> extension(e.jsonObject) })
         } catch (failure: Throwable) {
-            InvalidCsrAttribute(it.oid(), failure.nonFatalOrThrow())
+            CsrAttribute(it.oid(), UnsupportedCryptoException("Cannot decode J509 CSR attribute ${it.oid()}", failure.nonFatalOrThrow()))
         }
     }
 

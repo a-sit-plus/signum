@@ -23,9 +23,9 @@ object ServiceLoader {
 
     @SignumInternals
     abstract class UnknownShim(
-        val lookupResult: UnsupportedCryptoException,
-        final override val sourceRepresentation: SourceRepresentationStorage = SourceRepresentationStorage(),
+        val lookupResult: UnsupportedCryptoException
     ) : WithSourceRepresentation {
+        final override val sourceRepresentation = SourceRepresentationStorage()
         final override fun equals(other: Any?) = (other is UnknownShim) && (sourceRepresentation == other.sourceRepresentation)
         final override fun hashCode() = sourceRepresentation.hashCode()
         final override fun toString() = "Failed to parse ($sourceRepresentation)"
