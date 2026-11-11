@@ -23,6 +23,7 @@ data class EDIPartyName(
         require(nameAssigner == null || nameAssigner.isNotEmpty()) { "EDI name assigner cannot be empty" }
     }
 
+    /** ASN.1 schema from [RFC 5280, Section 4.2.1.6](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.6). */
     @Serializable
     internal data class Asn1Representation(
         @Asn1Tag(0u, constructed = Asn1Tag.ConstructedBit.CONSTRUCTED)

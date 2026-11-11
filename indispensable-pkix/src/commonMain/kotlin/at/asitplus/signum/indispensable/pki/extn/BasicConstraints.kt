@@ -27,6 +27,8 @@ data class BasicConstraints(
     init { require(ca || pathLenConstraint == null) { "Only CA certificates may have a path length constraint" } }
 
     /**
+     * ASN.1 schema from [RFC 5280, Section 4.2.1.9](https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.9).
+     *
      * ```
      * BasicConstraints ::= SEQUENCE {
      *   cA                BOOLEAN DEFAULT FALSE,
