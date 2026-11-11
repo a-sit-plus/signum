@@ -123,7 +123,13 @@ open class AttributeTypeAndValue protected constructor(
     val typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()
     protected val valueAsn1String by lazy { catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()) } }
 
-    open val isValid get() = valueAsn1String.mapCatching { it.isValid }.getOrElse { false }
+    /**
+     * Validates recognized ASN.1 strings. For opaque non-string values, `null` means that no
+     * validator is available; an unknown attribute's syntax need not be a string.
+     */
+    open val isValid: Boolean? get() =
+        if (value.tag in Asn1String.leadingTags) valueAsn1String.mapCatching { it.isValid }.getOrElse { false }
+        else null
 
     val valueString get() =
         valueAsn1String.mapCatching {
@@ -226,7 +232,10 @@ private class StandardX500AttributeDescriptor(
 
     override fun fromValue(value: Asn1Element): AttributeTypeAndValue = ATV(oid, value)
 
-    private class ATV(oid: ObjectIdentifier, value: Asn1Element) : AttributeTypeAndValue(oid, value)
+    private class ATV(oid: ObjectIdentifier, value: Asn1Element) : AttributeTypeAndValue(oid, value) {
+        // Standard X.500 attributes require a string; an opaque value here is invalid.
+        override val isValid get() = valueAsn1String.mapCatching { it.isValid }.getOrElse { false }
+    }
 }
 
 internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(

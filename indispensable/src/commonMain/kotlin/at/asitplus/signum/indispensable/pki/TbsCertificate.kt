@@ -13,7 +13,13 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
-/** The semantic certificate contents that are signed. Originals are retained separately. */
+/**
+ * The semantic certificate contents that are signed. Originals are retained separately.
+ *
+ * @param strict Enforce positive serial numbers of at most 20 DER content octets. Enabled by
+ * default for programmatic construction; ASN.1 decoding disables this check to preserve
+ * certificates with nonconforming serial numbers. Duplicate extension OIDs are always rejected.
+ */
 class TbsCertificate(
     val serialNumber: BigInteger,
     val signatureAlgorithm: SignatureAlgorithm,
@@ -35,9 +41,9 @@ class TbsCertificate(
                 runRethrowing { require(size <= 20) { "Serial Number too long for X.509. Limit = 20 value octets, is: $size" } }
             }
             runRethrowing { require(serialNumber.isPositive) { "Serial Number must be positive" } }
-            if (!extensions.allDistinctByOids()) {
-                throw Asn1StructuralException("Multiple extensions with the same OID found")
-            }
+        }
+        if (!extensions.allDistinctByOids()) {
+            throw Asn1StructuralException("Multiple extensions with the same OID found")
         }
     }
 

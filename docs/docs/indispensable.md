@@ -94,12 +94,17 @@ which is implemented by `CryptoPublicKey.EC`
 #### PKI-Related Data Structures
 The `pki` package contains data classes relevant in the PKI context:
 
-* `X509Certificate` does what you think it does
-    * `X509CertificateExtension` contains a convenience abstraction of X.509 certificate extensions 
+* `Certificate` contains a signed certificate and its `TbsCertificate` contents
+    * `CertificateExtension` contains a convenience abstraction of X.509 certificate extensions
     * `AlternativeNames` contains definitions of subject/issuer alternative names
     * `RelativeDistinguishedName` contains definitions of RDNs (Common Name, City, …)
 * `Pkcs10CertificateRequest` contains a CSR abstraction
     * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension
+
+Programmatic `TbsCertificate` construction requires a positive serial number occupying at most 20 DER
+content octets by default (`strict = true`). Decoding through `TbsCertificate.fromAsn1` or
+`Certificate.fromAsn1` accepts nonconforming serial numbers, including zero and longer values, and
+preserves the original encoding. Duplicate extension OIDs are rejected in both paths.
 
 ##  Conversion from/to Platform Types
 
