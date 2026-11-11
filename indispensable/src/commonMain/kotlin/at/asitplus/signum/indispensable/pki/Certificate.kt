@@ -15,7 +15,7 @@ class Certificate(
     val signatureValue: AbstractSignature,
 ) : WithSourceRepresentation {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     init {
         require(tbsCertificate.extensions.allDistinctByOids()) {

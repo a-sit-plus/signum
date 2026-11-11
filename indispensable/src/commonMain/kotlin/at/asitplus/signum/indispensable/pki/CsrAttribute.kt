@@ -14,7 +14,7 @@ class CsrAttribute(
     val value: Set<Asn1Element>
 ) : Identifiable, WithSourceRepresentation {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     constructor(oid: ObjectIdentifier, singleValue: Asn1Element) : this(oid, setOf(singleValue))
 

@@ -17,7 +17,7 @@ class RelativeDistinguishedName(
     val attrsAndValues: Set<AttributeTypeAndValue>,
     performValidation: Boolean = true,
 ) : WithSourceRepresentation {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     constructor(singleItem: AttributeTypeAndValue) : this(setOf(singleItem))
 
@@ -115,7 +115,7 @@ open class AttributeTypeAndValue protected constructor(
     // if this is not true, we should have a shared base interface for value and go from there
     val value: Asn1Element
 ) : Identifiable, WithSourceRepresentation {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override fun toString() = "AttributeTypeAndValue(${toRfc2253String()})"
 

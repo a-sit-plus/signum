@@ -22,7 +22,7 @@ class TbsCertificationRequest(
     validateAttributes: Boolean = true,
 ) : WithSourceRepresentation {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     init {
         if (validateAttributes) {
@@ -92,7 +92,7 @@ class CertificationRequest(
     val signatureValue: AbstractSignature,
 ) : WithSourceRepresentation {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     val publicKey get() = tbsCsr.publicKey
     val signature get() = signatureValue.withSignatureAlgorithm(signatureAlgorithm)

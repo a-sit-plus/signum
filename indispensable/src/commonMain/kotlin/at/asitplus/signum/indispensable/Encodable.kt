@@ -7,6 +7,10 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 
+/** Concrete instantiation of [WithSourceRepresentation] interfaces need to provide a
+ * default-constructed instance of this class as an override.
+ * It is used as a backing field by [SignumEncodingHelpers.encodeTo] and [SignumEncodingHelpers.decodeFrom],
+ * to enable byte-for-byte round-tripping. */
 class SourceRepresentationStorage {
     /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
     @SignumInternals
@@ -23,7 +27,6 @@ class SourceRepresentationStorage {
 
 interface WithSourceRepresentation {
     /** The cached source representation. No, you aren't allowed to mess with it directly. Can't be `internal` because interface. */
-    @SignumInternals
     val sourceRepresentation: SourceRepresentationStorage
 }
 

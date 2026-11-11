@@ -20,7 +20,7 @@ import at.asitplus.signum.indispensable.fromAsn1
  */
 class AlternativeNames(val generalNames: List<GeneralName>) : WithSourceRepresentation {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

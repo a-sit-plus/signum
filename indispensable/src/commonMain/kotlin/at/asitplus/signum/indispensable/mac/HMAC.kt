@@ -14,7 +14,7 @@ class HMAC(val digest: Digest, val oid: ObjectIdentifier)
     : MessageAuthenticationCode
 {
 
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override fun toString() = "HMAC-$digest"
     override fun hashCode() = digest.hashCode()
