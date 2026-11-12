@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.ImplementationError
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
@@ -30,20 +31,29 @@ interface WithSourceRepresentation {
     val sourceRepresentation: SourceRepresentationStorage
 }
 
-@OptIn(SignumInternals::class)
 /** The source format that this was parsed from, if any, in human-readable form. */
+@OptIn(SignumInternals::class)
 val WithSourceRepresentation.sourceFormat get(): String {
     return (sourceRepresentation.x ?: return "<no source>")::class.simpleName ?: "<anonymous>"
 }
 
-@SignumInternals @PublishedApi
 /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
+@SignumInternals @PublishedApi
 internal fun WithSourceRepresentation.finangleSourceRepresentation(v: Any) {
+    this.sourceRepresentation.x?.let { existing ->
+        // heuristic: overwriting the existing representation with a different representation of the same type is a bug
+        // overwriting with a different type can be legal (because of how nested calls end up working)
+        // the value returned from the decodeFrom lambda must always be a FRESH instance, due to how source round-tripping works.
+        // the only exception is if the decoder only accepts a single canonical representation, in which case source round-tripping can be opted out of (by making val sourceRepresentation a getter instead of a backing field.)
+        if ((v !== existing) && (v::class == existing::class)) {
+            throw ImplementationError("Overwriting existing ${v::class.simpleName} source representation with a different instance. This is almost certainly a bug caused by reusing a singleton instance in source-format decoders.")
+        }
+    }
     this.sourceRepresentation.x = v
 }
 
-@SignumInternals @PublishedApi
 /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
+@SignumInternals @PublishedApi
 internal val WithSourceRepresentation.realSourceRepresentation get() =
     this.sourceRepresentation.x
 
