@@ -1,13 +1,15 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.*
+import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1IntegerHexStringSerializer
+import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.*
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.DefaultDer
 import at.asitplus.awesn1.serialization.decodeFromDer
 import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.Name
 import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
@@ -33,10 +35,6 @@ import java.net.URLClassLoader
 import java.security.KeyPairGenerator
 
 val DerLifecycleRegressionTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
-    test("Decoding a digest retains each input representation independently") {
-        isolatedDerScenario("digestSources")
-    }
-
     test("Signum copies the default DER template after awesn1 has used it") {
         isolatedDerScenario("defaultDerTemplateAfterUse")
     }
@@ -78,16 +76,6 @@ private fun isolatedDerScenario(name: String) {
 }
 
 internal object DerLifecycleRegressionScenarios {
-    @JvmStatic
-    fun digestSources() {
-        val withNull = X509AlgorithmIdentifier(KnownOIDs.sha_256, Asn1Null)
-        val withoutParameters = X509AlgorithmIdentifier(KnownOIDs.sha_256, null)
-        val first = Digest.fromAsn1(withNull)
-        val second = Digest.fromAsn1(withoutParameters)
-
-        first.asn1.toRepresentation() shouldBe withNull
-        second.asn1.toRepresentation() shouldBe withoutParameters
-    }
 
     @JvmStatic
     fun defaultDerTemplateAfterUse() {

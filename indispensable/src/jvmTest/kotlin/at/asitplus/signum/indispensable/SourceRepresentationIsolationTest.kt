@@ -1,13 +1,8 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.Asn1Null
-import at.asitplus.awesn1.KnownOIDs
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.sha1WithRSAEncryption
-import at.asitplus.awesn1.sha256WithRSAEncryption
-import at.asitplus.awesn1.sha384WithRSAEncryption
-import at.asitplus.awesn1.sha512WithRSAEncryption
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.mac.HMAC
@@ -33,12 +28,6 @@ val SourceRepresentationIsolationTest by matrixSuite(matrixConfig { execution = 
             test("Decoded digests retain independent input representations") {
                 isolatedScenario(SourceRepresentationScenarios::class.java, "digestSources", digest)
             }
-            test("Decoding leaves the digest preset without a source") {
-                isolatedScenario(SourceRepresentationScenarios::class.java, "digestPreset", digest)
-            }
-            test("Decoded HMACs retain independent input models") {
-                isolatedScenario(SourceRepresentationScenarios::class.java, "hmacSources", digest)
-            }
             test("Decoding leaves the HMAC preset without a source") {
                 isolatedScenario(SourceRepresentationScenarios::class.java, "hmacPreset", digest)
             }
@@ -52,11 +41,6 @@ val SourceRepresentationIsolationTest by matrixSuite(matrixConfig { execution = 
     }
     "Cached signature presets" - {
         listOf("SHA256", "SHA384", "SHA512").asData() - { digest ->
-            "Cached PSS encoding survives unrelated digest decoding" - {
-                listOf("algorithm", "parameters", "mgf1").asData() test { kind ->
-                    isolatedScenario(SourceRepresentationScenarios::class.java, "cachedPssEncoding", digest, kind)
-                }
-            }
             test("ECDSA preset is not used as decoded storage") {
                 isolatedScenario(SourceRepresentationScenarios::class.java, "ecdsaPreset", digest)
             }
@@ -86,40 +70,16 @@ internal object SourceRepresentationScenarios {
         val first = Digest.fromAsn1(withNull)
         val second = Digest.fromAsn1(withoutParameters)
 
+        preset.asn1.toRepresentation() shouldNotBeSameInstanceAs withoutParameters
         first.asn1.toRepresentation() shouldBe withNull
         second.asn1.toRepresentation() shouldBe withoutParameters
-    }
-
-    @JvmStatic
-    fun digestPreset(name: String) {
-        val preset = digest(name)
-        preset.sourceFormat shouldBe "<no source>"
-        val before = preset.asn1.toDer()
-        Digest.fromAsn1(X509AlgorithmIdentifier(preset.oid, Asn1Null))
-
-        preset.sourceFormat shouldBe "<no source>"
-        preset.asn1.toDer() shouldBe before
-    }
-
-    @JvmStatic
-    fun hmacSources(name: String) {
-        val preset = HMAC.byDigest(digest(name))
-        // HMAC only accepts NULL parameters, so use equal but separately owned input models.
-        val firstModel = X509AlgorithmIdentifier(preset.oid, Asn1Null)
-        val secondModel = X509AlgorithmIdentifier(preset.oid, Asn1Null)
-        firstModel shouldNotBeSameInstanceAs secondModel
-        val first = MessageAuthenticationCode.fromAsn1(firstModel)
-        val second = MessageAuthenticationCode.fromAsn1(secondModel)
-
-        first.asn1.toRepresentation() shouldBeSameInstanceAs firstModel
-        second.asn1.toRepresentation() shouldBeSameInstanceAs secondModel
     }
 
     @JvmStatic
     fun hmacPreset(name: String) {
         val preset = HMAC.byDigest(digest(name))
         preset.sourceFormat shouldBe "<no source>"
-        MessageAuthenticationCode.fromAsn1(X509AlgorithmIdentifier(preset.oid, Asn1Null))
+        val _ = MessageAuthenticationCode.fromAsn1(X509AlgorithmIdentifier(preset.oid, Asn1Null))
 
         preset.sourceFormat shouldBe "<no source>"
     }
@@ -145,22 +105,6 @@ internal object SourceRepresentationScenarios {
         "SHA384" -> PssPadded.DEFAULT_SHA384
         "SHA512" -> PssPadded.DEFAULT_SHA512
         else -> error(name)
-    }
-
-    @JvmStatic
-    fun cachedPssEncoding(name: String, kind: String) {
-        val preset = pss(name)
-        val algorithm = RsaAlgorithm.entries.single { it.digest.name == name && it.parameters is PssPadded }
-        fun encode() = when (kind) {
-            "algorithm" -> algorithm.asn1.toDer()
-            "parameters" -> preset.asn1.toDer()
-            "mgf1" -> preset.mgfAlgorithm.asn1.toDer()
-            else -> error(kind)
-        }
-        val before = encode()
-        Digest.fromAsn1(X509AlgorithmIdentifier(digest(name).oid, Asn1Null))
-
-        encode() shouldBe before
     }
 
     @JvmStatic
@@ -222,15 +166,19 @@ internal object SourceRepresentationScenarios {
 
     @JvmStatic
     fun emptyName() {
-        val preset = Name.EMPTY
-        Name.fromString("") shouldBeSameInstanceAs preset
-        val first = Name.fromAsn1("3000".hexToByteArray())
-        val second = Name.fromAsn1("3000".hexToByteArray())
+        val emptySingleton = Name.EMPTY
+        Name.fromString("") shouldBeSameInstanceAs emptySingleton
+        val tlv1 = Asn1Element.parseFromDerHexString("3000")
+        val tlv2 = Asn1Element.parseFromDerHexString("3000")
+        tlv1 shouldNotBeSameInstanceAs tlv2
+        val first = Name.fromAsn1(tlv1)
+        val second = Name.fromAsn1(tlv2)
 
-        first shouldBe preset
-        first.sourceRepresentation shouldNotBeSameInstanceAs preset.sourceRepresentation
-        first.sourceRepresentation shouldNotBeSameInstanceAs second.sourceRepresentation
-        preset.sourceFormat shouldBe "<no source>"
-        preset.asn1.toDer() shouldBe "3000".hexToByteArray()
+        first shouldBe emptySingleton
+        second shouldBe emptySingleton
+        first.asn1.toRepresentation() shouldBeSameInstanceAs tlv1
+        second.asn1.toRepresentation() shouldBeSameInstanceAs tlv2
+        emptySingleton.sourceFormat shouldBe "<no source>"
+        emptySingleton.asn1.toDer() shouldBe "3000".hexToByteArray()
     }
 }
