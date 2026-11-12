@@ -5,7 +5,6 @@ package at.asitplus.signum
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.DefaultDer
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Asn1DigestAlgorithmProvider
@@ -56,8 +55,6 @@ object Signum {
     /**
      * The finalized instance used by every Signum DER codec and helper. First access seals registration.
      * If no template was selected with [setDer], awesn1's default [DER] supplies the settings and serializers.
-     * A fresh [at.asitplus.awesn1.serialization.Der] instance combines that template with Signum's contributions;
-     * it can copy an already-used default without registering into the sealed [DefaultDer] registry.
      */
     val Der: Der by lazy {
         consumed = true
