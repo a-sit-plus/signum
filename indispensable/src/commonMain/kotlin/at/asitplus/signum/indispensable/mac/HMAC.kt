@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.awesn1.*
 import at.asitplus.signum.Signum
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
@@ -27,7 +26,6 @@ class HMAC(val digest: Digest, val oid: ObjectIdentifier)
         val SHA384 = HMAC(Digest.SHA384, KnownOIDs.hmacWithSHA384)
         val SHA512 = HMAC(Digest.SHA512, KnownOIDs.hmacWithSHA512)
 
-        /** Creates an independent HMAC value rather than returning one of the shared presets. */
         fun byDigest(digest: WellKnownDigest) = when (digest) {
             is WellKnownDigest.SHA1 -> HMAC(digest, KnownOIDs.hmacWithSHA1)
             is WellKnownDigest.SHA256 -> HMAC(digest, KnownOIDs.hmacWithSHA256)
