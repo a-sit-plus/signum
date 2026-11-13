@@ -149,7 +149,7 @@ object RsaAsn1Constructors :
     })
 {
 
-    val PKCS1 get() = asn1Decoders { src: Pkcs1RsaPrivateKeyInfo ->
+    val PKCS1 get() = asn1Decoders(Pkcs1RsaPrivateKeyInfo.Companion) { src ->
         when (src.version) {
             Pkcs1RsaPrivateKeyInfo.Version.TWO_PRIME -> require(src.otherPrimeInfos == null) { "OtherPrimeInfos must be null for TWO_PRIME (version = 0) keys!" }
             Pkcs1RsaPrivateKeyInfo.Version.MULTI -> require(src.otherPrimeInfos != null) { "OtherPrimeInfos must be present for MULTI (version = 1) keys!" }
@@ -206,7 +206,7 @@ object EcdsaAsn1Constructors :
     })
 {
 
-    val SEC1 get() = asn1Decoders { src: Sec1EcPrivateKeyInfo ->
+    val SEC1 get() = asn1Decoders(Sec1EcPrivateKeyInfo.Companion) { src ->
         require(src.version == Sec1EcPrivateKeyInfo.Version.V1) { "Unsupported SEC1 private key version: ${src.version}" }
         ecPrivateKey(src, null)
     }

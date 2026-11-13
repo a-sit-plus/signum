@@ -3,15 +3,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.*
-import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
-import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
-import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo.Companion.invoke
-import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.crypto.X509SignatureValue
+import at.asitplus.awesn1.crypto.*
 import at.asitplus.awesn1.crypto.pki.*
 import at.asitplus.awesn1.io.decodeFromSource
 import at.asitplus.awesn1.io.encodeToSink
@@ -21,10 +13,10 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
-import at.asitplus.signum.indispensable.Asn1EncodingHelpers.Asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1DecodersWith
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1EncodersWith
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.withAlternativePemDecoder
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
@@ -35,8 +27,7 @@ import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.pki.*
-import at.asitplus.signum.indispensable.sign.Asn1SignatureAlgorithmProvider
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.*
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.KSerializer
@@ -248,6 +239,25 @@ inline fun <reified Asn1Type: WithPemLabel, reified AbstractType: WithSourceRepr
         companion
     )
 
+
+inline fun <
+    reified OriginalAsn1Type : WithPemLabel,
+    reified AlternateAsn1Type : WithPemLabel,
+    reified AbstractType : WithSourceRepresentation
+> Asn1Decoders.WithPEM<OriginalAsn1Type, AbstractType>.withAlternativePemDecoder(
+    alternateDecoder: Asn1Decoders.WithPEM<AlternateAsn1Type, AbstractType>
+) = object : Asn1Decoders.WithPEM<OriginalAsn1Type, AbstractType> by this {
+    override fun invoke(pemEncoded: String): AbstractType {
+        return try {
+            alternateDecoder(pemEncoded)
+        } catch (x: IllegalArgumentException) {
+            if (x.message?.contains("Unexpected PEM label") == true) {
+                this@withAlternativePemDecoder(pemEncoded)
+            } else throw x
+        }
+    }
+}
+
 @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
 /** Provider + no PEM + unknown doesn't want source */
 inline fun <
@@ -345,13 +355,7 @@ val CryptoPublicKey.asn1 get() =
 
 val CryptoPublicKey.Companion.fromAsn1 get() =
     asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, CryptoPublicKey::Unknown)
-        .withPemDecoder { block ->
-            when (block.pemLabel) {
-                Pkcs1RsaPublicKeyInfo.PEM_LABEL -> SubjectPublicKeyInfo.from(
-                    Pkcs1RsaPublicKeyInfo.decodeFromPem(block, Signum.Der), Signum.Der)
-                else -> SubjectPublicKeyInfo.decodeFromPem(block, Signum.Der)
-            }
-        }
+        .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
 
 val KeyAgreementPublicValue.Companion.fromAsn1 get() =
     asn1Decoders<SubjectPublicKeyInfo,_> {
@@ -363,32 +367,8 @@ val CryptoPrivateKey.asn1 get() =
 
 val CryptoPrivateKey.Companion.fromAsn1 get() =
     asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, CryptoPrivateKey::Unknown)
-        .withPemDecoder { block ->
-            when (block.pemLabel) {
-                Pkcs1RsaPrivateKeyInfo.PEM_LABEL -> Pkcs8PrivateKeyInfo(
-                    Pkcs1RsaPrivateKeyInfo.decodeFromPem(block, Signum.Der), der = Signum.Der)
-                Sec1EcPrivateKeyInfo.PEM_LABEL -> Sec1EcPrivateKeyInfo.decodeFromPem(block, Signum.Der).let {
-                    Pkcs8PrivateKeyInfo(it, it.parameters, der = Signum.Der)
-                }
-                else -> Pkcs8PrivateKeyInfo.decodeFromPem(block, Signum.Der)
-            }
-        }
-
-/**
- * Key PEM labels can describe different ASN.1 structures, not just alternate names for one structure.
- * [decode] parses each block into the common SPKI/PKCS#8 model consumed by the existing decoder.
- * Only PEM entry points are replaced; model, TLV, DER, source and hex decoding delegate unchanged.
- */
-private fun <Asn1Type : Any, AbstractType : WithSourceRepresentation>
-        Asn1Decoders.WithPEM<Asn1Type, AbstractType>.withPemDecoder(decode: (PemBlock) -> Asn1Type)
-        : Asn1Decoders.WithPEM<Asn1Type, AbstractType> =
-    object : Asn1Decoders.WithPEM<Asn1Type, AbstractType> by this {
-        override fun invoke(pemEncoded: String): AbstractType =
-            this@withPemDecoder(decode(PemBlock.decodeFromPem(pemEncoded)))
-
-        override fun list(pemEncoded: String): Iterable<AbstractType> =
-            PemBlock.decodeAllFromPem(pemEncoded).map { this@withPemDecoder(decode(it)) }
-    }
+        .withAlternativePemDecoder(RsaPrivateKey.fromAsn1.PKCS1)
+        .withAlternativePemDecoder(EcdsaPrivateKey.fromAsn1.SEC1)
 
 private class X509UnparsedSignature : AbstractSignature {
     override val sourceRepresentation = SourceRepresentationStorage()

@@ -5,7 +5,6 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.Signum
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
@@ -128,6 +127,7 @@ open class AttributeTypeAndValue protected constructor(
      * validator is available; an unknown attribute's syntax need not be a string.
      */
     open val isValid: Boolean? get() =
+        // TODO: this also assumes asn.1
         if (value.tag in Asn1String.leadingTags) valueAsn1String.mapCatching { it.isValid }.getOrElse { false }
         else null
 
