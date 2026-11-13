@@ -61,13 +61,6 @@ It contains essentials such as:
     * RSA keys also support PKCS#1 encoding (`.asn1.pkcs1`)
     * EC keys also support SEC1 encoding (`.asn1.sec1`)
 * `Digest` containing an enumeration of supported digests
-    * `WellKnownDigest.SHA1`, `.SHA256`, `.SHA384`, and `.SHA512` are constructible classes; use, for example,
-      `WellKnownDigest.SHA256()` for an independent value. The existing `Digest.SHA256` and
-      `WellKnownDigest.SHA256` presets remain available. Digests compare and hash by algorithm, regardless
-      of their retained source representation. Decoding creates fresh digest and HMAC values so that
-      later decoding cannot overwrite an earlier value's source or change a shared preset's encoding.
-      For exhaustive `when` expressions on `WellKnownDigest`, match its classes with
-      `is WellKnownDigest.SHA256` (and the other variants).
 * `ECCurve` representing an EC Curve
 * `ECPoint` representing a point on an elliptic curve
 * `CryptoSignatre` representing a cryptographic signature including descriptive information regarding the algorithms and signature data

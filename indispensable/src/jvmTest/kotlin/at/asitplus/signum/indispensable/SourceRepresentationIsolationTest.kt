@@ -28,8 +28,8 @@ val SourceRepresentationIsolationTest by matrixSuite(matrixConfig { execution = 
             test("Decoded digests retain independent input representations") {
                 isolatedScenario(SourceRepresentationScenarios::class.java, "digestSources", digest)
             }
-            test("Decoding leaves the HMAC preset without a source") {
-                isolatedScenario(SourceRepresentationScenarios::class.java, "hmacPreset", digest)
+            test("Decoded HMACs retain independent input representations") {
+                isolatedScenario(SourceRepresentationScenarios::class.java, "hmacSources", digest)
             }
             test("PSS hash and MGF1 hash retain their distinct representations") {
                 isolatedScenario(SourceRepresentationScenarios::class.java, "pssDigestPositions", digest)
@@ -72,23 +72,31 @@ internal object SourceRepresentationScenarios {
     @JvmStatic
     fun digestSources(name: String) {
         val preset = digest(name)
-        val withNull = X509AlgorithmIdentifier(preset.oid, Asn1Null)
-        val withoutParameters = X509AlgorithmIdentifier(preset.oid, null)
-        val first = Digest.fromAsn1(withNull)
-        val second = Digest.fromAsn1(withoutParameters)
+        val reprWithNull = X509AlgorithmIdentifier(preset.oid, Asn1Null)
+        val reprWithoutParameters = X509AlgorithmIdentifier(preset.oid, null)
+        // order matters: non-canonical (with explicit null) decodes last
+        val instanceWithoutParameters = Digest.fromAsn1(reprWithoutParameters)
+        val instanceWithNull = Digest.fromAsn1(reprWithNull)
 
-        preset.asn1.toRepresentation() shouldNotBeSameInstanceAs withoutParameters
-        first.asn1.toRepresentation() shouldBe withNull
-        second.asn1.toRepresentation() shouldBe withoutParameters
+        // canonical for digest: parameters are absent
+        preset.asn1.toRepresentation() shouldBe reprWithoutParameters
+        instanceWithNull.asn1.toRepresentation() shouldBe reprWithNull
+        instanceWithoutParameters.asn1.toRepresentation() shouldBe reprWithoutParameters
     }
 
     @JvmStatic
-    fun hmacPreset(name: String) {
+    fun hmacSources(name: String) {
         val preset = hmac(name)
-        preset.sourceFormat shouldBe "<no source>"
-        val _ = MessageAuthenticationCode.fromAsn1(X509AlgorithmIdentifier(preset.oid, Asn1Null))
+        val reprWithNull = X509AlgorithmIdentifier(preset.oid, Asn1Null)
+        val reprWithoutParameters = X509AlgorithmIdentifier(preset.oid, null)
+        // order matters: non-canonical (without explicit null) decodes last
+        val instanceWithNull = MessageAuthenticationCode.fromAsn1(reprWithNull)
+        val instanceWithoutParameters = MessageAuthenticationCode.fromAsn1(reprWithoutParameters)
 
-        preset.sourceFormat shouldBe "<no source>"
+        // canonical for hmac: parameters are explicit null
+        preset.asn1.toRepresentation() shouldBe reprWithNull
+        instanceWithoutParameters.asn1.toRepresentation() shouldBe reprWithoutParameters
+        instanceWithNull.asn1.toRepresentation() shouldBe reprWithNull
     }
 
     @JvmStatic
