@@ -7,7 +7,6 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
@@ -39,7 +38,8 @@ private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte(
  * XOR them together. Very signature, very secure! Wow!
  */
 object CursorySignatureScheme : SignatureAlgorithm {
-    override val sourceRepresentation = SourceRepresentationStorage()
+    // opt out of round-tripping; this is ONLY a good idea if you only accept a single specific canonical encoding!
+    override val sourceRepresentation get() = SourceRepresentationStorage()
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
     data class Signature(val bit: Boolean) : CryptoSignature {

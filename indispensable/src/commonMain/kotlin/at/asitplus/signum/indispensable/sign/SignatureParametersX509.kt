@@ -127,8 +127,8 @@ val PssPadded.MaskGenerationFunction.Companion.fromAsn1 get() = asn1Decoders<X50
 }
 
 object RsaAsn1Constructors :
-    Asn1EncodingHelpers.Asn1Decoders<Pkcs8PrivateKeyInfo, RsaPrivateKey> by
-    (asn1Decoders<Pkcs8PrivateKeyInfo,RsaPrivateKey> { src ->
+    Asn1EncodingHelpers.Asn1Decoders.WithPEM<Pkcs8PrivateKeyInfo, RsaPrivateKey> by
+    (asn1Decoders(Pkcs8PrivateKeyInfo) { src ->
         require(src.algorithmOid == RsaPrivateKey.oid) { "Expected RSA private key, got ${src.algorithmOid}" }
         require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
         // Nested parsing uses the application-wide DER configuration (docs/docs/extensibility.md).
@@ -194,8 +194,8 @@ private fun ecPrivateKey(
 }
 
 object EcdsaAsn1Constructors :
-    Asn1EncodingHelpers.Asn1Decoders<Pkcs8PrivateKeyInfo, EcdsaPrivateKey> by
-    (asn1Decoders { src ->
+    Asn1EncodingHelpers.Asn1Decoders.WithPEM<Pkcs8PrivateKeyInfo, EcdsaPrivateKey> by
+    (asn1Decoders(Pkcs8PrivateKeyInfo) { src ->
         require(src.algorithmOid == oid) { "Expected EC private key, got ${src.algorithmOid}" }
         require(src.version == Pkcs8PrivateKeyInfo.Version.V1) { "Unsupported PKCS8 private key version: ${src.version}" }
         // Nested parsing uses the application-wide DER configuration (docs/docs/extensibility.md).

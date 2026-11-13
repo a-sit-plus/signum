@@ -2,11 +2,11 @@
 
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.ImplementationError
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.internals.ImplementationError
 
 /** Concrete instantiation of [WithSourceRepresentation] interfaces need to provide a
  * default-constructed instance of this class as an override.
@@ -40,22 +40,13 @@ val WithSourceRepresentation.sourceFormat get(): String {
 /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
 @SignumInternals @PublishedApi
 internal fun WithSourceRepresentation.finangleSourceRepresentation(v: Any) {
-    this.sourceRepresentation.x?.let { existing ->
-        // heuristic: overwriting the existing representation with a different representation of the same type is a bug
-        // overwriting with a different type can be legal (because of how nested calls end up working)
-        // the value returned from the decodeFrom lambda must always be a FRESH instance, due to how source round-tripping works.
-        // the only exception is if the decoder only accepts a single canonical representation, in which case source round-tripping can be opted out of (by making val sourceRepresentation a getter instead of a backing field.)
-        if ((v !== existing) && (v::class == existing::class)) {
-            throw ImplementationError("Overwriting existing ${v::class.simpleName} source representation with a different instance. This is almost certainly a bug caused by reusing a singleton instance in source-format decoders.")
-        }
-    }
     this.sourceRepresentation.x = v
 }
 
 /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
 @SignumInternals @PublishedApi
-internal val WithSourceRepresentation.realSourceRepresentation get() =
-    this.sourceRepresentation.x
+internal val WithSourceRepresentation.realSourceRepresentation
+    get() = this.sourceRepresentation.x
 
 /**
  * The methods in this class are useful for extension authors that want to implement conversion to custom encodings.
@@ -77,7 +68,18 @@ object SignumEncodingHelpers {
 inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> decodeFrom(
     crossinline fn: (EncodedType)->AbstractType
 ): (EncodedType)->AbstractType = { encoded ->
-    runRethrowing { fn(encoded) }.also { @OptIn(SignumInternals::class) it.finangleSourceRepresentation(encoded) }
+    runRethrowing { fn(encoded) }.also {
+        it.realSourceRepresentation?.let { existing ->
+            // heuristic: overwriting the existing representation with a different representation of the same type is a bug
+            // overwriting with a different type can be legal (because of how nested calls end up working)
+            // the value returned from the decodeFrom lambda must always be a FRESH instance, due to how source round-tripping works.
+            // the only exception is if the decoder only accepts a single canonical representation, in which case source round-tripping can be opted out of (by making val sourceRepresentation a getter instead of a backing field.)
+            if ((encoded::class == existing::class) && (encoded != existing)) {
+                throw ImplementationError("Overwriting existing ${encoded::class.simpleName} source representation on an ${it::class.simpleName} (${it}) with a different instance. This is almost certainly a bug caused by reusing a singleton instance in source-format decoders.")
+            }
+        }
+        @OptIn(SignumInternals::class) it.finangleSourceRepresentation(encoded)
+    }
 }
 
 /** A high-level decoding function using a Provider.

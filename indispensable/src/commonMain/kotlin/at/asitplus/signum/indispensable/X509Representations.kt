@@ -256,6 +256,11 @@ inline fun <
             } else throw x
         }
     }
+
+    override fun list(pemEncoded: String): Iterable<AbstractType> =
+        PemBlock.decodeAllFromPem(pemEncoded).map {
+            invoke(it.encodeToPem())
+        }
 }
 
 @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
@@ -358,7 +363,7 @@ val CryptoPublicKey.Companion.fromAsn1 get() =
         .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
 
 val KeyAgreementPublicValue.Companion.fromAsn1 get() =
-    asn1Decoders<SubjectPublicKeyInfo,_> {
+    asn1Decoders(SubjectPublicKeyInfo) {
         CryptoPublicKey.fromAsn1(it) as KeyAgreementPublicValue
     }
 
