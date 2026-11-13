@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
@@ -14,11 +13,9 @@ import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
 /**
- * The semantic certificate contents that are signed. Originals are retained separately.
+ * The semantic certificate contents that are signed.
  *
- * @param strict Enforce positive serial numbers of at most 20 DER content octets. Enabled by
- * default for programmatic construction; ASN.1 decoding disables this check to preserve
- * certificates with nonconforming serial numbers. Duplicate extension OIDs are always rejected.
+ * @param strict Enforce serial number constraints (at most 20 octets encoded, strictly positive)
  */
 class TbsCertificate(
     val serialNumber: BigInteger,

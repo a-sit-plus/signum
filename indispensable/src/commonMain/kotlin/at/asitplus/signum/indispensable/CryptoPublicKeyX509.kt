@@ -44,7 +44,7 @@ object RsaPublicKeyAsn1Constructors
         RsaPublicKeyAsn1Constructors.invoke(decoded)
     })
 {
-    val PKCS1 get() = asn1Decoders { src: Pkcs1RsaPublicKeyInfo ->
+    val PKCS1 get() = asn1Decoders(Pkcs1RsaPublicKeyInfo.Companion) { src ->
         RsaPublicKey(
             n = src.modulus as Asn1Integer.Positive,
             e = src.publicExponent as Asn1Integer.Positive,

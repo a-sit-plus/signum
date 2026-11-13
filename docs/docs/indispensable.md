@@ -101,11 +101,6 @@ The `pki` package contains data classes relevant in the PKI context:
 * `Pkcs10CertificateRequest` contains a CSR abstraction
     * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension
 
-Programmatic `TbsCertificate` construction requires a positive serial number occupying at most 20 DER
-content octets by default (`strict = true`). Decoding through `TbsCertificate.fromAsn1` or
-`Certificate.fromAsn1` accepts nonconforming serial numbers, including zero and longer values, and
-preserves the original encoding. Duplicate extension OIDs are rejected in both paths.
-
 ##  Conversion from/to Platform Types
 
 Obviously, a world outside this library's data structures exists.
