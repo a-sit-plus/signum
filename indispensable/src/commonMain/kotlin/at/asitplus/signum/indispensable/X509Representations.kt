@@ -239,17 +239,24 @@ inline fun <reified Asn1Type: WithPemLabel, reified AbstractType: WithSourceRepr
         companion
     )
 
-
 inline fun <
     reified OriginalAsn1Type : WithPemLabel,
     reified AlternateAsn1Type : WithPemLabel,
     reified AbstractType : WithSourceRepresentation
 > Asn1Decoders.WithPEM<OriginalAsn1Type, AbstractType>.withAlternativePemDecoder(
     alternateDecoder: Asn1Decoders.WithPEM<AlternateAsn1Type, AbstractType>
+) = withAlternativePemDecoder { alternateDecoder }
+
+inline fun <
+    reified OriginalAsn1Type : WithPemLabel,
+    reified AlternateAsn1Type : WithPemLabel,
+    reified AbstractType : WithSourceRepresentation
+> Asn1Decoders.WithPEM<OriginalAsn1Type, AbstractType>.withAlternativePemDecoder(
+    crossinline alternateDecoder: ()->Asn1Decoders.WithPEM<AlternateAsn1Type, AbstractType>
 ) = object : Asn1Decoders.WithPEM<OriginalAsn1Type, AbstractType> by this {
     override fun invoke(pemEncoded: String): AbstractType {
         return try {
-            alternateDecoder(pemEncoded)
+            alternateDecoder()(pemEncoded)
         } catch (x: IllegalArgumentException) {
             if (x.message?.contains("Unexpected PEM label") == true) {
                 this@withAlternativePemDecoder(pemEncoded)
@@ -361,6 +368,9 @@ val CryptoPublicKey.asn1 get() =
 val CryptoPublicKey.Companion.fromAsn1 get() =
     asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, CryptoPublicKey::Unknown)
         .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
+
+val KeyAgreementPublicValue.asn1 get() =
+    (this as KeyAgreementPublicValue.ECDH).asCryptoPublicKey().asn1
 
 val KeyAgreementPublicValue.Companion.fromAsn1 get() =
     asn1Decoders(SubjectPublicKeyInfo) {

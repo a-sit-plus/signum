@@ -11,6 +11,7 @@ import at.asitplus.io.UVarInt
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.withAlternativePemDecoder
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -42,7 +43,7 @@ object RsaPublicKeyAsn1Constructors
     (asn1Decoders(SubjectPublicKeyInfo.Companion) { src: SubjectPublicKeyInfo ->
         val decoded = Pkcs1RsaPublicKeyInfo.of(src, Signum.Der)
         RsaPublicKeyAsn1Constructors.invoke(decoded)
-    })
+    }.withAlternativePemDecoder { RsaPublicKeyAsn1Constructors.PKCS1 })
 {
     val PKCS1 get() = asn1Decoders(Pkcs1RsaPublicKeyInfo.Companion) { src ->
         RsaPublicKey(

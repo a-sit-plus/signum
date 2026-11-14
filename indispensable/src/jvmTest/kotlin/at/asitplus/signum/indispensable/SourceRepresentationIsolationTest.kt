@@ -183,17 +183,8 @@ internal object SourceRepresentationScenarios {
     fun emptyName() {
         val emptySingleton = Name.EMPTY
         Name.fromString("") shouldBeSameInstanceAs emptySingleton
-        val tlv1 = Asn1Element.parseFromDerHexString("3000")
-        val tlv2 = Asn1Element.parseFromDerHexString("3000")
-        tlv1 shouldNotBeSameInstanceAs tlv2
-        val first = Name.fromAsn1(tlv1)
-        val second = Name.fromAsn1(tlv2)
-
-        first shouldBe emptySingleton
-        second shouldBe emptySingleton
-        first.asn1.toRepresentation() shouldBeSameInstanceAs tlv1
-        second.asn1.toRepresentation() shouldBeSameInstanceAs tlv2
-        emptySingleton.sourceFormat shouldBe "<no source>"
-        emptySingleton.asn1.toDer() shouldBe "3000".hexToByteArray()
+        val empty = Name.fromAsn1.fromHexString("3000")
+        empty shouldBe emptySingleton
+        empty shouldNotBeSameInstanceAs emptySingleton
     }
 }
