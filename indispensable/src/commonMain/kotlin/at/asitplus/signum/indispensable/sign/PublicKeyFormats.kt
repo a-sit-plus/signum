@@ -1,59 +1,29 @@
 package at.asitplus.signum.indispensable.sign
 
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1Integer
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
-import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.rsa
-import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
-import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.awesn1.ecPublicKey
-import at.asitplus.awesn1.rsaEncryption
-import at.asitplus.awesn1.serialization.DER
-import at.asitplus.awesn1.serialization.decodeFromDer
-import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.catching
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
-import at.asitplus.signum.indispensable.PublicKeyFormatProvider
-import at.asitplus.signum.indispensable.fromIosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.internals.orLazy
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.encodeToByteArray
 
 /** RSA Public key */
-class RsaPublicKey constructor(
+class RsaPublicKey(
     /** modulus */
     val n: Asn1Integer.Positive,
     /** public exponent */
     val e: Asn1Integer.Positive,
-    providedAsn1Representation: SubjectPublicKeyInfo? = null,
 ) : CryptoPublicKey {
 
+    override val sourceRepresentation = SourceRepresentationStorage()
+
     override val additionalProperties = mutableMapOf<String, String>()
-
-    constructor(info: Pkcs1RsaPublicKeyInfo, providedAsn1Representation: SubjectPublicKeyInfo?) : this(
-        info.modulus as Asn1Integer.Positive,
-        info.publicExponent as Asn1Integer.Positive,
-        providedAsn1Representation
-    )
-
-    constructor(asn1Representation: SubjectPublicKeyInfo) : this(
-        Pkcs1RsaPublicKeyInfo.of(asn1Representation),
-        asn1Representation,
-    )
-
-    override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.rsa(n, e)
-    }
 
     val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -84,14 +54,7 @@ class RsaPublicKey constructor(
     }
 
     override val didCodec get() = DID_KEY_CODEC
-    override val didKeyBytes get() = pkcsEncoded
-
-    /**
-     * PKCS#1 encoded RSA Public Key
-     */
-    val pkcsEncoded by lazy {
-        DER.encodeToByteArray(Pkcs1RsaPublicKeyInfo(n, e))
-    }
+    override val didKeyBytes get() = this@RsaPublicKey.asn1.pkcs1.toDer()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -109,17 +72,9 @@ class RsaPublicKey constructor(
 
     companion object {
         val DID_KEY_CODEC = 0x1205u.varint
-        /**
-         * decodes a PKCS#1-encoded RSA key
-         *
-         * @throws Asn1Exception all sorts of exceptions on invalid input
-         */
-        @Throws(Asn1Exception::class)
-        fun fromPKCS1encoded(input: ByteArray): RsaPublicKey =
-            RsaPublicKey(DER.decodeFromDer<Pkcs1RsaPublicKeyInfo>(input), null)
 
-        @Deprecated("Use fromPKCS1encoded directly", replaceWith = ReplaceWith("fromPKCS1encoded(input)"))
-        fun fromIosEncoded(input: ByteArray) = fromPKCS1encoded(input)
+        @Deprecated("Use from pkcs1 directly", replaceWith = ReplaceWith("fromAsn1.PKCS1(input)"))
+        fun fromIosEncoded(input: ByteArray) = fromAsn1.PKCS1(input)
 
         // on companion to prevent platform signature clashes with JVM
         @Suppress("NOTHING_TO_INLINE")
@@ -136,42 +91,17 @@ class RsaPublicKey constructor(
  * @see Companion.asPublicKey
  */
 @SerialName("EC")
-class EcdsaPublicKey private constructor(
-    private val content: Content,
-    providedAsn1Representation: SubjectPublicKeyInfo?,
+class EcdsaPublicKey(
+    val publicPoint: ECPoint.Normalized,
+    // TODO: remove this once COSE/JOSE are source formats
+    val preferCompressedRepresentation: Boolean,
 ) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
+
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     override val additionalProperties = mutableMapOf<String, String>()
 
-    private data class Content(
-        val publicPoint: ECPoint.Normalized,
-        val preferCompressedRepresentation: Boolean,
-    ) {
-        companion object {
-            operator fun invoke(asn1Representation: SubjectPublicKeyInfo): Content {
-                val parsed = Sec1EcPublicKeyInfo.of(asn1Representation)
-                val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
-                    ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
-                return when (parsed) {
-                    is Sec1EcPublicKeyInfo.Compressed ->
-                        EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
-                    is Sec1EcPublicKeyInfo.Uncompressed ->
-                        EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
-                }.content
-            }
-        }
-    }
-
-    constructor(asn1Representation: SubjectPublicKeyInfo) : this(Content(asn1Representation), asn1Representation)
-
     override fun asCryptoPublicKey() = this
-
-    override val asn1Representation: SubjectPublicKeyInfo by providedAsn1Representation orLazy {
-        SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Uncompressed(curve.oid, xBytes, yBytes))
-    }
-
-    val publicPoint get() = content.publicPoint
-    val preferCompressedRepresentation get() = content.preferCompressedRepresentation
 
     val curve get() = publicPoint.curve
     val x get() = publicPoint.x
@@ -181,6 +111,7 @@ class EcdsaPublicKey private constructor(
     val yCompressed get() = publicPoint.yCompressed
 
     /** ANSI X9.63 encoding (as used in the X.509 signatureValue) */
+    // TODO: should this end up being a source format?
     fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
         when (useCompressed) {
             true -> ANSIECPrefix.forSign(yCompressed) + xBytes
@@ -213,8 +144,7 @@ class EcdsaPublicKey private constructor(
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
         fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
-            return EcdsaPublicKey(
-                Content(this.normalize(), preferCompressed), null)
+            return EcdsaPublicKey(this.normalize(), preferCompressed)
         }
 
         /** Decodes key from big-endian X and sign of Y */
@@ -264,16 +194,22 @@ class EcdsaPublicKey private constructor(
     }
 }
 
-object IndispensablePublicKeyFormatsProvider : PublicKeyFormatProvider {
+object IndispensableAsn1PublicKeyFormatsProvider : Asn1PublicKeyFormatProvider {
+    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
+        is RsaPublicKey -> value.asn1.toRepresentation()
+        is EcdsaPublicKey -> value.asn1.toRepresentation()
+        else -> null
+    }
+
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
-        EcdsaPublicKey.oid -> EcdsaPublicKey(publicKeyInfo)
-        RsaPublicKey.oid -> RsaPublicKey(publicKeyInfo)
+        EcdsaPublicKey.oid -> EcdsaPublicKey.fromAsn1(publicKeyInfo)
+        RsaPublicKey.oid -> RsaPublicKey.fromAsn1(publicKeyInfo)
         else -> null
     }
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = when(codec) {
         RsaPublicKey.DID_KEY_CODEC ->
-            RsaPublicKey.fromPKCS1encoded(keyBytes)
+            RsaPublicKey.fromAsn1.PKCS1(keyBytes)
         EcdsaPublicKey.DID_KEY_CODEC_P256, UVarInt(0x1290u) ->
             EcdsaPublicKey.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
         EcdsaPublicKey.DID_KEY_CODEC_P384, UVarInt(0x1291u), UVarInt(8u) ->

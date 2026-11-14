@@ -1,6 +1,9 @@
 package at.asitplus.signum.indispensable.cosef
 
+import kotlinx.serialization.decodeFromByteArray
+
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -68,7 +71,6 @@ class CoseSignedSerializer<P : Any?>(
     }
 )
 
-
 /**
  * Serializes [CoseMac] with a typed payload, by using its [CoseMac.wireFormat].
  * Also handles deserialization of the bytes.
@@ -123,9 +125,8 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
-        ?.let { Certificate.decodeFromByteArray(it) }
+                ?.let { Certificate.fromAsn1(it) }
         ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
     is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
     else -> false
 }
-

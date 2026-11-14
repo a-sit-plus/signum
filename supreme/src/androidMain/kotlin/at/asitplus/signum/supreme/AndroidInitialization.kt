@@ -58,4 +58,3 @@ class InitProvider: ContentProvider() {
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = no()
     override fun getType(uri: Uri) = no()
 }
-

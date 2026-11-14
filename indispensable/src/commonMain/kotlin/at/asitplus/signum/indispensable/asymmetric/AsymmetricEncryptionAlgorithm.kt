@@ -3,10 +3,10 @@ package at.asitplus.signum.indispensable.asymmetric
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.rsaEncryption
-import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.digest.Digest
 
 sealed interface RSAPadding : Enumerable {
     @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
@@ -18,7 +18,6 @@ sealed interface RSAPadding : Enumerable {
     object NONE : RSAPadding {
         override fun toString(): String = "NONE"
     }
-
 
     sealed class OAEP(val digest: Digest) : RSAPadding {
         object SHA1 : OAEP(Digest.SHA1)
@@ -38,11 +37,10 @@ sealed interface RSAPadding : Enumerable {
         fun fromString(string: String) = entries.firstOrNull { it.toString() == string }
     }
 
-
 }
 
 // TODO extensible, no more sealed
-// TODO DerEncodable<X509AlgorithmIdentifier>
+// TODO WithSourceRepresentation
 sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */

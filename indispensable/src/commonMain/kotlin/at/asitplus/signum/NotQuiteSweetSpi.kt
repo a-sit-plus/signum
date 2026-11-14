@@ -3,6 +3,8 @@
 package at.asitplus.signum
 
 import at.asitplus.nonFatalOrThrow
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 import kotlin.reflect.KClass
 
 object ServiceLoader {
@@ -19,10 +21,15 @@ object ServiceLoader {
     /** This needs the same exact class as [get] will use. You cannot register for intermediate interfaces! */
     inline fun <reified T: Any> register(it: T) { register(it, T::class) }
 
-
     @SignumInternals
-    interface UnknownShim {
+    abstract class UnknownShim(
         val lookupResult: UnsupportedCryptoException
+    ) : WithSourceRepresentation {
+        final override val sourceRepresentation = SourceRepresentationStorage()
+        final override fun equals(other: Any?) = (other is UnknownShim) && (this::class == other::class) && (sourceRepresentation == other.sourceRepresentation)
+        final override fun hashCode() = this::class.hashCode() * 31 + sourceRepresentation.hashCode()
+        final override fun toString() = "Failed to parse ($sourceRepresentation)"
+        protected val fails : Nothing get() = throw lookupResult
     }
 
     class ServiceProviders<out T: Any>(@PublishedApi internal val className: String, private val inner: Iterable<T>): Iterable<T> by inner {
@@ -62,12 +69,12 @@ object ServiceLoader {
         }
 
         @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-        inline fun <reified KeyT, ResultT, UnsupportedT> getWithUnknown(
-            what: KeyT, defaultBuilder: (KeyT, UnsupportedCryptoException)->ResultT, loadBlock: T.(KeyT)->(ResultT?)
+        inline fun <reified KeyT: Any, ResultT, UnsupportedT> getWithUnknown(
+            what: KeyT, unknownCtor: (KeyT, UnsupportedCryptoException)->UnsupportedT, loadBlock: T.(KeyT)->(ResultT?)
         ) where UnsupportedT : ResultT, UnsupportedT : UnknownShim = try {
             get(what, loadBlock)
         } catch (x: UnsupportedCryptoException) {
-            defaultBuilder(what, x)
+            unknownCtor(what, x)
         }
     }
     @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =

@@ -1,20 +1,23 @@
 package at.asitplus.signum.indispensable.josef
-
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.nextPositiveBigInteger
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.awesn1.nextPositiveBigInteger
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.TbsCertificate
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.X500Name
+import at.asitplus.signum.indispensable.pki.Name
+import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
+import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.testballoon.matrix.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -71,6 +74,7 @@ val JwkTest  by matrixSuite {
         val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(serialized)
 
         parsed shouldBe jwk
+        parsed.hashCode() shouldBe jwk.hashCode()
     }
 
     "Deserialize BP keys" {
@@ -115,6 +119,7 @@ val JwkTest  by matrixSuite {
             val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(serialized)
 
             parsed shouldBe jwk
+            parsed.hashCode() shouldBe jwk.hashCode()
         }
     }
 
@@ -134,6 +139,7 @@ val JwkTest  by matrixSuite {
         val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(joseCompliantSerializer.encodeToString(jwk))
 
         parsed shouldBe jwk
+        parsed.hashCode() shouldBe jwk.hashCode()
     }
 
     "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
@@ -151,11 +157,11 @@ val JwkTest  by matrixSuite {
 private fun randomCertificate() = Certificate(
     TbsCertificate(
         serialNumber = InsecureRandom.nextPositiveBigInteger(10),
-        issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
+        issuerName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("Test"))))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey(),
         signatureAlgorithm = EcdsaAlgorithm.withSHA256,
-        subjectName = X500Name(X500AttributeTypeAndValue.CommonName("Test")),
+        subjectName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("Test"))))),
         validFrom = (Clock.System.now()),
         validUntil = (Clock.System.now()),
     ),

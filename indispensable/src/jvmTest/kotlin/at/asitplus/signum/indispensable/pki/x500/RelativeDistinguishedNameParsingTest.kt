@@ -1,12 +1,15 @@
 package at.asitplus.signum.indispensable.pki.x500
 
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
@@ -14,10 +17,7 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import kotlin.streams.asSequence
-
-private class NonX509AttributeTypeAndValue(oid: ObjectIdentifier) : BaseAttributeTypeAndValue(oid)
 
 val RelativeDistinguishedNameParsingTest by matrixSuite {
 
@@ -63,10 +63,10 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         rdn.attrsAndValues.size shouldBe 2
         // attrsAndValues is a Set; look up by displayName instead of positional index
         val cn =
-            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue.X509Representable
+            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.3") } as AttributeTypeAndValue
         Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "John Doe"
         val o =
-            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue.X509Representable
+            rdn.attrsAndValues.first { it.oid == ObjectIdentifier("2.5.4.10") } as AttributeTypeAndValue
         Asn1String.decodeFromTlv(o.value.asPrimitive()).value shouldBe "Company"
     }
 
@@ -77,8 +77,8 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         }
     }
 
-    "X500Name should respect quotes and convert between RFC and ASN.1 RDN order" {
-        val name = X500Name.fromString("""2.5.4.3="Foo, Bar",2.5.4.10=Acme,2.5.4.6=DE""")
+    "Name should respect quotes and convert between RFC and ASN.1 RDN order" {
+        val name = Name.fromString("""2.5.4.3="Foo, Bar",2.5.4.10=Acme,2.5.4.6=DE""")
 
         name.relativeDistinguishedNames.map { it.attrsAndValues.single().oid } shouldBe listOf(
             ObjectIdentifier("2.5.4.6"),
@@ -88,23 +88,23 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         name.toRfc2253String() shouldBe "cn=foo\\, bar,o=acme,c=de"
     }
 
-    "X500Name should reject empty RDN segments" {
+    "Name should reject empty RDN segments" {
         listOf(
             ",2.5.4.3=Alice",
             "2.5.4.3=Alice,",
             "2.5.4.3=Alice,,2.5.4.10=Example",
             "2.5.4.3=Alice; ;2.5.4.10=Example",
         ).forEach { name ->
-            shouldThrow<IllegalArgumentException> { X500Name.fromString(name) }
+            shouldThrow<IllegalArgumentException> { Name.fromString(name) }
         }
     }
 
-    "X500Name should accept the empty RDN sequence" {
-        X500Name.fromString("").relativeDistinguishedNames shouldBe emptyList()
+    "Name should accept the empty RDN sequence" {
+        Name.fromString("").relativeDistinguishedNames shouldBe emptyList()
     }
 
     "decoded empty RDN should be invalid" {
-        RelativeDistinguishedName(X500RelativeDistinguishedName(emptySet())).isValid shouldBe false
+        shouldThrow<Asn1Exception> { RelativeDistinguishedName.fromAsn1(X500RelativeDistinguishedName(emptySet())) }
     }
 
     "decoded RDN with a duplicate attribute OID should be invalid" {
@@ -116,19 +116,19 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
             )
         )
 
-        RelativeDistinguishedName(rdn).isValid shouldBe false
+        shouldThrow<Asn1Exception> { RelativeDistinguishedName.fromAsn1(rdn) }
     }
 
     "parsed value accessor holds the raw, unescaped, case-preserved content" {
         // toRfc2253String would lowercase and re-escape this; the stored value must not.
         val atv = AttributeTypeAndValue.fromString("2.5.4.3", """Foo\, Bar""")
-                as AttributeTypeAndValue.X509Representable
+                as AttributeTypeAndValue
         Asn1String.decodeFromTlv(atv.value.asPrimitive()).value shouldBe "Foo, Bar"
     }
 
     "parsed value accessor strips surrounding quotes" {
         val rdn = RelativeDistinguishedName.fromString("""2.5.4.3="Foo+Bar"""")
-        val cn = rdn.attrsAndValues.single() as AttributeTypeAndValue.X509Representable
+        val cn = rdn.attrsAndValues.single() as AttributeTypeAndValue
         // '+' inside quotes is part of the value, not an ATV separator, and the quotes are dropped.
         Asn1String.decodeFromTlv(cn.value.asPrimitive()).value shouldBe "Foo+Bar"
     }
@@ -136,23 +136,23 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     "hexstring form populates value with the exact DER element and preserves the string type" {
         // "#13025553" == PrintableString "US" (tag 0x13, len 2). toRfc2253String would obscure the tag.
         val atv = AttributeTypeAndValue.fromString("2.5.4.6", "#13025553")
-                as AttributeTypeAndValue.X509Representable
+                as AttributeTypeAndValue
         val decoded = Asn1String.decodeFromTlv(atv.value.asPrimitive())
         decoded.value shouldBe "US"
         (decoded is Asn1String.Printable) shouldBe true
     }
 
-    "asn1Representation accessor reflects the RDN's attributes" {
+    "ASN.1 accessor reflects the RDN's attributes" {
         val cn = X500AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice"))
-        RelativeDistinguishedName(cn).asn1Representation shouldBe X500RelativeDistinguishedName(setOf(cn))
+        RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(cn)).asn1.toRepresentation() shouldBe X500RelativeDistinguishedName(setOf(cn))
     }
 
     "ATV isValid accessor reflects the stored value" {
-        BaseX509AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice")).isValid shouldBe true
+        AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice").encodeToTlv()).isValid shouldBe true
 
         // IA5's permitted [\x00-\x7f] range
         val invalidIa5 = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
-        val atv = BaseX509AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5)
+        val atv = AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5)
 
         atv.isValid shouldBe false
         // raw value survives untouched and can still be received/decoded
@@ -161,19 +161,19 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         Asn1String.decodeFromTlv(atv.value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
     }
 
-    "ATV equality should be symmetric across representations" {
+    "ATV equality should be symmetric across sourceRepresentation" {
         val oid = ObjectIdentifier("2.5.4.3")
-        val generic = NonX509AttributeTypeAndValue(oid)
-        val x509 = BaseX509AttributeTypeAndValue(oid, Asn1String.UTF8("Alice"))
+        val generic = AttributeTypeAndValue(oid, Asn1String.UTF8("Alice").encodeToTlv())
+        val x509 = AttributeTypeAndValue.fromAsn1(generic.asn1.toRepresentation())
 
-        generic shouldNotBe x509
-        x509 shouldNotBe generic
+        generic shouldBe x509
+        x509 shouldBe generic
     }
 
     "GeneralName should retain the typed X.509 representation" {
         val dnsName = X509GeneralName.Dns("example.com")
 
-        GeneralName.X509Representable.fromAsn1Representation(dnsName).asn1Representation shouldBe dnsName
+        GeneralName.fromAsn1(dnsName).asn1.toRepresentation() shouldBe dnsName
     }
 
     /**
@@ -204,7 +204,6 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
             recombined shouldBe dn
         }
     }
-
 
     val hexExamples = listOf(
         "\\20Test\\20X",

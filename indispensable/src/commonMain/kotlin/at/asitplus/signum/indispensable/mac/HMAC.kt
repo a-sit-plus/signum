@@ -1,40 +1,36 @@
 package at.asitplus.signum.indispensable.mac
 
-import at.asitplus.awesn1.Asn1Null
-import at.asitplus.awesn1.KnownOIDs
-import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
-import at.asitplus.awesn1.hmacWithSHA1
-import at.asitplus.awesn1.hmacWithSHA256
-import at.asitplus.awesn1.hmacWithSHA384
-import at.asitplus.awesn1.hmacWithSHA512
-import at.asitplus.signum.indispensable.Indispensable
+import at.asitplus.awesn1.*
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 
 /** RFC 2104 HMAC */
-data class HMAC(val digest: Digest, val oid: ObjectIdentifier)
+class HMAC(val digest: Digest, val oid: ObjectIdentifier)
     : MessageAuthenticationCode
 {
 
-    override fun toString() = "HMAC-$digest"
+    override val sourceRepresentation = SourceRepresentationStorage()
 
-    override val asn1Representation: X509AlgorithmIdentifier
-        get() = X509AlgorithmIdentifier(oid, Asn1Null)
+    override fun toString() = "HMAC-$digest"
+    override fun hashCode() = digest.hashCode()
+    override fun equals(other: Any?) = (other is HMAC) && (digest == other.digest)
 
     companion object {
-        init { Indispensable.init() }
+        init { Signum.installIndispensable() }
         val SHA1 = HMAC(Digest.SHA1, KnownOIDs.hmacWithSHA1)
         val SHA256 = HMAC(Digest.SHA256, KnownOIDs.hmacWithSHA256)
         val SHA384 = HMAC(Digest.SHA384, KnownOIDs.hmacWithSHA384)
         val SHA512 = HMAC(Digest.SHA512, KnownOIDs.hmacWithSHA512)
 
         fun byDigest(digest: WellKnownDigest) = when (digest) {
-            WellKnownDigest.SHA1 -> SHA1
-            WellKnownDigest.SHA256 -> SHA256
-            WellKnownDigest.SHA384 -> SHA384
-            WellKnownDigest.SHA512 -> SHA512
+            is WellKnownDigest.SHA1 -> HMAC(digest, KnownOIDs.hmacWithSHA1)
+            is WellKnownDigest.SHA256 -> HMAC(digest, KnownOIDs.hmacWithSHA256)
+            is WellKnownDigest.SHA384 -> HMAC(digest, KnownOIDs.hmacWithSHA384)
+            is WellKnownDigest.SHA512 -> HMAC(digest, KnownOIDs.hmacWithSHA512)
         }
     }
 
