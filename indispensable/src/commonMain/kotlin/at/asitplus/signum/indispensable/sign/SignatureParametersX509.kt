@@ -13,6 +13,7 @@ import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.withAlternativePemDecoder
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey.Companion.oid
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
@@ -146,7 +147,7 @@ object RsaAsn1Constructors :
                 )
             },
         )
-    })
+    }.withAlternativePemDecoder { RsaAsn1Constructors.PKCS1 })
 {
 
     val PKCS1 get() = asn1Decoders(Pkcs1RsaPrivateKeyInfo.Companion) { src ->
@@ -203,7 +204,7 @@ object EcdsaAsn1Constructors :
         return@asn1Decoders ecPrivateKey(
             parsed, src.algorithmParameters,
         )
-    })
+    }.withAlternativePemDecoder { EcdsaAsn1Constructors.SEC1 })
 {
 
     val SEC1 get() = asn1Decoders(Sec1EcPrivateKeyInfo.Companion) { src ->
