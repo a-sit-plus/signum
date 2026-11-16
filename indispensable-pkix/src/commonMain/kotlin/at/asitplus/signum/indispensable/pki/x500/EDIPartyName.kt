@@ -6,7 +6,6 @@ import at.asitplus.awesn1.serialization.Asn1Tag
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import kotlinx.serialization.Serializable
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.GeneralName
@@ -16,7 +15,7 @@ data class EDIPartyName(
     val partyName: String,
     val nameAssigner: String? = null,
 ) : GeneralName {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 
     init {
         require(partyName.isNotEmpty()) { "EDI party name cannot be empty" }

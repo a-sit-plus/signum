@@ -1,11 +1,10 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.GeneralName
 
 abstract class AbstractGeneralName : GeneralName {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     protected abstract val equalityValue: Any
 
     override fun equals(other: Any?): Boolean =

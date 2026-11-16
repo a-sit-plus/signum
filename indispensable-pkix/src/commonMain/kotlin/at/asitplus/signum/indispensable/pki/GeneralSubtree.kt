@@ -5,7 +5,6 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.Asn1Tag
 import kotlinx.serialization.Serializable
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.pki.GeneralName
@@ -16,7 +15,7 @@ data class GeneralSubtree(
     val minimum: BigInteger = BigInteger.ZERO,
     val maximum: BigInteger? = null,
 ) : WithSourceRepresentation {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     companion object
 
     /**

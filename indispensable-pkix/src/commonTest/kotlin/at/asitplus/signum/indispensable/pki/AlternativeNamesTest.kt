@@ -2,7 +2,6 @@
 
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.indispensable.asn1
@@ -41,7 +40,7 @@ val AlternativeNamesTest by matrixSuite {
 
     "Alternative names compare their contents without encoding them" {
         val name: GeneralName = object : GeneralName {
-            @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+            override val sourceRepresentation = SourceRepresentationStorage()
         }
         val first = AlternativeNames(listOf(name))
         val second = AlternativeNames(listOf(name))

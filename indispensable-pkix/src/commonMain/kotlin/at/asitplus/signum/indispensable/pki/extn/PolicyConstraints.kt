@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.awesn1.*
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import kotlinx.serialization.Serializable
@@ -20,7 +19,7 @@ data class PolicyConstraints(
     val inhibitPolicyMapping: Int? = null,
     override val critical: Boolean = true,
 ) : CertificateExtension {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     override val oid get() = Companion.oid
 
     companion object : Identifiable {

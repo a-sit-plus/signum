@@ -1,15 +1,17 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.*
+import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
-import at.asitplus.signum.indispensable.pki.attributes.CommonName
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.pki.extn.*
 import at.asitplus.signum.indispensable.pki.x500.*
-import at.asitplus.signum.indispensable.sign.*
-import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.json.*
 import kotlin.time.Instant
@@ -119,7 +121,7 @@ internal object J509 {
             UserNotice().oid -> UserNotice(payload.optional("notice")?.jsonObject?.let { n ->
                 NoticeReference(n.s("organization"), n.list("numbers").map { number -> BigInteger.parseString(number.jsonPrimitive.content) })
             }, payload.optional("text")?.jsonPrimitive?.content)
-            else -> PolicyQualifierInfo(oid)
+            else -> PolicyQualifierInfo.Unknown(oid, UnsupportedCryptoException("Unknown OID $oid"))
         }
     }
     private fun subtree(value: GeneralSubtree) = obj("base" to generalName(value.base), "min" to text(value.minimum), "max" to (value.maximum?.let(::text) ?: JsonNull))
@@ -194,5 +196,5 @@ internal object J509 {
 }
 
 internal data class J509OnlyExtension(override val oid: ObjectIdentifier, override val critical: Boolean) : CertificateExtension {
-    @at.asitplus.signum.SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 }

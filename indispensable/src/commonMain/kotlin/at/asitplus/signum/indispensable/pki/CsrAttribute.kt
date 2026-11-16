@@ -33,6 +33,6 @@ interface CsrAttribute : Identifiable, WithSourceRepresentation {
 
 data class ExtensionRequest(val extensions: List<CertificateExtension>) : CsrAttribute {
     override val oid get() = CsrAttribute.EXTENSION_REQUEST_OID
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     init { require(extensions.isNotEmpty()) { "At least one extension is required" } }
 }

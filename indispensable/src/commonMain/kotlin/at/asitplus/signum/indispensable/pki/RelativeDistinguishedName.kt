@@ -188,7 +188,7 @@ open class TextAttributeTypeAndValue(
     final override val oid: ObjectIdentifier,
     val text: String,
 ) : AttributeTypeAndValue {
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
     override fun equals(other: Any?): Boolean = other is TextAttributeTypeAndValue && oid == other.oid && text == other.text
     override fun hashCode(): Int = 31 * oid.hashCode() + text.hashCode()
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"

@@ -7,12 +7,16 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.extn.*
 import at.asitplus.signum.indispensable.pki.x500.*
+import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -38,19 +42,48 @@ internal object LenientPkixProvider : CertificateExtensionProvider, GeneralNameF
         return if (address.contentEquals(ByteArray(7) { 42 })) MacAddressName(address.copyOf(6)) else null
     }
 
-    override fun decodeFromAsn1(oid: ObjectIdentifier, value: Asn1Element): PolicyQualifierInfo? =
-        if (oid == KnownOIDs.cps && value.tag == Asn1Element.Tag.STRING_UTF8)
-            CpsUri(Asn1String.decodeFromTlv(value.asPrimitive()).value)
+    override fun decodeFromAsn1(value: Asn1PolicyQualifier): PolicyQualifierInfo? =
+        if (value.oid == KnownOIDs.cps && value.qualifier.tag == Asn1Element.Tag.STRING_UTF8)
+            CpsUri(Asn1String.decodeFromTlv(value.qualifier.asPrimitive()).value)
         else null
 
     override fun encodeToAsn1(value: CertificateExtension): X509CertificateExtension? = null
     override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = null
     override fun encodeToAsn1(value: OtherName): X509GeneralName.Other? = null
-    override fun encodeToAsn1(value: PolicyQualifierInfo): Asn1Element? = null
+    override fun encodeToAsn1(value: PolicyQualifierInfo): Asn1PolicyQualifier? =
+        if (value is MismatchedPolicyQualifier)
+            Asn1PolicyQualifier(KnownOIDs.unotice, Asn1String.UTF8("mismatched").encodeToTlv())
+        else null
+}
+
+private class MismatchedPolicyQualifier : PolicyQualifierInfo {
+    override val oid = KnownOIDs.cps
+    override val sourceRepresentation = SourceRepresentationStorage()
 }
 
 val LenientPkixProviderTest by matrixSuite {
     "A lower-priority provider recovers extensions rejected by built-in construction checks" {
+        isolatedScenario(LenientPkixScenarios::class.java, "extensions")
+    }
+    "A lower-priority provider recovers names rejected by the built-in parser" {
+        isolatedScenario(LenientPkixScenarios::class.java, "names")
+    }
+    "OtherName providers recover inner OID failures without hiding the name family" {
+        isolatedScenario(LenientPkixScenarios::class.java, "otherNames")
+    }
+    "Qualifier providers can accept UTF8 CPS URIs after the built-in IA5 decoder fails" {
+        isolatedScenario(LenientPkixScenarios::class.java, "qualifiers")
+    }
+    "Qualifier encoding rejects providers that change the OID" {
+        isolatedScenario(LenientPkixScenarios::class.java, "mismatchedQualifierOid")
+    }
+}
+
+internal object LenientPkixScenarios {
+    @JvmStatic
+    fun extensions() {
+        ServiceLoader.register<CertificateExtensionProvider>(LenientPkixProvider)
+        Signum.installPkix()
         val providers = ServiceLoader.load<CertificateExtensionProvider>().toList()
         (providers.indexOf(PkixAsn1Provider) < providers.indexOf(LenientPkixProvider)) shouldBe true
         val source = X509CertificateExtension(BasicConstraints.oid, true, "300302012a".hexToByteArray())
@@ -62,7 +95,10 @@ val LenientPkixProviderTest by matrixSuite {
         recovered.asn1.toRepresentation() shouldBeSameInstanceAs source
     }
 
-    "A lower-priority provider recovers names rejected by the built-in parser" {
+    @JvmStatic
+    fun names() {
+        ServiceLoader.register<GeneralNameFormatProvider>(LenientPkixProvider)
+        Signum.installPkix()
         val providers = ServiceLoader.load<GeneralNameFormatProvider>().toList()
         (providers.indexOf(PkixAsn1Provider) < providers.indexOf(LenientPkixProvider)) shouldBe true
         val source = X509GeneralName.Dns(" lenient.example ")
@@ -72,7 +108,10 @@ val LenientPkixProviderTest by matrixSuite {
         (recovered.asn1.toRepresentation() as X509GeneralName.Dns).rawValue shouldBeSameInstanceAs source.rawValue
     }
 
-    "OtherName providers recover inner OID failures without hiding the name family" {
+    @JvmStatic
+    fun otherNames() {
+        ServiceLoader.register<OtherNameAsn1Provider>(LenientPkixProvider)
+        Signum.installPkix()
         val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
             MacAddressName.OID, Asn1OctetString(ByteArray(7) { 42 }),
         ))
@@ -82,9 +121,12 @@ val LenientPkixProviderTest by matrixSuite {
         (recovered.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
     }
 
-    "Qualifier providers can accept UTF8 CPS URIs after the built-in IA5 decoder fails" {
+    @JvmStatic
+    fun qualifiers() {
+        ServiceLoader.register<PolicyQualifierAsn1Provider>(LenientPkixProvider)
+        Signum.installPkix()
         val qualifier = Asn1String.UTF8("https://lenient.example/policy").encodeToTlv()
-        shouldThrowAny { BuiltinPolicyQualifiers.decodeFromAsn1(KnownOIDs.cps, qualifier) }
+        shouldThrowAny { BuiltinPolicyQualifiers.decodeFromAsn1(Asn1PolicyQualifier(KnownOIDs.cps, qualifier)) }
         val body = Signum.Der.encodeToByteArray(ListSerializer(FallbackPolicyWire.serializer()), listOf(
             FallbackPolicyWire(ObjectIdentifier("1.2.3.4"), listOf(FallbackQualifierWire(KnownOIDs.cps, qualifier))),
         ))
@@ -94,5 +136,17 @@ val LenientPkixProviderTest by matrixSuite {
             .uri.toString() shouldBe "https://lenient.example/policy"
         // Rebuilding the extension exercises the qualifier's retained wire representation.
         CertificatePolicies(policies.certificatePolicies).asn1.toRepresentation().value shouldBe body
+    }
+
+    @JvmStatic
+    fun mismatchedQualifierOid() {
+        ServiceLoader.register<PolicyQualifierAsn1Provider>(LenientPkixProvider)
+        Signum.installPkix()
+        val failure = shouldThrow<Asn1Exception> {
+            encodeCertificatePolicies(listOf(PolicyInformation(ObjectIdentifier("1.2.3.4"), listOf(MismatchedPolicyQualifier()))))
+        }
+        failure.cause.shouldBeInstanceOf<UnsupportedCryptoException>().suppressedExceptions.single()
+            .shouldBeInstanceOf<IllegalStateException>().message shouldBe
+            "Encoded policy qualifier OID ${KnownOIDs.unotice} does not match ${KnownOIDs.cps}"
     }
 }

@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 
@@ -61,7 +60,7 @@ data class SubjectAlternativeName(
     override val critical: Boolean = false,
 ) : AlternativeNamesExtension {
     override val oid get() = KnownOIDs.subjectAltName_2_5_29_17
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 }
 
 data class IssuerAlternativeName(
@@ -69,7 +68,7 @@ data class IssuerAlternativeName(
     override val critical: Boolean = false,
 ) : AlternativeNamesExtension {
     override val oid get() = KnownOIDs.issuerAltName_2_5_29_18
-    @SignumInternals override val sourceRepresentation = SourceRepresentationStorage()
+    override val sourceRepresentation = SourceRepresentationStorage()
 }
 
 /** Subject alternative names interpreted by the installed PKIX provider. */
