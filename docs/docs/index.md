@@ -333,20 +333,23 @@ in unnecessary functionality.
 COSE and JOSE data types come with mapping functionality to core (_Indispensable_) data types,
 such as `PublicKey` and are guaranteed to parse and serialize correctly.
 
-#### COSE Parsing (Indidpensable Cosef)
-As a quick self-contained example, deserializing the following `CoseSigned` structure works as expected:
+#### COSE Parsing (Indispensable Cosef)
+Raw decoding needs only the model for the unprotected bucket:
 ```kotlin
 val input = "d28443a10126a10442313154546869732069732074686520636f6e74656e" +
                 "742e58408eb33e4ca31d1c465ab05aac34cc6b23d58fef5c083106c4d25a" +
                 "91aef0b0117e2af9a291aa32e14ab834dc56ed2a223444547e01f11d3b09" +
                 "16e5a4c345cacb36"
-val cose = CoseSigned.deserialize(ByteArraySerializer(), input.uppercase().decodeToByteArray(Base16Strict))
-println(cose)
+@Serializable
+data class RoutingHeader(@CborLabel(4) @ByteString override val kid: ByteArray) : CoseHeader
+
+val cose = CoseSign1.Raw<RoutingHeader>(input.uppercase().decodeToByteArray(Base16Strict))
+println(cose.unprotectedHeader.kid.decodeToString()) // 11
 ```
 
-The output confirms that parsing was successful:
-
-    CoseSigned(protectedHeader=CoseHeader(algorithm=ES256, criticalHeaders=null, contentType=null, kid=null, iv=null, partialIv=null, coseKey=null, certificateChain=null), unprotectedHeader=CoseHeader(algorithm=null, criticalHeaders=null, contentType=null, kid=3131, iv=null, partialIv=null, coseKey=null, certificateChain=null), payload=546869732069732074686520636F6E74656E742E, signature=8EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36)
+Decode a typed protected header and payload with `cose.typed<SigningHeader, ByteArray>()`.
+Parsing does not verify authenticity; verify the signature against a trusted key before accepting the contents.
+See the [COSEF migration guide](cosef-migration.md) for the complete API and preservation boundaries.
 
 #### JWK creation (Indispensable Josef)
 JsonWebKeys can be manually created (just as COSE keys) and converted to `PublicKey`, so we can pass it to a _Supreme_ verifier:

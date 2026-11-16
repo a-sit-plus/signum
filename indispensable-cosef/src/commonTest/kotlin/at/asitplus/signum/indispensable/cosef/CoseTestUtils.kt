@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.indispensable.cosef.legacy.CoseHeader
+
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray

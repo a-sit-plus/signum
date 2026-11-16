@@ -1,16 +1,18 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.ByteString
-import kotlinx.serialization.cbor.CborObjectAsArray
+import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
 @Serializable
-@CborObjectAsArray
+@CborArray
 @Deprecated(
     "Replaced by CoseSign1.signatureInput / CoseMac0.macInput",
     level = DeprecationLevel.WARNING

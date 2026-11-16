@@ -1,4 +1,6 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -7,7 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.cbor.ByteString
-import kotlinx.serialization.cbor.CborObjectAsArray
+import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
@@ -20,7 +22,7 @@ import kotlinx.serialization.encodeToByteArray
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
 @Serializable
-@CborObjectAsArray
+@CborArray
 @ConsistentCopyVisibility
 @Deprecated(
     "Replaced by CoseSign1 and CoseMac0, which keep the protected header as transmitted",

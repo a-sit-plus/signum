@@ -10,8 +10,10 @@ serialization, leveraging kotlinx.serialization.
 There's really not much more to it; it's data structures with self-describing names that interop with
 _Indispensable_ data classes such as `SignatureAlgorithm`, `Signature`,  and `PublicKey`.
 
-Classes like `CborWebToken` come with `serialize()` and `deserialize()` functions, that take care of everything.
-The preconfigured serializer ensuring compliant serialization of all COSE-related data structures is called `coseCompliantSerializer`.
+Use `CoseSigner` and `CoseMacCreator` to create authenticated messages, and `CoseSign1`, `CoseMac0`, or `CoseSign` to decode typed views.
+Applications implement `CoseHeader` separately for each bucket, and may implement `CwtClaims` for CWT claims.
+The preconfigured CBOR format is `coseCompliantSerializer`; generated serializers compose through each message's `.Raw` envelope.
+See [COSEF migration](cosef-migration.md) for examples and preservation boundaries.
 
 !!! tip
       **Do check out the full API docs [here](dokka/indispensable-cosef/index.html)** to get an overview about all COSE-specific data types included!

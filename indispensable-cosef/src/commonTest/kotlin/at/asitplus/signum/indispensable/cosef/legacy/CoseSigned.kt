@@ -1,9 +1,11 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
-import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
+import at.asitplus.signum.indispensable.cosef.legacy.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.base16.Base16

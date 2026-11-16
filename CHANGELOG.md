@@ -16,11 +16,6 @@ at the cost of introducing breaking changes**
     * Typed access now uses `.typed<H, P>()`; `JwsTypedSerializerTemplate` takes header and payload serializers and creates concrete serializers through `jwsCompactSerializer()`, `jwsFlattenedSerializer()`, and `jwsGeneralSerializer()`
     * Rename JWS conversions to `toCompact()`, `toFlattened()`, and `toGeneral()`
     * Replace typed and callback signing factories with `JwsSigner`; make typed constructors and copying internal
-* COSE: Retain the protected header bytes of deserialized `CoseSigned`/`CoseMac` as received
-    * Use them for `prepareCoseSignatureInput()`/`prepareCoseMacInput()` and for serialization, instead of re-encoding the parsed `CoseHeader`, as required by RFC 9052 Section 4.4
-    * Fixes verification of objects whose protected header is encoded differently than Signum would encode it (e.g. other key order, `h'a0'` instead of `h''`), as well as signatures breaking after a deserialize/serialize round trip
-    * Add `CoseBytes.rawProtectedHeader`; `CoseBytes` equality now compares these bytes instead of the parsed header
-    * `CoseBytes.protectedHeader` is parsed from `rawProtectedHeader`; `CoseSigned`/`CoseMac` expose `protectedHeader` and `unprotectedHeader` as getters delegating to `wireFormat` (**breaking** for destructuring, as their `componentN()` functions change)
 * COSE header parameters:
     * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash`, using the new `CoseAlgorithm.Hash` (with `Digest.toCoseAlgorithm()`)
     * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
@@ -43,26 +38,15 @@ at the cost of introducing breaking changes**
     * kotlinx.serialization 1.13.0
     * kotlinx.io 0.9.3
     * bignum 0.4.0
-* Rework COSE support around explicit `COSE_Sign1` and `COSE_Mac0` structures
-    * Add sealed `COSE` base with dedicated `CoseSign1` and `CoseMac0`, which keep the protected header as transmitted (`plainProtectedHeader`)
-    * `Sig_structure` / `MAC_structure` are built from the received protected-header bytes instead of a re-encoded `CoseHeader`
-    * Add `CoseSign1.signatureInput` and `CoseMac0.macInput`, supporting external AAD and detached payloads
-    * Typed payloads remain supported via `CoseTyped` (`CoseSign1Typed`, `CoseMac0Typed`) and `CoseTypedSerializerTemplate`
-    * CBOR and JSON wire forms are unchanged, so values persisted with `CoseSigned` / `CoseMac` can be read with the new types and vice versa
-    * Deprecate `CoseSigned`, `CoseMac`, `CoseBytes` and `CoseInput`
-* COSE header rework
-    Builds on the CBOR element preview of kotlinx.serialization (`1.11.1-waltid-20260811`, via `https://maven.waltid.dev/releases`).
-    * Header buckets are kept as transmitted: `CoseSign1`/`CoseMac0` expose `protectedHeader` and `unprotectedHeader` as raw `CborMap`s, so parameters not modeled by a header class are neither lost nor rejected
-    * New `CoseHeaderBase` interface for header models; `CoseHeader` implements it, and applications can define their own (e.g. with private-use labels)
-    * New `CoseHeaderWrapped<H>`, mirroring josef's `JwsHeaderWrapped`: the effective header `H` (strict union of both buckets) together with the buckets
-        * `CoseHeaderWrapped(header, unprotectedLabels)` splits a header model into buckets by label
-        * `CoseHeaderWrapped.fromBuckets(...)` / `COSE.wrappedHeader<H>()` decode the buckets into any header model
-    * Structural checks of RFC 9052 3 on parsing and building: no label in both buckets, `crit` only in the protected bucket and as a non-empty array
-    * `CoseSign1`/`CoseMac0` builders and `CoseTyped.sign1`/`mac0` additionally accept a `CoseHeaderWrapped<H>`
-    * `CoseHeader` uses its generated serializer; `x5chain` (RFC 9360) is handled by a dedicated serializer 
-    * Fix `CoseHeader.hashCode` for `certificateChain` (now content-based, consistent with `equals`)
-    * Deprecate `CoseHeaderSerializer` in favor of `CoseHeader.serializer()`
-    * The deprecated `CoseSigned`/`CoseMac`/`CoseBytes` keep their wire format, including an empty map for a missing unprotected header
+* COSEF explicit header buckets (**breaking**), building on Srdjan Stjepanovic's contributions in PRs [#506](https://github.com/a-sit-plus/signum/pull/506) and [#507](https://github.com/a-sit-plus/signum/pull/507); all 29 original commits remain individually attributed beneath the rewrite.
+    * `CoseHeader` is an interface. Applications define annotated protected and unprotected models; reusable `X5ChainSerializer` and `CriticalHeadersSerializer` handle special properties.
+    * Add `CoseSign1<ProtectedHeader, UnprotectedHeader, Payload>`, `CoseMac0<ProtectedHeader, UnprotectedHeader, Payload>`, and their nested `.Raw<UnprotectedHeader>` envelopes.
+    * Add `CoseSigner`, `CoseMacCreator`, and `CoseSign` with ordered signature entries, distinct body/signer buckets, and one serialized payload.
+    * Retain received protected/payload bytes for authentication and typed reserialization, including detached versus attached-empty payloads. Typed payload creation keeps the legacy tag-24 policy.
+    * Use upstream kotlinx.serialization 1.13.0 and Kotlin 2.4.21. No fork repository or CBOR tree backend is required.
+    * Reject duplicate modeled labels, bucket conflicts, invalid critical references, algorithm/curve/key-ID mismatches, and unprocessed critical parameters before signing.
+    * Add `CwtClaims` for application-owned CWT implementations; `CborWebToken` implements it.
+    * Remove the legacy signed/MAC factories and combined-header APIs. Compatibility implementations live only in test fixtures. Raw unprotected headers are model-dependent and do not preserve ignored fields. See the [migration guide](https://a-sit-plus.github.io/signum/cosef-migration/).
    
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support

@@ -1,7 +1,11 @@
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
-import at.asitplus.signum.indispensable.cosef.CoseMac
-import at.asitplus.signum.indispensable.cosef.CoseSigned
+import at.asitplus.signum.indispensable.cosef.CoseMac0
+import at.asitplus.signum.indispensable.cosef.CoseSign1
+import at.asitplus.signum.indispensable.cosef.EmptyCoseHeader
+import at.asitplus.signum.indispensable.cosef.legacy.CoseHeader
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import kotlinx.serialization.encodeToByteArray
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.indispensable.parseJCASignature
@@ -48,10 +52,10 @@ private val eudiwStatusListCwt = (
                 "ZcPHC3OYFRhYQH7yBmD6FZxd4AQulNQiOemIg3Ov7Onnj7I/ta3KBRNHGRI3zz12gM9mxeH5ZLh1BpLthMAIe2skglSeZo+TPCc="
         ).decodeToByteArray(Base64())
 
-private fun CoseSigned<*>.verify(publicKey: PublicKey): Boolean =
+private fun CoseSign1<CoseHeader, EmptyCoseHeader, *>.verify(publicKey: PublicKey): Boolean =
     (protectedHeader.algorithm as CoseAlgorithm.Signature).algorithm.getJCASignatureInstance().run {
         initVerify(publicKey)
-        update(prepareCoseSignatureInput())
+        update(signatureInput())
         verify(signature.jcaSignatureBytes)
     }
 
@@ -84,13 +88,13 @@ val CoseProtectedHeaderVerificationTest by matrixSuite {
         }
         val input = cbor("84") + protectedEs256.bstr() + cbor("A0") + payload.bstr() + signature.coseBytes.bstr()
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input)
+        val cose = CoseSign1<CoseHeader, EmptyCoseHeader, ByteArray>(input)
 
         cose.protectedHeader.type shouldBe "application/test"
-        cose.prepareCoseSignatureInput() shouldBe sigStructure
+        cose.signatureInput() shouldBe sigStructure
         cose.verify(keyPair.public) shouldBe true
-        cose.serialize(ByteArraySerializer()) shouldBe input
-        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer()))
+        coseCompliantSerializer.encodeToByteArray(cose) shouldBe input
+        CoseSign1<CoseHeader, EmptyCoseHeader, ByteArray>(coseCompliantSerializer.encodeToByteArray(cose))
             .verify(keyPair.public) shouldBe true
     }
 
@@ -102,15 +106,15 @@ val CoseProtectedHeaderVerificationTest by matrixSuite {
         val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(key, "HmacSHA256")) }
         val input = cbor("84") + protectedHs256.bstr() + cbor("A0") + payload.bstr() + mac.doFinal(macStructure).bstr()
 
-        val cose = CoseMac.deserialize(ByteArraySerializer(), input)
+        val cose = CoseMac0<CoseHeader, EmptyCoseHeader, ByteArray>(input)
 
-        cose.prepareCoseMacInput() shouldBe macStructure
-        mac.doFinal(cose.prepareCoseMacInput()) shouldBe cose.tag
-        cose.serialize(ByteArraySerializer()) shouldBe input
+        cose.macInput() shouldBe macStructure
+        mac.doFinal(cose.macInput()) shouldBe cose.tag
+        coseCompliantSerializer.encodeToByteArray(cose) shouldBe input
     }
 
     "EUDIW status list CWT verifies" {
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), eudiwStatusListCwt)
+        val cose = CoseSign1<CoseHeader, EmptyCoseHeader, ByteArray>(eudiwStatusListCwt)
         val leaf = cose.protectedHeader.certificateChain.shouldNotBeNull().first()
         val publicKey = CertificateFactory.getInstance("X.509").generateCertificate(leaf.inputStream()).publicKey
 
@@ -118,6 +122,6 @@ val CoseProtectedHeaderVerificationTest by matrixSuite {
         cose.protectedHeader.type shouldBe "application/statuslist+cwt"
         cose.verify(publicKey) shouldBe true
         // input is tagged with 18 (COSE_Sign1), serialization does not add the tag
-        cose.serialize(ByteArraySerializer()) shouldBe eudiwStatusListCwt.drop(1).toByteArray()
+        coseCompliantSerializer.encodeToByteArray(cose) shouldBe eudiwStatusListCwt.drop(1).toByteArray()
     }
 }

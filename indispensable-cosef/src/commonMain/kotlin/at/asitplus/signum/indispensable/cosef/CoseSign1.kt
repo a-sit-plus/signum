@@ -1,156 +1,95 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Transient
-import kotlinx.serialization.cbor.ByteString
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
+import kotlinx.serialization.*
 import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.cbor.CborMap
-import kotlinx.serialization.cbor.CborObjectAsArray
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.serializer
 
-/**
- * COSE_Sign1
- * This type is the wire form. For a payload whose type is part of the contract, see [CoseSign1Typed].
- */
-@OptIn(ExperimentalSerializationApi::class)
-@ConsistentCopyVisibility
-@Serializable
-@CborObjectAsArray
-data class CoseSign1 internal constructor(
-    @ByteString
-    override val plainProtectedHeader: ByteArray,
-
-    /** Always encoded as a map; a CBOR `null` written by the deprecated `CoseSigned` is read as an empty bucket. */
-    @Serializable(with = UnprotectedHeaderSerializer::class)
-    override val unprotectedHeader: CborMap,
-
-    @ByteString
-    override val plainPayload: ByteArray?,
-
-    @ByteString
-    val plainSignature: ByteArray,
-) : CosePlaintextMessage() {
-
-    @Transient
-    override val protectedHeader: CborMap = decodeProtectedBucket(plainProtectedHeader)
-
-    init {
-        requireValidBuckets(protectedHeader, unprotectedHeader)
-    }
+/** Typed COSE_Sign1. Decoding does not verify signatures or establish trust. */
+@Serializable(with = CoseSign1Serializer::class)
+class CoseSign1<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Payload> internal constructor(
+    val raw: Raw<UnprotectedHeader>,
+    val protectedHeader: ProtectedHeader,
+    val payload: Payload?,
+    /** Exact external content retained on detached creation; absent when decoding a detached envelope. */
+    val detachedPayload: ByteArray? = null,
+) {
+    val unprotectedHeader: UnprotectedHeader get() = raw.unprotectedHeader
+    val isDetached: Boolean get() = raw.plainPayload == null
+    val signature get() = COSE.getSignature(raw.plainSignature, protectedHeader, unprotectedHeader)
+    fun signatureInput(externalAad: ByteArray = byteArrayOf(), detachedPayload: ByteArray? = null) = raw.signatureInput(externalAad, detachedPayload)
+    override fun equals(other: Any?) = other is CoseSign1<*, *, *> && raw == other.raw && protectedHeader == other.protectedHeader && (payload?.contentEqualsIfArray(other.payload) ?: (other.payload == null))
+    override fun hashCode() = 31 * (31 * raw.hashCode() + protectedHeader.hashCode()) + (payload?.contentHashCodeIfArray() ?: 0)
 
     /**
-     * The `Sig_structure` bytes that [plainSignature] is computed over, built from [plainProtectedHeader] as received.
+     * Raw decoding interprets only the application-owned unprotected bucket. Ignored members of that map are
+     * not retained on re-encoding. Keep the original input separately when unchanged byte forwarding is needed.
      */
-    fun signatureInput(
-        externalAad: ByteArray = byteArrayOf(),
-        detachedPayload: ByteArray? = null,
-    ): ByteArray {
-        val payload = if (plainPayload != null) {
-            require(detachedPayload == null) { "Payload is attached; detachedPayload must not be set" }
-            plainPayload
-        } else requireNotNull(detachedPayload) { "Payload is detached; supply it as detachedPayload" }
-        return sign1StructureInput(plainProtectedHeader, externalAad, payload)
+    @Serializable(with = CoseSign1RawSerializer::class)
+    class Raw<UnprotectedHeader : CoseHeader> internal constructor(
+        val plainProtectedHeader: ByteArray,
+        val unprotectedHeader: UnprotectedHeader,
+        val plainPayload: ByteArray?,
+        val plainSignature: ByteArray,
+        internal val unprotectedLabels: Set<CoseHeaderLabel>,
+    ) {
+        fun signatureInput(externalAad: ByteArray = byteArrayOf(), detachedPayload: ByteArray? = null) =
+            COSE.sign1StructureInput(plainProtectedHeader, externalAad, authenticationPayload(plainPayload, detachedPayload))
+
+        fun <ProtectedHeader : CoseHeader, Payload> typed(
+            protectedHeaderSerializer: KSerializer<ProtectedHeader>,
+            payloadSerializer: KSerializer<Payload>,
+            serialFormat: Cbor = coseCompliantSerializer,
+        ): CoseSign1<ProtectedHeader, UnprotectedHeader, Payload> {
+            val decoded = decodeHeader(plainProtectedHeader, protectedHeaderSerializer, serialFormat)
+            validateBuckets(decoded.header, unprotectedHeader, decoded.labels, unprotectedLabels)
+            return CoseSign1(this, decoded.header, plainPayload?.toTypedPayload(payloadSerializer, serialFormat))
+        }
+
+        inline fun <reified ProtectedHeader : CoseHeader, reified Payload> typed(serialFormat: Cbor = coseCompliantSerializer) =
+            typed(serialFormat.serializersModule.serializer<ProtectedHeader>(), serialFormat.serializersModule.serializer<Payload>(), serialFormat)
+
+        override fun equals(other: Any?) = other is Raw<*> && plainProtectedHeader.contentEquals(other.plainProtectedHeader) &&
+                unprotectedHeader == other.unprotectedHeader && plainPayload.contentEquals(other.plainPayload) && plainSignature.contentEquals(other.plainSignature)
+        override fun hashCode() = 31 * (31 * (31 * plainProtectedHeader.contentHashCode() + unprotectedHeader.hashCode()) + (plainPayload?.contentHashCode() ?: 0)) + plainSignature.contentHashCode()
+
+        companion object {
+            operator fun <UnprotectedHeader : CoseHeader> invoke(bytes: ByteArray, unprotectedHeaderSerializer: KSerializer<UnprotectedHeader>, serialFormat: Cbor = coseCompliantSerializer): Raw<UnprotectedHeader> =
+                serialFormat.decodeFromByteArray(CoseSign1RawSerializer(unprotectedHeaderSerializer), bytes)
+            inline operator fun <reified UnprotectedHeader : CoseHeader> invoke(bytes: ByteArray, serialFormat: Cbor = coseCompliantSerializer) =
+                invoke(bytes, serialFormat.serializersModule.serializer<UnprotectedHeader>(), serialFormat)
+        }
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as CoseSign1
-
-        if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
-        if (unprotectedHeader != other.unprotectedHeader) return false
-        if (!plainPayload.contentEquals(other.plainPayload)) return false
-        if (!plainSignature.contentEquals(other.plainSignature)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = plainProtectedHeader.contentHashCode()
-        result = 31 * result + unprotectedHeader.hashCode()
-        result = 31 * result + (plainPayload?.contentHashCode() ?: 0)
-        result = 31 * result + plainSignature.contentHashCode()
-        return result
-    }
-
-    override fun toString(): String = "CoseSign1(" +
-            "protectedHeader=$protectedHeader, " +
-            "unprotectedHeader=$unprotectedHeader, " +
-            "payload=${plainPayload?.encodeToString(Base16Strict)}, " +
-            "signature=${plainSignature.encodeToString(Base16Strict)})"
 
     companion object {
-
-        /** Parses a [CoseSign1] from its CBOR encoding. */
-        @Throws(SerializationException::class)
-        operator fun invoke(bytes: ByteArray): CoseSign1 = catchingUnwrappedAs(::SerializationException) {
-            coseCompliantSerializer.decodeFromByteArray<CoseSign1>(bytes)
-        }.getOrThrow()
-
-        /** Builds a new [CoseSign1] with the buckets of [header], signing the `Sig_structure`. */
-        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
-        suspend operator fun invoke(
-            header: CoseHeaderWrapped<*>,
-            plainPayload: ByteArray,
-            detached: Boolean = false,
-            externalAad: ByteArray = byteArrayOf(),
-            signer: suspend (ByteArray) -> ByteArray,
-        ): CoseSign1 {
-            val plainProtectedHeader = header.plainProtectedHeader
-            return CoseSign1(
-                plainProtectedHeader = plainProtectedHeader,
-                unprotectedHeader = header.unprotectedHeader,
-                plainPayload = if (detached) null else plainPayload,
-                plainSignature = signer(sign1StructureInput(plainProtectedHeader, externalAad, plainPayload)),
-            )
-        }
-
-        /** Builds a new [CoseSign1] from two [CoseHeader]s, one per bucket. */
-        //TODO move to designated signer class/interface https://github.com/a-sit-plus/signum/pull/446
-        suspend operator fun invoke(
-            protectedHeader: CoseHeader,
-            unprotectedHeader: CoseHeader? = null,
-            plainPayload: ByteArray,
-            detached: Boolean = false,
-            externalAad: ByteArray = byteArrayOf(),
-            signer: suspend (ByteArray) -> ByteArray,
-        ): CoseSign1 {
-            val plainProtectedHeader = encodeProtectedBucket(protectedHeader.toBucket())
-            return CoseSign1(
-                plainProtectedHeader = plainProtectedHeader,
-                unprotectedHeader = unprotectedHeader?.toBucket() ?: EMPTY_BUCKET,
-                plainPayload = if (detached) null else plainPayload,
-                plainSignature = signer(sign1StructureInput(plainProtectedHeader, externalAad, plainPayload)),
-            )
-        }
+        inline operator fun <reified ProtectedHeader : CoseHeader, reified UnprotectedHeader : CoseHeader, reified Payload> invoke(bytes: ByteArray, serialFormat: Cbor = coseCompliantSerializer): CoseSign1<ProtectedHeader, UnprotectedHeader, Payload> =
+            Raw<UnprotectedHeader>(bytes, serialFormat).typed<ProtectedHeader, Payload>(serialFormat)
     }
 }
 
-/** Decodes payload and header of a [CoseSign1] using explicit serializers, retaining the wire object. */
-fun <P, H : CoseHeaderBase> CoseSign1.typed(
-    payloadSerializer: KSerializer<P>,
-    headerSerializer: KSerializer<H>,
-    serialFormat: Cbor = coseCompliantSerializer,
-): CoseSign1Typed<P, H> = CoseTyped(
-    this,
-    getPayload(payloadSerializer, serialFormat).getOrThrow(),
-    wrappedHeader(headerSerializer, serialFormat),
-)
+class CoseSign1RawSerializer<UnprotectedHeader : CoseHeader>(private val headerSerializer: KSerializer<UnprotectedHeader>) : KSerializer<CoseSign1.Raw<UnprotectedHeader>> {
+    override val descriptor = CoseEnvelope.serializer(headerSerializer).descriptor
+    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: CoseSign1.Raw<UnprotectedHeader>) =
+        encoder.encodeSerializableValue(CoseEnvelope.serializer(HeaderBucketSerializer(headerSerializer)), CoseEnvelope(value.plainProtectedHeader, value.unprotectedHeader, value.plainPayload, value.plainSignature))
+    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): CoseSign1.Raw<UnprotectedHeader> {
+        val labels = mutableSetOf<CoseHeaderLabel>()
+        val wire = decoder.decodeSerializableValue(CoseEnvelope.serializer(HeaderBucketSerializer(headerSerializer, labels)))
+        return CoseSign1.Raw(wire.protectedHeader, wire.unprotectedHeader, wire.payload, wire.authentication, labels)
+    }
+}
 
-/** Decodes payload and header of a [CoseSign1] into [P] and [H]. */
-inline fun <reified P, reified H : CoseHeaderBase> CoseSign1.typed(
-    serialFormat: Cbor = coseCompliantSerializer,
-): CoseSign1Typed<P, H> = typed(
-    payloadSerializer = serialFormat.serializersModule.serializer<P>(),
-    headerSerializer = serialFormat.serializersModule.serializer<H>(),
-    serialFormat = serialFormat,
+/** Composes through the raw envelope, preserving protected and payload bytes during typed serialization. */
+class CoseSign1Serializer<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Payload>(
+    protectedHeaderSerializer: KSerializer<ProtectedHeader>,
+    unprotectedHeaderSerializer: KSerializer<UnprotectedHeader>,
+    payloadSerializer: KSerializer<Payload>,
+) : TransformingSerializerTemplate<CoseSign1<ProtectedHeader, UnprotectedHeader, Payload>, CoseSign1.Raw<UnprotectedHeader>>(
+    parent = CoseSign1RawSerializer(unprotectedHeaderSerializer),
+    serialName = "CoseSign1",
+    encodeAs = { it.raw },
+    decodeAs = { it.typed(protectedHeaderSerializer, payloadSerializer) },
 )
