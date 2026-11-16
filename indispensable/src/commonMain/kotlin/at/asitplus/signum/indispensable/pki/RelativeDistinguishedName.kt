@@ -140,6 +140,7 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
             oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for attribute $oid"),
         )
 
+        @OptIn(SignumInternals::class)
         private class Unknown(
             override val oid: ObjectIdentifier,
             lookupResult: UnsupportedCryptoException,
@@ -181,17 +182,6 @@ open class TextAttributeTypeAndValue(
     override fun equals(other: Any?): Boolean = other is TextAttributeTypeAndValue && oid == other.oid && text == other.text
     override fun hashCode(): Int = 31 * oid.hashCode() + text.hashCode()
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
-}
-
-class OpaqueAttributeTypeAndValue(
-    override val oid: ObjectIdentifier,
-    val decodingFailure: at.asitplus.signum.UnsupportedCryptoException? = null,
-) : AttributeTypeAndValue {
-    override val sourceRepresentation = SourceRepresentationStorage()
-    override fun equals(other: Any?): Boolean = this === other || other is OpaqueAttributeTypeAndValue &&
-            oid == other.oid && (sourceRepresentation presentAndEquals other.sourceRepresentation)
-    override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
-    override fun toString(): String = "OpaqueAttributeTypeAndValue($oid, $sourceRepresentation)"
 }
 
 val AttributeTypeAndValue.typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()

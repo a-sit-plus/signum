@@ -17,6 +17,7 @@ interface CsrAttribute : Identifiable, WithSourceRepresentation {
             oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for CSR attribute $oid"),
         )
 
+        @OptIn(SignumInternals::class)
         private class Unknown(
             override val oid: ObjectIdentifier,
             lookupResult: UnsupportedCryptoException,

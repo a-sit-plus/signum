@@ -5,8 +5,8 @@ This document describes the process for library developers.
 
 ## Registration and DER configuration
 
-All extensibility registration and registry lookups go through `Signum`. Register a provider and its
-concrete ASN.1 serializers together:
+Register core and platform providers through `Signum`. If a provider needs additional wire serializers,
+it can contribute them during registration:
 
 ```kotlin
 Signum.register(FoobarProvider, serializers = asn1Serializers)
@@ -18,16 +18,16 @@ providers are tried first. Install Supreme before registering overrides for its 
 For module-specific service interfaces, use explicit typed registration:
 
 ```kotlin
-Signum.registerProvider<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
+ServiceLoader.register<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
 ```
 
-An extension should expose one `install()` function that registers its providers, contextual serializers,
-and any certificate-extension or name descriptors. Applications call it during startup before using those types.
+An extension should expose one `install()` function that registers its providers, any optional wire
+serializers, and attribute descriptors. Applications call it during startup before using those types.
 
 Signum uses one application-wide `Signum.Der` instance. Public signing, verification, platform conversion,
-and chain-validation helpers use it automatically for all things serialization. Nested codecs and deferred
-semantic decoding use the same instance. The core serializers are included automatically;
-`Signum.installPkix()` registers the PKIX descriptors and their serializers.
+and ASN.1 representation helpers use it automatically. Nested ASN.1 codecs use the same instance.
+The selected awesn1 template supplies its wire serializers; `Signum.installPkix()` registers PKIX
+interpretation providers and attribute descriptors, without contextual semantic serializers.
 Module installers are extension functions on `Signum`, defined in their respective modules; core
 Indispensable does not depend on Supreme or PKIX. Core provider installation remains lazy and idempotent;
 it is also available explicitly as `Signum.installIndispensable()`.
@@ -63,8 +63,8 @@ Signum.installSupreme() // when using Supreme; install its defaults before overr
 FoobarExtension.install()
 Signum.installPkix() // when using the typed PKIX module
 
-val bytes = Signum.Der.encodeToByteArray(foobarPublicKey)
-val key = Signum.Der.decodeFromByteArray<FoobarPublicKey>(bytes)
+val bytes = publicKey.asn1.toDer()
+val key = CryptoPublicKey.fromAsn1(bytes)
 ```
 
 Signum copies all four template settings (`encodeDefaults`, `explicitNulls`, `maxInputLength`, and
@@ -85,9 +85,9 @@ The two registries have independent lifecycles:
 
 Perform startup configuration on one thread. Calling a Signum encoding or decoding helper can access
 `Signum.Der`, so complete Signum serializer registration before using those helpers.
-Each descriptor registry seals on its first lookup; combined descriptor/serializer registration requires
-both stores to remain open. Provider-only registration retains its existing mutable behavior, allowing
-lazy module installation. Centralization does not introduce a single shared freeze point.
+The attribute descriptor registry seals on its first lookup, independently of the serializer configuration.
+Register attribute descriptors before looking up attributes, and contribute wire serializers before first
+access to `Signum.Der`. Provider-only registration remains mutable, allowing later provider overrides.
 
 Serializer precedence is the selected template, then contributions in registration order;
 later contributions replace earlier registrations for the same type.
@@ -96,39 +96,43 @@ Register native open-polymorphic payload serializers (such as custom `otherName`
 
 ## Representations and Encoding
 
-Semantic types implement `Encodable`; their companions can implement `Decodable<T>` as a typed decoding target.
-These interfaces replace `DerEncodable` and `DerDecodable` and do not prescribe an ASN.1 representation.
-Encoding and decoding use contextual serializers through `Signum.Der`, including awesn1's TLV and kotlinx.io APIs.
-Signum's PEM extensions also use `Signum.Der`.
-`maxInputLength` constrains DER byte input, including nested byte decoding; it does not constrain
-encoded output or re-check the byte size of an already-parsed TLV element.
+Semantic types implement `WithSourceRepresentation`. Each instance supplies a backing
+`SourceRepresentationStorage`, which holds its original decoded model when one exists. The model's
+concrete type identifies its representation; there is no separate format-key enum or source pair.
+`sourceFormat` exposes the retained model's type name, or `<no source>` for a constructed value.
 
-`Encodable.sourceRepresentation` is a nullable `Pair<Encodable.Representation, Any>`: one format key
-and the original decoded model. The key implements an open interface; `X509` identifies an ASN.1 source,
-and other formats can define their own keys. A decoded value retains only its source, preserving
-round-trip accuracy. Programmatically constructed values have `null`, even after encoding;
-getters and serializers never store generated models there. Exclude the pair from semantic
-`equals` and `hashCode`. Public constructors take semantic values; constructors accepting a retained
-source pair should be internal or private. Companion `fromAsn1Representation` functions provide
-conversion from matching awesn1 models.
+Use `SignumEncodingHelpers.decodeFrom` / `encodeTo` for explicit conversions, or `decodeWith` /
+`encodeWith` to dispatch through providers. The ASN.1 wrappers expose `.asn1.toRepresentation()`,
+`.asn1.toTlv()`, `.asn1.toDer()`, and companion `fromAsn1(...)` overloads for models, TLVs, DER, and streams.
+Signum's ASN.1 and PEM helpers use `Signum.Der`. Its `maxInputLength` constrains DER byte input,
+including nested byte decoding; it does not constrain encoded output or re-check the byte size of an
+already-parsed TLV element.
 
-Attribute descriptors provide `fromValue(Asn1Element)` for programmatic OID/value construction,
-separately from `fromAsn1Representation` for decoding. The former must leave the source pair null.
+Decoded values retain their source for round-trip encoding. Encoding to another format leaves that source
+unchanged. Programmatically constructed values have empty storage, even after encoding; getters and
+serializers do not cache generated models. Keep storage out of semantic `equals` and `hashCode`.
+Return fresh instances from decoders. Reusing an instance for a different source model of the same type
+is rejected by the decoding helper to protect its retained representation.
 
-Keep format-specific tags and explicit serializers on wire models. Shared semantic types should use
-contextual serializers so another format can choose its own representation. `GeneralSubtree` and its
-internal `X509GeneralSubtree` illustrate this separation. C509 is not implemented yet.
+Public constructors take semantic values. An attribute descriptor provides `fromString(String)` and
+OID/name metadata. ASN.1-specific companion factories, such as `AttributeTypeAndValue(oid, element)`,
+decode through providers and retain the supplied wire model.
+
+Keep format-specific tags on serializable wire models and select their serializers explicitly at codec
+boundaries. Semantic classes require no contextual ASN.1 registration. For example, `GeneralSubtree`
+owns an internal `Asn1Representation`, separate from its semantic fields. The test-only J509 codecs
+exercise JSON representations without converting through ASN.1; C509 is not implemented yet.
 
 ## Message Digests & Message Authentication Codes
 
-Implement `DigestProvider` and `DigestOperationProvider`.
+Implement `Asn1DigestAlgorithmProvider` and `DigestOperationProvider`.
 Your digest identifier should implement `Digest`.
-`DigestProvider` should implement `getDigest` to map an `X509AlgorithmIdentifier` to your digest identifier class, and `encodeToAsn1` for the reverse conversion.
+`Asn1DigestAlgorithmProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your digest identifier class, and `encodeToAsn1` for the reverse conversion.
 `DigestOperationProvider` should implement the actual digest operation as `doDigest`.
 
-Implement `MessageAuthenticationCodeProvider` and `MessageAuthenticationCodeOperationProvider`.
+Implement `Asn1MACAlgorithmProvider` and `MessageAuthenticationCodeOperationProvider`.
 Your MAC identifier should implement `MessageAuthenticationCode`.
-`MessageAuthenticationCodeProvider` should implement `getMAC` to map an `X509AlgorithmIdentifier` to your MAC identifier class, and `encodeToAsn1` for the reverse conversion.
+`Asn1MACAlgorithmProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your MAC identifier class, and `encodeToAsn1` for the reverse conversion.
 `MessageAuthenticationCodeOperationProvider` should implement the actual MAC operation as `doMAC`.
 
 Digest and MAC identifiers convert through their ASN.1 providers. Use `.asn1.toDer()` and
@@ -143,16 +147,16 @@ Your KDF identifier should implement `KDF`.
 
 ## Signatures
 
-For data formats, implement `SignatureAlgorithmsProvider`, `SignatureFormatProvider`, `PublicKeyFormatProvider`, and `PrivateKeyFormatProvider`.
+For data formats, implement `Asn1SignatureAlgorithmProvider`, `SignatureFormatProvider`, `Asn1PublicKeyFormatProvider`, and `Asn1PrivateKeyFormatProvider`.
 Your signature algorithm identifier should implement `SignatureAlgorithm`.
 Your signature format class should implement `CryptoSignature`.
 Your public key class should implement `CryptoPublicKey`.
 Your private key class should implement `CryptoPrivateKey`, and likely `CryptoPrivateKey.WithPublicKey`.
 
-`SignatureAlgorithmsProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
+`Asn1SignatureAlgorithmProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
 `SignatureFormatProvider` should implement `parseCryptoSignature` to parse `X509SignatureValue`s given an algorithm identifier.
-`PublicKeyFormatProvider` should implement `decodeFromAsn1` and, if desired `decodeFromDidKey`.
-`PrivateKeyFormatProvider` should implement `decodeFromAsn1`.
+`Asn1PublicKeyFormatProvider` should implement `decodeFromAsn1` and, if desired `decodeFromDidKey`.
+`Asn1PrivateKeyFormatProvider` should implement `decodeFromAsn1`.
 Each of these four format providers also exposes `encodeToAsn1` for the corresponding Signum type.
 Return `null` for values your provider does not support. The encoding methods default to `null`, so providers that only decode remain valid.
 

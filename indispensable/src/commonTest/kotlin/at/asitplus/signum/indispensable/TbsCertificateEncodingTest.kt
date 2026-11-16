@@ -13,7 +13,6 @@ import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toBigInteger
-import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
@@ -74,6 +73,7 @@ val TbsCertificateEncodingTest by matrixSuite {
     "Serial number validation distinguishes construction from decoding" - {
         data class Case(val name: String, val serial: BigInteger, val validForConstruction: Boolean)
         listOf(
+            Case("Negative", BigInteger(-1), false),
             Case("Zero", BigInteger.ZERO, false),
             Case("One", BigInteger.ONE, true),
             Case("20 value octets", (BigInteger.ONE shl 159) - BigInteger.ONE, true),

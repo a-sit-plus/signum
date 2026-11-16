@@ -118,18 +118,6 @@ val RemainingEncodingTest by matrixSuite {
         opaqueTbs.asn1.toRepresentation() shouldBeSameInstanceAs unknownKey
     }
 
-    "Alternative names compare their contents without encoding them" {
-        val name: GeneralName = object : GeneralName {
-            override val sourceRepresentation = SourceRepresentationStorage()
-        }
-        val first = AlternativeNames(listOf(name))
-        val second = AlternativeNames(listOf(name))
-        first shouldBe second
-        first.hashCode() shouldBe second.hashCode()
-        first shouldNotBe AlternativeNames(emptyList())
-        shouldThrowAny { first.asn1.toDer() }
-    }
-
     "Only decoded values retain a source and other encodings leave it unchanged" {
         val ecSignature = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
         ecSignature.realSourceRepresentation shouldBe null

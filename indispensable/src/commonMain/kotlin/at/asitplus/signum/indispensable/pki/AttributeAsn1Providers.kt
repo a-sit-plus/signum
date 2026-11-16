@@ -45,7 +45,7 @@ internal object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider, CsrAt
         else null
 
     override fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute? = when (value) {
-        is ExtensionRequest -> Pkcs10CsrAttribute.ExtensionRequest(value.extensions.map { it.asn1.toRepresentation() })
+        is ExtensionRequest -> Pkcs10CsrAttribute.ExtensionRequest(value.extensions.map { it.asn1.toRepresentation() }, Signum.Der)
         else -> null
     }
 }

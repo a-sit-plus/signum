@@ -43,6 +43,25 @@ val UnknownPkixValueTest by matrixSuite {
         }
     }
 
+    "A parseable extension request retains malformed extension payloads as unknowns" {
+        val extension = X509CertificateExtension(BasicConstraints.oid, true, "3003020100".hexToByteArray())
+        val source = Pkcs10CsrAttribute.ExtensionRequest(listOf(extension))
+        val request = CsrAttribute.fromAsn1(source).shouldBeInstanceOf<ExtensionRequest>()
+        val fallback = request.extensions.single().shouldBeInstanceOf<CertificateExtension.Unknown>()
+        fallback.oid shouldBe BasicConstraints.oid
+        fallback.critical shouldBe true
+        fallback.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+        fallback.asn1.toRepresentation().value shouldBe extension.value
+
+        val csr = TbsCertificationRequest(Name.EMPTY, ECCurve.SECP_256_R_1.generator.asPublicKey(), attributes = listOf(request))
+        csr.extensions shouldBeSameInstanceAs request.extensions
+        val bytes = csr.asn1.toDer()
+        val decoded = TbsCertificationRequest.fromAsn1(bytes)
+        decoded.extensions.single().shouldBeInstanceOf<CertificateExtension.Unknown>()
+            .asn1.toRepresentation().value shouldBe extension.value
+        decoded.asn1.toDer() shouldBe bytes
+    }
+
     "Malformed recognized names fall back to unknowns and retain their original source" {
         val sources = listOf<X509GeneralName>(
             X509GeneralName.Dns("bad name"), X509GeneralName.Rfc822("two@@example.com"),
