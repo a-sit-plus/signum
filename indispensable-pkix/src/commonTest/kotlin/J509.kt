@@ -40,14 +40,10 @@ internal object J509 {
     }
     fun attribute(node: JsonObject): AttributeTypeAndValue = read(node) {
         val oid = it.oid()
-        val descriptor = at.asitplus.signum.Signum.attributeDescriptorFor(oid)
         try {
             val value = it.optional("text")?.jsonPrimitive?.content
-            if (value == null && descriptor == null) AttributeTypeAndValue(oid)
-            else {
-                require(value != null) { "Invalid J509 attribute $oid" }
-                descriptor?.fromString(value) ?: TextAttributeTypeAndValue(oid, value)
-            }
+            if (value == null) AttributeTypeAndValue(oid)
+            else AttributeTypeAndValue.fromString(oid, value)
         } catch (failure: Throwable) {
             AttributeTypeAndValue(oid, UnsupportedCryptoException("Cannot decode J509 attribute $oid", failure.nonFatalOrThrow()))
         }

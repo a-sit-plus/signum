@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.installIndispensable
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -103,36 +104,49 @@ private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
 
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
-    interface Descriptor<out T : AttributeTypeAndValue> : Identifiable {
-        val canonicalName: String
-
-        object OID {
-            val commonName = ObjectIdentifier("2.5.4.3")
-            val countryName = ObjectIdentifier("2.5.4.6")
-            val localityName = ObjectIdentifier("2.5.4.7")
-            val stateOrProvinceName = ObjectIdentifier("2.5.4.8")
-            val streetAddress = ObjectIdentifier("2.5.4.9")
-            val organizationName = ObjectIdentifier("2.5.4.10")
-            val organizationalUnitName = ObjectIdentifier("2.5.4.11")
-            val title = ObjectIdentifier("2.5.4.12")
-            val telephoneNumber = ObjectIdentifier("2.5.4.20")
-            val surname = ObjectIdentifier("2.5.4.4")
-            val serialNumber = ObjectIdentifier("2.5.4.5")
-            val name = ObjectIdentifier("2.5.4.41")
-            val givenName = ObjectIdentifier("2.5.4.42")
-            val initials = ObjectIdentifier("2.5.4.43")
-            val generationQualifier = ObjectIdentifier("2.5.4.44")
-            val dnQualifier = ObjectIdentifier("2.5.4.46")
-            val domainComponent = ObjectIdentifier("0.9.2342.19200300.100.1.25")
-            val userId = ObjectIdentifier("0.9.2342.19200300.100.1.1")
-            val emailAddress = ObjectIdentifier("1.2.840.113549.1.9.1")
-        }
-
-        fun fromString(value: String): T
-
+    object OID {
+        val commonName = ObjectIdentifier("2.5.4.3")
+        val countryName = ObjectIdentifier("2.5.4.6")
+        val localityName = ObjectIdentifier("2.5.4.7")
+        val stateOrProvinceName = ObjectIdentifier("2.5.4.8")
+        val streetAddress = ObjectIdentifier("2.5.4.9")
+        val organizationName = ObjectIdentifier("2.5.4.10")
+        val organizationalUnitName = ObjectIdentifier("2.5.4.11")
+        val title = ObjectIdentifier("2.5.4.12")
+        val telephoneNumber = ObjectIdentifier("2.5.4.20")
+        val surname = ObjectIdentifier("2.5.4.4")
+        val serialNumber = ObjectIdentifier("2.5.4.5")
+        val name = ObjectIdentifier("2.5.4.41")
+        val givenName = ObjectIdentifier("2.5.4.42")
+        val initials = ObjectIdentifier("2.5.4.43")
+        val generationQualifier = ObjectIdentifier("2.5.4.44")
+        val dnQualifier = ObjectIdentifier("2.5.4.46")
+        val domainComponent = ObjectIdentifier("0.9.2342.19200300.100.1.25")
+        val userId = ObjectIdentifier("0.9.2342.19200300.100.1.1")
+        val emailAddress = ObjectIdentifier("1.2.840.113549.1.9.1")
     }
 
     companion object {
+        init { Signum.installIndispensable() }
+
+        /** Resolve a DN shorthand or alias through the registered semantic providers. */
+        fun oidForName(name: String): ObjectIdentifier? = try {
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(name.trim().uppercase()) { oidForName(it) }
+        } catch (_: UnsupportedCryptoException) { null }
+
+        /** Resolve a canonical DN name through the registered semantic providers. */
+        fun nameForOid(oid: ObjectIdentifier): String? = try {
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(oid) { nameForOid(it) }
+        } catch (_: UnsupportedCryptoException) { null }
+
+        /** Construct from semantic text; unrecognized OIDs retain their text without choosing a wire format. */
+        fun fromString(oid: ObjectIdentifier, value: String): AttributeTypeAndValue = try {
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(oid) { decoderFor(it)?.invoke(value) }
+        } catch (failure: UnsupportedCryptoException) {
+            if (failure.suppressedExceptions.isNotEmpty()) throw failure
+            TextAttributeTypeAndValue(oid, value)
+        }
+
         operator fun invoke(
             oid: ObjectIdentifier,
             decodingFailure: UnsupportedCryptoException? = null,
@@ -155,20 +169,16 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
             if (v.length > 1 && v.first() == '#' &&  isHexString(v.substring(1))) {
                 catchingUnwrapped { Asn1Element.parse(v.substring(1).hexToByteArray()) }.getOrNull()?.let { element ->
-                    // TODO: attribute descriptor by name lookup
-                    val oid = Signum.attributeDescriptorForName(key)?.oid
+                    val oid = oidForName(key)
                         ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
                     return invoke(oid, element)
                 }
             }
-            // Otherwise unquote/unescape to the raw value; the typed Asn1String holds the raw content,
-            // and toRfc2253String re-escapes on output (RFC 4514). This keeps the stored value correct
-            // (no escape backslashes in the DER) and works for PrintableString/IA5 attributes too.
+            // Store unquoted/unescaped semantic text; toRfc2253String re-escapes it on output (RFC 4514).
             val raw = unescapeRfc2253(v)
-            Signum.attributeDescriptorForName(key)?.let { return it.fromString(raw) }
-            // Fall back to a raw dotted-OID attribute type (e.g. "1.2.3.4.5"); value carried as a UTF8String.
-            val oid = catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
-            return invoke(oid, Asn1String.UTF8(raw).encodeToTlv())
+            val oid = oidForName(key)
+                ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
+            return fromString(oid, raw)
         }
     }
 }
@@ -184,7 +194,7 @@ open class TextAttributeTypeAndValue(
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
 }
 
-val AttributeTypeAndValue.typeString: String get() = Signum.attributeNameFor(oid) ?: oid.toString()
+val AttributeTypeAndValue.typeString: String get() = AttributeTypeAndValue.nameForOid(oid) ?: oid.toString()
 val AttributeTypeAndValue.valueString: String get() = when (this) {
     is TextAttributeTypeAndValue -> canonicalizeRfc2253String(text)
     else -> asn1.toRepresentation().value.let { value ->
@@ -193,53 +203,6 @@ val AttributeTypeAndValue.valueString: String get() = when (this) {
     }
 }
 fun AttributeTypeAndValue.toRfc2253String(): String = "${typeString.lowercase()}=${valueString.lowercase()}"
-
-private class StandardX500AttributeDescriptor(
-    override val oid: ObjectIdentifier,
-    override val canonicalName: String,
-) : AttributeTypeAndValue.Descriptor<TextAttributeTypeAndValue> {
-    override fun fromString(value: String) = TextAttributeTypeAndValue(oid, value)
-}
-
-internal val standardX500AttributeDescriptors: List<AttributeTypeAndValue.Descriptor<*>> = listOf(
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.commonName, "CN"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.countryName, "C"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.localityName, "L"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName, "ST"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.streetAddress, "STREET"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationName, "O"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.organizationalUnitName, "OU"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.title, "T"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.telephoneNumber, "TELEPHONENUMBER"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.surname, "SURNAME"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.serialNumber, "SERIALNUMBER"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.name, "NAME"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.givenName, "GIVENNAME"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.initials, "INITIALS"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.generationQualifier, "GENERATION"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.dnQualifier, "DNQUALIFIER"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.domainComponent, "DC"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.userId, "UID"),
-    StandardX500AttributeDescriptor(AttributeTypeAndValue.Descriptor.OID.emailAddress, "EMAILADDRESS"),
-)
-
-internal val standardX500AttributeAliases = mapOf(
-    "COMMONNAME" to AttributeTypeAndValue.Descriptor.OID.commonName,
-    "COUNTRY" to AttributeTypeAndValue.Descriptor.OID.countryName,
-    "COUNTRYNAME" to AttributeTypeAndValue.Descriptor.OID.countryName,
-    "LOCALITY" to AttributeTypeAndValue.Descriptor.OID.localityName,
-    "LOCALITYNAME" to AttributeTypeAndValue.Descriptor.OID.localityName,
-    "S" to AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName,
-    "STATEORPROVINCENAME" to AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName,
-    "STREETADDRESS" to AttributeTypeAndValue.Descriptor.OID.streetAddress,
-    "ORGANIZATION" to AttributeTypeAndValue.Descriptor.OID.organizationName,
-    "ORGANIZATIONNAME" to AttributeTypeAndValue.Descriptor.OID.organizationName,
-    "ORGANIZATIONALUNIT" to AttributeTypeAndValue.Descriptor.OID.organizationalUnitName,
-    "ORGANIZATIONALUNITNAME" to AttributeTypeAndValue.Descriptor.OID.organizationalUnitName,
-    "TITLE" to AttributeTypeAndValue.Descriptor.OID.title,
-    "DNQ" to AttributeTypeAndValue.Descriptor.OID.dnQualifier,
-    "EMAIL" to AttributeTypeAndValue.Descriptor.OID.emailAddress,
-)
 
 private fun isHexString(s: String): Boolean =
     s.isNotEmpty() && s.length % 2 == 0 && s.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }

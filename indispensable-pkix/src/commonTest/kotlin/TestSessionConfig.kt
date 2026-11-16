@@ -21,7 +21,9 @@ class ModuleTestSession : TestSession() {
         ServiceLoader.register<PolicyQualifierAsn1Provider>(LenientPkixProvider)
         Signum.installPkix()
         Signum.register(RegisteredExtensionProvider)
-        Signum.registerAttributeAlias("CUSTOMCN", CommonName.oid)
+        Signum.register(object : at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider {
+            override fun oidForName(name: String) = CommonName.oid.takeIf { name == "CUSTOMCN" }
+        })
         val jsonAttribute = at.asitplus.signum.indispensable.pki.J509.attribute(CommonName("startup"))
         check(at.asitplus.signum.indispensable.pki.J509.attribute(jsonAttribute) is CommonName)
         // This would fail if the JSON path had initialized Signum.Der.

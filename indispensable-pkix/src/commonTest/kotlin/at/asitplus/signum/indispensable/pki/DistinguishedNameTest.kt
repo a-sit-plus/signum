@@ -14,7 +14,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 private data class TypedAttributeCase(
-    val descriptor: AttributeTypeAndValue.Descriptor<*>,
+    val type: at.asitplus.awesn1.Identifiable,
     val names: Set<String>,
     val expected: (String) -> AttributeTypeAndValue,
 )
@@ -193,7 +193,7 @@ val DistinguishedNameTest by matrixSuite {
         )
     }
 
-    "AttributeTypeAndValue registry parses aliases" {
+    "AttributeTypeAndValue providers parse aliases" {
         AttributeTypeAndValue.fromString("S", "Vienna") shouldBe StateOrProvince("Vienna")
         AttributeTypeAndValue.fromString("Title", "Dr") shouldBe Title("Dr")
         AttributeTypeAndValue.fromString("DNQ", "dnq") shouldBe DistinguishedNameQualifier("dnq")
@@ -201,19 +201,19 @@ val DistinguishedNameTest by matrixSuite {
                 EmailAddress("jane@example.test")
     }
 
-    compact("PKIX descriptors replace construction but retain core aliases") - {
-        data(typedAttributes, nameFn = { it.descriptor.canonicalName }) - { case ->
+    compact("PKIX providers replace construction but retain core aliases") - {
+        data(typedAttributes, nameFn = { it.names.first() }) - { case ->
             data(case.names) test { name ->
                 val parsed = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
 
                 parsed shouldBe case.expected("Test")
-                parsed?.oid shouldBe case.descriptor.oid
-                Signum.attributeOidFor(name) shouldBe case.descriptor.oid
+                parsed?.oid shouldBe case.type.oid
+                AttributeTypeAndValue.oidForName(name) shouldBe case.type.oid
             }
         }
     }
 
-    data(typedAttributes, nameFn = { "non-canonical ${it.descriptor.canonicalName}" }) test { case ->
+    data(typedAttributes, nameFn = { "non-canonical ${it.names.first()}" }) test { case ->
         val canonical = case.expected("Test") as AttributeTypeAndValue
         val nonCanonicalValue = when (Asn1String.decodeFromTlv(canonical.asn1.toRepresentation().value.asPrimitive())) {
             is Asn1String.UTF8 -> Asn1String.Printable("Test")
@@ -221,7 +221,7 @@ val DistinguishedNameTest by matrixSuite {
             else -> error("unexpected canonical X.500 string type")
         }.encodeToTlv()
         val original = RelativeDistinguishedName(
-            AttributeTypeAndValue(case.descriptor.oid, nonCanonicalValue)
+            AttributeTypeAndValue(case.type.oid, nonCanonicalValue)
         )
         val encoded = original.asn1.toDer()
         val decoded = (RelativeDistinguishedName.fromAsn1(encoded))

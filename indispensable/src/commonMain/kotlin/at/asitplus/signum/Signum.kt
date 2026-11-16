@@ -2,7 +2,6 @@
 
 package at.asitplus.signum
 
-import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.Der
 import at.asitplus.signum.indispensable.*
@@ -18,13 +17,11 @@ import at.asitplus.signum.indispensable.sign.InMemoryKeysProvider
 import at.asitplus.signum.indispensable.sign.SignatureVerifierProvider
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.overwriteWith
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
- * Application-wide providers, semantic descriptors, and DER configuration.
- * Configure on one thread during startup, before first use. Descriptor registries seal on first lookup;
- * serializer contributions seal on first [Der] access. Provider-only registration remains mutable.
+ * Application-wide providers and DER configuration.
+ * Configure serializers during startup, before first [Der] access.
+ * Provider-only registration remains mutable and later providers take precedence.
  * See docs/docs/extensibility.md for registration order and the single-configuration limitation.
  */
 object Signum {
@@ -86,6 +83,7 @@ object Signum {
         if (provider is Asn1PrivateKeyFormatProvider) { ServiceLoader.register<Asn1PrivateKeyFormatProvider>(provider); matched = true }
         if (provider is InMemoryKeysProvider) { ServiceLoader.register<InMemoryKeysProvider>(provider); matched = true }
         if (provider is SignatureVerifierProvider) { ServiceLoader.register<SignatureVerifierProvider>(provider); matched = true }
+        if (provider is AttributeTypeAndValueProvider) { ServiceLoader.register<AttributeTypeAndValueProvider>(provider); matched = true }
         if (provider is AttributeTypeAndValueAsn1Provider) { ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(provider); matched = true }
         if (provider is CsrAttributeAsn1Provider) { ServiceLoader.register<CsrAttributeAsn1Provider>(provider); matched = true }
         if (provider is CertificateExtensionProvider) { ServiceLoader.register<CertificateExtensionProvider>(provider); matched = true }
@@ -93,66 +91,6 @@ object Signum {
         matched = registerIndispensablePlatformProvider(provider) || matched
         require(matched) { "No supported provider interface on ${provider::class.simpleName}; use ServiceLoader.register<ServiceInterface> for module-specific services" }
         serializers?.let(::registerAsn1Serializers)
-    }
-
-    /** Register semantic attribute metadata independently of ASN.1 serialization. */
-    fun register(descriptor: AttributeTypeAndValue.Descriptor<*>) {
-        Attributes.register(descriptor)
-    }
-    fun attributeDescriptorFor(oid: ObjectIdentifier): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorFor(oid)
-    fun attributeDescriptorForName(name: String): AttributeTypeAndValue.Descriptor<*>? = Attributes.descriptorForName(name)
-    fun attributeOidFor(name: String): ObjectIdentifier? = Attributes.oidFor(name)
-    fun attributeNameFor(oid: ObjectIdentifier): String? = Attributes.nameFor(oid)
-    fun registerAttributeAlias(alias: String, oid: ObjectIdentifier) = Attributes.registerAlias(alias, oid)
-
-    @OptIn(ExperimentalAtomicApi::class)
-    @PublishedApi
-    internal object Attributes {
-        private val descriptors: MutableMap<ObjectIdentifier, AttributeTypeAndValue.Descriptor<*>> = standardX500AttributeDescriptors
-            .associateByTo(mutableMapOf()) { it.oid }
-        private val aliases = standardX500AttributeAliases.toMutableMap()
-        private val sealed = AtomicReference<Map<ObjectIdentifier, AttributeTypeAndValue.Descriptor<*>>?>(null)
-
-        @PublishedApi
-        internal fun register(descriptor: AttributeTypeAndValue.Descriptor<*>) {
-            check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first attribute lookup."
-            }
-            descriptors[descriptor.oid] = descriptor
-        }
-
-        fun registerAlias(alias: String, oid: ObjectIdentifier) {
-            check(sealed.load() == null) {
-                "AttributeTypeAndValue registry is sealed; register before the first attribute lookup."
-            }
-            require(descriptors.containsKey(oid)) { "No AttributeTypeAndValue descriptor registered for $oid." }
-            val normalizedAlias = alias.uppercase()
-            check(descriptors.values.none { it.canonicalName.uppercase() == normalizedAlias }) {
-                "AttributeTypeAndValue alias '$alias' conflicts with a canonical name."
-            }
-            check(aliases[normalizedAlias].let { it == null || it == oid }) {
-                "AttributeTypeAndValue alias '$alias' is already registered for ${aliases[normalizedAlias]}."
-            }
-            aliases[normalizedAlias] = oid
-        }
-
-        fun oidFor(name: String): ObjectIdentifier? =
-            descriptorForName(name)?.oid
-
-        fun nameFor(oid: ObjectIdentifier): String? =
-            descriptorFor(oid)?.canonicalName
-
-        fun descriptorFor(oid: ObjectIdentifier): AttributeTypeAndValue.Descriptor<*>? = view()[oid]
-
-        fun descriptorForName(name: String): AttributeTypeAndValue.Descriptor<*>? {
-            val normalizedName = name.uppercase()
-            val descriptors = view()
-            return aliases[normalizedName]?.let { descriptors[it] }
-                ?: descriptors.values.firstOrNull { it.canonicalName.uppercase() == normalizedName }
-        }
-
-        private fun view(): Map<ObjectIdentifier, AttributeTypeAndValue.Descriptor<*>> =
-            sealed.load() ?: descriptors.toMap().also { sealed.store(it) }
     }
 
 }

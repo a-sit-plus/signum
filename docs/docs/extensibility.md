@@ -22,12 +22,12 @@ ServiceLoader.register<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
 ```
 
 An extension should expose one `install()` function that registers its providers, any optional wire
-serializers, and attribute descriptors. Applications call it during startup before using those types.
+serializers, and semantic attribute providers. Applications call it during startup before using those types.
 
 Signum uses one application-wide `Signum.Der` instance. Public signing, verification, platform conversion,
 and ASN.1 representation helpers use it automatically. Nested ASN.1 codecs use the same instance.
 The selected awesn1 template supplies its wire serializers; `Signum.installPkix()` registers PKIX
-interpretation providers and attribute descriptors, without contextual semantic serializers.
+representation and semantic attribute providers, without contextual semantic serializers.
 Module installers are extension functions on `Signum`, defined in their respective modules; core
 Indispensable does not depend on Supreme or PKIX. Core provider installation remains lazy and idempotent;
 it is also available explicitly as `Signum.installIndispensable()`.
@@ -85,9 +85,9 @@ The two registries have independent lifecycles:
 
 Perform startup configuration on one thread. Calling a Signum encoding or decoding helper can access
 `Signum.Der`, so complete Signum serializer registration before using those helpers.
-The attribute descriptor registry seals on its first lookup, independently of the serializer configuration.
-Register attribute descriptors before looking up attributes, and contribute wire serializers before first
-access to `Signum.Der`. Provider-only registration remains mutable, allowing later provider overrides.
+Contribute wire serializers before first access to `Signum.Der`. Provider-only registration remains mutable,
+including attribute names, aliases, and text construction. Later providers take precedence; previous
+lookups do not freeze registration.
 
 Serializer precedence is the selected template, then contributions in registration order;
 later contributions replace earlier registrations for the same type.
@@ -114,8 +114,9 @@ serializers do not cache generated models. Keep storage out of semantic `equals`
 Return fresh instances from decoders. Reusing an instance for a different source model of the same type
 is rejected by the decoding helper to protect its retained representation.
 
-Public constructors take semantic values. An attribute descriptor provides `fromString(String)` and
-OID/name metadata. ASN.1-specific companion factories, such as `AttributeTypeAndValue(oid, element)`,
+Public constructors take semantic values. `AttributeTypeAndValueProvider` supplies text constructors
+and OID/name lookup. `AttributeTypeAndValue.fromString(oid, text)` constructs semantic attributes without
+selecting an encoding. ASN.1-specific companion factories, such as `AttributeTypeAndValue(oid, element)`,
 decode through providers and retain the supplied wire model.
 
 Keep format-specific tags on serializable wire models and select their serializers explicitly at codec
@@ -246,17 +247,33 @@ The open `OtherName` family and policy qualifiers retain uninterpreted payloads 
 representation. Applications may interpret raw payloads manually or provide explicit conversions;
 open-polymorphic wire registration is optional.
 
-For an X.500 text attribute, register its `AttributeTypeAndValue.Descriptor` before the first attribute
-lookup, then optionally add aliases:
+X.500 text attributes use `AttributeTypeAndValueProvider` for semantic construction and DN naming:
 
 ```kotlin
-Signum.register(MyAttribute)
-Signum.registerAttributeAlias("MYATTR", MyAttribute.oid)
+object MyAttributeProvider : AttributeTypeAndValueProvider {
+    override fun decoderFor(oid: ObjectIdentifier): ((String) -> AttributeTypeAndValue)? =
+        if (oid == MyAttribute.oid) ::MyAttribute else null
+
+    override fun oidForName(name: String): ObjectIdentifier? =
+        MyAttribute.oid.takeIf { name == "MYATTR" || name == "MYALIAS" }
+
+    override fun nameForOid(oid: ObjectIdentifier): String? =
+        "MYATTR".takeIf { oid == MyAttribute.oid }
+}
+
+Signum.register(MyAttributeProvider)
 ```
 
-Descriptors contain semantic metadata and string construction. They do not register serializers or
-initialize `Signum.Der`. `Signum.attributeOidFor`, `attributeNameFor`, and `attributeDescriptorForName`
-provide name resolution.
+`AttributeTypeAndValue.oidForName` normalizes input names to uppercase; `nameForOid` resolves a canonical
+name for RFC 2253 output. `decoderFor` returns a constructor for a supported OID, or `null`. The constructor
+is invoked inside provider dispatch, so failures allow lower-priority providers to try the same input.
+The ASN.1 text adapter uses this same service; each provider can decline an OID before its payload is read.
+
+The core provider supplies standard names, aliases, and generic text attributes. PKIX adds typed
+constructors such as `CommonName`. Neither requires a descriptor registry or initializes `Signum.Der`
+for text construction. Provider-only registration also works after earlier name lookups or DER use.
+Unknown dotted OIDs with supplied text become generic `TextAttributeTypeAndValue` values, with empty
+source storage. RFC 4514 `#` hex values remain explicitly encoded ASN.1 and go through ASN.1 decoding.
 
 Providers return `null` for unsupported inputs and throw when decoding fails. Either outcome lets the
 loader try the next provider; the first successful result completes selection. Only after all providers

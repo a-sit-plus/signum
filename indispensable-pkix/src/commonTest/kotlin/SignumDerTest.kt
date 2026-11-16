@@ -89,7 +89,7 @@ val SignumDerTest by matrixSuite {
         concrete shouldBe source
         concrete.asn1.toDer() shouldBe bytes
         requireNotNull(concrete.asn1.toRepresentation())
-        Signum.attributeOidFor("customcn") shouldBe at.asitplus.signum.indispensable.pki.attributes.CommonName.oid
+        AttributeTypeAndValue.oidForName("customcn") shouldBe at.asitplus.signum.indispensable.pki.attributes.CommonName.oid
     }
 
     "Rejected serializer registration leaves the active provider usable" {

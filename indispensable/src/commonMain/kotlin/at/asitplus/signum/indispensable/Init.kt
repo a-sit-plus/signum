@@ -19,6 +19,7 @@ private val initialize by lazy {
     ServiceLoader.register<SignatureFormatProvider>(IndispensableSignatureFormats)
     ServiceLoader.register<Asn1PublicKeyFormatProvider>(IndispensableAsn1PublicKeyFormatsProvider)
     ServiceLoader.register<Asn1PrivateKeyFormatProvider>(IndispensableAsn1PrivateKeyFormatsProvider)
+    ServiceLoader.register<AttributeTypeAndValueProvider>(IndispensableAttributeTypeAndValueProvider)
     ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(AttributeAsn1Provider)
     ServiceLoader.register<CsrAttributeAsn1Provider>(AttributeAsn1Provider)
 

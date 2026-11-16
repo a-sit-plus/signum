@@ -76,9 +76,9 @@ val EncodingRegressionTest by matrixSuite {
         val malformedString = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
         listOf(
             Case("Non-string common name", X500AttributeTypeAndValue(
-                AttributeTypeAndValue.Descriptor.OID.commonName, Asn1OctetString(byteArrayOf(1))), true),
+                AttributeTypeAndValue.OID.commonName, Asn1OctetString(byteArrayOf(1))), true),
             Case("Malformed known string", X500AttributeTypeAndValue(
-                AttributeTypeAndValue.Descriptor.OID.commonName, malformedString), true),
+                AttributeTypeAndValue.OID.commonName, malformedString), true),
             Case("Malformed string with unknown OID", X500AttributeTypeAndValue(
                 ObjectIdentifier("1.2.3.4"), malformedString), false),
         ).asData(nameFn = { it.name }) - { case ->
@@ -109,7 +109,7 @@ val EncodingRegressionTest by matrixSuite {
 
     "A later ATV provider can recover a payload rejected by the built-in decoder" {
         val source = X500AttributeTypeAndValue(
-            AttributeTypeAndValue.Descriptor.OID.commonName, Asn1OctetString("Alice".encodeToByteArray()),
+            AttributeTypeAndValue.OID.commonName, Asn1OctetString("Alice".encodeToByteArray()),
         )
         val lenient = object : AttributeTypeAndValueAsn1Provider {
             override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? =
@@ -129,7 +129,7 @@ val EncodingRegressionTest by matrixSuite {
 
     "RDN construction still rejects empty sets and duplicate OIDs" {
         shouldThrow<Asn1Exception> { RelativeDistinguishedName(emptySet()) }
-        val oid = AttributeTypeAndValue.Descriptor.OID.commonName
+        val oid = AttributeTypeAndValue.OID.commonName
         val first = TextAttributeTypeAndValue(oid, "Alice")
         val second = TextAttributeTypeAndValue(oid, "Bob")
         shouldThrow<Asn1Exception> { RelativeDistinguishedName(setOf(first, second)) }

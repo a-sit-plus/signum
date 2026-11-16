@@ -8,28 +8,11 @@ private val initializePkix by lazy {
     at.asitplus.signum.ServiceLoader.register<OtherNameAsn1Provider>(BuiltinOtherNames)
     Signum.register(PkixAsn1Provider)
 
-    Signum.register(CommonName)
-    Signum.register(Country)
-    Signum.register(Locality)
-    Signum.register(StateOrProvince)
-    Signum.register(Organization)
-    Signum.register(OrganizationalUnit)
-    Signum.register(Title)
-    Signum.register(Street)
-    Signum.register(DomainComponent)
-    Signum.register(DistinguishedNameQualifier)
-    Signum.register(Surname)
-    Signum.register(GivenName)
-    Signum.register(Initials)
-    Signum.register(Generation)
-    Signum.register(EmailAddress)
-    Signum.register(UserId)
-    Signum.register(SerialNumber)
-    Signum.register(TelephoneNumber)
+    Signum.register(PkixAttributeTypeAndValueProvider)
 }
 
 /**
- * Install the PKIX providers and attribute descriptors before the first X.500 name lookup.
+ * Install the PKIX representation and semantic attribute providers.
  * Custom providers register afterward. No contextual ASN.1 serializers are installed.
  */
 fun Signum.installPkix() { initializePkix }

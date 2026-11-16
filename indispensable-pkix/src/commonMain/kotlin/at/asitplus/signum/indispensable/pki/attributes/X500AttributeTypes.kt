@@ -1,156 +1,140 @@
 package at.asitplus.signum.indispensable.pki.attributes
 
+import at.asitplus.awesn1.Identifiable
+import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider
 import at.asitplus.signum.indispensable.pki.TextAttributeTypeAndValue
 
-/**
- * Typed X.500 [AttributeTypeAndValue]s. These live in `indispensable-pkix` (not the lean core) and
- * contribute their typed descriptors and serializers through
- * [at.asitplus.signum.indispensable.pki.installPkix].
- * Without `indispensable-pkix` on the classpath, the core RFC 4514 codec uses generic structural
- * descriptors for standard shorthands and falls back to dotted OIDs for unknown attribute types.
- */
-
+/** Typed semantic X.500 attributes installed by the PKIX text provider. */
 class CommonName(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<CommonName>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.commonName
-        override val canonicalName = "CN"
-        override fun fromString(value: String) = CommonName(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.commonName
     }
 }
 
 class Country(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Country>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.countryName
-        override val canonicalName = "C"
-        override fun fromString(value: String) = Country(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.countryName
     }
 }
 
 class Locality(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Locality>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.localityName
-        override val canonicalName = "L"
-        override fun fromString(value: String) = Locality(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.localityName
     }
 }
 
 class StateOrProvince(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<StateOrProvince>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.stateOrProvinceName
-        override val canonicalName = "ST"
-        override fun fromString(value: String) = StateOrProvince(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.stateOrProvinceName
     }
 }
 
 class Organization(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Organization>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.organizationName
-        override val canonicalName = "O"
-        override fun fromString(value: String) = Organization(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.organizationName
     }
 }
 
 class OrganizationalUnit(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<OrganizationalUnit>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.organizationalUnitName
-        override val canonicalName = "OU"
-        override fun fromString(value: String) = OrganizationalUnit(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.organizationalUnitName
     }
 }
 
 class Title(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Title>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.title
-        override val canonicalName = "T"
-        override fun fromString(value: String) = Title(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.title
     }
 }
 
 class Street(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Street>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.streetAddress
-        override val canonicalName = "STREET"
-        override fun fromString(value: String) = Street(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.streetAddress
     }
 }
 
 class DomainComponent(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<DomainComponent>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.domainComponent
-        override val canonicalName = "DC"
-        override fun fromString(value: String) = DomainComponent(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.domainComponent
     }
 }
 
 class DistinguishedNameQualifier(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<DistinguishedNameQualifier>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.dnQualifier
-        override val canonicalName = "DNQUALIFIER"
-        override fun fromString(value: String) = DistinguishedNameQualifier(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.dnQualifier
     }
 }
 
 class Surname(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Surname>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.surname
-        override val canonicalName = "SURNAME"
-        override fun fromString(value: String) = Surname(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.surname
     }
 }
 
 class GivenName(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<GivenName>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.givenName
-        override val canonicalName = "GIVENNAME"
-        override fun fromString(value: String) = GivenName(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.givenName
     }
 }
 
 class Initials(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Initials>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.initials
-        override val canonicalName = "INITIALS"
-        override fun fromString(value: String) = Initials(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.initials
     }
 }
 
 class Generation(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<Generation>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.generationQualifier
-        override val canonicalName = "GENERATION"
-        override fun fromString(value: String) = Generation(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.generationQualifier
     }
 }
 
 class EmailAddress(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<EmailAddress>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.emailAddress
-        override val canonicalName = "EMAILADDRESS"
-        override fun fromString(value: String) = EmailAddress(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.emailAddress
     }
 }
 
 class UserId(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<UserId>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.userId
-        override val canonicalName = "UID"
-        override fun fromString(value: String) = UserId(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.userId
     }
 }
 
 class SerialNumber(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<SerialNumber>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.serialNumber
-        override val canonicalName = "SERIALNUMBER"
-        override fun fromString(value: String) = SerialNumber(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.serialNumber
     }
 }
 
 class TelephoneNumber(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
-    companion object : AttributeTypeAndValue.Descriptor<TelephoneNumber>{
-        override val oid = AttributeTypeAndValue.Descriptor.OID.telephoneNumber
-        override val canonicalName = "TELEPHONENUMBER"
-        override fun fromString(value: String) = TelephoneNumber(value)
+    companion object : Identifiable{
+        override val oid = AttributeTypeAndValue.OID.telephoneNumber
+    }
+}
+
+internal object PkixAttributeTypeAndValueProvider : AttributeTypeAndValueProvider {
+    override fun decoderFor(oid: ObjectIdentifier): ((String) -> AttributeTypeAndValue)? = when (oid) {
+        CommonName.oid -> ::CommonName
+        Country.oid -> ::Country
+        Locality.oid -> ::Locality
+        StateOrProvince.oid -> ::StateOrProvince
+        Organization.oid -> ::Organization
+        OrganizationalUnit.oid -> ::OrganizationalUnit
+        Title.oid -> ::Title
+        Street.oid -> ::Street
+        DomainComponent.oid -> ::DomainComponent
+        DistinguishedNameQualifier.oid -> ::DistinguishedNameQualifier
+        Surname.oid -> ::Surname
+        GivenName.oid -> ::GivenName
+        Initials.oid -> ::Initials
+        Generation.oid -> ::Generation
+        EmailAddress.oid -> ::EmailAddress
+        UserId.oid -> ::UserId
+        SerialNumber.oid -> ::SerialNumber
+        TelephoneNumber.oid -> ::TelephoneNumber
+        else -> null
     }
 }

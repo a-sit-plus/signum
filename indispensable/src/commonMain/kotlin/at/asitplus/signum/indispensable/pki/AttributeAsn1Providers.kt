@@ -4,6 +4,8 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.Signum
+import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.asn1
 
@@ -19,21 +21,28 @@ interface CsrAttributeAsn1Provider {
 
 internal object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider, CsrAttributeAsn1Provider {
     override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {
-        val descriptor = Signum.attributeDescriptorFor(value.oid) ?: return null
-        val text = Asn1String.decodeFromTlv(value.value.asPrimitive())
-        require(text.isValid != false) { "Malformed attribute string ${value.oid}" }
-        return descriptor.fromString(text.value)
+        return try {
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(value) {
+                val construct = decoderFor(it.oid) ?: return@get null
+                val text = Asn1String.decodeFromTlv(it.value.asPrimitive())
+                require(text.isValid != false) { "Malformed attribute string ${it.oid}" }
+                construct(text.value)
+            }
+        } catch (failure: UnsupportedCryptoException) {
+            if (failure.suppressedExceptions.isNotEmpty()) throw failure
+            null
+        }
     }
 
     override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? {
         if (value !is TextAttributeTypeAndValue) return null
         val text = when (value.oid) {
-            AttributeTypeAndValue.Descriptor.OID.domainComponent,
-            AttributeTypeAndValue.Descriptor.OID.emailAddress -> Asn1String.IA5(value.text)
-            AttributeTypeAndValue.Descriptor.OID.countryName,
-            AttributeTypeAndValue.Descriptor.OID.dnQualifier,
-            AttributeTypeAndValue.Descriptor.OID.serialNumber,
-            AttributeTypeAndValue.Descriptor.OID.telephoneNumber -> Asn1String.Printable(value.text)
+            AttributeTypeAndValue.OID.domainComponent,
+            AttributeTypeAndValue.OID.emailAddress -> Asn1String.IA5(value.text)
+            AttributeTypeAndValue.OID.countryName,
+            AttributeTypeAndValue.OID.dnQualifier,
+            AttributeTypeAndValue.OID.serialNumber,
+            AttributeTypeAndValue.OID.telephoneNumber -> Asn1String.Printable(value.text)
             else -> Asn1String.UTF8(value.text)
         }
         return X500AttributeTypeAndValue(value.oid, text.encodeToTlv())
