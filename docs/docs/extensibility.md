@@ -134,9 +134,8 @@ Digest and MAC identifiers convert through their ASN.1 providers. Use `.asn1.toD
 
 ## Key Derivation Functions
 
-Implement `KDFProvider` and `KDFOperationProvider`.
+Implement `KDFOperationProvider`.
 Your KDF identifier should implement `KDF`.
-`KDFProvider` is currently unused. It may be extended at a later point to provide algorithm identifier resolution.
 `KDFOperationProvider` should implement the actual KDF operation as `deriveKey`.
 
 ## Signatures

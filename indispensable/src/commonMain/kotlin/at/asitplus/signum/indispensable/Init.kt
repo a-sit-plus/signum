@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.pki.*
 
 /** NEVER CALL THIS DIRECTLY -> use [Signum.installIndispensable] */
 internal expect fun indispensablePlatformInit()
-internal expect fun registerIndispensablePlatformProvider(provider: Any): Boolean
 private val initialize by lazy {
     ServiceLoader.register<Asn1DigestAlgorithmProvider>(IndispensableDigestsAlgorithmProviderAsn1)
     ServiceLoader.register<Asn1MACAlgorithmProvider>(IndispensableHMACProvider)
