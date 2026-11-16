@@ -217,30 +217,34 @@ recovered shouldBe payload //success!
 
 ### ASN.1 Parsing and Encoding
 
-Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
-implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
-material.
+Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` retain their decoded
+source representations. Use `fromAsn1` to decode them and `asn1.toDer()` to encode them.
+These helpers use `Signum.Der` to serialize the underlying awesn1 models; no contextual serializers
+for the Signum types need to be registered.
+By default, Signum copies awesn1's finalized `DER` configuration into its own instance, including when
+awesn1 has already used it. See [DER templates and startup order](extensibility.md#der-templates) for configuration and registration details.
+These helpers support parsing and examining certificates, creating CSRs, and transferring key material.
 Parsing and re-encoding an X.509 certificate works as follows:
 
 ```kotlin
-val cert = X509Certificate.decodeFromDer(certBytes)
+
+val cert = Certificate.fromAsn1(certBytes)
 
 when (val pk = cert.publicKey) {
-    is CryptoPublicKey.EC -> println(
+    is EcdsaPublicKey -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains an EC public key using curve ${pk.curve}"
     )
 
-    is CryptoPublicKey.RSA -> println(
+    is RsaPublicKey -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains a ${pk.bits.number} bit RSA public key"
     )
 }
 
-println("Re-encoding it produces the same bytes? ${cert.encodeToDer() contentEquals certBytes}")
+println("Re-encoding it produces the same bytes? ${cert.asn1.toDer() contentEquals certBytes}")
 ```
 
 Which produces the following output:

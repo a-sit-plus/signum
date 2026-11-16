@@ -14,8 +14,8 @@ import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.pki.Name
 import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X500Name
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -32,21 +32,25 @@ private val Byte.hasHighest get() = (this.countLeadingZeroBits() == 0)
 private val ByteArray.hasHighest get() = get(0).hasHighest
 private fun byteArrayOfHighest(bit: Boolean) = byteArrayOf(if (bit) 0x80.toByte() else 0x00)
 
-
 /**
  * We implement our own custom signature scheme! We call it the "cursory signature scheme", because it looks
  * no further than the first bit of the input, and the first bit of the private key (which is only one bit!)
  * XOR them together. Very signature, very secure! Wow!
  */
 object CursorySignatureScheme : SignatureAlgorithm {
+    // opt out of round-tripping; this is ONLY a good idea if you only accept a single specific canonical encoding!
+    override val sourceRepresentation get() = SourceRepresentationStorage()
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
-    override val asn1Representation get() = ALG
-    data class Signature(private val bit: Boolean) : CryptoSignature {
-        override val asn1Representation: X509SignatureValue
-            get() = X509SignatureValue(Asn1BitString(bit))
+    data class Signature(val bit: Boolean) : CryptoSignature {
+        override val sourceRepresentation = SourceRepresentationStorage()
+        override fun equals(other: Any?) = other is Signature && bit == other.bit
+        override fun hashCode() = bit.hashCode()
     }
-    data class Key(private val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
+    data class Key(val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
+        override val sourceRepresentation = SourceRepresentationStorage()
+        override fun equals(other: Any?) = other is Key && bit == other.bit
+        override fun hashCode() = bit.hashCode()
         companion object {
             val OID = ObjectIdentifier(Uuid.parse("01a00ed6-7067-7149-a548-40aa87ed4bbc"))
             val ALG = X509AlgorithmIdentifier(OID, null)
@@ -55,17 +59,11 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val additionalProperties = mutableMapOf<String, String>()
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
-        override val asn1Representation: SubjectPublicKeyInfo get() =
-            SubjectPublicKeyInfo(
-                ALG,
-                Asn1BitString(bit))
-
         inner class Private : CryptoPrivateKey.WithPublicKey {
+            override val sourceRepresentation = SourceRepresentationStorage()
             override val publicKey = this@Key
-            override val asn1Representation = Pkcs8PrivateKeyInfo(
-                privateKeyAlgorithm = ALG,
-                privateKey = Asn1OctetString(byteArrayOfHighest(bit))
-            )
+            override fun equals(other: Any?) = other is Private && publicKey == other.publicKey
+            override fun hashCode() = publicKey.hashCode()
         }
 
         @SecretExposure
@@ -94,10 +92,36 @@ val EphemeralSignerConfiguration.cursory get() =
     _algSpecific.option("CURSORY", CursorySignatureScheme.Key::Config)
 
 object CursorySignatureSchemeProvider :
-    SignatureAlgorithmsProvider, InMemoryKeysProvider, PublicKeyFormatProvider, PrivateKeyFormatProvider,
+    Asn1SignatureAlgorithmProvider, InMemoryKeysProvider, Asn1PublicKeyFormatProvider, Asn1PrivateKeyFormatProvider,
         SignatureVerifierProvider, SignatureFormatProvider
 {
-    override fun getAlgorithm(algorithmIdentifier: X509AlgorithmIdentifier) =
+
+    fun install() {
+        ServiceLoader.register<Asn1SignatureAlgorithmProvider>(this)
+        ServiceLoader.register<SignatureFormatProvider>(this)
+        ServiceLoader.register<Asn1PublicKeyFormatProvider>(this)
+        ServiceLoader.register<Asn1PrivateKeyFormatProvider>(this)
+        ServiceLoader.register<InMemoryKeysProvider>(this)
+        ServiceLoader.register<SignatureVerifierProvider>(this)
+    }
+
+    override fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? =
+        CursorySignatureScheme.ALG.takeIf { value == CursorySignatureScheme }
+
+    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? =
+        (value as? CursorySignatureScheme.Key)?.let {
+            SubjectPublicKeyInfo(CursorySignatureScheme.Key.ALG, Asn1BitString(it.bit))
+        }
+
+    override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? =
+        (value as? CursorySignatureScheme.Key.Private)?.let {
+            Pkcs8PrivateKeyInfo(CursorySignatureScheme.Key.ALG, Asn1OctetString(byteArrayOfHighest(it.publicKey.bit)))
+        }
+
+    override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? =
+        (value as? CursorySignatureScheme.Signature)?.let { X509SignatureValue(Asn1BitString(it.bit)) }
+
+    override fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier) =
         CursorySignatureScheme.takeIf { algorithmIdentifier == CursorySignatureScheme.ALG }
     override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): CursorySignatureScheme.Key? {
         val v = config.cursory.v ?: return null
@@ -120,7 +144,7 @@ object CursorySignatureSchemeProvider :
             publicKeyInfo.subjectPublicKey
                 .also { require(it.sizeBits == 1L) }
                 .get(0)
-                .let(CursorySignatureScheme::Key)
+                .let { CursorySignatureScheme.Key(it) }
         } else null
     }
 
@@ -156,19 +180,19 @@ object CursorySignatureSchemeProvider :
 }
 
 val ExtensibilityTest by matrixSuite {
-    ServiceLoader.register<SignatureAlgorithmsProvider>(CursorySignatureSchemeProvider)
-    ServiceLoader.register<InMemoryKeysProvider>(CursorySignatureSchemeProvider)
-    ServiceLoader.register<PublicKeyFormatProvider>(CursorySignatureSchemeProvider)
-    ServiceLoader.register<PrivateKeyFormatProvider>(CursorySignatureSchemeProvider)
-    ServiceLoader.register<SignatureVerifierProvider>(CursorySignatureSchemeProvider)
-    ServiceLoader.register<SignatureFormatProvider>(CursorySignatureSchemeProvider)
 
     "X.509 resolution" {
-        SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
-        shouldThrow<UnsupportedCryptoException> { SignatureAlgorithm.decodeFromTlv(CursorySignatureScheme.Key.ALG).preHashedSignatureFormat }
+        val algorithm: SignatureAlgorithm = CursorySignatureScheme
+        SignatureAlgorithm.fromAsn1(algorithm.asn1.toDer()) shouldBe algorithm
+        val key: CryptoPublicKey = CursorySignatureScheme.Key(true)
+        CryptoPublicKey.fromAsn1(key.asn1.toDer()) shouldBe key
+        SignatureAlgorithm.fromAsn1(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
+        val unknownAlgorithm = SignatureAlgorithm.fromAsn1(CursorySignatureScheme.Key.ALG)
+        shouldThrow<UnsupportedCryptoException> { unknownAlgorithm.preHashedSignatureFormat }
 
-        val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1Representation.copy(algorithmIdentifier = CursorySignatureScheme.ALG)
-        shouldThrow<UnsupportedCryptoException> { CryptoPublicKey.decodeFromTlv(keyWithAlgOid).additionalProperties }
+        val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1.toRepresentation().copy(algorithmIdentifier = CursorySignatureScheme.ALG)
+        val unknownKey = CryptoPublicKey.fromAsn1(keyWithAlgOid)
+        shouldThrow<UnsupportedCryptoException> { unknownKey.didEncoded }
     }
 
     "Signing" {
@@ -187,11 +211,11 @@ val ExtensibilityTest by matrixSuite {
             val useEmptySubject = it % 2 == 0
             val data = Random.nextBytes(1)
             val privateKey = Signer.Ephemeral { cursory {} }
-            val theSignature = privateKey.sign(data).signature.encodeToDer()
+            val theSignature = privateKey.sign(data).signature.asn1.toDer()
             val theCertificate = run {
                 val publicKey = privateKey.publicKey
                 val certificateName =
-                    if (useEmptySubject) X500Name.EMPTY else X500Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
+                    if (useEmptySubject) Name.EMPTY else Name.fromString("name=JohnDoe,Title=Dr,C=Austria")
                 val tbsCertificate = TbsCertificate(
                     serialNumber = BigInteger.ONE,
                     validFrom = Clock.System.now(),
@@ -201,19 +225,19 @@ val ExtensibilityTest by matrixSuite {
                     issuerName = certificateName,
                     subjectName = certificateName,
                 )
-                val signature = privateKey.sign(tbsCertificate.encodeToDer()).signature
-                Certificate(tbsCertificate, signature).encodeToDer()
+                val signature = privateKey.sign(tbsCertificate.asn1.toDer()).signature
+                Certificate(tbsCertificate, signature).asn1.toDer()
             }
 
-            val parsedCertificate = Certificate.decodeFromDer(theCertificate)
+            val parsedCertificate = Certificate.fromAsn1(theCertificate)
             parsedCertificate.publicKey shouldBe privateKey.publicKey
             if (!useEmptySubject) {
-                val nameAttributes = (parsedCertificate.tbsCertificate.subjectName as X500Name)
+                val nameAttributes = parsedCertificate.tbsCertificate.subjectName
                     .relativeDistinguishedNames
                     .flatMap { it.attrsAndValues }
                     .associateBy { it.oid }
                 fun encodedValue(oid: String) =
-                    (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue.X509Representable)
+                    (nameAttributes.getValue(ObjectIdentifier(oid)) as AttributeTypeAndValue)
                         .value.asPrimitive()
                 fun stringValue(oid: String) = Asn1String.decodeFromTlv(encodedValue(oid)).value
                 encodedValue("2.5.4.41").tag shouldBe Asn1Element.Tag.STRING_UTF8
@@ -225,7 +249,7 @@ val ExtensibilityTest by matrixSuite {
             }
             val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
             verifier.verify(parsedCertificate) shouldBe SignatureVerifier.Success
-            val parsedSignature = CryptoSignature.decodeFromDer(theSignature)
+            val parsedSignature = CryptoSignature.fromAsn1(theSignature)
             verifier.verify(data, parsedSignature) shouldBe SignatureVerifier.Success
         }
     }

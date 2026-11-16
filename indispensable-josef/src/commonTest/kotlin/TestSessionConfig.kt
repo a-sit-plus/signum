@@ -1,3 +1,4 @@
+import at.asitplus.signum.Signum
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -8,7 +9,9 @@ import kotlin.random.Random
 //Supercharge tests with concurrency!
 class ModuleTestSession : TestSession(
     testConfig = DefaultConfiguration.apply { MatrixTestDefaults { execution = ExecutionMode.Concurrent(64) } }
-)
+){
+    init { Signum.Der }
+}
 
 // CryptRand != Random, see https://github.com/KotlinCrypto/random/issues/50
 @OptIn(DelicateCryptoRandApi::class)

@@ -253,7 +253,7 @@ If not, it usually means that a non-existent alias was specified.
 Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object:
 
 ```kotlin
-CryptoPrivateKey.decodeFromPem(pkcs8)
+CryptoPrivateKey.fromAsn1(pkcs8)
 ```
 
 These keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).

@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.indispensable.sign.Signer
@@ -8,14 +10,13 @@ import at.asitplus.signum.indispensable.sign.makeVerifier
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.supreme.Supreme
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlin.time.Instant
 
 val NumericDateVerificationTest by matrixSuite {
-    Supreme.init()
+    Signum.installIndispensable()
 
     "compact JWS with non-integer NumericDates decodes, verifies and round-trips" {
         val signer = Signer.Ephemeral { ec {} }

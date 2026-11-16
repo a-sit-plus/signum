@@ -11,8 +11,11 @@ import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.digest.Digest
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -32,20 +35,20 @@ val UnknownOidTest by matrixSuite {
 
     "unknown signature, digest and MAC algorithms retain their DER until used" {
         val encoded = DER.encodeToByteArray(unknownAlgorithm)
-        val signature = SignatureAlgorithm.decodeFromDer(encoded)
-        val digest = Digest.decodeFromDer(encoded)
-        val mac = MessageAuthenticationCode.decodeFromDer(encoded)
+        val signature = SignatureAlgorithm.fromAsn1(encoded)
+        val digest = Digest.fromAsn1(encoded)
+        val mac = MessageAuthenticationCode.fromAsn1(encoded)
 
-        signature.encodeToDer() shouldBe encoded
-        digest.encodeToDer() shouldBe encoded
-        mac.encodeToDer() shouldBe encoded
-        signature shouldBe SignatureAlgorithm.decodeFromDer(encoded)
-        digest shouldBe Digest.decodeFromDer(encoded)
-        mac shouldBe MessageAuthenticationCode.decodeFromDer(encoded)
-        signature.hashCode() shouldBe SignatureAlgorithm.decodeFromDer(encoded).hashCode()
-        digest.hashCode() shouldBe Digest.decodeFromDer(encoded).hashCode()
-        mac.hashCode() shouldBe MessageAuthenticationCode.decodeFromDer(encoded).hashCode()
-        signature shouldNotBe SignatureAlgorithm.decodeFromTlv(
+        signature.asn1.toDer() shouldBe encoded
+        digest.asn1.toDer() shouldBe encoded
+        mac.asn1.toDer() shouldBe encoded
+        signature shouldBe SignatureAlgorithm.fromAsn1(encoded)
+        digest shouldBe Digest.fromAsn1(encoded)
+        mac shouldBe MessageAuthenticationCode.fromAsn1(encoded)
+        signature.hashCode() shouldBe SignatureAlgorithm.fromAsn1(encoded).hashCode()
+        digest.hashCode() shouldBe Digest.fromAsn1(encoded).hashCode()
+        mac.hashCode() shouldBe MessageAuthenticationCode.fromAsn1(encoded).hashCode()
+        signature shouldNotBe SignatureAlgorithm.fromAsn1(
             X509AlgorithmIdentifier(ObjectIdentifier(Uuid.random()), Asn1Null)
         )
         shouldThrow<UnsupportedCryptoException> { signature.preHashedSignatureFormat }
@@ -55,61 +58,61 @@ val UnknownOidTest by matrixSuite {
 
     "unknown public and private key algorithms round-trip without interpreting key bytes" {
         val publicDer = DER.encodeToByteArray(publicKeyInfo)
-        val publicKey = CryptoPublicKey.decodeFromDer(publicDer)
-        publicKey.encodeToDer() shouldBe publicDer
-        publicKey shouldBe CryptoPublicKey.decodeFromDer(publicDer)
-        publicKey.hashCode() shouldBe CryptoPublicKey.decodeFromDer(publicDer).hashCode()
+        val publicKey = CryptoPublicKey.fromAsn1(publicDer)
+        publicKey.asn1.toDer() shouldBe publicDer
+        publicKey shouldBe CryptoPublicKey.fromAsn1(publicDer)
+        publicKey.hashCode() shouldBe CryptoPublicKey.fromAsn1(publicDer).hashCode()
         shouldThrow<UnsupportedCryptoException> { publicKey.didEncoded }
 
         val privateKeyInfo = Pkcs8PrivateKeyInfo(unknownAlgorithm, Asn1OctetString(byteArrayOf(7, 8, 9)))
         val privateDer = DER.encodeToByteArray(privateKeyInfo)
-        val privateKey = CryptoPrivateKey.decodeFromDer(privateDer)
-        privateKey.encodeToDer() shouldBe privateDer
-        privateKey shouldBe CryptoPrivateKey.decodeFromDer(privateDer)
-        privateKey.hashCode() shouldBe CryptoPrivateKey.decodeFromDer(privateDer).hashCode()
+        val privateKey = CryptoPrivateKey.fromAsn1(privateDer)
+        privateKey.asn1.toDer() shouldBe privateDer
+        privateKey shouldBe CryptoPrivateKey.fromAsn1(privateDer)
+        privateKey.hashCode() shouldBe CryptoPrivateKey.fromAsn1(privateDer).hashCode()
     }
 
     "certificate with unknown signature and key OIDs can be decoded and re-encoded" {
         val tbs = X509TbsCertificate(
             serialNumber = Asn1Integer.ONE,
             signatureAlgorithm = unknownAlgorithm,
-            issuerName = X500Name.EMPTY.asn1Representation,
+            issuerName = Name.EMPTY.asn1.toRepresentation(),
             validFrom = Asn1Time.SecondsCapped(Instant.parse("2026-01-01T00:00:00Z")),
             validUntil = Asn1Time.SecondsCapped(Instant.parse("2027-01-01T00:00:00Z")),
-            subjectName = X500Name.EMPTY.asn1Representation,
+            subjectName = Name.EMPTY.asn1.toRepresentation(),
             subjectPublicKeyInfo = publicKeyInfo,
         )
         val encoded = DER.encodeToByteArray(X509Certificate(tbs, unknownAlgorithm, signatureValue))
-        val certificate = Certificate.decodeFromDer(encoded)
+        val certificate = Certificate.fromAsn1(encoded)
 
-        certificate.encodeToDer() shouldBe encoded
+        certificate.asn1.toDer() shouldBe encoded
         certificate.tbsCertificate.serialNumber shouldBe BigInteger.ONE
-        certificate.tbsCertificate.signatureAlgorithm.asn1Representation shouldBe unknownAlgorithm
-        certificate.publicKey.asn1Representation shouldBe publicKeyInfo
-        certificate.signatureValue.asn1Representation shouldBe signatureValue
-        certificate shouldBe Certificate.decodeFromDer(encoded)
-        certificate.hashCode() shouldBe Certificate.decodeFromDer(encoded).hashCode()
+        certificate.tbsCertificate.signatureAlgorithm.asn1.toRepresentation() shouldBe unknownAlgorithm
+        certificate.publicKey.asn1.toRepresentation() shouldBe publicKeyInfo
+        certificate.signatureValue.asn1.toRepresentation() shouldBe signatureValue
+        certificate shouldBe Certificate.fromAsn1(encoded)
+        certificate.hashCode() shouldBe Certificate.fromAsn1(encoded).hashCode()
         shouldThrow<UnsupportedCryptoException> { certificate.signature }
     }
 
     "CSR with an unknown public key OID retains its subject, key and signature" {
-        val subject = X500Name.fromString("CN=Unknown key")
+        val subject = Name.fromString("CN=Unknown key")
         val algorithm = RsaAlgorithm.withSHA256andPKCS1Padding
         val request = Pkcs10CertificationRequest(
-            Pkcs10CertificationRequestInfo(subjectName = subject.asn1Representation, publicKey = publicKeyInfo),
-            algorithm.asn1Representation,
+            Pkcs10CertificationRequestInfo(subjectName = subject.asn1.toRepresentation(), publicKey = publicKeyInfo),
+            algorithm.asn1.toRepresentation(),
             signatureValue,
         )
         val encoded = DER.encodeToByteArray(request)
-        val decoded = CertificationRequest.decodeFromDer(encoded)
+        val decoded = CertificationRequest.fromAsn1(encoded)
 
-        decoded.encodeToDer() shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
         decoded.tbsCsr.subjectName shouldBe subject
-        decoded.tbsCsr.publicKey.asn1Representation shouldBe publicKeyInfo
+        decoded.tbsCsr.publicKey.asn1.toRepresentation() shouldBe publicKeyInfo
         decoded.signatureAlgorithm shouldBe algorithm
-        decoded.signature.asn1Representation shouldBe signatureValue
-        decoded shouldBe CertificationRequest.decodeFromDer(encoded)
-        decoded.hashCode() shouldBe CertificationRequest.decodeFromDer(encoded).hashCode()
+        decoded.signature.asn1.toRepresentation() shouldBe signatureValue
+        decoded shouldBe CertificationRequest.fromAsn1(encoded)
+        decoded.hashCode() shouldBe CertificationRequest.fromAsn1(encoded).hashCode()
         shouldThrow<UnsupportedCryptoException> { decoded.tbsCsr.publicKey.didEncoded }
     }
 }

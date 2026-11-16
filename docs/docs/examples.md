@@ -305,7 +305,7 @@ val csr = signer.sign(tbsCSR).getOrElse { TODO("handle error") }
 ```kotlin
 X509SignatureAlgorithm.ES256.verifierFor(csr.tbsCsr.publicKey)
   .verify(
-    csr.tbsCsr.encodeToDer(),
+    csr.tbsCsr.asn1.toDer(),
     csr.decodedSignature.getOrElse { TODO("unrecognized signature format?") }
   ).getOrElse { TODO("Abort here!") }
 

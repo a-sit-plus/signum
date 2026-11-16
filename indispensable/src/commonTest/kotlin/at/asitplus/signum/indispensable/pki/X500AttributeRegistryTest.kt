@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.decodeFromDer
-import at.asitplus.signum.indispensable.encodeToDer
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 
 private enum class StringKind { UTF8, PRINTABLE, IA5 }
@@ -42,10 +42,8 @@ val X500AttributeRegistryTest by matrixSuite {
         data(standardAttributes, nameFn = { it.names.first() }) - { case ->
             data(case.names) test { name ->
                 val attribute = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
-                    as AttributeTypeAndValue.X509Representable
+                    as AttributeTypeAndValue
                 val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
-
-                attribute::class shouldBe BaseX509AttributeTypeAndValue::class
                 attribute.oid shouldBe ObjectIdentifier(case.oid)
                 value.value shouldBe "Test"
                 when (case.kind) {
@@ -65,18 +63,16 @@ val X500AttributeRegistryTest by matrixSuite {
         val original = RelativeDistinguishedName(
             AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue)
         )
-        val encoded = original.encodeToDer()
-        val decoded = RelativeDistinguishedName.decodeFromDer(encoded)
-        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue.X509Representable
-
-        attribute::class shouldBe BaseX509AttributeTypeAndValue::class
+        val encoded = original.asn1.toDer()
+        val decoded = RelativeDistinguishedName.fromAsn1(encoded)
+        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
         attribute.value shouldBe nonCanonicalValue
-        decoded.encodeToDer() shouldBe encoded
+        decoded.asn1.toDer() shouldBe encoded
     }
 
     "unknown dotted OID falls back to UTF8" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
-            as AttributeTypeAndValue.X509Representable
+            as AttributeTypeAndValue
         val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")

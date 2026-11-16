@@ -1,31 +1,16 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.*
 import at.asitplus.awesn1.*
-import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
-import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.dsl.*
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.sign.SignatureInput
-import at.asitplus.signum.supreme.InsecureRandom
-import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.dsl.SignerConfiguration
-import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.verify
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.sign.makeVerifier
-import at.asitplus.signum.indispensable.sign.sign
-import at.asitplus.signum.indispensable.sign.signature
-import at.asitplus.signum.indispensable.sign.signerFor
-import at.asitplus.testballoon.matrix.*
+import at.asitplus.signum.supreme.InsecureRandom
+import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
@@ -33,6 +18,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
 
 interface SignatureTestSuite {
     val isPreHashed: Boolean
@@ -227,7 +213,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 }
 
                 val csr = TbsCertificationRequest(
-                    subjectName = X500Name(X500AttributeTypeAndValue.CommonName("client")),
+                    subjectName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("client"))))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         CsrAttribute(
@@ -243,16 +229,16 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val verifier = signer.makeVerifier()
-                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr, signedCSR.signature) }
+                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr.asn1.toDer(), signedCSR.signature) }
 
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = InsecureRandom.nextPositiveBigInteger(10),
                     signatureAlgorithm = signer.signatureAlgorithm,
-                    issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Foo")),
+                    issuerName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("Foo"))))),
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 356.days,
-                    subjectName = X500Name(X500AttributeTypeAndValue.CommonName("client")),
+                    subjectName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("client"))))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         CertificateExtension(
@@ -264,7 +250,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 )
                 val cert = signer.sign(tbsCrt)
 
-                shouldNotThrowAny { verifier.verify(cert.tbsCertificate, cert.signature) }
+                shouldNotThrowAny { verifier.verify(cert.tbsCertificate.asn1.toDer(), cert.signature) }
 
             }
         }
@@ -278,7 +264,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
                 val csr = TbsCertificationRequest(
-                    subjectName = X500Name(X500AttributeTypeAndValue.CommonName("client")),
+                    subjectName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("client"))))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         CsrAttribute(
@@ -293,16 +279,16 @@ val EphemeralSignerCommonTests by matrixSuite {
 
 
                 val verifier = signer.makeVerifier()
-                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr, signedCSR.signature) }
+                shouldNotThrowAny { verifier.verify(signedCSR.tbsCsr.asn1.toDer(), signedCSR.signature) }
 
 
                 val tbsCrt = TbsCertificate(
                     serialNumber = InsecureRandom.nextPositiveBigInteger(10),
                     signatureAlgorithm = signer.signatureAlgorithm,
-                    issuerName = X500Name(X500AttributeTypeAndValue.CommonName("Foo")),
+                    issuerName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("Foo"))))),
                     validFrom = Clock.System.now(),
                     validUntil = Clock.System.now() + 356.days,
-                    subjectName = X500Name(X500AttributeTypeAndValue.CommonName("client")),
+                    subjectName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("client"))))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         CertificateExtension(
@@ -314,7 +300,7 @@ val EphemeralSignerCommonTests by matrixSuite {
                 )
                 val cert = signer.sign(tbsCrt)
 
-                shouldNotThrowAny { verifier.verify(cert.tbsCertificate, cert.signature) }
+                shouldNotThrowAny { verifier.verify(cert.tbsCertificate.asn1.toDer(), cert.signature) }
             }
         }
     }

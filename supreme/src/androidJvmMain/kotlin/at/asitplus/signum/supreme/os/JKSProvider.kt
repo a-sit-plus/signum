@@ -2,47 +2,14 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveBigInteger
-import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.dsl.JCAProviderRef
-import at.asitplus.signum.dsl.JCAProviderRefO
-import at.asitplus.signum.dsl.Of
-import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
-import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
-import at.asitplus.signum.dsl.SigningKeyConfiguration
-import at.asitplus.signum.dsl.ec
-import at.asitplus.signum.dsl.hardware
-import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.dsl.signer
-import at.asitplus.signum.indispensable.decodeFromDer
+import at.asitplus.signum.dsl.*
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.encodeToDer
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X500Name
-import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.toCryptoPublicKey
-import at.asitplus.signum.indispensable.toJcaCertificate
+import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
-import at.asitplus.signum.dsl.DSL
-import at.asitplus.signum.dsl.DSLConfigureFn
-import at.asitplus.signum.dsl.REQUIRED
-import at.asitplus.signum.indispensable.SelfAttestation
-import at.asitplus.signum.indispensable.parseJCASignature
-import at.asitplus.signum.indispensable.sign.Signer
-import at.asitplus.signum.indispensable.sign.sign
-import at.asitplus.signum.indispensable.sign.signerFor
-import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -241,7 +208,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val (certAlg, keyPair) =
                 ServiceLoader.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
-            val cn = X500Name(X500AttributeTypeAndValue.CommonName(alias))
+            val cn = Name(listOf(RelativeDistinguishedName(X500AttributeTypeAndValue.CommonName(alias))))
             val publicKey = keyPair.public.toCryptoPublicKey()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextPositiveBigInteger(20),
@@ -258,7 +225,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)
-                    update(tbsCert.encodeToDer())
+                    update(tbsCert.asn1.toDer())
                     sign()
                 }.let { Certificate(tbsCert, certAlg.parseJCASignature(it)) }
             }
@@ -282,7 +249,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val config = DSL.resolve(::JKSSignerConfiguration, configure)
             if (!ctx.ks.containsAlias(alias)) throw NoSuchElementException("No key with alias $alias in keystore")
             val privateKey = ctx.ks.getKey(alias, config.privateKeyPassword) as PrivateKey
-            val certificateChain = ctx.ks.getCertificateChain(alias).map { Certificate.decodeFromDer(it.encoded) }
+            val certificateChain = ctx.ks.getCertificateChain(alias).map { it.toKmpCertificate() }
             return getSigner(alias, config, privateKey, certificateChain.leaf)
         }
     }

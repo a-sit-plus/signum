@@ -4,33 +4,30 @@ import at.asitplus.signum.dsl.JCAProviderRef
 import at.asitplus.signum.dsl.JCAProviderRefO
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
-import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
-import java.security.PrivateKey
-import java.security.PublicKey
+import java.security.*
 
 /** This is not semantics-aware, but allows fallback for public key/private key parsing based on DER formats */
 object FallbackToDERFormat : JcaMappingProvider {
     override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
         if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
-            CryptoPublicKey.decodeFromDer(publicKey.encoded)
+            CryptoPublicKey.fromAsn1(publicKey.encoded)
         else null
 
     override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            CryptoPrivateKey.decodeFromDer(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+            CryptoPrivateKey.fromAsn1(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
         else null
 }
+
+private fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
+    when (provider) {
+        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> Signature.getInstance(alg)
+        else -> throw ImplementationError("invalid JCAProvider ref")
+    }
 
 /** This provides semantics-aware operations for types supported by Indispensable */
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
@@ -84,7 +81,7 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.asn1.toRepresentation().rawBytes
         else -> null
     }
 
@@ -114,4 +111,3 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
             else -> null
         }
 }
-

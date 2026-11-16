@@ -4,15 +4,8 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.digest.Digest
-import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
-import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaAlgorithm
-import at.asitplus.signum.indispensable.sign.RsaPrivateKey
-import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import at.asitplus.signum.indispensable.sign.RsaSignature
+import at.asitplus.signum.indispensable.sign.*
+import at.asitplus.signum.indispensable.sign.asn1
 import at.asitplus.signum.internals.*
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
@@ -114,7 +107,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
     }
 
     override fun getSignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
-        is EcdsaSignature, is RsaSignature -> signature.asn1Representation.rawBytes
+        is EcdsaSignature, is RsaSignature -> signature.asn1.toRepresentation().rawBytes
         else -> null
     }
 
@@ -140,7 +133,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 SecKeyCopyAttributes(key).also { defer { CFRelease(it) } }
             }.getAndTake<String>(kSecAttrKeyType)
             val ctor = when (keyType) {
-                kSecAttrKeyTypeRSA.toKotlinString() -> RsaPublicKey::fromPKCS1encoded
+                kSecAttrKeyTypeRSA.toKotlinString() -> { bytes: ByteArray -> RsaPublicKey.fromAsn1.PKCS1(bytes) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() -> { bytes ->
                     EcdsaPublicKey.fromAnsiX963Bytes(
                         src = bytes,
@@ -161,7 +154,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                 is EcdsaPrivateKey.WithPublicKey ->
                     Triple(kSecAttrKeyTypeECSECPrimeRandom, key.curve.coordinateLength.bits.toInt(), key.publicKey.iosEncoded+key.privateKeyBytes)
                 is RsaPrivateKey ->
-                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), key.asPKCS1.encodeToDer())
+                    Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), key.asn1.pkcs1.toDer())
                 else -> return null
             }
             val attr = createCFDictionary {
@@ -183,7 +176,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
             }.getAndTake<String>(kSecAttrKeyType)
             val ctor: ((ByteArray)-> CryptoPrivateKey.WithPublicKey) = when (keyType) {
                 kSecAttrKeyTypeRSA.toKotlinString() ->
-                    RsaPrivateKey.FromPKCS1::decodeFromDer
+                    { bytes: ByteArray -> RsaPrivateKey.fromAsn1.PKCS1(bytes) }
                 kSecAttrKeyTypeECSECPrimeRandom.toKotlinString() ->
                     EcdsaPrivateKey::iosDecodeInternal
                 else -> return null
