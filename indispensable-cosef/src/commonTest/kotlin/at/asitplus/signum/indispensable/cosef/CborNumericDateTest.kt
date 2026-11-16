@@ -68,4 +68,14 @@ val CborNumericDateTest by matrixSuite {
         coseCompliantSerializer.encodeToByteArray(cwt) shouldBe
                 bytes(0xA3, 0x04) + uint1700000000 + bytes(0x05) + uint1700000000 + bytes(0x06) + uint1700000000
     }
+
+    "NumericDate alternatives retain following fields and reject truncation" {
+        for (value in listOf(bytes(0x01), bytes(0x20), bytes(0xF9, 0x3C, 0x00), float32(1.5f), float64(1.5))) {
+            val decoded = coseCompliantSerializer.decodeFromByteArray<CborWebToken>(bytes(0xA2, 0x04) + value + bytes(0x01, 0x61, 0x78))
+            decoded.issuer shouldBe "x"
+        }
+        for (value in listOf(bytes(0x1A, 0x01), bytes(0xF9, 0x3C), bytes(0xFA, 0x00), bytes(0xFB, 0x00))) {
+            shouldThrow<SerializationException> { decodeExp(value) }
+        }
+    }
 }

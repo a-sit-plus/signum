@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.indispensable.cosef.legacy.CoseHeader
+
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.assertions.throwables.shouldThrow

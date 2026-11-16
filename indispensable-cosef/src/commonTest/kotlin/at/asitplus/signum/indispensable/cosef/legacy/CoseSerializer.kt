@@ -1,4 +1,6 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -54,7 +56,11 @@ class CoseSignedSerializer<P : Any?>(
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
         val protectedHeader = wire.protectedHeader
-        val signature = COSE.getSignature(wire.rawAuthBytes, protectedHeader, wire.unprotectedHeader)
+        // Preserve the old heuristic only in the compatibility fixture; production APIs require an algorithm.
+        val signature = if (protectedHeader.algorithm == null && wire.unprotectedHeader?.algorithm == null) {
+            if (wire.rawAuthBytes.size < 2048) at.asitplus.signum.indispensable.sign.EcdsaSignature.fromP1363Bytes(wire.rawAuthBytes)
+            else at.asitplus.signum.indispensable.sign.RsaSignature(wire.rawAuthBytes)
+        } else COSE.getSignature(wire.rawAuthBytes, protectedHeader, wire.unprotectedHeader)
         CoseSigned(
             payload = wire.payload.toNullablePayload(parameterSerializer),
             signature = signature,

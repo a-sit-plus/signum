@@ -79,7 +79,7 @@ jwsObject.header.expiration
 //TODO check any other constraints
 ```
 
-## Creating a `CoseSigned` Object
+## Creating a `CoseSign1` Object
 
 !!! info  inline end
     This example requires the _Supreme_ KMP crypto provider and _Indispensable Cosef_.
@@ -89,44 +89,41 @@ In this example, we'll again start with an ephemeral P-256 signer:
 ```kotlin
 val signer = Signer.Ephemeral {
     ec { curve = ECCurve.SECP_256_R_1 }
-}.getOrThrow() //TODO handle error properly
+}
 ```
 
 Next up, we'll create a header and payload:
 
 ```kotlin
-//set KID + algorithm
-val protectedHeader = CoseHeader(
-    algorithm = signer.signatureAlgorithm.toCoseAlgorithm().getOrElse { TODO() },
-    kid = signer.publicKey.didEncoded.encodeToByteArray()
-)
+@Serializable
+data class SigningHeader(
+    @CborLabel(1) override val algorithm: CoseAlgorithm,
+) : CoseHeader
+
+val protectedHeader = SigningHeader(signer.signatureAlgorithm.toCoseAlgorithm().getOrThrow())
 
 val payload = byteArrayOf(0xC, 0xA, 0xF, 0xE)
 ```
 
-Both of these are signature inputs, so we can construct the signature input:
+Sign with an empty unprotected bucket:
 
 ```kotlin
-val signatureInput = CoseSigned.prepareCoseSignatureInput(
+val cose = CoseSigner(signer).sign1(
     protectedHeader = protectedHeader,
     payload = payload,
     externalAad = byteArrayOf()
 )
+val encoded = coseCompliantSerializer.encodeToByteArray(cose)
 ```
 
-Now, everything is ready to be signed:
+Decode and verify with the trusted signer's public key:
 
 ```kotlin
-val signature = signer.sign(signatureInput).signature //TODO handle error
-
-CoseSigned(
-    protectedHeader = ByteStringWrapper(protectedHeader),
-    unprotectedHeader = unprotectedHeader,
-    payload = payload,
-    signature = signature
-)
-// sadly, there's no cwt.io, but you can use cbor.me to explore the signed data
+val decoded = CoseSign1<SigningHeader, EmptyCoseHeader, ByteArray>(encoded)
+signer.makeVerifier().verify(decoded.signatureInput(), decoded.signature)
 ```
+
+See [COSEF migration](cosef-migration.md) for custom buckets, MACs, detached payloads, and multiple signatures.
 
 ## Create and Parse a Custom-Tagged ASN.1 Structure
 

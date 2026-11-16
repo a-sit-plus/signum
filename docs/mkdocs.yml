@@ -82,6 +82,7 @@ nav:
       - CHANGELOG.md
       - Examples: examples.md
       - Extensibility: extensibility.md
+      - COSEF Migration: cosef-migration.md
       - Modules:
           - Indispensable ASN.1: indispensable-asn1.md
           - Indispensable: indispensable.md

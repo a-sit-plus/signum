@@ -1,198 +1,82 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaSignature
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.cbor.CborMap
-import kotlinx.serialization.cbor.CborObjectAsArray
+import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.serializer
 
-/**
- * Common base for the COSE message structures of
- * [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
- */
-@OptIn(ExperimentalSerializationApi::class)
-sealed class COSE {
+/** Authentication structures use received protected and payload bytes, never re-encoded typed views. */
+object COSE {
+    fun sign1StructureInput(plainProtectedHeader: ByteArray, externalAad: ByteArray = byteArrayOf(), payload: ByteArray) =
+        coseCompliantSerializer.encodeToByteArray(CoseStructure("Signature1", plainProtectedHeader, externalAad, payload))
 
-    abstract val plainProtectedHeader: ByteArray
+    fun mac0StructureInput(plainProtectedHeader: ByteArray, externalAad: ByteArray = byteArrayOf(), payload: ByteArray) =
+        coseCompliantSerializer.encodeToByteArray(CoseStructure("MAC0", plainProtectedHeader, externalAad, payload))
 
-    /** The protected bucket decoded from [plainProtectedHeader], not interpreted. */
-    abstract val protectedHeader: CborMap
+    fun signStructureInput(bodyProtected: ByteArray, signerProtected: ByteArray, externalAad: ByteArray = byteArrayOf(), payload: ByteArray) =
+        coseCompliantSerializer.encodeToByteArray(CoseSignStructure("Signature", bodyProtected, signerProtected, externalAad, payload))
 
-    /** The unprotected bucket, not interpreted. Unknown labels are kept. */
-    abstract val unprotectedHeader: CborMap
-
-    /**
-     * The content of the message the plaintext or the ciphertext as transmitted, or `null` when it is
-     * detached.
-     */
-    abstract val plainContent: ByteArray?
-
-    /**
-     * Combines and decodes both buckets with [serializer]. Unlike `typed()`, this does not touch the payload, so it
-     * also works for detached messages.
-     */
-    fun <H : CoseHeaderBase> wrappedHeader(
-        serializer: KSerializer<H>,
-        serialFormat: Cbor = coseCompliantSerializer,
-    ): CoseHeaderWrapped<H> = CoseHeaderWrapped.fromBuckets(serializer, protectedHeader, unprotectedHeader, serialFormat)
-
-    /** Combines and decodes both buckets into [H]. */
-    inline fun <reified H : CoseHeaderBase> wrappedHeader(
-        serialFormat: Cbor = coseCompliantSerializer,
-    ): CoseHeaderWrapped<H> = wrappedHeader(serialFormat.serializersModule.serializer(), serialFormat)
-
-
-    companion object {
-
-        /**
-         * Builds the `Sig_structure` of a `COSE_Sign1` (RFC 9052 4.4):
-         * `["Signature1", body_protected, external_aad, payload]`.
-         */
-        fun sign1StructureInput(
-            plainProtectedHeader: ByteArray,
-            externalAad: ByteArray = byteArrayOf(),
-            payload: ByteArray,
-        ): ByteArray = encodeStructure("Signature1", plainProtectedHeader, externalAad, payload)
-
-        /**
-         * Builds the `MAC_structure` of a `COSE_Mac0` (RFC 9052 §6.3):
-         * `["MAC0", protected, external_aad, payload]`.
-         */
-        fun mac0StructureInput(
-            plainProtectedHeader: ByteArray,
-            externalAad: ByteArray = byteArrayOf(),
-            payload: ByteArray,
-        ): ByteArray = encodeStructure("MAC0", plainProtectedHeader, externalAad, payload)
-
-        private fun encodeStructure(
-            context: String,
-            plainProtectedHeader: ByteArray,
-            externalAad: ByteArray,
-            payload: ByteArray,
-        ): ByteArray = coseCompliantSerializer.encodeToByteArray(
-            CoseStructure(context, plainProtectedHeader, externalAad, payload)
-        )
-
-        /**
-         * Reconstructs a [CryptoSignature] from the raw `bstr`, using `alg` (or the `x5chain` leaf) of [header].
-         */
-        fun getSignature(plainSignature: ByteArray, header: CoseHeaderBase): CryptoSignature =
-            getSignature(plainSignature, header, null)
-
-        /** Also consults [fallbackHeader], for the deprecated `CoseSigned`, which keeps both buckets separate. */
-        internal fun getSignature(
-            plainSignature: ByteArray,
-            header: CoseHeaderBase,
-            fallbackHeader: CoseHeaderBase?,
-        ): CryptoSignature =
-            if (header.usesEC() ?: fallbackHeader?.usesEC() ?: (plainSignature.size < 2048))
-                EcdsaSignature.fromP1363Bytes(plainSignature)
-            else
-                RsaSignature(plainSignature)
-
-        private fun CoseHeaderBase.usesEC(): Boolean? = when (val alg = algorithm) {
-            null -> certificateChain?.firstOrNull()
-                ?.let { Certificate.decodeFromByteArray(it) }
-                ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
-
-            is CoseAlgorithm.Signature -> (alg.algorithm is EcdsaAlgorithm)
-            else -> false
+    fun getSignature(plainSignature: ByteArray, header: CoseHeader, fallbackHeader: CoseHeader? = null): CryptoSignature {
+        val algorithm = (header.algorithm ?: fallbackHeader?.algorithm) as? CoseAlgorithm.Signature
+            ?: throw IllegalArgumentException("An explicit signature algorithm is required")
+        return when (algorithm.algorithm) {
+            is EcdsaAlgorithm -> EcdsaSignature.fromP1363Bytes(plainSignature)
+            is RsaAlgorithm -> RsaSignature(plainSignature)
+            else -> throw IllegalArgumentException("Unsupported COSE signature algorithm")
         }
     }
 }
 
-/**
- * A COSE message whose content is the plaintext payload: signed and MACed messages.
- */
-sealed class CosePlaintextMessage : COSE() {
-
-    /** The payload as transmitted, or `null` when it is detached. */
-    abstract val plainPayload: ByteArray?
-
-    final override val plainContent: ByteArray? get() = plainPayload
-
-    /**
-     * Decodes [plainPayload] with [serializer]
-     * Accepts both a directly encoded payload and one wrapped in CBOR tag 24
-     */
-    fun <P> getPayload(serializer: KSerializer<P>, serialFormat: Cbor = coseCompliantSerializer): KmmResult<P> =
-        catching {
-            val bytes = plainPayload ?: throw IllegalStateException("Payload is detached; supply it externally")
-            bytes.toTypedPayload(serializer, serialFormat)
-        }
-
-    /** Find the correct serializer at compile time. */
-    inline fun <reified P> getPayload(serialFormat: Cbor = coseCompliantSerializer): KmmResult<P> =
-        getPayload(serialFormat.serializersModule.serializer(), serialFormat)
-}
-
-/**
- * A COSE message whose content is ciphertext: COSE_Encrypt0 and COSE_Encrypt
- * Not implemented by any message type yet
- */
-sealed class CoseCiphertextMessage : COSE() {
-
-    /** The ciphertext as transmitted, or `null` when it is detached. */
-    abstract val ciphertext: ByteArray?
-
-    final override val plainContent: ByteArray? get() = ciphertext
-}
-
-/** The four-element `Sig_structure` / `MAC_structure` */
 @Serializable
-@CborObjectAsArray
+@CborArray
 internal data class CoseStructure(
     val context: String,
     @ByteString val plainProtectedHeader: ByteArray,
     @ByteString val externalAad: ByteArray,
     @ByteString val payload: ByteArray,
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
+)
 
-        other as CoseStructure
+@Serializable
+@CborArray
+private data class CoseSignStructure(
+    val context: String,
+    @ByteString val bodyProtected: ByteArray,
+    @ByteString val signerProtected: ByteArray,
+    @ByteString val externalAad: ByteArray,
+    @ByteString val payload: ByteArray,
+)
 
-        if (context != other.context) return false
-        if (!plainProtectedHeader.contentEquals(other.plainProtectedHeader)) return false
-        if (!externalAad.contentEquals(other.externalAad)) return false
-        if (!payload.contentEquals(other.payload)) return false
+internal fun authenticationPayload(attached: ByteArray?, detached: ByteArray?): ByteArray =
+    if (attached != null) {
+        require(detached == null) { "Payload is attached; detachedPayload must not be set" }
+        attached
+    } else requireNotNull(detached) { "Payload is detached; supply detachedPayload" }
 
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = context.hashCode()
-        result = 31 * result + plainProtectedHeader.contentHashCode()
-        result = 31 * result + externalAad.contentHashCode()
-        result = 31 * result + payload.contentHashCode()
-        return result
-    }
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-internal fun <P> ByteArray.toTypedPayload(
-    serializer: KSerializer<P>,
-    serialFormat: Cbor = coseCompliantSerializer,
-): P =
+internal fun <Payload> ByteArray.toTypedPayload(serializer: KSerializer<Payload>, serialFormat: Cbor = coseCompliantSerializer): Payload =
     if (serializer == ByteArraySerializer()) {
         @Suppress("UNCHECKED_CAST")
-        (this as P)
+        (this as Payload)
     } else {
         runCatching { serialFormat.decodeFromByteArray(serializer, this) }
             .getOrElse { serialFormat.decodeFromByteArray(ByteStringWrapperSerializer(serializer), this).value }
     }
+
+/** Legacy encoding policy: byte arrays are opaque; other payloads are tag 24 wrapping an encoded CBOR byte string. */
+internal fun <Payload> encodePayload(payload: Payload, serializer: KSerializer<Payload>): ByteArray = when (payload) {
+    is ByteArray -> payload.copyOf()
+    is ByteStringWrapper<*> -> throw IllegalArgumentException("Payload must not be a ByteStringWrapper")
+    else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapperSerializer(serializer), ByteStringWrapper(payload)).wrapInCborTag(24)
+}
