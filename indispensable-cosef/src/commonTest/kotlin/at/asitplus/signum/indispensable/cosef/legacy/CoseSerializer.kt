@@ -93,4 +93,3 @@ private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>):
     this == null || this.isEmpty() -> null
     else -> toTypedPayload(serializer)
 }
-

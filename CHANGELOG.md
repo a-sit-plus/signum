@@ -41,7 +41,7 @@ This is a major refactor!
     * Reject duplicate modeled labels, bucket conflicts, invalid critical references, algorithm/curve/key-ID mismatches, and unprocessed critical parameters before signing.
     * Add `CwtClaims` for application-owned CWT implementations; `CborWebToken` implements it.
     * Remove the legacy signed/MAC factories and combined-header APIs. Compatibility implementations live only in test fixtures. Raw unprotected headers are model-dependent and do not preserve ignored fields. See the [migration guide](https://a-sit-plus.github.io/signum/cosef-migration/).
-   
+
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support
 * Defence-in-depth
