@@ -5,32 +5,25 @@ This document describes the process for library developers.
 
 ## Registration and DER configuration
 
-Register core and platform providers through `Signum`. If a provider needs additional wire serializers,
-it can contribute them during registration:
-
-```kotlin
-Signum.register(FoobarProvider, serializers = asn1Serializers)
-```
-
-This registers every Indispensable provider interface implemented by the object, including the current
-platform's JCA or iOS mapping interface. Core defaults are installed before the provider, and later
-providers are tried first. Install Supreme before registering overrides for its operation providers.
-For module-specific service interfaces, use explicit typed registration:
-
-```kotlin
-ServiceLoader.register<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
-```
-
-An extension should expose one `install()` function that registers its providers, any optional wire
+Extensions should expose one `install()` function that registers providers, any optional wire
 serializers, and semantic attribute providers. Applications call it during startup before using those types.
+
+Register core and platform providers through `ServiceLoader.register`.
+If a provider needs additional wire serializers on `Signum.Der`, it can also contribute them during registration:
+
+```kotlin
+ServiceLoader.register<Asn1PublicKeyFormatProvider>(FoobarKeyFormatProvider)
+ServiceLoader.register<JavaKeyStoreOperationsProvider>(FoobarKeystoreProvider)
+Signum.registerAsn1Serializers(asn1Serializers)
+```
+
+Providers registered later are tried first. Install Supreme before registering overrides for its operation providers.
 
 Signum uses one application-wide `Signum.Der` instance. Public signing, verification, platform conversion,
 and ASN.1 representation helpers use it automatically. Nested ASN.1 codecs use the same instance.
 The selected awesn1 template supplies its wire serializers; `Signum.installPkix()` registers PKIX
 representation and semantic attribute providers, without contextual semantic serializers.
-Module installers are extension functions on `Signum`, defined in their respective modules; core
-Indispensable does not depend on Supreme or PKIX. Core provider installation remains lazy and idempotent;
-it is also available explicitly as `Signum.installIndispensable()`.
+Core provider installation is lazy and idempotent; it is also available explicitly as `Signum.installIndispensable()`.
 
 ### DER templates
 
@@ -171,7 +164,10 @@ Register the provider; semantic Signum classes need no contextual ASN.1 serializ
 
 ```kotlin
 fun install() {
-    Signum.register(FoobarProvider)
+    ServiceLoader.register<Asn1SignatureAlgorithmProvider>(FoobarProvider)
+    ServiceLoader.register<SignatureFormatProvider>(FoobarProvider)
+    ServiceLoader.register<Asn1PublicKeyFormatProvider>(FoobarProvider)
+    ServiceLoader.register<Asn1PrivateKeyFormatProvider>(FoobarProvider)
 }
 
 val der = publicKey.asn1.toDer()
@@ -236,7 +232,7 @@ For actual operations, implement the following:
 
 A custom extension implements `CertificateExtension`, including its OID, critical flag, and source storage.
 A `CertificateExtensionProvider` converts between that semantic type and `X509CertificateExtension`.
-Register it with `Signum.register(MyExtensionProvider)`; return `null` for unsupported types or OIDs.
+Register it with `ServiceLoader.register<CertificateExtensionProvider>(MyExtensionProvider)`; return `null` for unsupported types or OIDs.
 No separate extension registry or contextual semantic serializer is required.
 
 `GeneralNameFormatProvider` follows the same pattern for `GeneralName` and `X509GeneralName`.
@@ -261,7 +257,7 @@ object MyAttributeProvider : AttributeTypeAndValueProvider {
         "MYATTR".takeIf { oid == MyAttribute.oid }
 }
 
-Signum.register(MyAttributeProvider)
+ServiceLoader.register<AttributeTypeAndValueProvider>(MyAttributeProvider)
 ```
 
 `AttributeTypeAndValue.oidForName` normalizes input names to uppercase; `nameForOid` resolves a canonical

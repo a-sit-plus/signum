@@ -2,14 +2,17 @@
 
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.asn1
-
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.*
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.extn.*
+import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.pki.extn.AuthorityKeyIdentifier
+import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
+import at.asitplus.signum.indispensable.pki.extn.GeneralSubtrees
+import at.asitplus.signum.indispensable.pki.extn.NameConstraints
 import at.asitplus.signum.indispensable.pki.x500.DNSName
 import at.asitplus.signum.indispensable.pki.x500.OtherName
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -17,13 +20,16 @@ import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import kotlinx.serialization.*
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.*
+import kotlinx.serialization.modules.SerializersModule
 
 @Serializable
 internal data class RegisteredOtherName(
@@ -93,7 +99,10 @@ val SignumDerTest by matrixSuite {
     }
 
     "Rejected serializer registration leaves the active provider usable" {
-        shouldThrowAny { Signum.register(RegisteredExtensionProvider, SerializersModule {}) }
+        shouldThrowAny {
+            ServiceLoader.register<CertificateExtensionProvider>(RegisteredExtensionProvider)
+            Signum.registerAsn1Serializers(SerializersModule {})
+        }
         val source = RegisteredCertificateExtension("still registered")
         CertificateExtension.fromAsn1(source.asn1.toRepresentation()) shouldBe source
     }

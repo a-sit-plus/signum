@@ -1,3 +1,4 @@
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.LenientNicknameProvider
@@ -18,7 +19,7 @@ class ModuleTestSession : TestSession(
         Signum.Der
         // Text lookup does not seal provider registration or couple it to the DER lifecycle.
         check(AttributeTypeAndValue.oidForName("CN") == AttributeTypeAndValue.OID.commonName)
-        Signum.register(LenientNicknameProvider)
-        Signum.register(NicknameProvider)
+        ServiceLoader.register<at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider>(LenientNicknameProvider)
+        ServiceLoader.register<at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider>(NicknameProvider)
     }
 }
