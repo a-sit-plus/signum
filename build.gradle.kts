@@ -17,6 +17,14 @@ group = "at.asitplus.signum"
 subprojects {
     repositories {
         mavenLocal()
+        maven("https://maven.pkg.github.com/a-sit-plus/awesn1") {
+            credentials {
+                username = findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+            content { includeGroup("at.asitplus.awesn1") }
+            mavenContent { snapshotsOnly() }
+        }
     }
 }
 //work around nexus publish bug
