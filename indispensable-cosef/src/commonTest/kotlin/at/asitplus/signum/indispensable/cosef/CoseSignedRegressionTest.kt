@@ -18,12 +18,17 @@ val CoseSignedRegressionTest by matrixSuite {
             val protectedBytes = header.toProtectedHeaderBytes()
             val legacy = CoseSigned.create(header, FixtureHeader(kid = byteArrayOf(1)), CONTENT, RsaSignature(FAKE_SIGNATURE), ByteArraySerializer())
             val bytes = legacy.serialize(ByteArraySerializer())
-            val sign = CoseSign1.Raw<FixtureHeader>(bytes).typed<FixtureHeader, ByteArray>()
+            val sign = CoseSign1.Raw<FixtureHeader>(bytes)
             val mac = CoseMac0.Raw<FixtureHeader>(bytes).typed<FixtureHeader, ByteArray>()
             sign.signatureInput(aad) shouldBe legacy.prepareCoseSignatureInput(aad)
             mac.macInput(aad) shouldBe COSE.mac0StructureInput(protectedBytes, aad, CONTENT)
             coseCompliantSerializer.encodeToByteArray(sign) shouldBe bytes
             coseCompliantSerializer.encodeToByteArray(mac) shouldBe bytes
+            if (header.algorithm is CoseAlgorithm.Signature) {
+                val typed = sign.typed<FixtureHeader, ByteArray>()
+                typed.signatureInput(aad) shouldBe legacy.prepareCoseSignatureInput(aad)
+                coseCompliantSerializer.encodeToByteArray(typed) shouldBe bytes
+            }
         }
     }
 

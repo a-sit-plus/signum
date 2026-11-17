@@ -75,6 +75,7 @@ interface PublicKey : WithSourceRepresentation {
 }
 
 interface SpecializedPublicKey {
+    /** Returns the public key, throwing when parameters are missing, invalid, or unsupported. */
     @Throws(Throwable::class)
     fun toPublicKey(): PublicKey
 

@@ -2,7 +2,7 @@
 
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -29,11 +29,13 @@ object COSE {
     fun signStructureInput(bodyProtected: ByteArray, signerProtected: ByteArray, externalAad: ByteArray = byteArrayOf(), payload: ByteArray) =
         coseCompliantSerializer.encodeToByteArray(CoseSignStructure("Signature", bodyProtected, signerProtected, externalAad, payload))
 
-    fun getSignature(plainSignature: ByteArray, header: CoseHeader, fallbackHeader: CoseHeader? = null): CryptoSignature {
+    fun getSignature(plainSignature: ByteArray, header: CoseHeader, fallbackHeader: CoseHeader? = null): Signature {
         val algorithm = (header.algorithm ?: fallbackHeader?.algorithm) as? CoseAlgorithm.Signature
             ?: throw IllegalArgumentException("An explicit signature algorithm is required")
         return when (algorithm.algorithm) {
-            is EcdsaAlgorithm -> EcdsaSignature.fromP1363Bytes(plainSignature)
+            is EcdsaAlgorithm -> (algorithm.algorithm as EcdsaAlgorithm).requiredCurve?.let {
+                EcdsaSignature.fromP1363Bytes(it, plainSignature)
+            } ?: EcdsaSignature.fromP1363Bytes(plainSignature)
             is RsaAlgorithm -> RsaSignature(plainSignature)
             else -> throw IllegalArgumentException("Unsupported COSE signature algorithm")
         }

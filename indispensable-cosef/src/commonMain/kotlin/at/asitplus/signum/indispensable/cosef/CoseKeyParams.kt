@@ -116,9 +116,9 @@ sealed class CoseKeyParams : SpecializedPublicKey {
         override fun yHashCode(): Int = y?.hashCode() ?: 0
 
         override fun toPublicKey(): PublicKey {
-            val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
-            val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
-            val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
+            val curve = curve ?: throw IllegalArgumentException("Cannot determine Curve - Missing Curve")
+            val x = x ?: throw IllegalArgumentException("Cannot determine key - Missing x coordinate")
+            val yFlag = y ?: throw IllegalArgumentException("Cannot determine key - Missing Indicator y")
             return EcdsaPublicKey.fromCompressed(curve.toEcCurve(), x, yFlag)
         }
     }

@@ -195,6 +195,7 @@ fun <A: AuthCapability<*>> SymmetricKey<SymmetricEncryptionAlgorithm<A, *>>.requ
 }
 
 interface SpecializedSymmetricKey {
+    /** Returns the symmetric key, throwing when parameters are missing, invalid, or unsupported. */
     @Throws(Throwable::class)
     fun toSymmetricKey(): SymmetricKey<*>
 }

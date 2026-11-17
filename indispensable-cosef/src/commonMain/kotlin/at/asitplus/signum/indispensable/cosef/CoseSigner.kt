@@ -1,13 +1,12 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.sign.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
 
 /** Explicit signer-level buckets for COSE_Sign. Serializes and validates each bucket once. */
-class CoseSignatureParameters<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader>(
+class CoseSignatureParameters<out ProtectedHeader : CoseHeader, out UnprotectedHeader : CoseHeader>(
     protectedHeader: ProtectedHeader, unprotectedHeader: UnprotectedHeader,
     protectedHeaderSerializer: KSerializer<ProtectedHeader>, unprotectedHeaderSerializer: KSerializer<UnprotectedHeader>,
 ) {
@@ -94,8 +93,13 @@ class CoseSigner(signers: List<Signer>) {
         val algorithm = headers.firstNotNullOfOrNull { it.algorithm } as? CoseAlgorithm.Signature
             ?: throw IllegalArgumentException("An explicit signature algorithm is required")
         val kid = headers.firstNotNullOfOrNull { it.kid }
-        val candidates = signers.filter { signer ->
-            matches(algorithm, signer) && (kid == null || signer.publicKey.coseKid == null || kid.contentEquals(signer.publicKey.coseKid))
+        val compatible = signers.filter { matches(algorithm, it) }
+        val exact = if (kid == null) emptyList() else compatible.filter { kid.contentEquals(it.publicKey.coseKid) }
+        val candidates = when {
+            exact.isNotEmpty() -> exact
+            compatible.size == 1 && (kid == null || compatible.single().publicKey.coseKid == null) -> compatible
+            kid == null -> compatible
+            else -> emptyList()
         }
         require(candidates.size == 1) { "Expected one signer matching the COSE algorithm, curve, and key ID" }
         return candidates.single()
@@ -105,13 +109,8 @@ class CoseSigner(signers: List<Signer>) {
         val expected = algorithm.algorithm
         val actual = signer.signatureAlgorithm
         return if (expected is EcdsaAlgorithm && actual is EcdsaAlgorithm) {
-            val curve = when (algorithm) {
-                CoseAlgorithm.Signature.ES256, CoseAlgorithm.Signature.ESP256 -> ECCurve.SECP_256_R_1
-                CoseAlgorithm.Signature.ES384, CoseAlgorithm.Signature.ESP384 -> ECCurve.SECP_384_R_1
-                CoseAlgorithm.Signature.ES512, CoseAlgorithm.Signature.ESP512 -> ECCurve.SECP_521_R_1
-                else -> return false
-            }
-            actual.digest == expected.digest && (signer.publicKey as? EcdsaPublicKey)?.curve == curve &&
+            val curve = (signer.publicKey as? EcdsaPublicKey)?.curve ?: return false
+            actual.digest == expected.digest && (expected.requiredCurve == null || expected.requiredCurve == curve) &&
                     (actual.requiredCurve == null || actual.requiredCurve == curve)
         } else expected is RsaAlgorithm && expected == actual && (signer.publicKey as? RsaPublicKey)?.let {
             it.bits.number >= expected.minimumKeySize.toUInt() * 8u

@@ -73,7 +73,7 @@ internal fun <Header : CoseHeader> decodeHeader(bytes: ByteArray, serializer: KS
     return DecodedHeader(header, labels)
 }
 
-internal data class EncodedHeader<Header : CoseHeader>(val header: Header, val bytes: ByteArray, val labels: Set<CoseHeaderLabel>)
+internal data class EncodedHeader<out Header : CoseHeader>(val header: Header, val bytes: ByteArray, val labels: Set<CoseHeaderLabel>)
 
 internal fun <Header : CoseHeader> encodeHeader(header: Header, serializer: KSerializer<Header>, protected: Boolean): EncodedHeader<Header> {
     val labels = mutableSetOf<CoseHeaderLabel>()

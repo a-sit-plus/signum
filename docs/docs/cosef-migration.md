@@ -81,3 +81,30 @@ val signed = CoseSigner(listOf(ecSigner, rsaSigner)).sign(
 Use the same application header types for the signature list, with different algorithm values. `CoseSign.Raw<BodyUnprotectedHeader, SignerUnprotectedHeader>` decodes without protected or payload serializers. Its `.typed<BodyProtectedHeader, SignerProtectedHeader, Payload>()` preserves signature order and each protected encoding. Body and signer parameters must have disjoint modeled labels under this API's explicit conflict policy. Every signer is validated before any signer runs, and all signatures share one payload serialization. `raw.signatureInput(index)` uses the five-element `Signature` context, while Sign1 uses the four-element `Signature1` context. Their wire structures remain distinct even for a single signature.
 
 `CwtClaims` provides the common CWT properties, like `JwtPayload`. Implement it in concrete annotated models and narrow a header's `cwtClaims` property to your concrete claims type. `CborWebToken` also implements this interface for migration. Arbitrary COSE payloads do not have to implement `CwtClaims`.
+
+## API alignment and conversion migration
+
+`SpecializedPublicKey.toPublicKey()` and `SpecializedSymmetricKey.toSymmetricKey()` now return keys directly
+and throw on invalid, missing, or unsupported parameters. This changes both COSE keys and JWK implementations.
+COSEF's `toCoseKey()`, `toCoseAlgorithm()`, factories, and deprecated decoding helpers also return values directly.
+Remove the corresponding `.getOrThrow()` calls. Cryptographic equality returns false for an unconvertible key.
+Supreme's encryption and decryption adapters propagate conversion errors as exceptions.
+
+`CoseSigner` and `JwsSigner` retain all registered keys, including keys sharing an algorithm. Among compatible keys,
+one exact `kid` match wins over unlabeled keys; multiple exact matches are ambiguous. Without an exact match, an
+application-supplied ID is allowed only for a sole compatible key with no configured ID. Multiple compatible keys need
+an unambiguous ID. Unknown IDs and conflicting configured IDs are rejected before signing. All multi-signature requests
+are checked before the first signer runs. COSE IDs compare byte contents; JOSE IDs compare strings.
+
+Typed Sign1 and Sign decoding now interprets every signature eagerly. Missing signature algorithms and malformed signature
+encodings fail during typed construction; raw envelopes remain available for opaque inspection and round trips.
+Curve-specific ESP algorithms validate ECDSA signature length against their required curve. Generic ES algorithms retain
+curve-independent decoding; verification must use the trusted key's actual curve. Read-only COSE views are covariant,
+and typed COSE_Sign values now have structural equality.
+
+Existing valid wire encodings remain compatible: opaque byte-array payloads, legacy tag-24 payload creation, received
+protected/payload bytes, empty protected encodings, tag handling, AAD, and attached/detached distinctions are unchanged.
+Upstream CBOR still cannot expose or re-emit arbitrary inline map bytes. Unknown unprotected fields remain model-dependent;
+keep the complete original input for unchanged forwarding. No CBOR tree, raw map injection, or automatic Sign1/Mac0 dispatch
+is introduced. Header creation still decodes the serialized buckets for validation and returns those decoded header views.
+For split-header signing with a ByteArray payload, name `unprotectedHeader` and `payload` to distinguish the fully protected overload.

@@ -13,7 +13,7 @@ import kotlinx.serialization.cbor.CborArray
 
 /** Typed COSE_Mac0. A decoded tag must be verified before accepting the message. */
 @Serializable(with = CoseMac0Serializer::class)
-class CoseMac0<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Payload> internal constructor(
+class CoseMac0<out ProtectedHeader : CoseHeader, out UnprotectedHeader : CoseHeader, out Payload> internal constructor(
     val raw: Raw<UnprotectedHeader>,
     val protectedHeader: ProtectedHeader,
     val payload: Payload?,
@@ -28,7 +28,7 @@ class CoseMac0<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Pay
     override fun hashCode() = 31 * (31 * raw.hashCode() + protectedHeader.hashCode()) + (payload?.contentHashCodeIfArray() ?: 0)
 
     @Serializable(with = CoseMac0RawSerializer::class)
-    class Raw<UnprotectedHeader : CoseHeader> internal constructor(
+    class Raw<out UnprotectedHeader : CoseHeader> internal constructor(
         val plainProtectedHeader: ByteArray,
         val unprotectedHeader: UnprotectedHeader,
         val plainPayload: ByteArray?,

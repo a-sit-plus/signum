@@ -16,6 +16,7 @@ kotlin {
             implementation(project(":supreme"))
             implementation(project(":indispensable-pkix"))
             implementation(project(":indispensable-cosef"))
+            implementation(project(":indispensable-josef"))
         }
     }
 }

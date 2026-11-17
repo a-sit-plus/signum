@@ -11,7 +11,7 @@ import kotlinx.serialization.cbor.Cbor
 
 /** Typed COSE_Sign1. Decoding does not verify signatures or establish trust. */
 @Serializable(with = CoseSign1Serializer::class)
-class CoseSign1<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Payload> internal constructor(
+class CoseSign1<out ProtectedHeader : CoseHeader, out UnprotectedHeader : CoseHeader, out Payload> internal constructor(
     val raw: Raw<UnprotectedHeader>,
     val protectedHeader: ProtectedHeader,
     val payload: Payload?,
@@ -20,7 +20,7 @@ class CoseSign1<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Pa
 ) {
     val unprotectedHeader: UnprotectedHeader get() = raw.unprotectedHeader
     val isDetached: Boolean get() = raw.plainPayload == null
-    val signature get() = COSE.getSignature(raw.plainSignature, protectedHeader, unprotectedHeader)
+    val signature = COSE.getSignature(raw.plainSignature, protectedHeader, unprotectedHeader)
     fun signatureInput(externalAad: ByteArray = byteArrayOf(), detachedPayload: ByteArray? = null) = raw.signatureInput(externalAad, detachedPayload)
     override fun equals(other: Any?) = other is CoseSign1<*, *, *> && raw == other.raw && protectedHeader == other.protectedHeader && (payload?.contentEqualsIfArray(other.payload) ?: (other.payload == null))
     override fun hashCode() = 31 * (31 * raw.hashCode() + protectedHeader.hashCode()) + (payload?.contentHashCodeIfArray() ?: 0)
@@ -30,7 +30,7 @@ class CoseSign1<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader, Pa
      * not retained on re-encoding. Keep the original input separately when unchanged byte forwarding is needed.
      */
     @Serializable(with = CoseSign1RawSerializer::class)
-    class Raw<UnprotectedHeader : CoseHeader> internal constructor(
+    class Raw<out UnprotectedHeader : CoseHeader> internal constructor(
         val plainProtectedHeader: ByteArray,
         val unprotectedHeader: UnprotectedHeader,
         val plainPayload: ByteArray?,

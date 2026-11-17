@@ -4,6 +4,8 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import kotlinx.serialization.*
 import kotlinx.serialization.cbor.*
 import kotlinx.serialization.encoding.Decoder
@@ -11,18 +13,19 @@ import kotlinx.serialization.encoding.Encoder
 
 /** COSE_Sign keeps body and signer headers, order, and protected encodings distinct from COSE_Sign1. */
 @Serializable(with = CoseSignSerializer::class)
-class CoseSign<BodyProtectedHeader : CoseHeader, BodyUnprotectedHeader : CoseHeader, SignerProtectedHeader : CoseHeader, SignerUnprotectedHeader : CoseHeader, Payload> internal constructor(
+class CoseSign<out BodyProtectedHeader : CoseHeader, out BodyUnprotectedHeader : CoseHeader, out SignerProtectedHeader : CoseHeader, out SignerUnprotectedHeader : CoseHeader, out Payload> internal constructor(
     val raw: Raw<BodyUnprotectedHeader, SignerUnprotectedHeader>,
     val protectedHeader: BodyProtectedHeader,
-    val signatures: List<Signature<SignerProtectedHeader, SignerUnprotectedHeader>>,
+    signatures: List<Signature<SignerProtectedHeader, SignerUnprotectedHeader>>,
     val payload: Payload?,
     /** Exact external content retained on detached creation; absent when decoding a detached envelope. */
     val detachedPayload: ByteArray? = null,
 ) {
+    val signatures = signatures.toList()
     val unprotectedHeader: BodyUnprotectedHeader get() = raw.unprotectedHeader
     val isDetached: Boolean get() = raw.plainPayload == null
     fun signatureInput(index: Int, externalAad: ByteArray = byteArrayOf(), detachedPayload: ByteArray? = null) = raw.signatureInput(index, externalAad, detachedPayload)
-    fun signature(index: Int) = signatures[index].let {
+    private val decodedSignatures = this.signatures.map {
         COSE.getSignature(it.raw.plainSignature, when {
             it.protectedHeader.algorithm != null -> it.protectedHeader
             it.unprotectedHeader.algorithm != null -> it.unprotectedHeader
@@ -31,21 +34,29 @@ class CoseSign<BodyProtectedHeader : CoseHeader, BodyUnprotectedHeader : CoseHea
         })
     }
 
-    class Signature<ProtectedHeader : CoseHeader, UnprotectedHeader : CoseHeader> internal constructor(
+    fun signature(index: Int) = decodedSignatures[index]
+    override fun equals(other: Any?) = other is CoseSign<*, *, *, *, *> && raw == other.raw && protectedHeader == other.protectedHeader &&
+            signatures == other.signatures && (payload?.contentEqualsIfArray(other.payload) ?: (other.payload == null))
+    override fun hashCode() = 31 * (31 * (31 * raw.hashCode() + protectedHeader.hashCode()) + signatures.hashCode()) + (payload?.contentHashCodeIfArray() ?: 0)
+
+    class Signature<out ProtectedHeader : CoseHeader, out UnprotectedHeader : CoseHeader> internal constructor(
         val raw: SignatureRaw<UnprotectedHeader>, val protectedHeader: ProtectedHeader,
     ) {
         val unprotectedHeader: UnprotectedHeader get() = raw.unprotectedHeader
+        override fun equals(other: Any?) = other is Signature<*, *> && raw == other.raw && protectedHeader == other.protectedHeader
+        override fun hashCode() = 31 * raw.hashCode() + protectedHeader.hashCode()
     }
 
     @Serializable(with = CoseSignRawSerializer::class)
-    class Raw<BodyUnprotectedHeader : CoseHeader, SignerUnprotectedHeader : CoseHeader> internal constructor(
+    class Raw<out BodyUnprotectedHeader : CoseHeader, out SignerUnprotectedHeader : CoseHeader> internal constructor(
         val plainProtectedHeader: ByteArray,
         val unprotectedHeader: BodyUnprotectedHeader,
         val plainPayload: ByteArray?,
-        val signatures: List<SignatureRaw<SignerUnprotectedHeader>>,
+        signatures: List<SignatureRaw<SignerUnprotectedHeader>>,
         internal val unprotectedLabels: Set<CoseHeaderLabel>,
     ) {
-        init { require(signatures.isNotEmpty()) { "COSE_Sign requires at least one signature" } }
+        val signatures = signatures.toList()
+        init { require(this.signatures.isNotEmpty()) { "COSE_Sign requires at least one signature" } }
         fun signatureInput(index: Int, externalAad: ByteArray = byteArrayOf(), detachedPayload: ByteArray? = null) =
             COSE.signStructureInput(plainProtectedHeader, signatures[index].plainProtectedHeader, externalAad, authenticationPayload(plainPayload, detachedPayload))
 
@@ -83,7 +94,7 @@ class CoseSign<BodyProtectedHeader : CoseHeader, BodyUnprotectedHeader : CoseHea
     }
 
     @Serializable(with = CoseSignatureRawSerializer::class)
-    class SignatureRaw<UnprotectedHeader : CoseHeader> internal constructor(
+    class SignatureRaw<out UnprotectedHeader : CoseHeader> internal constructor(
         val plainProtectedHeader: ByteArray,
         val unprotectedHeader: UnprotectedHeader,
         val plainSignature: ByteArray,

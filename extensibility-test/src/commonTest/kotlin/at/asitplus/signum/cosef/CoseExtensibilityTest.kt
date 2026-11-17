@@ -158,7 +158,7 @@ val CoseExtensibilityTest by matrixSuite {
         val signing = CoseSigner(signer)
         shouldThrowAny { signing.sign1(headers(CoseAlgorithm.Signature.RS256), Payload("x")) }
         val wrongCurve = CountingSigner(Signer.Ephemeral { ec { curve = ECCurve.SECP_384_R_1 } })
-        shouldThrowAny { CoseSigner(wrongCurve).sign1(headers(CoseAlgorithm.Signature.ES256), Payload("x")) }
+        shouldThrowAny { CoseSigner(wrongCurve).sign1(headers(CoseAlgorithm.Signature.ESP256), Payload("x")) }
         wrongCurve.calls shouldBe 0
         shouldThrowAny { signing.sign1(headers(CoseAlgorithm.Signature.ES256), headers(CoseAlgorithm.Signature.ES256), Payload("x")) }
         val critical = headers(CoseAlgorithm.Signature.ES256).copy(criticalHeaders = listOf(CoseHeaderLabel.Numeric(-65537)))
