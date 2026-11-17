@@ -5,7 +5,6 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
@@ -44,7 +43,6 @@ interface CryptoSignature : WithSourceRepresentation, AbstractSignature {
         fun signaturesEqual(leftAlg: SignatureAlgorithm, left: AbstractSignature, rightAlg: SignatureAlgorithm, right: AbstractSignature): Boolean {
             if (leftAlg != rightAlg) return false
             if (left is CryptoSignature && right is CryptoSignature) return (left == right)
-            @OptIn(SignumInternals::class)
             // this covers unparsed signatures on both sides
             if (left.sourceRepresentation presentAndEquals right.sourceRepresentation) return true
             // ok, now we need to be able to parse both

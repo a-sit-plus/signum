@@ -2,14 +2,12 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
-import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
 /**
@@ -46,16 +44,6 @@ class TbsCertificate(
 
     val validFrom = validFrom.secondsCapped()
     val validUntil = validUntil.secondsCapped()
-
-    /** Contains `SubjectAlternativeName`s parsed from extensions. */
-    @Transient
-    // Nested conversion uses the application-wide DER configuration (docs/docs/extensibility.md).
-    val subjectAlternativeNames: AlternativeNames? by lazy { extensions.findSubjectAltNames() }
-
-    /** Contains `IssuerAlternativeName`s parsed from extensions. */
-    @Transient
-    // Nested conversion uses the application-wide DER configuration (docs/docs/extensibility.md).
-    val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
     private fun semanticEquals(other: TbsCertificate): Boolean {
         if (this === other) return true
