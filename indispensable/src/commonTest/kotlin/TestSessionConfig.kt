@@ -1,8 +1,4 @@
-import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.LenientNicknameProvider
-import at.asitplus.signum.indispensable.pki.NicknameProvider
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -17,9 +13,5 @@ class ModuleTestSession : TestSession(
 ) {
     init {
         Signum.Der
-        // Text lookup does not seal provider registration or couple it to the DER lifecycle.
-        check(AttributeTypeAndValue.oidForName("CN") == AttributeTypeAndValue.OID.commonName)
-        ServiceLoader.register<at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider>(LenientNicknameProvider)
-        ServiceLoader.register<at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider>(NicknameProvider)
     }
 }
