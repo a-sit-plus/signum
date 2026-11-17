@@ -293,7 +293,7 @@ fun Asn1Primitive.decodeToAsn1Integer(assertTag: Asn1Element.Tag = Asn1Element.T
 /** Exception-free version of [decodeToAsn1Integer] */
 @Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catchingUnwrapped { decodeToAsn1Integer() }.getOrNull()
+    catchingUnwrapped { decodeToAsn1Integer(assertTag) }.getOrNull()
 
 /**
  * Decodes a [Asn1Integer] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
@@ -698,6 +698,10 @@ fun Source.readAsn1Tag(): Asn1Element.Tag =
         (firstByte byteMask 0x1F).let { tagNumber ->
             if (tagNumber <= 30U) Asn1Element.Tag(tagNumber.toULong(), byteArrayOf(firstByte))
             else decodeAsn1VarULong().let { (l, b) ->
+                if (b.first() == 0x80.toByte())
+                    throw Asn1Exception("Illegal DER tag encoding; long-form tag number with leading zero bits")
+                if (l < 31uL)
+                    throw Asn1Exception("Illegal DER tag encoding; tag number $l < 31 using long form")
                 Asn1Element.Tag(l, byteArrayOf(firstByte, *b))
             }
         }

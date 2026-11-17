@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigUInt
 import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.writeAsn1VarInt
 import kotlinx.io.*
-import kotlin.math.ceil
 
 private const val UVARINT_SINGLEBYTE_MAXVALUE_UBYTE: UByte = 0x80u
 internal const val UVARINT_SINGLEBYTE_MAXVALUE: Byte = 0x80.toByte()
@@ -357,19 +356,15 @@ fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteArray> =
  */
 @Throws(IllegalArgumentException::class)
 private fun Source.decodeAsn1VarInt(bits: Int): Pair<ULong, ByteArray> {
-    var offset = 0
     var result = 0uL
     val accumulator = Buffer()
-    while (!exhausted()) {
+    while (true) {
+        require(!exhausted()) { "Truncated varint: input ended before the last byte" }
         val current = readUByte()
         accumulator.writeUByte(current)
-        if (current >= UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) {
-            result = (current and UVARINT_MASK_UBYTE).toULong() or (result shl 7)
-        } else {
-            result = (current and UVARINT_MASK_UBYTE).toULong() or (result shl 7)
-            break
-        }
-        if (++offset > ceil((bits * 8).toFloat() * 8f / 7f)) throw IllegalArgumentException("Number too Large do decode into $bits bits!")
+        require((result shr (bits - 7)) == 0uL) { "Number too large to decode into $bits bits!" }
+        result = (current and UVARINT_MASK_UBYTE).toULong() or (result shl 7)
+        if (current < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) break
     }
 
     return result to accumulator.readByteArray()
