@@ -53,11 +53,7 @@ private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
                     key,
                     nonce,
                     data,
-                    pad = when (algorithm) {
-                        is AES.CBC.Unauthenticated, is AES.ECB -> true
-                        is AES.WRAP.RFC3394, is AES.ECB_NOPADDING -> false
-                        is AES.GCM -> algorithm.absurd()
-                    }
+                    pad = algorithm is AES.CBC<*> || algorithm is AES.ECB
                 )
             }
         }
