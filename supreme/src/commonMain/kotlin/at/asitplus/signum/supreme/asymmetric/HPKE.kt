@@ -263,10 +263,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
             /** well-known AEADs as specified in RFC9180 section 7.3 */
             private data class SignumAEADProxy(
                 override val aeadId: Int,
-                private val alg: SymmetricEncryptionAlgorithm<
-                        AuthCapability.Authenticated.Integrated,
-                        NonceTrait.Required,
-                        KeyType.Integrated>
+                private val alg: SymmetricEncryptionAlgorithm.AuthenticatedIntegrated<NonceTrait.Required>
             ) : HPKE.AEAD {
                 override val Nk get() = alg.keySize
                 override val Nn get() = alg.nonceSize
