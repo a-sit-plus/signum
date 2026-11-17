@@ -88,6 +88,33 @@ fun ByteArrayView.toUIntArrayLE(buf: UIntArray) {
     }
 }
 
+fun Char.toHexValue() = when (this) {
+    in '0'..'9' -> this - '0'
+    in 'a'..'f' -> this - 'a' + 10
+    in 'A'..'F' -> this - 'A' + 10
+    else -> throw IllegalArgumentException("Invalid hex character '$this")
+}
+
+fun String.hexToByteArray(
+    startIndex: Int = 0,
+    endIndex: Int = length,
+): ByteArray {
+    if (startIndex !in 0..length || endIndex !in 0..length) {
+        throw IndexOutOfBoundsException(
+            "Range [$startIndex, $endIndex) exceeds string length $length"
+        )
+    }
+    require(startIndex <= endIndex) { "startIndex must not exceed endIndex" }
+
+    val count = endIndex - startIndex
+    require(count % 2 == 0) { "Hex input must contain an even number of characters" }
+
+    return ByteArray(count / 2) { i ->
+        val offset = startIndex + i * 2
+        ((this[offset].toHexValue() shl 4) or this[offset + 1].toHexValue()).toByte()
+    }
+}
+
 fun UIntArray.toLEByteArray(buf: ByteArrayView) {
     check(buf.size == this.size * 4)
     repeat(buf.size) { i ->

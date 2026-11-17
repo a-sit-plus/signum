@@ -1,14 +1,11 @@
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.signum.indispensable.asn1
-import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Exception
-import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
@@ -20,6 +17,12 @@ import io.kotest.matchers.shouldBe
 import kotlin.streams.asSequence
 
 val RelativeDistinguishedNameParsingTest by matrixSuite {
+
+    "Name should accept empty attribute values" {
+        listOf("CN=", "CN=   ").forEach {
+            Name.fromString(it).toRfc2253String() shouldBe "cn="
+        }
+    }
 
     "splitRespectingEscapeAndQuotes should split simple RDN" {
         val input = "CN=John+O=Company"
@@ -148,24 +151,35 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     }
 
     "Core ATV decoding preserves malformed payloads without semantic RDN rejection" {
-        (AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), Asn1String.UTF8("Alice").encodeToTlv()) as TextAttributeTypeAndValue).text shouldBe "Alice"
+        (AttributeTypeAndValue.fromAsn1(
+            X500AttributeTypeAndValue(
+                ObjectIdentifier("2.5.4.3"),
+                Asn1String.UTF8("Alice").encodeToTlv()
+            )
+        ) as TextAttributeTypeAndValue).text shouldBe "Alice"
 
         // IA5's permitted [\x00-\x7f] range
         val invalidIa5 = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
-        val atv = AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5)
+        val atv = AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), invalidIa5))
 
         // raw value survives untouched and can still be received/decoded
         atv.asn1.toRepresentation().value shouldBe invalidIa5
         atv.asn1.toRepresentation().value.asPrimitive().content shouldBe byteArrayOf(0x80.toByte())
         Asn1String.decodeFromTlv(atv.asn1.toRepresentation().value.asPrimitive()).value.codePoints().asSequence().toList() shouldBe listOf(65533)
 
-        val nonText = AttributeTypeAndValue(ObjectIdentifier("2.5.4.3"), at.asitplus.awesn1.Asn1Integer(1).encodeToTlv())
+        val nonText = AttributeTypeAndValue.fromAsn1(
+            X500AttributeTypeAndValue(
+                ObjectIdentifier("2.5.4.3"),
+                Asn1Integer(1).encodeToTlv()
+            )
+        )
         RelativeDistinguishedName(nonText).attrsAndValues.single() shouldBe nonText
     }
 
     "ATV equality should be symmetric across sourceRepresentation" {
         val oid = ObjectIdentifier("2.5.4.3")
-        val generic = AttributeTypeAndValue(oid, Asn1String.UTF8("Alice").encodeToTlv())
+        val generic =
+            AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue(oid, Asn1String.UTF8("Alice").encodeToTlv()))
         val x509 = AttributeTypeAndValue.fromAsn1(generic.asn1.toRepresentation())
 
         generic shouldBe x509

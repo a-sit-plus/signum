@@ -2,12 +2,13 @@
 
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sourceFormat
-import at.asitplus.signum.ServiceLoader
-import at.asitplus.awesn1.Asn1String
-import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -59,7 +60,9 @@ val X500AttributeProviderTest by matrixSuite {
             val semantic = AttributeTypeAndValue.fromString("NICK", text).shouldBeInstanceOf<Nickname>()
             semantic.text shouldBe "alice"
             val wire = Asn1String.Printable(text).encodeToTlv()
-            val decoded = AttributeTypeAndValue(Nickname.oid, wire).shouldBeInstanceOf<Nickname>()
+            val decoded = AttributeTypeAndValue.fromAsn1(
+                X500AttributeTypeAndValue(Nickname.oid, wire))
+                .shouldBeInstanceOf<Nickname>()
             decoded.text shouldBe "alice"
             decoded.asn1.toRepresentation().value shouldBe wire
         }
@@ -67,7 +70,7 @@ val X500AttributeProviderTest by matrixSuite {
 
     "Exhausted semantic providers preserve the original wire payload as unknown" {
         val wire = Asn1String.UTF8("").encodeToTlv()
-        val value = AttributeTypeAndValue(Nickname.oid, wire)
+        val value = AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue(Nickname.oid, wire))
         value.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
         value.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
         value.oid shouldBe Nickname.oid
@@ -98,7 +101,7 @@ val X500AttributeProviderTest by matrixSuite {
             StringKind.PRINTABLE, StringKind.IA5 -> Asn1String.UTF8("Test")
         }.encodeToTlv()
         val original = RelativeDistinguishedName(
-            AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue)
+            AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue))
         )
         val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
