@@ -1,4 +1,4 @@
-@file:OptIn(SecretExposure::class)
+@file:OptIn(SecretExposure::class, HazardousMaterials::class)
 
 package at.asitplus.signum.supreme.symmetric
 
@@ -954,7 +954,7 @@ val SymmetricTest by matrixSuite {
         }
 
         "illegal nonce sizes" - {
-            data(allAlgorithms.filter { it.requiresNonce() }) - { alg ->
+            data(allAlgorithms.mapNotNull { if (it.requiresNonce()) it else null }) - { alg ->
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
