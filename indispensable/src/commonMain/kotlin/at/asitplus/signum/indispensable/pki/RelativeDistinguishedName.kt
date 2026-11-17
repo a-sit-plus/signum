@@ -9,6 +9,7 @@ import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.internals.hexToByteArray
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -149,25 +150,18 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
             TextAttributeTypeAndValue(oid, value)
         }
 
-        operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
-            fromAsn1(X500AttributeTypeAndValue(oid, value))
-
-        fun fromString(type: String, value: String): AttributeTypeAndValue? {
+        fun fromString(type: String, value: String): AttributeTypeAndValue? = runRethrowing {
             val key = type.trim()
+            val oid = oidForName(key) ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
             val v = value.trim()
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
-            if (v.length > 1 && v.first() == '#' &&  isHexString(v.substring(1))) {
-                catchingUnwrapped { Asn1Element.parse(v.substring(1).hexToByteArray()) }.getOrNull()?.let { element ->
-                    val oid = oidForName(key)
-                        ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
-                    return invoke(oid, element)
-                }
+            if (v.firstOrNull() == '#') {
+                require(v.length > 1)
+                require(v.length % 2 == 1)
+                fromAsn1(X500AttributeTypeAndValue(oid, Asn1Element.parse(v.hexToByteArray(startIndex = 1))))
+            } else {
+                fromString(oid, unescapeRfc2253(v))
             }
-            // Store unquoted/unescaped semantic text; toRfc2253String re-escapes it on output (RFC 4514).
-            val raw = unescapeRfc2253(v)
-            val oid = oidForName(key)
-                ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
-            return fromString(oid, raw)
         }
     }
 }
