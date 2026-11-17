@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.Name
@@ -21,7 +20,6 @@ val CertificateExtensionEncodingTest by matrixSuite {
         val extension: CertificateExtension = object : CertificateExtension {
             override val oid = ObjectIdentifier("1.2.3.4")
             override val critical = true
-            @OptIn(SignumInternals::class)
             override val sourceRepresentation = SourceRepresentationStorage()
         }
         shouldThrow<Asn1Exception> { extension.asn1.toRepresentation() }
