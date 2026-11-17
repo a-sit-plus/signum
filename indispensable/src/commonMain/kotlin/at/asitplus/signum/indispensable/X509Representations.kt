@@ -513,7 +513,7 @@ val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn
 val AttributeTypeAndValue.Companion.fromAsn1 get() = asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue> { src ->
     try { ServiceLoader.load<AttributeTypeAndValueAsn1Provider>().get(src, AttributeTypeAndValueAsn1Provider::decodeFromAsn1) }
     catch (failure: UnsupportedCryptoException) {
-        AttributeTypeAndValue(src.oid, failure)
+        AttributeTypeAndValue.Unknown(src.oid, failure)
     }
 }
 
@@ -533,7 +533,7 @@ val CsrAttribute.asn1 get() = asn1EncodersWith(CsrAttributeAsn1Provider::encodeT
 
 val CsrAttribute.Companion.fromAsn1 get() = asn1Decoders<Pkcs10CsrAttribute, CsrAttribute> { src ->
     try { ServiceLoader.load<CsrAttributeAsn1Provider>().get(src, CsrAttributeAsn1Provider::decodeFromAsn1) }
-    catch (failure: UnsupportedCryptoException) { CsrAttribute(src.oid, failure) }
+    catch (failure: UnsupportedCryptoException) { CsrAttribute.Unknown(src.oid, failure) }
 }
 
 val TbsCertificationRequest.asn1 get() =
