@@ -206,7 +206,7 @@ data class JsonWebKey(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
-    val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
+    val didEncoded: String? by lazy { catching { toCryptoPublicKey().didEncoded }.getOrNull() }
 
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +
@@ -292,11 +292,11 @@ data class JsonWebKey(
     }
 
     /**
-     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible
-     * (i.e. if all key params are set), or the first error.
+     * @return the [CryptoPublicKey] equivalent if conversion is possible
+     * (i.e. if all key params are set), or throws on invalid parameters.
      */
-    override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-        when (type) {
+    override fun toCryptoPublicKey(): CryptoPublicKey {
+        return when (type) {
             JwkType.EC -> {
                 EcdsaPublicKey.fromUncompressed(
                     curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
@@ -357,10 +357,10 @@ data class JsonWebKey(
      * * [SymmetricEncryptionAlgorithm.AES.WRAP]
      *
      */
-    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+    override fun toSymmetricKey(): SymmetricKey<*, *, *> {
         require(algorithm is JweAlgorithm.Symmetric) { "Not a symmetric JweAlgorithm" }
         require(k != null) { "key bytes not present" }
-        when (val alg = algorithm.algorithm) {
+        return when (val alg = algorithm.algorithm) {
             is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k).getOrThrow()
             is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k).getOrThrow()
             else -> throw IllegalArgumentException("Unsupported algorithm $algorithm")

@@ -8,6 +8,8 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.cbor.CborLabel
 
 val HeaderBucketsTest by matrixSuite {
@@ -53,6 +55,25 @@ val HeaderBucketsTest by matrixSuite {
         val critical = FixtureHeader(criticalHeaders = listOf(CoseHeaderLabel.Numeric(-65537)))
         shouldThrowAny { validateBuckets(critical, EmptyCoseHeader, setOf(CoseHeaderLabel.Numeric(2)), emptySet()) }
         shouldThrowAny { validateBuckets(EmptyCoseHeader, critical, emptySet(), setOf(CoseHeaderLabel.Numeric(2))) }
+    }
+
+    "Header round trips reject changed authentication parameters and retain decoded nonauthentication values" {
+        val header = FixtureHeader(algorithm = CoseAlgorithm.Signature.ES256, kid = byteArrayOf(1), type = "original")
+        for (changed in listOf(
+            header.copy(algorithm = CoseAlgorithm.Signature.RS256),
+            header.copy(kid = byteArrayOf(2)),
+            header.copy(criticalHeaders = listOf(CoseHeaderLabel.Numeric(16))),
+        )) {
+            val serializer = object : KSerializer<FixtureHeader> by FixtureHeader.serializer() {
+                override fun serialize(encoder: Encoder, value: FixtureHeader) = FixtureHeader.serializer().serialize(encoder, changed)
+            }
+            shouldThrowAny { encodeHeader(header, serializer, true) }
+        }
+        val serializer = object : KSerializer<FixtureHeader> by FixtureHeader.serializer() {
+            override fun serialize(encoder: Encoder, value: FixtureHeader) = FixtureHeader.serializer().serialize(encoder, value.copy(type = "NORMALIZED"))
+        }
+        encodeHeader(header, serializer, true).header.type shouldBe "NORMALIZED"
+        header.type shouldBe "original"
     }
 }
 

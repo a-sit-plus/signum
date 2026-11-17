@@ -33,7 +33,9 @@ object COSE {
         val algorithm = (header.algorithm ?: fallbackHeader?.algorithm) as? CoseAlgorithm.Signature
             ?: throw IllegalArgumentException("An explicit signature algorithm is required")
         return when (algorithm.algorithm) {
-            is EcdsaAlgorithm -> EcdsaSignature.fromP1363Bytes(plainSignature)
+            is EcdsaAlgorithm -> (algorithm.algorithm as EcdsaAlgorithm).requiredCurve?.let {
+                EcdsaSignature.fromP1363Bytes(it, plainSignature)
+            } ?: EcdsaSignature.fromP1363Bytes(plainSignature)
             is RsaAlgorithm -> RsaSignature(plainSignature)
             else -> throw IllegalArgumentException("Unsupported COSE signature algorithm")
         }

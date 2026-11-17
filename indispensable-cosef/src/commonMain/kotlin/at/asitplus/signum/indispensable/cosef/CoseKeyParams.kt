@@ -1,8 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.failure
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.awesn1.Asn1Integer
@@ -87,8 +84,8 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
 
         override fun yHashCode(): Int = y?.contentHashCode() ?: 0
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-            EcdsaPublicKey.fromUncompressed(
+        override fun toCryptoPublicKey(): CryptoPublicKey {
+            return EcdsaPublicKey.fromUncompressed(
                 curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                 x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                 y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -118,11 +115,11 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
 
         override fun yHashCode(): Int = y?.hashCode() ?: 0
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-            val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
-            val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
-            val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
-            EcdsaPublicKey.fromCompressed(curve.toEcCurve(), x, yFlag)
+        override fun toCryptoPublicKey(): CryptoPublicKey {
+            val curve = curve ?: throw IllegalArgumentException("Cannot determine Curve - Missing Curve")
+            val x = x ?: throw IllegalArgumentException("Cannot determine key - Missing x coordinate")
+            val yFlag = y ?: throw IllegalArgumentException("Cannot determine key - Missing Indicator y")
+            return EcdsaPublicKey.fromCompressed(curve.toEcCurve(), x, yFlag)
         }
     }
 
@@ -163,8 +160,8 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
             return result
         }
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-            RsaPublicKey(
+        override fun toCryptoPublicKey(): CryptoPublicKey {
+            return RsaPublicKey(
                 n = Asn1Integer.fromUnsignedByteArray(
                     n ?: throw IllegalArgumentException("Missing modulus n")),
                 e = Asn1Integer.fromUnsignedByteArray(
@@ -177,8 +174,8 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
     data class SymmKeyParams(
         val k: ByteArray,
     ) : CoseKeyParams() {
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-            failure(IllegalArgumentException("Symmetric keys do not have public component"))
+        override fun toCryptoPublicKey(): CryptoPublicKey =
+            throw IllegalArgumentException("Symmetric keys do not have public component")
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

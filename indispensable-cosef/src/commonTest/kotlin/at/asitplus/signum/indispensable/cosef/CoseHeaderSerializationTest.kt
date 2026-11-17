@@ -218,7 +218,7 @@ val CoseHeaderSerializationTest by matrixSuite {
 
     "COSE header with x5t of all hash algorithms" {
         CoseAlgorithm.Hash.entries.forEach { algorithm ->
-            algorithm.digest.toCoseAlgorithm().getOrThrow() shouldBe algorithm
+            algorithm.digest.toCoseAlgorithm() shouldBe algorithm
             val header = CoseHeader(certificateHash = CoseCertificateHash(algorithm, byteArrayOf(1)))
             coseCompliantSerializer.decodeFromHexString<CoseHeader>(coseCompliantSerializer.encodeToHexString(header))
                 .certificateHash.shouldNotBeNull().algorithm shouldBe algorithm

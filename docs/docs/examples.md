@@ -100,7 +100,7 @@ data class SigningHeader(
     @CborLabel(1) override val algorithm: CoseAlgorithm,
 ) : CoseHeader
 
-val protectedHeader = SigningHeader(signer.signatureAlgorithm.toCoseAlgorithm().getOrThrow())
+val protectedHeader = SigningHeader(signer.signatureAlgorithm.toCoseAlgorithm())
 
 val payload = byteArrayOf(0xC, 0xA, 0xF, 0xE)
 ```

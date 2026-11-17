@@ -15,6 +15,7 @@ kotlin {
         commonTest.dependencies {
             implementation(project(":supreme"))
             implementation(project(":indispensable-cosef"))
+            implementation(project(":indispensable-josef"))
         }
     }
 }

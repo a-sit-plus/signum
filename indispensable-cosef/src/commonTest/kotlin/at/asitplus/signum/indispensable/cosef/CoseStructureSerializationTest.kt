@@ -24,20 +24,20 @@ val CoseStructureSerializationTest by matrixSuite {
 
     "Both empty protected encodings survive typed serialization" {
         for (protected in listOf("40", "41A0")) {
-            val input = "84${protected}A04040".hexBytes()
-            val typed = CoseSign1<EmptyCoseHeader, EmptyCoseHeader, ByteArray>(input)
+            val input = "84${protected}A1013901004040".hexBytes()
+            val typed = CoseSign1<EmptyCoseHeader, FixtureHeader, ByteArray>(input)
             typed.payload shouldBe byteArrayOf()
             typed.isDetached shouldBe false
             coseCompliantSerializer.encodeToByteArray(typed) shouldBe input
-            val mac = CoseMac0<EmptyCoseHeader, EmptyCoseHeader, ByteArray>(input)
+            val mac = CoseMac0<EmptyCoseHeader, FixtureHeader, ByteArray>(input)
             coseCompliantSerializer.encodeToByteArray(mac) shouldBe input
         }
     }
 
     "Detached payloads remain null and require externally supplied bytes" {
-        val bytes = "8440A0F640".hexBytes()
-        val sign = CoseSign1<EmptyCoseHeader, EmptyCoseHeader, ByteArray>(bytes)
-        val mac = CoseMac0<EmptyCoseHeader, EmptyCoseHeader, ByteArray>(bytes)
+        val bytes = "8440A101390100F640".hexBytes()
+        val sign = CoseSign1<EmptyCoseHeader, FixtureHeader, ByteArray>(bytes)
+        val mac = CoseMac0<EmptyCoseHeader, FixtureHeader, ByteArray>(bytes)
         sign.isDetached shouldBe true
         sign.payload shouldBe null
         shouldThrowAny { sign.signatureInput() }
@@ -60,7 +60,7 @@ val CoseStructureSerializationTest by matrixSuite {
     }
 
     "Typed serializers compose when nested" {
-        val input = "8443A10126A04040".hexBytes()
+        val input = "8445A101390100A0404101".hexBytes()
         val sign = CoseSign1<FixtureHeader, EmptyCoseHeader, ByteArray>(input)
         val nested = NestedCose(sign)
         val bytes = coseCompliantSerializer.encodeToByteArray(nested)
@@ -76,15 +76,16 @@ val CoseStructureSerializationTest by matrixSuite {
 
     "COSE_Sign has a list of three-element signatures and a distinct signing structure" {
         val bytes = "8440A040818340A040".hexBytes()
-        val typed = CoseSign.Raw<EmptyCoseHeader, EmptyCoseHeader>(bytes).typed<EmptyCoseHeader, EmptyCoseHeader, ByteArray>()
-        typed.signatures.size shouldBe 1
-        typed.signatureInput(0).hex() shouldBe "85695369676E617475726540404040"
-        coseCompliantSerializer.encodeToByteArray(typed) shouldBe bytes
+        val raw = CoseSign.Raw<EmptyCoseHeader, EmptyCoseHeader>(bytes)
+        shouldThrowAny { raw.typed<EmptyCoseHeader, EmptyCoseHeader, ByteArray>() }
+        raw.signatures.size shouldBe 1
+        raw.signatureInput(0).hex() shouldBe "85695369676E617475726540404040"
+        coseCompliantSerializer.encodeToByteArray(raw) shouldBe bytes
         shouldThrowAny { CoseSign1.Raw<EmptyCoseHeader>(bytes) }
         shouldThrowAny { CoseSign.Raw<EmptyCoseHeader, EmptyCoseHeader>("8440A04080".hexBytes()) }
         val detached = CoseSign.Raw<EmptyCoseHeader, EmptyCoseHeader>("8440A0F6818340A040".hexBytes())
         shouldThrowAny { detached.signatureInput(0) }
-        detached.signatureInput(0, detachedPayload = byteArrayOf()) shouldBe typed.signatureInput(0)
+        detached.signatureInput(0, detachedPayload = byteArrayOf()) shouldBe raw.signatureInput(0)
         for (wire in listOf(
             "8445A101390100A040818340A043626172",
             "8440A10139010040818340A043626172",
@@ -102,6 +103,24 @@ val CoseStructureSerializationTest by matrixSuite {
         bytes.take(2).toByteArray().hex() shouldBe "D818"
         bytes.toTypedPayload(DataClass.serializer()) shouldBe payload
         coseCompliantSerializer.encodeToByteArray(payload).toTypedPayload(DataClass.serializer()) shouldBe payload
+    }
+
+    "Typed signatures fail eagerly while raw signatures stay opaque" {
+        for (hex in listOf("8440A04040", "8443A10128A040420102")) {
+            val bytes = hex.hexBytes()
+            val raw = CoseSign1.Raw<EmptyCoseHeader>(bytes)
+            coseCompliantSerializer.encodeToByteArray(raw) shouldBe bytes
+            shouldThrowAny { raw.typed<FixtureHeader, ByteArray>() }
+        }
+        // Generic ES256 has no required curve; ESP256 requires a P-256 signature length.
+        val generic = CoseSign1<FixtureHeader, EmptyCoseHeader, ByteArray>("8443A10126A040420102".hexBytes())
+        (generic.signature === generic.signature) shouldBe true
+        val widened: CoseSign1<CoseHeader, CoseHeader, Any?> = generic
+        widened.payload shouldBe byteArrayOf()
+        val multi = "8440A040828345A101390100A041018343A10128A0420102".hexBytes()
+        val raw = CoseSign.Raw<EmptyCoseHeader, EmptyCoseHeader>(multi)
+        coseCompliantSerializer.encodeToByteArray(raw) shouldBe multi
+        shouldThrowAny { raw.typed<EmptyCoseHeader, FixtureHeader, ByteArray>() }
     }
 }
 

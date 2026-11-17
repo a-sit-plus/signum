@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
 import kotlinx.serialization.serializer
 
 /**
@@ -41,6 +39,7 @@ data class JwsHeaderWrapped<out H : JwsHeader> private constructor(
             val serializedHeader = serialFormat.encodeToJsonElement(serializer, header).jsonObject
             val protectedHeaderJson = JsonObject(serializedHeader.filterKeys { it !in unprotectedMembers })
             val unprotectedHeader = JsonObject(serializedHeader.filterKeys { it in unprotectedMembers })
+            validateJwsCriticalHeaders(protectedHeaderJson, unprotectedHeader)
             return JwsHeaderWrapped(
                 header = header,
                 protectedHeaderJson = protectedHeaderJson,
@@ -93,11 +92,17 @@ data class JwsHeaderWrapped<out H : JwsHeader> private constructor(
             unprotectedHeader: JsonObject? = null,
             serialFormat: Json = joseCompliantSerializer,
         ): JwsHeaderWrapped<H> = protectedHeader.strictUnion(unprotectedHeader).let { combinedHeader ->
-            invoke(
-                header = serialFormat.decodeFromJsonElement(serializer, combinedHeader),
-                serializer = serializer,
-                unprotectedMembers = unprotectedHeader?.keys ?: emptySet(),
-                serialFormat = serialFormat,
+            validateJwsCriticalHeaders(protectedHeader, unprotectedHeader)
+            val header = serialFormat.decodeFromJsonElement(serializer, combinedHeader)
+            val modeled = serialFormat.encodeToJsonElement(serializer, header).jsonObject
+            val unprotectedNames = unprotectedHeader?.keys.orEmpty()
+            val protected = JsonObject(modeled.filterKeys { it !in unprotectedNames })
+            // Validate received references against received fragments, including unmodeled parameters.
+            JwsHeaderWrapped(
+                header = header,
+                protectedHeaderJson = protected,
+                unprotectedHeader = JsonObject(modeled.filterKeys { it in unprotectedNames }),
+                protectedHeader = protected.toProtectedHeaderBytes(),
             )
         }
 
@@ -117,3 +122,17 @@ data class JwsHeaderWrapped<out H : JwsHeader> private constructor(
 
 internal fun ByteArray.toProtectedHeaderJsonObject(): JsonObject =
     joseCompliantSerializer.decodeFromString(JsonObject.serializer(), decodeToString())
+
+/** Checks wire placement and references; application semantics still require explicit processing. */
+internal fun validateJwsCriticalHeaders(protected: JsonObject?, unprotected: JsonObject?): List<String>? {
+    require(unprotected?.containsKey("crit") != true) { "crit must be protected" }
+    val value = protected?.get("crit") ?: return null
+    require(value is JsonArray && value.isNotEmpty()) { "crit must be a nonempty array" }
+    val labels = value.map {
+        require(it is JsonPrimitive && it.isString) { "crit must contain parameter names" }
+        it.content
+    }
+    require(labels.distinct().size == labels.size) { "crit must be unique" }
+    require("crit" !in labels && protected.keys.containsAll(labels)) { "crit must refer to present protected parameters" }
+    return labels
+}

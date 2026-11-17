@@ -50,7 +50,7 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrai
 }
 
 suspend fun SpecializedSymmetricKey.encrypt(data: ByteArray, authenticatedData: ByteArray? = null) =
-    this.toSymmetricKey().transform { key ->
+    catching { this.toSymmetricKey() }.transform { key ->
         when (key) {
             is SymmetricKey.Authenticating -> key.encrypt(data, authenticatedData)
             else -> {

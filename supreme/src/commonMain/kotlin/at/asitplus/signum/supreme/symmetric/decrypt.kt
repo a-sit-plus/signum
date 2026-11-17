@@ -48,7 +48,7 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
  * [key] and [SealedBox].**
  */
 @JvmName("decryptGeneric")
-suspend fun SealedBox<*, *, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<ByteArray> = key.toSymmetricKey().transform { decrypt(it) }
+suspend fun SealedBox<*, *, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<ByteArray> = catching { key.toSymmetricKey() }.transform { decrypt(it) }
 
 
 //required because we don't store MAC info all the way

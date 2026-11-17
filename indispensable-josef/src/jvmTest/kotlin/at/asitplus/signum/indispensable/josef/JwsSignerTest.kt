@@ -226,7 +226,7 @@ val JwsSignerTest by matrixSuite {
 
         shouldThrow<IllegalArgumentException> {
             jwsSigner.signCompact(SigningHeader(JwsAlgorithm.Signature.ES256), SigningPayload("alice"))
-        }.message.shouldContain("Signer curve does not match")
+        }.message.shouldContain("Expected one signer")
         signer.calls shouldBe 0
     }
 
@@ -249,5 +249,52 @@ val JwsSignerTest by matrixSuite {
         shouldThrow<UserInitiatedCancellation> {
             jwsSigner.signCompact(SigningHeader(JwsAlgorithm.Signature.ES256), SigningPayload("alice"))
         } shouldBe problem
+    }
+
+    "critical parameters require explicit processing in all signing forms" {
+        val signer = CountingSigner(newEcSigner())
+        val signing = JwsSigner(listOf(signer))
+        val header = SigningHeader(JwsAlgorithm.Signature.ES256, extension = "value", crit = listOf("extension"))
+        val payload = SigningPayload("alice")
+        val wrapped = JwsHeaderWrapped(header)
+        shouldThrow<IllegalArgumentException> { signing.signCompact(header, payload) }
+        shouldThrow<IllegalArgumentException> { signing.signFlattened(header, payload) }
+        shouldThrow<IllegalArgumentException> { signing.signGeneral(payload, listOf(wrapped)) }
+        shouldThrow<IllegalArgumentException> {
+            signing.signGeneral(payload, listOf(JwsHeaderWrapped(header.copy(crit = null)), wrapped))
+        }
+        signer.calls shouldBe 0
+        val compact = signing.signCompact(header, payload, processCritical = { it == "extension" })
+        val flattened = signing.signFlattened(header, payload, processCritical = { it == "extension" })
+        val general = signing.signGeneral(payload, listOf(wrapped), processCritical = { it == "extension" })
+        signer.calls shouldBe 3
+        for (view in listOf(compact.toFlattened(), flattened) + general.toFlattened()) {
+            signer.makeVerifier().verify(view.signatureInput, view.signature) shouldBe SignatureVerifier.Success
+        }
+    }
+
+    "header serializers cannot change authentication parameters before signing" {
+        val signer = CountingSigner(newEcSigner())
+        val signing = JwsSigner(listOf(signer))
+        val header = SigningHeader(JwsAlgorithm.Signature.ES256, "key", extension = "value", jsonWebKey = signer.publicKey.toJsonWebKey())
+        val changes: List<(SigningHeader) -> SigningHeader> = listOf(
+            { it.copy(algorithm = JwsAlgorithm.Signature.PS256) },
+            { it.copy(keyId = "changed") },
+            { it.copy(jsonWebKey = null) },
+            { it.copy(crit = listOf("extension")) },
+        )
+        for (change in changes) {
+            val serializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
+                override fun serialize(encoder: Encoder, value: SigningHeader) = SigningHeader.serializer().serialize(encoder, change(value))
+                override fun deserialize(decoder: Decoder): SigningHeader = error("Signing must not deserialize the header")
+            }
+            shouldThrow<IllegalArgumentException> {
+                signing.signCompact(header, SigningPayload("alice"), SigningPayload.serializer(), serializer)
+            }
+            shouldThrow<IllegalArgumentException> {
+                signing.signGeneral(SigningPayload("alice"), listOf(JwsHeaderWrapped(header, serializer)))
+            }
+        }
+        signer.calls shouldBe 0
     }
 }

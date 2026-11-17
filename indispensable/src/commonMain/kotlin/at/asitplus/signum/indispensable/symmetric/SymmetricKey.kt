@@ -323,5 +323,6 @@ val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac,
 
 
 interface SpecializedSymmetricKey {
-    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>>
+    /** Returns the symmetric key, throwing when parameters are missing, invalid, or unsupported. */
+    fun toSymmetricKey(): SymmetricKey<*, *, *>
 }

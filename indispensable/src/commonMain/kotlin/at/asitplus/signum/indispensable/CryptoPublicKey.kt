@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.MultiBase
 import at.asitplus.io.UVarInt
@@ -73,7 +72,8 @@ interface CryptoPublicKey : WithSourceRepresentation {
 }
 
 interface SpecializedCryptoPublicKey {
-    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey>
+    /** Returns the public key, throwing when parameters are missing, invalid, or unsupported. */
+    fun toCryptoPublicKey(): CryptoPublicKey
 }
 
 /** Alias of [equals] provided for convenience (and alignment with [SpecializedCryptoPublicKey]) */
@@ -82,11 +82,11 @@ fun CryptoPublicKey.equalsCryptographically(other: CryptoPublicKey) =
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun SpecializedCryptoPublicKey.equalsCryptographically(other: CryptoPublicKey) =
-    toCryptoPublicKey().map { it.equalsCryptographically(other) }.getOrElse { false }
+    catching { toCryptoPublicKey().equalsCryptographically(other) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun SpecializedCryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
-    toCryptoPublicKey().map { other.equalsCryptographically(it) }.getOrElse { false }
+    catching { other.equalsCryptographically(toCryptoPublicKey()) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =

@@ -3,6 +3,13 @@
 ## NEXT
 This is a major refactor!
 
+* Align COSEF/JOSEF authentication APIs (**breaking**):
+    * Shared specialized-key conversion contracts and COSEF conversions return values directly and throw on failure; remove conversion-specific `getOrThrow()` calls
+    * Select same-algorithm signers by unambiguous key ID, preferring exact matches over unlabeled keys; reject registration ambiguity before signing
+    * Validate JOSE critical-header placement/references and serialized authentication parameters; signing requires explicit processing of critical extensions
+    * Decode typed COSE signatures eagerly, validate required ESP curve lengths, and add covariance and structural COSE_Sign equality
+    * Preserve existing valid wire encodings, authenticated bytes, tag-24 payload policy, and the upstream CBOR preservation boundary
+
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
