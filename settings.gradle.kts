@@ -1,5 +1,7 @@
 pluginManagement {
-    repositories {
+    repositories { providers.gradleProperty("kotlin_repo_url").orNull?.let {
+        maven { url = uri(it); name = "kotlinDev" }
+    }
         mavenLocal()
         google()
         mavenCentral()

@@ -1,0 +1,29 @@
+FROM eclipse-temurin:17-jdk AS toolchain
+
+WORKDIR /workspace
+
+ARG ANDROID_COMPILE_SDK=34
+ARG ANDROID_BUILD_TOOLS=34.0.0
+ARG ANDROID_CMDLINE_TOOLS_VERSION=11076708
+ARG KOTLIN_REPO_URL
+ARG KOTLIN_VERSION
+ARG KOTLIN_API_VERSION
+ARG KOTLIN_LANGUAGE_VERSION
+ARG KOTLIN_ADDITIONAL_CLI_OPTIONS
+ARG TESTBALLOON_VERSION
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=${ANDROID_HOME}
+ENV PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends libatomic1 unzip wget; \
+    rm -rf /var/lib/apt/lists/*; \
+    mkdir -p "${ANDROID_HOME}/cmdline-tools"; \
+    wget -q "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip" -O /tmp/android-commandlinetools.zip; \
+    unzip -q /tmp/android-commandlinetools.zip -d "${ANDROID_HOME}/cmdline-tools"; \
+    mv "${ANDROID_HOME}/cmdline-tools/cmdline-tools" "${ANDROID_HOME}/cmdline-tools/latest"; \
+    rm /tmp/android-commandlinetools.zip; \
+    yes | sdkmanager --licenses > /dev/null; \
+    sdkmanager "platform-tools" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}"

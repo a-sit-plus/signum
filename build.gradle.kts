@@ -4,8 +4,8 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import java.time.Duration
 
 plugins {
-    val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
-    val testballoonVer = System.getenv("TESTBALLOON_VERSION_OVERRIDE")?.ifBlank { null } ?: libs.versions.testballoon.get()
+    val kotlinVer = System.getenv("KOTLIN_VERSION")?.ifBlank { null } ?: libs.versions.kotlin.get()
+    val testballoonVer = System.getenv("TESTBALLOON_VERSION")?.ifBlank { null } ?: libs.versions.testballoon.get()
 
     alias(libs.plugins.asp)
     kotlin("multiplatform") version kotlinVer apply false
@@ -16,6 +16,9 @@ plugins {
 group = "at.asitplus.signum"
 subprojects {
     repositories {
+        providers.gradleProperty("kotlin_repo_url").orNull?.let {
+            maven { url = uri(it); name = "kotlinDev" }
+        }
         mavenLocal()
         maven("https://maven.pkg.github.com/a-sit-plus/awesn1") {
             credentials {

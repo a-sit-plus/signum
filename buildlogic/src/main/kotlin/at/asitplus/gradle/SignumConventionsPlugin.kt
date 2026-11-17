@@ -14,6 +14,7 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.extraProperties
@@ -66,6 +67,17 @@ class SignumConventionsExtension(private val project: Project) {
         project.silence()
 
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
+            project.providers.gradleProperty("kotlin_api_version").orNull?.let {
+                compilerOptions.apiVersion.set(KotlinVersion.fromVersion(it))
+            }
+            project.providers.gradleProperty("kotlin_language_version").orNull?.let {
+                compilerOptions.languageVersion.set(KotlinVersion.fromVersion(it))
+            }
+            project.providers.gradleProperty("kotlin_additional_cli_options").orNull
+                ?.trim()
+                ?.takeIf(String::isNotEmpty)
+                ?.split(Regex("\\s+"))
+                ?.let(compilerOptions.freeCompilerArgs::addAll)
             compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
             // configureEach (not whenObjectAdded): covers eagerly-created source sets like AGP 9's androidMain,
             // so the ExperimentalUnsignedTypes opt-in is applied uniformly and KGP's opt-in consistency check passes.
@@ -303,9 +315,6 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
 
     if (project.hasAndroidSdk()) {
         if (project.hasAndroidNdk() && !project.disableNdkTargets) {
-            androidNativeX64()
-            androidNativeX86()
-            androidNativeArm32()
             androidNativeArm64()
         } else {
             Logger.lifecycle("  > Skipping Android native targets (NDK missing or disableNdkTargets=true)")
