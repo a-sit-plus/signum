@@ -64,9 +64,7 @@ val X500AttributeProviderTest by matrixSuite {
         }
     }
 
-    data(standardAttributes, nameFn = {
-        "${if (it.kind == StringKind.UTF8) "valid alternative" else "invalid string type"} ${it.names.first()}"
-    }) test { case ->
+    data(standardAttributes, nameFn = { "alternate string tag ${it.names.first()}" }) test { case ->
         val encodedValue = when (case.kind) {
             StringKind.UTF8 -> Asn1String.Printable(case.text)
             StringKind.PRINTABLE, StringKind.IA5 -> Asn1String.UTF8(case.text)
@@ -76,11 +74,8 @@ val X500AttributeProviderTest by matrixSuite {
         )
         val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
-        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
-        when (case.kind) {
-            StringKind.UTF8 -> attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe case.text
-            StringKind.PRINTABLE, StringKind.IA5 -> attribute.shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
-        }
+        val attribute = decoded.attrsAndValues.single().shouldBeInstanceOf<TextAttributeTypeAndValue>()
+        attribute.text shouldBe case.text
         attribute.asn1.toRepresentation().value shouldBe encodedValue
         decoded.asn1.toDer() shouldBe encoded
     }
