@@ -4,15 +4,11 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.Signum
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SourceRepresentationStorage
-import at.asitplus.signum.indispensable.WithSourceRepresentation
-import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.asn1
-import at.asitplus.signum.indispensable.installIndispensable
+import at.asitplus.signum.indispensable.*
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -104,6 +100,12 @@ private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
 
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
+    @SignumInternals
+    class Unknown(
+        override val oid: ObjectIdentifier,
+        lookupResult: UnsupportedCryptoException,
+    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
+
     object OID {
         val commonName = ObjectIdentifier("2.5.4.3")
         val countryName = ObjectIdentifier("2.5.4.6")
@@ -146,19 +148,6 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
             if (failure.suppressedExceptions.isNotEmpty()) throw failure
             TextAttributeTypeAndValue(oid, value)
         }
-
-        operator fun invoke(
-            oid: ObjectIdentifier,
-            decodingFailure: UnsupportedCryptoException? = null,
-        ): AttributeTypeAndValue = Unknown(
-            oid, decodingFailure ?: UnsupportedCryptoException("No semantic interpretation for attribute $oid"),
-        )
-
-        @OptIn(SignumInternals::class)
-        private class Unknown(
-            override val oid: ObjectIdentifier,
-            lookupResult: UnsupportedCryptoException,
-        ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
 
         operator fun invoke(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue =
             fromAsn1(X500AttributeTypeAndValue(oid, value))
