@@ -219,14 +219,20 @@ val DistinguishedNameTest by matrixSuite {
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single()
 
-        if (directoryString) {
-            attribute::class shouldBe canonical::class
-            attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
-        } else {
-            (attribute is TextAttributeTypeAndValue) shouldBe false
-        }
+        attribute::class shouldBe canonical::class
+        attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
         attribute.asn1.toRepresentation() shouldBe source
         decoded.asn1.toDer() shouldBe encoded
+    }
+
+    "Serial number decoding accepts characters outside the PrintableString repertoire" {
+        val value = Asn1Primitive(Asn1Element.Tag.STRING_PRINTABLE, "A_B".encodeToByteArray())
+        val source = X500AttributeTypeAndValue(SerialNumber.oid, value)
+
+        val attribute = AttributeTypeAndValue.fromAsn1(source).shouldBeInstanceOf<SerialNumber>()
+
+        attribute.text shouldBe "A_B"
+        attribute.asn1.toRepresentation() shouldBe source
     }
 
     "Known attributes parsed by alias and dotted OID retain the DER string tag" {

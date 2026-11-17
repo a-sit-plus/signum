@@ -73,11 +73,11 @@ val EncodingRegressionTest by matrixSuite {
 
     "Failed interpretation preserves malformed ATVs without rejecting the containing name" - {
         data class Case(val name: String, val attribute: X500AttributeTypeAndValue, val decoderFailed: Boolean)
-        val malformedString = Asn1Element.parse(byteArrayOf(0x16, 0x01, 0x80.toByte()))
+        val malformedString = Asn1Element.parse(byteArrayOf(0x1E, 0x01, 0x00)) // BMPString with a truncated code unit
         listOf(
             Case("Non-string common name", X500AttributeTypeAndValue(
                 AttributeTypeAndValue.OID.commonName, Asn1OctetString(byteArrayOf(1))), true),
-            Case("Malformed known string", X500AttributeTypeAndValue(
+            Case("Undecodable known string", X500AttributeTypeAndValue(
                 AttributeTypeAndValue.OID.commonName, malformedString), true),
             Case("Malformed string with unknown OID", X500AttributeTypeAndValue(
                 ObjectIdentifier("1.2.3.4"), malformedString), false),
