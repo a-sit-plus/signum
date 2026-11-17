@@ -1,5 +1,3 @@
-@file:OptIn(at.asitplus.signum.SignumInternals::class)
-
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
