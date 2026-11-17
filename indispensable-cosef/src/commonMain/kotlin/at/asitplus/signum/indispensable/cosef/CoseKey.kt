@@ -1,8 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.failure
-import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
@@ -100,13 +97,13 @@ data class CoseKey(
     }
 
     /**
-     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
-     * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey],
+     * @return the [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
+     * or throws on invalid parameters. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey],
      * [CoseKeyParams.EcYBoolParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
-    override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        keyParams?.toCryptoPublicKey()?.map { it.coseKid = this.keyId; it }
-            ?: failure(IllegalArgumentException("No public key parameters!"))
+    override fun toCryptoPublicKey(): CryptoPublicKey =
+        keyParams?.toCryptoPublicKey()?.also { it.coseKid = this.keyId }
+            ?: throw IllegalArgumentException("No public key parameters!")
 
 
     @Deprecated("To be removed in next release")
@@ -119,22 +116,15 @@ data class CoseKey(
 
         @Deprecated("To be removed in next release")
         fun deserialize(it: ByteArray) =
-            catching { coseCompliantSerializer.decodeFromByteArray<CoseKey>(it) }
+            coseCompliantSerializer.decodeFromByteArray<CoseKey>(it)
 
-        fun fromDid(input: String): KmmResult<CoseKey> =
-            catching {
-                CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow()
-            }
+        fun fromDid(input: String): CoseKey = CryptoPublicKey.fromDid(input).toCoseKey()
 
         fun fromCoordinates(
             curve: CoseEllipticCurve,
             x: ByteArray,
             y: ByteArray,
-        ): KmmResult<CoseKey> =
-            catching {
-                CryptoPublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
-                    .getOrThrow()
-            }
+        ): CoseKey = EcdsaPublicKey.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
 
         fun forMacKey(
             algorithm: MessageAuthenticationCode,
@@ -144,7 +134,7 @@ data class CoseKey(
         ) = CoseKey(
             CoseKeyType.SYMMETRIC,
             keyId = keyId,
-            algorithm = algorithm.toCoseAlgorithm().getOrThrow(),
+            algorithm = algorithm.toCoseAlgorithm(),
             keyParams = CoseKeyParams.SymmKeyParams(keyBytes),
             operations = includedOps.let { if (it.isEmpty()) null else it.asList().toTypedArray() },
         )
@@ -154,12 +144,12 @@ data class CoseKey(
     /**
      * Tries to transform this CoseKey into a corresponding [SymmetricKey]
      */
-    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+    override fun toSymmetricKey(): SymmetricKey<*, *, *> {
         require(algorithm is CoseAlgorithm.SymmetricEncryption) { "Not a symmetric algorithm" }
         require(keyParams is CoseKeyParams.SymmKeyParams) { "No symmetric key bytes present" }
         val alg = algorithm.algorithm
         require(alg.isAuthenticated() && alg.isIntegrated())
-        alg.keyFrom(keyParams.k).getOrThrow()
+        return alg.keyFrom(keyParams.k).getOrThrow()
     }
 }
 
@@ -171,12 +161,12 @@ fun SymmetricKey<*, *, *>.toCoseKey(
     baseIv: ByteArray? = null,
     keyId: ByteArray? = this.coseKid,
     vararg includedOps: CoseKeyOperation
-) = catching {
+): CoseKey {
     //fail fast
-    val alg = algorithm.toCoseAlgorithm().getOrThrow()
+    val alg = algorithm.toCoseAlgorithm()
     require(this is SymmetricKey.Integrated) //we don't support anything else
 
-    CoseKey(
+    return CoseKey(
         CoseKeyType.SYMMETRIC,
         keyId = keyId,
         algorithm = alg,
@@ -188,17 +178,17 @@ fun SymmetricKey<*, *, *>.toCoseKey(
 
 
 /**
- * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
- * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
+ * Converts [CryptoPublicKey] into a [CoseKey], throwing on invalid parameters.
+ * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), throws [IllegalArgumentException] for invalid kty/algorithm pairs
  */
 fun CryptoPublicKey.toCoseKey(
     algorithm: CoseAlgorithm.Signature? = null,
     keyId: ByteArray? = this.coseKid
-): KmmResult<CoseKey> =
+): CoseKey =
     when (this) {
         is EcdsaPublicKey ->
             if ((algorithm != null) && (algorithm.algorithm !is EcdsaAlgorithm))
-                failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
+                throw IllegalArgumentException("Algorithm and Key Type mismatch")
             else {
                 val keyParams = if (this.preferCompressedRepresentation) {
                     CoseKeyParams.EcYBoolParams(
@@ -212,14 +202,12 @@ fun CryptoPublicKey.toCoseKey(
                         x = xBytes,
                         y = yBytes
                     )
-                catching {
-                    CoseKey(
-                        keyParams = keyParams,
-                        type = CoseKeyType.EC2,
-                        keyId = keyId,
-                        algorithm = algorithm
-                    )
-                }
+                CoseKey(
+                    keyParams = keyParams,
+                    type = CoseKeyType.EC2,
+                    keyId = keyId,
+                    algorithm = algorithm
+                )
             }
 
         is RsaPublicKey ->
@@ -232,9 +220,8 @@ fun CryptoPublicKey.toCoseKey(
                     CoseAlgorithm.Signature.RS512,
                     CoseAlgorithm.Signature.RS1
                 ))
-            ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
-            else catching {
-                CoseKey(
+            ) throw IllegalArgumentException("Algorithm and Key Type mismatch")
+            else CoseKey(
                     keyParams = CoseKeyParams.RsaParams(
                         n = n.magnitude,
                         e = e.magnitude
@@ -243,7 +230,6 @@ fun CryptoPublicKey.toCoseKey(
                     keyId = keyId,
                     algorithm = algorithm
                 )
-            }
         else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 

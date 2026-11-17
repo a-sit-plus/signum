@@ -1,10 +1,13 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
+import at.asitplus.signum.indispensable.cosef.legacy.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.base16.Base16
@@ -28,6 +31,11 @@ import kotlinx.serialization.Serializable
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseSignedSerializer::class)
 @ConsistentCopyVisibility
+@Deprecated(
+    "Replaced by CoseSign1 (wire) + CoseSign1Typed (typed payload)",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CoseSign1Typed")
+)
 data class CoseSigned<P : Any?> internal constructor(
     val payload: P?,
     val signature: CryptoSignature,

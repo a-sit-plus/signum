@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
@@ -26,7 +25,7 @@ data class CborWebToken(
      */
     @CborLabel(1)
     @SerialName("iss")
-    val issuer: String? = null,
+    override val issuer: String? = null,
 
     /**
      * The "sub" (subject) claim has the same meaning and processing rules
@@ -36,7 +35,7 @@ data class CborWebToken(
      */
     @CborLabel(2)
     @SerialName("sub")
-    val subject: String? = null,
+    override val subject: String? = null,
 
     /**
      * The "aud" (audience) claim has the same meaning and processing rules
@@ -49,7 +48,7 @@ data class CborWebToken(
      */
     @CborLabel(3)
     @SerialName("aud")
-    val audience: String? = null,
+    override val audience: String? = null,
 
     /**
      * The "exp" (expiration time) claim has the same meaning and processing
@@ -60,7 +59,7 @@ data class CborWebToken(
     @CborLabel(4)
     @SerialName("exp")
     @Serializable(with = InstantLongSerializer::class)
-    val expiration: Instant? = null,
+    override val expiration: Instant? = null,
 
     /**
      * The "nbf" (not before) claim has the same meaning and processing
@@ -71,7 +70,7 @@ data class CborWebToken(
     @CborLabel(5)
     @SerialName("nbf")
     @Serializable(with = InstantLongSerializer::class)
-    val notBefore: Instant? = null,
+    override val notBefore: Instant? = null,
 
     /**
      * The "iat" (issued at) claim has the same meaning and processing rules
@@ -82,7 +81,7 @@ data class CborWebToken(
     @CborLabel(6)
     @SerialName("iat")
     @Serializable(with = InstantLongSerializer::class)
-    val issuedAt: Instant? = null,
+    override val issuedAt: Instant? = null,
 
     /**
      * The "cti" (CWT ID) claim has the same meaning and processing rules as
@@ -93,13 +92,13 @@ data class CborWebToken(
     @CborLabel(7)
     @SerialName("jti")
     @ByteString
-    val cwtId: ByteArray? = null,
+    override val cwtId: ByteArray? = null,
 
     @CborLabel(10)
     @SerialName("Nonce")
     @ByteString
-    val nonce: ByteArray? = null,
-) {
+    override val nonce: ByteArray? = null,
+) : CwtClaims {
 
 
     @Deprecated("To be removed in next release")
@@ -156,8 +155,6 @@ data class CborWebToken(
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: ByteArray) = catching {
-            coseCompliantSerializer.decodeFromByteArray<CborWebToken>(it)
-        }
+        fun deserialize(it: ByteArray) = coseCompliantSerializer.decodeFromByteArray<CborWebToken>(it)
     }
 }

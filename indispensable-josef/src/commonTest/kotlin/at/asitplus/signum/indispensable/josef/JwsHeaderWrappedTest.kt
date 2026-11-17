@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
 
 val JwsHeaderWrappedTest by matrixSuite {
     "custom headers split and decode with explicit and reified serializers" {
@@ -69,11 +71,11 @@ val JwsHeaderWrappedTest by matrixSuite {
     "factories cache fragments using the supplied JSON configuration" {
         val format = Json(joseCompliantSerializer) { encodeDefaults = true }
         val wrapped = JwsHeaderWrapped(
-            SigningHeader(JwsAlgorithm.Signature.RS256), setOf("extension"), serialFormat = format,
+            SigningHeader(JwsAlgorithm.Signature.RS256, extension = "value", crit = listOf("extension")), setOf("kid"), serialFormat = format,
         )
 
-        wrapped.unprotectedHeader shouldBe JsonObject(mapOf("extension" to JsonNull))
-        wrapped.unprotectedHeaderMembers shouldBe setOf("extension")
+        wrapped.unprotectedHeader shouldBe JsonObject(mapOf("kid" to JsonNull))
+        wrapped.unprotectedHeaderMembers shouldBe setOf("kid")
         val decoded = JwsHeaderWrapped.fromParts<SigningHeader>(
             wrapped.protectedHeader, wrapped.unprotectedHeader, format,
         )
@@ -90,5 +92,40 @@ val JwsHeaderWrappedTest by matrixSuite {
         }
         result.shouldBeFailure().shouldBeInstanceOf<IllegalArgumentException>()
             .message.shouldContain("Duplicate keys: extension")
+    }
+
+    "critical parameters are protected nonempty unique names referencing protected members" {
+        val base = mapOf("alg" to JsonPrimitive("RS256"), "extension" to JsonPrimitive("value"))
+        for (crit in listOf(
+            JsonArray(emptyList()), JsonNull, JsonPrimitive("extension"),
+            JsonArray(listOf(JsonPrimitive(1))),
+            JsonArray(listOf(JsonPrimitive("extension"), JsonPrimitive("extension"))),
+            JsonArray(listOf(JsonPrimitive("missing"))),
+            JsonArray(listOf(JsonPrimitive("crit"))),
+        )) {
+            shouldThrow<IllegalArgumentException> {
+                JwsHeaderWrapped.fromJsonObjects<SigningHeader>(JsonObject(base + ("crit" to crit)))
+            }
+        }
+        val critical = JsonArray(listOf(JsonPrimitive("extension")))
+        shouldThrow<IllegalArgumentException> {
+            JwsHeaderWrapped.fromJsonObjects<SigningHeader>(JsonObject(base), JsonObject(mapOf("crit" to critical)))
+        }
+        shouldThrow<IllegalArgumentException> {
+            JwsHeaderWrapped.fromJsonObjects<SigningHeader>(
+                JsonObject(mapOf("alg" to JsonPrimitive("RS256"), "crit" to critical)),
+                JsonObject(mapOf("extension" to JsonPrimitive("value"))),
+            )
+        }
+        JwsHeaderWrapped.fromJsonObjects<SigningHeader>(JsonObject(base + ("crit" to critical))).header.crit shouldBe listOf("extension")
+    }
+
+    "received critical references may name unmodeled protected extensions" {
+        val protected = """{"alg":"RS256","vendor":1,"crit":["vendor"]}""".encodeToByteArray()
+        val raw = JwsFlattened.Raw(protected, null, "{}".encodeToByteArray(), byteArrayOf(1))
+        val typed = raw.typed<SigningHeader, SigningPayload>()
+        typed.header.crit shouldBe listOf("vendor")
+        typed.raw.plainProtectedHeader shouldBe protected
+        typed.raw shouldBe raw
     }
 }

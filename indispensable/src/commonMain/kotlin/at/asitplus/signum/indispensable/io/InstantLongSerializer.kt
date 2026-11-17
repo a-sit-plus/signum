@@ -41,7 +41,7 @@ object InstantLongSerializer : KSerializer<Instant> {
         } catch (_: SerializationException) {
             // Not an integer, e.g. a CBOR float. This relies on the decoder not consuming the
             // offending data item when decodeLong() fails, which holds for kotlinx-serialization-cbor.
-            // Switch to inspecting a CborElement once kotlinx-serialization-cbor provides one.
+            // Regression tests cover following fields and malformed/truncated alternatives on the upstream backend.
             decoder.decodeDouble().toInstant()
         }
 

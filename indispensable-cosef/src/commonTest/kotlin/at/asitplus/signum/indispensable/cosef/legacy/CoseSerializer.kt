@@ -1,17 +1,10 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
 
-import kotlinx.serialization.decodeFromByteArray
+import at.asitplus.signum.indispensable.cosef.*
 
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.pki.Certificate
-import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
-import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaSignature
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -28,7 +21,7 @@ import kotlinx.serialization.json.JsonDecoder
 object CoseBytesWireFormatSerializer : KSerializer<CoseBytes> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseBytes") {
         element("protectedHeader", ProtectedCoseHeaderSerializer.descriptor)
-        element("unprotectedHeader", CoseHeaderSerializer.descriptor)
+        element("unprotectedHeader", CoseHeader.serializer().descriptor)
         element("payload", ByteArraySerializer().descriptor, isOptional = true)
         element("authTag", ByteArraySerializer().descriptor)
     }
@@ -62,7 +55,12 @@ class CoseSignedSerializer<P : Any?>(
     serialName = "CoseSigned",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val signature = wire.rawAuthBytes.toSignature(wire.protectedHeader, wire.unprotectedHeader)
+        val protectedHeader = wire.protectedHeader
+        // Preserve the old heuristic only in the compatibility fixture; production APIs require an algorithm.
+        val signature = if (protectedHeader.algorithm == null && wire.unprotectedHeader?.algorithm == null) {
+            if (wire.rawAuthBytes.size < 2048) at.asitplus.signum.indispensable.sign.EcdsaSignature.fromP1363Bytes(wire.rawAuthBytes)
+            else at.asitplus.signum.indispensable.sign.RsaSignature(wire.rawAuthBytes)
+        } else COSE.getSignature(wire.rawAuthBytes, protectedHeader, wire.unprotectedHeader)
         CoseSigned(
             payload = wire.payload.toNullablePayload(parameterSerializer),
             signature = signature,
@@ -94,39 +92,4 @@ class CoseMacSerializer<P : Any?>(
 private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>): P? = when {
     this == null || this.isEmpty() -> null
     else -> toTypedPayload(serializer)
-}
-
-private fun ByteArray.toSignature(
-    protectedHeader: CoseHeader,
-    unprotectedHeader: CoseHeader?,
-): CryptoSignature =
-    if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
-        EcdsaSignature.fromP1363Bytes(this)
-    else
-        RsaSignature(this)
-
-private fun <P : Any?> ByteArray.toTypedPayload(serializer: KSerializer<P>): P =
-    if (serializer == ByteArraySerializer()) {
-        @Suppress("UNCHECKED_CAST")
-        (this as P)
-    } else {
-        runCatching { fromBytes(serializer) }
-            .getOrElse { fromByteStringWrapper(serializer) }
-    }
-
-private fun <P : Any?> ByteArray.fromBytes(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(serializer, this)
-
-private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P>): P =
-    coseCompliantSerializer.decodeFromByteArray(
-        ByteStringWrapperSerializer(serializer),
-        this
-    ).value
-
-private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
-    null -> certificateChain?.firstOrNull()
-                ?.let { Certificate.fromAsn1(it) }
-        ?.let { it.signatureAlgorithm is EcdsaAlgorithm }
-    is CoseAlgorithm.Signature -> (algorithm.algorithm is EcdsaAlgorithm)
-    else -> false
 }

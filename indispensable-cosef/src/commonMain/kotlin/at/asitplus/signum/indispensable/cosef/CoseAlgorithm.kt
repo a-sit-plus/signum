@@ -2,8 +2,6 @@
 
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import at.asitplus.signum.UnsupportedCryptoException
@@ -348,9 +346,9 @@ object CoseHashAlgorithmSerializer : KSerializer<CoseAlgorithm.Hash> {
 
 }
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
-fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = catching {
-    when (this) {
+/** Finds a matching COSE algorithm, throwing on unsupported parameters; ESP variants retain a required curve. */
+fun SignatureAlgorithm.toCoseAlgorithm(): CoseAlgorithm.Signature {
+    return when (this) {
         is EcdsaAlgorithm -> when (this.digest) {
             Digest.SHA256 -> when (this.requiredCurve) {
                 ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
@@ -396,9 +394,9 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
     }
 }
 
-/** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
-fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {
-    when (this) {
+/** Finds a matching COSE MAC, including SHA-256 truncated to 64 bits, or throws if unsupported. */
+fun MessageAuthenticationCode.toCoseAlgorithm(): CoseAlgorithm.MAC {
+    return when (this) {
         HMAC.SHA1 -> CoseAlgorithm.MAC.UNOFFICIAL_HS1
         HMAC.SHA256 -> CoseAlgorithm.MAC.HS256
         HMAC.SHA384 -> CoseAlgorithm.MAC.HS384
@@ -412,8 +410,8 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
 }
 
 /** Tries to find a matching COSE algorithm. Note that only AES-GCM and ChaCha/Poly are supported. */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
-    when (this) {
+fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): CoseAlgorithm.SymmetricEncryption {
+    return when (this) {
         SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
         SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM
         SymmetricEncryptionAlgorithm.AES_192.GCM -> CoseAlgorithm.SymmetricEncryption.A192GCM
@@ -423,8 +421,8 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
 }
 
 /** Tries to find a matching COSE algorithm. Note that only SHA-1 and SHA-2 with 256, 384 and 512 bits are supported. */
-fun Digest.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Hash> = catching {
-    when (this) {
+fun Digest.toCoseAlgorithm(): CoseAlgorithm.Hash {
+    return when (this) {
         Digest.SHA1 -> CoseAlgorithm.Hash.SHA1
         Digest.SHA256 -> CoseAlgorithm.Hash.SHA256
         Digest.SHA384 -> CoseAlgorithm.Hash.SHA384
@@ -433,10 +431,10 @@ fun Digest.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Hash> = catching {
     }
 }
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
-fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> =
+/** Finds a matching COSE algorithm, throwing on unsupported parameters; ESP variants retain a required curve. */
+fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): CoseAlgorithm.Signature =
     this.algorithm.toCoseAlgorithm()
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
-fun SpecializedMessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> =
+/** Finds a matching COSE algorithm, throwing on unsupported parameters; ESP variants retain a required curve. */
+fun SpecializedMessageAuthenticationCode.toCoseAlgorithm(): CoseAlgorithm.MAC =
     this.algorithm.toCoseAlgorithm()
