@@ -34,7 +34,7 @@ interface CertificateValidator : CertificateChainValidator {
         context: CertificateValidationContext
     ): Map<X509Certificate, Set<ObjectIdentifier>> {
         val checkedCriticalExtensions = mutableMapOf<X509Certificate, MutableSet<ObjectIdentifier>>()
-        anchoredChain.chain.forEachIndexed { index, cert ->
+        anchoredChain.validationPath.forEachIndexed { index, cert ->
             try {
                 val checked = check(cert)
                 checkedCriticalExtensions

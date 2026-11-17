@@ -482,7 +482,7 @@ val GeneralName.asn1 get() =
 val GeneralName.Companion.fromAsn1 get() =
     asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
 
-val GeneralName.tag: BigInteger get() = BigInteger.fromULong(this@tag.asn1.toRepresentation().tag.tagValue)
+val GeneralName.asn1TagValue: ULong get() = this@asn1TagValue.asn1.toRepresentation().tag.tagValue
 
 val RelativeDistinguishedName.asn1 get() =
     asn1Encoders<X500RelativeDistinguishedName, _> { src ->

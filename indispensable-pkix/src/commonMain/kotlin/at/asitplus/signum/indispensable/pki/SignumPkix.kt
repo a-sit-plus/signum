@@ -19,5 +19,3 @@ private val initializePkix by lazy {
  */
 fun Signum.installPkix() { initializePkix }
 
-/** The chain ordered from trust anchor to leaf (reverse of the conventional leaf-first order). */
-val CertificateChain.validationPath: CertificateChain get() = reversed()

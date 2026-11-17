@@ -4,11 +4,8 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.asn1
-import at.asitplus.signum.indispensable.tag
+import at.asitplus.signum.indispensable.asn1TagValue
 import com.ionspin.kotlin.bignum.integer.BigInteger
-
-import at.asitplus.awesn1.serialization.decodeFromTlv
-import at.asitplus.awesn1.serialization.encodeToTlv
 
 import at.asitplus.awesn1.Asn1EncapsulatingOctetString
 import at.asitplus.awesn1.Asn1String
@@ -16,7 +13,6 @@ import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.encoding.Asn1.Bool
-import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.keyUsage
 import at.asitplus.signum.indispensable.pki.extn.AuthorityKeyIdentifier
 import at.asitplus.signum.indispensable.pki.extn.BasicConstraints
@@ -179,16 +175,16 @@ val X509CertificateExtensionParsingTest by matrixSuite {
 
     "AuthorityKeyIdentifier constructed programmatically round-trips" {
         val keyId = byteArrayOf(9, 8, 7, 6)
-        val decoded = CertificateExtension.fromAsn1((AuthorityKeyIdentifier(keyIdentifier = keyId, authorityCertSerialNumber = com.ionspin.kotlin.bignum.integer.BigInteger(42))).asn1.toTlv()) as AuthorityKeyIdentifier
+        val decoded = CertificateExtension.fromAsn1((AuthorityKeyIdentifier(keyIdentifier = keyId, authorityCertSerialNumber = BigInteger(42))).asn1.toTlv()) as AuthorityKeyIdentifier
         (decoded.keyIdentifier?.contentEquals(keyId)) shouldBe true
-        decoded.authorityCertSerialNumber shouldBe com.ionspin.kotlin.bignum.integer.BigInteger(42)
+        decoded.authorityCertSerialNumber shouldBe BigInteger(42)
     }
 
     "NameConstraints constructed programmatically round-trips" {
         val permitted = GeneralSubtrees(mutableListOf(GeneralSubtree(DNSName(Asn1String.IA5("example.com")))))
         val decoded = CertificateExtension.fromAsn1((NameConstraints(permitted = permitted)).asn1.toTlv()) as NameConstraints
         decoded.permitted?.trees?.size shouldBe 1
-        (decoded.permitted?.trees?.first()?.base as? GeneralName)?.tag shouldBe BigInteger.fromULong(X509GeneralName.Tags.dnsName.tagValue)
+        decoded.permitted?.trees?.first()?.base?.asn1TagValue shouldBe X509GeneralName.Tags.dnsName.tagValue
         decoded.excluded shouldBe null
     }
 

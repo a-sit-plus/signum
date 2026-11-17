@@ -4,12 +4,9 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.sourceFormat
-import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.signum.indispensable.tag
+import at.asitplus.signum.indispensable.asn1TagValue
 import com.ionspin.kotlin.bignum.integer.BigInteger
-
-import at.asitplus.awesn1.serialization.DER
 
 import at.asitplus.signum.indispensable.pki.attributes.*
 
@@ -34,7 +31,7 @@ import io.kotest.matchers.shouldBe
 
 private fun serializer() = X509GeneralNames.serializer()
 
-private fun List<GeneralName>.tags() = map { it.tag }
+private fun List<GeneralName>.tags() = map { it.asn1TagValue }
 
 val AlternativeNamesTest by matrixSuite {
 
@@ -81,7 +78,7 @@ val AlternativeNamesTest by matrixSuite {
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.registeredID, X509GeneralName.Tags.directoryName,
-        ).map { BigInteger.fromULong(it.tagValue) }
+        ).map { it.tagValue }
         (decoded.generalNames[2] as DirectoryName).name.toRfc2253String() shouldBe "cn=directory" // RFC 2253 canonical: type + value lower-cased
         decoded.let { it.asn1.toDer() } shouldBe encoded
     }
@@ -97,7 +94,7 @@ val AlternativeNamesTest by matrixSuite {
 
         decoded.generalNames.tags() shouldBe listOf(
             X509GeneralName.Tags.dnsName, X509GeneralName.Tags.ipAddress, X509GeneralName.Tags.registeredID,
-        ).map { BigInteger.fromULong(it.tagValue) }
+        ).map { it.tagValue }
         decoded.let { it.asn1.toDer() } shouldBe encoded
     }
 
