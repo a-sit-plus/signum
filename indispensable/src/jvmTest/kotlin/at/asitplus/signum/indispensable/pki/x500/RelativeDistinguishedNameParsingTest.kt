@@ -8,11 +8,8 @@ import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.*
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import kotlin.streams.asSequence
 
@@ -24,40 +21,45 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
         }
     }
 
-    "splitRespectingEscapeAndQuotes should split simple RDN" {
+    "fromString should parse shorthand attributes in a multi-valued RDN" {
         val input = "CN=John+O=Company"
-        val result = input.splitRespectingEscapeAndQuotes('+')
-        result shouldBe listOf("CN=John", "O=Company")
+        val result = RelativeDistinguishedName.fromString(input)
+        result.attrsAndValues shouldBe setOf(
+            TextAttributeTypeAndValue(AttributeTypeAndValue.OID.commonName, "John"),
+            TextAttributeTypeAndValue(AttributeTypeAndValue.OID.organizationName, "Company"),
+        )
     }
 
-    "splitRespectingEscapeAndQuotes should ignore delimiter inside quotes" {
+    "fromString should keep quoted plus in the attribute value" {
         val input = """CN="John+Doe"+O=Company"""
-        val result = input.splitRespectingEscapeAndQuotes('+')
-        result shouldBe listOf("""CN="John+Doe"""", "O=Company")
+        val result = RelativeDistinguishedName.fromString(input)
+        result.attrsAndValues shouldBe setOf(
+            TextAttributeTypeAndValue(AttributeTypeAndValue.OID.commonName, "John+Doe"),
+            TextAttributeTypeAndValue(AttributeTypeAndValue.OID.organizationName, "Company"),
+        )
     }
 
-    "splitRespectingEscapeAndQuotes should preserve escaped delimiter" {
+    "fromString should keep escaped plus in the attribute value" {
         val input = """CN=John\+Doe+O=Company"""
-        val result = input.splitRespectingEscapeAndQuotes('+')
-        result shouldBe listOf("""CN=John\+Doe""", "O=Company")
+        val result = RelativeDistinguishedName.fromString(input)
+        result.attrsAndValues shouldBe setOf(
+            TextAttributeTypeAndValue(AttributeTypeAndValue.OID.commonName, "John+Doe"),
+            TextAttributeTypeAndValue(AttributeTypeAndValue.OID.organizationName, "Company"),
+        )
     }
 
-    "splitFirstUnescaped should split on first unescaped delimiter" {
-        val input = "CN=John Doe"
-        val result = input.splitFirstUnescaped('=')
-        result shouldBe listOf("CN", "John Doe")
+    "fromString should split on the first equals sign" {
+        val result = RelativeDistinguishedName.fromString("CN=John=Doe")
+        result.attrsAndValues.single() shouldBe TextAttributeTypeAndValue(AttributeTypeAndValue.OID.commonName, "John=Doe")
     }
 
-    "splitFirstUnescaped should preserve escaped delimiter" {
-        val input = "CN=John\\=Doe"
-        val result = input.splitFirstUnescaped('=')
-        result shouldBe listOf("CN", "John\\=Doe")
+    "fromString should unescape equals in the attribute value" {
+        val result = RelativeDistinguishedName.fromString("CN=John\\=Doe")
+        result.attrsAndValues.single() shouldBe TextAttributeTypeAndValue(AttributeTypeAndValue.OID.commonName, "John=Doe")
     }
 
-    "splitFirstUnescaped should return whole string if delimiter missing" {
-        val input = "CNJohnDoe"
-        val result = input.splitFirstUnescaped('=')
-        result shouldBe listOf("CNJohnDoe")
+    "fromString should reject a missing equals sign" {
+        shouldThrow<IllegalArgumentException> { RelativeDistinguishedName.fromString("CNJohnDoe") }
     }
 
     "fromString should parse valid RDN" {
@@ -197,27 +199,21 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
      * https://github.com/bcgit/bc-java/blob/main/core/src/test/java/org/bouncycastle/asn1/test/X500NameTest.java
      */
     val bcExamples = listOf(
-        "C=AU,ST=Victoria,L=South Melbourne,O=Connect 4 Pty Ltd,OU=Webserver Team,CN=www2.connect4.com.au,E=webmaster@connect4.com.au",
-        "C=AU,ST=Victoria,L=South Melbourne,O=Connect 4 Pty Ltd,OU=Certificate Authority,CN=Connect 4 CA,E=webmaster@connect4.com.au",
+        "C=AU,ST=Victoria,L=South Melbourne,O=Connect 4 Pty Ltd,OU=Webserver Team,CN=www2.connect4.com.au,EMAILADDRESS=webmaster@connect4.com.au",
+        "C=AU,ST=Victoria,L=South Melbourne,O=Connect 4 Pty Ltd,OU=Certificate Authority,CN=Connect 4 CA,EMAILADDRESS=webmaster@connect4.com.au",
         "C=AU,ST=QLD,CN=SSLeay/rsa test cert",
         "C=US,O=National Aeronautics and Space Administration,SERIALNUMBER=16+CN=Steve Schoch",
-        "E=cooke@issl.atl.hp.com,C=US,OU=Hewlett Packard Company (ISSL),CN=Paul A. Cooke",
-        """CN=*.canal-plus.com,OU=Provided by TBS INTERNET https://www.tbs-certificats.com/,OU=\\ CANAL \\+,O=CANAL\\+DISTRIBUTION,L=issy les moulineaux,ST=Hauts de Seine,C=FR""",
+        "EMAILADDRESS=cooke@issl.atl.hp.com,C=US,OU=Hewlett Packard Company (ISSL),CN=Paul A. Cooke",
+        """CN=*.canal-plus.com,OU=Provided by TBS INTERNET https://www.tbs-certificats.com/,OU=\ CANAL \+,O=CANAL\+DISTRIBUTION,L=issy les moulineaux,ST=Hauts de Seine,C=FR""",
         "O=Bouncy Castle,CN=www.bouncycastle.org\\ ",
         "O=Bouncy Castle,CN=c:\\\\fred\\\\bob",
         "C=DE,L=Berlin,O=Wohnungsbaugenossenschaft \\\"Humboldt-Universität\\\" eG,CN=transfer.wbg-hub.de"
     )
 
     bcExamples.forEachIndexed { index, dn ->
-        "Bouncy Castle example #$index should round-trip through splitRespectingEscapeAndQuotes" {
-            val rdnStrings = dn.splitRespectingEscapeAndQuotes(',')
-
-            // Ensure we split into multiple RDNs if there are commas outside quotes
-            rdnStrings.size shouldBeGreaterThan 0
-
-            // Join back and normalize whitespace to roughly check round-trip
-            val recombined = rdnStrings.joinToString(",") { it } // <- preserve trailing spaces and escapes
-            recombined shouldBe dn
+        "Bouncy Castle example #$index should round-trip through Name" {
+            val name = Name.fromString(dn.lowercase())
+            Name.fromString(name.toRfc2253String()) shouldBe name
         }
     }
 
@@ -227,19 +223,11 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     )
 
     hexExamples.forEachIndexed { index, input ->
-        "Hex escaping example #$index should preserve escapes" {
+        "Hex escaping example #$index should round-trip through Name" {
             val dn = "CN=$input,O=\\ Test,C=GB"
-            val rdnStrings = dn.splitRespectingEscapeAndQuotes(',')
-
-            // 1. Ensure we split correctly
-            rdnStrings.size shouldBe 3
-
-            // 2. First RDN matches exactly
-            rdnStrings[0] shouldBe "CN=$input"
-
-            // 3. Check recombination matches original DN exactly
-            val recombined = rdnStrings.joinToString(",")
-            recombined shouldBe dn
+            val name = Name.fromString(dn.lowercase())
+            name.relativeDistinguishedNames.size shouldBe 3
+            Name.fromString(name.toRfc2253String()) shouldBe name
         }
     }
 }
