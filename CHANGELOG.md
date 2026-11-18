@@ -42,6 +42,7 @@ at the cost of introducing breaking changes**
     * multibase 1.4.1
     * kotlinx.serialization 1.13.0
     * kotlinx.io 0.9.3
+    * bignum 0.4.0
 
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support
