@@ -58,13 +58,17 @@ val CertificateEncodingTest by matrixSuite {
             pss to explicitPss,
         )) {
             for ((inner, outer) in listOf(first to second, second to first)) {
-                val template = certificate(SignatureAlgorithm.fromAsn1(inner)).asn1.toRepresentation()
+                val innerAlgorithm = SignatureAlgorithm.fromAsn1(inner)
+                val outerAlgorithm = SignatureAlgorithm.fromAsn1(outer)
+                innerAlgorithm shouldBe outerAlgorithm
+                outerAlgorithm shouldBe innerAlgorithm
+                innerAlgorithm.hashCode() shouldBe outerAlgorithm.hashCode()
+                val template = certificate(innerAlgorithm).asn1.toRepresentation()
                 val original = X509Certificate(template.tbsCertificate, outer, template.signatureValue)
                 val bytes = Signum.Der.encodeToByteArray(original)
                 val fromModel = Certificate.fromAsn1(original)
                 val fromDer = Certificate.fromAsn1(bytes)
 
-                SignatureAlgorithm.fromAsn1(inner) shouldBe SignatureAlgorithm.fromAsn1(outer)
                 fromDer shouldBe Certificate.fromAsn1(template)
                 fromDer.hashCode() shouldBe Certificate.fromAsn1(template).hashCode()
                 fromModel shouldBe fromDer
