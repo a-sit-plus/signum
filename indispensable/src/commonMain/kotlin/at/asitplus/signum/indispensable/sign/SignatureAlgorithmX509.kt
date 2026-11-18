@@ -54,7 +54,7 @@ interface Asn1SignatureAlgorithmProvider {
 val EcdsaAlgorithm.Companion.fromAsn1 get() = asn1Decoders<X509AlgorithmIdentifier,_> { src ->
     EcdsaAlgorithm(
         run {
-            require(src.parameters == null)
+            require(src.parameters == null || src.parameters == Asn1Null)
             when (src.oid) {
                 KnownOIDs.ecdsaWithSHA1 -> Digest.SHA1
                 KnownOIDs.ecdsaWithSHA256 -> Digest.SHA256

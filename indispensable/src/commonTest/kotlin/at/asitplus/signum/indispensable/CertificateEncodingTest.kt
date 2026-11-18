@@ -46,12 +46,14 @@ private fun certificate(signatureAlgorithm: SignatureAlgorithm = EcdsaAlgorithm.
 val CertificateEncodingTest by matrixSuite {
 
     "Equivalent signature identifiers preserve both certificate and signed TBS sources" {
+        val ecdsa = EcdsaAlgorithm.withSHA256.asn1.toRepresentation()
         val pkcs1 = RsaAlgorithm.withSHA256andPKCS1Padding.asn1.toRepresentation()
         val pss = X509AlgorithmIdentifier(RsaSsaPssParams())
         val explicitPss = X509AlgorithmIdentifier(RsaSsaPssParams(
             hashAlgorithm = X509AlgorithmIdentifier(RsaSsaPssParams.SHA1_OID, null),
         ))
         for ((first, second) in listOf(
+            ecdsa to X509AlgorithmIdentifier(ecdsa.oid, Asn1Null),
             pkcs1 to X509AlgorithmIdentifier(pkcs1.oid, null),
             pss to explicitPss,
         )) {

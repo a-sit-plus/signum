@@ -64,6 +64,38 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         RsaAlgorithm.fromAsn1(rsa.asn1.toDer()) shouldBe rsa
     }
 
+    "ECDSA signature identifiers accept absent or NULL parameters and preserve encoding" {
+        for (digest in listOf(Digest.SHA1, Digest.SHA256, Digest.SHA384, Digest.SHA512)) {
+            val expected = EcdsaAlgorithm(digest)
+            val canonical = expected.asn1.toRepresentation()
+            canonical.parameters shouldBe null
+            val decoded = listOf(null, Asn1Null).map { parameters ->
+                val source = X509AlgorithmIdentifier(canonical.oid, parameters)
+                val concrete = EcdsaAlgorithm.fromAsn1(source)
+                val generic = SignatureAlgorithm.fromAsn1(source)
+                concrete shouldBe expected
+                generic shouldBe expected
+                concrete.hashCode() shouldBe expected.hashCode()
+                concrete.asn1.toRepresentation().element shouldBeSameInstanceAs source.element
+                generic.asn1.toRepresentation().element shouldBeSameInstanceAs source.element
+                val bytes = DER.encodeToByteArray(source)
+                val reparsed = EcdsaAlgorithm.fromAsn1(bytes)
+                val genericReparsed = SignatureAlgorithm.fromAsn1(bytes)
+                reparsed shouldBe expected
+                genericReparsed shouldBe expected
+                reparsed.asn1.toDer() shouldBe bytes
+                genericReparsed.asn1.toDer() shouldBe bytes
+                concrete
+            }
+            decoded[0] shouldBe decoded[1]
+            expected.asn1.toRepresentation() shouldBe canonical
+            EcdsaAlgorithm(digest).asn1.toRepresentation().parameters shouldBe null
+            shouldThrowAny {
+                EcdsaAlgorithm.fromAsn1(X509AlgorithmIdentifier(canonical.oid, Asn1.OctetString(byteArrayOf(1))))
+            }
+        }
+    }
+
     "RSA PKCS1 signature identifiers accept absent or NULL parameters and preserve encoding" {
         for (digest in listOf(Digest.SHA1, Digest.SHA256, Digest.SHA384, Digest.SHA512)) {
             val expected = RsaAlgorithm(RsaAlgorithm.Padding.PKCS1, digest)
