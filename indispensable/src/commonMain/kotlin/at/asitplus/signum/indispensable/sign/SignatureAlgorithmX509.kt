@@ -80,7 +80,7 @@ val RsaAlgorithm.Companion.fromAsn1 get() = asn1Decoders<X509AlgorithmIdentifier
                 KnownOIDs.sha512WithRSAEncryption -> Digest.SHA512
                 else -> throw IllegalArgumentException("Unsupported algorithm ${src.oid}")
             }.let { digest ->
-                require(src.parameters == Asn1Null)
+                require(src.parameters == null || src.parameters == Asn1Null)
                 RsaAlgorithm.Parameters.Pkcs1Padded(digest)
             }
         }
