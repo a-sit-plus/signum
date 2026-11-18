@@ -2,13 +2,14 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
+import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.internals.hexToByteArray
 
 /**
@@ -45,22 +46,10 @@ class RelativeDistinguishedName(
 
         /** Parse a single RDN string (e.g., "CN=John Doe+O=Company"). */
         fun fromString(rdnStr: String): RelativeDistinguishedName {
-            val atvs = rdnStr.splitRespectingEscapeAndQuotes('+').map { atvStr ->
-                val parts = atvStr.splitFirstUnescaped( '=')
-                if (parts.size != 2) throw IllegalArgumentException("Invalid RDN part: $atvStr")
-                AttributeTypeAndValue.fromString(parts[0], parts[1])
-                    ?: throw IllegalArgumentException("Unknown RDN part: $atvStr")
-            }
+            val atvs = rdnStr.splitRespectingEscapeAndQuotes('+').map(AttributeTypeAndValue::fromString)
             return RelativeDistinguishedName(atvs.toSet())
         }
 
-        //internal for tests
-        internal fun String.splitFirstUnescaped(delimiter: Char): List<String> {
-            val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
-            return this.split(regex, limit = 2)
-        }
-
-        //internal for tests
         internal fun String.splitRespectingEscapeAndQuotes(vararg delimiters: Char): List<String> {
             val parts = mutableListOf<String>()
             val sb = StringBuilder()
@@ -132,36 +121,57 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     companion object {
         init { Signum.installIndispensable() }
 
-        /** Resolve a DN shorthand or alias through the registered semantic providers. */
-        fun oidForName(name: String): ObjectIdentifier? = try {
-            ServiceLoader.load<AttributeTypeAndValueProvider>().get(name.trim().uppercase()) { oidForName(it) }
-        } catch (_: UnsupportedCryptoException) { null }
-
-        /** Resolve a canonical DN name through the registered semantic providers. */
-        fun nameForOid(oid: ObjectIdentifier): String? = try {
-            ServiceLoader.load<AttributeTypeAndValueProvider>().get(oid) { nameForOid(it) }
-        } catch (_: UnsupportedCryptoException) { null }
-
-        /** Construct from semantic text; unrecognized OIDs retain their text without choosing a wire format. */
-        fun fromString(oid: ObjectIdentifier, value: String): AttributeTypeAndValue = try {
-            ServiceLoader.load<AttributeTypeAndValueProvider>().get(oid) { decoderFor(it)?.invoke(value) }
-        } catch (failure: UnsupportedCryptoException) {
-            if (failure.suppressedExceptions.isNotEmpty()) throw failure
-            TextAttributeTypeAndValue(oid, value)
+        private fun String.splitFirstUnescaped(delimiter: Char): List<String> {
+            val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
+            return this.split(regex, limit = 2)
         }
 
-        fun fromString(type: String, value: String): AttributeTypeAndValue? = runRethrowing {
+        /** constructs an ATV from type-value string form (e.g., `CN=Alice`) */
+        fun fromString(str: String) = runRethrowing {
+            val parts = str.splitFirstUnescaped( '=')
+            if (parts.size != 2) throw Asn1Exception("Invalid ATV string: $str")
+            fromString(parts[0], parts[1])
+        }
+
+        /** constructs an ATV from a type-value pair */
+        fun fromString(type: String, value: String): AttributeTypeAndValue = runRethrowing {
+            // covered options:
+            // oid=kotlinstring
+            // oid=#hexstring
+            // alias=kotlinstring
+            // alias=#hexstring
             val key = type.trim()
-            val oid = oidForName(key) ?: catchingUnwrapped { ObjectIdentifier(key) }.getOrNull() ?: return null
+            val oid =
+                if (key.firstOrNull()?.isDigit() == true) {
+                    // digit: dot-notation OID
+                    AttributeTypeAndValueProvider.Key(ObjectIdentifier(key))
+                } else {
+                    // not digit: string alias
+                    AttributeTypeAndValueProvider.Key(key.trim().uppercase())
+                }
+
             val v = value.trim()
             // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
-            if (v.firstOrNull() == '#') {
-                require(v.length > 1)
-                require(v.length % 2 == 1)
-                fromAsn1(X500AttributeTypeAndValue(oid, Asn1Element.parse(v.hexToByteArray(startIndex = 1))))
-            } else {
-                fromString(oid, unescapeRfc2253(v))
-            }
+            val resolvedValue =
+                if (v.firstOrNull() == '#') {
+                    require(v.length > 1)
+                    require(v.length % 2 == 1)
+                    AttributeTypeAndValueProvider.Value(v.hexToByteArray(startIndex = 1))
+                } else {
+                    AttributeTypeAndValueProvider.Value(unescapeRfc2253(v))
+                }
+
+            @OptIn(SignumInternals::class)
+            return ServiceLoader.load<AttributeTypeAndValueProvider>().getWithUnknown(type,
+                unknownCtor = { _, failure ->
+                    when (oid) {
+                        is AttributeTypeAndValueProvider.OID -> Unknown(oid.oid, failure)
+                        is AttributeTypeAndValueProvider.StringAlias -> throw Asn1Exception("Unknown alias '${oid.str}")
+                    }
+                },
+                loadBlock = {
+                    decodeATV(oid, resolvedValue)
+                })
         }
     }
 }
@@ -177,18 +187,27 @@ open class TextAttributeTypeAndValue(
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
 }
 
-val AttributeTypeAndValue.typeString: String get() = AttributeTypeAndValue.nameForOid(oid) ?: oid.toString()
-val AttributeTypeAndValue.valueString: String get() = when (this) {
-    is TextAttributeTypeAndValue -> canonicalizeRfc2253String(text)
-    else -> asn1.toRepresentation().value.let { value ->
-        catchingUnwrapped { canonicalizeRfc2253String(Asn1String.decodeFromTlv(value.asPrimitive()).value) }
-            .getOrElse { "#" + value.derEncoded.toHexString() }
+fun AttributeTypeAndValue.toRfc2253String(): String {
+    val (keyString, valueString) = ServiceLoader.load<AttributeTypeAndValueProvider>()
+        .get(this, AttributeTypeAndValueProvider::encodeATV)
+    return buildString {
+        // append key
+        when (keyString) {
+            is AttributeTypeAndValueProvider.OID -> append(keyString.oid.toString())
+            is AttributeTypeAndValueProvider.StringAlias -> append(keyString.str.uppercase())
+        }
+        // append delimiter
+        append('=')
+        // append value
+        when (valueString) {
+            is AttributeTypeAndValueProvider.StringValue -> append(canonicalizeRfc2253String(valueString.str))
+            is AttributeTypeAndValueProvider.ByteArrayValue -> {
+                append('#')
+                append(valueString.bytes.toHexString())
+            }
+        }
     }
 }
-fun AttributeTypeAndValue.toRfc2253String(): String = "${typeString.lowercase()}=${valueString.lowercase()}"
-
-private fun isHexString(s: String): Boolean =
-    s.isNotEmpty() && s.length % 2 == 0 && s.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
 
 /** Unquote (legacy RFC 1779) and unescape an RFC 2253/4514 attribute value string into its raw text. */
 private fun unescapeRfc2253(value: String): String {

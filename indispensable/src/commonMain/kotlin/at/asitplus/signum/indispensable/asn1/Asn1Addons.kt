@@ -126,3 +126,8 @@ fun CryptoRand.nextNegativeAsn1Integer(nBytes: Int) =
 /** @return `true` if no two elements share the same [oid][Identifiable.oid]. */
 fun Collection<Identifiable>.allDistinctByOids(): Boolean =
     distinctBy { it.oid }.size == size
+
+/** X.520 DirectoryString */
+fun Asn1String.isDirectoryString() =
+    (this is Asn1String.UTF8 || this is Asn1String.Printable || this is Asn1String.Teletex ||
+            this is Asn1String.BMP || this is Asn1String.Universal)

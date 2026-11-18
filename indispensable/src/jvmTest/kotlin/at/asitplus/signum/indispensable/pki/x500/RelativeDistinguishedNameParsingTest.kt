@@ -15,9 +15,11 @@ import kotlin.streams.asSequence
 
 val RelativeDistinguishedNameParsingTest by matrixSuite {
 
+    "Name should round-trip opaque attributes" { Name.fromString("1.2.3.4=#040101").toRfc2253String() shouldBe "1.2.3.4=#040101" }
+
     "Name should accept empty attribute values" {
         listOf("CN=", "CN=   ").forEach {
-            Name.fromString(it).toRfc2253String() shouldBe "cn="
+            Name.fromString(it).toRfc2253String() shouldBe "CN="
         }
     }
 
@@ -90,7 +92,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
             ObjectIdentifier("2.5.4.10"),
             ObjectIdentifier("2.5.4.3"),
         )
-        name.toRfc2253String() shouldBe "cn=foo\\, bar,o=acme,c=de"
+        name.toRfc2253String() shouldBe "CN=Foo\\, Bar,O=Acme,C=DE"
     }
 
     "Name should reject empty RDN segments" {
@@ -125,7 +127,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     }
 
     "parsed value accessor holds the raw, unescaped, case-preserved content" {
-        // toRfc2253String would lowercase and re-escape this; the stored value must not.
+        // toRfc2253String would re-escape this; the stored value must not.
         val atv = AttributeTypeAndValue.fromString("2.5.4.3", """Foo\, Bar""")
                 as AttributeTypeAndValue
         Asn1String.decodeFromTlv(atv.asn1.toRepresentation().value.asPrimitive()).value shouldBe "Foo, Bar"
@@ -212,7 +214,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
 
     bcExamples.forEachIndexed { index, dn ->
         "Bouncy Castle example #$index should round-trip through Name" {
-            val name = Name.fromString(dn.lowercase())
+            val name = Name.fromString(dn)
             Name.fromString(name.toRfc2253String()) shouldBe name
         }
     }
@@ -225,7 +227,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     hexExamples.forEachIndexed { index, input ->
         "Hex escaping example #$index should round-trip through Name" {
             val dn = "CN=$input,O=\\ Test,C=GB"
-            val name = Name.fromString(dn.lowercase())
+            val name = Name.fromString(dn)
             name.relativeDistinguishedNames.size shouldBe 3
             Name.fromString(name.toRfc2253String()) shouldBe name
         }

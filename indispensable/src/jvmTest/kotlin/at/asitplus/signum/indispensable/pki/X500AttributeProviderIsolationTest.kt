@@ -5,7 +5,6 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sourceFormat
@@ -15,10 +14,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
 val X500AttributeProviderIsolationTest by matrixSuite {
-    "Text lookup allows provider registration after DER initialization" {
-        isolatedScenario(X500AttributeProviderScenarios::class.java, "registrationAfterTextLookup")
-    }
-
     "Provider-only registration supplies aliases, canonical names, and typed text construction" {
         isolatedScenario(X500AttributeProviderScenarios::class.java, "providerAliases")
     }
@@ -34,18 +29,8 @@ val X500AttributeProviderIsolationTest by matrixSuite {
 
 internal object X500AttributeProviderScenarios {
     private fun registerNicknameProviders() {
-        Signum.Der
         ServiceLoader.register<AttributeTypeAndValueProvider>(LenientNicknameProvider)
         ServiceLoader.register<AttributeTypeAndValueProvider>(NicknameProvider)
-    }
-
-    @JvmStatic
-    fun registrationAfterTextLookup() {
-        Signum.Der
-        // Text lookup does not seal provider registration or couple it to the DER lifecycle.
-        AttributeTypeAndValue.oidForName("CN") shouldBe AttributeTypeAndValue.OID.commonName
-        registerNicknameProviders()
-        AttributeTypeAndValue.oidForName("NICK") shouldBe Nickname.oid
     }
 
     @JvmStatic
@@ -56,9 +41,7 @@ internal object X500AttributeProviderScenarios {
             .shouldBeInstanceOf<Nickname>()
         attribute.text shouldBe "alice"
         attribute.sourceFormat shouldBe "<no source>"
-        AttributeTypeAndValue.oidForName("NiCk") shouldBe Nickname.oid
-        AttributeTypeAndValue.nameForOid(Nickname.oid) shouldBe "NICK"
-        name.toRfc2253String() shouldBe "nick=alice"
+        name.toRfc2253String() shouldBe "NICK=alice"
     }
 
     @JvmStatic
