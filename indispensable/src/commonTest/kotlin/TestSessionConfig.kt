@@ -1,4 +1,3 @@
-import at.asitplus.signum.Signum
 import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.MatrixTestDefaults
 import de.infix.testBalloon.framework.core.TestSession
@@ -10,8 +9,4 @@ class ModuleTestSession : TestSession(
             execution = ExecutionMode.Concurrent(64)
         }
     }
-) {
-    init {
-        Signum.Der
-    }
-}
+)

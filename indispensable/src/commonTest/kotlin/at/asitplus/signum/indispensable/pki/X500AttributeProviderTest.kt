@@ -5,10 +5,12 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
@@ -18,11 +20,12 @@ private data class AttributeCase(
     val oid: String,
     val kind: StringKind,
     val names: Set<String>,
+    val text: String = "Test",
 )
 
 private val standardAttributes = listOf(
     AttributeCase("2.5.4.3", StringKind.UTF8, setOf("CN", "COMMONNAME")),
-    AttributeCase("2.5.4.6", StringKind.PRINTABLE, setOf("C", "COUNTRY", "COUNTRYNAME")),
+    AttributeCase("2.5.4.6", StringKind.PRINTABLE, setOf("C", "COUNTRY", "COUNTRYNAME"), "AT"),
     AttributeCase("2.5.4.7", StringKind.UTF8, setOf("L", "LOCALITY", "LOCALITYNAME")),
     AttributeCase("2.5.4.8", StringKind.UTF8, setOf("ST", "S", "STATEORPROVINCENAME")),
     AttributeCase("2.5.4.9", StringKind.UTF8, setOf("STREET", "STREETADDRESS")),
@@ -46,11 +49,11 @@ val X500AttributeProviderTest by matrixSuite {
     compact("standard X.500 shorthand providers") - {
         data(standardAttributes, nameFn = { it.names.first() }) - { case ->
             data(case.names) test { name ->
-                val attribute = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
+                val attribute = AttributeTypeAndValue.fromString(name.lowercase(), case.text)
                     as AttributeTypeAndValue
                 val value = Asn1String.decodeFromTlv(attribute.asn1.toRepresentation().value.asPrimitive())
                 attribute.oid shouldBe ObjectIdentifier(case.oid)
-                value.value shouldBe "Test"
+                value.value shouldBe case.text
                 when (case.kind) {
                     StringKind.UTF8 -> (value is Asn1String.UTF8) shouldBe true
                     StringKind.PRINTABLE -> (value is Asn1String.Printable) shouldBe true
@@ -60,30 +63,35 @@ val X500AttributeProviderTest by matrixSuite {
         }
     }
 
-    data(standardAttributes, nameFn = { "non-canonical ${it.names.first()}" }) test { case ->
-        val nonCanonicalValue = when (case.kind) {
-            StringKind.UTF8 -> Asn1String.Printable("Test")
-            StringKind.PRINTABLE, StringKind.IA5 -> Asn1String.UTF8("Test")
+    data(standardAttributes, nameFn = {
+        "${if (it.kind == StringKind.UTF8) "valid alternative" else "invalid string type"} ${it.names.first()}"
+    }) test { case ->
+        val encodedValue = when (case.kind) {
+            StringKind.UTF8 -> Asn1String.Printable(case.text)
+            StringKind.PRINTABLE, StringKind.IA5 -> Asn1String.UTF8(case.text)
         }.encodeToTlv()
         val original = RelativeDistinguishedName(
-            AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue(ObjectIdentifier(case.oid), nonCanonicalValue))
+            AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue(ObjectIdentifier(case.oid), encodedValue))
         )
         val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
-        attribute.asn1.toRepresentation().value shouldBe nonCanonicalValue
+        when (case.kind) {
+            StringKind.UTF8 -> attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe case.text
+            StringKind.PRINTABLE, StringKind.IA5 -> attribute.shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+        }
+        attribute.asn1.toRepresentation().value shouldBe encodedValue
         decoded.asn1.toDer() shouldBe encoded
     }
 
-    "unknown dotted OID falls back to UTF8" {
+    "unknown dotted OID text has no built-in ASN.1 encoding" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
             as AttributeTypeAndValue
-        val value = Asn1String.decodeFromTlv(attribute.asn1.toRepresentation().value.asPrimitive())
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")
         attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
         attribute.sourceFormat shouldBe "<no source>"
-        (value is Asn1String.UTF8) shouldBe true
+        shouldThrow<UnsupportedCryptoException> { attribute.asn1.toRepresentation() }
         AttributeTypeAndValue.fromString("UNKNOWN", "Test") shouldBe null
     }
 }
