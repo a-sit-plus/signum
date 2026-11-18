@@ -6,11 +6,11 @@ import at.asitplus.signum.indispensable.digest.Asn1DigestAlgorithmProvider
 import at.asitplus.signum.indispensable.digest.IndispensableDigestsAlgorithmProviderAsn1
 import at.asitplus.signum.indispensable.digest.IndispensableHMACProvider
 import at.asitplus.signum.indispensable.mac.Asn1MACAlgorithmProvider
+import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.sign.*
 
 /** NEVER CALL THIS DIRECTLY -> use [Signum.installIndispensable] */
 internal expect fun indispensablePlatformInit()
-internal expect fun registerIndispensablePlatformProvider(provider: Any): Boolean
 private val initialize by lazy {
     ServiceLoader.register<Asn1DigestAlgorithmProvider>(IndispensableDigestsAlgorithmProviderAsn1)
     ServiceLoader.register<Asn1MACAlgorithmProvider>(IndispensableHMACProvider)
@@ -18,6 +18,12 @@ private val initialize by lazy {
     ServiceLoader.register<SignatureFormatProvider>(IndispensableSignatureFormats)
     ServiceLoader.register<Asn1PublicKeyFormatProvider>(IndispensableAsn1PublicKeyFormatsProvider)
     ServiceLoader.register<Asn1PrivateKeyFormatProvider>(IndispensableAsn1PrivateKeyFormatsProvider)
+    ServiceLoader.register<AttributeTypeAndValueProvider>(AtvAsn1FallbackProvider)
+    ServiceLoader.register<AttributeTypeAndValueProvider>(AtvOidFallbackProvider)
+    ServiceLoader.register<AttributeTypeAndValueProvider>(AtvWellKnownAliasesProvider)
+    ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(AttributeAsn1Provider)
+    ServiceLoader.register<CsrAttributeAsn1Provider>(ExtensionRequestCsrProvider)
+
     indispensablePlatformInit()
 }
 

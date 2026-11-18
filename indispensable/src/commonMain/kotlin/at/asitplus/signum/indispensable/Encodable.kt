@@ -16,13 +16,9 @@ class SourceRepresentationStorage {
     /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
     @SignumInternals
     internal var x: Any? = null
-    @OptIn(SignumInternals::class)
     override fun hashCode() = x.hashCode()
-    @OptIn(SignumInternals::class)
     override fun equals(other: Any?) = (other is SourceRepresentationStorage) && (x == other.x)
-    @OptIn(SignumInternals::class)
     infix fun presentAndEquals(other: SourceRepresentationStorage) = (x != null) && this == other
-    @OptIn(SignumInternals::class)
     override fun toString() = x.toString()
 }
 
@@ -32,7 +28,6 @@ interface WithSourceRepresentation {
 }
 
 /** The source format that this was parsed from, if any, in human-readable form. */
-@OptIn(SignumInternals::class)
 val WithSourceRepresentation.sourceFormat get(): String {
     return (sourceRepresentation.x ?: return "<no source>")::class.simpleName ?: "<anonymous>"
 }
@@ -78,7 +73,7 @@ inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresenta
                 throw ImplementationError("Overwriting existing ${encoded::class.simpleName} source representation on an ${it::class.simpleName} (${it}) with a different instance. This is almost certainly a bug caused by reusing a singleton instance in source-format decoders.")
             }
         }
-        @OptIn(SignumInternals::class) it.finangleSourceRepresentation(encoded)
+        it.finangleSourceRepresentation(encoded)
     }
 }
 
@@ -119,7 +114,6 @@ inline fun <
 inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> AbstractType.encodeTo(
     crossinline fn: (AbstractType)->EncodedType
 ): EncodedType {
-    @OptIn(SignumInternals::class)
     this@encodeTo.realSourceRepresentation?.let { v ->
         if (v is EncodedType) return v
     }
