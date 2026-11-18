@@ -463,7 +463,8 @@ val Certificate.asn1 get() =
 
 val Certificate.Companion.fromAsn1 get() =
     asn1Decoders(X509Certificate.Companion) { src ->
-        require(src.signatureAlgorithm == src.tbsCertificate.signatureAlgorithm) {
+        require(src.signatureAlgorithm == src.tbsCertificate.signatureAlgorithm ||
+                SignatureAlgorithm.fromAsn1(src.signatureAlgorithm) == SignatureAlgorithm.fromAsn1(src.tbsCertificate.signatureAlgorithm)) {
             "Inner TBS certificate signature algorithm ${src.tbsCertificate.signatureAlgorithm} != certificate outer " +
                     "signature algorithm ${src.signatureAlgorithm}, that earns the whole certificate with serial " +
                     "${src.tbsCertificate.serialNumber} a spot on my naughty list!"
