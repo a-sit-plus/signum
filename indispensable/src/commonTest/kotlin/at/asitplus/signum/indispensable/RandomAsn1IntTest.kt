@@ -21,19 +21,19 @@ val RandomAsn1IntTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
     var negativeLimitHit = false
     property("nBytes", Arb.int(1, 100), nameFn = { "$it" }) - { nBytes ->
         "Two's complement" {
-            val size = CryptoRand.nextAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
+            val size = InsecureRandom.nextAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
             size shouldBeLessThanOrEqual nBytes
             if (size == nBytes) twosComplementLimitHit = true
 
         }
         "Positive" {
-            val size = CryptoRand.nextPositiveAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
+            val size = InsecureRandom.nextPositiveAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
             size shouldBeLessThanOrEqual nBytes
             if (size == nBytes) positiveLimitHit = true
         }
 
         "Negative" {
-            val size = CryptoRand.nextNegativeAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
+            val size = InsecureRandom.nextNegativeAsn1Integer(nBytes).encodeToAsn1ContentBytes().size
             size shouldBeLessThanOrEqual nBytes
             if(size == nBytes) negativeLimitHit = true
         }

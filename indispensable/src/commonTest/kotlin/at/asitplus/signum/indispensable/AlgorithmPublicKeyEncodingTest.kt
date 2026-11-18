@@ -1,9 +1,12 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Null
+import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
@@ -59,6 +62,24 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         EcdsaAlgorithm.fromAsn1(ec.asn1.toDer()) shouldBe ec
         val rsa = RsaAlgorithm.withSHA256andPSSPadding
         RsaAlgorithm.fromAsn1(rsa.asn1.toDer()) shouldBe rsa
+    }
+
+    "RSA PKCS1 signature identifiers accept absent or NULL parameters and preserve encoding" {
+        for (digest in listOf(Digest.SHA1, Digest.SHA256, Digest.SHA384, Digest.SHA512)) {
+            val expected = RsaAlgorithm(RsaAlgorithm.Padding.PKCS1, digest)
+            val oid = expected.asn1.toRepresentation().oid
+            for (parameters in listOf(null, Asn1Null)) {
+                val source = X509AlgorithmIdentifier(oid, parameters)
+                val decoded = RsaAlgorithm.fromAsn1(source)
+                decoded shouldBe expected
+                decoded.asn1.toRepresentation().parameters shouldBe parameters
+                val bytes = decoded.asn1.toDer()
+                val reparsed = SignatureAlgorithm.fromAsn1(bytes)
+                reparsed shouldBe expected
+                reparsed.asn1.toDer() shouldBe bytes
+            }
+            shouldThrowAny { RsaAlgorithm.fromAsn1(X509AlgorithmIdentifier(oid, Asn1.OctetString(byteArrayOf(1)))) }
+        }
     }
 
     "Public key interface and concrete serializers preserve compressed SPKI" {

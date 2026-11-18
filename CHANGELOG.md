@@ -1,7 +1,9 @@
 # Changelog
 
 ## NEXT
-This is a major refactor!
+** This is a major refactor, opening up Signum for third-party extensions
+(any algorithm goes! any provider goes!, any platform goes!)
+at the cost of introducing breaking changes** 
 
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
@@ -35,8 +37,11 @@ This is a major refactor!
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
 * Dependency Updates:
-    * Bouncy Castle 1.85
-    * multibase 1.3.0
+    * Kotlin 2.4.21
+    * Bouncy Castle 1.87
+    * multibase 1.4.1
+    * kotlinx.serialization 1.13.0
+    * kotlinx.io 0.9.3
 
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support

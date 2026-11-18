@@ -1,11 +1,16 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.sourceFormat
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 private enum class StringKind { UTF8, PRINTABLE, IA5 }
 
@@ -37,13 +42,45 @@ private val standardAttributes = listOf(
     AttributeCase("1.2.840.113549.1.9.1", StringKind.IA5, setOf("EMAILADDRESS", "EMAIL")),
 )
 
-val X500AttributeRegistryTest by matrixSuite {
-    compact("standard X.500 shorthand registry") - {
+val X500AttributeProviderTest by matrixSuite {
+    "Provider-only registration supplies aliases, canonical names, and typed text construction" {
+        val name = Name.fromString("nickname=alice")
+        val attribute = name.relativeDistinguishedNames.single().attrsAndValues.single()
+            .shouldBeInstanceOf<Nickname>()
+        attribute.text shouldBe "alice"
+        attribute.sourceFormat shouldBe "<no source>"
+        AttributeTypeAndValue.oidForName("NiCk") shouldBe Nickname.oid
+        AttributeTypeAndValue.nameForOid(Nickname.oid) shouldBe "NICK"
+        name.toRfc2253String() shouldBe "nick=alice"
+    }
+
+    "Typed construction and lenient recovery work for both text and ASN.1 input" {
+        for (text in listOf("alice", "ALICE")) {
+            val semantic = AttributeTypeAndValue.fromString("NICK", text).shouldBeInstanceOf<Nickname>()
+            semantic.text shouldBe "alice"
+            val wire = Asn1String.Printable(text).encodeToTlv()
+            val decoded = AttributeTypeAndValue(Nickname.oid, wire).shouldBeInstanceOf<Nickname>()
+            decoded.text shouldBe "alice"
+            decoded.asn1.toRepresentation().value shouldBe wire
+        }
+    }
+
+    "Exhausted semantic providers preserve the original wire payload as unknown" {
+        val wire = Asn1String.UTF8("").encodeToTlv()
+        val value = AttributeTypeAndValue(Nickname.oid, wire)
+        value.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+        value.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+        value.oid shouldBe Nickname.oid
+        value.asn1.toRepresentation().value shouldBe wire
+        AttributeTypeAndValue.fromAsn1(value.asn1.toDer()).asn1.toDer() shouldBe value.asn1.toDer()
+    }
+
+    compact("standard X.500 shorthand providers") - {
         data(standardAttributes, nameFn = { it.names.first() }) - { case ->
             data(case.names) test { name ->
                 val attribute = AttributeTypeAndValue.fromString(name.lowercase(), "Test")
                     as AttributeTypeAndValue
-                val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
+                val value = Asn1String.decodeFromTlv(attribute.asn1.toRepresentation().value.asPrimitive())
                 attribute.oid shouldBe ObjectIdentifier(case.oid)
                 value.value shouldBe "Test"
                 when (case.kind) {
@@ -66,16 +103,18 @@ val X500AttributeRegistryTest by matrixSuite {
         val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
-        attribute.value shouldBe nonCanonicalValue
+        attribute.asn1.toRepresentation().value shouldBe nonCanonicalValue
         decoded.asn1.toDer() shouldBe encoded
     }
 
     "unknown dotted OID falls back to UTF8" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
             as AttributeTypeAndValue
-        val value = Asn1String.decodeFromTlv(attribute.value.asPrimitive())
+        val value = Asn1String.decodeFromTlv(attribute.asn1.toRepresentation().value.asPrimitive())
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")
+        attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
+        attribute.sourceFormat shouldBe "<no source>"
         (value is Asn1String.UTF8) shouldBe true
         AttributeTypeAndValue.fromString("UNKNOWN", "Test") shouldBe null
     }
