@@ -3,8 +3,10 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1OctetString
+import at.asitplus.awesn1.Asn1CustomStructure
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.TagClass
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
@@ -13,6 +15,7 @@ import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
 import at.asitplus.awesn1.ecPublicKey
+import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
@@ -34,8 +37,82 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 val RemainingEncodingTest by matrixSuite {
+
+    "CSR equality and hashing ignore attribute order without changing the lists" {
+        val first = CsrAttribute(ObjectIdentifier("1.2.3.4"), linkedSetOf(Asn1.Int(1), Asn1.Int(2)))
+        val sameFirst = CsrAttribute(first.oid, first.value.reversed().toSet())
+        val second = CsrAttribute(ObjectIdentifier("1.2.3.5"), Asn1.Int(3))
+        val attributes = listOf(first, second)
+        val reversed = listOf(second, sameFirst)
+        val key = ECCurve.SECP_256_R_1.generator.asPublicKey()
+        val tbs = TbsCertificationRequest(Name.EMPTY, key, attributes)
+        val sameTbs = TbsCertificationRequest(Name.EMPTY, key, reversed)
+        val signature = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO)
+        val csr = CertificationRequest(tbs, EcdsaAlgorithm.withSHA256, signature)
+        val sameCsr = CertificationRequest(sameTbs, EcdsaAlgorithm.withSHA256, signature)
+
+        first shouldBe sameFirst
+        first.hashCode() shouldBe sameFirst.hashCode()
+        tbs shouldBe sameTbs
+        tbs.hashCode() shouldBe sameTbs.hashCode()
+        csr shouldBe sameCsr
+        csr.hashCode() shouldBe sameCsr.hashCode()
+        setOf(tbs, sameTbs).size shouldBe 1
+        setOf(csr, sameCsr).size shouldBe 1
+        tbs.attributes shouldBe attributes
+        sameTbs.attributes shouldBe reversed
+        tbs shouldNotBe TbsCertificationRequest(Name.EMPTY, key, listOf(first))
+        tbs shouldNotBe TbsCertificationRequest(Name.EMPTY, key,
+            listOf(first, CsrAttribute(second.oid, Asn1.Int(4))))
+        shouldThrowAny { TbsCertificationRequest(Name.EMPTY, key, listOf(first, sameFirst)) }
+    }
+
+    "CSR semantic equality preserves the received attribute order and original sources" {
+        val original = CertificationRequest(
+            TbsCertificationRequest(Name.EMPTY, ECCurve.SECP_256_R_1.generator.asPublicKey(), attributes = listOf(
+                CsrAttribute(ObjectIdentifier("1.2.3.4"), Asn1.Int(1)),
+                CsrAttribute(ObjectIdentifier("1.2.3.5"), Asn1.Int(2)),
+            )),
+            EcdsaAlgorithm.withSHA256, EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO),
+        )
+        val canonical = original.asn1.toTlv().asSequence()
+        val canonicalTbs = canonical.children.first().asSequence()
+        val attributes = canonicalTbs.children.last().asStructure()
+        val reversedTbs = Asn1.Sequence {
+            canonicalTbs.children.dropLast(1).forEach { +it }
+            +Asn1CustomStructure(attributes.children.reversed(), 0uL, TagClass.CONTEXT_SPECIFIC)
+        }
+        val reversed = Asn1.Sequence {
+            +reversedTbs
+            canonical.children.drop(1).forEach { +it }
+        }
+        val bytes = reversed.derEncoded
+        val model = Signum.Der.decodeFromByteArray<Pkcs10CertificationRequest>(bytes)
+        val fromModel = CertificationRequest.fromAsn1(model)
+        val fromDer = CertificationRequest.fromAsn1(bytes)
+        val fromCanonical = CertificationRequest.fromAsn1(canonical.derEncoded)
+
+        bytes shouldNotBe canonical.derEncoded
+        fromDer.tbsCsr.attributes shouldBe fromCanonical.tbsCsr.attributes.reversed()
+        fromDer.tbsCsr shouldBe original.tbsCsr
+        fromDer.tbsCsr.hashCode() shouldBe original.tbsCsr.hashCode()
+        fromDer shouldBe original
+        fromDer shouldBe fromCanonical
+        fromDer shouldBe fromModel
+        fromDer.hashCode() shouldBe fromCanonical.hashCode()
+        fromModel.asn1.toRepresentation() shouldBeSameInstanceAs model
+        fromModel.tbsCsr.asn1.toRepresentation() shouldBeSameInstanceAs model.certificationRequestInfo
+        fromModel.tbsCsr.attributes.zip(model.certificationRequestInfo.attributes).forEach { (attribute, source) ->
+            attribute.asn1.toRepresentation() shouldBeSameInstanceAs source
+        }
+        fromModel.asn1.toDer() shouldBe bytes
+        fromDer.asn1.toDer() shouldBe bytes
+        fromDer.tbsCsr.asn1.toDer() shouldBe reversedTbs.derEncoded
+        TbsCertificationRequest.fromAsn1(reversedTbs).asn1.toDer() shouldBe reversedTbs.derEncoded
+    }
 
     "Signatures use contextual DER and retain raw values until an algorithm is supplied" {
         val rsa = RsaSignature.fromRawSignatureValue(byteArrayOf(1, 2, 3))
