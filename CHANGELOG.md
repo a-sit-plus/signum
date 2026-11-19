@@ -31,6 +31,11 @@ This is a major refactor!
     * Fractional seconds are retained when decoding; encoding still produces whole seconds
     * Non-finite and out-of-range values are rejected with a `SerializationException`
     * The deprecated `at.asitplus.signum.indispensable.cosef.InstantLongSerializer` now delegates to `at.asitplus.signum.indispensable.io.InstantLongSerializer`
+* Support `did:jwk` in addition to `did:key`:
+    * `CryptoPublicKey.fromDid` (and thereby `JsonWebKey.fromDid`, `CoseKey.fromDid` and DID-based `kid` resolution in JWS/JWE headers) now also decodes `did:jwk`; JWKs containing private key material are rejected
+    * Add `CryptoPublicKey.didJwkEncoded` and `JsonWebKey.didJwkEncoded`, producing the minimal (RFC 7638) public JWK with lexicographically ordered members; `didEncoded` still produces `did:key`
+    * `JsonWebKey.fromDid` retains all members of the JWK embedded in a `did:jwk` (e.g. `kid`, `use`, `alg`)
+    * Add `Asn1PublicKeyFormatProvider.encodeToDidJwk` and `decodeFromDidJwk`, which providers must implement (returning `null` for unsupported keys)
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
 * `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
