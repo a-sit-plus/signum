@@ -23,6 +23,7 @@ import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.kotlincrypto.random.CryptoRand
+import kotlinx.serialization.json.JsonObject
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -155,6 +156,8 @@ object CursorySignatureSchemeProvider :
     }
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = null
+    override fun encodeToDidJwk(value: CryptoPublicKey) = null
+    override fun decodeFromDidJwk(jwk: JsonObject) = null
 
     override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration): SignatureVerifier? {
         return if (algorithm == CursorySignatureScheme) (key as CursorySignatureScheme.Key) else null
