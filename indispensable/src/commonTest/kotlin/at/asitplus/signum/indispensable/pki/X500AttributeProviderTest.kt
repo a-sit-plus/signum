@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
@@ -86,12 +87,17 @@ val X500AttributeProviderTest by matrixSuite {
 
     "unknown dotted OID text has no built-in ASN.1 encoding" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
-            as AttributeTypeAndValue
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")
         attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
         attribute.sourceFormat shouldBe "<no source>"
-        shouldThrow<UnsupportedCryptoException> { attribute.asn1.toRepresentation() }
-        AttributeTypeAndValue.fromString("UNKNOWN", "Test") shouldBe null
+        shouldThrow<Asn1Exception> { attribute.asn1.toRepresentation() }
+            .cause.shouldBeInstanceOf<UnsupportedCryptoException>()
+    }
+
+    "Unsupported attribute strings report UnsupportedCryptoException" {
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("UNKNOWN", "Test") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("UNKNOWN=Test") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("CN=#GG") }
     }
 }
