@@ -6,6 +6,9 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.installIndispensable
@@ -26,6 +29,10 @@ val X500AttributeProviderIsolationTest by matrixSuite {
 
     "Exhausted semantic providers preserve the original wire payload as unknown" {
         isolatedScenario(X500AttributeProviderScenarios::class.java, "exhaustedProviders")
+    }
+
+    "A text provider can render an opaque attribute with a non-ASN.1 source" {
+        isolatedScenario(X500AttributeProviderScenarios::class.java, "opaqueText")
     }
 }
 
@@ -74,5 +81,24 @@ internal object X500AttributeProviderScenarios {
         value.oid shouldBe Nickname.oid
         value.asn1.toRepresentation().value shouldBe wire
         AttributeTypeAndValue.fromAsn1(value.asn1.toDer()).asn1.toDer() shouldBe value.asn1.toDer()
+    }
+
+    @JvmStatic
+    fun opaqueText() {
+        Signum.installIndispensable()
+        ServiceLoader.register<AttributeTypeAndValueProvider>(object : AttributeTypeAndValueProvider {
+            override fun decodeATV(key: AttributeTypeAndValueProvider.Key, value: AttributeTypeAndValueProvider.Value) = null
+
+            override fun encodeATV(atv: AttributeTypeAndValue): Pair<AttributeTypeAndValueProvider.Key, AttributeTypeAndValueProvider.Value>? {
+                if (atv.oid != Nickname.oid) return null
+                val text: String = atv.encodeTo { error("Expected the retained text") }
+                return AttributeTypeAndValueProvider.Key("NICK") to AttributeTypeAndValueProvider.Value(text)
+            }
+        })
+
+        val attribute = decodeFrom<String, AttributeTypeAndValue> {
+            AttributeTypeAndValue.Unknown(Nickname.oid, UnsupportedCryptoException("No semantic interpretation"))
+        }("Alice")
+        attribute.toRfc2253String() shouldBe "NICK=Alice"
     }
 }
