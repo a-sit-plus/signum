@@ -135,6 +135,53 @@ val EncodingRegressionTest by matrixSuite {
         shouldThrow<Asn1Exception> { RelativeDistinguishedName(setOf(first, second)) }
     }
 
+    "RDN equality and hashing ignore text case in any attribute order" {
+        val mixed = RelativeDistinguishedName.fromString("CN=Straße+O=Köln")
+        val upper = RelativeDistinguishedName.fromString("O=KÖLN+CN=STRAẞE")
+
+        mixed shouldBe upper
+        mixed.hashCode() shouldBe upper.hashCode()
+        Name(listOf(mixed)) shouldBe Name(listOf(upper))
+        (mixed == RelativeDistinguishedName.fromString("OU=Straße+O=Köln")) shouldBe false
+    }
+
+    "Unicode case folding gives RDNs equal values and hash codes" - {
+        listOf(
+            "ß" to "ss",
+            "ẞ" to "ss",
+            "Straße" to "STRASSE",
+            "Ö" to "ö",
+            "Σ" to "ς",
+            "ﬃ" to "ffi",
+            "I" to "i",
+            "İ" to "i̇", // i followed by a combining dot above
+            "𐐀" to "𐐨", // Deseret letters, each encoded as a surrogate pair
+        ).asData(nameFn = { (left, right) -> "$left and $right" }) - { (left, right) ->
+            test("RDNs compare equal and have equal hash codes") {
+                val first = RelativeDistinguishedName.fromString("CN=$left")
+                val second = RelativeDistinguishedName.fromString("CN=$right")
+
+                (first == second) shouldBe true
+                first.hashCode() shouldBe second.hashCode()
+            }
+        }
+    }
+
+    "Default case folding keeps ö and oe distinct and I and ı distinct" {
+        (RelativeDistinguishedName.fromString("CN=ö") == RelativeDistinguishedName.fromString("CN=oe")) shouldBe false
+        (RelativeDistinguishedName.fromString("CN=I") == RelativeDistinguishedName.fromString("CN=ı")) shouldBe false
+    }
+
+    "RDN equality preserves attribute counts with validation disabled" {
+        val oid = AttributeTypeAndValue.OID.commonName
+        val alice = TextAttributeTypeAndValue(oid, "Alice")
+        val bob = TextAttributeTypeAndValue(oid, "Bob")
+        val first = RelativeDistinguishedName(setOf(alice, bob, TextAttributeTypeAndValue(oid, "ALICE")), false)
+        val second = RelativeDistinguishedName(setOf(alice, bob, TextAttributeTypeAndValue(oid, "BOB")), false)
+
+        (first == second) shouldBe false
+    }
+
     "Unknown signature algorithms, digests and MACs are distinct values" {
         val original = X509AlgorithmIdentifier(ObjectIdentifier("1.2.3.4"), null)
 
