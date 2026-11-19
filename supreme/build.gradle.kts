@@ -118,6 +118,7 @@ tasks.register("assembleSignumSupremeXCFramework") {
 
 //work no stand-alone needs manual booting and we manually shutdown
 val shutdownIosSimulator by tasks.registering {
+    onlyIf { HostManager.hostIsMac }
     doLast {
         providers.exec {
             commandLine("xcrun", "simctl", "shutdown", "iPhone 16")
