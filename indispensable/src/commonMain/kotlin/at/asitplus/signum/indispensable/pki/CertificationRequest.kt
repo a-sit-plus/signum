@@ -14,7 +14,7 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
  *
  * @param subjectName list of subject distinguished names
  * @param publicKey nomen est omen
- * @param attributes nomen est omen
+ * @param attributes Attribute order is retained but ignored by equality and hashing.
  */
 class TbsCertificationRequest(
     val subjectName: Name,
@@ -68,13 +68,13 @@ class TbsCertificationRequest(
         if (other !is TbsCertificationRequest) return false
         return subjectName == other.subjectName &&
                 publicKey == other.publicKey &&
-                attributes == other.attributes
+                attributes.toSet() == other.attributes.toSet()
     }
 
     override fun hashCode(): Int {
         var result = subjectName.hashCode()
         result = 31 * result + publicKey.hashCode()
-        result = 31 * result + attributes.hashCode()
+        result = 31 * result + attributes.toSet().hashCode()
         return result
     }
 

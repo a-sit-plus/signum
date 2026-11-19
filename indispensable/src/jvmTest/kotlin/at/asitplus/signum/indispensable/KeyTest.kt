@@ -4,10 +4,13 @@ import at.asitplus.signum.indispensable.sign.asn1
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
+import at.asitplus.awesn1.Asn1Null
+import at.asitplus.awesn1.Asn1OctetString
 import at.asitplus.awesn1.Asn1Sequence
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPrivateKeyInfo.Companion.invoke
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.signum.Signum
@@ -18,9 +21,11 @@ import at.asitplus.testballoon.matrix.ExecutionMode
 import at.asitplus.testballoon.matrix.matrixConfig
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
@@ -29,6 +34,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
 import java.security.Security
+import kotlinx.serialization.encodeToByteArray
 import java.security.interfaces.ECPrivateKey as JcaECPrivateKey
 import java.security.interfaces.ECPublicKey as JcaECPublicKey
 import java.security.interfaces.RSAPrivateKey as JcaRSAPrivateKey
@@ -37,6 +43,51 @@ import java.security.interfaces.RSAPublicKey as JcaRSAPublicKey
 @OptIn(ExperimentalStdlibApi::class)
 val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
     Security.addProvider(BouncyCastleProvider())
+
+    "RSA key imports accept absent or NULL parameters and retain their sources" {
+        val pair = KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.genKeyPair()
+        val publicKey = RsaPublicKey.fromAsn1(pair.public.encoded)
+        val privateKey = RsaPrivateKey.fromAsn1(pair.private.encoded)
+        val spki = publicKey.asn1.toRepresentation()
+        val pkcs8 = privateKey.asn1.toRepresentation()
+        spki.algorithmParameters shouldBe Asn1Null
+        pkcs8.algorithmParameters shouldBe Asn1Null
+
+        for (parameters in listOf(null, Asn1Null)) {
+            val publicSource = spki.copy(algorithmIdentifier = X509AlgorithmIdentifier(spki.algorithmOid, parameters))
+            val privateSource = pkcs8.copy(privateKeyAlgorithm = X509AlgorithmIdentifier(pkcs8.algorithmOid, parameters))
+            val publicBytes = Signum.Der.encodeToByteArray(publicSource)
+            val privateBytes = Signum.Der.encodeToByteArray(privateSource)
+            val concretePublic = RsaPublicKey.fromAsn1(publicSource)
+            val concretePrivate = RsaPrivateKey.fromAsn1(privateSource)
+            val genericPublic = CryptoPublicKey.fromAsn1(publicSource)
+            val genericPrivate = CryptoPrivateKey.fromAsn1(privateSource)
+
+            concretePublic shouldBe publicKey
+            concretePrivate shouldBe privateKey
+            concretePublic.hashCode() shouldBe publicKey.hashCode()
+            concretePrivate.hashCode() shouldBe privateKey.hashCode()
+            concretePrivate.privateKey shouldBe privateKey.privateKey
+            genericPublic shouldBe concretePublic
+            genericPrivate shouldBe concretePrivate
+            concretePublic.asn1.toRepresentation() shouldBeSameInstanceAs publicSource
+            concretePrivate.asn1.toRepresentation() shouldBeSameInstanceAs privateSource
+            genericPublic.asn1.toRepresentation() shouldBeSameInstanceAs publicSource
+            genericPrivate.asn1.toRepresentation() shouldBeSameInstanceAs privateSource
+            RsaPublicKey.fromAsn1(publicBytes).asn1.toDer() shouldBe publicBytes
+            RsaPrivateKey.fromAsn1(privateBytes).asn1.toDer() shouldBe privateBytes
+            CryptoPublicKey.fromAsn1(publicBytes).asn1.toDer() shouldBe publicBytes
+            CryptoPrivateKey.fromAsn1(privateBytes).asn1.toDer() shouldBe privateBytes
+        }
+
+        val invalidParameters = Asn1OctetString(byteArrayOf(1))
+        shouldThrowAny {
+            RsaPublicKey.fromAsn1(spki.copy(algorithmIdentifier = X509AlgorithmIdentifier(spki.algorithmOid, invalidParameters)))
+        }
+        shouldThrowAny {
+            RsaPrivateKey.fromAsn1(pkcs8.copy(privateKeyAlgorithm = X509AlgorithmIdentifier(pkcs8.algorithmOid, invalidParameters)))
+        }
+    }
 
     "JCA conversions use Signum.Der" {
         val native = KeyPairGenerator.getInstance("EC").apply { initialize(256) }.genKeyPair().private as JcaECPrivateKey
