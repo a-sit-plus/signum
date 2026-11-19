@@ -5,6 +5,7 @@ import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.crypto.pki.X500RelativeDistinguishedName
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.*
@@ -61,7 +62,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
     }
 
     "fromString should reject a missing equals sign" {
-        shouldThrow<IllegalArgumentException> { RelativeDistinguishedName.fromString("CNJohnDoe") }
+        shouldThrow<UnsupportedCryptoException> { RelativeDistinguishedName.fromString("CNJohnDoe") }
     }
 
     "fromString should parse valid RDN" {
@@ -79,7 +80,7 @@ val RelativeDistinguishedNameParsingTest by matrixSuite {
 
     "fromString should throw on invalid RDN" {
         val rdnStr = "CNJohn Doe+O=Company"
-        shouldThrow<IllegalArgumentException> {
+        shouldThrow<UnsupportedCryptoException> {
             RelativeDistinguishedName.fromString(rdnStr)
         }
     }
