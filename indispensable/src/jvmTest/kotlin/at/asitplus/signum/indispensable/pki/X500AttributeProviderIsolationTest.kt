@@ -5,8 +5,10 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -29,8 +31,11 @@ val X500AttributeProviderIsolationTest by matrixSuite {
 
 internal object X500AttributeProviderScenarios {
     private fun registerNicknameProviders() {
-        ServiceLoader.register<AttributeTypeAndValueProvider>(LenientNicknameProvider)
-        ServiceLoader.register<AttributeTypeAndValueProvider>(NicknameProvider)
+        Signum.installIndispensable()
+        for (provider in listOf(NicknameProvider("LEGACYNICK", strict = false), NicknameProvider("NICK", strict = true))) {
+            ServiceLoader.register<AttributeTypeAndValueProvider>(provider)
+            ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(provider)
+        }
     }
 
     @JvmStatic
