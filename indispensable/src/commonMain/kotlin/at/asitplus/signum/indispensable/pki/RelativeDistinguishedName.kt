@@ -189,8 +189,9 @@ open class TextAttributeTypeAndValue(
 }
 
 fun AttributeTypeAndValue.toRfc2253String(): String {
+    // Look up by OID so text providers can also re-emit opaque attributes.
     val (keyString, valueString) = ServiceLoader.load<AttributeTypeAndValueProvider>()
-        .get(this, AttributeTypeAndValueProvider::encodeATV)
+        .get(oid) { encodeATV(this@toRfc2253String) }
     return buildString {
         // append key
         when (keyString) {
