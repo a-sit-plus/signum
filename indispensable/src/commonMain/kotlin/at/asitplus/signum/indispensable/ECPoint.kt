@@ -1,17 +1,19 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.catchingAs
 import at.asitplus.signum.internals.ensureSize
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.compressY
 import at.asitplus.signum.indispensable.misc.decompressY
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKey
 import com.ionspin.kotlin.bignum.BigNumber
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -159,21 +161,25 @@ sealed class ECPoint private constructor(
     }
 }
 
+/**
+ * Serializes a point as a byte array holding the DER encoding of its [EcdsaPublicKey]: a SubjectPublicKeyInfo
+ * (RFC 5480), which names the curve. The point is written uncompressed, but compressed points are also decoded.
+ *
+ * Decoding fails with a [SerializationException] if the bytes are not an EC public key on a supported curve.
+ */
 object ECPointSerializer : KSerializer<ECPoint.Normalized> {
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("ECPointSerializer", PrimitiveKind.STRING)
+        SerialDescriptor("ECPoint", ByteArraySerializer().descriptor)
 
-    override fun serialize(encoder: Encoder, value: ECPoint.Normalized) {
-        encoder.encodeSerializableValue(ECCurve.serializer(), value.curve)
-        encoder.encodeSerializableValue(ByteArrayBase64Serializer, value.x.toByteArray())
-        encoder.encodeBoolean(value.yCompressed == Sign.POSITIVE)
-    }
+    override fun serialize(encoder: Encoder, value: ECPoint.Normalized) =
+        encoder.encodeSerializableValue(ByteArraySerializer(), value.asPublicKey().encodeToDer())
 
     override fun deserialize(decoder: Decoder): ECPoint.Normalized {
-        val curve = decoder.decodeSerializableValue(ECCurve.serializer())
-        val xBytes = decoder.decodeSerializableValue(ByteArrayBase64Serializer)
-        val yIsPositive = decoder.decodeBoolean()
-        return ECPoint.fromCompressed(curve, xBytes, yIsPositive)
+        val der = decoder.decodeSerializableValue(ByteArraySerializer())
+        return catchingAs({ SerializationException("Not the encoding of an EC point: ${it.message}", it) }) {
+            val key = CryptoPublicKey.decodeFromDer(der)
+            require(key is EcdsaPublicKey) { "Expected an EC public key, got ${key::class.simpleName}" }
+            key.publicPoint
+        }.getOrThrow()
     }
-
 }
