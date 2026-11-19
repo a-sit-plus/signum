@@ -77,10 +77,10 @@ val UnknownPkixValueTest by matrixSuite {
         }
     }
 
-    "Undecodable ATVs survive as unknowns through name and certificate construction and parsing" {
+    "Malformed ATVs survive as unknowns through name and certificate construction and parsing" {
         val sources = listOf(
             X500AttributeTypeAndValue(CommonName.oid, Asn1Integer(1).encodeToTlv()),
-            X500AttributeTypeAndValue(CommonName.oid, Asn1Element.parse("1E0100".hexToByteArray())),
+            X500AttributeTypeAndValue(CommonName.oid, Asn1Element.parse("160180".hexToByteArray())),
         )
         sources.forEach { source ->
             val atv = AttributeTypeAndValue.fromAsn1(source).also { it.shouldBeInstanceOf<ServiceLoader.UnknownShim>() }
