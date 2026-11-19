@@ -219,8 +219,12 @@ val DistinguishedNameTest by matrixSuite {
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
         val attribute = decoded.attrsAndValues.single()
 
-        attribute::class shouldBe canonical::class
-        attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
+        if (directoryString) {
+            attribute::class shouldBe canonical::class
+            attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
+        } else {
+            (attribute is TextAttributeTypeAndValue) shouldBe false
+        }
         attribute.asn1.toRepresentation() shouldBe source
         decoded.asn1.toDer() shouldBe encoded
     }
