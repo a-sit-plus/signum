@@ -1,4 +1,4 @@
-@file:OptIn(SecretExposure::class, HazardousMaterials::class, SignumInternals::class)
+@file:OptIn(SecretExposure::class, HazardousMaterials::class)
 
 package at.asitplus.signum.supreme.symmetric
 
@@ -24,11 +24,22 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlin.collections.mapNotNull
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Clock
 
 val SymmetricTest by matrixSuite {
+
+    "ECB without padding preserves trailing bytes" {
+        val key = SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING.keyFrom(ByteArray(16)).getOrThrow()
+        for (lastByte in listOf(0, 1, 16, 128, 255)) {
+            val plaintext = ByteArray(16) { lastByte.toByte() }
+            val encrypted = key.encrypt(plaintext).getOrThrow()
+            encrypted.encryptedData.size shouldBe plaintext.size
+            encrypted.decrypt(key).getOrThrow() shouldBe plaintext
+        }
+    }
 
     "README" {
 
@@ -141,10 +152,10 @@ val SymmetricTest by matrixSuite {
                 key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
 
-                if (alg.authCapability is AuthCapability.Authenticated)
+                if (alg.isAuthenticated())
                     key.encrypt(Random.nextBytes(32))
                         .getOrThrow().algorithm.isAuthenticated() shouldBe true
-                else if (alg.authCapability is AuthCapability.Unauthenticated)
+                else
                     key.encrypt(Random.nextBytes(32))
                         .getOrThrow().algorithm.isAuthenticated() shouldBe false
             }
@@ -207,14 +218,14 @@ val SymmetricTest by matrixSuite {
                 key.andPredefinedNonce(alg.randomNonce()).getOrThrow()
                     .encrypt(data = Random.nextBytes(32)) should succeed
 
-                if (alg.authCapability is AuthCapability.Authenticated)
+                if (alg.isAuthenticated())
                     alg.randomKey(InsecureRandom).encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
                         it.getOrThrow().algorithm.isAuthenticated() shouldBe true
                     }
-                else if (alg.authCapability is AuthCapability.Unauthenticated)
+                else
                     alg.randomKey(InsecureRandom).encrypt(
                         Random.nextBytes(32)
                     ).let {
@@ -359,7 +370,7 @@ val SymmetricTest by matrixSuite {
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
+                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated>()
                         val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
                         decrypted shouldBe plaintext
 
@@ -502,7 +513,7 @@ val SymmetricTest by matrixSuite {
                                 val manilaAlg = it.Custom(ciphertext.authTag.size.bytes)
                                 { _, _, _ -> "Manila".encodeToByteArray() }
 
-                                val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                val manilaKey = SymmetricKey.WithDedicatedMac(
                                     manilaAlg,
                                     key.encryptionKey.getOrThrow(),
                                     key.macKey.getOrThrow()
@@ -521,7 +532,7 @@ val SymmetricTest by matrixSuite {
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonceSize.bytes.toInt()
-                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
+                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated>()
 
                                 val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
                                 decrypted shouldBe plaintext
@@ -564,7 +575,7 @@ val SymmetricTest by matrixSuite {
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
                                 ).getOrThrow().decrypt(
-                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                    SymmetricKey.WithDedicatedMac(
                                         ciphertext.algorithm,
                                         key.encryptionKey.getOrThrow(),
                                         dedicatedMacKey = key.macKey.getOrThrow().asList().shuffled().toByteArray()
@@ -588,7 +599,7 @@ val SymmetricTest by matrixSuite {
                                 ).getOrThrow().decrypt(it.Custom(ciphertext.authTag.size.bytes) { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
                                 }.let {
-                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                    SymmetricKey.WithDedicatedMac(
                                         it,
                                         key.encryptionKey.getOrThrow(),
                                         key.macKey.getOrThrow()
@@ -736,29 +747,33 @@ val SymmetricTest by matrixSuite {
                 alg.randomKey(InsecureRandom).also { key ->
                     when (alg.hasDedicatedMac()) {
                         true -> {
+                            require(key.hasDedicatedMacKey())
                             key shouldBe alg.keyFrom(
-                                (key as SymmetricKey.WithDedicatedMac).encryptionKey.getOrThrow(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow()
+                                key.encryptionKey.getOrThrow(),
+                                key.macKey.getOrThrow()
                             ).getOrThrow()
 
                             key shouldNotBe alg.keyFrom(
                                 key.encryptionKey.getOrThrow(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow().asList().shuffled()
+                                key.macKey.getOrThrow().asList().shuffled()
                                     .toByteArray()
                             ).getOrThrow()
                             key shouldNotBe alg.keyFrom(
                                 key.encryptionKey.getOrThrow().asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow()
+                                key.macKey.getOrThrow()
                             ).getOrThrow()
                             key shouldNotBe alg.keyFrom(
                                 key.encryptionKey.getOrThrow().asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow().asList().shuffled()
+                                key.macKey.getOrThrow().asList().shuffled()
                                     .toByteArray()
                             ).getOrThrow()
                         }
 
-                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow())
-                            .getOrThrow()
+                        false -> {
+                            require(!key.hasDedicatedMacKey())
+                            key shouldBe alg.keyFrom(key.secretKey.getOrThrow())
+                                .getOrThrow()
+                        }
                     }
                 }
 
@@ -949,8 +964,7 @@ val SymmetricTest by matrixSuite {
         }
 
         "illegal nonce sizes" - {
-            data(allAlgorithms.filter { it.requiresNonce() }) - { alg ->
-                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
+            data(allAlgorithms.mapNotNull { if (it.requiresNonce()) it else null }) - { alg ->
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
