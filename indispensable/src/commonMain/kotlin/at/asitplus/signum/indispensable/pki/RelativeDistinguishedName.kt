@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
@@ -29,13 +30,25 @@ class RelativeDistinguishedName(
         if (performValidation && !hasValidStructure()) throw Asn1Exception("Invalid RelativeDistinguishedName structure!")
     }
 
+    /**
+     * Compares text attributes using Unicode default full case folding.
+     * Turkic case folding (T mappings) is excluded.
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RelativeDistinguishedName) return false
-        return attrsAndValues == other.attrsAndValues
+        return attributeCounts() == other.attributeCounts()
     }
 
-    override fun hashCode(): Int = attrsAndValues.hashCode()
+    /**
+     * Hashes text attributes using the same Unicode default full case folding as [equals].
+     * Turkic case folding (T mappings) is excluded.
+     */
+    override fun hashCode(): Int = attributeCounts().hashCode()
+
+    private fun attributeCounts() = attrsAndValues.groupingBy {
+        if (it is TextAttributeTypeAndValue) it.oid to it.text.caseFold() else it
+    }.eachCount()
 
     override fun toString() = "RelativeDistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
@@ -88,6 +101,23 @@ class RelativeDistinguishedName(
 private fun Set<AttributeTypeAndValue>.isStructurallyValid(): Boolean =
     isNotEmpty() && allDistinctByOids()
 
+private fun String.caseFold(): String = buildString(length) {
+    val text = this@caseFold
+    var index = 0
+    while (index < text.length) {
+        val start = index
+        val first = text[index++]
+        //UTF-16, UTF-8 code point conversion. Sting.codePintAt is JVM-only!
+        val codePoint = if (first.isHighSurrogate() && index < text.length && text[index].isLowSurrogate()) {
+            0x10000 + ((first.code - 0xD800) shl 10) + (text[index++].code - 0xDC00)
+        } else {
+            first.code
+        }
+        val replacement = CaseFoldingMap[codePoint]
+        if (replacement != null) append(replacement) else append(text, start, index)
+    }
+}
+
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     @SignumInternals
@@ -127,14 +157,14 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
         }
 
         /** constructs an ATV from type-value string form (e.g., `CN=Alice`) */
-        fun fromString(str: String) = runRethrowing {
+        fun fromString(str: String) = catchingUnwrappedAs(a = ::UnsupportedCryptoException) {
             val parts = str.splitFirstUnescaped( '=')
             if (parts.size != 2) throw Asn1Exception("Invalid ATV string: $str")
             fromString(parts[0], parts[1])
-        }
+        }.getOrThrow()
 
         /** constructs an ATV from a type-value pair */
-        fun fromString(type: String, value: String): AttributeTypeAndValue = runRethrowing {
+        fun fromString(type: String, value: String): AttributeTypeAndValue = catchingUnwrappedAs(a = ::UnsupportedCryptoException) {
             // covered options:
             // oid=kotlinstring
             // oid=#hexstring
@@ -162,17 +192,17 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                 }
 
             @OptIn(SignumInternals::class)
-            return ServiceLoader.load<AttributeTypeAndValueProvider>().getWithUnknown(type,
+            ServiceLoader.load<AttributeTypeAndValueProvider>().getWithUnknown(type,
                 unknownCtor = { _, failure ->
                     when (oid) {
                         is AttributeTypeAndValueProvider.OID -> Unknown(oid.oid, failure)
-                        is AttributeTypeAndValueProvider.StringAlias -> throw Asn1Exception("Unknown alias '${oid.str}")
+                        is AttributeTypeAndValueProvider.StringAlias -> throw failure
                     }
                 },
                 loadBlock = {
                     decodeATV(oid, resolvedValue)
                 })
-        }
+        }.getOrThrow()
     }
 }
 
@@ -188,8 +218,9 @@ open class TextAttributeTypeAndValue(
 }
 
 fun AttributeTypeAndValue.toRfc2253String(): String {
+    // Look up by OID so text providers can also re-emit opaque attributes.
     val (keyString, valueString) = ServiceLoader.load<AttributeTypeAndValueProvider>()
-        .get(this, AttributeTypeAndValueProvider::encodeATV)
+        .get(oid) { encodeATV(this@toRfc2253String) }
     return buildString {
         // append key
         when (keyString) {

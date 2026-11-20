@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
@@ -63,9 +64,7 @@ val X500AttributeProviderTest by matrixSuite {
         }
     }
 
-    data(standardAttributes, nameFn = {
-        "${if (it.kind == StringKind.UTF8) "valid alternative" else "invalid string type"} ${it.names.first()}"
-    }) test { case ->
+    data(standardAttributes, nameFn = { "alternate string tag ${it.names.first()}" }) test { case ->
         val encodedValue = when (case.kind) {
             StringKind.UTF8 -> Asn1String.Printable(case.text)
             StringKind.PRINTABLE, StringKind.IA5 -> Asn1String.UTF8(case.text)
@@ -75,23 +74,25 @@ val X500AttributeProviderTest by matrixSuite {
         )
         val encoded = original.asn1.toDer()
         val decoded = RelativeDistinguishedName.fromAsn1(encoded)
-        val attribute = decoded.attrsAndValues.single() as AttributeTypeAndValue
-        when (case.kind) {
-            StringKind.UTF8 -> attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe case.text
-            StringKind.PRINTABLE, StringKind.IA5 -> attribute.shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
-        }
+        val attribute = decoded.attrsAndValues.single().shouldBeInstanceOf<TextAttributeTypeAndValue>()
+        attribute.text shouldBe case.text
         attribute.asn1.toRepresentation().value shouldBe encodedValue
         decoded.asn1.toDer() shouldBe encoded
     }
 
     "unknown dotted OID text has no built-in ASN.1 encoding" {
         val attribute = AttributeTypeAndValue.fromString("1.2.3.4", "Test")
-            as AttributeTypeAndValue
 
         attribute.oid shouldBe ObjectIdentifier("1.2.3.4")
         attribute.shouldBeInstanceOf<TextAttributeTypeAndValue>().text shouldBe "Test"
         attribute.sourceFormat shouldBe "<no source>"
-        shouldThrow<UnsupportedCryptoException> { attribute.asn1.toRepresentation() }
-        AttributeTypeAndValue.fromString("UNKNOWN", "Test") shouldBe null
+        shouldThrow<Asn1Exception> { attribute.asn1.toRepresentation() }
+            .cause.shouldBeInstanceOf<UnsupportedCryptoException>()
+    }
+
+    "Unsupported attribute strings report UnsupportedCryptoException" {
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("UNKNOWN", "Test") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("UNKNOWN=Test") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("CN=#GG") }
     }
 }

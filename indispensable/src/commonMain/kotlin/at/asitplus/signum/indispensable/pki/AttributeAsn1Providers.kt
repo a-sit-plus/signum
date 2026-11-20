@@ -25,34 +25,7 @@ object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider {
         decodeFromAsn1(value.oid, value.value)
 
     fun decodeFromAsn1(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue? {
-        val typecheck: (Asn1String)->Boolean = when (oid) {
-            AttributeTypeAndValue.OID.domainComponent,
-            AttributeTypeAndValue.OID.emailAddress -> ({ it is Asn1String.IA5 })
-
-            AttributeTypeAndValue.OID.countryName,
-            AttributeTypeAndValue.OID.dnQualifier,
-            AttributeTypeAndValue.OID.serialNumber,
-            AttributeTypeAndValue.OID.telephoneNumber -> ({ it is Asn1String.Printable })
-
-            AttributeTypeAndValue.OID.commonName,
-            AttributeTypeAndValue.OID.localityName,
-            AttributeTypeAndValue.OID.stateOrProvinceName,
-            AttributeTypeAndValue.OID.streetAddress,
-            AttributeTypeAndValue.OID.organizationName,
-            AttributeTypeAndValue.OID.organizationalUnitName,
-            AttributeTypeAndValue.OID.title,
-            AttributeTypeAndValue.OID.surname,
-            AttributeTypeAndValue.OID.name,
-            AttributeTypeAndValue.OID.givenName,
-            AttributeTypeAndValue.OID.initials,
-            AttributeTypeAndValue.OID.generationQualifier,
-            AttributeTypeAndValue.OID.userId -> ({ it.isDirectoryString() })
-
-            else -> return null
-        }
         val str = Asn1String.decodeFromTlv(value.asPrimitive())
-        require(typecheck(str)) { "Invalid attribute string type for $oid: ${value::class.simpleName}" }
-        require(str.isValid != false) { "Malformed attribute string for $oid" }
         return TextAttributeTypeAndValue(oid, str.value)
     }
 
