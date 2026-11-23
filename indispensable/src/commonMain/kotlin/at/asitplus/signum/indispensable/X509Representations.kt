@@ -510,12 +510,10 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
 
 val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
 
-val AttributeTypeAndValue.Companion.fromAsn1 get() = asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue> { src ->
-    try { ServiceLoader.load<AttributeTypeAndValueAsn1Provider>().get(src, AttributeTypeAndValueAsn1Provider::decodeFromAsn1) }
-    catch (failure: UnsupportedCryptoException) {
-        AttributeTypeAndValue.Unknown(src.oid, failure)
-    }
-}
+val AttributeTypeAndValue.Companion.fromAsn1 get() =
+        asn1DecodersWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { src, failure ->
+            AttributeTypeAndValue.Unknown(src.oid, failure)
+        }
 
 val Name.asn1 get() =
     asn1Encoders<X500Name, _> { src ->
