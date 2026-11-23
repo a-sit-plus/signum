@@ -4,10 +4,10 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
+import at.asitplus.signum.indispensable.SpecializedPublicKey
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
@@ -188,7 +188,7 @@ data class JsonWebKey(
     @SerialName("y")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
-) : SpecializedCryptoPublicKey, SpecializedSymmetricKey {
+) : SpecializedPublicKey, SpecializedSymmetricKey {
 
     /**
      * Thumbprint in the form of `urn:ietf:params:oauth:jwk-thumbprint:sha256:DEADBEEF`
@@ -206,7 +206,7 @@ data class JsonWebKey(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
-    val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
+    val didEncoded: String? by lazy { toPublicKey().getOrNull()?.didEncoded }
 
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +
@@ -292,10 +292,10 @@ data class JsonWebKey(
     }
 
     /**
-     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible
+     * @return a KmmResult wrapped [PublicKey] equivalent if conversion is possible
      * (i.e. if all key params are set), or the first error.
      */
-    override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
+    override fun toPublicKey(): KmmResult<PublicKey> = catching {
         when (type) {
             JwkType.EC -> {
                 EcdsaPublicKey.fromUncompressed(
@@ -343,7 +343,7 @@ data class JsonWebKey(
             catching { joseCompliantSerializer.decodeFromString<JsonWebKey>(it) }
 
         fun fromDid(input: String): KmmResult<JsonWebKey> =
-            catching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
+            catching { PublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
 
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
             catching { EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
@@ -398,9 +398,9 @@ val SymmetricKey<*, *, *>.jsonWebKeyBytes
     }
 
 /**
- * Converts a [CryptoPublicKey] to a [JsonWebKey]
+ * Converts a [PublicKey] to a [JsonWebKey]
  */
-fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
+fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
         is EcdsaPublicKey ->
             JsonWebKey(
@@ -435,16 +435,16 @@ fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<J
 private const val JWK_ID = "jwkIdentifier"
 
 /**
- * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [PublicKey]
  */
-var CryptoPublicKey.jwkId: String?
+var PublicKey.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
     }
 
 /**
- * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [PublicKey]
  */
 var SymmetricKey<*, *, *>.jwkId: String?
     get() = additionalProperties[JWK_ID]

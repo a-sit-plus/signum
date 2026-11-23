@@ -7,25 +7,28 @@ import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.internals.ImplementationError
 import java.security.*
+import java.security.PrivateKey as JCAPrivateKey
+import java.security.PublicKey as JCAPublicKey
+import java.security.Signature as JCASignature
 
 /** This is not semantics-aware, but allows fallback for public key/private key parsing based on DER formats */
 object FallbackToDERFormat : JcaMappingProvider {
-    override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey): CryptoPublicKey? =
+    override fun jcaPublicKeyToPublicKey(publicKey: JCAPublicKey): PublicKey? =
         if (publicKey.format?.equals("X.509", ignoreCase = true) == true)
-            CryptoPublicKey.fromAsn1(publicKey.encoded)
+            PublicKey.fromAsn1(publicKey.encoded)
         else null
 
-    override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey): CryptoPrivateKey.WithPublicKey? =
+    override fun jcaPrivateKeyToPrivateKey(privateKey: JCAPrivateKey): PrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            CryptoPrivateKey.fromAsn1(privateKey.encoded) as CryptoPrivateKey.WithPublicKey
+            PrivateKey.fromAsn1(privateKey.encoded) as PrivateKey.WithPublicKey
         else null
 }
 
-private fun sigGetInstance(alg: String, provider: JCAProviderRef): Signature =
+private fun sigGetInstance(alg: String, provider: JCAProviderRef): JCASignature =
     when (provider) {
-        is JCAProviderRef.ByName -> Signature.getInstance(alg, provider.provider)
-        is JCAProviderRefO -> Signature.getInstance(alg, provider.provider)
-        is JCAProviderRef.None -> Signature.getInstance(alg)
+        is JCAProviderRef.ByName -> JCASignature.getInstance(alg, provider.provider)
+        is JCAProviderRefO -> JCASignature.getInstance(alg, provider.provider)
+        is JCAProviderRef.None -> JCASignature.getInstance(alg)
         else -> throw ImplementationError("invalid JCAProvider ref")
     }
 
@@ -74,40 +77,40 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
         else -> null
     }
 
-    override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): CryptoSignature? = when (algorithm) {
+    override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): Signature? = when (algorithm) {
         is EcdsaAlgorithm -> EcdsaSignature.fromRawSignatureValue(sigBytes)
         is RsaAlgorithm -> RsaSignature.fromRawSignatureValue(sigBytes)
         else -> null
     }
 
-    override fun getJCASignatureBytes(signature: CryptoSignature): ByteArray? = when (signature) {
+    override fun getJCASignatureBytes(signature: Signature): ByteArray? = when (signature) {
         is EcdsaSignature, is RsaSignature -> signature.asn1.toRepresentation().rawBytes
         else -> null
     }
 
-    override fun cryptoPublicKeyToJcaPublicKey(publicKey: CryptoPublicKey) = when(publicKey) {
+    override fun publicKeyToJcaPublicKey(publicKey: PublicKey) = when(publicKey) {
         is EcdsaPublicKey -> publicKey.toJcaPublicKey()
         is RsaPublicKey -> publicKey.toJcaPublicKey()
         else -> null
     }
 
-    override fun jcaPublicKeyToCryptoPublicKey(publicKey: PublicKey) = when(publicKey) {
-        is java.security.interfaces.RSAPublicKey -> publicKey.toCryptoPublicKey()
-        is java.security.interfaces.ECPublicKey -> publicKey.toCryptoPublicKey()
+    override fun jcaPublicKeyToPublicKey(publicKey: JCAPublicKey) = when(publicKey) {
+        is java.security.interfaces.RSAPublicKey -> publicKey.toPublicKey()
+        is java.security.interfaces.ECPublicKey -> publicKey.toPublicKey()
         else -> null
     }
 
-    override fun cryptoPrivateKeyToJcaPrivateKey(privateKey: CryptoPrivateKey) =
+    override fun privateKeyToJcaPrivateKey(privateKey: PrivateKey) =
         when (privateKey) {
             is RsaPrivateKey -> privateKey.toJcaPrivateKey()
             is EcdsaPrivateKey -> privateKey.toJcaPrivateKey()
             else -> null
         }
 
-    override fun jcaPrivateKeyToCryptoPrivateKey(privateKey: PrivateKey) =
+    override fun jcaPrivateKeyToPrivateKey(privateKey: JCAPrivateKey) =
         when (privateKey) {
-            is java.security.interfaces.RSAPrivateKey -> privateKey.toCryptoPrivateKey()
-            is java.security.interfaces.ECPrivateKey -> privateKey.toCryptoPrivateKey()
+            is java.security.interfaces.RSAPrivateKey -> privateKey.toPrivateKey()
+            is java.security.interfaces.ECPrivateKey -> privateKey.toPrivateKey()
             else -> null
         }
 }

@@ -36,7 +36,7 @@ implementation("at.asitplus.signum:supreme:$supreme_version")
 
 ## Key Design Principles
 The Supreme KMP crypto provider works differently than the JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
-and a `SupremeVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
+and a `SupremeVerifier`, that is instantiated on a `SignatureAlgorithm`, taking a `PublicKey` as parameter.
 In addition, creating ephemeral keys is a dedicated operation, decoupled from a `Provider`.
 The actual implementation of cryptographic functionality is delegated to platform-native implementations.
 
@@ -105,7 +105,7 @@ options are passed.
 
 ## Key Management
 The provider enables creating, loading, and deleting signing keys.
-In addition, it is possible to create a signing key (and a signer) from a `CryptoPrivateKey`.
+In addition, it is possible to create a signing key (and a signer) from a `PrivateKey`.
 
 ### Key Generation
 A key's properties cannot be modified after its creation.
@@ -250,29 +250,29 @@ If the operation succeeds, a key was indeed deleted.
 If not, it usually means that a non-existent alias was specified.
 
 ### Private Key Management
-Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object:
+Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `PrivateKey` object:
 
 ```kotlin
-CryptoPrivateKey.fromAsn1(pkcs8)
+PrivateKey.fromAsn1(pkcs8)
 ```
 
 These keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).
 Also, while encrypted keys can be parsed, decryption is currently not natively supported.
 
-#### Creating a Signer from a `CryptoPrivateKey`
+#### Creating a Signer from a `PrivateKey`
 
 !!! note inline end 
     Signers can only be created for private keys that have a public key and/or a curve attached. This may not be the case
     when an EC private key was parsed from SEC1 encoding without curve and public key info.
 
-Given a `CryptoPrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object, a signer can be created as follows:
+Given a `PrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object, a signer can be created as follows:
 
 ```kotlin
 val signer = sigAlg.signerFor(privateKey)
 ```
 
 This only works if key and signature algorithm are compatible. Otherwise, it returns `KmmResult.failure`. 
-If you have an EC private key at hand without a public key attached, simply convert it to a `CryptoPrivateKey.EC.WithPublicKey` as follows:
+If you have an EC private key at hand without a public key attached, simply convert it to a `EcdsaPrivateKey.WithPublicKey` as follows:
 
 ```kotlin
 privateKey.withCurve(EECurve.SECP_256_R_1)
@@ -292,7 +292,7 @@ val privKey = signer.exportPrivateKey()
 
 While all signers feature an `exportPrivateKey()` method, only some signers allow for actually exporting private key material.
 Platform-native signers prevent it (i.e. always return a `KmmResult.failure`) when trying to export private keys.
-Keys from signers created from a `CryptoPrivateKey` (see above), as well as ephemeral signers can be exported.
+Keys from signers created from a `PrivateKey` (see above), as well as ephemeral signers can be exported.
 
 
 ## Signature Creation
@@ -321,9 +321,9 @@ A variety of constants, resembling the well-known JCA names, are also available 
 As an example, here's how to verify a basic signature using a public key:
 
 ```kotlin
-val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
+val publicKey: EcdsaPublicKey = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
-val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
+val signature: Signature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")

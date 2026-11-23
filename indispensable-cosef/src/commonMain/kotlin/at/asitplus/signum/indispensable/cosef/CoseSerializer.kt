@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import kotlinx.serialization.decodeFromByteArray
 
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -99,7 +99,7 @@ private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>):
 private fun ByteArray.toSignature(
     protectedHeader: CoseHeader,
     unprotectedHeader: CoseHeader?,
-): CryptoSignature =
+): Signature =
     if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
         EcdsaSignature.fromP1363Bytes(this)
     else

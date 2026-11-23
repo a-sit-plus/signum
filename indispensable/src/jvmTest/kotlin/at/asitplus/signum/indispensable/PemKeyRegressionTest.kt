@@ -32,13 +32,13 @@ val PemKeyRegressionTest by matrixSuite {
         val sample by lazy {
             when (label) {
                 "RSA PUBLIC KEY" -> RsaPublicKey.fromAsn1(rsa.public.encoded).let {
-                    KeyPemSample(it, it.asn1.pkcs1.toPem(), it.asn1.toPem(), CryptoPublicKey.fromAsn1)
+                    KeyPemSample(it, it.asn1.pkcs1.toPem(), it.asn1.toPem(), PublicKey.fromAsn1)
                 }
                 "RSA PRIVATE KEY" -> RsaPrivateKey.fromAsn1(rsa.private.encoded).let {
-                    KeyPemSample(it, it.asn1.pkcs1.toPem(), it.asn1.toPem(), CryptoPrivateKey.fromAsn1)
+                    KeyPemSample(it, it.asn1.pkcs1.toPem(), it.asn1.toPem(), PrivateKey.fromAsn1)
                 }
                 else -> EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1).let {
-                    KeyPemSample(it, it.asn1.sec1.toPem(), it.asn1.toPem(), CryptoPrivateKey.fromAsn1)
+                    KeyPemSample(it, it.asn1.sec1.toPem(), it.asn1.toPem(), PrivateKey.fromAsn1)
                 }
             }
         }

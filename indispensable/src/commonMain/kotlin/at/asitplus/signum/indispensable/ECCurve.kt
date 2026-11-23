@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
@@ -165,7 +166,7 @@ enum class ECCurve(
                         "2C7D1BD9 98F54449 579B4468 17AFBD17 273E662C 97EE7299 5EF42640" +
                         "C550B901 3FAD0761 353C7086 A272C240 88BE9476 9FD16650"
         }.replace(" ", "").chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            .let { CryptoPublicKey.EC.fromAnsiX963Bytes(this, it).publicPoint }
+            .let { EcdsaPublicKey.fromAnsiX963Bytes(this, it).publicPoint }
     }
 
     /**

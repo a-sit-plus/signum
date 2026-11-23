@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
@@ -38,7 +38,7 @@ val RsaEncryptionTest  by matrixSuite {
 
 @Serializable
 class RsaTestData(
-    @Serializable(PemSerializer::class) val key: CryptoPrivateKey,
+    @Serializable(PemSerializer::class) val key: PrivateKey,
     @Serializable(ByteArrayHexSerializer::class) val plain: ByteArray,
     @Serializable(ByteArrayHexSerializer::class) val enc: ByteArray,
     @Serializable(PaddingSerializer::class) val padding: RSAPadding
@@ -48,19 +48,19 @@ class RsaTestData(
     override fun toString() = "$padding, Data=${plain.toHexString(HexFormat.Default)}, Encrypted=${enc.toHexString()}"
 
     companion object {
-        object PemSerializer : KSerializer<CryptoPrivateKey> {
+        object PemSerializer : KSerializer<PrivateKey> {
             override val descriptor: SerialDescriptor =
                 PrimitiveSerialDescriptor("PemEncodedPrivateKey", PrimitiveKind.STRING)
 
             override fun serialize(
                 encoder: Encoder,
-                value: CryptoPrivateKey
+                value: PrivateKey
             ) {
                 encoder.encodeString(value.asn1.toPem())
             }
 
             override fun deserialize(decoder: Decoder) =
-                CryptoPrivateKey.fromAsn1(decoder.decodeString())
+                PrivateKey.fromAsn1(decoder.decodeString())
         }
 
         object PaddingSerializer : KSerializer<RSAPadding> {

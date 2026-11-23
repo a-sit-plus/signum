@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
-import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -58,10 +58,10 @@ val ConversionTests by matrixSuite {
         }
     }
 
-    "Regression test: COSE key (no keyId) -> CryptoPublicKey -> COSE key (no keyId)" {
+    "Regression test: COSE key (no keyId) -> PublicKey -> COSE key (no keyId)" {
         val key = randomPublicKey().toCoseKey().getOrThrow()
         key.keyId shouldBe null
-        val cpk = key.toCryptoPublicKey().getOrThrow()
+        val cpk = key.toPublicKey().getOrThrow()
         cpk.toCoseKey().getOrThrow().keyId shouldBe null
         val kid = Random.nextBytes(16)
         cpk.toCoseKey(keyId = kid).getOrThrow().keyId shouldBe kid
@@ -70,4 +70,4 @@ val ConversionTests by matrixSuite {
 
 private fun randomPublicKey() =
     (KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-        .genKeyPair().public as ECPublicKey).toCryptoPublicKey()
+        .genKeyPair().public as ECPublicKey).toPublicKey()

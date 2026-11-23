@@ -52,7 +52,7 @@ val VerifierTests by matrixSuite {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
-                    val publicKey = keypair.public.toCryptoPublicKey() as EcdsaPublicKey
+                    val publicKey = keypair.public.toPublicKey() as EcdsaPublicKey
                     val data = Random.nextBytes(256)
                     val sig = Signature.getInstance("${component(digest)}withECDSA", "BC").run {
                         initSign(keypair.private)

@@ -6,7 +6,7 @@ import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignatureFormatProvider
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
@@ -20,7 +20,7 @@ sealed class EcdsaSignature
 @Throws(IllegalArgumentException::class) private constructor(
     val r: BigInteger,
     val s: BigInteger,
-) : CryptoSignature {
+) : Signature {
 
     override val sourceRepresentation = SourceRepresentationStorage()
 
@@ -143,7 +143,7 @@ sealed class EcdsaSignature
 
 class RsaSignature(
     val rawBytes: ByteArray,
-) : CryptoSignature {
+) : Signature {
 
     override val sourceRepresentation = SourceRepresentationStorage()
 
@@ -167,13 +167,13 @@ class RsaSignature(
 }
 
 object IndispensableSignatureFormats : SignatureFormatProvider {
-    override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? = when (value) {
+    override fun encodeToAsn1(value: Signature): X509SignatureValue? = when (value) {
         is EcdsaSignature -> at.asitplus.awesn1.crypto.EcdsaSigValue(value.r.toAsn1Integer(), value.s.toAsn1Integer()).toX509SignatureValue(Signum.Der)
         is RsaSignature -> X509SignatureValue(value.rawBytes)
         else -> null
     }
 
-    override fun parseCryptoSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
+    override fun parseSignature(signatureAlgorithm: SignatureAlgorithm, signature: X509SignatureValue) = when (signatureAlgorithm) {
         is EcdsaAlgorithm -> {
             val parsedSig = EcdsaSignature.fromAsn1(signature)
             when (val crv = signatureAlgorithm.requiredCurve) {
@@ -185,7 +185,7 @@ object IndispensableSignatureFormats : SignatureFormatProvider {
         else -> null
     }
 
-    override fun parseCryptoSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue) =
+    override fun parseSignature(x509Algorithm: X509AlgorithmIdentifier, signature: X509SignatureValue) =
         when (x509Algorithm.oid) {
 
             KnownOIDs.sha1WithRSAEncryption, KnownOIDs.sha256WithRSAEncryption, KnownOIDs.sha384WithRSAEncryption,

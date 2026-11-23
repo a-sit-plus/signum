@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.nextPositiveBigInteger
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -14,7 +14,7 @@ import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toPublicKey
 import at.asitplus.testballoon.matrix.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -45,13 +45,13 @@ val JwkTest  by matrixSuite {
                         it.w.affineX.toByteArray().encodeToString(Base64Strict)
                     } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})" }) test { pubKey ->
 
-                val cryptoPubKey = pubKey.toCryptoPublicKey().also { it.jwkId = it.didEncoded }
+                val cryptoPubKey = pubKey.toPublicKey().also { it.jwkId = it.didEncoded }
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
 
-                own.toCryptoPublicKey().getOrThrow().iosEncoded shouldBe cryptoPubKey.iosEncoded
-                CryptoPublicKey.fromDid(own.keyId.shouldNotBeNull()) shouldBe cryptoPubKey
+                own.toPublicKey().getOrThrow().iosEncoded shouldBe cryptoPubKey.iosEncoded
+                PublicKey.fromDid(own.keyId.shouldNotBeNull()) shouldBe cryptoPubKey
             }
         }
     }
@@ -142,10 +142,10 @@ val JwkTest  by matrixSuite {
         parsed.hashCode() shouldBe jwk.hashCode()
     }
 
-    "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
+    "Regression test: JWK (no keyId) -> PublicKey -> JWK (no keyId)" {
         val key = randomCertificate().publicKey.toJsonWebKey()
         key.keyId shouldBe null
-        val cpk = key.toCryptoPublicKey().getOrThrow()
+        val cpk = key.toPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null
         val kid = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(
             RandomSource.default()
@@ -159,7 +159,7 @@ private fun randomCertificate() = Certificate(
         serialNumber = InsecureRandom.nextPositiveBigInteger(10),
         issuerName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("Test"))))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-            .genKeyPair().public.toCryptoPublicKey(),
+            .genKeyPair().public.toPublicKey(),
         signatureAlgorithm = EcdsaAlgorithm.withSHA256,
         subjectName = Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.fromAsn1(X500AttributeTypeAndValue.CommonName("Test"))))),
         validFrom = (Clock.System.now()),

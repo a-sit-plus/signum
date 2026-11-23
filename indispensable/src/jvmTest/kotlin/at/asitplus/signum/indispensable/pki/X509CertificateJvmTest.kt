@@ -8,6 +8,7 @@ import at.asitplus.io.MultiBase
 import at.asitplus.io.multibaseEncode
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.internals.ensureSize
@@ -74,7 +75,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
                 val keyPair: KeyPair = keyGen.genKeyPair()
                 System.setProperty("kotest.assertions.collection.print.size", "5000")
                 val ecPublicKey = keyPair.public as ECPublicKey
-                val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+                val cryptoPublicKey = ecPublicKey.toPublicKey()
 
                 // create certificate with bouncycastle
                 val notBeforeDate = Date.from(Instant.now())
@@ -140,7 +141,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
     "Certificates Conversions" {
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+        val cryptoPublicKey = ecPublicKey.toPublicKey()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -215,7 +216,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
         val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
-        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        parsedPublicKey.shouldBeInstanceOf<EcdsaPublicKey>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
     }
@@ -227,7 +228,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         */
         val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey()
+        val cryptoPublicKey = ecPublicKey.toPublicKey()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())

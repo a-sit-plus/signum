@@ -227,7 +227,7 @@ sealed class IosSigner(final override val alias: String,
         }
     }
 
-    protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
+    protected abstract fun bytesToSignature(sigBytes: ByteArray): Signature
     override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
     SignatureResult.make {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
@@ -283,7 +283,7 @@ sealed class IosSigner(final override val alias: String,
                 SecKeyCopyKeyExchangeResult(
                     key,
                     kSecKeyAlgorithmECDHKeyExchangeStandard,
-                    publicValue.asCryptoPublicKey().toSecKey().value,
+                    publicValue.asPublicKey().toSecKey().value,
                     parameters = null,
                     error
                 )
@@ -385,7 +385,7 @@ interface IosKeychainOperationsProvider {
         }.let { Pair(it, bundle.GetAlgSpecificMetadata()) }
     }
 
-    fun makeIosSigner(alias: String, publicKey: CryptoPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner?
+    fun makeIosSigner(alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner?
 }
 
 object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
@@ -430,7 +430,7 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
             else -> null
         }
 
-    override fun makeIosSigner(alias: String, publicKey: CryptoPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner? =
+    override fun makeIosSigner(alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner? =
         when (publicKey) {
             is EcdsaPublicKey -> IosSigner.ECDSA(alias, publicKey, metadata, config)
             is RsaPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
@@ -505,7 +505,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = errSecItemNotFound)
     }
 
-    private suspend fun getSignerInternal(alias: String, publicKey: CryptoPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner =
+    private suspend fun getSignerInternal(alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner =
         ServiceLoader.load<IosKeychainOperationsProvider>()
             .get(publicKey) { makeIosSigner(alias, it, metadata, config) }
 
@@ -525,7 +525,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
             val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
             val usedSecureEnclave: Boolean
-            val publicKey: CryptoPublicKey
+            val publicKey: PublicKey
             val allowKeyAgreement: Boolean
             val allowDecryption: Boolean
             val allowSigning: Boolean
@@ -610,7 +610,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 if (config.hardware.v.backing == REQUIRED)
                     require(usedSecureEnclave) { "Requested secure enclave key but received non-secure enclave key?" }
 
-                publicKey = keyPair.public.value.toCryptoPublicKey()
+                publicKey = keyPair.public.value.toPublicKey()
             }
 
             val attestation = if (usedSecureEnclave) {
@@ -674,7 +674,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             memScoped {
                 getPublicKey(alias)
                     ?: throw NoSuchElementException("No key for alias $alias exists")
-            }.value.toCryptoPublicKey()
+            }.value.toPublicKey()
         val metadata = getKeyMetadata(alias)
         return@withContext getSignerInternal(alias, publicKey, metadata, config)
     }

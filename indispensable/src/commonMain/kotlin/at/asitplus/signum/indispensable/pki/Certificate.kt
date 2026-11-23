@@ -27,7 +27,7 @@ class Certificate(
     val signature by lazy { signatureValue.withSignatureAlgorithm(tbsCertificate.signatureAlgorithm) }
 
     /** convenience getter for the contained [TbsCertificate.publicKey] */
-    val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
+    val publicKey: PublicKey get() = tbsCertificate.publicKey
 
     val signatureAlgorithm: SignatureAlgorithm get() = tbsCertificate.signatureAlgorithm
 
@@ -85,7 +85,7 @@ class Certificate(
 
     override fun equals(other: Any?): Boolean = this === other || (
         other is Certificate && tbsCertificate == other.tbsCertificate &&
-            CryptoSignature.signaturesEqual(signatureAlgorithm, signatureValue, other.signatureAlgorithm, other.signatureValue)
+            Signature.signaturesEqual(signatureAlgorithm, signatureValue, other.signatureAlgorithm, other.signatureValue)
     )
 
     override fun hashCode(): Int =

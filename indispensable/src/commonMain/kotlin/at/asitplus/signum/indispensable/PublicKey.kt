@@ -16,7 +16,7 @@ import at.asitplus.signum.indispensable.sign.RsaPublicKey
 /**
  * Representation of a public key structure
  */
-interface CryptoPublicKey : WithSourceRepresentation {
+interface PublicKey : WithSourceRepresentation {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -35,7 +35,7 @@ interface CryptoPublicKey : WithSourceRepresentation {
 
     @SignumInternals
     class Unknown(lookupResult: UnsupportedCryptoException)
-        : CryptoPublicKey, ServiceLoader.UnknownShim(lookupResult) {
+        : PublicKey, ServiceLoader.UnknownShim(lookupResult) {
         override val didKeyBytes get() = fails
         override val didCodec get() = fails
         override val additionalProperties: MutableMap<String, String> get() = fails
@@ -46,11 +46,11 @@ interface CryptoPublicKey : WithSourceRepresentation {
 
         /**
          * Parses a DID representation of a public key and
-         * reconstructs the corresponding [CryptoPublicKey] from it
+         * reconstructs the corresponding [PublicKey] from it
          * @throws Throwable all sorts of exception on invalid input
          */
         @Throws(Throwable::class)
-        fun fromDid(input: String): CryptoPublicKey {
+        fun fromDid(input: String): PublicKey {
             val bytes = multiKeyRemovePrefix(input).substringBefore("#")
             val decoded = catching { bytes.multibaseDecode() }.getOrThrow()
                 ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
@@ -64,32 +64,35 @@ interface CryptoPublicKey : WithSourceRepresentation {
 
     }
 
-    @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
+    @Deprecated(message = "Public key types migrated out of PublicKey as part of providerization",
         replaceWith = ReplaceWith("EcdsaPublicKey"))
     typealias EC = EcdsaPublicKey
-    @Deprecated(message = "Public key types migrated out of CryptoPublicKey as part of providerization",
+    @Deprecated(message = "Public key types migrated out of PublicKey as part of providerization",
         replaceWith = ReplaceWith("RsaPublicKey"))
     typealias RSA = RsaPublicKey
 }
 
-interface SpecializedCryptoPublicKey {
-    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey>
+interface SpecializedPublicKey {
+    fun toPublicKey(): KmmResult<PublicKey>
+
+    @Deprecated("Renamed to toPublicKey", ReplaceWith("toPublicKey()"))
+    fun toCryptoPublicKey(): KmmResult<PublicKey> = toPublicKey()
 }
 
-/** Alias of [equals] provided for convenience (and alignment with [SpecializedCryptoPublicKey]) */
-fun CryptoPublicKey.equalsCryptographically(other: CryptoPublicKey) =
+/** Alias of [equals] provided for convenience (and alignment with [SpecializedPublicKey]) */
+fun PublicKey.equalsCryptographically(other: PublicKey) =
     equals(other)
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun SpecializedCryptoPublicKey.equalsCryptographically(other: CryptoPublicKey) =
-    toCryptoPublicKey().map { it.equalsCryptographically(other) }.getOrElse { false }
+fun SpecializedPublicKey.equalsCryptographically(other: PublicKey) =
+    toPublicKey().map { it.equalsCryptographically(other) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun SpecializedCryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
-    toCryptoPublicKey().map { other.equalsCryptographically(it) }.getOrElse { false }
+fun SpecializedPublicKey.equalsCryptographically(other: SpecializedPublicKey) =
+    toPublicKey().map { other.equalsCryptographically(it) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
+fun PublicKey.equalsCryptographically(other: SpecializedPublicKey) =
     other.equalsCryptographically(this)
 
 private const val PREFIX_DID_KEY = "did:key:"
@@ -98,3 +101,9 @@ private const val PREFIX_DID_KEY = "did:key:"
 private fun multiKeyRemovePrefix(keyId: String): String =
     keyId.takeIf { it.startsWith(PREFIX_DID_KEY) }?.removePrefix(PREFIX_DID_KEY)
         ?: throw IllegalArgumentException("Input does not specify public key")
+
+@Deprecated("Renamed to PublicKey", ReplaceWith("PublicKey", "at.asitplus.signum.indispensable.PublicKey"))
+typealias CryptoPublicKey = PublicKey
+
+@Deprecated("Renamed to SpecializedPublicKey", ReplaceWith("SpecializedPublicKey", "at.asitplus.signum.indispensable.SpecializedPublicKey"))
+typealias SpecializedCryptoPublicKey = SpecializedPublicKey

@@ -54,9 +54,9 @@ of working with and on cryptographic data.
 The main package housing all data classes is `at.asitplus.signum.indispensable`.
 It contains essentials such as:
 
-* `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
-* `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
-    * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
+* `PublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
+* `PrivateKey` representing a private key. Currently, we support RSA (`RsaPrivateKey`) and EC (`EcdsaPrivateKey`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+    * Has an additional specialization `PrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
     * RSA keys also support PKCS#1 encoding (`.asn1.pkcs1`)
     * EC keys also support SEC1 encoding (`.asn1.sec1`)
@@ -71,9 +71,9 @@ It contains essentials such as:
     * `IosHomebrewAttestation` contains the new iOS attestation format introduces in Supreme 0.2.0 (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
     * `SelfAttestation` is used on the JVM. It has no specific semantics, but could be used, if an attestation-supporting HSM is used on the JVM. WIP!
 * `KeyAgreementPrivateValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPrivateValue.ECDH`,
-which is implemented by `CryptoPrivateKey.EC`
+which is implemented by `EcdsaPrivateKey`
 * `KeyAgreementPublicValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPublicValue.ECDH`,
-which is implemented by `CryptoPublicKey.EC`
+which is implemented by `EcdsaPublicKey`
 * `MAC` defines the interface for message authentication codes
     * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
 * `KDF` defines the interface for key derivation functions
@@ -132,41 +132,39 @@ The following functions provide interop functionality with platform types.
 
 <br>
 
-* `CryptoPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key
-* `CryptoPublicKey.EC.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `CryptoPublicKey.RSA.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `PublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey` from a JCA Public Key
-* `ECPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
-* `RSAPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
+* `PublicKey.toJcaPublicKey()` returns the JCA-representation of the public key
+* `EcdsaPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
+* `RsaPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
+* `java.security.PublicKey.toPublicKey()` creates a Signum `PublicKey`
+* `ECPublicKey.toPublicKey()` creates a `EcdsaPublicKey` from a JCA EC Public Key
+* `RSAPublicKey.toPublicKey()` creates a `RsaPublicKey` from a JCA RSA Public Key
 
 <br>
 
-* `CryptoPrivateKey.WihtPublicKey<*>.toJcaPublicKey()` returns the JCA-representation of the private key
-* `CryptoPrivateKey.EC.WithPublicKey.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
-* `CryptoPrivateKey.RSA.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
-* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.WithPublicKey` from a JCA Public Key
-* `ECPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.EC.WithPublicKey` from a JCA EC Public Key
-* `RSAPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.RSA` from a JCA RSA Public Key
+* `PrivateKey.toJcaPrivateKey()` returns the JCA representation of the private key
+* `EcdsaPrivateKey.toJcaPrivateKey()` returns the JCA representation of the EC private key
+* `RsaPrivateKey.toJcaPrivateKey()` returns the JCA representation of the RSA private key
+* `java.security.PrivateKey.toPrivateKey()` creates a Signum `PrivateKey.WithPublicKey`
+* `ECPrivateKey.toPrivateKey()` creates an `EcdsaPrivateKey.WithPublicKey` from a JCA EC private key
+* `RSAPrivateKey.toPrivateKey()` creates a `RsaPrivateKey` from a JCA RSA private key
 
 <br>
 
-* `CryptoSignature.jcaSignatureBytes` returns the JCA-native encoded representation of a signature
-* `CryptoSignature.parseFromJca()` returns a signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.EC.parseFromJca()` returns an EC signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.RSA.parseFromJca()` returns an RSA signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.EC.parseFromJcaP1363` parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
+* `Signature.jcaSignatureBytes` returns the JCA-native encoded representation of a signature
+* `Signature.parseFromJca()` parses a JCA-encoded signature using its signature algorithm
+* `EcdsaSignature.fromP1363Bytes()` parses an ECDSA signature in P1363 format
 * `X509Certificate.toJcaCertificate()` converts the certificate to a JCA-native `X509Certificate`
 * `java.security.cert.X509Certificate.toKmpCertificate()` converts a JCA-native certificate to a Signum `X509Certificate`
 
 ### iOS
 
-* `CryptoPublicKey.iosEncoded` encodes a public key as iOS does
-* `CryptoPublicKey.fromIosEncoded()` decodes a public key that was encoded in iOS
+* `PublicKey.iosEncoded` encodes a public key as iOS does
+* `SecKeyRef?.toPublicKey()` creates a Signum `PublicKey` from an iOS key
 
 <br>
 
-* `CryptoPrivateKey.toSecKey()` produces a `SecKey` usable on iOS
-* `CryptoPrivateKey.fromIosEncoded()` decodes a private key as it is exported from iOS
+* `PrivateKey.WithPublicKey.toSecKey()` produces a `SecKey` usable on iOS
+* `SecKeyRef?.toPrivateKey()` creates a Signum `PrivateKey.WithPublicKey` from an iOS key
 
 <br>
 
@@ -176,23 +174,23 @@ The following functions provide interop functionality with platform types.
 * `SignatureAlgorithm.secKeyAlgorithmPreHashed` returns an algorithm identifier constant usable with CommonCrypto (for pre-hashed data)
 * `SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed` returns an algorithm identifier constant usable with CommonCrypto (for pre-hashed data)
 
-* `CryptoSignature.iosEncoded` encodes a signature object as iOS would natively do
+* `Signature.iosEncoded` encodes a signature object as iOS would natively do
 
 
 ## ASN.1 Engine Addons
 
-Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `Certificate`, `Pkcs10CertificationRequest`, etc. all
+Relevant classes like `PublicKey`, `PrivateKey`, `Certificate`, `Pkcs10CertificationRequest`, etc. all
 have `asn1` extensions and their respective companions have `fromAsn1` extensions.
 This is an essential pattern, making the ASN.1 engine work the way it does.  
 The following section provides more details on the various patterns used for ASN.1 encoding and decoding.
 
 ### Generic Patterns
 
-As mentioned before, classes like `CryptoPublicKey`, `X509Certificate`, and `ObjectIdentifier` all implement `Asn1Encodable`
+As mentioned before, classes like `PublicKey`, `X509Certificate`, and `ObjectIdentifier` all implement `Asn1Encodable`
 while their companions implement `Asn1Decodable`.
 These interfaces essentially provide a mapping between custom types and low-level TLV structures that can directly be encoded, conforming to DER.
 
-In addition, `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
+In addition, `PublicKey`, `PrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
 while their respective companions implement `PemDecodable`.
 This brings about the `encodeToPem` and `decodeFromPem` functions doing what their names imply:
 Encode/decode to/from PEM strings.

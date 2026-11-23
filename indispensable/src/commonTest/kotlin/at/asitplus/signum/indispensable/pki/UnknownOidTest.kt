@@ -11,8 +11,8 @@ import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509TbsCertificate
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PrivateKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.fromAsn1
@@ -58,18 +58,18 @@ val UnknownOidTest by matrixSuite {
 
     "unknown public and private key algorithms round-trip without interpreting key bytes" {
         val publicDer = DER.encodeToByteArray(publicKeyInfo)
-        val publicKey = CryptoPublicKey.fromAsn1(publicDer)
+        val publicKey = PublicKey.fromAsn1(publicDer)
         publicKey.asn1.toDer() shouldBe publicDer
-        publicKey shouldBe CryptoPublicKey.fromAsn1(publicDer)
-        publicKey.hashCode() shouldBe CryptoPublicKey.fromAsn1(publicDer).hashCode()
+        publicKey shouldBe PublicKey.fromAsn1(publicDer)
+        publicKey.hashCode() shouldBe PublicKey.fromAsn1(publicDer).hashCode()
         shouldThrow<UnsupportedCryptoException> { publicKey.didEncoded }
 
         val privateKeyInfo = Pkcs8PrivateKeyInfo(unknownAlgorithm, Asn1OctetString(byteArrayOf(7, 8, 9)))
         val privateDer = DER.encodeToByteArray(privateKeyInfo)
-        val privateKey = CryptoPrivateKey.fromAsn1(privateDer)
+        val privateKey = PrivateKey.fromAsn1(privateDer)
         privateKey.asn1.toDer() shouldBe privateDer
-        privateKey shouldBe CryptoPrivateKey.fromAsn1(privateDer)
-        privateKey.hashCode() shouldBe CryptoPrivateKey.fromAsn1(privateDer).hashCode()
+        privateKey shouldBe PrivateKey.fromAsn1(privateDer)
+        privateKey.hashCode() shouldBe PrivateKey.fromAsn1(privateDer).hashCode()
     }
 
     "certificate with unknown signature and key OIDs can be decoded and re-encoded" {

@@ -19,7 +19,7 @@ class RsaPublicKey(
     val n: Asn1Integer.Positive,
     /** public exponent */
     val e: Asn1Integer.Positive,
-) : CryptoPublicKey {
+) : PublicKey {
 
     override val sourceRepresentation = SourceRepresentationStorage()
 
@@ -95,13 +95,13 @@ class EcdsaPublicKey(
     val publicPoint: ECPoint.Normalized,
     // TODO: remove this once COSE/JOSE are source formats
     val preferCompressedRepresentation: Boolean,
-) : CryptoPublicKey, KeyAgreementPublicValue.ECDH {
+) : PublicKey, KeyAgreementPublicValue.ECDH {
 
     override val sourceRepresentation = SourceRepresentationStorage()
 
     override val additionalProperties = mutableMapOf<String, String>()
 
-    override fun asCryptoPublicKey() = this
+    override fun asPublicKey() = this
 
     val curve get() = publicPoint.curve
     val x get() = publicPoint.x
@@ -182,7 +182,7 @@ class EcdsaPublicKey(
             }
         }
 
-        @Deprecated("Use SecKeyRef.toCryptoPublicKey instead", ReplaceWith("fromAnsiX963Bytes(ECCurve.fromIosEncodedPublicKeyLength(src.size)!!, src)"))
+        @Deprecated("Use SecKeyRef.toPublicKey instead", ReplaceWith("fromAnsiX963Bytes(ECCurve.fromIosEncodedPublicKeyLength(src.size)!!, src)"))
         fun fromIosEncoded(src: ByteArray) =
             fromAnsiX963Bytes(
                 ECCurve.fromIosEncodedPublicKeyLength(src.size)
@@ -195,7 +195,7 @@ class EcdsaPublicKey(
 }
 
 object IndispensableAsn1PublicKeyFormatsProvider : Asn1PublicKeyFormatProvider {
-    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = when (value) {
+    override fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? = when (value) {
         is RsaPublicKey -> value.asn1.toRepresentation()
         is EcdsaPublicKey -> value.asn1.toRepresentation()
         else -> null

@@ -50,11 +50,11 @@ data class IosHomebrewAttestation(
     data class ClientData private constructor(
         private val purpose: String,
         @Serializable(with=IosPublicKeySerializer::class)
-        val publicKey: CryptoPublicKey,
+        val publicKey: PublicKey,
         @Serializable(with=ByteArrayBase64UrlSerializer::class)
         val challenge: ByteArray
     ) {
-        constructor(publicKey: CryptoPublicKey, challenge: ByteArray) :
+        constructor(publicKey: PublicKey, challenge: ByteArray) :
             this(THE_PURPOSE, publicKey, challenge)
 
         internal fun assertValidity() { if (purpose != THE_PURPOSE) throw IllegalStateException("Invalid purpose") }

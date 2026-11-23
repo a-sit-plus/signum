@@ -42,20 +42,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
 import at.asitplus.signum.indispensable.SecretExposure
@@ -148,7 +148,7 @@ internal fun App() {
             currentAttestation?.jsonEncoded?.also { Napier.d { "Current Attestation: $it" } } ?: ""
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
-        var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
+        var signatureData by remember { mutableStateOf<KmmResult<Signature>?>(null) }
         var ephemeralKey by remember {
             mutableStateOf<KeyAgreementPrivateValue.ECDH?>(
                 null
@@ -177,8 +177,8 @@ internal fun App() {
         val genText by getter { genTextOverride ?: "Generate" }
 
         fun genEphemeralKey() {
-            ephemeralKey = if (currentKey?.getOrNull() is CryptoPublicKey.EC)
-                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as CryptoPublicKey.EC).curve)
+            ephemeralKey = if (currentKey?.getOrNull() is EcdsaPublicKey)
+                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as EcdsaPublicKey).curve)
                     .getOrNull()
             else null
             agreedKey = null
@@ -483,7 +483,7 @@ internal fun App() {
                 enabled = signingPossible
             ) { Text("Sign") }
 
-            if (signingPossible && (currentKey?.getOrNull() is CryptoPublicKey.EC)) {
+            if (signingPossible && (currentKey?.getOrNull() is EcdsaPublicKey)) {
                 Napier.i { "Ephemeral key: $ephemeralKey" }
                 Spacer(Modifier.height(8.dp))
                 ephemeralKey?.let { ephemeralKey ->
