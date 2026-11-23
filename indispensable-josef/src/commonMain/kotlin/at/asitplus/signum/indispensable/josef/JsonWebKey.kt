@@ -20,6 +20,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -206,7 +207,14 @@ data class JsonWebKey(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
+    /** Representation of the key as `did:key`, or null if it is not a supported public key */
     val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
+
+    /**
+     * Representation of the key as `did:jwk`, containing only the members required by RFC 7638,
+     * or null if it is not a supported public key. See [CryptoPublicKey.didJwkEncoded].
+     */
+    val didJwkEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didJwkEncoded }
 
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +
@@ -342,8 +350,25 @@ data class JsonWebKey(
         fun deserialize(it: String): KmmResult<JsonWebKey> =
             catching { joseCompliantSerializer.decodeFromString<JsonWebKey>(it) }
 
-        fun fromDid(input: String): KmmResult<JsonWebKey> =
-            catching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
+        /**
+         * Parses a `did:key` or `did:jwk` into a [JsonWebKey].
+         *
+         * For `did:jwk`, all members of the embedded JWK (e.g. `use`, `alg`, `kid`) are retained.
+         * If the key carries no `kid`, [input] is used as [keyId], as is always the case for `did:key`.
+         */
+        fun fromDid(input: String): KmmResult<JsonWebKey> = catching {
+            // validates the key (including rejection of private key material) for both DID methods
+            val publicKey = CryptoPublicKey.fromDid(input)
+            if (input.startsWith(PREFIX_DID_JWK)) {
+                val encoded = input.removePrefix(PREFIX_DID_JWK).substringBefore("#")
+                val jwk = joseCompliantSerializer.decodeFromString<JsonWebKey>(
+                    encoded.decodeToByteArray(Base64UrlStrict).decodeToString()
+                )
+                if (jwk.keyId == null) jwk.copy(keyId = input) else jwk
+            } else {
+                publicKey.also { it.jwkId = input }.toJsonWebKey()
+            }
+        }
 
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
             catching { EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
@@ -433,6 +458,7 @@ fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<J
 
 
 private const val JWK_ID = "jwkIdentifier"
+private const val PREFIX_DID_JWK = "did:jwk:"
 
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]

@@ -11,7 +11,14 @@ import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /** RSA Public key */
 class RsaPublicKey(
@@ -218,4 +225,40 @@ object IndispensableAsn1PublicKeyFormatsProvider : Asn1PublicKeyFormatProvider {
             EcdsaPublicKey.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
         else -> null
     }
+
+    override fun encodeToDidJwk(value: CryptoPublicKey): JsonObject? = when (value) {
+        is EcdsaPublicKey -> buildJsonObject {
+            put("crv", value.curve.jwkName)
+            put("kty", "EC")
+            put("x", value.xBytes.encodeToString(Base64UrlStrict))
+            put("y", value.yBytes.encodeToString(Base64UrlStrict))
+        }
+        is RsaPublicKey -> buildJsonObject {
+            put("e", value.e.magnitude.encodeToString(Base64UrlStrict))
+            put("kty", "RSA")
+            put("n", value.n.magnitude.encodeToString(Base64UrlStrict))
+        }
+        else -> null
+    }
+
+    override fun decodeFromDidJwk(jwk: JsonObject): CryptoPublicKey? = when (jwk.stringMember("kty")) {
+        "EC" -> {
+            val crv = jwk.stringMember("crv")
+            val curve = ECCurve.entries.firstOrNull { it.jwkName == crv }
+                ?: throw IllegalArgumentException("Unsupported curve $crv")
+            EcdsaPublicKey.fromUncompressed(curve, jwk.bytesMember("x"), jwk.bytesMember("y"))
+        }
+        "RSA" -> RsaPublicKey(
+            n = Asn1Integer.fromUnsignedByteArray(jwk.bytesMember("n")),
+            e = Asn1Integer.fromUnsignedByteArray(jwk.bytesMember("e")),
+        )
+        else -> null
+    }
+
+    private fun JsonObject.stringMember(name: String): String =
+        (this[name] as? JsonPrimitive)?.takeIf { it.isString }?.content
+            ?: throw IllegalArgumentException("Missing or invalid JWK member \"$name\"")
+
+    private fun JsonObject.bytesMember(name: String): ByteArray =
+        stringMember(name).decodeToByteArray(Base64UrlStrict)
 }

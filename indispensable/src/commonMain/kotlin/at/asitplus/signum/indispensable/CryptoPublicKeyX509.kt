@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import com.ionspin.kotlin.bignum.integer.Sign
+import kotlinx.serialization.json.JsonObject
 
 /** Representation of the key in the format used by iOS. */
 // TODO: this should probably be its own source format
@@ -36,6 +37,20 @@ interface Asn1PublicKeyFormatProvider {
 
     // TODO: this should be its own source format, with its own unknown wrapper, etc
     fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
+
+    /**
+     * Return the public JWK (only the members required by RFC 7638) used for `did:jwk` encoding,
+     * or null if this provider does not support the value.
+     */
+    // TODO: this should be its own source format, with its own unknown wrapper, etc
+    fun encodeToDidJwk(value: CryptoPublicKey): JsonObject?
+
+    /**
+     * Decode the public JWK contained in a `did:jwk`, or return null if this provider does not support its key type.
+     * Private key members have already been rejected by the caller.
+     */
+    // TODO: this should be its own source format, with its own unknown wrapper, etc
+    fun decodeFromDidJwk(jwk: JsonObject): CryptoPublicKey?
 }
 
 object RsaPublicKeyAsn1Constructors
