@@ -1,0 +1,101 @@
+package at.asitplus.signum.indispensable.pki
+
+import at.asitplus.awesn1.Asn1Element
+import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.ObjectIdentifier
+import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
+import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.isDirectoryString
+import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.asn1
+import at.asitplus.signum.indispensable.fromAsn1
+
+interface AttributeTypeAndValueAsn1Provider {
+    fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue?
+    fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue?
+}
+
+interface CsrAttributeAsn1Provider {
+    fun decodeFromAsn1(value: Pkcs10CsrAttribute): CsrAttribute?
+    fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute?
+}
+
+object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider {
+    override fun decodeFromAsn1(value: X500AttributeTypeAndValue) =
+        decodeFromAsn1(value.oid, value.value)
+
+    fun decodeFromAsn1(oid: ObjectIdentifier, value: Asn1Element): AttributeTypeAndValue? {
+        val typecheck: (Asn1String)->Boolean = when (oid) {
+            AttributeTypeAndValue.OID.domainComponent,
+            AttributeTypeAndValue.OID.emailAddress -> ({ it is Asn1String.IA5 })
+
+            AttributeTypeAndValue.OID.countryName,
+            AttributeTypeAndValue.OID.dnQualifier,
+            AttributeTypeAndValue.OID.serialNumber,
+            AttributeTypeAndValue.OID.telephoneNumber -> ({ it is Asn1String.Printable })
+
+            AttributeTypeAndValue.OID.commonName,
+            AttributeTypeAndValue.OID.localityName,
+            AttributeTypeAndValue.OID.stateOrProvinceName,
+            AttributeTypeAndValue.OID.streetAddress,
+            AttributeTypeAndValue.OID.organizationName,
+            AttributeTypeAndValue.OID.organizationalUnitName,
+            AttributeTypeAndValue.OID.title,
+            AttributeTypeAndValue.OID.surname,
+            AttributeTypeAndValue.OID.name,
+            AttributeTypeAndValue.OID.givenName,
+            AttributeTypeAndValue.OID.initials,
+            AttributeTypeAndValue.OID.generationQualifier,
+            AttributeTypeAndValue.OID.userId -> ({ it.isDirectoryString() })
+
+            else -> return null
+        }
+        val str = Asn1String.decodeFromTlv(value.asPrimitive())
+        require(typecheck(str)) { "Invalid attribute string type for $oid: ${value::class.simpleName}" }
+        require(str.isValid != false) { "Malformed attribute string for $oid" }
+        return TextAttributeTypeAndValue(oid, str.value)
+    }
+
+    override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? {
+        if (value !is TextAttributeTypeAndValue) return null
+        val text = when (value.oid) {
+            AttributeTypeAndValue.OID.domainComponent,
+            AttributeTypeAndValue.OID.emailAddress -> Asn1String.IA5(value.text)
+
+            AttributeTypeAndValue.OID.countryName,
+            AttributeTypeAndValue.OID.dnQualifier,
+            AttributeTypeAndValue.OID.serialNumber,
+            AttributeTypeAndValue.OID.telephoneNumber -> Asn1String.Printable(value.text)
+
+            AttributeTypeAndValue.OID.commonName,
+            AttributeTypeAndValue.OID.localityName,
+            AttributeTypeAndValue.OID.stateOrProvinceName,
+            AttributeTypeAndValue.OID.streetAddress,
+            AttributeTypeAndValue.OID.organizationName,
+            AttributeTypeAndValue.OID.organizationalUnitName,
+            AttributeTypeAndValue.OID.title,
+            AttributeTypeAndValue.OID.surname,
+            AttributeTypeAndValue.OID.name,
+            AttributeTypeAndValue.OID.givenName,
+            AttributeTypeAndValue.OID.initials,
+            AttributeTypeAndValue.OID.generationQualifier,
+            AttributeTypeAndValue.OID.userId -> Asn1String.UTF8(value.text)
+
+            else -> return null
+        }
+        return X500AttributeTypeAndValue(value.oid, text.encodeToTlv())
+    }
+
+}
+
+object ExtensionRequestCsrProvider : CsrAttributeAsn1Provider {
+    override fun decodeFromAsn1(value: Pkcs10CsrAttribute): CsrAttribute? =
+        if (value.oid == CsrAttribute.EXTENSION_REQUEST_OID)
+            ExtensionRequest(value.value.single().asSequence().map { CertificateExtension.fromAsn1(it) })
+        else null
+
+    override fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute? = when (value) {
+        is ExtensionRequest -> Pkcs10CsrAttribute.ExtensionRequest(value.extensions.map { it.asn1.toRepresentation() }, Signum.Der)
+        else -> null
+    }
+}

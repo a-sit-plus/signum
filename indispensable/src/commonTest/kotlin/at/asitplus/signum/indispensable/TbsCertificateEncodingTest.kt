@@ -11,8 +11,8 @@ import at.asitplus.awesn1.crypto.pki.X509Certificate
 import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.serialization.encodeToTlv
-import at.asitplus.awesn1.toBigInteger
 import at.asitplus.awesn1.toAsn1Integer
+import at.asitplus.awesn1.toBigInteger
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
@@ -26,10 +26,11 @@ import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlin.time.Instant
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.decodeFromByteArray
-import kotlin.time.Instant
+import kotlinx.serialization.encodeToByteArray
 
 private data class ExtraRepresentation(val serialNumber: Int)
 
@@ -37,6 +38,7 @@ private fun tbsCertificate(
     issuerUniqueID: ByteArray? = null,
     subjectUniqueID: ByteArray? = null,
     serialNumber: BigInteger = BigInteger.ONE,
+    extensions: List<CertificateExtension> = emptyList(),
 ) = TbsCertificate(
     serialNumber = serialNumber,
     signatureAlgorithm = EcdsaAlgorithm.withSHA256,
@@ -47,7 +49,7 @@ private fun tbsCertificate(
     publicKey = ECCurve.SECP_256_R_1.generator.asPublicKey(),
     issuerUniqueID = issuerUniqueID,
     subjectUniqueID = subjectUniqueID,
-    extensions = emptyList(),
+    extensions = extensions,
 )
 
 private fun tbsModel(
@@ -71,6 +73,7 @@ val TbsCertificateEncodingTest by matrixSuite {
     "Serial number validation distinguishes construction from decoding" - {
         data class Case(val name: String, val serial: BigInteger, val validForConstruction: Boolean)
         listOf(
+            Case("Negative", BigInteger(-1), false),
             Case("Zero", BigInteger.ZERO, false),
             Case("One", BigInteger.ONE, true),
             Case("20 value octets", (BigInteger.ONE shl 159) - BigInteger.ONE, true),

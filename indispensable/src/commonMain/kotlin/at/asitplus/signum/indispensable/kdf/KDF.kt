@@ -13,11 +13,6 @@ interface KDF {
 }
 
 // @Service
-// TODO: do we need/want this? it only makes sense if we want to find KDFs by OID in the future or similar
-interface KDFProvider {
-}
-
-// @Service
 interface KDFOperationProvider {
     /** If the [KDF] in question is supported by this provider, perform it; otherwise, return null or throw */
     suspend fun deriveKey(kdf: KDF, salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): ByteArray?

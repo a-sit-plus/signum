@@ -204,8 +204,8 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
         // x509Certificate.asn1.toDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.asn1.toRepresentation().version shouldBe X509TbsCertificate.Version.V3
-        ((x509Certificate.tbsCertificate.issuerName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
-        ((x509Certificate.tbsCertificate.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
+        ((x509Certificate.tbsCertificate.issuerName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).asn1.toRepresentation().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
+        ((x509Certificate.tbsCertificate.subjectName.relativeDistinguishedNames.first().attrsAndValues.first() as AttributeTypeAndValue).asn1.toRepresentation().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber.toJavaBigInteger() shouldBe serialNumber
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant()
