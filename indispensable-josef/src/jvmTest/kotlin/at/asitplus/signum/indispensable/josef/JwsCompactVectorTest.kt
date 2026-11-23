@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.testballoon.matrix.*
 import com.nimbusds.jose.JWSObject
@@ -20,10 +21,10 @@ val JwsCompactVectorTest by matrixSuite {
         data(testvec) test { input ->
             val parsed = JwsCompact<SigningHeader, JsonElement>(input)
 
-            val publicKey = CryptoPublicKey.fromDid(parsed.header.keyId.shouldNotBeNull())
+            val publicKey = PublicKey.fromDid(parsed.header.keyId.shouldNotBeNull())
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey())
+                if (publicKey is EcdsaPublicKey) ECDSAVerifier(publicKey.toJcaPublicKey())
                 else RSASSAVerifier(publicKey.toJcaPublicKey() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.raw.toString()).verify(jvmVerifier)

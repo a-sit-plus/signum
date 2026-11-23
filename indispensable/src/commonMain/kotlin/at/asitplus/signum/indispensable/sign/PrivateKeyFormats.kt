@@ -13,7 +13,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 class RsaPrivateKey(
     private val parameters: Parameters,
-) : CryptoPrivateKey, CryptoPrivateKey.WithPublicKey {
+) : PrivateKey, PrivateKey.WithPublicKey {
     override val sourceRepresentation = SourceRepresentationStorage()
 
     /** The RSA components form one unit: every semantic access requires valid CRT relationships. */
@@ -106,7 +106,7 @@ class RsaPrivateKey(
 
 sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger
-) : CryptoPrivateKey {
+) : PrivateKey {
 
     override val sourceRepresentation = SourceRepresentationStorage()
 
@@ -123,7 +123,7 @@ sealed class EcdsaPrivateKey private constructor(
         privateKey: BigInteger,
         override val publicKey: EcdsaPublicKey,
     ) : EcdsaPrivateKey(privateKey),
-        CryptoPrivateKey.WithPublicKey,
+        PrivateKey.WithPublicKey,
         KeyAgreementPrivateValue.ECDH {
 
         init {
@@ -210,13 +210,13 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
     value.toAsn1Integer() as Asn1Integer.Positive
 
 object IndispensableAsn1PrivateKeyFormatsProvider : Asn1PrivateKeyFormatProvider {
-    override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
+    override fun encodeToAsn1(value: PrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
         is RsaPrivateKey -> value.asn1.toRepresentation()
         is EcdsaPrivateKey -> value.asn1.toRepresentation()
         else -> null
     }
 
-    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : CryptoPrivateKey? {
+    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo) : PrivateKey? {
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {
             RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1(privateKeyInfo)

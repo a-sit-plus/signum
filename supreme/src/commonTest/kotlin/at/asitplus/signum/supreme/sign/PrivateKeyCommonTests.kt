@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
@@ -41,7 +41,7 @@ val PrivateKeyCommonTests by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = CryptoPrivateKey.fromAsn1(rsa) as CryptoPrivateKey.WithPublicKey
+        val key = PrivateKey.fromAsn1(rsa) as PrivateKey.WithPublicKey
 
         val signer: Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
 
@@ -61,7 +61,7 @@ val PrivateKeyCommonTests by matrixSuite {
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.fromAsn1(pkcs8) as EcdsaPrivateKey.WithPublicKey
+        val privateKey = PrivateKey.fromAsn1(pkcs8) as EcdsaPrivateKey.WithPublicKey
 
         val signer: Signer = EcdsaAlgorithm.withSHA256.signerFor(privateKey)
 
@@ -96,7 +96,7 @@ val PrivateKeyCommonTests by matrixSuite {
 
     "Regressions" - {
         "#233" {
-            CryptoPrivateKey.fromAsn1("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
+            PrivateKey.fromAsn1("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
         }
     }
 }

@@ -365,26 +365,26 @@ val MessageAuthenticationCode.asn1 get() =
 val MessageAuthenticationCode.Companion.fromAsn1 get() =
     asn1DecodersWith(Asn1MACAlgorithmProvider::decodeFromAsn1, MessageAuthenticationCode::Unknown)
 
-val CryptoPublicKey.asn1 get() =
+val PublicKey.asn1 get() =
     asn1EncodersWith(Asn1PublicKeyFormatProvider::encodeToAsn1)
 
-val CryptoPublicKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, CryptoPublicKey::Unknown)
+val PublicKey.Companion.fromAsn1 get() =
+    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, PublicKey::Unknown)
         .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
 
 val KeyAgreementPublicValue.asn1 get() =
-    (this as KeyAgreementPublicValue.ECDH).asCryptoPublicKey().asn1
+    (this as KeyAgreementPublicValue.ECDH).asPublicKey().asn1
 
 val KeyAgreementPublicValue.Companion.fromAsn1 get() =
     asn1Decoders(SubjectPublicKeyInfo) {
-        CryptoPublicKey.fromAsn1(it) as KeyAgreementPublicValue
+        PublicKey.fromAsn1(it) as KeyAgreementPublicValue
     }
 
-val CryptoPrivateKey.asn1 get() =
+val PrivateKey.asn1 get() =
     asn1EncodersWith(Asn1PrivateKeyFormatProvider::encodeToAsn1)
 
-val CryptoPrivateKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, CryptoPrivateKey::Unknown)
+val PrivateKey.Companion.fromAsn1 get() =
+    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, PrivateKey::Unknown)
         .withAlternativePemDecoder(RsaPrivateKey.fromAsn1.PKCS1)
         .withAlternativePemDecoder(EcdsaPrivateKey.fromAsn1.SEC1)
 
@@ -392,10 +392,10 @@ private class X509UnparsedSignature : AbstractSignature {
     override val sourceRepresentation = SourceRepresentationStorage()
     override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
         ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {
-            parseCryptoSignature(it, this@X509UnparsedSignature.asn1.toRepresentation())
+            parseSignature(it, this@X509UnparsedSignature.asn1.toRepresentation())
         }
 
-    override fun toString() = "Unparsed CryptoSignature (from X.509: $sourceRepresentation)"
+    override fun toString() = "Unparsed Signature (from X.509: $sourceRepresentation)"
 }
 
 val AbstractSignature.Companion.fromAsn1 get() =
@@ -403,14 +403,14 @@ val AbstractSignature.Companion.fromAsn1 get() =
 
 val AbstractSignature.asn1 get() =
     when (this) {
-        is CryptoSignature -> this@asn1.asn1
+        is Signature -> this@asn1.asn1
         else -> asn1Encoders<X509SignatureValue, _> { throw UnsupportedOperationException("Unparsed signature in format ${this.sourceFormat} cannot be converted to ASN.1") }
     }
 
-val CryptoSignature.Companion.fromAsn1 get() =
+val Signature.Companion.fromAsn1 get() =
     AbstractSignature.fromAsn1
 
-val CryptoSignature.asn1 get() =
+val Signature.asn1 get() =
     asn1EncodersWith(SignatureFormatProvider::encodeToAsn1)
 
 val TbsCertificate.asn1 get() = asn1Encoders<X509TbsCertificate,_> {
@@ -436,7 +436,7 @@ val TbsCertificate.Companion.fromAsn1 get() = asn1Decoders<X509TbsCertificate,_>
         validFrom = src.validity.validFrom.instant,
         validUntil = src.validity.validUntil.instant,
         subjectName = Name.fromAsn1(src.subjectName),
-        publicKey = CryptoPublicKey.fromAsn1(src.subjectPublicKeyInfo),
+        publicKey = PublicKey.fromAsn1(src.subjectPublicKeyInfo),
         issuerUniqueID = src.issuerUniqueID?.bitCarryingBytes,
         subjectUniqueID = src.subjectUniqueID?.bitCarryingBytes,
         extensions = src.extensions?.map { CertificateExtension.fromAsn1(it) }.orEmpty(),
@@ -473,7 +473,7 @@ val Certificate.Companion.fromAsn1 get() =
         }
         Certificate(
             tbsCertificate = TbsCertificate.fromAsn1(src.tbsCertificate),
-            signatureValue = CryptoSignature.fromAsn1(src.signatureValue))
+            signatureValue = Signature.fromAsn1(src.signatureValue))
     }
 
 val GeneralName.asn1 get() =
@@ -547,7 +547,7 @@ val TbsCertificationRequest.Companion.fromAsn1 get() =
     asn1Decoders<Pkcs10CertificationRequestInfo, _> { src ->
         TbsCertificationRequest(
             subjectName = Name.fromAsn1(src.subjectName),
-            publicKey = CryptoPublicKey.fromAsn1(src.publicKey),
+            publicKey = PublicKey.fromAsn1(src.publicKey),
             attributes = src.attributes.map { CsrAttribute.fromAsn1(it) },
         )
     }
@@ -566,6 +566,6 @@ val CertificationRequest.Companion.fromAsn1 get() =
         CertificationRequest(
             tbsCsr = TbsCertificationRequest.fromAsn1(src.certificationRequestInfo),
             signatureAlgorithm = SignatureAlgorithm.fromAsn1(src.signatureAlgorithm),
-            signatureValue = CryptoSignature.fromAsn1(src.signatureValue),
+            signatureValue = Signature.fromAsn1(src.signatureValue),
         )
     }

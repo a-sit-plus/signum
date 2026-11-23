@@ -39,13 +39,13 @@ val RemainingEncodingTest by matrixSuite {
 
     "Signatures use contextual DER and retain raw values until an algorithm is supplied" {
         val rsa = RsaSignature.fromRawSignatureValue(byteArrayOf(1, 2, 3))
-        val signature: CryptoSignature = rsa
+        val signature: Signature = rsa
         val bytes = signature.asn1.toDer()
         RsaSignature.fromAsn1(bytes) shouldBe rsa
         val raw = AbstractSignature.fromAsn1(bytes)
         raw.asn1.toDer() shouldBe bytes
         raw.withSignatureAlgorithm(RsaAlgorithm.withSHA256andPKCS1Padding) shouldBe rsa
-        val generic = CryptoSignature.fromAsn1(bytes)
+        val generic = Signature.fromAsn1(bytes)
         generic.asn1.toDer() shouldBe bytes
         shouldThrow<UnsupportedCryptoException> { generic.withSignatureAlgorithm(EcdsaAlgorithm.withSHA256) }
 
@@ -65,7 +65,7 @@ val RemainingEncodingTest by matrixSuite {
         val key = ECCurve.SECP_256_R_1.generator.asPublicKey()
         val tbs = TbsCertificationRequest(name, key, attributes = emptyList())
         val sameTbs = TbsCertificationRequest(name, key, attributes = emptyList())
-        val signature: CryptoSignature = object : CryptoSignature {
+        val signature: Signature = object : Signature {
             override val sourceRepresentation = SourceRepresentationStorage()
         }
         val csr = CertificationRequest(tbs, EcdsaAlgorithm.withSHA256, signature)
@@ -205,7 +205,7 @@ val RemainingEncodingTest by matrixSuite {
             privateKey = Asn1OctetString(Signum.Der.encodeToByteArray(original)),
         )
         shouldThrowAny { EcdsaPrivateKey.fromAsn1(pkcs8) }
-        val fromPkcs8 = CryptoPrivateKey.fromAsn1(pkcs8)
+        val fromPkcs8 = PrivateKey.fromAsn1(pkcs8)
         fromPkcs8.asn1.toRepresentation() shouldBeSameInstanceAs pkcs8
         fromPkcs8.asn1.toDer() shouldBe Signum.Der.encodeToByteArray(pkcs8)
     }

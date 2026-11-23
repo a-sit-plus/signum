@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.sign.asn1
+import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
@@ -40,8 +41,26 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
     "JCA conversions use Signum.Der" {
         val native = KeyPairGenerator.getInstance("EC").apply { initialize(256) }.genKeyPair().private as JcaECPrivateKey
-        val key: CryptoPrivateKey = native.toCryptoPrivateKey()
-        key.toJcaPrivateKey().toCryptoPrivateKey() shouldBe key
+        val key: PrivateKey = native.toPrivateKey()
+        key.toJcaPrivateKey().toPrivateKey() shouldBe key
+    }
+
+    @Suppress("DEPRECATION")
+    "Deprecated key and signature names still work" {
+        val pair = KeyPairGenerator.getInstance("EC").apply { initialize(256) }.generateKeyPair()
+        val publicKey: CryptoPublicKey = pair.public.toCryptoPublicKey()
+        val privateKey: CryptoPrivateKey = pair.private.toCryptoPrivateKey()
+        publicKey shouldBe pair.public.toPublicKey()
+        privateKey shouldBe pair.private.toPrivateKey()
+        (pair.public as JcaECPublicKey).toCryptoPublicKey().asCryptoPublicKey() shouldBe publicKey
+        (pair.private as JcaECPrivateKey).toCryptoPrivateKey().publicKey shouldBe publicKey
+
+        val specialized: SpecializedCryptoPublicKey = object : SpecializedPublicKey {
+            override fun toPublicKey(): KmmResult<PublicKey> = KmmResult.success(publicKey)
+        }
+        specialized.toCryptoPublicKey().getOrThrow() shouldBe publicKey
+        val signature: CryptoSignature = RsaSignature(byteArrayOf(1))
+        signature shouldBe RsaSignature(byteArrayOf(1))
     }
 
     "RSA CRT validation remains joint and deferred" {
@@ -49,7 +68,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
         val valid = RsaPrivateKey.fromAsn1(encoded).asn1.pkcs1.toRepresentation()
         val invalid = valid.copy(coefficient = valid.prime1)
         val model = Pkcs8PrivateKeyInfo(invalid)
-        val decoded = CryptoPrivateKey.fromAsn1(model)
+        val decoded = PrivateKey.fromAsn1(model)
         Pkcs1RsaPrivateKeyInfo.of(decoded.asn1.toRepresentation(), Signum.Der) shouldBe invalid
         shouldThrow<UnsupportedCryptoException> { (decoded.toJcaPrivateKey() as JcaRSAPrivateKey).modulus }
         shouldThrow<UnsupportedCryptoException> { (decoded.toJcaPrivateKey() as JcaRSAPrivateKey).privateExponent }
@@ -69,9 +88,9 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                         " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
             }) test { (privKey, pubKey) ->
 
-                val own = pubKey.toCryptoPublicKey()
+                val own = pubKey.toPublicKey()
 
-                val ownPrivate = CryptoPrivateKey.fromAsn1(privKey.encoded) as CryptoPrivateKey.WithPublicKey
+                val ownPrivate = PrivateKey.fromAsn1(privKey.encoded) as PrivateKey.WithPublicKey
 
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.asn1.toDer() shouldBe privKey.encoded
@@ -80,10 +99,10 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 withClue("Basic Conversions") {
                     own.asn1.toDer() shouldBe pubKey.encoded
                     own.asn1.toDer() shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1(own.asn1.toRepresentation()) shouldBe own
-                    CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
+                    PublicKey.fromAsn1(own.asn1.toRepresentation()) shouldBe own
+                    PublicKey.fromDid(own.didEncoded) shouldBe own
                     own.toJcaPublicKey().encoded shouldBe pubKey.encoded
-                    CryptoPublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
+                    PublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
                 }
 
                 withClue("Compressed Test") {
@@ -99,8 +118,8 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.fromAsn1(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.fromAsn1(keyPair.public.encoded)
+            val pubKey1 = PublicKey.fromAsn1(keyPair.public.encoded)
+            val pubKey2 = PublicKey.fromAsn1(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -110,7 +129,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
             val listOfDidKeys = javaClass.classLoader.getResourceAsStream("did_keys.txt")?.reader()?.readLines()
                 ?: throw Exception("Test vectors missing!")
             for (key in listOfDidKeys) {
-                kotlin.runCatching { CryptoPublicKey.fromDid(key) }.wrap().getOrThrow()
+                kotlin.runCatching { PublicKey.fromDid(key) }.wrap().getOrThrow()
             }
         }
     }
@@ -131,7 +150,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
 
                 val own = RsaPublicKey(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
-                val ownPrivate = CryptoPrivateKey.fromAsn1(privKey.encoded) as CryptoPrivateKey.WithPublicKey
+                val ownPrivate = PrivateKey.fromAsn1(privKey.encoded) as PrivateKey.WithPublicKey
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.asn1.toDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().encoded shouldBe privKey.encoded
@@ -150,15 +169,15 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 own.asn1.pkcs1.toDer() shouldBe keyBytes //PKCS#1
                 own.asn1.toDer() shouldBe pubKey.encoded //PKCS#8
                 own.asn1.toTlv().derEncoded shouldBe pubKey.encoded
-                CryptoPublicKey.fromAsn1(own.asn1.toRepresentation()) shouldBe own
-                CryptoPublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
+                PublicKey.fromAsn1(own.asn1.toRepresentation()) shouldBe own
+                PublicKey.fromAsn1(Asn1Element.parse(own.asn1.toDer()) as Asn1Sequence) shouldBe own
                 own.toJcaPublicKey().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.fromAsn1(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.fromAsn1(keyPair.public.encoded)
+            val pubKey1 = PublicKey.fromAsn1(keyPair.public.encoded)
+            val pubKey2 = PublicKey.fromAsn1(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -172,10 +191,10 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairRSA1 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
                 val keyPairRSA2 = KeyPairGenerator.getInstance("RSA").also { it.initialize(rsaBits) }.genKeyPair()
-                val pubKey1 = CryptoPublicKey.fromAsn1(keyPairEC1.public.encoded)
-                val pubKey2 = CryptoPublicKey.fromAsn1(keyPairEC2.public.encoded)
-                val pubKey3 = CryptoPublicKey.fromAsn1(keyPairRSA1.public.encoded)
-                val pubKey4 = CryptoPublicKey.fromAsn1(keyPairRSA2.public.encoded)
+                val pubKey1 = PublicKey.fromAsn1(keyPairEC1.public.encoded)
+                val pubKey2 = PublicKey.fromAsn1(keyPairEC2.public.encoded)
+                val pubKey3 = PublicKey.fromAsn1(keyPairRSA1.public.encoded)
+                val pubKey4 = PublicKey.fromAsn1(keyPairRSA2.public.encoded)
 
                 pubKey1.hashCode() shouldNotBe pubKey2.hashCode()
                 pubKey1.hashCode() shouldNotBe pubKey3.hashCode()

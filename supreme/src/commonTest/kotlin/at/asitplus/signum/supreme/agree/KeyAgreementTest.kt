@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.agree
 
-import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.agree.keyAgreement
@@ -24,7 +24,7 @@ val KeyAgreementTest by matrixSuite {
             -----END PRIVATE KEY-----
         """.trimIndent()
         val other =
-            CryptoPrivateKey.fromAsn1(pkcs8) as KeyAgreementPrivateValue.ECDH
+            PrivateKey.fromAsn1(pkcs8) as KeyAgreementPrivateValue.ECDH
 
         val symmetric1 = self.keyAgreement(other.publicValue)
         val symmetric2 = other.keyAgreement(self.publicValue)

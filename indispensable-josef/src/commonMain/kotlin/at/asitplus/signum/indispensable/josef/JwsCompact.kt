@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catchingUnwrappedAs
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -38,7 +38,7 @@ data class JwsCompact<out H : JwsHeader, out P> internal constructor(
     override val raw: Raw,
     override val payload: P,
     internal val wrappedHeader: JwsHeaderWrapped<H>,
-    val signature: CryptoSignature
+    val signature: Signature
 ) : JwsTyped<JwsCompact.Raw, H, P>() {
 
     val header = wrappedHeader.header

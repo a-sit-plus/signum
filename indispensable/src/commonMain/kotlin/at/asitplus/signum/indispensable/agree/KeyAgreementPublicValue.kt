@@ -10,13 +10,16 @@ import kotlin.jvm.JvmName
  */
 interface KeyAgreementPublicValue : WithSourceRepresentation {
     /**
-     * ECDH key agreement public value. Is always an EC public key, thus comes with [asCryptoPublicKey]
+     * ECDH key agreement public value. Is always an EC public key, thus comes with [asPublicKey]
      */
     interface ECDH: KeyAgreementPublicValue {
         /**
          * Returns this value as an [EcdsaPublicKey]
          */
-        fun asCryptoPublicKey(): EcdsaPublicKey
+        fun asPublicKey(): EcdsaPublicKey
+
+        @Deprecated("Renamed to asPublicKey", ReplaceWith("asPublicKey()"))
+        fun asCryptoPublicKey(): EcdsaPublicKey = asPublicKey()
     }
 
     companion object

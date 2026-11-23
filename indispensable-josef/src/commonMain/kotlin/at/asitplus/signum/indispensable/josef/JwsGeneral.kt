@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -31,7 +31,7 @@ import kotlinx.serialization.serializer
 data class JwsGeneral<out H : JwsHeader, out P> private constructor(
     override val raw: Raw,
     override val payload: P,
-    internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
+    internal val signatureViews: List<Pair<JwsHeaderWrapped<H>, Signature>>,
 ) : JwsTyped<JwsGeneral.Raw, H, P>() {
 
     internal val wrappedHeaders = signatureViews.map { it.first }
@@ -132,7 +132,7 @@ data class JwsGeneral<out H : JwsHeader, out P> private constructor(
         internal operator fun <H : JwsHeader, P> invoke(
             jws: Raw,
             payload: P,
-            signatureViews: List<Pair<JwsHeaderWrapped<H>, CryptoSignature>>,
+            signatureViews: List<Pair<JwsHeaderWrapped<H>, Signature>>,
         ): JwsGeneral<H, P> = JwsGeneral(jws, payload, buildList { addAll(signatureViews) })
 
         /** Combines raw flattened signatures over one payload and decodes a typed general view. */

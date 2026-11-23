@@ -12,6 +12,7 @@ import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.Signature as SignumSignature
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.pki.Name
@@ -42,12 +43,12 @@ object CursorySignatureScheme : SignatureAlgorithm {
     override val sourceRepresentation get() = SourceRepresentationStorage()
     val OID = ObjectIdentifier(Uuid.parse("01a00ebe-aa38-733c-ad7e-42442b6a8a35"))
     val ALG = X509AlgorithmIdentifier(OID, null)
-    data class Signature(val bit: Boolean) : CryptoSignature {
+    data class Signature(val bit: Boolean) : SignumSignature {
         override val sourceRepresentation = SourceRepresentationStorage()
         override fun equals(other: Any?) = other is Signature && bit == other.bit
         override fun hashCode() = bit.hashCode()
     }
-    data class Key(val bit: Boolean) : CryptoPublicKey, Signer.WithExportableKey, SignatureVerifier {
+    data class Key(val bit: Boolean) : PublicKey, Signer.WithExportableKey, SignatureVerifier {
         override val sourceRepresentation = SourceRepresentationStorage()
         override fun equals(other: Any?) = other is Key && bit == other.bit
         override fun hashCode() = bit.hashCode()
@@ -59,7 +60,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
         override val additionalProperties = mutableMapOf<String, String>()
         override val didCodec: UVarInt get() = error("")
         override val didKeyBytes: ByteArray get() = error("")
-        inner class Private : CryptoPrivateKey.WithPublicKey {
+        inner class Private : PrivateKey.WithPublicKey {
             override val sourceRepresentation = SourceRepresentationStorage()
             override val publicKey = this@Key
             override fun equals(other: Any?) = other is Private && publicKey == other.publicKey
@@ -68,7 +69,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
 
         @SecretExposure
         override suspend fun exportPrivateKey() = TODO()
-        override val publicKey: CryptoPublicKey get() = this
+        override val publicKey: PublicKey get() = this
 
         override val signatureAlgorithm: SignatureAlgorithm get() = CursorySignatureScheme
         override suspend fun sign(data: SignatureInput) = SignatureResult.make {
@@ -77,7 +78,7 @@ object CursorySignatureScheme : SignatureAlgorithm {
             Signature(dataHasHighest != this.bit)
         }
 
-        override suspend fun verify(data: SignatureInput, sig: CryptoSignature): SignatureVerifier.Success {
+        override suspend fun verify(data: SignatureInput, sig: SignumSignature): SignatureVerifier.Success {
             require(sig is CursorySignatureScheme.Signature)
             require(sign(data).signature == sig) { "Invalid signature" }
             return SignatureVerifier.Success
@@ -108,17 +109,17 @@ object CursorySignatureSchemeProvider :
     override fun encodeToAsn1(value: SignatureAlgorithm): X509AlgorithmIdentifier? =
         CursorySignatureScheme.ALG.takeIf { value == CursorySignatureScheme }
 
-    override fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? =
+    override fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? =
         (value as? CursorySignatureScheme.Key)?.let {
             SubjectPublicKeyInfo(CursorySignatureScheme.Key.ALG, Asn1BitString(it.bit))
         }
 
-    override fun encodeToAsn1(value: CryptoPrivateKey): Pkcs8PrivateKeyInfo? =
+    override fun encodeToAsn1(value: PrivateKey): Pkcs8PrivateKeyInfo? =
         (value as? CursorySignatureScheme.Key.Private)?.let {
             Pkcs8PrivateKeyInfo(CursorySignatureScheme.Key.ALG, Asn1OctetString(byteArrayOfHighest(it.publicKey.bit)))
         }
 
-    override fun encodeToAsn1(value: CryptoSignature): X509SignatureValue? =
+    override fun encodeToAsn1(value: SignumSignature): X509SignatureValue? =
         (value as? CursorySignatureScheme.Signature)?.let { X509SignatureValue(Asn1BitString(it.bit)) }
 
     override fun decodeFromAsn1(algorithmIdentifier: X509AlgorithmIdentifier) =
@@ -131,7 +132,7 @@ object CursorySignatureSchemeProvider :
 
     override fun createSignerForKey(
         algorithm: SignatureAlgorithm,
-        privateKey: CryptoPrivateKey.WithPublicKey,
+        privateKey: PrivateKey.WithPublicKey,
         config: InMemorySignerConfiguration
     ): Signer.WithExportableKey? {
         if (algorithm != CursorySignatureScheme) return null
@@ -139,7 +140,7 @@ object CursorySignatureSchemeProvider :
         return privateKey.publicKey
     }
 
-    override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey? {
+    override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): PublicKey? {
         return if (publicKeyInfo.algorithmIdentifier == CursorySignatureScheme.Key.ALG) {
             publicKeyInfo.subjectPublicKey
                 .also { require(it.sizeBits == 1L) }
@@ -148,7 +149,7 @@ object CursorySignatureSchemeProvider :
         } else null
     }
 
-    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): CryptoPrivateKey? {
+    override fun decodeFromAsn1(privateKeyInfo: Pkcs8PrivateKeyInfo): PrivateKey? {
         if (privateKeyInfo.version != Pkcs8PrivateKeyInfo.Version.V1) return null
         if (privateKeyInfo.privateKeyAlgorithm != CursorySignatureScheme.Key.ALG) return null
         return CursorySignatureScheme.Key(privateKeyInfo.privateKey.content.hasHighest).Private()
@@ -156,26 +157,26 @@ object CursorySignatureSchemeProvider :
 
     override fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray) = null
 
-    override fun verifierFor(algorithm: SignatureAlgorithm, key: CryptoPublicKey, config: VerifierConfiguration): SignatureVerifier? {
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration): SignatureVerifier? {
         return if (algorithm == CursorySignatureScheme) (key as CursorySignatureScheme.Key) else null
     }
 
-    override fun parseCryptoSignature(
+    override fun parseSignature(
         signatureAlgorithm: SignatureAlgorithm,
         signature: X509SignatureValue
-    ): CryptoSignature? {
+    ): SignumSignature? {
         if (signatureAlgorithm != CursorySignatureScheme) return null
         return signature.rawBitString
                 .also { require(it.sizeBits == 1L) }
                 .let { CursorySignatureScheme.Signature(it[0]) }
     }
 
-    override fun parseCryptoSignature(
+    override fun parseSignature(
         x509Algorithm: X509AlgorithmIdentifier,
         signature: X509SignatureValue
-    ): CryptoSignature? {
+    ): SignumSignature? {
         if (x509Algorithm != CursorySignatureScheme.ALG) return null
-        return parseCryptoSignature(CursorySignatureScheme, signature)
+        return parseSignature(CursorySignatureScheme, signature)
     }
 }
 
@@ -184,14 +185,14 @@ val ExtensibilityTest by matrixSuite {
     "X.509 resolution" {
         val algorithm: SignatureAlgorithm = CursorySignatureScheme
         SignatureAlgorithm.fromAsn1(algorithm.asn1.toDer()) shouldBe algorithm
-        val key: CryptoPublicKey = CursorySignatureScheme.Key(true)
-        CryptoPublicKey.fromAsn1(key.asn1.toDer()) shouldBe key
+        val key: PublicKey = CursorySignatureScheme.Key(true)
+        PublicKey.fromAsn1(key.asn1.toDer()) shouldBe key
         SignatureAlgorithm.fromAsn1(CursorySignatureScheme.ALG) shouldBe CursorySignatureScheme
         val unknownAlgorithm = SignatureAlgorithm.fromAsn1(CursorySignatureScheme.Key.ALG)
         shouldThrow<UnsupportedCryptoException> { unknownAlgorithm.preHashedSignatureFormat }
 
         val keyWithAlgOid = CursorySignatureScheme.Key(true).asn1.toRepresentation().copy(algorithmIdentifier = CursorySignatureScheme.ALG)
-        val unknownKey = CryptoPublicKey.fromAsn1(keyWithAlgOid)
+        val unknownKey = PublicKey.fromAsn1(keyWithAlgOid)
         shouldThrow<UnsupportedCryptoException> { unknownKey.didEncoded }
     }
 
@@ -249,7 +250,7 @@ val ExtensibilityTest by matrixSuite {
             }
             val verifier = CursorySignatureScheme.verifierFor(parsedCertificate.publicKey)
             verifier.verify(parsedCertificate) shouldBe SignatureVerifier.Success
-            val parsedSignature = CryptoSignature.fromAsn1(theSignature)
+            val parsedSignature = SignumSignature.fromAsn1(theSignature)
             verifier.verify(data, parsedSignature) shouldBe SignatureVerifier.Success
         }
     }

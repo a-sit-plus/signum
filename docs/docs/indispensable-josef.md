@@ -7,7 +7,7 @@
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent JOSE data
 types, predefined algorithm identifiers, and serializers based on kotlinx.serialization.
 _Indispensable Josef_ interoperates with [Indispensable](indispensable.md) data classes such as `SignatureAlgorithm`,
-`CryptoSignature`, and `CryptoPublicKey`. Its JWS models preserve the bytes used for signing while providing typed
+`Signature`, and `PublicKey`. Its JWS models preserve the bytes used for signing while providing typed
 access to headers and payloads.
 
 !!! tip

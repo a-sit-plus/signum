@@ -20,7 +20,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 
 /** Representation of the key in the format used by iOS. */
 // TODO: this should probably be its own source format
-val CryptoPublicKey.iosEncoded: ByteArray
+val PublicKey.iosEncoded: ByteArray
     get() = when (this) {
         is EcdsaPublicKey -> this.toAnsiX963Encoded(useCompressed = false)
         else -> this.asn1.toRepresentation().subjectPublicKey.also {
@@ -30,12 +30,12 @@ val CryptoPublicKey.iosEncoded: ByteArray
 
 interface Asn1PublicKeyFormatProvider {
     /** Return the ASN.1 representation, or null if this provider does not support the value. */
-    fun encodeToAsn1(value: CryptoPublicKey): SubjectPublicKeyInfo? = null
+    fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? = null
 
-    fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): CryptoPublicKey?
+    fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo): PublicKey?
 
     // TODO: this should be its own source format, with its own unknown wrapper, etc
-    fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): CryptoPublicKey?
+    fun decodeFromDidKey(codec: UVarInt, keyBytes: ByteArray): PublicKey?
 }
 
 object RsaPublicKeyAsn1Constructors

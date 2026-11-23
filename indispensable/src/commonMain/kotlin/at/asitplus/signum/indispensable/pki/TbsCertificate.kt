@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -24,7 +24,7 @@ class TbsCertificate(
     validFrom: Instant,
     validUntil: Instant,
     val subjectName: Name,
-    val publicKey: CryptoPublicKey,
+    val publicKey: PublicKey,
     val issuerUniqueID: ByteArray? = null,
     val subjectUniqueID: ByteArray? = null,
     val extensions: List<CertificateExtension> = emptyList(),

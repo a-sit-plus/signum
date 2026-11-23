@@ -180,9 +180,9 @@ A variety of constants, resembling the well-known JCA names, are also available 
 As an example, here's how to verify a basic signature using a public key:
 
 ```kotlin
-val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
+val publicKey: EcdsaPublicKey = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
-val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
+val signature: Signature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
@@ -217,7 +217,7 @@ recovered shouldBe payload //success!
 
 ### ASN.1 Parsing and Encoding
 
-Relevant classes like `CryptoPublicKey`, `Certificate`, and `CertificationRequest` retain their decoded
+Relevant classes like `PublicKey`, `Certificate`, and `CertificationRequest` retain their decoded
 source representations. Use `fromAsn1` to decode them and `asn1.toDer()` to encode them.
 These helpers use `Signum.Der` to serialize the underlying awesn1 models; no contextual serializers
 for the Signum types need to be registered.
@@ -341,7 +341,7 @@ Since these are essentially data classes, there's really not much magic to using
 The main reason those modules exist, is to keep the core _Indispensable_ module small, so it can be used without pulling
 in unnecessary functionality.
 COSE and JOSE data types come with mapping functionality to core (_Indispensable_) data types,
-such as `CryptoPublicKey` and are guaranteed to parse and serialize correctly.
+such as `PublicKey` and are guaranteed to parse and serialize correctly.
 
 #### COSE Parsing (Indidpensable Cosef)
 As a quick self-contained example, deserializing the following `CoseSigned` structure works as expected:
@@ -359,7 +359,7 @@ The output confirms that parsing was successful:
     CoseSigned(protectedHeader=CoseHeader(algorithm=ES256, criticalHeaders=null, contentType=null, kid=null, iv=null, partialIv=null, coseKey=null, certificateChain=null), unprotectedHeader=CoseHeader(algorithm=null, criticalHeaders=null, contentType=null, kid=3131, iv=null, partialIv=null, coseKey=null, certificateChain=null), payload=546869732069732074686520636F6E74656E742E, signature=8EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36)
 
 #### JWK creation (Indispensable Josef)
-JsonWebKeys can be manually created (just as COSE keys) and converted to `CryptoPublicKey`, so we can pass it to a _Supreme_ verifier:
+JsonWebKeys can be manually created (just as COSE keys) and converted to `PublicKey`, so we can pass it to a _Supreme_ verifier:
 
 ```kotlin
 val parsedN = ("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2" +
@@ -372,7 +372,7 @@ val parsedE = "AQAB".decodeToByteArray(Base64UrlStrict)
 val key = JsonWebKey(type = JwkType.RSA, n = parsedN, e = parsedE)
 
 key.jwkThumbprint //this is "urn:ietf:params:oauth:jwk-thumbprint:sha256:NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"
-key.toCryptoPublicKey().getOrThrow() //<- this we can pass to a Supreme verifier
+key.toPublicKey().getOrThrow() //<- this we can pass to a Supreme verifier
 ```
 
 ## Further Reading

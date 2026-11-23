@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
 import at.asitplus.signum.indispensable.fromAsn1
@@ -39,7 +39,7 @@ val RSAVerifierCommonTests by matrixSuite {
     class TestInfo(test: RawTestInfo) {
         val digest = WellKnownDigest.entries.first { it.name == test.dig }
         val parameters = RsaAlgorithm.Parameters.valueOf(test.pad, digest)
-        val key = CryptoPublicKey.fromAsn1(Base64.decode(test.key)) as RsaPublicKey
+        val key = PublicKey.fromAsn1(Base64.decode(test.key)) as RsaPublicKey
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = RsaSignature(Base64.decode(test.sig))

@@ -85,12 +85,12 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
     "Public key interface and concrete serializers preserve compressed SPKI" {
         val ec = ECCurve.SECP_256_R_1.generator.asPublicKey()
         val original = SubjectPublicKeyInfo.from(Sec1EcPublicKeyInfo.Compressed(ec.curve.oid, ec.xBytes, true))
-        val key: CryptoPublicKey = CryptoPublicKey.fromAsn1(original)
+        val key: PublicKey = PublicKey.fromAsn1(original)
         key.asn1.toRepresentation() shouldBeSameInstanceAs original
         val rsa = RsaPublicKey(Asn1Integer.fromUnsignedByteArray(ByteArray(64).apply { this[0] = 0x80.toByte() }), Asn1Integer(65537))
 
         RsaPublicKey.fromAsn1(rsa.asn1.toDer()) shouldBe rsa
-        val rsaInterface: CryptoPublicKey = rsa
-        CryptoPublicKey.fromAsn1(rsaInterface.asn1.toDer()) shouldBe rsa
+        val rsaInterface: PublicKey = rsa
+        PublicKey.fromAsn1(rsaInterface.asn1.toDer()) shouldBe rsa
     }
 }

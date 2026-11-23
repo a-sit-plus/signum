@@ -209,7 +209,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 ServiceLoader.load<JavaKeyStoreOperationsProvider>().get(config) { createKeyPair(it) }
             // CN=… subject via the awesn1 builder; no dependency on the typed CommonName in indispensable-pkix.
             val cn = Name(listOf(RelativeDistinguishedName(X500AttributeTypeAndValue.CommonName(alias))))
-            val publicKey = keyPair.public.toCryptoPublicKey()
+            val publicKey = keyPair.public.toPublicKey()
             val tbsCert = TbsCertificate(
                 serialNumber = CryptoRand.Default.nextPositiveBigInteger(20),
                 signatureAlgorithm = certAlg,
@@ -221,7 +221,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             )
 
             val cert = try {
-                certAlg.signerFor(keyPair.private.toCryptoPrivateKey()).sign(tbsCert)
+                certAlg.signerFor(keyPair.private.toPrivateKey()).sign(tbsCert)
             } catch (x: UnsupportedCryptoException) {
                 certAlg.getJCASignatureInstance(provider = config.provider).run {
                     initSign(keyPair.private)

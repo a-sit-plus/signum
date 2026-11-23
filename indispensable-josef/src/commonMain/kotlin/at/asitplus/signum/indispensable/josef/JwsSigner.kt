@@ -143,7 +143,7 @@ class JwsSigner(signers: List<Signer>) {
             }
         }
         header.jsonWebKey?.let { key ->
-            require(key.toCryptoPublicKey().getOrThrow() == publicKey) {
+            require(key.toPublicKey().getOrThrow() == publicKey) {
                 "Signer public key does not match the JWS header JWK"
             }
         }

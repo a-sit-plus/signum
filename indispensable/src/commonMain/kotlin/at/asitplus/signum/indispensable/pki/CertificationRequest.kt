@@ -15,7 +15,7 @@ import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
  */
 class TbsCertificationRequest(
     val subjectName: Name,
-    val publicKey: CryptoPublicKey,
+    val publicKey: PublicKey,
     val attributes: List<CsrAttribute> = listOf(),
     validateAttributes: Boolean = true,
 ) : WithSourceRepresentation {
@@ -36,7 +36,7 @@ class TbsCertificationRequest(
     @Throws(IllegalArgumentException::class)
     constructor(
         subjectName: Name,
-        publicKey: CryptoPublicKey,
+        publicKey: PublicKey,
         extensions: List<CertificateExtension>? = null,
         attributesWithoutExtensions: List<CsrAttribute>? = null,
     ) : this(
@@ -98,7 +98,7 @@ class CertificationRequest(
         if (this === other) return true
         if (other !is CertificationRequest) return false
         return tbsCsr == other.tbsCsr &&
-            CryptoSignature.signaturesEqual(signatureAlgorithm, signatureValue, other.signatureAlgorithm, other.signatureValue)
+            Signature.signaturesEqual(signatureAlgorithm, signatureValue, other.signatureAlgorithm, other.signatureValue)
     }
 
     override fun hashCode(): Int {

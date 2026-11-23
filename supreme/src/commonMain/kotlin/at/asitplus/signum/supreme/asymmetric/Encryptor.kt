@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.dsl.DSL
@@ -10,7 +10,7 @@ import at.asitplus.signum.dsl.DSL
 
 sealed interface Encryptor {
     val algorithm: AsymmetricEncryptionAlgorithm
-    val publicKey: CryptoPublicKey
+    val publicKey: PublicKey
 
     fun encrypt(data: ByteArray): KmmResult<ByteArray>
 
@@ -48,12 +48,12 @@ internal constructor(
  * Obtains an Encryptor.
  */
 fun AsymmetricEncryptionAlgorithm.encryptorFor(
-    publicKey: CryptoPublicKey,
+    publicKey: PublicKey,
     config: ConfigurePlatformEncryptor = null
 ) = encryptorForImpl(publicKey, config)
 
 private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
-    publicKey: CryptoPublicKey,
+    publicKey: PublicKey,
     config: ConfigurePlatformEncryptor
 ): Encryptor =
     when (this) {
