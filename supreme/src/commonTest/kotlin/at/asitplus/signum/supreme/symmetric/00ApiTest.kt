@@ -5,12 +5,32 @@ import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
 val ApiTest  by matrixSuite {
+
+    "Decrypt with AAD" {
+        val gcmKey = SymmetricEncryptionAlgorithm.AES_128.GCM.randomKey()
+        val hmacKey = SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256.randomKey()
+        val plaintext = byteArrayOf(1)
+        val aad = byteArrayOf(2)
+        val gcmBox = gcmKey.encrypt(plaintext, aad)
+        val hmacBox = hmacKey.encrypt(plaintext, aad)
+
+        gcmBox.decrypt(gcmKey, aad) shouldBe plaintext
+        hmacBox.decrypt(hmacKey, aad) shouldBe plaintext
+        shouldThrow<IllegalArgumentException> { gcmBox.decrypt(hmacKey) }
+        shouldThrow<IllegalArgumentException> { hmacBox.decrypt(gcmKey) }
+
+        // expected compile error. do not change comment or the line below
+        // gcmBox.decrypt(hmacKey, aad)
+        // expected compile error. do not change comment or the line below
+        // hmacBox.decrypt(gcmKey, aad)
+    }
 
     "Utterly Untyped v2" - {
         data(
@@ -45,13 +65,13 @@ val ApiTest  by matrixSuite {
             val loadedKey = when (algorithm.hasDedicatedMac()) {
                 true -> {
                     algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()), Random.nextBytes(32))
-                    //Compile error
+                    // expected compile error. do not change comment or the line below
                     //algorithm.keyFrom(byteArrayOf())
                 }
 
                 false -> {
                     algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()))
-                    //Compile error
+                    // expected compile error. do not change comment or the line below
                     //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
                 }
             }
@@ -61,13 +81,13 @@ val ApiTest  by matrixSuite {
             when (algorithm.requiresNonce()) {
                 true -> when (algorithm.isAuthenticated()) {
                     true -> {
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
                         algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
@@ -76,15 +96,15 @@ val ApiTest  by matrixSuite {
                     }
 
                     false -> {
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
 
                         algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
 
                     }
@@ -92,28 +112,28 @@ val ApiTest  by matrixSuite {
 
                 false -> when (algorithm.isAuthenticated()) {
                     true -> {
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf())
 
                         algorithm.sealedBox.from(byteArrayOf(), ByteArray(algorithm.authTagSize.bytes.toInt()))
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
-                        //compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
                         algorithm.sealedBox.from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf(),byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
                     }
                 }
@@ -124,28 +144,28 @@ val ApiTest  by matrixSuite {
             when (algorithm.isAuthenticated()) {
                 true -> when (algorithm.requiresNonce()) {
                     true -> {
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
                         algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf())
 
                         algorithm.sealedBox.from(byteArrayOf(), ByteArray(algorithm.authTagSize.bytes.toInt()))
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
-                        //compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
 
 
@@ -154,28 +174,28 @@ val ApiTest  by matrixSuite {
 
                 false -> when (algorithm.requiresNonce()) {
                     true -> {
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
 
                         algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
 
                     }
 
                     false -> {
                         algorithm.sealedBox.from(byteArrayOf())
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.from(byteArrayOf(),byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
-                        // compile error
+                        // expected compile error. do not change comment or the line below
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
 
                     }
@@ -200,23 +220,23 @@ val ApiTest  by matrixSuite {
             val loadedKey = when (algorithm.hasDedicatedMac()) {
                 true -> {
                     algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()), Random.nextBytes(32))
-                    //Compile error
+                    // expected compile error. do not change comment or the line below
                     //algorithm.keyFrom(byteArrayOf())
                 }
 
                 false -> {
                     algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()))
-                    //Compile error
+                    // expected compile error. do not change comment or the line below
                     //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
                 }
             }
-            // compile error
+            // expected compile error. do not change comment or the line below
             // algorithm.sealedBox.from(byteArrayOf())
 
-            // compile error
+            // expected compile error. do not change comment or the line below
             // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
 
-            // compile error
+            // expected compile error. do not change comment or the line below
             // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
 
             //correct

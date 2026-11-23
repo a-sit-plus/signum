@@ -3,7 +3,9 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.target.HostManager
+import java.io.ByteArrayOutputStream
 
 plugins {
     id("at.asitplus.signum.buildlogic")
@@ -106,6 +108,61 @@ kotlin {
             if (!HostManager.hostIsMac) kotlin.srcDir("src/iosMain/stubbed")
         }
     }
+}
+
+val checkSymmetricCompileFailures by tasks.registering(JavaExec::class) {
+    val apiTest = layout.projectDirectory.file(
+        "src/commonTest/kotlin/at/asitplus/signum/supreme/symmetric/00ApiTest.kt"
+    ).asFile
+    val uncommentedApiTest = temporaryDir.resolve(apiTest.name)
+    val testCompilation = tasks.named<KotlinCompile>("compileTestKotlinJvm")
+    val testClasses = testCompilation.flatMap { it.destinationDirectory }
+    val jvmTarget = testCompilation.flatMap { it.compilerOptions.jvmTarget }.map { it.target }
+    val libraryClasspath = files(
+        tasks.named<Jar>("jvmJar").flatMap { it.archiveFile },
+        configurations.named("jvmTestCompileClasspath"),
+        testClasses
+    )
+    description = "Checks that marked symmetric API calls fail to compile."
+    inputs.file(apiTest)
+    inputs.files(libraryClasspath)
+    inputs.property("jvmTarget", jvmTarget)
+    classpath(configurations.named("kotlinCompilerClasspath"))
+    mainClass.set("org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
+    args("-no-stdlib", "-no-reflect", "-d", temporaryDir.resolve("classes").path, uncommentedApiTest.path)
+    isIgnoreExitValue = true
+    val apiMarker = "// expected compile error. do not change comment or the line below"
+    fun apiFailureIndices(lines: List<String>) =
+        lines.indices.filter { lines[it].trim() == apiMarker }.map { it + 1 }
+
+    doFirst {
+        val lines = apiTest.readLines().toMutableList()
+        for (index in apiFailureIndices(lines)) {
+            val call = lines.getOrNull(index)
+            check(call != null && call.trimStart().startsWith("//")) {
+                "Expected a commented call at ${apiTest.name}:${index + 1}"
+            }
+            lines[index] = call.replaceFirst("//", "")
+        }
+        uncommentedApiTest.writeText(lines.joinToString("\n", postfix = "\n"))
+        args("-classpath", libraryClasspath.asPath, "-jvm-target", jvmTarget.get())
+        args("-Xfriend-paths=${testClasses.get().asFile.path}")
+        errorOutput = ByteArrayOutputStream()
+    }
+    doLast {
+        val diagnostics = errorOutput.toString()
+        val errors = Regex("""(?m)^.+\.kt:(\d+):\d+: error:""").findAll(diagnostics)
+            .map { it.groupValues[1].toInt() }.toSet()
+        val expected = apiFailureIndices(apiTest.readLines()).map { it + 1 }.toSet()
+        check(expected.isNotEmpty()) { "No marked compile failures in ${apiTest.name}" }
+        check(executionResult.get().exitValue == 1 && errors == expected) {
+            "${apiTest.name} missing errors on lines ${expected - errors}\n" +
+                "Unexpected errors on lines ${errors - expected}\n$diagnostics"
+        }
+    }
+}
+tasks.named("jvmTest") {
+    dependsOn(checkSymmetricCompileFailures)
 }
 
 //Task alias for github action globbing

@@ -32,12 +32,12 @@ import kotlin.time.Clock
 val SymmetricTest by matrixSuite {
 
     "ECB without padding preserves trailing bytes" {
-        val key = SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING.keyFrom(ByteArray(16)).getOrThrow()
+        val key = SymmetricEncryptionAlgorithm.AES_128.ECB_NOPADDING.keyFrom(ByteArray(16))
         for (lastByte in listOf(0, 1, 16, 128, 255)) {
             val plaintext = ByteArray(16) { lastByte.toByte() }
-            val encrypted = key.encrypt(plaintext).getOrThrow()
+            val encrypted = key.encrypt(plaintext)
             encrypted.encryptedData.size shouldBe plaintext.size
-            encrypted.decrypt(key).getOrThrow() shouldBe plaintext
+            encrypted.decrypt(key) shouldBe plaintext
         }
     }
 

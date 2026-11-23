@@ -64,19 +64,19 @@ suspend fun <E: SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> SealedBox<E>.dec
 }
 
 /**
- * Attempts to decrypt this ciphertext (which may also hold an IV/nonce) using the provided [key].
- * Do provide [authenticatedData] if required, or else decryption will fail!
- * This is the generic, untyped decryption function for convenience.
- * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
- * [key] and [SealedBox].**
+ * Decrypts an integrated AEAD sealed box with an integrated AEAD [key].
+ * Pass the same [authenticatedData] that was used for encryption.
  */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-@kotlin.internal.LowPriorityInOverloadResolution
 @JvmName("decryptAuthenticatedGeneric")
 @Throws(Throwable::class)
-suspend fun <E: SymmetricEncryptionAlgorithm.Authenticated<*>> SealedBox<E>.decrypt(
+suspend fun <E : SymmetricEncryptionAlgorithm.AuthenticatedIntegrated<*>> SealedBox<E>.decrypt(
     key: SymmetricKey<E>,
     authenticatedData: ByteArray = byteArrayOf()
+): ByteArray = decryptAuthenticated(key, authenticatedData)
+
+private suspend fun SealedBox.Authenticated<*>.decryptAuthenticated(
+    key: SymmetricKey.Authenticating<*>,
+    authenticatedData: ByteArray
 ): ByteArray {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     return if (!key.hasDedicatedMacKey()) {
@@ -176,7 +176,7 @@ suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.AuthenticatedRequiringNonc
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): ByteArray =
-    algorithm.sealedBox.withNonce(nonce).from(encryptedData, authTag).decrypt(this, authenticatedData)
+    algorithm.sealedBox.withNonce(nonce).from(encryptedData, authTag).decryptAuthenticated(this, authenticatedData)
 
 /**
  * Directly decrypts raw [encryptedData], feeding [authTag], and [authenticatedData] into the decryption process.
@@ -189,4 +189,4 @@ suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.AuthenticatedWithoutNonce>
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): ByteArray =
-    algorithm.sealedBox.from(encryptedData, authTag).decrypt(this, authenticatedData)
+    algorithm.sealedBox.from(encryptedData, authTag).decryptAuthenticated(this, authenticatedData)

@@ -53,8 +53,8 @@ val JvmSymmetricTest by matrixSuite {
                                 Cipher.getInstance(if (!alg.isAuthenticated()) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                             if (alg.isAuthenticated()) {
+                                check(alg.isIntegrated())
                                 val secretKey = alg.randomKey(random = InsecureRandom)
-                                //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
                                     secretKey.andPredefinedNonce(
                                         iv
