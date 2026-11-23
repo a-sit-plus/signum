@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Null
+import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
@@ -17,6 +18,8 @@ import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import kotlinx.io.Buffer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToByteArray
@@ -62,6 +65,60 @@ val AlgorithmPublicKeyEncodingTest by matrixSuite {
         EcdsaAlgorithm.fromAsn1(ec.asn1.toDer()) shouldBe ec
         val rsa = RsaAlgorithm.withSHA256andPSSPadding
         RsaAlgorithm.fromAsn1(rsa.asn1.toDer()) shouldBe rsa
+    }
+
+    "Opaque signature algorithm equality compares retained sources without a certificate fallback" {
+        val oid = ObjectIdentifier("1.2.3.4")
+        val algorithms = listOf(null, Asn1Null, Asn1.Sequence {}).map { parameters ->
+            val source = X509AlgorithmIdentifier(oid, parameters)
+            val bytes = DER.encodeToByteArray(source)
+            val first = SignatureAlgorithm.fromAsn1(source)
+            val second = SignatureAlgorithm.fromAsn1(bytes)
+
+            first.shouldBeInstanceOf<SignatureAlgorithm.Unknown>()
+            second.shouldBeInstanceOf<SignatureAlgorithm.Unknown>()
+            first shouldNotBeSameInstanceAs second
+            first shouldBe second
+            second shouldBe first
+            first.hashCode() shouldBe second.hashCode()
+            first.asn1.toRepresentation().element shouldBeSameInstanceAs source.element
+            first.asn1.toDer() shouldBe bytes
+            second.asn1.toDer() shouldBe bytes
+            first
+        }
+        algorithms.toSet().size shouldBe 3
+    }
+
+    "ECDSA signature identifiers accept absent or NULL parameters and preserve encoding" {
+        for (digest in listOf(Digest.SHA1, Digest.SHA256, Digest.SHA384, Digest.SHA512)) {
+            val expected = EcdsaAlgorithm(digest)
+            val canonical = expected.asn1.toRepresentation()
+            canonical.parameters shouldBe null
+            val decoded = listOf(null, Asn1Null).map { parameters ->
+                val source = X509AlgorithmIdentifier(canonical.oid, parameters)
+                val concrete = EcdsaAlgorithm.fromAsn1(source)
+                val generic = SignatureAlgorithm.fromAsn1(source)
+                concrete shouldBe expected
+                generic shouldBe expected
+                concrete.hashCode() shouldBe expected.hashCode()
+                concrete.asn1.toRepresentation().element shouldBeSameInstanceAs source.element
+                generic.asn1.toRepresentation().element shouldBeSameInstanceAs source.element
+                val bytes = DER.encodeToByteArray(source)
+                val reparsed = EcdsaAlgorithm.fromAsn1(bytes)
+                val genericReparsed = SignatureAlgorithm.fromAsn1(bytes)
+                reparsed shouldBe expected
+                genericReparsed shouldBe expected
+                reparsed.asn1.toDer() shouldBe bytes
+                genericReparsed.asn1.toDer() shouldBe bytes
+                concrete
+            }
+            decoded[0] shouldBe decoded[1]
+            expected.asn1.toRepresentation() shouldBe canonical
+            EcdsaAlgorithm(digest).asn1.toRepresentation().parameters shouldBe null
+            shouldThrowAny {
+                EcdsaAlgorithm.fromAsn1(X509AlgorithmIdentifier(canonical.oid, Asn1.OctetString(byteArrayOf(1))))
+            }
+        }
     }
 
     "RSA PKCS1 signature identifiers accept absent or NULL parameters and preserve encoding" {
