@@ -4,6 +4,7 @@ import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import kotlin.jvm.JvmInline
@@ -34,7 +35,11 @@ interface AttributeTypeAndValueProvider {
 
     /** Encode an ATV to a key=value pair. The result should be of a format suitable for [decodeATV]. [StringAlias] should be preferred over [OID]. */
     fun encodeATV(atv: AttributeTypeAndValue): Pair<Key, Value>?
+
 }
+
+/** Resolve an uppercase X.500 attribute alias from the core alias table. */
+fun AttributeTypeAndValueProvider.wellKnownAttributeOidForAlias(alias: String): ObjectIdentifier? = AtvWellKnownAliasesProvider.oidForAlias(alias)
 
 object AtvAsn1FallbackProvider : AttributeTypeAndValueProvider {
     override fun decodeATV(
@@ -75,6 +80,7 @@ object AtvOidFallbackProvider: AttributeTypeAndValueProvider {
             Pair(AttributeTypeAndValueProvider.Key(atv.oid), AttributeTypeAndValueProvider.Value(atv.text))
         else null
 }
+
 
 internal object AtvWellKnownAliasesProvider : AttributeTypeAndValueProvider {
     private val oidToName = mapOf(
@@ -117,13 +123,15 @@ internal object AtvWellKnownAliasesProvider : AttributeTypeAndValueProvider {
         "EMAIL" to AttributeTypeAndValue.OID.emailAddress,
     )
 
+    fun oidForAlias(alias: String): ObjectIdentifier? = nameToOid[alias]
+
     override fun decodeATV(
         key: AttributeTypeAndValueProvider.Key,
         value: AttributeTypeAndValueProvider.Value
     ): AttributeTypeAndValue? {
         if (key !is AttributeTypeAndValueProvider.StringAlias) return null
         return AtvOidFallbackProvider.decodeATV(
-            AttributeTypeAndValueProvider.Key(nameToOid[key.str] ?: return null),
+            AttributeTypeAndValueProvider.Key(oidForAlias(key.str) ?: return null),
             value)
     }
 

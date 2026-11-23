@@ -236,7 +236,7 @@ val DistinguishedNameTest by matrixSuite {
     }
 
     "Known attributes parsed by alias and dotted OID retain the DER string tag" {
-        for (key in listOf("CN", CommonName.oid.toString())) {
+        for (key in listOf("CN", "COMMONNAME", CommonName.oid.toString())) {
             AttributeTypeAndValue.fromString(key, "Alice").shouldBeInstanceOf<CommonName>().text shouldBe "Alice"
             val attribute = AttributeTypeAndValue.fromString(key, "#130141").shouldBeInstanceOf<CommonName>()
             attribute.text shouldBe "A"
