@@ -27,6 +27,10 @@ val X500AttributeProviderIsolationTest by matrixSuite {
         isolatedScenario(X500AttributeProviderScenarios::class.java, "lenientRecovery")
     }
 
+    "DN hex values use the ASN.1 provider for both an alias and a dotted OID" {
+        isolatedScenario(X500AttributeProviderScenarios::class.java, "hexUsesAsn1Provider")
+    }
+
     "Exhausted semantic providers preserve the original wire payload as unknown" {
         isolatedScenario(X500AttributeProviderScenarios::class.java, "exhaustedProviders")
     }
@@ -68,6 +72,26 @@ internal object X500AttributeProviderScenarios {
                 .shouldBeInstanceOf<Nickname>()
             decoded.text shouldBe "alice"
             decoded.asn1.toRepresentation().value shouldBe wire
+        }
+    }
+
+    @JvmStatic
+    fun hexUsesAsn1Provider() {
+        Signum.installIndispensable()
+        val oid = AttributeTypeAndValue.OID.commonName
+        val source = X500AttributeTypeAndValue(oid, Asn1String.UTF8("Alice"))
+        ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(object : AttributeTypeAndValueAsn1Provider {
+            override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? =
+                if (value == source) TextAttributeTypeAndValue(oid, "ALICE") else null
+
+            override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
+        })
+
+        val hex = source.value.derEncoded.toHexString()
+        for (key in listOf("CN", oid.toString())) {
+            val decoded = AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
+            decoded.text shouldBe "ALICE"
+            decoded.asn1.toRepresentation() shouldBe source
         }
     }
 

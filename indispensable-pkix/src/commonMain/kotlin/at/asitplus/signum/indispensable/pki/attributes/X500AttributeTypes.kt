@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki.attributes
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.pki.AttributeAsn1Provider
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueAsn1Provider
@@ -10,6 +11,7 @@ import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider.*
 import at.asitplus.signum.indispensable.pki.AtvAsn1FallbackProvider
 import at.asitplus.signum.indispensable.pki.TextAttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.wellKnownAttributeOidForAlias
 
 /** Typed semantic X.500 attributes installed by the PKIX providers. */
 class CommonName(text: String) : TextAttributeTypeAndValue(Companion.oid, text) {
@@ -123,10 +125,11 @@ class TelephoneNumber(text: String) : TextAttributeTypeAndValue(Companion.oid, t
 internal object PkixAttributeTypeAndValueProvider :
     AttributeTypeAndValueProvider, AttributeTypeAndValueAsn1Provider {
 
+    @OptIn(SignumInternals::class)
     override fun decodeATV(key: Key, value: Value): AttributeTypeAndValue? {
         val oid = when (key) {
             is OID -> key.oid
-            is StringAlias -> oidForAlias(key.str) ?: return null
+            is StringAlias -> wellKnownAttributeOidForAlias(key.str) ?: return null
         }
         val construct = constructorFor(oid) ?: return null
         return when (value) {
@@ -144,28 +147,6 @@ internal object PkixAttributeTypeAndValueProvider :
     // Both encoders fall through to the core's standard text and ASN.1 providers.
     override fun encodeATV(atv: AttributeTypeAndValue): Pair<Key, Value>? = null
     override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
-
-    private fun oidForAlias(alias: String): ObjectIdentifier? = when (alias) {
-        "CN", "COMMONNAME" -> CommonName.oid
-        "C", "COUNTRY", "COUNTRYNAME" -> Country.oid
-        "L", "LOCALITY", "LOCALITYNAME" -> Locality.oid
-        "ST", "S", "STATEORPROVINCENAME" -> StateOrProvince.oid
-        "O", "ORGANIZATION", "ORGANIZATIONNAME" -> Organization.oid
-        "OU", "ORGANIZATIONALUNIT", "ORGANIZATIONALUNITNAME" -> OrganizationalUnit.oid
-        "T", "TITLE" -> Title.oid
-        "STREET", "STREETADDRESS" -> Street.oid
-        "DC" -> DomainComponent.oid
-        "DNQUALIFIER", "DNQ" -> DistinguishedNameQualifier.oid
-        "SURNAME" -> Surname.oid
-        "GIVENNAME" -> GivenName.oid
-        "INITIALS" -> Initials.oid
-        "GENERATION" -> Generation.oid
-        "EMAILADDRESS", "EMAIL" -> EmailAddress.oid
-        "UID" -> UserId.oid
-        "SERIALNUMBER" -> SerialNumber.oid
-        "TELEPHONENUMBER" -> TelephoneNumber.oid
-        else -> null
-    }
 
     private fun constructorFor(oid: ObjectIdentifier): ((String) -> TextAttributeTypeAndValue)? = when (oid) {
         CommonName.oid -> ::CommonName
