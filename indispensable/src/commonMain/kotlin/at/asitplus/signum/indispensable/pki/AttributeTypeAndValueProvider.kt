@@ -1,11 +1,9 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1Element
-import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import kotlin.jvm.JvmInline
@@ -68,10 +66,7 @@ object AtvOidFallbackProvider: AttributeTypeAndValueProvider {
             is AttributeTypeAndValueProvider.StringValue ->
                 TextAttributeTypeAndValue(key.oid, value.str)
             is AttributeTypeAndValueProvider.ByteArrayValue ->
-                SignumEncodingHelpers.decodeFrom { src: X500AttributeTypeAndValue ->
-                    AttributeAsn1Provider.decodeFromAsn1(src.oid, src.value) ?:
-                        throw Asn1Exception("Unknown string-type key ${src.oid}")
-                } (X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)))
+                AtvAsn1FallbackProvider.decodeATV(key, value)
         }
     }
 
