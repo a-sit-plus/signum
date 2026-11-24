@@ -48,7 +48,7 @@ object AtvAsn1FallbackProvider : AttributeTypeAndValueProvider {
     ): AttributeTypeAndValue? {
         if (key !is AttributeTypeAndValueProvider.OID) return null
         if (value !is AttributeTypeAndValueProvider.ByteArrayValue) return null
-        return decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1)(
+        return decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1, { _, failure -> throw failure })(
             X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)),
         )
     }

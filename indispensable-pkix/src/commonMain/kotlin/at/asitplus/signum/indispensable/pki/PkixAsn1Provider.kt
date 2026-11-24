@@ -5,7 +5,6 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Signum
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.pki.extn.*
@@ -91,10 +90,6 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
             is X509GeneralName.X400Address -> X400AddressName.fromAsn1Model(generalName)
             else -> null
         }
-
-    @OptIn(SignumInternals::class)
-    override fun refineUnknownAsn1(source: X509GeneralName, fallback: GeneralName.Unknown): OtherName? =
-        (source as? X509GeneralName.Other)?.let { OtherName.Unknown(it.value.oid, fallback) }
 
     override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = when (generalName) {
         is DNSName -> X509GeneralName.Dns(generalName.value)

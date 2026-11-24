@@ -74,6 +74,17 @@ object ServiceLoader {
             throw x
         }
 
+        inline fun <reified KeyT : Any, ResultT, UnsupportedT : ResultT> getWithUnknown(
+            what: KeyT,
+            unknownCtor: (KeyT, UnsupportedCryptoException) -> UnsupportedT,
+            loadBlock: T.(KeyT) -> ResultT?,
+        ): ResultT = try {
+            get(what, loadBlock)
+        } catch (failure: UnsupportedCryptoException) {
+            unknownCtor(what, failure).also {
+                check(lookupFailure(it) != null) { "Provider fallback must be a source-backed unknown" }
+            }
+        }
     }
     @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =
         ServiceProviders(clazz.simpleName ?: "<anonymous>", getStorageFromMap(clazz))

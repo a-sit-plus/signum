@@ -15,6 +15,7 @@ import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1DecodersWith
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.digest.Digest
@@ -50,6 +51,18 @@ val EncodingRegressionTest by matrixSuite {
         retained shouldBe source
         unknown shouldBe AttributeTypeAndValue.fromString("1.2.3.4", "#01")
         (unknown == AttributeTypeAndValue.fromString("1.2.3.4", "#02")) shouldBe false
+    }
+
+    "Provider decoder overloads still accept a fallback that captures the source" {
+        val source = X500AttributeTypeAndValue(ObjectIdentifier("1.2.3.4"), Asn1OctetString(byteArrayOf(1)))
+        val decode = asn1DecodersWith<
+            AttributeTypeAndValueAsn1Provider, X500AttributeTypeAndValue, AttributeTypeAndValue, AttributeTypeAndValue.Unknown,
+        >(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { failure ->
+            AttributeTypeAndValue.Unknown(source.oid, source, failure)
+        }
+
+        val unknown = decode(source).shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+        unknown.asn1.toRepresentation() shouldBeSameInstanceAs source
     }
 
     "Unrecognized non-string ATVs round-trip through RDNs and Names" - {

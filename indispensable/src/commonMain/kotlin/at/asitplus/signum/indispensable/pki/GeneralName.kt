@@ -26,8 +26,11 @@ interface GeneralName : WithSourceRepresentation {
 interface GeneralNameFormatProvider {
     fun decodeFromAsn1(generalName: X509GeneralName): GeneralName?
     fun encodeToAsn1(generalName: GeneralName): X509GeneralName?
-
-    /** Refine an exhausted lookup, retaining the supplied fallback's source storage. */
-    @SignumInternals
-    fun refineUnknownAsn1(source: X509GeneralName, fallback: GeneralName.Unknown): GeneralName? = null
 }
+
+/** Indicates that a name family is known even though its payload could not be interpreted. */
+@SignumInternals
+class GeneralNameDecodingFailure(
+    internal val failure: UnsupportedCryptoException,
+    internal val wrapUnknown: (GeneralName.Unknown) -> GeneralName,
+) : UnsupportedCryptoException(failure.message, failure)

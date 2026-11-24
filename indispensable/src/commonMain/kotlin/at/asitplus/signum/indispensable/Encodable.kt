@@ -62,8 +62,13 @@ object SignumEncodingHelpers {
 
 /** The low-level decoding function.
  * Constructs using the specified constructor lambda, then sets the source representation. */
-inline fun <EncodedType: Any, AbstractType: WithSourceRepresentation> decodeFrom(
+inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> decodeFrom(
     crossinline fn: (EncodedType)->AbstractType
+): (EncodedType)->AbstractType = decodeAndStoreSource(fn)
+
+@PublishedApi
+internal inline fun <EncodedType : Any, AbstractType : WithSourceRepresentation> decodeAndStoreSource(
+    crossinline fn: (EncodedType) -> AbstractType,
 ): (EncodedType)->AbstractType = { encoded ->
     runRethrowing { fn(encoded) }.also {
         it.realSourceRepresentation?.let { existing ->
@@ -83,17 +88,30 @@ inline fun <EncodedType: Any, AbstractType: WithSourceRepresentation> decodeFrom
 inline fun <
     reified ProviderType: Any,
     reified EncodedType: Any,
-    AbstractType: WithSourceRepresentation,
+    reified AbstractType: WithSourceRepresentation,
+    UnknownType : AbstractType,
 > decodeWith(
     crossinline fn: ProviderType.(EncodedType)->AbstractType?,
+    crossinline unknownCtor: (EncodedType, UnsupportedCryptoException) -> UnknownType = { _, failure -> throw failure },
 ) : (EncodedType)->AbstractType = decodeFrom {
-    ServiceLoader.load<ProviderType>().get(it, fn)
+    ServiceLoader.load<ProviderType>().getWithUnknown(it, unknownCtor, fn)
 }
+
+/** Decode through registered providers with a fallback that captures its source separately. */
+inline fun <
+    reified ProviderType : Any,
+    reified EncodedType : Any,
+    reified AbstractType : WithSourceRepresentation,
+    UnknownType : AbstractType,
+> decodeWith(
+    crossinline fn: ProviderType.(EncodedType) -> AbstractType?,
+    crossinline unknownCtor: (UnsupportedCryptoException) -> UnknownType = { throw it },
+): (EncodedType) -> AbstractType = decodeWith(fn, { _, failure -> unknownCtor(failure) })
 
 internal fun <EncodedType : Any, AbstractType : WithSourceRepresentation> decodeFrom(
     decode: (EncodedType) -> AbstractType,
     fallback: (EncodedType, UnsupportedCryptoException) -> AbstractType,
-): (EncodedType) -> AbstractType = decodeFrom { source ->
+): (EncodedType) -> AbstractType = decodeAndStoreSource { source ->
     try {
         decode(source)
     } catch (failure: UnsupportedCryptoException) {

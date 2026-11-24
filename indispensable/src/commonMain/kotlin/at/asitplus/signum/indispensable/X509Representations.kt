@@ -18,6 +18,7 @@ import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1EncodersWith
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.withAlternativePemDecoder
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeWith
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
@@ -272,31 +273,55 @@ inline fun <
         }
 }
 
-internal inline fun <
+inline fun <
     reified ProviderType : Any,
     reified Asn1Type : Any,
     reified AbstractType : WithSourceRepresentation,
+    UnknownType : AbstractType,
 > asn1DecodersWith(
     crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
-    noinline fallback: (Asn1Type, UnsupportedCryptoException) -> AbstractType,
+    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException) -> UnknownType,
 ): Asn1Decoders<Asn1Type, AbstractType> = Asn1DecodersImpl(
-    decodeFrom({ source -> ServiceLoader.load<ProviderType>().get(source, fn) }, fallback),
+    decodeWith(fn, unknownCtor),
     Signum.Der.serializersModule.serializer<Asn1Type>(),
 )
 
-internal inline fun <
+inline fun <
+    reified ProviderType : Any,
+    reified Asn1Type : Any,
+    reified AbstractType : WithSourceRepresentation,
+    UnknownType : AbstractType,
+> asn1DecodersWith(
+    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
+    crossinline unknownCtor: (UnsupportedCryptoException) -> UnknownType,
+): Asn1Decoders<Asn1Type, AbstractType> = asn1DecodersWith(fn, { _, failure -> unknownCtor(failure) })
+
+inline fun <
     reified ProviderType : Any,
     reified Asn1Type : WithPemLabel,
     reified AbstractType : WithSourceRepresentation,
+    UnknownType : AbstractType,
 > asn1DecodersWith(
     companion: PemDeserializable<Asn1Type>,
     crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
-    noinline fallback: (Asn1Type, UnsupportedCryptoException) -> AbstractType,
+    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException) -> UnknownType,
 ): Asn1Decoders.WithPEM<Asn1Type, AbstractType> = Asn1DecodersImpl.WithPEM(
-    decodeFrom({ source -> ServiceLoader.load<ProviderType>().get(source, fn) }, fallback),
+    decodeWith(fn, unknownCtor),
     Signum.Der.serializersModule.serializer<Asn1Type>(),
     companion,
 )
+
+inline fun <
+    reified ProviderType : Any,
+    reified Asn1Type : WithPemLabel,
+    reified AbstractType : WithSourceRepresentation,
+    UnknownType : AbstractType,
+> asn1DecodersWith(
+    companion: PemDeserializable<Asn1Type>,
+    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
+    crossinline unknownCtor: (UnsupportedCryptoException) -> UnknownType,
+): Asn1Decoders.WithPEM<Asn1Type, AbstractType> =
+    asn1DecodersWith(companion, fn, { _, failure -> unknownCtor(failure) })
 
 }
 
@@ -434,13 +459,19 @@ val GeneralName.asn1 get() =
     asn1EncodersWith(GeneralNameFormatProvider::encodeToAsn1)
 
 val GeneralName.Companion.fromAsn1 get() =
-    asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1) { source, failure ->
-        val fallback = GeneralName.Unknown(source, failure)
-        ServiceLoader.load<GeneralNameFormatProvider>().firstNotNullOfOrNull {
-            it.refineUnknownAsn1(source, fallback)?.takeIf { refined ->
-                refined.sourceRepresentation === fallback.sourceRepresentation
+    asn1Decoders<X509GeneralName, GeneralName> { source ->
+        var wrapUnknown: ((GeneralName.Unknown) -> GeneralName)? = null
+        ServiceLoader.load<GeneralNameFormatProvider>().getWithUnknown(source, { input, failure ->
+            val unknown = GeneralName.Unknown(input, failure)
+            wrapUnknown?.invoke(unknown)?.takeIf { it.sourceRepresentation === unknown.sourceRepresentation } ?: unknown
+        }) {
+            try {
+                decodeFromAsn1(it)
+            } catch (failure: GeneralNameDecodingFailure) {
+                if (wrapUnknown == null) wrapUnknown = failure.wrapUnknown
+                throw failure.failure
             }
-        } ?: fallback
+        }
     }
 
 val GeneralName.asn1TagValue: ULong get() = this@asn1TagValue.asn1.toRepresentation().tag.tagValue
