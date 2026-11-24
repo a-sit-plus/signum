@@ -257,7 +257,8 @@ The ASN.1 text adapter uses this same service; each provider can decline an OID 
 The core provider supplies standard names, aliases, and generic text attributes without a descriptor
 registry or initializing `Signum.Der` for text construction. Provider-only registration also works after earlier name lookups or DER use.
 Unknown dotted OIDs with supplied text become generic `TextAttributeTypeAndValue` values, with empty
-source storage. RFC 4514 `#` hex values remain explicitly encoded ASN.1 and go through ASN.1 decoding.
+source storage. Providers can decode the embedded ASN.1 in RFC 4514 `#` hex values. If the lookup
+fails, the fallback retains the original DN text.
 
 Providers return `null` for unsupported inputs and throw when decoding fails. Either outcome lets the
 loader try the next provider. After all providers fail, Signum's decoders construct fallbacks with the

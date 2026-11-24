@@ -2,8 +2,6 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.catchingUnwrapped
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
@@ -13,6 +11,7 @@ import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.installIndispensable
+import at.asitplus.signum.indispensable.realSourceRepresentation
 import at.asitplus.signum.internals.hexToByteArray
 
 /**
@@ -199,17 +198,13 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
             } catch (failure: UnsupportedCryptoException) {
                 val resolvedOid = when (oid) {
                     is AttributeTypeAndValueProvider.OID -> oid.oid
-                    is AttributeTypeAndValueProvider.StringAlias ->
+                    is AttributeTypeAndValueProvider.StringAlias -> {
+                        if (resolvedValue !is AttributeTypeAndValueProvider.ByteArrayValue) throw failure
                         AtvWellKnownAliasesProvider.oidForAlias(oid.str) ?: throw failure
+                    }
                 }
-                val asn1 = (resolvedValue as? AttributeTypeAndValueProvider.ByteArrayValue)?.let { bytes ->
-                    catchingUnwrapped {
-                        X500AttributeTypeAndValue(resolvedOid, Asn1Element.parse(bytes.bytes))
-                    }.getOrNull()
-                }
-                if (asn1 == null && oid is AttributeTypeAndValueProvider.StringAlias) throw failure
                 @OptIn(SignumInternals::class)
-                Unknown(resolvedOid, asn1 ?: (type to value), failure)
+                Unknown(resolvedOid, type to value, failure)
             }
         }.getOrThrow()
     }
@@ -226,7 +221,12 @@ open class TextAttributeTypeAndValue(
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
 }
 
+@OptIn(SignumInternals::class)
 fun AttributeTypeAndValue.toRfc2253String(): String {
+    if (this is AttributeTypeAndValue.Unknown) {
+        val source = realSourceRepresentation as? Pair<*, *>
+        if (source?.first is String && source.second is String) return "${source.first}=${source.second}"
+    }
     // Look up by OID so text providers can also re-emit opaque attributes.
     val (keyString, valueString) = ServiceLoader.load<AttributeTypeAndValueProvider>()
         .get(oid) { encodeATV(this@toRfc2253String) }

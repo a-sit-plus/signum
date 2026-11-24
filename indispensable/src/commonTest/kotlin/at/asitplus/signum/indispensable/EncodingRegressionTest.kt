@@ -25,6 +25,7 @@ import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueAsn1Provider
 import at.asitplus.signum.indispensable.pki.AttributeAsn1Provider
 import at.asitplus.signum.indispensable.pki.TextAttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Name
+import at.asitplus.signum.indispensable.pki.toRfc2253String
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -51,6 +52,17 @@ val EncodingRegressionTest by matrixSuite {
         unknown shouldBe AttributeTypeAndValue.fromString("1.2.3.4", "#01")
         (unknown == AttributeTypeAndValue.fromString("1.2.3.4", "#02")) shouldBe false
         (unknown == AttributeTypeAndValue.fromString("1.2.3.5", source.second)) shouldBe false
+    }
+
+    "Uninterpreted hex ATVs retain and re-emit their DN text" {
+        for ((key, value) in listOf("1.2.3.4" to "#0401ff", "cN" to "#040101", "CN" to "#01")) {
+            val unknown = AttributeTypeAndValue.fromString(key, value)
+                .shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+            val retained: Pair<String, String> = unknown.encodeTo { error("Expected retained text") }
+            retained shouldBe (key to value)
+            unknown.toRfc2253String() shouldBe "$key=$value"
+            shouldThrow<Asn1Exception> { unknown.asn1.toRepresentation() }
+        }
     }
 
     "Unrecognized non-string ATVs round-trip through RDNs and Names" - {
