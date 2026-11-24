@@ -273,55 +273,73 @@ inline fun <
         }
 }
 
+@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
+/** Provider + no PEM + unknown doesn't want source */
 inline fun <
-    reified ProviderType : Any,
-    reified Asn1Type : Any,
-    reified AbstractType : WithSourceRepresentation,
-    UnknownType : AbstractType,
+    reified ProviderType: Any,
+    reified Asn1Type: Any,
+    reified AbstractType: WithSourceRepresentation,
+    UnknownType
 > asn1DecodersWith(
-    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
-    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException) -> UnknownType,
-): Asn1Decoders<Asn1Type, AbstractType> = Asn1DecodersImpl(
-    decodeWith(fn, unknownCtor),
-    Signum.Der.serializersModule.serializer<Asn1Type>(),
-)
+    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
+    crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType
+) : Asn1Decoders<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
+    Asn1DecodersImpl(
+        decodeWith(fn, unknownCtor),
+        Signum.Der.serializersModule.serializer<Asn1Type>(),
+    )
 
+@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
+/** Provider + no PEM + unknown wants source */
 inline fun <
-    reified ProviderType : Any,
-    reified Asn1Type : Any,
-    reified AbstractType : WithSourceRepresentation,
-    UnknownType : AbstractType,
+    reified ProviderType: Any,
+    reified Asn1Type: Any,
+    reified AbstractType: WithSourceRepresentation,
+    UnknownType
 > asn1DecodersWith(
-    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
-    crossinline unknownCtor: (UnsupportedCryptoException) -> UnknownType,
-): Asn1Decoders<Asn1Type, AbstractType> = asn1DecodersWith(fn, { _, failure -> unknownCtor(failure) })
+    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
+    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException)->UnknownType
+) : Asn1Decoders<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
+    Asn1DecodersImpl(
+        decodeWith(fn, unknownCtor),
+        Signum.Der.serializersModule.serializer<Asn1Type>(),
+    )
 
+@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
+/** Provider + PEM + unknown doesn't want source */
 inline fun <
-    reified ProviderType : Any,
-    reified Asn1Type : WithPemLabel,
-    reified AbstractType : WithSourceRepresentation,
-    UnknownType : AbstractType,
+    reified ProviderType: Any,
+    reified Asn1Type: WithPemLabel,
+    reified AbstractType: WithSourceRepresentation,
+    UnknownType
 > asn1DecodersWith(
     companion: PemDeserializable<Asn1Type>,
-    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
-    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException) -> UnknownType,
-): Asn1Decoders.WithPEM<Asn1Type, AbstractType> = Asn1DecodersImpl.WithPEM(
-    decodeWith(fn, unknownCtor),
-    Signum.Der.serializersModule.serializer<Asn1Type>(),
-    companion,
-)
+    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
+    crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType
+) : Asn1Decoders.WithPEM<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
+    Asn1DecodersImpl.WithPEM(
+        decodeWith(fn, unknownCtor),
+        Signum.Der.serializersModule.serializer<Asn1Type>(),
+        companion
+    )
 
+@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
+/** Provider + PEM + unknown wants source */
 inline fun <
-    reified ProviderType : Any,
-    reified Asn1Type : WithPemLabel,
-    reified AbstractType : WithSourceRepresentation,
-    UnknownType : AbstractType,
+    reified ProviderType: Any,
+    reified Asn1Type: WithPemLabel,
+    reified AbstractType: WithSourceRepresentation,
+    UnknownType
 > asn1DecodersWith(
     companion: PemDeserializable<Asn1Type>,
-    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
-    crossinline unknownCtor: (UnsupportedCryptoException) -> UnknownType,
-): Asn1Decoders.WithPEM<Asn1Type, AbstractType> =
-    asn1DecodersWith(companion, fn, { _, failure -> unknownCtor(failure) })
+    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
+    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException)->UnknownType
+) : Asn1Decoders.WithPEM<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
+    Asn1DecodersImpl.WithPEM(
+        decodeWith(fn, unknownCtor),
+        Signum.Der.serializersModule.serializer<Asn1Type>(),
+        companion
+    )
 
 }
 
@@ -431,7 +449,10 @@ val CertificateExtension.asn1 get() =
 
 val CertificateExtension.Companion.fromAsn1 get() =
     asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { asn1, lookup ->
-        CertificateExtension.Unknown(asn1.oid, asn1.critical, asn1, lookup)
+        object : CertificateExtension.Unknown(asn1, lookup) {
+            override val critical = asn1.critical
+            override val oid: ObjectIdentifier = asn1.oid
+        }
     }
 
 val Certificate.asn1 get() =
@@ -459,20 +480,7 @@ val GeneralName.asn1 get() =
     asn1EncodersWith(GeneralNameFormatProvider::encodeToAsn1)
 
 val GeneralName.Companion.fromAsn1 get() =
-    asn1Decoders<X509GeneralName, GeneralName> { source ->
-        var wrapUnknown: ((GeneralName.Unknown) -> GeneralName)? = null
-        ServiceLoader.load<GeneralNameFormatProvider>().getWithUnknown(source, { input, failure ->
-            val unknown = GeneralName.Unknown(input, failure)
-            wrapUnknown?.invoke(unknown)?.takeIf { it.sourceRepresentation === unknown.sourceRepresentation } ?: unknown
-        }) {
-            try {
-                decodeFromAsn1(it)
-            } catch (failure: GeneralNameDecodingFailure) {
-                if (wrapUnknown == null) wrapUnknown = failure.wrapUnknown
-                throw failure.failure
-            }
-        }
-    }
+    asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
 
 val GeneralName.asn1TagValue: ULong get() = this@asn1TagValue.asn1.toRepresentation().tag.tagValue
 

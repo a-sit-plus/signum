@@ -7,7 +7,6 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
 
@@ -24,27 +23,17 @@ interface CertificateExtension : Identifiable, WithSourceRepresentation {
 
     val critical: Boolean
 
+    /** Derivators need to provide [critical]. */
     @SignumInternals
-    class Unknown internal constructor(
-        override val oid: ObjectIdentifier,
-        override val critical: Boolean,
+    abstract class Unknown internal constructor(
         source: Any,
         lookupResult: UnsupportedCryptoException,
-    ) : CertificateExtension, ServiceLoader.UnknownShim(source, lookupResult)
+    ) : CertificateExtension, ServiceLoader.UnknownShim(source, lookupResult) {
+        override val oid: ObjectIdentifier get() = fails
+    }
 
 
     companion object {
-        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
-        @OptIn(SignumInternals::class)
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            oid: ObjectIdentifier,
-            critical: Boolean,
-            decode: (Source) -> CertificateExtension,
-        ): CertificateExtension = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
-            Unknown(oid, critical, input, failure)
-        }(source)
-
         operator fun invoke(
             oid: ObjectIdentifier,
             critical: Boolean = false,

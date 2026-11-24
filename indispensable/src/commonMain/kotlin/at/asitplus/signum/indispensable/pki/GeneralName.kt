@@ -4,7 +4,6 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 
 /** An encoding-independent RFC 5280/C509 `GeneralName`. */
@@ -13,24 +12,10 @@ interface GeneralName : WithSourceRepresentation {
     class Unknown internal constructor(source: Any, lookupResult: UnsupportedCryptoException)
         : GeneralName, ServiceLoader.UnknownShim(source, lookupResult)
 
-    companion object {
-        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
-        @OptIn(SignumInternals::class)
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            decode: (Source) -> GeneralName,
-        ): GeneralName = SignumEncodingHelpers.decodeFrom(decode, ::Unknown)(source)
-    }
+    companion object
 }
 
 interface GeneralNameFormatProvider {
     fun decodeFromAsn1(generalName: X509GeneralName): GeneralName?
     fun encodeToAsn1(generalName: GeneralName): X509GeneralName?
 }
-
-/** Indicates that a name family is known even though its payload could not be interpreted. */
-@SignumInternals
-class GeneralNameDecodingFailure(
-    internal val failure: UnsupportedCryptoException,
-    internal val wrapUnknown: (GeneralName.Unknown) -> GeneralName,
-) : UnsupportedCryptoException(failure.message, failure)

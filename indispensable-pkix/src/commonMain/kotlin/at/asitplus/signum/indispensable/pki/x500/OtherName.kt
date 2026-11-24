@@ -3,41 +3,36 @@ package at.asitplus.signum.indispensable.pki.x500
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
 import kotlinx.serialization.Serializable
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.pki.GeneralName
 
 /** An open OID-selected name family. Interpreted subtypes are independent of their source format. */
-abstract class OtherName protected constructor(
-    override val sourceRepresentation: SourceRepresentationStorage = SourceRepresentationStorage(),
-) : GeneralName, Identifiable {
-    @OptIn(SignumInternals::class)
+abstract class OtherName : GeneralName, Identifiable {
+    override val sourceRepresentation = SourceRepresentationStorage()
+
     internal class Unknown(
         override val oid: ObjectIdentifier,
-        private val fallback: GeneralName.Unknown,
-    ) : OtherName(fallback.sourceRepresentation) {
-        val lookupResult get() = fallback.lookupResult
-        override fun equals(other: Any?): Boolean =
-            other is Unknown && oid == other.oid && fallback == other.fallback
+        source: Any,
+        val lookupResult: UnsupportedCryptoException,
+    ) : OtherName() {
+        init { decodeFrom<Any, Unknown> { this }(source) }
 
-        override fun hashCode(): Int = 31 * oid.hashCode() + fallback.hashCode()
-        override fun toString(): String = fallback.toString()
+        override fun equals(other: Any?): Boolean =
+            other is Unknown && oid == other.oid && sourceRepresentation == other.sourceRepresentation
+
+        override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+        override fun toString(): String = "Failed to parse ($sourceRepresentation)"
     }
 
     companion object {
-        /** Decode a wire value and retain its payload if decoding is unsupported. */
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            oid: ObjectIdentifier,
-            decode: (Source) -> OtherName,
-        ): OtherName = GeneralName.decodeFrom(source, decode).asOtherName(oid)
-
-        operator fun invoke(value: X509GeneralName.Other): OtherName =
-            GeneralName.fromAsn1(value).asOtherName(value.value.oid)
-
         @OptIn(SignumInternals::class)
-        private fun GeneralName.asOtherName(oid: ObjectIdentifier): OtherName =
-            if (this is GeneralName.Unknown) Unknown(oid, this) else this as OtherName
+        operator fun invoke(value: X509GeneralName.Other): OtherName = when (val name = GeneralName.fromAsn1(value)) {
+            is GeneralName.Unknown -> Unknown(value.value.oid, value, name.lookupResult)
+            else -> name as OtherName
+        }
     }
 }
 

@@ -4,7 +4,6 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.Signum
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.pki.x500.*
 
@@ -14,11 +13,22 @@ interface OtherNameAsn1Provider {
     fun encodeToAsn1(value: OtherName): X509GeneralName.Other?
 }
 
-@OptIn(SignumInternals::class)
-internal fun decodeOtherName(src: X509GeneralName.Other): OtherName = try {
-    ServiceLoader.load<OtherNameAsn1Provider>().get(src, OtherNameAsn1Provider::decodeFromAsn1)
-} catch (failure: UnsupportedCryptoException) {
-    throw GeneralNameDecodingFailure(failure) { OtherName.Unknown(src.value.oid, it) }
+internal fun decodeOtherName(src: X509GeneralName.Other): GeneralName {
+    try {
+        return ServiceLoader.load<OtherNameAsn1Provider>().get(src, OtherNameAsn1Provider::decodeFromAsn1)
+    } catch (failure: UnsupportedCryptoException) {
+        // Higher-priority GeneralName providers have already declined in the outer lookup.
+        val remaining = ServiceLoader.load<GeneralNameFormatProvider>().dropWhile { it !== PkixAsn1Provider }.drop(1)
+        if (remaining.isNotEmpty()) {
+            try {
+                return ServiceLoader.ServiceProviders("GeneralNameFormatProvider", remaining)
+                    .get(src, GeneralNameFormatProvider::decodeFromAsn1)
+            } catch (laterFailure: UnsupportedCryptoException) {
+                failure.addSuppressed(laterFailure)
+            }
+        }
+        return OtherName.Unknown(src.value.oid, src, failure)
+    }
 }
 
 internal fun encodeOtherName(src: OtherName): X509GeneralName.Other =

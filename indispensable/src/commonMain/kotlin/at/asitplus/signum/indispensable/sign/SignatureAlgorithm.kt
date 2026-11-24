@@ -4,7 +4,6 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.installIndispensable
 
@@ -29,14 +28,6 @@ interface SignatureAlgorithm : WithSourceRepresentation {
     }
 
     companion object {
-        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            decode: (Source) -> SignatureAlgorithm,
-        ): SignatureAlgorithm = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
-            Unknown(input, failure)
-        }(source)
-
         init { Signum.installIndispensable() }
 
         @Deprecated(message = "Concrete algorithms migrated out of SignatureAlgorithm as part of providerization",

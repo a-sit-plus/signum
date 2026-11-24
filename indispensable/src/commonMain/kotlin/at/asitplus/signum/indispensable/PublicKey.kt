@@ -42,15 +42,6 @@ interface PublicKey : WithSourceRepresentation {
     }
 
     companion object {
-        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
-        @OptIn(SignumInternals::class)
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            decode: (Source) -> PublicKey,
-        ): PublicKey = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
-            Unknown(input, failure)
-        }(source)
-
         init { Signum.installIndispensable() }
 
         /**

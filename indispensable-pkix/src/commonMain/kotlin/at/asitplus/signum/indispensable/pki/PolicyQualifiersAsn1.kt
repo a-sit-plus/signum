@@ -3,6 +3,8 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.*
 import at.asitplus.signum.Signum
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeWith
 import at.asitplus.signum.indispensable.pki.extn.*
 import kotlinx.serialization.Serializable
@@ -20,11 +22,13 @@ data class Asn1PolicyQualifier(override val oid: ObjectIdentifier, val qualifier
 
 internal fun decodeCertificatePolicies(bytes: ByteArray): List<PolicyInformation> =
     Signum.Der.decodeFromByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), bytes).map { wire ->
-        PolicyInformation(wire.oid, wire.qualifiers.map { qualifier ->
-            PolicyQualifierInfo.decodeFrom(qualifier, qualifier.oid) { source ->
+        PolicyInformation(wire.oid, wire.qualifiers.map(decodeFrom<Asn1PolicyQualifier, PolicyQualifierInfo> { source ->
+            try {
                 ServiceLoader.load<PolicyQualifierAsn1Provider>().get(source, PolicyQualifierAsn1Provider::decodeFromAsn1)
+            } catch (failure: UnsupportedCryptoException) {
+                PolicyQualifierInfo.Unknown(source.oid, source, failure)
             }
-        })
+        }))
     }
 
 internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteArray =

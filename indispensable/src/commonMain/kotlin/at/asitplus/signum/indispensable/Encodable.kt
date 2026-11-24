@@ -12,9 +12,7 @@ import at.asitplus.signum.internals.ImplementationError
  * default-constructed instance of this class as an override.
  * It is used as a backing field by [SignumEncodingHelpers.encodeTo] and [SignumEncodingHelpers.decodeFrom],
  * to enable byte-for-byte round-tripping. */
-class SourceRepresentationStorage internal constructor(internal val lookupFailure: UnsupportedCryptoException?) {
-    constructor() : this(null)
-
+class SourceRepresentationStorage {
     /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
     @SignumInternals
     internal var x: Any? = null
@@ -64,11 +62,6 @@ object SignumEncodingHelpers {
  * Constructs using the specified constructor lambda, then sets the source representation. */
 inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> decodeFrom(
     crossinline fn: (EncodedType)->AbstractType
-): (EncodedType)->AbstractType = decodeAndStoreSource(fn)
-
-@PublishedApi
-internal inline fun <EncodedType : Any, AbstractType : WithSourceRepresentation> decodeAndStoreSource(
-    crossinline fn: (EncodedType) -> AbstractType,
 ): (EncodedType)->AbstractType = { encoded ->
     runRethrowing { fn(encoded) }.also {
         it.realSourceRepresentation?.let { existing ->
@@ -84,40 +77,36 @@ internal inline fun <EncodedType : Any, AbstractType : WithSourceRepresentation>
     }
 }
 
-/** Decode through registered providers. */
+/** A high-level decoding function using a Provider.
+ * Delegates to ServiceLoader to perform decoding. */
+// with provider + unknown wants source type
+@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
 inline fun <
     reified ProviderType: Any,
     reified EncodedType: Any,
     reified AbstractType: WithSourceRepresentation,
-    UnknownType : AbstractType,
+    UnknownType
 > decodeWith(
     crossinline fn: ProviderType.(EncodedType)->AbstractType?,
-    crossinline unknownCtor: (EncodedType, UnsupportedCryptoException) -> UnknownType = { _, failure -> throw failure },
-) : (EncodedType)->AbstractType = decodeFrom {
+    crossinline unknownCtor: (EncodedType, UnsupportedCryptoException)->UnknownType = { _,x -> throw x }
+) : (EncodedType)->AbstractType where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim = decodeFrom {
     ServiceLoader.load<ProviderType>().getWithUnknown(it, unknownCtor, fn)
 }
 
-/** Decode through registered providers with a fallback that captures its source separately. */
+/** A high-level decoding function using a Provider.
+ * Delegates to ServiceLoader to perform decoding. */
+// with provider + unknown does not want source type
+@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
 inline fun <
-    reified ProviderType : Any,
-    reified EncodedType : Any,
-    reified AbstractType : WithSourceRepresentation,
-    UnknownType : AbstractType,
-> decodeWith(
-    crossinline fn: ProviderType.(EncodedType) -> AbstractType?,
-    crossinline unknownCtor: (UnsupportedCryptoException) -> UnknownType = { throw it },
-): (EncodedType) -> AbstractType = decodeWith(fn, { _, failure -> unknownCtor(failure) })
-
-internal fun <EncodedType : Any, AbstractType : WithSourceRepresentation> decodeFrom(
-    decode: (EncodedType) -> AbstractType,
-    fallback: (EncodedType, UnsupportedCryptoException) -> AbstractType,
-): (EncodedType) -> AbstractType = decodeAndStoreSource { source ->
-    try {
-        decode(source)
-    } catch (failure: UnsupportedCryptoException) {
-        fallback(source, failure)
-    }
-}
+        reified ProviderType: Any,
+        reified EncodedType: Any,
+        reified AbstractType: WithSourceRepresentation,
+        UnknownType
+        > decodeWith(
+    crossinline fn: ProviderType.(EncodedType)->AbstractType?,
+    crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType = { x -> throw x }
+) : (EncodedType)->AbstractType where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
+    decodeWith(fn, { _, x -> unknownCtor(x) })
 
 /** The low-level encoding function.
  * Uses the cached source representation if present and matching.

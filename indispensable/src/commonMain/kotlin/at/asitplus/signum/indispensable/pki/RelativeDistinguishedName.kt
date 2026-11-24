@@ -9,7 +9,6 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
@@ -153,16 +152,6 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     }
 
     companion object {
-        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
-        @OptIn(SignumInternals::class)
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            oid: ObjectIdentifier,
-            decode: (Source) -> AttributeTypeAndValue,
-        ): AttributeTypeAndValue = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
-            Unknown(oid, input, failure)
-        }(source)
-
         init { Signum.installIndispensable() }
 
         private fun String.splitFirstUnescaped(delimiter: Char): List<String> {

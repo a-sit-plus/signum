@@ -1,7 +1,10 @@
 package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.awesn1.*
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
+import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.Asn1PolicyQualifier
 import com.eygraber.uri.Uri
@@ -35,6 +38,24 @@ data class PolicyInformation(
         val oid: ObjectIdentifier,
         val qualifiers: List<Asn1PolicyQualifier> = emptyList(),
     )
+}
+
+interface PolicyQualifierInfo : Identifiable, WithSourceRepresentation {
+    class Unknown internal constructor(
+        override val oid: ObjectIdentifier,
+        source: Any,
+        val lookupResult: UnsupportedCryptoException,
+    ) : PolicyQualifierInfo {
+        override val sourceRepresentation = SourceRepresentationStorage()
+
+        init { decodeFrom<Any, Unknown> { this }(source) }
+
+        override fun equals(other: Any?): Boolean =
+            other is Unknown && oid == other.oid && sourceRepresentation == other.sourceRepresentation
+
+        override fun hashCode(): Int = 31 * oid.hashCode() + sourceRepresentation.hashCode()
+        override fun toString(): String = "Failed to parse ($sourceRepresentation)"
+    }
 }
 
 data class CpsUri(val uri: Uri) : PolicyQualifierInfo {

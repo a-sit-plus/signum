@@ -16,6 +16,7 @@ import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKe
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.Serializable
@@ -139,14 +140,28 @@ val UnknownPkixValueTest by matrixSuite {
         val policies = CertificateExtension.fromAsn1(X509CertificateExtension(CertificatePolicies.oid, false, body))
             .shouldBeInstanceOf<CertificatePolicies>()
         val qualifier = policies.certificatePolicies.single().policyQualifiers.single()
-        qualifier.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+            .shouldBeInstanceOf<PolicyQualifierInfo.Unknown>()
         qualifier.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
         CertificatePolicies(policies.certificatePolicies).asn1.toRepresentation().value shouldBe body
     }
 
-    "Unknown values retain a non-ASN.1 source for independent recovery" {
+    "Unknown CSR attributes and policy qualifiers distinguish OIDs with identical payloads" {
+        val first = ObjectIdentifier("1.2.3.4")
+        val second = ObjectIdentifier("1.2.3.5")
+        val payload = Asn1Integer(1).encodeToTlv()
+        val attribute = CsrAttribute(first, payload).shouldBeInstanceOf<CsrAttribute.Unknown>()
+        attribute shouldBe CsrAttribute(first, payload)
+        attribute shouldNotBe CsrAttribute(second, payload)
+
+        val failure = at.asitplus.signum.UnsupportedCryptoException()
+        val qualifier = PolicyQualifierInfo.Unknown(first, payload, failure)
+        qualifier shouldBe PolicyQualifierInfo.Unknown(first, payload, failure)
+        qualifier shouldNotBe PolicyQualifierInfo.Unknown(second, payload, failure)
+    }
+
+    "Custom values retain a non-ASN.1 source for independent recovery" {
         val raw = Json.parseToJsonElement("""{"oid":"2.5.4.6","value":{"uninterpreted":true},"extra":42}""").jsonObject
-        val unknown = J509.attribute(raw).also { it.shouldBeInstanceOf<ServiceLoader.UnknownShim>() }
+        val unknown = J509.attribute(raw)
         J509.attribute(unknown) shouldBeSameInstanceAs raw
         shouldThrowAny { unknown.asn1.toRepresentation() }
         val recovered = decodeFrom<kotlinx.serialization.json.JsonObject, AttributeTypeAndValue> {
@@ -155,7 +170,7 @@ val UnknownPkixValueTest by matrixSuite {
         J509.attribute(recovered) shouldBeSameInstanceAs raw
 
         val csr = Json.parseToJsonElement("""{"oid":"1.2.840.113549.1.9.14","extensions":[]}""").jsonObject
-        J509.csrAttribute(J509.csrAttribute(csr).also { it.shouldBeInstanceOf<ServiceLoader.UnknownShim>() }) shouldBeSameInstanceAs csr
+        J509.csrAttribute(J509.csrAttribute(csr)) shouldBeSameInstanceAs csr
     }
 }
 

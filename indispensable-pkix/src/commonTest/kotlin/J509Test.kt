@@ -5,9 +5,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
-import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.attributes.*
 import at.asitplus.signum.indispensable.pki.extn.*
@@ -18,7 +16,6 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.eygraber.uri.Uri
 import io.kotest.assertions.throwables.shouldThrowAny
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -95,20 +92,6 @@ val J509Test by matrixSuite {
         J509.other(name) shouldBeSameInstanceAs raw
         J509.qualifier(qualifier) shouldBeSameInstanceAs raw
         listOf(atv, csr, name, qualifier) shouldBe listOf(J509.attribute(raw), J509.csrAttribute(raw), J509.other(raw), J509.qualifier(raw))
-        listOf(atv, csr, qualifier).forEach { fallback ->
-            val shim = fallback.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
-            shouldThrow<UnsupportedCryptoException> {
-                ServiceLoader.load<GeneralNameFormatProvider>().get<Any, Unit>(fallback) {
-                    error("Unknown values must not retry provider lookup")
-                }
-            } shouldBeSameInstanceAs shim.lookupResult
-        }
-        val otherNameFailure = name.shouldBeInstanceOf<OtherName.Unknown>().lookupResult
-        shouldThrow<UnsupportedCryptoException> {
-            ServiceLoader.load<GeneralNameFormatProvider>().get<OtherName, Unit>(name) {
-                error("Unknown values must not retry provider lookup")
-            }
-        } shouldBeSameInstanceAs otherNameFailure
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
         nativeNames.extensions.filterIsInstance<SubjectAlternativeName>().single().generalNames.single() shouldBeSameInstanceAs name
         nativeNames.extensions.filterIsInstance<IssuerAlternativeName>().single().generalNames.single() shouldBeSameInstanceAs name

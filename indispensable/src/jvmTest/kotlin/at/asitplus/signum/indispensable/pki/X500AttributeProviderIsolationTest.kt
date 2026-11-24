@@ -122,9 +122,9 @@ internal object X500AttributeProviderScenarios {
             }
         })
 
-        val attribute = AttributeTypeAndValue.decodeFrom(Nickname.oid to "Alice", Nickname.oid) {
-            throw UnsupportedCryptoException("No semantic interpretation")
-        }
+        val attribute = AttributeTypeAndValue.Unknown(
+            Nickname.oid, Nickname.oid to "Alice", UnsupportedCryptoException("No semantic interpretation"),
+        )
         attribute.toRfc2253String() shouldBe "NICK=Alice"
     }
 }

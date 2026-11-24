@@ -39,6 +39,9 @@ val GeneralNamesEqualityTest by matrixSuite {
         OtherName(other1) shouldBe OtherName(other1)
         OtherName(other1).hashCode() shouldBe OtherName(other1).hashCode()
         OtherName(other1) shouldNotBe OtherName(other2)
+        OtherName(other1) shouldNotBe OtherName(X509GeneralName.Other(
+            X509GeneralName.Other.SemanticValue.Generic(ObjectIdentifier("1.2.3.5"), Asn1.Int(1)),
+        ))
     }
 
     "X400AddressName equals and hashcode" {

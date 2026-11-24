@@ -21,15 +21,6 @@ interface PrivateKey : WithSourceRepresentation {
     class Unknown internal constructor(source: Any, lookupResult: UnsupportedCryptoException) : PrivateKey, ServiceLoader.UnknownShim(source, lookupResult)
 
     companion object {
-        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
-        @OptIn(SignumInternals::class)
-        fun <Source : Any> decodeFrom(
-            source: Source,
-            decode: (Source) -> PrivateKey,
-        ): PrivateKey = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
-            Unknown(input, failure)
-        }(source)
-
         init { Signum.installIndispensable() }
         @Deprecated("Use SecKeyRef.toPrivateKey instead")
         fun fromIosEncoded(keyBytes: ByteArray): PrivateKey.WithPublicKey =

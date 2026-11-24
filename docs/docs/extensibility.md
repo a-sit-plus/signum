@@ -260,11 +260,10 @@ Unknown dotted OIDs with supplied text become generic `TextAttributeTypeAndValue
 source storage. RFC 4514 `#` hex values remain explicitly encoded ASN.1 and go through ASN.1 decoding.
 
 Providers return `null` for unsupported inputs and throw when decoding fails. Either outcome lets the
-loader try the next provider. After all providers fail, Signum constructs the fallback with the original
-source and collected failures. For a custom format, pass the complete wire value and your decoder to the
-type's `decodeFrom` function. The wire value should include the identifier and payload. For example,
-`OtherName.decodeFrom(source, oid) { ... }` retains an uninterpreted payload as a typed `OtherName`
-that can round-trip through its original codec.
+loader try the next provider. After all providers fail, Signum's decoders construct fallbacks with the
+original source and collected failures. For a custom format, pass the complete wire value and your
+decoder to `SignumEncodingHelpers.decodeFrom`. The codec can use its own subtype to retain values
+specific to that format.
 
 To retry a previously unknown value after adding a provider, decode its retained source representation.
 
