@@ -1,12 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.ObjectIdentifier
-import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.awesn1.encoding.parse
-import at.asitplus.signum.SignumInternals
-import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
-import at.asitplus.signum.indispensable.asn1
 import kotlin.jvm.JvmInline
 
 /** Converting of ATV pairs (e.g., `cn=Alice`) to/from strings */
@@ -41,42 +35,13 @@ interface AttributeTypeAndValueProvider {
 /** Resolve an uppercase X.500 attribute alias from the core alias table. */
 fun AttributeTypeAndValueProvider.wellKnownAttributeOidForAlias(alias: String): ObjectIdentifier? = AtvWellKnownAliasesProvider.oidForAlias(alias)
 
-object AtvAsn1FallbackProvider : AttributeTypeAndValueProvider {
-    @OptIn(SignumInternals::class)
-    override fun decodeATV(
-        key: AttributeTypeAndValueProvider.Key,
-        value: AttributeTypeAndValueProvider.Value
-    ): AttributeTypeAndValue? {
-        if (key !is AttributeTypeAndValueProvider.OID) return null
-        if (value !is AttributeTypeAndValueProvider.ByteArrayValue) return null
-        return decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1, { src, failure ->
-            AttributeTypeAndValue.Unknown(src.oid, src, failure)
-        })(
-            X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)),
-        )
-    }
-
-    override fun encodeATV(atv: AttributeTypeAndValue) =
-        atv.asn1.toRepresentation().let {
-            Pair(
-                AttributeTypeAndValueProvider.Key(it.oid),
-                AttributeTypeAndValueProvider.Value(it.value.derEncoded)
-            )
-        }
-}
-
 object AtvOidFallbackProvider: AttributeTypeAndValueProvider {
     override fun decodeATV(
         key: AttributeTypeAndValueProvider.Key,
         value: AttributeTypeAndValueProvider.Value
     ): AttributeTypeAndValue? {
-        if (key !is AttributeTypeAndValueProvider.OID) return null
-        return when (value) {
-            is AttributeTypeAndValueProvider.StringValue ->
-                TextAttributeTypeAndValue(key.oid, value.str)
-            is AttributeTypeAndValueProvider.ByteArrayValue ->
-                AtvAsn1FallbackProvider.decodeATV(key, value)
-        }
+        if (key !is AttributeTypeAndValueProvider.OID || value !is AttributeTypeAndValueProvider.StringValue) return null
+        return TextAttributeTypeAndValue(key.oid, value.str)
     }
 
     override fun encodeATV(atv: AttributeTypeAndValue) =
@@ -129,6 +94,8 @@ internal object AtvWellKnownAliasesProvider : AttributeTypeAndValueProvider {
 
     fun oidForAlias(alias: String): ObjectIdentifier? = nameToOid[alias]
 
+    fun aliasForOid(oid: ObjectIdentifier): String? = oidToName[oid]
+
     override fun decodeATV(
         key: AttributeTypeAndValueProvider.Key,
         value: AttributeTypeAndValueProvider.Value
@@ -140,12 +107,8 @@ internal object AtvWellKnownAliasesProvider : AttributeTypeAndValueProvider {
     }
 
     override fun encodeATV(atv: AttributeTypeAndValue): Pair<AttributeTypeAndValueProvider.Key, AttributeTypeAndValueProvider.Value>? {
-        return Pair(
-            AttributeTypeAndValueProvider.Key(oidToName[atv.oid] ?: return null),
-            when {
-                atv is TextAttributeTypeAndValue -> AttributeTypeAndValueProvider.StringValue(atv.text)
-                else -> AttributeTypeAndValueProvider.ByteArrayValue(atv.asn1.toRepresentation().value.derEncoded)
-            }
-        )
+        if (atv !is TextAttributeTypeAndValue) return null
+        val alias = aliasForOid(atv.oid) ?: return null
+        return AttributeTypeAndValueProvider.Key(alias) to AttributeTypeAndValueProvider.Value(atv.text)
     }
 }

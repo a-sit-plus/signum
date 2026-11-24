@@ -12,6 +12,8 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.Asn1Decoders
+import at.asitplus.signum.indispensable.Asn1EncodingHelpers.Asn1DecodersImpl
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1DecodersWith
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
@@ -510,10 +512,8 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
 
 val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
 
-val AttributeTypeAndValue.Companion.fromAsn1 get() =
-        asn1DecodersWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { src, failure ->
-            AttributeTypeAndValue.Unknown(src.oid, src, failure)
-        }
+val AttributeTypeAndValue.Companion.fromAsn1: Asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue>
+    get() = Asn1DecodersImpl(decodeAsn1Attribute, Signum.Der.serializersModule.serializer())
 
 val Name.asn1 get() =
     asn1Encoders<X500Name, _> { src ->

@@ -18,7 +18,7 @@ private val initialize by lazy {
     ServiceLoader.register<SignatureFormatProvider>(IndispensableSignatureFormats)
     ServiceLoader.register<Asn1PublicKeyFormatProvider>(IndispensableAsn1PublicKeyFormatsProvider)
     ServiceLoader.register<Asn1PrivateKeyFormatProvider>(IndispensableAsn1PrivateKeyFormatsProvider)
-    ServiceLoader.register<AttributeTypeAndValueProvider>(AtvAsn1FallbackProvider)
+    ServiceLoader.register<AttributeTypeAndValueProvider>(AtvAsn1HexProvider)
     ServiceLoader.register<AttributeTypeAndValueProvider>(AtvOidFallbackProvider)
     ServiceLoader.register<AttributeTypeAndValueProvider>(AtvWellKnownAliasesProvider)
     ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(AttributeAsn1Provider)

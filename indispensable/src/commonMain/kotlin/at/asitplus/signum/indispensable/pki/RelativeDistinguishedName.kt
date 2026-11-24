@@ -160,7 +160,7 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
         /** constructs an ATV from type-value string form (e.g., `CN=Alice`) */
         fun fromString(str: String) = catchingUnwrappedAs(a = ::UnsupportedCryptoException) {
             val parts = str.splitFirstUnescaped( '=')
-            if (parts.size != 2) throw Asn1Exception("Invalid ATV string: $str")
+            require(parts.size == 2) { "Invalid ATV string: $str" }
             fromString(parts[0], parts[1])
         }.getOrThrow()
 
@@ -182,7 +182,7 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                 }
 
             val v = value.trim()
-            // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
+            // Decode the hex syntax here. Providers interpret the resulting bytes.
             val resolvedValue =
                 if (v.firstOrNull() == '#') {
                     require(v.length > 1)

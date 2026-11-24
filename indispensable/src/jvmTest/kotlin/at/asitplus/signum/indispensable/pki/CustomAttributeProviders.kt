@@ -18,7 +18,7 @@ internal class NicknameProvider(private val alias: String, private val strict: B
         if (key != oidKey && key != Key(alias) && key != Key("NICK") && key != Key("NICKNAME")) return null
         return when (value) {
             is StringValue -> nickname(value.str)
-            is ByteArrayValue -> AtvAsn1FallbackProvider.decodeATV(oidKey, value)
+            is ByteArrayValue -> AtvAsn1HexProvider.decodeATV(oidKey, value)
         }
     }
 

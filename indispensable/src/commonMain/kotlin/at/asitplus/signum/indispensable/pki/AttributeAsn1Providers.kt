@@ -5,9 +5,13 @@ import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider.*
 
 interface AttributeTypeAndValueAsn1Provider {
     fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue?
@@ -17,6 +21,30 @@ interface AttributeTypeAndValueAsn1Provider {
 interface CsrAttributeAsn1Provider {
     fun decodeFromAsn1(value: Pkcs10CsrAttribute): CsrAttribute?
     fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute?
+}
+
+@OptIn(SignumInternals::class)
+internal val decodeAsn1Attribute = decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { src, failure ->
+    AttributeTypeAndValue.Unknown(src.oid, src, failure)
+}
+
+/** Bridges RFC 4514 hex values and the ASN.1 ATV model. */
+object AtvAsn1HexProvider : AttributeTypeAndValueProvider {
+    override fun decodeATV(key: Key, value: Value): AttributeTypeAndValue? {
+        if (value !is ByteArrayValue) return null
+        val oid = when (key) {
+            is OID -> key.oid
+            is StringAlias -> wellKnownAttributeOidForAlias(key.str) ?: return null
+        }
+        return decodeAsn1Attribute(X500AttributeTypeAndValue(oid, Asn1Element.parse(value.bytes)))
+    }
+
+    override fun encodeATV(atv: AttributeTypeAndValue): Pair<Key, Value> {
+        val model = atv.asn1.toRepresentation()
+        val alias = AtvWellKnownAliasesProvider.aliasForOid(model.oid)
+        val key = if (alias != null) Key(alias) else Key(model.oid)
+        return key to Value(model.value.derEncoded)
+    }
 }
 
 object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider {

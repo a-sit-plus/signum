@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.awesn1.Asn1String
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
@@ -81,6 +82,9 @@ internal object X500AttributeProviderScenarios {
         Signum.installIndispensable()
         val oid = AttributeTypeAndValue.OID.commonName
         val source = X500AttributeTypeAndValue(oid, Asn1String.UTF8("Alice"))
+        val bytes = AttributeTypeAndValueProvider.Value(source.value.derEncoded)
+        AtvOidFallbackProvider.decodeATV(AttributeTypeAndValueProvider.Key(oid), bytes) shouldBe null
+        AtvWellKnownAliasesProvider.decodeATV(AttributeTypeAndValueProvider.Key("CN"), bytes) shouldBe null
         var parsed: X500AttributeTypeAndValue? = null
         ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(object : AttributeTypeAndValueAsn1Provider {
             override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {
@@ -91,15 +95,16 @@ internal object X500AttributeProviderScenarios {
             override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
         })
 
+        val opaque = AttributeTypeAndValue.fromString("1.2.3.4=#0401Ff").shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+        Signum.setDer(DER {})
+        opaque.asn1.toRepresentation() shouldBeSameInstanceAs parsed
+
         val hex = source.value.derEncoded.toHexString()
         for (key in listOf("CN", oid.toString())) {
             val decoded = AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
             decoded.text shouldBe "ALICE"
             decoded.asn1.toRepresentation() shouldBeSameInstanceAs parsed
         }
-
-        val opaque = AttributeTypeAndValue.fromString("1.2.3.4=#0401Ff").shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
-        opaque.asn1.toRepresentation() shouldBeSameInstanceAs parsed
     }
 
     @JvmStatic
