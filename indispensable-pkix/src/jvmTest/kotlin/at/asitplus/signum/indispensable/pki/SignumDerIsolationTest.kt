@@ -5,6 +5,7 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.*
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
@@ -38,6 +39,25 @@ internal data class RegisteredOtherName(
     }
 }
 
+private data class CustomOtherName(val text: String) : OtherName() {
+    override val oid get() = RegisteredOtherName.oid
+}
+
+private object CustomOtherNameProvider : OtherNameAsn1Provider, GeneralNameFormatProvider {
+    override fun decodeFromAsn1(value: X509GeneralName.Other): OtherName? =
+        (value.value as? RegisteredOtherName)?.let { CustomOtherName(it.payload.value.value) }
+
+    override fun encodeToAsn1(value: OtherName): X509GeneralName.Other? =
+        (value as? CustomOtherName)?.let {
+            X509GeneralName.Other(RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8(it.text))))
+        }
+
+    override fun decodeFromAsn1(generalName: X509GeneralName): GeneralName? =
+        (generalName as? X509GeneralName.Other)?.let { decodeFromAsn1(it) }
+
+    override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = null
+}
+
 internal data class RegisteredCertificateExtension(val text: String) : CertificateExtension {
     override val oid get() = Companion.oid
     override val critical = false
@@ -66,7 +86,7 @@ val SignumDerIsolationTest by matrixSuite {
     "Rejected serializer registration leaves the active provider usable" {
         isolatedScenario(SignumDerScenarios::class.java, "rejectedRegistration")
     }
-    "Custom otherName registration reaches nested AKI and NameConstraints codecs" {
+    "Custom OtherName providers reach nested AKI and NameConstraints codecs" {
         isolatedScenario(SignumDerScenarios::class.java, "customOtherName")
     }
     "Selected depth limit reaches embedded constraint bodies" {
@@ -130,6 +150,7 @@ internal object SignumDerScenarios {
     }
 
     @JvmStatic
+    @OptIn(SignumInternals::class)
     fun customOtherName() {
         Signum.setDer(DER {
             serializersModule = SerializersModule {
@@ -139,11 +160,23 @@ internal object SignumDerScenarios {
                 }
             }
         })
+        val source = X509GeneralName.Other(RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8("custom"))))
+        val fallback = GeneralName.fromAsn1(source).shouldBeInstanceOf<GeneralName.Unknown>()
+        fallback.asn1.toRepresentation() shouldBe source
+
+        ServiceLoader.register<GeneralNameFormatProvider>(CustomOtherNameProvider)
         Signum.installPkix()
-        val name = OtherName(X509GeneralName.Other(RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8("custom")))))
+        // PKIX's OtherName lookup declines first, leaving the lower-priority GeneralName provider a chance.
+        GeneralName.fromAsn1(source) shouldBe CustomOtherName("custom")
+
+        ServiceLoader.register<OtherNameAsn1Provider>(CustomOtherNameProvider)
+        val name = OtherName(source).shouldBeInstanceOf<CustomOtherName>()
+        name.text shouldBe "custom"
+        CustomOtherName("custom").asn1.toRepresentation() shouldBe source
         val aki = AuthorityKeyIdentifier(authorityCertIssuer = listOf(name))
         val akiBytes = aki.asn1.toDer()
         val decodedAki = (CertificateExtension.fromAsn1(akiBytes) as AuthorityKeyIdentifier)
+        decodedAki.authorityCertIssuer.single().shouldBeInstanceOf<CustomOtherName>().text shouldBe name.text
         (decodedAki.authorityCertIssuer.single().asn1.toRepresentation() as X509GeneralName.Other).value
             .shouldBeInstanceOf<RegisteredOtherName>()
         decodedAki.asn1.toDer() shouldBe akiBytes
@@ -151,7 +184,9 @@ internal object SignumDerScenarios {
         val constraints = NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(name))))
         val bytes = constraints.asn1.toDer()
         val decoded = (CertificateExtension.fromAsn1(bytes) as NameConstraints)
-        (decoded.permitted!!.trees.single().base.asn1.toRepresentation() as X509GeneralName.Other).value
+        val base = checkNotNull(decoded.permitted).trees.single().base
+        base.shouldBeInstanceOf<CustomOtherName>().text shouldBe name.text
+        (base.asn1.toRepresentation() as X509GeneralName.Other).value
             .shouldBeInstanceOf<RegisteredOtherName>()
         decoded.asn1.toDer() shouldBe bytes
     }

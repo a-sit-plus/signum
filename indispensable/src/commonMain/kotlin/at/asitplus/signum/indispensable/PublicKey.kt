@@ -34,14 +34,23 @@ interface PublicKey : WithSourceRepresentation {
     val didKeyBytes: ByteArray
 
     @SignumInternals
-    class Unknown(lookupResult: UnsupportedCryptoException)
-        : PublicKey, ServiceLoader.UnknownShim(lookupResult) {
+    class Unknown internal constructor(source: Any, lookupResult: UnsupportedCryptoException)
+        : PublicKey, ServiceLoader.UnknownShim(source, lookupResult) {
         override val didKeyBytes get() = fails
         override val didCodec get() = fails
         override val additionalProperties: MutableMap<String, String> get() = fails
     }
 
     companion object {
+        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
+        @OptIn(SignumInternals::class)
+        fun <Source : Any> decodeFrom(
+            source: Source,
+            decode: (Source) -> PublicKey,
+        ): PublicKey = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
+            Unknown(input, failure)
+        }(source)
+
         init { Signum.installIndispensable() }
 
         /**

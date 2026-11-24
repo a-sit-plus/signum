@@ -1,11 +1,7 @@
 package at.asitplus.signum.indispensable.pki.extn
 
 import at.asitplus.awesn1.*
-import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.SignumInternals
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
-import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.Asn1PolicyQualifier
 import com.eygraber.uri.Uri
@@ -39,14 +35,6 @@ data class PolicyInformation(
         val oid: ObjectIdentifier,
         val qualifiers: List<Asn1PolicyQualifier> = emptyList(),
     )
-}
-
-interface PolicyQualifierInfo : Identifiable, WithSourceRepresentation {
-    @OptIn(SignumInternals::class)
-    class Unknown(
-        override val oid: ObjectIdentifier,
-        lookupResult: UnsupportedCryptoException,
-    ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(lookupResult)
 }
 
 data class CpsUri(val uri: Uri) : PolicyQualifierInfo {

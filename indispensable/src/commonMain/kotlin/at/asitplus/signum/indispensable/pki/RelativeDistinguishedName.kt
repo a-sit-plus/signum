@@ -2,11 +2,14 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
+import at.asitplus.awesn1.encoding.parse
+import at.asitplus.catchingUnwrapped
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
@@ -121,10 +124,11 @@ private fun String.caseFold(): String = buildString(length) {
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown(
+    class Unknown internal constructor(
         override val oid: ObjectIdentifier,
+        source: Any,
         lookupResult: UnsupportedCryptoException,
-    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
+    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(source, lookupResult)
 
     object OID {
         val commonName = ObjectIdentifier("2.5.4.3")
@@ -149,6 +153,16 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     }
 
     companion object {
+        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
+        @OptIn(SignumInternals::class)
+        fun <Source : Any> decodeFrom(
+            source: Source,
+            oid: ObjectIdentifier,
+            decode: (Source) -> AttributeTypeAndValue,
+        ): AttributeTypeAndValue = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
+            Unknown(oid, input, failure)
+        }(source)
+
         init { Signum.installIndispensable() }
 
         private fun String.splitFirstUnescaped(delimiter: Char): List<String> {
@@ -191,17 +205,23 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                     AttributeTypeAndValueProvider.Value(unescapeRfc2253(v))
                 }
 
-            @OptIn(SignumInternals::class)
-            ServiceLoader.load<AttributeTypeAndValueProvider>().getWithUnknown(type,
-                unknownCtor = { _, failure ->
-                    when (oid) {
-                        is AttributeTypeAndValueProvider.OID -> Unknown(oid.oid, failure)
-                        is AttributeTypeAndValueProvider.StringAlias -> throw failure
-                    }
-                },
-                loadBlock = {
-                    decodeATV(oid, resolvedValue)
-                })
+            try {
+                ServiceLoader.load<AttributeTypeAndValueProvider>().get(type) { decodeATV(oid, resolvedValue) }
+            } catch (failure: UnsupportedCryptoException) {
+                val resolvedOid = when (oid) {
+                    is AttributeTypeAndValueProvider.OID -> oid.oid
+                    is AttributeTypeAndValueProvider.StringAlias ->
+                        AtvWellKnownAliasesProvider.oidForAlias(oid.str) ?: throw failure
+                }
+                val asn1 = (resolvedValue as? AttributeTypeAndValueProvider.ByteArrayValue)?.let { bytes ->
+                    catchingUnwrapped {
+                        X500AttributeTypeAndValue(resolvedOid, Asn1Element.parse(bytes.bytes))
+                    }.getOrNull()
+                }
+                if (asn1 == null && oid is AttributeTypeAndValueProvider.StringAlias) throw failure
+                @OptIn(SignumInternals::class)
+                Unknown(resolvedOid, asn1 ?: (type to value), failure)
+            }
         }.getOrThrow()
     }
 }

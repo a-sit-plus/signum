@@ -3,11 +3,11 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
@@ -115,14 +115,16 @@ internal object X500AttributeProviderScenarios {
 
             override fun encodeATV(atv: AttributeTypeAndValue): Pair<AttributeTypeAndValueProvider.Key, AttributeTypeAndValueProvider.Value>? {
                 if (atv.oid != Nickname.oid) return null
-                val text: String = atv.encodeTo { error("Expected the retained text") }
+                val (_, text) = atv.encodeTo<Pair<ObjectIdentifier, String>, AttributeTypeAndValue> {
+                    error("Expected the retained text")
+                }
                 return AttributeTypeAndValueProvider.Key("NICK") to AttributeTypeAndValueProvider.Value(text)
             }
         })
 
-        val attribute = decodeFrom<String, AttributeTypeAndValue> {
-            AttributeTypeAndValue.Unknown(Nickname.oid, UnsupportedCryptoException("No semantic interpretation"))
-        }("Alice")
+        val attribute = AttributeTypeAndValue.decodeFrom(Nickname.oid to "Alice", Nickname.oid) {
+            throw UnsupportedCryptoException("No semantic interpretation")
+        }
         attribute.toRfc2253String() shouldBe "NICK=Alice"
     }
 }

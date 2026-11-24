@@ -12,7 +12,9 @@ import at.asitplus.signum.internals.ImplementationError
  * default-constructed instance of this class as an override.
  * It is used as a backing field by [SignumEncodingHelpers.encodeTo] and [SignumEncodingHelpers.decodeFrom],
  * to enable byte-for-byte round-tripping. */
-class SourceRepresentationStorage {
+class SourceRepresentationStorage internal constructor(internal val lookupFailure: UnsupportedCryptoException?) {
+    constructor() : this(null)
+
     /** This should NEVER be touched outside of createFrom/convertTo, or all bets are off. */
     @SignumInternals
     internal var x: Any? = null
@@ -60,7 +62,7 @@ object SignumEncodingHelpers {
 
 /** The low-level decoding function.
  * Constructs using the specified constructor lambda, then sets the source representation. */
-inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> decodeFrom(
+inline fun <EncodedType: Any, AbstractType: WithSourceRepresentation> decodeFrom(
     crossinline fn: (EncodedType)->AbstractType
 ): (EncodedType)->AbstractType = { encoded ->
     runRethrowing { fn(encoded) }.also {
@@ -77,36 +79,27 @@ inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresenta
     }
 }
 
-/** A high-level decoding function using a Provider.
- * Delegates to ServiceLoader to perform decoding. */
-// with provider + unknown wants source type
-@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
+/** Decode through registered providers. */
 inline fun <
     reified ProviderType: Any,
     reified EncodedType: Any,
-    reified AbstractType: WithSourceRepresentation,
-    UnknownType
+    AbstractType: WithSourceRepresentation,
 > decodeWith(
     crossinline fn: ProviderType.(EncodedType)->AbstractType?,
-    crossinline unknownCtor: (EncodedType, UnsupportedCryptoException)->UnknownType = { _,x -> throw x }
-) : (EncodedType)->AbstractType where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim = decodeFrom {
-    ServiceLoader.load<ProviderType>().getWithUnknown(it, unknownCtor, fn)
+) : (EncodedType)->AbstractType = decodeFrom {
+    ServiceLoader.load<ProviderType>().get(it, fn)
 }
 
-/** A high-level decoding function using a Provider.
- * Delegates to ServiceLoader to perform decoding. */
-// with provider + unknown does not want source type
-@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-inline fun <
-        reified ProviderType: Any,
-        reified EncodedType: Any,
-        reified AbstractType: WithSourceRepresentation,
-        UnknownType
-        > decodeWith(
-    crossinline fn: ProviderType.(EncodedType)->AbstractType?,
-    crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType = { x -> throw x }
-) : (EncodedType)->AbstractType where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
-    decodeWith(fn, { _, x -> unknownCtor(x) })
+internal fun <EncodedType : Any, AbstractType : WithSourceRepresentation> decodeFrom(
+    decode: (EncodedType) -> AbstractType,
+    fallback: (EncodedType, UnsupportedCryptoException) -> AbstractType,
+): (EncodedType) -> AbstractType = decodeFrom { source ->
+    try {
+        decode(source)
+    } catch (failure: UnsupportedCryptoException) {
+        fallback(source, failure)
+    }
+}
 
 /** The low-level encoding function.
  * Uses the cached source representation if present and matching.

@@ -5,6 +5,7 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -17,8 +18,8 @@ interface Digest : WithSourceRepresentation {
     val outputLength: BitLength
 
     @SignumInternals
-    class Unknown(lookupResult: UnsupportedCryptoException)
-        : Digest, ServiceLoader.UnknownShim(lookupResult)
+    class Unknown internal constructor(source: Any, lookupResult: UnsupportedCryptoException)
+        : Digest, ServiceLoader.UnknownShim(source, lookupResult)
     {
         override val name get() = fails
         override val inputBlockSize get() = fails
@@ -26,6 +27,15 @@ interface Digest : WithSourceRepresentation {
     }
 
     companion object {
+        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
+        @OptIn(SignumInternals::class)
+        fun <Source : Any> decodeFrom(
+            source: Source,
+            decode: (Source) -> Digest,
+        ): Digest = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
+            Unknown(input, failure)
+        }(source)
+
         init { Signum.installIndispensable() }
         val SHA1 inline get() = WellKnownDigest.SHA1
         val SHA256 inline get() = WellKnownDigest.SHA256

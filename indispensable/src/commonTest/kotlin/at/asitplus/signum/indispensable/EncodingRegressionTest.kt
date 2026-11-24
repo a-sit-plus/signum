@@ -16,6 +16,7 @@ import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
@@ -38,6 +39,17 @@ val EncodingRegressionTest by matrixSuite {
         val key = EcdsaPrivateKey.WithPublicKey(BigInteger.ONE, ECCurve.SECP_256_R_1).publicKey
 
         key.iosEncoded shouldBe key.toAnsiX963Encoded(useCompressed = false)
+    }
+
+    "Malformed dotted-OID ATV retains its original text" {
+        val source = "1.2.3.4" to "#01"
+        val unknown = AttributeTypeAndValue.fromString(source.first, source.second)
+            .shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+        val retained: Pair<String, String> = unknown.encodeTo { error("Expected retained text") }
+
+        retained shouldBe source
+        unknown shouldBe AttributeTypeAndValue.fromString("1.2.3.4", "#01")
+        (unknown == AttributeTypeAndValue.fromString("1.2.3.4", "#02")) shouldBe false
     }
 
     "Unrecognized non-string ATVs round-trip through RDNs and Names" - {

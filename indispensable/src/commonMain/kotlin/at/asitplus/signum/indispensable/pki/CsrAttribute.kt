@@ -10,12 +10,23 @@ import at.asitplus.signum.indispensable.*
 /** An open CSR attribute family, without a format-specific payload contract. */
 interface CsrAttribute : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown(
+    class Unknown internal constructor(
         override val oid: ObjectIdentifier,
+        source: Any,
         lookupResult: UnsupportedCryptoException,
-    ) : CsrAttribute, ServiceLoader.UnknownShim(lookupResult)
+    ) : CsrAttribute, ServiceLoader.UnknownShim(source, lookupResult)
 
     companion object {
+        /** Decode a wire value and retain it as opaque if decoding is unsupported. */
+        @OptIn(SignumInternals::class)
+        fun <Source : Any> decodeFrom(
+            source: Source,
+            oid: ObjectIdentifier,
+            decode: (Source) -> CsrAttribute,
+        ): CsrAttribute = SignumEncodingHelpers.decodeFrom(decode) { input, failure ->
+            Unknown(oid, input, failure)
+        }(source)
+
         val EXTENSION_REQUEST_OID = ObjectIdentifier("1.2.840.113549.1.9.14")
         operator fun invoke(oid: ObjectIdentifier, value: Set<Asn1Element>): CsrAttribute =
             fromAsn1(Pkcs10CsrAttribute(oid, value))

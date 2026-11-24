@@ -118,13 +118,17 @@ val UnknownPkixValueTest by matrixSuite {
         val otherSource = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
             MacAddressName.OID, Asn1String.UTF8("wrong type").encodeToTlv(),
         ))
-        val other = OtherName(otherSource).also { it.shouldBeInstanceOf<ServiceLoader.UnknownShim>() }
-        (other as ServiceLoader.UnknownShim).lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+        val other = OtherName(otherSource)
+        other.shouldBeInstanceOf<OtherName.Unknown>()
         other.oid shouldBe MacAddressName.OID
         (other.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs otherSource.value
-        OtherName(X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
-            ObjectIdentifier("1.2.3.999"), Asn1Integer(1).encodeToTlv(),
-        ))).shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+        val unknownOid = ObjectIdentifier("1.2.3.999")
+        val uninterpreted = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
+            unknownOid, Asn1Integer(1).encodeToTlv(),
+        ))
+        val unknown = GeneralName.fromAsn1(uninterpreted).shouldBeInstanceOf<OtherName.Unknown>()
+        unknown.oid shouldBe unknownOid
+        (unknown.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs uninterpreted.value
     }
 
     "Malformed qualifiers stay as unknowns inside interpreted certificate policies" {

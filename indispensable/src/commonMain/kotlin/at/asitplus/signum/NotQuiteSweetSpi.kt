@@ -22,24 +22,30 @@ object ServiceLoader {
     inline fun <reified T: Any> register(it: T) { register(it, T::class) }
 
     @SignumInternals
-    abstract class UnknownShim(
-        val lookupResult: UnsupportedCryptoException
+    abstract class UnknownShim internal constructor(
+        source: Any,
+        val lookupResult: UnsupportedCryptoException,
     ) : WithSourceRepresentation {
-        final override val sourceRepresentation = SourceRepresentationStorage()
+        final override val sourceRepresentation = SourceRepresentationStorage(lookupResult).apply { x = source }
         final override fun equals(other: Any?) = (other is UnknownShim) && (this::class == other::class) && (sourceRepresentation == other.sourceRepresentation)
         final override fun hashCode() = this::class.hashCode() * 31 + sourceRepresentation.hashCode()
-        final override fun toString() = "Failed to parse ($sourceRepresentation)"
+        final override fun toString() = "Failed to parse (${sourceRepresentation.x?.let { it::class.simpleName }})"
         protected val fails : Nothing get() = throw lookupResult
     }
 
+    @PublishedApi
+    internal fun lookupFailure(value: Any?): UnsupportedCryptoException? =
+        (value as? WithSourceRepresentation)?.sourceRepresentation?.lookupFailure
+
     class ServiceProviders<out T: Any>(@PublishedApi internal val className: String, private val inner: Iterable<T>): Iterable<T> by inner {
         inline fun <reified KeyT, ResultT> get(what: KeyT, loadBlock: T.(KeyT)->(ResultT?)): ResultT {
-            if (what is UnknownShim) throw what.lookupResult
+            lookupFailure(what)?.let { throw it }
             val failures = mutableListOf<Pair<String, Throwable?>>()
             if (none()) throw UnsupportedCryptoException("No $className is loaded. Did you forget init() somewhere?")
             for (provider in this) {
                 try {
                     val result = provider.loadBlock(what)
+                    lookupFailure(result)?.let { throw it }
                     if (result != null) return result
                     failures.add(Pair(provider::class.simpleName ?: "<anonymous>", null))
                 } catch (e: Throwable) {
@@ -68,14 +74,6 @@ object ServiceLoader {
             throw x
         }
 
-        @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-        inline fun <reified KeyT: Any, ResultT, UnsupportedT> getWithUnknown(
-            what: KeyT, unknownCtor: (KeyT, UnsupportedCryptoException)->UnsupportedT, loadBlock: T.(KeyT)->(ResultT?)
-        ) where UnsupportedT : ResultT, UnsupportedT : UnknownShim = try {
-            get(what, loadBlock)
-        } catch (x: UnsupportedCryptoException) {
-            unknownCtor(what, x)
-        }
     }
     @PublishedApi internal fun <T: Any> load(clazz: KClass<T>): ServiceProviders<T> =
         ServiceProviders(clazz.simpleName ?: "<anonymous>", getStorageFromMap(clazz))

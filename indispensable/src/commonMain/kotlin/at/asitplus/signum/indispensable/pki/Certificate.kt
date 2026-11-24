@@ -35,12 +35,6 @@ class Certificate(
     val criticalExtensionOids: Set<ObjectIdentifier>
         get() = tbsCertificate.extensions.asSequence().filter { it.critical }.map { it.oid }.toSet()
 
-    /**
-     * A certificate is self-issued if subject and issuer are the same (not the same as self-signed).
-     */
-    val isSelfIssued: Boolean
-        get() = tbsCertificate.subjectName == tbsCertificate.issuerName
-
     /** Whether this certificate is expired at [date].
      *
      * RFC 5280 only allows second granularities in the validity interval, with

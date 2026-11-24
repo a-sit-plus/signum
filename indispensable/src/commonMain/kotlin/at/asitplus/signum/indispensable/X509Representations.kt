@@ -18,7 +18,6 @@ import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1EncodersWith
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.withAlternativePemDecoder
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
-import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeWith
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
@@ -273,73 +272,31 @@ inline fun <
         }
 }
 
-@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-/** Provider + no PEM + unknown doesn't want source */
-inline fun <
-    reified ProviderType: Any,
-    reified Asn1Type: Any,
-    reified AbstractType: WithSourceRepresentation,
-    UnknownType
+internal inline fun <
+    reified ProviderType : Any,
+    reified Asn1Type : Any,
+    reified AbstractType : WithSourceRepresentation,
 > asn1DecodersWith(
-    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
-    crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType
-) : Asn1Decoders<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
-    Asn1DecodersImpl(
-        decodeWith(fn, unknownCtor),
-        Signum.Der.serializersModule.serializer<Asn1Type>(),
-    )
+    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
+    noinline fallback: (Asn1Type, UnsupportedCryptoException) -> AbstractType,
+): Asn1Decoders<Asn1Type, AbstractType> = Asn1DecodersImpl(
+    decodeFrom({ source -> ServiceLoader.load<ProviderType>().get(source, fn) }, fallback),
+    Signum.Der.serializersModule.serializer<Asn1Type>(),
+)
 
-@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-/** Provider + no PEM + unknown wants source */
-inline fun <
-    reified ProviderType: Any,
-    reified Asn1Type: Any,
-    reified AbstractType: WithSourceRepresentation,
-    UnknownType
-> asn1DecodersWith(
-    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
-    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException)->UnknownType
-) : Asn1Decoders<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
-    Asn1DecodersImpl(
-        decodeWith(fn, unknownCtor),
-        Signum.Der.serializersModule.serializer<Asn1Type>(),
-    )
-
-@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-/** Provider + PEM + unknown doesn't want source */
-inline fun <
-    reified ProviderType: Any,
-    reified Asn1Type: WithPemLabel,
-    reified AbstractType: WithSourceRepresentation,
-    UnknownType
+internal inline fun <
+    reified ProviderType : Any,
+    reified Asn1Type : WithPemLabel,
+    reified AbstractType : WithSourceRepresentation,
 > asn1DecodersWith(
     companion: PemDeserializable<Asn1Type>,
-    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
-    crossinline unknownCtor: (UnsupportedCryptoException)->UnknownType
-) : Asn1Decoders.WithPEM<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
-    Asn1DecodersImpl.WithPEM(
-        decodeWith(fn, unknownCtor),
-        Signum.Der.serializersModule.serializer<Asn1Type>(),
-        companion
-    )
-
-@Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
-/** Provider + PEM + unknown wants source */
-inline fun <
-    reified ProviderType: Any,
-    reified Asn1Type: WithPemLabel,
-    reified AbstractType: WithSourceRepresentation,
-    UnknownType
-> asn1DecodersWith(
-    companion: PemDeserializable<Asn1Type>,
-    crossinline fn: ProviderType.(Asn1Type)->AbstractType?,
-    crossinline unknownCtor: (Asn1Type, UnsupportedCryptoException)->UnknownType
-) : Asn1Decoders.WithPEM<Asn1Type, AbstractType> where UnknownType : AbstractType, UnknownType : ServiceLoader.UnknownShim =
-    Asn1DecodersImpl.WithPEM(
-        decodeWith(fn, unknownCtor),
-        Signum.Der.serializersModule.serializer<Asn1Type>(),
-        companion
-    )
+    crossinline fn: ProviderType.(Asn1Type) -> AbstractType?,
+    noinline fallback: (Asn1Type, UnsupportedCryptoException) -> AbstractType,
+): Asn1Decoders.WithPEM<Asn1Type, AbstractType> = Asn1DecodersImpl.WithPEM(
+    decodeFrom({ source -> ServiceLoader.load<ProviderType>().get(source, fn) }, fallback),
+    Signum.Der.serializersModule.serializer<Asn1Type>(),
+    companion,
+)
 
 }
 
@@ -449,10 +406,7 @@ val CertificateExtension.asn1 get() =
 
 val CertificateExtension.Companion.fromAsn1 get() =
     asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { asn1, lookup ->
-        object : CertificateExtension.Unknown(lookup) {
-            override val critical = asn1.critical
-            override val oid: ObjectIdentifier = asn1.oid
-        }
+        CertificateExtension.Unknown(asn1.oid, asn1.critical, asn1, lookup)
     }
 
 val Certificate.asn1 get() =
@@ -480,7 +434,14 @@ val GeneralName.asn1 get() =
     asn1EncodersWith(GeneralNameFormatProvider::encodeToAsn1)
 
 val GeneralName.Companion.fromAsn1 get() =
-    asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
+    asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1) { source, failure ->
+        val fallback = GeneralName.Unknown(source, failure)
+        ServiceLoader.load<GeneralNameFormatProvider>().firstNotNullOfOrNull {
+            it.refineUnknownAsn1(source, fallback)?.takeIf { refined ->
+                refined.sourceRepresentation === fallback.sourceRepresentation
+            }
+        } ?: fallback
+    }
 
 val GeneralName.asn1TagValue: ULong get() = this@asn1TagValue.asn1.toRepresentation().tag.tagValue
 
@@ -512,7 +473,7 @@ val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn
 
 val AttributeTypeAndValue.Companion.fromAsn1 get() =
         asn1DecodersWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { src, failure ->
-            AttributeTypeAndValue.Unknown(src.oid, failure)
+            AttributeTypeAndValue.Unknown(src.oid, src, failure)
         }
 
 val Name.asn1 get() =
@@ -531,7 +492,7 @@ val CsrAttribute.asn1 get() = asn1EncodersWith(CsrAttributeAsn1Provider::encodeT
 
 val CsrAttribute.Companion.fromAsn1 get() = asn1Decoders<Pkcs10CsrAttribute, CsrAttribute> { src ->
     try { ServiceLoader.load<CsrAttributeAsn1Provider>().get(src, CsrAttributeAsn1Provider::decodeFromAsn1) }
-    catch (failure: UnsupportedCryptoException) { CsrAttribute.Unknown(src.oid, failure) }
+    catch (failure: UnsupportedCryptoException) { CsrAttribute.Unknown(src.oid, src, failure) }
 }
 
 val TbsCertificationRequest.asn1 get() =

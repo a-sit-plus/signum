@@ -2,13 +2,12 @@
 
 package at.asitplus.signum.indispensable.pki.x500
 
-import at.asitplus.signum.ServiceLoader
-import io.kotest.matchers.types.shouldBeInstanceOf
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.encoding.Asn1
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.assertions.throwables.shouldThrow
 
 val DefaultValidationTest by matrixSuite {
@@ -25,7 +24,7 @@ val DefaultValidationTest by matrixSuite {
             X509GeneralName.Other.SemanticValue.Generic(ObjectIdentifier("1.2.3.4"), Asn1.Int(1)),
         )
         val name = OtherName(other)
-        name.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
+        name.shouldBeInstanceOf<OtherName.Unknown>()
         name.oid shouldBe other.value.oid
     }
 

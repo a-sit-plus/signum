@@ -95,7 +95,7 @@ val J509Test by matrixSuite {
         J509.other(name) shouldBeSameInstanceAs raw
         J509.qualifier(qualifier) shouldBeSameInstanceAs raw
         listOf(atv, csr, name, qualifier) shouldBe listOf(J509.attribute(raw), J509.csrAttribute(raw), J509.other(raw), J509.qualifier(raw))
-        listOf(atv, csr, name, qualifier).forEach { fallback ->
+        listOf(atv, csr, qualifier).forEach { fallback ->
             val shim = fallback.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
             shouldThrow<UnsupportedCryptoException> {
                 ServiceLoader.load<GeneralNameFormatProvider>().get<Any, Unit>(fallback) {
@@ -103,6 +103,12 @@ val J509Test by matrixSuite {
                 }
             } shouldBeSameInstanceAs shim.lookupResult
         }
+        val otherNameFailure = name.shouldBeInstanceOf<OtherName.Unknown>().lookupResult
+        shouldThrow<UnsupportedCryptoException> {
+            ServiceLoader.load<GeneralNameFormatProvider>().get<OtherName, Unit>(name) {
+                error("Unknown values must not retry provider lookup")
+            }
+        } shouldBeSameInstanceAs otherNameFailure
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
         nativeNames.extensions.filterIsInstance<SubjectAlternativeName>().single().generalNames.single() shouldBeSameInstanceAs name
         nativeNames.extensions.filterIsInstance<IssuerAlternativeName>().single().generalNames.single() shouldBeSameInstanceAs name
@@ -126,7 +132,8 @@ val J509Test by matrixSuite {
             MacAddressName.OID, Asn1String.UTF8("wrong payload type").encodeToTlv(),
         ))
         val name = OtherName(source)
-        name.shouldBeInstanceOf<ServiceLoader.UnknownShim>().lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
+        val failure = name.shouldBeInstanceOf<OtherName.Unknown>().lookupResult
+        failure.suppressedExceptions.isNotEmpty() shouldBe true
         (name.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
     }
 

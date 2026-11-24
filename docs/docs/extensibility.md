@@ -100,7 +100,7 @@ including nested byte decoding; it does not constrain encoded output or re-check
 already-parsed TLV element.
 
 Decoded values retain their source for round-trip encoding. Encoding to another format leaves that source
-unchanged. Programmatically constructed values have empty storage, even after encoding; getters and
+unchanged. Programmatically constructed semantic values have empty storage, even after encoding; getters and
 serializers do not cache generated models. Keep storage out of semantic `equals` and `hashCode`.
 Return fresh instances from decoders. Reusing an instance for a different source model of the same type
 is rejected by the decoding helper to protect its retained representation.
@@ -260,11 +260,11 @@ Unknown dotted OIDs with supplied text become generic `TextAttributeTypeAndValue
 source storage. RFC 4514 `#` hex values remain explicitly encoded ASN.1 and go through ASN.1 decoding.
 
 Providers return `null` for unsupported inputs and throw when decoding fails. Either outcome lets the
-loader try the next provider; the first successful result completes selection. Only after all providers
-fail does decoding produce an unknown value extending `ServiceLoader.UnknownShim`, retaining the source
-representation and aggregated provider failures. This applies to malformed recognized payloads as well
-as unsupported discriminators. A custom provider can therefore decode inputs rejected by the built-in
-parser, using the same dispatch mechanism.
+loader try the next provider. After all providers fail, Signum constructs the fallback with the original
+source and collected failures. For a custom format, pass the complete wire value and your decoder to the
+type's `decodeFrom` function. The wire value should include the identifier and payload. For example,
+`OtherName.decodeFrom(source, oid) { ... }` retains an uninterpreted payload as a typed `OtherName`
+that can round-trip through its original codec.
 
 To retry a previously unknown value after adding a provider, decode its retained source representation.
 

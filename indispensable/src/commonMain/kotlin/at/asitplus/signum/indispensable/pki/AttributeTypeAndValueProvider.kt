@@ -5,8 +5,8 @@ import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.asn1
-import at.asitplus.signum.indispensable.fromAsn1
 import kotlin.jvm.JvmInline
 
 /** Converting of ATV pairs (e.g., `cn=Alice`) to/from strings */
@@ -48,8 +48,9 @@ object AtvAsn1FallbackProvider : AttributeTypeAndValueProvider {
     ): AttributeTypeAndValue? {
         if (key !is AttributeTypeAndValueProvider.OID) return null
         if (value !is AttributeTypeAndValueProvider.ByteArrayValue) return null
-        return AttributeTypeAndValue.fromAsn1(
-            X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)))
+        return decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1)(
+            X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)),
+        )
     }
 
     override fun encodeATV(atv: AttributeTypeAndValue) =
