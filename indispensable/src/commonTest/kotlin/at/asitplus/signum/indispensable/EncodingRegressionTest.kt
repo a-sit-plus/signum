@@ -15,8 +15,8 @@ import at.asitplus.awesn1.encoding.parse
 import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
-import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
@@ -25,7 +25,6 @@ import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueAsn1Provider
 import at.asitplus.signum.indispensable.pki.AttributeAsn1Provider
 import at.asitplus.signum.indispensable.pki.TextAttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Name
-import at.asitplus.signum.indispensable.pki.toRfc2253String
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -42,26 +41,19 @@ val EncodingRegressionTest by matrixSuite {
         key.iosEncoded shouldBe key.toAnsiX963Encoded(useCompressed = false)
     }
 
-    "Malformed dotted-OID ATV retains its original text" {
-        val source = "1.2.3.4" to "#01"
-        val unknown = AttributeTypeAndValue.fromString(source.first, source.second)
-            .shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
-        val retained: Pair<String, String> = unknown.encodeTo { error("Expected retained text") }
-
-        retained shouldBe source
-        unknown shouldBe AttributeTypeAndValue.fromString("1.2.3.4", "#01")
-        (unknown == AttributeTypeAndValue.fromString("1.2.3.4", "#02")) shouldBe false
-        (unknown == AttributeTypeAndValue.fromString("1.2.3.5", source.second)) shouldBe false
+    "Hex ATVs with malformed DER fail to parse" {
+        for (key in listOf("1.2.3.4", "CN")) {
+            shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString(key, "#01") }
+        }
     }
 
-    "Uninterpreted hex ATVs retain and re-emit their DN text" {
-        for ((key, value) in listOf("1.2.3.4" to "#0401ff", "cN" to "#040101", "CN" to "#01")) {
-            val unknown = AttributeTypeAndValue.fromString(key, value)
+    "Uninterpreted hex ATVs round-trip their embedded DER" {
+        for ((key, hex) in listOf("1.2.3.4" to "0401ff", "cN" to "040101")) {
+            val unknown = AttributeTypeAndValue.fromString(key, "#$hex")
                 .shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
-            val retained: Pair<String, String> = unknown.encodeTo { error("Expected retained text") }
-            retained shouldBe (key to value)
-            unknown.toRfc2253String() shouldBe "$key=$value"
-            shouldThrow<Asn1Exception> { unknown.asn1.toRepresentation() }
+            val der = unknown.asn1.toDer()
+            Asn1Element.parse(der).asSequence().children.last().derEncoded shouldBe hex.hexToByteArray()
+            AttributeTypeAndValue.fromAsn1(der).asn1.toDer() shouldBe der
         }
     }
 

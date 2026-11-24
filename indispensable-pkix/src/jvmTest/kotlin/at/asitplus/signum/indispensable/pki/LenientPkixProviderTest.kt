@@ -20,6 +20,10 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.builtins.ListSerializer
 
+private fun malformedMacName() = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
+    MacAddressName.OID, Asn1OctetString(ByteArray(7) { 42 }),
+))
+
 /** Test-only recovery for deliberately narrow fixtures, registered below the built-in providers. */
 internal object LenientPkixProvider : CertificateExtensionProvider, GeneralNameFormatProvider,
     OtherNameAsn1Provider, PolicyQualifierAsn1Provider {
@@ -28,10 +32,11 @@ internal object LenientPkixProvider : CertificateExtensionProvider, GeneralNameF
             BasicConstraints(ca = false, critical = asn1.critical) // Ignore an inappropriate pathLenConstraint.
         else null
 
-    override fun decodeFromAsn1(generalName: X509GeneralName): GeneralName? =
-        if (generalName is X509GeneralName.Dns && generalName.value == " lenient.example ")
-            DNSName(generalName.value.trim())
-        else null
+    override fun decodeFromAsn1(generalName: X509GeneralName): GeneralName? = when {
+        generalName is X509GeneralName.Dns && generalName.value == " lenient.example " -> DNSName(generalName.value.trim())
+        generalName == malformedMacName() -> DNSName("lenient.example")
+        else -> null
+    }
 
     override fun decodeFromAsn1(value: X509GeneralName.Other): OtherName? {
         val raw = value.value as? X509GeneralName.Other.SemanticValue.Generic ?: return null
@@ -63,7 +68,7 @@ val LenientPkixProviderTest by matrixSuite {
     "A lower-priority provider recovers extensions rejected by built-in construction checks" {
         isolatedScenario(LenientPkixScenarios::class.java, "extensions")
     }
-    "A lower-priority provider recovers names rejected by the built-in parser" {
+    "General-name providers recover rejected names and typed OtherName checks the result" {
         isolatedScenario(LenientPkixScenarios::class.java, "names")
     }
     "OtherName providers recover inner OID failures without hiding the name family" {
@@ -104,15 +109,21 @@ internal object LenientPkixScenarios {
         val recovered = GeneralName.fromAsn1(source).shouldBeInstanceOf<DNSName>()
         recovered.value shouldBe "lenient.example"
         (recovered.asn1.toRepresentation() as X509GeneralName.Dns).rawValue shouldBeSameInstanceAs source.rawValue
+
+        val other = malformedMacName()
+        repeat(2) { attempt ->
+            if (attempt == 1) ServiceLoader.register<GeneralNameFormatProvider>(LenientPkixProvider)
+            GeneralName.fromAsn1(other).shouldBeInstanceOf<DNSName>()
+            shouldThrow<UnsupportedCryptoException> { OtherName(other) }.message shouldBe
+                "Expected OtherName for OID ${MacAddressName.OID}, received DNSName"
+        }
     }
 
     @JvmStatic
     fun otherNames() {
         ServiceLoader.register<OtherNameAsn1Provider>(LenientPkixProvider)
         Signum.installPkix()
-        val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
-            MacAddressName.OID, Asn1OctetString(ByteArray(7) { 42 }),
-        ))
+        val source = malformedMacName()
         shouldThrowAny { BuiltinOtherNames.decodeFromAsn1(source) }
         val recovered = OtherName(source).shouldBeInstanceOf<MacAddressName>()
         recovered.address shouldBe ByteArray(6) { 42 }

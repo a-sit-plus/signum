@@ -15,6 +15,7 @@ import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
 import at.asitplus.signum.indispensable.pki.extn.GeneralSubtrees
 import at.asitplus.signum.indispensable.pki.extn.NameConstraints
 import at.asitplus.signum.indispensable.pki.x500.OtherName
+import at.asitplus.signum.indispensable.pki.x500.SmtpUtf8Mailbox
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -26,6 +27,8 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.modules.SerializersModule
 
 @Serializable
@@ -95,7 +98,7 @@ val SignumDerIsolationTest by matrixSuite {
     "PKIX construction leaves DER configurable" {
         isolatedScenario(SignumDerScenarios::class.java, "constructionBeforeDer")
     }
-    "JSON attribute codecs leave DER configurable" {
+    "JSON attribute and OtherName codecs leave DER configurable" {
         isolatedScenario(SignumDerScenarios::class.java, "jsonBeforeDer")
     }
     "Attribute providers resolve custom aliases" {
@@ -215,6 +218,15 @@ internal object SignumDerScenarios {
         Signum.installPkix()
         val jsonAttribute = J509.attribute(CommonName("startup"))
         J509.attribute(jsonAttribute).shouldBeInstanceOf<CommonName>().text shouldBe "startup"
+
+        val mailbox = SmtpUtf8Mailbox("mé@example.test")
+        val known = J509.other(J509.other(mailbox)).shouldBeInstanceOf<SmtpUtf8Mailbox>()
+        known shouldBe mailbox
+        val jsonOtherName = Json.parseToJsonElement("""{"oid":"1.2.3.999","value":{"native":"opaque"}}""").jsonObject
+        val unknown = J509.other(jsonOtherName).shouldBeInstanceOf<OtherName.Unknown>()
+        unknown.oid shouldBe ObjectIdentifier("1.2.3.999")
+        J509.other(unknown) shouldBeSameInstanceAs jsonOtherName
+
         // This would fail if the JSON path had initialized Signum.Der.
         shouldNotThrowAny { Signum.registerAsn1Serializers(SerializersModule {}) }
     }

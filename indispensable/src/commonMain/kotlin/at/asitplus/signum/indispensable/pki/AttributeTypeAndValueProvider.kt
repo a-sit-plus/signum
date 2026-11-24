@@ -42,13 +42,16 @@ interface AttributeTypeAndValueProvider {
 fun AttributeTypeAndValueProvider.wellKnownAttributeOidForAlias(alias: String): ObjectIdentifier? = AtvWellKnownAliasesProvider.oidForAlias(alias)
 
 object AtvAsn1FallbackProvider : AttributeTypeAndValueProvider {
+    @OptIn(SignumInternals::class)
     override fun decodeATV(
         key: AttributeTypeAndValueProvider.Key,
         value: AttributeTypeAndValueProvider.Value
     ): AttributeTypeAndValue? {
         if (key !is AttributeTypeAndValueProvider.OID) return null
         if (value !is AttributeTypeAndValueProvider.ByteArrayValue) return null
-        return decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1, { _, failure -> throw failure })(
+        return decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1, { src, failure ->
+            AttributeTypeAndValue.Unknown(src.oid, src, failure)
+        })(
             X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)),
         )
     }

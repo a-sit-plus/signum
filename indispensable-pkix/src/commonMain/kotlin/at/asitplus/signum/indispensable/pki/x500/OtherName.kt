@@ -31,7 +31,9 @@ abstract class OtherName : GeneralName, Identifiable {
         @OptIn(SignumInternals::class)
         operator fun invoke(value: X509GeneralName.Other): OtherName = when (val name = GeneralName.fromAsn1(value)) {
             is GeneralName.Unknown -> Unknown(value.value.oid, value, name.lookupResult)
-            else -> name as OtherName
+            else -> name as? OtherName ?: throw UnsupportedCryptoException(
+                "Expected OtherName for OID ${value.value.oid}, received ${name::class.simpleName ?: "<anonymous>"}",
+            )
         }
     }
 }

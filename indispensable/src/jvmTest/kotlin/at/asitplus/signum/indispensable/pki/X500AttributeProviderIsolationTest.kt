@@ -17,6 +17,7 @@ import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 
 val X500AttributeProviderIsolationTest by matrixSuite {
     "Provider-only registration supplies aliases, canonical names, and typed text construction" {
@@ -80,9 +81,12 @@ internal object X500AttributeProviderScenarios {
         Signum.installIndispensable()
         val oid = AttributeTypeAndValue.OID.commonName
         val source = X500AttributeTypeAndValue(oid, Asn1String.UTF8("Alice"))
+        var parsed: X500AttributeTypeAndValue? = null
         ServiceLoader.register<AttributeTypeAndValueAsn1Provider>(object : AttributeTypeAndValueAsn1Provider {
-            override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? =
-                if (value == source) TextAttributeTypeAndValue(oid, "ALICE") else null
+            override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {
+                parsed = value
+                return if (value == source) TextAttributeTypeAndValue(oid, "ALICE") else null
+            }
 
             override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
         })
@@ -91,8 +95,11 @@ internal object X500AttributeProviderScenarios {
         for (key in listOf("CN", oid.toString())) {
             val decoded = AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
             decoded.text shouldBe "ALICE"
-            decoded.asn1.toRepresentation() shouldBe source
+            decoded.asn1.toRepresentation() shouldBeSameInstanceAs parsed
         }
+
+        val opaque = AttributeTypeAndValue.fromString("1.2.3.4=#0401Ff").shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+        opaque.asn1.toRepresentation() shouldBeSameInstanceAs parsed
     }
 
     @JvmStatic

@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.installIndispensable
-import at.asitplus.signum.indispensable.realSourceRepresentation
 import at.asitplus.signum.internals.hexToByteArray
 
 /**
@@ -193,19 +192,7 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                     AttributeTypeAndValueProvider.Value(unescapeRfc2253(v))
                 }
 
-            try {
-                ServiceLoader.load<AttributeTypeAndValueProvider>().get(type) { decodeATV(oid, resolvedValue) }
-            } catch (failure: UnsupportedCryptoException) {
-                val resolvedOid = when (oid) {
-                    is AttributeTypeAndValueProvider.OID -> oid.oid
-                    is AttributeTypeAndValueProvider.StringAlias -> {
-                        if (resolvedValue !is AttributeTypeAndValueProvider.ByteArrayValue) throw failure
-                        AtvWellKnownAliasesProvider.oidForAlias(oid.str) ?: throw failure
-                    }
-                }
-                @OptIn(SignumInternals::class)
-                Unknown(resolvedOid, type to value, failure)
-            }
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(type) { decodeATV(oid, resolvedValue) }
         }.getOrThrow()
     }
 }
@@ -221,12 +208,7 @@ open class TextAttributeTypeAndValue(
     override fun toString(): String = "AttributeTypeAndValue(${toRfc2253String()})"
 }
 
-@OptIn(SignumInternals::class)
 fun AttributeTypeAndValue.toRfc2253String(): String {
-    if (this is AttributeTypeAndValue.Unknown) {
-        val source = realSourceRepresentation as? Pair<*, *>
-        if (source?.first is String && source.second is String) return "${source.first}=${source.second}"
-    }
     // Look up by OID so text providers can also re-emit opaque attributes.
     val (keyString, valueString) = ServiceLoader.load<AttributeTypeAndValueProvider>()
         .get(oid) { encodeATV(this@toRfc2253String) }
